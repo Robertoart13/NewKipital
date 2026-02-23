@@ -11,6 +11,7 @@ import {
   PermissionsAdminListPage,
   RolesManagementPage,
   UsersManagementPage,
+  CompaniesManagementPage,
 } from '../pages/private';
 
 /**
@@ -64,6 +65,16 @@ export function AppRouter() {
             </PrivateLayout>
           )}
           path="/configuration/users"
+        />
+        <Route
+          element={(
+            <PrivateLayout>
+              <PermissionGuard requiredPermission="company:view">
+                <CompaniesManagementPage />
+              </PermissionGuard>
+            </PrivateLayout>
+          )}
+          path="/configuration/empresas"
         />
       </Route>
 

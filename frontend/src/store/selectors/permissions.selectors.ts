@@ -3,6 +3,12 @@ import type { Permission } from '../slices/permissionsSlice';
 
 const selectPermissions = (state: RootState) => state.permissions.permissions;
 
+const hasPermissionWithAliases = (permissions: string[], required: string): boolean => {
+  if (permissions.includes(required)) return true;
+  if (required.startsWith('company:') && permissions.includes('company:manage')) return true;
+  return false;
+};
+
 /**
  * Selectors derivados de permisos.
  * Nunca computar en el componente — siempre usar estos selectors.
@@ -47,7 +53,17 @@ export const canViewReports = (state: RootState) =>
   selectPermissions(state).includes('report:view');
 
 export const canManageCompany = (state: RootState) =>
-  selectPermissions(state).includes('company:manage');
+  hasPermissionWithAliases(selectPermissions(state), 'company:manage');
+export const canViewCompanies = (state: RootState) =>
+  hasPermissionWithAliases(selectPermissions(state), 'company:view');
+export const canCreateCompany = (state: RootState) =>
+  hasPermissionWithAliases(selectPermissions(state), 'company:create');
+export const canEditCompany = (state: RootState) =>
+  hasPermissionWithAliases(selectPermissions(state), 'company:edit');
+export const canInactivateCompany = (state: RootState) =>
+  hasPermissionWithAliases(selectPermissions(state), 'company:inactivate');
+export const canReactivateCompany = (state: RootState) =>
+  hasPermissionWithAliases(selectPermissions(state), 'company:reactivate');
 
 /** Permisos para ver secciones de configuración (tabs Roles, Usuarios, Permisos) */
 export const canViewConfigRoles = (state: RootState) =>
@@ -71,11 +87,11 @@ export const canDenyPermissions = (state: RootState) =>
  * Verifica si el usuario tiene un permiso específico.
  */
 export const hasPermission = (state: RootState, permission: Permission) =>
-  selectPermissions(state).includes(permission);
+  hasPermissionWithAliases(selectPermissions(state), permission);
 
 /**
  * Verifica permiso por módulo y acción.
  * Ej: hasModuleAction(state, 'payroll', 'create') → payroll:create
  */
 export const hasModuleAction = (state: RootState, module: string, action: string) =>
-  selectPermissions(state).includes(`${module}:${action}` as Permission);
+  hasPermissionWithAliases(selectPermissions(state), `${module}:${action}` as Permission);

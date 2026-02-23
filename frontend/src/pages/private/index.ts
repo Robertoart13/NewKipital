@@ -5,3 +5,4 @@ export { EmployeeDetailPage } from './employees/EmployeeDetailPage';
 export { PermissionsAdminListPage } from './configuration/PermissionsAdminListPage';
 export { RolesManagementPage } from './configuration/RolesManagementPage';
 export { UsersManagementPage } from './configuration/UsersManagementPage';
+export { CompaniesManagementPage } from './configuration/CompaniesManagementPage';

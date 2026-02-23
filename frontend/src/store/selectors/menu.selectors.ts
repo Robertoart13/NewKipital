@@ -5,6 +5,12 @@ import type { MenuItem } from '../slices/menuSlice';
 const selectMenuConfig = (state: RootState) => state.menu.config;
 const selectPermissions = (state: RootState) => state.permissions.permissions;
 
+const hasPermissionForMenu = (permissions: string[], required: string): boolean => {
+  if (permissions.includes(required)) return true;
+  if (required.startsWith('company:') && permissions.includes('company:manage')) return true;
+  return false;
+};
+
 /**
  * Filtra ítems de menú según permisos del usuario.
  * Regla: si un ítem tiene requiredPermission, el usuario debe tenerlo para verlo.
@@ -14,7 +20,7 @@ const filterMenuByPermissions = (items: MenuItem[], permissions: string[]): Menu
   return items
     .map((item) => {
       if (!item.requiredPermission) return item;
-      return permissions.includes(item.requiredPermission) ? item : null;
+      return hasPermissionForMenu(permissions, item.requiredPermission) ? item : null;
     })
     .filter((item): item is MenuItem => item !== null)
     .map((item) => {

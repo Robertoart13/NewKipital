@@ -30,7 +30,6 @@ import {
   WarningOutlined,
 } from '@ant-design/icons';
 import {
-  fetchConfigPermissions,
   fetchRolePermissions,
   fetchApps,
   fetchCompaniesForUserConfig,
@@ -103,7 +102,6 @@ export function UsersManagementPage() {
   const [apps, setApps] = useState<SystemApp[]>([]);
   const [companiesData, setCompaniesData] = useState<{ id: number; nombre: string; prefijo?: string | null }[]>([]);
   const [, setRoles] = useState<SystemRole[]>([]);
-  const [, setPermissions] = useState<SystemPermission[]>([]);
   const [userAppIds, setUserAppIds] = useState<number[]>([]);
   const [rolesForSelectedApp, setRolesForSelectedApp] = useState<SystemRole[]>([]);
   const [userCompanyIds, setUserCompanyIds] = useState<number[]>([]);
@@ -131,24 +129,43 @@ export function UsersManagementPage() {
   const loadBaseData = useCallback(async () => {
     setLoading(true);
     try {
-      const [usersData, appsData, rolesData, permsData, companiesCatalog] = await Promise.all([
+      const [usersDataResult, appsDataResult, rolesDataResult, companiesCatalogResult] = await Promise.allSettled([
         fetchUsers(false, true),
         fetchApps(),
         fetchRolesForUsers(false),
-        fetchConfigPermissions({ includeInactive: false }),
         fetchCompaniesForUserConfig(),
       ]);
-      setUsers(usersData.filter((u) => u.estado === 1));
-      setApps(appsData.filter((a) => a.estado === 1));
-      setRoles(rolesData.filter((r) => r.estado === 1));
-      setPermissions((permsData ?? []).filter((p) => p.estado === 1));
-      setCompaniesData(companiesCatalog ?? []);
+
+      if (usersDataResult.status === 'fulfilled') {
+        setUsers(usersDataResult.value.filter((u) => u.estado === 1));
+      } else {
+        setUsers([]);
+        message.error(usersDataResult.reason instanceof Error ? usersDataResult.reason.message : 'Error al cargar usuarios');
+      }
+
+      if (appsDataResult.status === 'fulfilled') {
+        setApps(appsDataResult.value.filter((a) => a.estado === 1));
+      } else {
+        setApps([]);
+      }
+
+      if (rolesDataResult.status === 'fulfilled') {
+        setRoles(rolesDataResult.value.filter((r) => r.estado === 1));
+      } else {
+        setRoles([]);
+      }
+
+      if (companiesCatalogResult.status === 'fulfilled') {
+        setCompaniesData(companiesCatalogResult.value ?? []);
+      } else {
+        setCompaniesData([]);
+      }
     } catch (e) {
       message.error(e instanceof Error ? e.message : 'Error al cargar datos');
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [message]);
 
   useEffect(() => {
     void loadBaseData();
@@ -673,11 +690,10 @@ export function UsersManagementPage() {
                         Solo las empresas marcadas. Si está desmarcada, el usuario no ve nada de ella.
                       </p>
                       <Alert
-                        className={styles.helpInfoAlert}
+                        className={`${styles.infoBanner} ${styles.infoType}`}
                         type="info"
                         showIcon
-                        style={{ marginBottom: 12 }}
-                        message={<span className={styles.helpInfoTitle}>Para qué sirve</span>}
+                        message="Para qué sirve"
                         description="Define en cuáles empresas puede operar el usuario. Sin empresas asignadas, no tendrá contexto de trabajo."
                       />
                       <Input
@@ -722,11 +738,11 @@ export function UsersManagementPage() {
                       )}
                       {userCompanyIds.length === 0 && (
                         <Alert
+                          className={`${styles.infoBanner} ${styles.warningType}`}
                           type="warning"
                           showIcon
                           message="Sin empresas asignadas los roles no tienen efecto"
                           description="Los roles globales solo aplican si el usuario tiene al menos una empresa asignada en la pestaña Empresas. Guarde las empresas primero."
-                          style={{ marginBottom: 16 }}
                         />
                       )}
                       <p className={styles.sectionTitle}>Roles globales</p>
@@ -734,11 +750,10 @@ export function UsersManagementPage() {
                         Se aplican automáticamente en todas las empresas del usuario.
                       </p>
                       <Alert
-                        className={styles.helpInfoAlert}
+                        className={`${styles.infoBanner} ${styles.infoType}`}
                         type="info"
                         showIcon
-                        style={{ marginBottom: 12 }}
-                        message={<span className={styles.helpInfoTitle}>Para qué sirve</span>}
+                        message="Para qué sirve"
                         description="Asigna capacidades base del usuario para la aplicación seleccionada (KPITAL o TimeWise)."
                       />
                       {loadingRolesForApp ? (
@@ -793,24 +808,25 @@ export function UsersManagementPage() {
                       )}
                       {userCompanyIds.length === 0 && (
                         <Alert
+                          className={`${styles.infoBanner} ${styles.warningType}`}
                           type="warning"
                           showIcon
                           message="Sin empresas asignadas las excepciones no tienen efecto"
                           description="Asigne al menos una empresa en la pestaña Empresas para que los roles y permisos apliquen al refrescar el perfil."
-                          style={{ marginBottom: 16 }}
                         />
                       )}
-                      <div className={styles.exceptionBanner}>
-                        <Text strong style={{ color: '#991b1b', fontSize: 12 }}>Denegar permisos globalmente.</Text>
-                        {' '}
-                        Los permisos marcados NO se aplicarán en ninguna empresa. Seleccione un rol para ver sus permisos y revocar los que no debe tener el usuario.
-                      </div>
                       <Alert
-                        className={styles.helpInfoAlert}
+                        className={`${styles.infoBanner} ${styles.warningType}`}
+                        type="warning"
+                        showIcon
+                        message="Denegar permisos globalmente"
+                        description="Los permisos marcados NO se aplicarán en ninguna empresa. Seleccione un rol para ver sus permisos y revocar los que no debe tener el usuario."
+                      />
+                      <Alert
+                        className={`${styles.infoBanner} ${styles.infoType}`}
                         type="info"
                         showIcon
-                        style={{ margin: '10px 0 12px 0' }}
-                        message={<span className={styles.helpInfoTitle}>Para qué sirve</span>}
+                        message="Para qué sirve"
                         description="Restringe permisos específicos aunque el rol los otorgue. Úselo para excepciones puntuales de seguridad."
                       />
                       {loadingRolesSummary ? (
@@ -892,11 +908,10 @@ export function UsersManagementPage() {
                         Controles de estado del usuario para habilitar o restringir su acceso a la plataforma.
                       </p>
                       <Alert
-                        className={styles.helpInfoAlert}
+                        className={`${styles.infoBanner} ${styles.infoType}`}
                         type="info"
                         showIcon
-                        style={{ marginBottom: 12 }}
-                        message={<span className={styles.helpInfoTitle}>Inactivar vs Bloquear</span>}
+                        message="Inactivar vs Bloquear"
                         description="Inactivar retira acceso por estado inactivo. Bloquear corta acceso inmediato. Reactivar restablece acceso."
                       />
                       <Flex gap={8} wrap="wrap">

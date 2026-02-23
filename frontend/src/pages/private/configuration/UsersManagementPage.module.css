@@ -604,56 +604,57 @@
   margin: 0 0 10px 0;
 }
 
-.exceptionBanner {
-  padding: 14px 16px;
-  background: #e4cdcd;
-  border: 1px solid #c99a9a;
-  border-radius: 10px;
-  font-size: 13px;
-  color: #4d2e2e;
-  line-height: 1.5;
-  margin-bottom: 16px;
+/* Banners informativos (Alert): compactos, limpios, iconos suaves */
+.infoBanner:global(.ant-alert) {
+  border-radius: 8px !important;
+  border: 1px solid #e8ecf0 !important;
+  background: #ffffff !important;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03) !important;
+  padding: 10px 14px !important;
+  margin-bottom: 8px !important;
 }
 
-.helpInfoAlert {
-  border-radius: 10px !important;
-  border: 1px solid #2f3f56 !important;
-  background: #1f2b3d !important;
+.infoBanner :global(.ant-alert-icon) {
+  font-size: 14px !important;
+  margin-right: 10px !important;
 }
 
-.helpInfoAlert :global(.ant-alert-content) {
-  color: #ffffff !important;
+.infoBanner :global(.ant-alert-message) {
+  color: #3d4f5c !important;
+  font-weight: 600 !important;
+  font-size: 13px !important;
+  line-height: 1.4 !important;
+  -webkit-text-fill-color: #3d4f5c !important;
 }
 
-.helpInfoAlert :global(.ant-alert-message) {
-  color: #ffffff !important;
-  font-weight: 700;
-  -webkit-text-fill-color: #ffffff !important;
+.infoBanner :global(.ant-alert-description) {
+  color: #6b7a85 !important;
+  font-size: 12px !important;
+  line-height: 1.45 !important;
+  margin-top: 2px !important;
+  -webkit-text-fill-color: #6b7a85 !important;
 }
 
-.helpInfoAlert :global(.ant-alert-description) {
-  color: #ffffff !important;
-  font-size: 13px;
-  line-height: 1.5;
-  -webkit-text-fill-color: #ffffff !important;
+.infoBanner :global(.ant-alert-content *),
+.infoBanner :global(.ant-alert-message *),
+.infoBanner :global(.ant-alert-description *) {
+  color: inherit !important;
+  -webkit-text-fill-color: inherit !important;
 }
 
-.helpInfoAlert :global(.ant-alert-icon) {
-  color: #8fd3ff !important;
+/* Iconos suaves: info=verde apagado, warning=naranja suave, error=rojo suave */
+.infoBanner.infoType :global(.ant-alert-icon) {
+  color: #5a7a6a !important;
 }
 
-.helpInfoTitle {
-  color: #ffffff !important;
-  -webkit-text-fill-color: #ffffff !important;
-  font-weight: 700;
+.infoBanner.warningType :global(.ant-alert-icon) {
+  color: #b8860b !important;
 }
 
-.helpInfoAlert :global(.ant-alert-content *),
-.helpInfoAlert :global(.ant-alert-message *),
-.helpInfoAlert :global(.ant-alert-description *) {
-  color: #ffffff !important;
-  -webkit-text-fill-color: #ffffff !important;
+.infoBanner.dangerType :global(.ant-alert-icon) {
+  color: #a85c5c !important;
 }
+
 
 .exceptionListBox {
   max-height: 220px;

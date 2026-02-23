@@ -165,7 +165,7 @@ const initialMenuConfig: MenuItem[] = [
         isGroup: true,
         children: [
           { id: 'reglas-distribucion', label: 'Reglas de Distribución', path: '/configuration/reglas-distribucion' },
-          { id: 'empresas', label: 'Empresas', path: '/configuration/empresas' },
+          { id: 'empresas', label: 'Empresas', path: '/configuration/empresas', requiredPermission: 'company:view' },
           { id: 'empleados', label: 'Empleados', path: '/employees', requiredPermission: 'employee:view' },
           { id: 'clases', label: 'Clases', path: '/configuration/clases' },
           { id: 'proyectos', label: 'Proyectos', path: '/configuration/proyectos' },

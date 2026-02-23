@@ -4,7 +4,7 @@
 **Para:** Ingeniero Frontend  
 **De:** Roberto — Arquitecto Funcional / Senior Engineer  
 **Prerrequisito:** Haber leído [02-ScaffoldingProyecto.md](./02-ScaffoldingProyecto.md)  
-**Última actualización:** 2026-02-23 (Paleta RRHH: Activo, danger, clases de referencia)
+**Última actualización:** 2026-02-23 (Tabs segmentados, banners informativos compactos, iconos suaves)
 
 ---
 
@@ -75,6 +75,14 @@ Se utilizan colores **poco saturados, tonos slate y grises neutros**. Referencia
 | Borde danger | `#c99a9a` | Rojo pastel |
 | Texto danger | `#4d2e2e` | Marrón-gris oscuro |
 
+### Iconos de banners informativos (suaves, no fuertes)
+
+| Tipo | Color | Hex |
+|------|-------|-----|
+| Info | Verde apagado | `#5a7a6a` |
+| Warning | Naranja suave | `#b8860b` |
+| Danger | Rojo suave | `#a85c5c` |
+
 ---
 
 ## Qué Pidió Roberto (Textual)
@@ -126,22 +134,75 @@ Ambas páginas comparten `UsersManagementPage.module.css` y aplican la Paleta RR
 |-------|-----|---------------------|
 | `.tagActivo` | Etiqueta estado Activo | fondo `#b8d9c4`, texto `#3d5a45` |
 | `.tagInactivo` | Etiqueta estado Inactivo | fondo `#f0f2f4`, texto `#6b7a85` |
-| `.exceptionBanner` | Banner de advertencia/danger | fondo `#e4cdcd`, borde `#c99a9a`, texto `#4d2e2e` |
-| `.helpInfoAlert` | Mensajes informativos (Para qué sirve / guías operativas) | fondo `#1f2b3d`, borde `#2f3f56`, texto `#ffffff`, ícono `#8fd3ff` |
 | `.exceptionListBox` | Lista dentro de sección danger | fondo `#ecd8d8`, borde `#c99a9a` |
 | `.btnPrimary` | Botón principal | fondo `#5a6c7d` |
 | `.btnSecondary` | Botón secundario | borde `#d8dde4`, texto `#5a6b7a` |
-| `.infoBanner` | Banner informativo (modo migración, etc.) | fondo `#f2f4f6`, borde `#e4e8ec`, texto `#4a5a68` |
+| `.infoBanner` (div) | Banner informativo simple (modo migración, etc.) | fondo `#f2f4f6`, borde `#e4e8ec`, texto `#4a5a68` |
+| `.infoBanner` + `.infoType` (Alert) | Mensajes informativos (Para qué sirve, guías) | Ver sección *Banners informativos* |
+| `.infoBanner` + `.warningType` (Alert) | Advertencias (Denegar permisos, Sin empresas) | Ver sección *Banners informativos* |
+| `.infoBanner` + `.dangerType` (Alert) | Mensajes de error/danger | Ver sección *Banners informativos* |
+| `.pageTabs` / `.pageTab` / `.pageTabActive` | Tabs de página (Roles, Usuarios, Permisos) | Ver sección *Tabs estilo control segmentado* |
+| `.tabsWrapper` | Tabs en Drawer (Empresas, Roles, Excepciones, Acciones) | Ver sección *Tabs estilo control segmentado* |
 | `.configTable` | Tabla de configuración (permisos, roles) | Mismos estilos que `.usersTable` |
 | `.appSelector` | Selector de aplicación (Roles: KPITAL/TimeWise) | Contenedor + `.appSelectorLabel`, `.appSelectorButtons`, `.appSelectorDesc` |
 
 **Regla:** Al crear nuevos componentes de configuración, alertas o etiquetas de estado, usar estos valores. No inventar colores.
 
-### Regla Global de Mensajes Informativos
+---
 
-- Todo mensaje informativo de producto (por ejemplo "Para qué sirve") debe usar la clase `.helpInfoAlert`.
-- Debe verse en formato dark: fondo `#1f2b3d`, texto blanco y borde `#2f3f56`.
-- La clase fuerza color blanco en todos los descendientes para evitar letras en negro por herencia de estilos de AntD.
+### Tabs estilo control segmentado (Obligatorio)
+
+Para secciones como **Empresas, Roles, Excepciones, Acciones** y **Roles, Usuarios, Permisos**:
+
+| Elemento | Estilo |
+|----------|--------|
+| Contenedor | Fondo `#f5f5f5`, padding 4–6px, border-radius 8–10px, sombra sutil |
+| Pestaña activa | Fondo blanco, texto `#333333`, font-weight 600, sombra `0 1px 3px rgba(0,0,0,0.06)`, `transform: scale(1.02)` |
+| Pestaña inactiva | Sin fondo, texto `#777777`, font-weight 400 |
+| Transición | `cubic-bezier(0.34, 1.56, 0.64, 1)` para efecto burbuja |
+| Contenido al cambiar pestaña | Animación `tabPaneFadeIn` (opacidad + translateY 4px) |
+
+**Uso:** 
+- Página: `className={styles.pageTabs}` con `pageTab` + `pageTabActive`
+- Drawer: envolver `Tabs` en `className={styles.tabsWrapper}`
+
+---
+
+### Banners informativos (Obligatorio)
+
+Todo mensaje informativo (Para qué sirve, Inactivar vs Bloquear, Denegar permisos globalmente, Sin empresas asignadas, etc.) debe usar:
+
+**Clase:** `className={\`${styles.infoBanner} ${styles.infoType}\`}` (o `warningType` / `dangerType`)
+
+| Propiedad | Valor |
+|-----------|-------|
+| Fondo | Blanco `#ffffff` |
+| Borde | `1px solid #e8ecf0` |
+| Padding | `10px 14px` |
+| Margin-bottom | `8px` |
+| Título | `#3d4f5c`, 13px, font-weight 600 |
+| Descripción | `#6b7a85`, 12px, line-height 1.45 |
+
+**Iconos suaves (no fuertes):**
+
+| Tipo | Clase | Color icono |
+|------|-------|-------------|
+| Información | `infoType` | Verde apagado `#5a7a6a` |
+| Advertencia | `warningType` | Naranja suave `#b8860b` |
+| Error/Danger | `dangerType` | Rojo suave `#a85c5c` |
+
+**Ejemplo:**
+```tsx
+<Alert
+  className={`${styles.infoBanner} ${styles.infoType}`}
+  type="info"
+  showIcon
+  message="Para qué sirve"
+  description="Define en cuáles empresas puede operar el usuario."
+/>
+```
+
+**Regla:** Mantener banners compactos, limpios y con iconos suaves. Evitar colores fuertes.
 
 ---
 
@@ -154,10 +215,12 @@ Ambas páginas comparten `UsersManagementPage.module.css` y aplican la Paleta RR
 3. **Usar CSS Modules (`.module.css`) para estilos específicos de componente.**
 4. **Usar exclusivamente la Paleta RRHH** para colores. No inventar colores fuera de ella.
 5. **Consultar `UsersManagementPage.module.css`** como referencia de clases y valores hex.
+6. **Usar tabs estilo control segmentado** para Empresas, Roles, Excepciones, Acciones y para Roles, Usuarios, Permisos.
+7. **Usar banners informativos compactos** (`infoBanner` + `infoType`/`warningType`/`dangerType`) para mensajes de guía o advertencia.
 
 ### Qué NO hacer
 
-1. **No usar colores fuertes ni llamativos.** Evitar azul brillante (`#1677ff`), verde fuerte (`#52c41a`), rojos saturados.
+1. **No usar colores fuertes ni llamativos.** Evitar azul brillante (`#1677ff`), verde fuerte (`#52c41a`), rojos saturados. En banners informativos, usar iconos suaves (ver sección *Iconos de banners informativos*).
 2. **No poner lógica de negocio en componentes UI.** Un `KpTable` no decide qué datos mostrar. Recibe datos procesados.
 3. **No mezclar frameworks.** Si AntD tiene un `Select`, no uses `react-select`. Si AntD tiene un `Modal`, no hagas uno custom con CSS.
 4. **No sobreescribir estilos globales de AntD con `!important`.** Usar tokens del tema o CSS Modules.

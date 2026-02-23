@@ -21,6 +21,20 @@ type RequestWithUser = {
   headers?: Record<string, unknown>;
 };
 
+function hasPermissionWithEnterpriseAliases(
+  userPermissions: string[],
+  requiredPermission: string,
+): boolean {
+  if (userPermissions.includes(requiredPermission)) return true;
+
+  // Compatibilidad legacy: company:manage cubre permisos granulares de company:*
+  if (requiredPermission.startsWith('company:') && userPermissions.includes('company:manage')) {
+    return true;
+  }
+
+  return false;
+}
+
 /**
  * Guard que verifica permisos granulares (module:action) por contexto.
  * Requiere companyId + appCode para resolver permisos reales del usuario.
@@ -64,7 +78,7 @@ export class PermissionsGuard implements CanActivate {
         roles: resolved.roles,
       };
 
-      const hasAll = required.every((p) => userPermissions.includes(p));
+      const hasAll = required.every((p) => hasPermissionWithEnterpriseAliases(userPermissions, p));
       if (!hasAll) {
         throw new ForbiddenException(`Permisos insuficientes. Requiere: ${required.join(', ')}`);
       }
@@ -82,7 +96,7 @@ export class PermissionsGuard implements CanActivate {
       roles: resolved.roles,
     };
 
-    const hasAll = required.every((p) => userPermissions.includes(p));
+    const hasAll = required.every((p) => hasPermissionWithEnterpriseAliases(userPermissions, p));
     if (!hasAll) {
       throw new ForbiddenException(`Permisos insuficientes. Requiere: ${required.join(', ')}`);
     }
