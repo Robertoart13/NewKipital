@@ -10,6 +10,8 @@ npm-debug.log*
 
 # environment
 .env
+.env.example
+.env.*
 
 # os
 .DS_Store
