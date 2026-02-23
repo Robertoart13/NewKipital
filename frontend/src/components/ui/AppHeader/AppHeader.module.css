@@ -1,0 +1,104 @@
+/* Header KPITAL 360 — Estilo Enterprise */
+
+.header {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: #fff;
+  box-shadow: 0 1px 0 rgba(0, 0, 0, 0.06);
+}
+
+.level1 {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 56px;
+  padding: 0 24px;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.logoImg {
+  height: 64px;
+  width: auto;
+  display: block;
+  object-fit: contain;
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.level2 {
+  height: 48px;
+  padding: 0 24px;
+  display: flex;
+  align-items: center;
+}
+
+.menu {
+  flex: 1;
+  min-width: 0;
+  border: none !important;
+  background: transparent !important;
+  height: 48px;
+  line-height: 48px !important;
+}
+
+.menu :global(.ant-menu-item),
+.menu :global(.ant-menu-submenu) {
+  height: 48px !important;
+  line-height: 48px !important;
+  margin: 0 !important;
+  padding: 0 16px !important;
+  color: #595959;
+  font-size: 14px;
+}
+
+.menu :global(.ant-menu-item:hover),
+.menu :global(.ant-menu-submenu:hover) :global(.ant-menu-submenu-title) {
+  color: #20638d;
+}
+
+.menu :global(.ant-menu-item-selected),
+.menu :global(.ant-menu-submenu-selected) :global(.ant-menu-submenu-title) {
+  color: #0d6efd;
+  border-bottom: 2px solid #0d6efd;
+}
+
+/* Dropdown popup — íconos celeste, hover celeste claro */
+:global(.ant-menu-submenu-popup) :global(.ant-menu-item) :global(.anticon),
+:global(.ant-menu-submenu-popup) :global(.ant-menu-submenu-title) :global(.anticon) {
+  color: #0d6efd;
+}
+
+:global(.ant-menu-submenu-popup) :global(.ant-menu-item):hover,
+:global(.ant-menu-submenu-popup) :global(.ant-menu-submenu-title):hover {
+  background: #e6f4ff !important;
+  color: #20638d !important;
+}
+
+:global(.ant-menu-submenu-popup) :global(.ant-menu-item-selected) {
+  background: #e6f4ff !important;
+  color: #0d6efd !important;
+}
+
+/* Grupos dentro de popups — título estilizado como label, items consistentes */
+:global(.ant-menu-submenu-popup) :global(.ant-menu-item-group-title) {
+  font-size: 13px;
+  font-weight: 600;
+  color: #8c8c8c;
+  padding: 8px 16px 4px !important;
+}
+
+:global(.ant-menu-submenu-popup) :global(.ant-menu-item-group-list) :global(.ant-menu-item),
+:global(.ant-menu-submenu-popup) :global(.ant-menu-item-group-list) :global(.ant-menu-submenu-title) {
+  padding-left: 16px !important;
+}

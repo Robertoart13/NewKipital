@@ -1,0 +1,126 @@
+# KPITAL 360 — Modelado Tabla sys_empresas
+
+**Documento:** 13  
+**Para:** Ingeniero Backend + DBA  
+**De:** Roberto — Arquitecto Funcional / Senior Engineer  
+**Prerrequisito:** Haber leído [01-EnfoqueSistema.md](./01-EnfoqueSistema.md) + [11-DirectivasConfiguracionBackend.md](./11-DirectivasConfiguracionBackend.md)  
+**Prioridad:** Primera tabla del sistema. Root aggregate.
+
+---
+
+## Principio
+
+La empresa es el **root aggregate** del sistema.  
+Sin empresa no existen: usuarios operativos, planillas, acciones de personal, roles scopeados, permisos por empresa.
+
+- No se puede borrar físicamente
+- No se puede romper integridad
+- No se puede perder trazabilidad
+- **Solo se puede inactivar**
+
+---
+
+## Estructura Definitiva — sys_empresas
+
+### PK
+
+- `id_empresa` — INT, auto incremental, primary key
+
+### Campos de negocio
+
+| Campo | Tipo | Restricción |
+|-------|------|-------------|
+| `nombre_empresa` | VARCHAR(200) | NOT NULL |
+| `nombre_legal_empresa` | VARCHAR(300) | NOT NULL |
+| `cedula_empresa` | VARCHAR(50) | UNIQUE, NOT NULL |
+| `actividad_economica_empresa` | VARCHAR(300) | NULL |
+| `prefijo_empresa` | VARCHAR(10) | UNIQUE, NOT NULL |
+| `id_externo_empresa` | VARCHAR(100) | UNIQUE, NULL (referencia NetSuite) |
+| `direccion_exacta_empresa` | TEXT | NULL |
+| `telefono_empresa` | VARCHAR(30) | NULL |
+| `email_empresa` | VARCHAR(150) | NULL |
+| `codigo_postal_empresa` | VARCHAR(20) | NULL |
+
+### Estado Enterprise
+
+| Campo | Tipo | Valor |
+|-------|------|-------|
+| `estado_empresa` | TINYINT(1) | 1 = Activa, 0 = Inactiva |
+
+### Auditoría obligatoria (Fase 1)
+
+| Campo | Tipo | Restricción |
+|-------|------|-------------|
+| `fecha_creacion_empresa` | DATETIME | NOT NULL, DEFAULT NOW() |
+| `fecha_modificacion_empresa` | DATETIME | NOT NULL, ON UPDATE NOW() |
+| `fecha_inactivacion_empresa` | DATETIME | NULL |
+| `creado_por_empresa` | INT | NOT NULL (userId) |
+| `modificado_por_empresa` | INT | NOT NULL (userId) |
+
+---
+
+## Reglas Enterprise
+
+- **NO** existe DELETE físico
+- **NO** existe CASCADE DELETE
+- **NO** existe "hard delete"
+- **SÍ** inactivación lógica solamente
+- **SÍ** integridad referencial siempre activa
+- **SÍ** índices en: `cedula_empresa`, `prefijo_empresa`, `id_externo_empresa`, `estado_empresa`
+
+---
+
+## Comportamiento de Negocio
+
+**Inactivar empresa:**
+- `estado_empresa = 0`
+- `fecha_inactivacion_empresa = NOW()`
+- `modificado_por_empresa = userId`
+
+**Reactivar empresa:**
+- `estado_empresa = 1`
+- `fecha_inactivacion_empresa = NULL`
+
+---
+
+## Justificación Arquitectónica
+
+Esto permite:
+- Mantener histórico de planillas pasadas
+- Mantener histórico de empleados
+- Mantener histórico contable
+- No romper relaciones
+- Evitar corrupción de datos
+
+NetSuite, SAP, Oracle — todos funcionan así. Nadie borra empresas.
+
+---
+
+## Lo que NO se hace ahora
+
+- No se crean relaciones aún
+- No se crea usuario aún
+- No se crea rol aún
+- No se crea planilla aún
+- **Primero se consolida el aggregate raíz**
+
+---
+
+## Qué sigue después de esta tabla
+
+| Orden | Tabla | Propósito |
+|-------|-------|-----------|
+| 1 | `sys_empresas` | **Esta tabla** — root aggregate |
+| 2 | `sys_usuarios` | Identidad única de la plataforma |
+| 3 | `sys_apps` | Catálogo de aplicaciones (KPITAL, TimeWise) |
+| 4 | `sys_usuario_empresa` | Relación M:M usuario ↔ empresa |
+| 5 | `sys_roles` | Roles por app + empresa |
+| 6 | `sys_permisos` | Permisos granulares |
+| 7 | `sys_usuario_rol` | Asignación rol a usuario |
+| 8 | `sys_rol_permiso` | Permisos por rol |
+
+Ese es el **core identity schema**.
+
+---
+
+*Primer paso de modelado serio. Consolida el aggregate raíz antes de cualquier otra tabla.*

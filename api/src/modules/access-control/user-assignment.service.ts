@@ -1,0 +1,730 @@
+import { Injectable, NotFoundException, ConflictException, BadRequestException } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { In, Repository } from 'typeorm';
+import { UserApp } from './entities/user-app.entity.js';
+import { UserCompany } from './entities/user-company.entity.js';
+import { UserRole } from './entities/user-role.entity.js';
+import { UserRoleGlobal } from './entities/user-role-global.entity.js';
+import { UserRoleExclusion } from './entities/user-role-exclusion.entity.js';
+import { UserPermissionOverride } from './entities/user-permission-override.entity.js';
+import { UserPermissionGlobalDeny } from './entities/user-permission-global-deny.entity.js';
+import { App } from './entities/app.entity.js';
+import { Role } from './entities/role.entity.js';
+import { Permission } from './entities/permission.entity.js';
+import { AssignUserAppDto } from './dto/assign-user-app.dto.js';
+import { AssignUserCompanyDto } from './dto/assign-user-company.dto.js';
+import { AssignUserRoleDto } from './dto/assign-user-role.dto.js';
+
+@Injectable()
+export class UserAssignmentService {
+  constructor(
+    @InjectRepository(UserApp)
+    private readonly userAppRepo: Repository<UserApp>,
+    @InjectRepository(UserCompany)
+    private readonly userCompanyRepo: Repository<UserCompany>,
+    @InjectRepository(UserRole)
+    private readonly userRoleRepo: Repository<UserRole>,
+    @InjectRepository(UserRoleGlobal)
+    private readonly userRoleGlobalRepo: Repository<UserRoleGlobal>,
+    @InjectRepository(UserRoleExclusion)
+    private readonly userRoleExclusionRepo: Repository<UserRoleExclusion>,
+    @InjectRepository(UserPermissionOverride)
+    private readonly userPermOverrideRepo: Repository<UserPermissionOverride>,
+    @InjectRepository(UserPermissionGlobalDeny)
+    private readonly userPermGlobalDenyRepo: Repository<UserPermissionGlobalDeny>,
+    @InjectRepository(App)
+    private readonly appRepo: Repository<App>,
+    @InjectRepository(Role)
+    private readonly roleRepo: Repository<Role>,
+    @InjectRepository(Permission)
+    private readonly permRepo: Repository<Permission>,
+  ) {}
+
+  // --- Usuario ↔ App ---
+
+  async assignApp(dto: AssignUserAppDto): Promise<UserApp> {
+    const existing = await this.userAppRepo.findOne({
+      where: { idUsuario: dto.idUsuario, idApp: dto.idApp },
+    });
+    if (existing) {
+      throw new ConflictException('El usuario ya tiene acceso a esa app');
+    }
+    const ua = this.userAppRepo.create(dto);
+    return this.userAppRepo.save(ua);
+  }
+
+  async revokeApp(idUsuario: number, idApp: number): Promise<void> {
+    const ua = await this.userAppRepo.findOne({ where: { idUsuario, idApp } });
+    if (!ua) {
+      throw new NotFoundException('Asignación usuario-app no encontrada');
+    }
+    ua.estado = 0;
+    await this.userAppRepo.save(ua);
+  }
+
+  async getUserApps(idUsuario: number): Promise<UserApp[]> {
+    return this.userAppRepo.find({ where: { idUsuario, estado: 1 } });
+  }
+
+  // --- Usuario ↔ Empresa ---
+
+  async assignCompany(dto: AssignUserCompanyDto): Promise<UserCompany> {
+    const existing = await this.userCompanyRepo.findOne({
+      where: { idUsuario: dto.idUsuario, idEmpresa: dto.idEmpresa },
+    });
+    if (existing) {
+      throw new ConflictException('El usuario ya está asignado a esa empresa');
+    }
+    const uc = this.userCompanyRepo.create(dto);
+    return this.userCompanyRepo.save(uc);
+  }
+
+  async revokeCompany(idUsuario: number, idEmpresa: number): Promise<void> {
+    const uc = await this.userCompanyRepo.findOne({ where: { idUsuario, idEmpresa } });
+    if (!uc) {
+      throw new NotFoundException('Asignación usuario-empresa no encontrada');
+    }
+    uc.estado = 0;
+    await this.userCompanyRepo.save(uc);
+  }
+
+  async getUserCompanies(idUsuario: number): Promise<UserCompany[]> {
+    return this.userCompanyRepo.find({ where: { idUsuario, estado: 1 } });
+  }
+
+  async replaceUserCompanies(idUsuario: number, companyIds: number[]): Promise<{ companyIds: number[] }> {
+    const normalized = [...new Set(companyIds)].filter((id) => Number.isInteger(id) && id > 0);
+    const existing = await this.userCompanyRepo.find({ where: { idUsuario } });
+    const existingById = new Map(existing.map((e) => [e.idEmpresa, e]));
+    const targetSet = new Set(normalized);
+
+    for (const e of existing) {
+      if (targetSet.has(e.idEmpresa)) {
+        if (e.estado !== 1) {
+          e.estado = 1;
+          await this.userCompanyRepo.save(e);
+        }
+      } else {
+        e.estado = 0;
+        await this.userCompanyRepo.save(e);
+      }
+    }
+
+    for (const companyId of normalized) {
+      if (existingById.has(companyId)) continue;
+      await this.userCompanyRepo.save(
+        this.userCompanyRepo.create({
+          idUsuario,
+          idEmpresa: companyId,
+          estado: 1,
+        }),
+      );
+    }
+
+    if (normalized.length > 0) {
+      await this.ensureUserHasKpitalApp(idUsuario);
+    }
+
+    const result = await this.userCompanyRepo.find({
+      where: { idUsuario, estado: 1 },
+    });
+    return { companyIds: result.map((r) => r.idEmpresa).sort((a, b) => a - b) };
+  }
+
+  private async ensureUserHasKpitalApp(idUsuario: number): Promise<void> {
+    const apps = await this.userAppRepo.find({ where: { idUsuario, estado: 1 } });
+    if (apps.length > 0) return;
+
+    const kpital = await this.appRepo.findOne({ where: { codigo: 'kpital', estado: 1 } });
+    if (!kpital) return;
+
+    const existing = await this.userAppRepo.findOne({ where: { idUsuario, idApp: kpital.id } });
+    if (existing) {
+      if (existing.estado !== 1) {
+        existing.estado = 1;
+        await this.userAppRepo.save(existing);
+      }
+      return;
+    }
+
+    await this.userAppRepo.save(
+      this.userAppRepo.create({ idUsuario, idApp: kpital.id, estado: 1 }),
+    );
+  }
+
+  // --- Usuario ↔ Rol (scoped por Empresa + App) ---
+
+  async assignRole(dto: AssignUserRoleDto, creatorId: number): Promise<UserRole> {
+    const existing = await this.userRoleRepo.findOne({
+      where: {
+        idUsuario: dto.idUsuario,
+        idRol: dto.idRol,
+        idEmpresa: dto.idEmpresa,
+        idApp: dto.idApp,
+      },
+    });
+    if (existing) {
+      throw new ConflictException(
+        'El usuario ya tiene ese rol en esa empresa y app',
+      );
+    }
+
+    const ur = this.userRoleRepo.create({
+      ...dto,
+      estado: 1,
+      creadoPor: creatorId,
+      modificadoPor: creatorId,
+    });
+    return this.userRoleRepo.save(ur);
+  }
+
+  async revokeRole(
+    idUsuario: number,
+    idRol: number,
+    idEmpresa: number,
+    idApp: number,
+    modifierId: number,
+  ): Promise<void> {
+    const ur = await this.userRoleRepo.findOne({
+      where: { idUsuario, idRol, idEmpresa, idApp },
+    });
+    if (!ur) {
+      throw new NotFoundException('Asignación usuario-rol no encontrada');
+    }
+    ur.estado = 0;
+    ur.modificadoPor = modifierId;
+    await this.userRoleRepo.save(ur);
+  }
+
+  async getUserRoles(
+    idUsuario: number,
+    idEmpresa?: number,
+    idApp?: number,
+  ): Promise<UserRole[]> {
+    const qb = this.userRoleRepo.createQueryBuilder('ur')
+      .where('ur.idUsuario = :idUsuario', { idUsuario })
+      .andWhere('ur.estado = 1');
+
+    if (idEmpresa) {
+      qb.andWhere('ur.idEmpresa = :idEmpresa', { idEmpresa });
+    }
+    if (idApp) {
+      qb.andWhere('ur.idApp = :idApp', { idApp });
+    }
+
+    return qb.getMany();
+  }
+
+  async replaceUserRolesByContext(
+    idUsuario: number,
+    companyId: number,
+    appCode: string,
+    roleIds: number[],
+    modifierId: number,
+  ): Promise<UserRole[]> {
+    const appId = await this.resolveAppId(appCode);
+    await this.ensureUserCompanyAccess(idUsuario, companyId);
+
+    const normalizedRoleIds = [...new Set(roleIds)];
+    if (normalizedRoleIds.length > 0) {
+      const existingRoles = await this.roleRepo.find({
+        where: { id: In(normalizedRoleIds), estado: 1 },
+      });
+      if (existingRoles.length !== normalizedRoleIds.length) {
+        const found = new Set(existingRoles.map((role) => role.id));
+        const missing = normalizedRoleIds.filter((roleId) => !found.has(roleId));
+        throw new NotFoundException(`Roles no encontrados o inactivos: ${missing.join(', ')}`);
+      }
+    }
+
+    const existingAssignments = await this.userRoleRepo.find({
+      where: { idUsuario, idEmpresa: companyId, idApp: appId },
+    });
+    const byRoleId = new Map(existingAssignments.map((assignment) => [assignment.idRol, assignment]));
+
+    for (const assignment of existingAssignments) {
+      if (!normalizedRoleIds.includes(assignment.idRol) && assignment.estado === 1) {
+        assignment.estado = 0;
+        assignment.modificadoPor = modifierId;
+        await this.userRoleRepo.save(assignment);
+      }
+    }
+
+    for (const roleId of normalizedRoleIds) {
+      const existing = byRoleId.get(roleId);
+      if (existing) {
+        if (existing.estado !== 1) {
+          existing.estado = 1;
+        }
+        existing.modificadoPor = modifierId;
+        await this.userRoleRepo.save(existing);
+        continue;
+      }
+
+      await this.userRoleRepo.save(
+        this.userRoleRepo.create({
+          idUsuario,
+          idRol: roleId,
+          idEmpresa: companyId,
+          idApp: appId,
+          estado: 1,
+          creadoPor: modifierId,
+          modificadoPor: modifierId,
+        }),
+      );
+    }
+
+    return this.getUserRoles(idUsuario, companyId, appId);
+  }
+
+  async replaceUserGlobalRoles(
+    idUsuario: number,
+    appCode: string,
+    roleIds: number[],
+    modifierId: number,
+  ): Promise<{ appCode: string; roleIds: number[] }> {
+    const appId = await this.resolveAppId(appCode);
+
+    const normalizedRoleIds = [...new Set(roleIds)];
+    if (normalizedRoleIds.length > 0) {
+      const existingRoles = await this.roleRepo.find({
+        where: { id: In(normalizedRoleIds), estado: 1 },
+      });
+      if (existingRoles.length !== normalizedRoleIds.length) {
+        const found = new Set(existingRoles.map((r) => r.id));
+        const missing = normalizedRoleIds.filter((rid) => !found.has(rid));
+        throw new NotFoundException(`Roles no encontrados o inactivos: ${missing.join(', ')}`);
+      }
+    }
+
+    const existing = await this.userRoleGlobalRepo.find({
+      where: { idUsuario, idApp: appId, estado: 1 },
+    });
+    const byRoleId = new Map(existing.map((g) => [g.idRol, g]));
+
+    for (const g of existing) {
+      if (!normalizedRoleIds.includes(g.idRol)) {
+        g.estado = 0;
+        g.modificadoPor = modifierId;
+        await this.userRoleGlobalRepo.save(g);
+      }
+    }
+
+    for (const roleId of normalizedRoleIds) {
+      const ex = byRoleId.get(roleId);
+      if (ex) {
+        if (ex.estado !== 1) {
+          ex.estado = 1;
+          ex.modificadoPor = modifierId;
+          await this.userRoleGlobalRepo.save(ex);
+        }
+        continue;
+      }
+      await this.userRoleGlobalRepo.save(
+        this.userRoleGlobalRepo.create({
+          idUsuario,
+          idApp: appId,
+          idRol: roleId,
+          estado: 1,
+          creadoPor: modifierId,
+          modificadoPor: modifierId,
+        }),
+      );
+    }
+
+    return { appCode: appCode.trim().toLowerCase(), roleIds: normalizedRoleIds };
+  }
+
+  async getUserGlobalRoles(idUsuario: number, appCode: string): Promise<{ appCode: string; roleIds: number[] }> {
+    const appId = await this.resolveAppId(appCode);
+    const rows = await this.userRoleGlobalRepo.find({
+      where: { idUsuario, idApp: appId, estado: 1 },
+    });
+    return {
+      appCode: appCode.trim().toLowerCase(),
+      roleIds: rows.map((r) => r.idRol),
+    };
+  }
+
+  async replaceUserRoleExclusions(
+    idUsuario: number,
+    companyId: number,
+    appCode: string,
+    roleIds: number[],
+    modifierId: number,
+  ): Promise<{ companyId: number; appCode: string; roleIds: number[] }> {
+    const appId = await this.resolveAppId(appCode);
+    await this.ensureUserCompanyAccess(idUsuario, companyId);
+
+    const normalizedRoleIds = [...new Set(roleIds)];
+    if (normalizedRoleIds.length > 0) {
+      const existingRoles = await this.roleRepo.find({
+        where: { id: In(normalizedRoleIds), estado: 1 },
+      });
+      if (existingRoles.length !== normalizedRoleIds.length) {
+        const found = new Set(existingRoles.map((r) => r.id));
+        const missing = normalizedRoleIds.filter((rid) => !found.has(rid));
+        throw new NotFoundException(`Roles no encontrados o inactivos: ${missing.join(', ')}`);
+      }
+    }
+
+    const existing = await this.userRoleExclusionRepo.find({
+      where: { idUsuario, idEmpresa: companyId, idApp: appId, estado: 1 },
+    });
+    const byRoleId = new Map(existing.map((e) => [e.idRol, e]));
+
+    for (const e of existing) {
+      if (!normalizedRoleIds.includes(e.idRol)) {
+        e.estado = 0;
+        e.modificadoPor = modifierId;
+        await this.userRoleExclusionRepo.save(e);
+      }
+    }
+
+    for (const roleId of normalizedRoleIds) {
+      if (byRoleId.has(roleId)) continue;
+      await this.userRoleExclusionRepo.save(
+        this.userRoleExclusionRepo.create({
+          idUsuario,
+          idEmpresa: companyId,
+          idApp: appId,
+          idRol: roleId,
+          estado: 1,
+          creadoPor: modifierId,
+          modificadoPor: modifierId,
+        }),
+      );
+    }
+
+    return { companyId, appCode: appCode.trim().toLowerCase(), roleIds: normalizedRoleIds };
+  }
+
+  async getUserRoleExclusions(
+    idUsuario: number,
+    companyId: number,
+    appCode: string,
+  ): Promise<{ companyId: number; appCode: string; roleIds: number[] }> {
+    const appId = await this.resolveAppId(appCode);
+    const rows = await this.userRoleExclusionRepo.find({
+      where: { idUsuario, idEmpresa: companyId, idApp: appId, estado: 1 },
+    });
+    return {
+      companyId,
+      appCode: appCode.trim().toLowerCase(),
+      roleIds: rows.map((r) => r.idRol),
+    };
+  }
+
+  /** Resumen completo para UI: roles por contexto, globales, exclusions, global deny y permission overrides */
+  async getUserRolesSummary(
+    idUsuario: number,
+    appCode: string,
+  ): Promise<{
+    appCode: string;
+    globalRoleIds: number[];
+    globalPermissionDeny: string[];
+    contextRoles: { companyId: number; roleIds: number[] }[];
+    exclusions: { companyId: number; roleIds: number[] }[];
+    permissionOverrides: { companyId: number; allow: string[]; deny: string[] }[];
+  }> {
+    const appId = await this.resolveAppId(appCode);
+    const companies = await this.userCompanyRepo.find({ where: { idUsuario, estado: 1 } });
+    const companyIds = companies.map((c) => c.idEmpresa);
+
+    // contextRolesRaw siempre existe (sys_usuario_rol)
+    const contextRolesRaw = await this.userRoleRepo.find({
+      where: { idUsuario, idApp: appId, estado: 1 },
+    });
+
+    // Tablas NetSuite y global-deny pueden no existir en BD
+    let globalRoles: Awaited<ReturnType<typeof this.userRoleGlobalRepo.find>> = [];
+    let exclusionsRaw: Awaited<ReturnType<typeof this.userRoleExclusionRepo.find>> = [];
+    let overridesRaw: Awaited<ReturnType<typeof this.userPermOverrideRepo.find>> = [];
+    let globalDenyRaw: Awaited<ReturnType<typeof this.userPermGlobalDenyRepo.find>> = [];
+    try {
+      [globalRoles, exclusionsRaw, overridesRaw, globalDenyRaw] = await Promise.all([
+        this.userRoleGlobalRepo.find({ where: { idUsuario, idApp: appId, estado: 1 } }),
+        this.userRoleExclusionRepo.find({ where: { idUsuario, idApp: appId, estado: 1 } }),
+        this.userPermOverrideRepo.find({ where: { idUsuario, idApp: appId, estado: 1 } }),
+        this.userPermGlobalDenyRepo.find({ where: { idUsuario, idApp: appId, estado: 1 } }),
+      ]);
+    } catch {
+      // sys_usuario_rol_global, sys_usuario_rol_exclusion, sys_usuario_permiso o sys_usuario_permiso_global no existen
+    }
+
+    const byCompanyContext = new Map<number, number[]>();
+    for (const cr of contextRolesRaw) {
+      if (!companyIds.includes(cr.idEmpresa)) continue;
+      const arr = byCompanyContext.get(cr.idEmpresa) ?? [];
+      if (!arr.includes(cr.idRol)) arr.push(cr.idRol);
+      byCompanyContext.set(cr.idEmpresa, arr);
+    }
+
+    const byCompanyExclusion = new Map<number, number[]>();
+    for (const ex of exclusionsRaw) {
+      if (!companyIds.includes(ex.idEmpresa)) continue;
+      const arr = byCompanyExclusion.get(ex.idEmpresa) ?? [];
+      if (!arr.includes(ex.idRol)) arr.push(ex.idRol);
+      byCompanyExclusion.set(ex.idEmpresa, arr);
+    }
+
+    const permByCode = new Map<number, string>();
+    if (overridesRaw.length > 0) {
+      const permIds = [...new Set(overridesRaw.map((o) => o.idPermiso))];
+      const perms = await this.permRepo.find({ where: { id: In(permIds) } });
+      perms.forEach((p) => permByCode.set(p.id, p.codigo));
+    }
+
+    const byCompanyOverrides = new Map<
+      number,
+      { allow: string[]; deny: string[] }
+    >();
+    for (const o of overridesRaw) {
+      if (!companyIds.includes(o.idEmpresa)) continue;
+      const cur = byCompanyOverrides.get(o.idEmpresa) ?? { allow: [], deny: [] };
+      const code = permByCode.get(o.idPermiso);
+      if (code) {
+        if (o.efecto === 'ALLOW') cur.allow.push(code);
+        else cur.deny.push(code);
+      }
+      byCompanyOverrides.set(o.idEmpresa, cur);
+    }
+
+    let globalDenyCodes: string[] = [];
+    if (globalDenyRaw.length > 0) {
+      const gPermIds = [...new Set(globalDenyRaw.map((g) => g.idPermiso))];
+      const gPerms = await this.permRepo.find({ where: { id: In(gPermIds) } });
+      globalDenyCodes = gPerms.map((p) => p.codigo).sort();
+    }
+
+    return {
+      appCode: appCode.trim().toLowerCase(),
+      globalRoleIds: globalRoles.map((g) => g.idRol),
+      globalPermissionDeny: globalDenyCodes,
+      contextRoles: companyIds.map((cid) => ({
+        companyId: cid,
+        roleIds: byCompanyContext.get(cid) ?? [],
+      })),
+      exclusions: companyIds.map((cid) => ({
+        companyId: cid,
+        roleIds: byCompanyExclusion.get(cid) ?? [],
+      })),
+      permissionOverrides: companyIds.map((cid) => {
+        const p = byCompanyOverrides.get(cid) ?? { allow: [], deny: [] };
+        return { companyId: cid, allow: [...new Set(p.allow)].sort(), deny: [...new Set(p.deny)].sort() };
+      }),
+    };
+  }
+
+  async getGlobalPermissionDenials(
+    idUsuario: number,
+    appCode: string,
+  ): Promise<{ appCode: string; deny: string[] }> {
+    const appId = await this.resolveAppId(appCode);
+    try {
+      const rows = await this.userPermGlobalDenyRepo.find({
+        where: { idUsuario, idApp: appId, estado: 1 },
+      });
+      if (rows.length === 0) return { appCode: appCode.trim().toLowerCase(), deny: [] };
+      const permIds = rows.map((r) => r.idPermiso);
+      const perms = await this.permRepo.find({ where: { id: In(permIds) } });
+      const codes = perms.map((p) => p.codigo).sort();
+      return { appCode: appCode.trim().toLowerCase(), deny: codes };
+    } catch {
+      return { appCode: appCode.trim().toLowerCase(), deny: [] };
+    }
+  }
+
+  async replaceGlobalPermissionDenials(
+    idUsuario: number,
+    appCode: string,
+    deny: string[],
+    modifierId: number,
+  ): Promise<{ appCode: string; deny: string[] }> {
+    const appId = await this.resolveAppId(appCode);
+    const normalized = [...new Set(deny.map((c) => c.trim().toLowerCase()).filter(Boolean))];
+    const permissions =
+      normalized.length > 0 ? await this.permRepo.find({ where: { codigo: In(normalized) } }) : [];
+    const byCode = new Map(permissions.map((p) => [p.codigo, p]));
+
+    const existing = await this.userPermGlobalDenyRepo.find({
+      where: { idUsuario, idApp: appId, estado: 1 },
+    });
+    const existingPermIds = new Set(existing.map((e) => e.idPermiso));
+
+    const targetPermIds = new Set(normalized.map((c) => byCode.get(c)?.id).filter((id): id is number => id != null));
+
+    for (const e of existing) {
+      if (!targetPermIds.has(e.idPermiso)) {
+        e.estado = 0;
+        e.modificadoPor = modifierId;
+        await this.userPermGlobalDenyRepo.save(e);
+      }
+    }
+
+    for (const permId of targetPermIds) {
+      if (existingPermIds.has(permId)) continue;
+      await this.userPermGlobalDenyRepo.save(
+        this.userPermGlobalDenyRepo.create({
+          idUsuario,
+          idApp: appId,
+          idPermiso: permId,
+          estado: 1,
+          creadoPor: modifierId,
+          modificadoPor: modifierId,
+        }),
+      );
+    }
+
+    const result = (await this.getGlobalPermissionDenials(idUsuario, appCode)).deny;
+    return { appCode: appCode.trim().toLowerCase(), deny: result };
+  }
+
+  async replaceUserPermissionOverridesByContext(
+    idUsuario: number,
+    companyId: number,
+    appCode: string,
+    allow: string[],
+    deny: string[],
+    modifierId: number,
+  ): Promise<{
+    idUsuario: number;
+    companyId: number;
+    appCode: string;
+    allow: string[];
+    deny: string[];
+  }> {
+    const appId = await this.resolveAppId(appCode);
+    await this.ensureUserCompanyAccess(idUsuario, companyId);
+
+    const normalizedAllow = [...new Set(allow.map((code) => code.trim().toLowerCase()).filter(Boolean))];
+    const normalizedDeny = [...new Set(deny.map((code) => code.trim().toLowerCase()).filter(Boolean))];
+
+    const intersection = normalizedAllow.filter((code) => normalizedDeny.includes(code));
+    if (intersection.length > 0) {
+      throw new BadRequestException(`Permisos duplicados en allow y deny: ${intersection.join(', ')}`);
+    }
+
+    const requestedCodes = [...new Set([...normalizedAllow, ...normalizedDeny])];
+    const permissions = requestedCodes.length > 0
+      ? await this.permRepo.find({ where: { codigo: In(requestedCodes) } })
+      : [];
+
+    if (permissions.length !== requestedCodes.length) {
+      const found = new Set(permissions.map((perm) => perm.codigo));
+      const missing = requestedCodes.filter((code) => !found.has(code));
+      throw new NotFoundException(`Permisos no encontrados: ${missing.join(', ')}`);
+    }
+
+    const permissionByCode = new Map(permissions.map((perm) => [perm.codigo, perm]));
+    const desiredByPermId = new Map<number, 'ALLOW' | 'DENY'>();
+    for (const code of normalizedAllow) {
+      desiredByPermId.set(permissionByCode.get(code)!.id, 'ALLOW');
+    }
+    for (const code of normalizedDeny) {
+      desiredByPermId.set(permissionByCode.get(code)!.id, 'DENY');
+    }
+
+    const existingOverrides = await this.userPermOverrideRepo.find({
+      where: { idUsuario, idEmpresa: companyId, idApp: appId },
+    });
+    const existingByPermId = new Map(existingOverrides.map((override) => [override.idPermiso, override]));
+
+    for (const override of existingOverrides) {
+      const desiredEffect = desiredByPermId.get(override.idPermiso);
+      if (!desiredEffect) {
+        if (override.estado !== 0) {
+          override.estado = 0;
+          override.modificadoPor = modifierId;
+          await this.userPermOverrideRepo.save(override);
+        }
+        continue;
+      }
+
+      const needsUpdate = override.estado !== 1 || override.efecto !== desiredEffect;
+      if (needsUpdate) {
+        override.estado = 1;
+        override.efecto = desiredEffect;
+        override.modificadoPor = modifierId;
+        await this.userPermOverrideRepo.save(override);
+      }
+    }
+
+    for (const [permId, effect] of desiredByPermId.entries()) {
+      if (existingByPermId.has(permId)) continue;
+      await this.userPermOverrideRepo.save(
+        this.userPermOverrideRepo.create({
+          idUsuario,
+          idEmpresa: companyId,
+          idApp: appId,
+          idPermiso: permId,
+          efecto: effect,
+          estado: 1,
+          creadoPor: modifierId,
+          modificadoPor: modifierId,
+        }),
+      );
+    }
+
+    const current = await this.getUserPermissionOverrides(idUsuario, companyId, appCode);
+    return current;
+  }
+
+  async getUserPermissionOverrides(
+    idUsuario: number,
+    companyId: number,
+    appCode: string,
+  ): Promise<{
+    idUsuario: number;
+    companyId: number;
+    appCode: string;
+    allow: string[];
+    deny: string[];
+  }> {
+    const appId = await this.resolveAppId(appCode);
+
+    const rows = await this.userPermOverrideRepo
+      .createQueryBuilder('up')
+      .innerJoin(Permission, 'p', 'p.id = up.idPermiso')
+      .select([
+        'up.efecto AS efecto',
+        'p.codigo AS codigo',
+      ])
+      .where('up.idUsuario = :idUsuario', { idUsuario })
+      .andWhere('up.idEmpresa = :companyId', { companyId })
+      .andWhere('up.idApp = :appId', { appId })
+      .andWhere('up.estado = 1')
+      .getRawMany<{ efecto: 'ALLOW' | 'DENY'; codigo: string }>();
+
+    const allow = rows.filter((row) => row.efecto === 'ALLOW').map((row) => row.codigo).sort();
+    const deny = rows.filter((row) => row.efecto === 'DENY').map((row) => row.codigo).sort();
+
+    return {
+      idUsuario,
+      companyId,
+      appCode: appCode.trim().toLowerCase(),
+      allow,
+      deny,
+    };
+  }
+
+  private async resolveAppId(appCode: string): Promise<number> {
+    const normalized = appCode.trim().toLowerCase();
+    const app = await this.appRepo.findOne({ where: { codigo: normalized, estado: 1 } });
+    if (!app) {
+      throw new NotFoundException(`App no encontrada o inactiva: ${normalized}`);
+    }
+    return app.id;
+  }
+
+  private async ensureUserCompanyAccess(idUsuario: number, companyId: number): Promise<void> {
+    const assignment = await this.userCompanyRepo.findOne({
+      where: { idUsuario, idEmpresa: companyId, estado: 1 },
+    });
+    if (!assignment) {
+      throw new ConflictException(
+        `El usuario ${idUsuario} no tiene asignacion activa a la empresa ${companyId}`,
+      );
+    }
+  }
+}

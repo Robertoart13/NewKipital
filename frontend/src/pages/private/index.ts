@@ -1,0 +1,7 @@
+export { DashboardPage } from './DashboardPage';
+export { ProfilePage } from './ProfilePage';
+export { EmployeesListPage } from './employees/EmployeesListPage';
+export { EmployeeDetailPage } from './employees/EmployeeDetailPage';
+export { PermissionsAdminListPage } from './configuration/PermissionsAdminListPage';
+export { RolesManagementPage } from './configuration/RolesManagementPage';
+export { UsersManagementPage } from './configuration/UsersManagementPage';
