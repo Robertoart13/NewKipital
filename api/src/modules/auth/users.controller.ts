@@ -27,8 +27,11 @@ export class UsersController {
 
   @RequirePermissions('config:users')
   @Get()
-  findAll(@Query('includeInactive', new ParseBoolPipe({ optional: true })) includeInactive?: boolean) {
-    return this.service.findAll(includeInactive ?? false);
+  findAll(
+    @Query('includeInactive', new ParseBoolPipe({ optional: true })) includeInactive?: boolean,
+    @Query('configView', new ParseBoolPipe({ optional: true })) configView?: boolean,
+  ) {
+    return this.service.findAll(includeInactive ?? false, configView ?? false);
   }
 
   @RequirePermissions('config:users')

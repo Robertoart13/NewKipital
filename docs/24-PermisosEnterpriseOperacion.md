@@ -43,23 +43,30 @@ Detalle técnico de tablas, flujo y diagnóstico: ver `26-SistemaPermisosReferen
 
 **Filtro de quién aparece:** Solo staff KPITAL (cualquier rol) y usuarios con rol Supervisor (o superior) en TimeWise. No aparecen empleados puros (solo TimeWise + rol Empleado). Ver [27-DiagramaFlujoEmpleadosYUsuarios.md](./27-DiagramaFlujoEmpleadosYUsuarios.md).
 
+**Visibilidad de pestañas:** Las pestañas Roles, Usuarios y Permisos se muestran solo si el usuario tiene el permiso correspondiente (`config:roles`, `config:users`, `config:permissions`).
+
 La ventana tiene **tres pestañas** y un selector de aplicación:
+
+**Selector de Aplicación:** Solo muestra las apps que el usuario tiene asignadas. Si no tiene ninguna, puede asignarlas desde ahí (requiere `config:users:assign-apps`). Estados de carga mientras se cargan apps y roles.
 
 ### 1. Empresas
 
-- Solo las empresas **marcadas** se asignan al usuario.
-- Si está desmarcada, el usuario no ve nada de esa empresa.
+- Solo las empresas **marcadas** se asignan al usuario. Si está desmarcada, el usuario no ve nada de esa empresa.
+- **Permiso:** `config:users:assign-companies`. Sin él, se muestra mensaje y controles deshabilitados.
 - **Guardar empresas** → `replaceUserCompanies` → `sys_usuario_empresa`
 
 ### 2. Roles
 
-- **Roles globales:** Se aplican a **todas** las empresas del usuario (para la app seleccionada).
+- **Roles globales:** Se aplican a **todas** las empresas del usuario (para la app seleccionada). Solo se muestran roles de la app seleccionada.
+- **Permiso:** `config:users:assign-roles`. Sin él, controles deshabilitados.
 - **Guardar roles globales** → `replaceUserGlobalRoles` → `sys_usuario_rol_global`
+- Al guardar, se cambia a Excepciones y se actualiza la lista sin refrescar.
 - Requiere al menos una empresa asignada; si no, los roles no tienen efecto.
 
 ### 3. Excepciones
 
-- Permisos que el usuario **NO** debe tener en ninguna empresa (para la app seleccionada).
+- Permisos que el usuario **NO** debe tener en ninguna empresa (para la app seleccionada). El selector de rol solo muestra los roles asignados al usuario.
+- **Permiso:** `config:users:deny-permissions`. Sin él, controles deshabilitados.
 - **Guardar** → `replaceUserGlobalPermissionDenials` → `sys_usuario_permiso_global`
 
 ---
@@ -67,7 +74,13 @@ La ventana tiene **tres pestañas** y un selector de aplicación:
 ## Reglas Base
 
 - Formato de permiso: `module:action` en minúsculas.
-- Seguridad administrable solo con: `config:permissions`, `config:roles`, `config:users`.
+- Seguridad administrable con permisos base: `config:permissions`, `config:roles`, `config:users`.
+- **Permisos granulares** (para acciones concretas en el drawer de usuarios):
+  - `config:users:assign-companies` — Asignar empresas
+  - `config:users:assign-apps` — Asignar aplicaciones (KPITAL, TimeWise)
+  - `config:users:assign-roles` — Asignar roles globales y por contexto
+  - `config:users:deny-permissions` — Denegar permisos globalmente (excepciones)
+- Con solo `config:users` se puede ver el drawer y los datos, pero no modificar; cada acción requiere su permiso específico.
 - Permisos efectivos desde: `GET /api/auth/me`, `POST /api/auth/switch-company`.
 - Frontend refleja permisos; backend decide autorización final (403 si falta permiso).
 

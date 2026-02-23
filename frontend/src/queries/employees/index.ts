@@ -5,3 +5,4 @@ export { useCreateEmployee } from './useCreateEmployee';
 export { useUpdateEmployee } from './useUpdateEmployee';
 export { useInactivateEmployee } from './useInactivateEmployee';
 export { useLiquidateEmployee } from './useLiquidateEmployee';
+export { useSupervisors } from './useSupervisors';

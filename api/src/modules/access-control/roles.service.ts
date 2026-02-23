@@ -2,6 +2,7 @@ import { Injectable, NotFoundException, ConflictException, BadRequestException }
 import { InjectRepository } from '@nestjs/typeorm';
 import { In, Repository } from 'typeorm';
 import { Role } from './entities/role.entity.js';
+import { App } from './entities/app.entity.js';
 import { Permission } from './entities/permission.entity.js';
 import { RolePermission } from './entities/role-permission.entity.js';
 import { CreateRoleDto } from './dto/create-role.dto.js';
@@ -13,6 +14,8 @@ export class RolesService {
   constructor(
     @InjectRepository(Role)
     private readonly roleRepo: Repository<Role>,
+    @InjectRepository(App)
+    private readonly appRepo: Repository<App>,
     @InjectRepository(Permission)
     private readonly permissionRepo: Repository<Permission>,
     @InjectRepository(RolePermission)
@@ -25,8 +28,18 @@ export class RolesService {
       throw new ConflictException('Ya existe un rol con ese código');
     }
 
+    const app = await this.appRepo.findOne({
+      where: { codigo: dto.appCode.trim().toLowerCase(), estado: 1 },
+    });
+    if (!app) {
+      throw new BadRequestException(`Aplicación '${dto.appCode}' no encontrada`);
+    }
+
     const role = this.roleRepo.create({
-      ...dto,
+      codigo: dto.codigo,
+      nombre: dto.nombre,
+      descripcion: dto.descripcion ?? null,
+      idApp: app.id,
       estado: 1,
       creadoPor: userId,
       modificadoPor: userId,
@@ -34,9 +47,20 @@ export class RolesService {
     return this.roleRepo.save(role);
   }
 
-  async findAll(includeInactive = false): Promise<Role[]> {
-    const where = includeInactive ? {} : { estado: 1 };
-    return this.roleRepo.find({ where, order: { nombre: 'ASC' } });
+  async findAll(includeInactive = false, appCode?: string): Promise<Role[]> {
+    const qb = this.roleRepo.createQueryBuilder('r');
+    if (!includeInactive) {
+      qb.andWhere('r.estado = 1');
+    }
+    if (appCode) {
+      const app = await this.appRepo.findOne({
+        where: { codigo: appCode.trim().toLowerCase(), estado: 1 },
+      });
+      if (app) {
+        qb.andWhere('(r.id_app = :appId OR r.id_app IS NULL)', { appId: app.id });
+      }
+    }
+    return qb.orderBy('r.nombre', 'ASC').getMany();
   }
 
   async findOne(id: number): Promise<Role> {

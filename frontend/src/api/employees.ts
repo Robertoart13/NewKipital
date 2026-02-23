@@ -103,6 +103,8 @@ export interface CreateEmployeePayload {
   cuentaBanco?: string;
   crearAccesoTimewise?: boolean;
   crearAccesoKpital?: boolean;
+  idRolTimewise?: number;
+  idRolKpital?: number;
   passwordInicial?: string;
 }
 
@@ -129,6 +131,15 @@ export interface UpdateEmployeePayload {
   monedaSalario?: string;
   numeroCcss?: string;
   cuentaBanco?: string;
+}
+
+/**
+ * GET /employees/supervisors?idEmpresa=N - Lista empleados elegibles como supervisores (rol Supervisor o Supervisor Global en TimeWise).
+ */
+export async function fetchSupervisors(companyId: string): Promise<{ id: number; nombre: string; apellido1: string }[]> {
+  const res = await httpFetch(`/employees/supervisors?idEmpresa=${companyId}`);
+  if (!res.ok) return [];
+  return res.json();
 }
 
 /**

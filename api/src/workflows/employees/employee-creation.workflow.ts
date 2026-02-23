@@ -7,6 +7,7 @@ import { User } from '../../modules/auth/entities/user.entity.js';
 import { App } from '../../modules/access-control/entities/app.entity.js';
 import { UserApp } from '../../modules/access-control/entities/user-app.entity.js';
 import { UserCompany } from '../../modules/access-control/entities/user-company.entity.js';
+import { UserRole } from '../../modules/access-control/entities/user-role.entity.js';
 import { WorkflowResult } from '../common/workflow.interface.js';
 import { DOMAIN_EVENTS } from '../../common/events/event-names.js';
 import { CreateEmployeeDto } from '../../modules/employees/dto/create-employee.dto.js';
@@ -113,6 +114,37 @@ export class EmployeeCreationWorkflow {
           idEmpresa: dto.idEmpresa,
           estado: 1,
         }));
+
+        // === Paso 3b: Asignar roles por app ===
+        const creator = creatorId ?? savedUser.id;
+        if (dto.crearAccesoTimewise && dto.idRolTimewise) {
+          const twApp = await manager.findOne(App, { where: { codigo: 'timewise', estado: 1 } });
+          if (twApp) {
+            await manager.save(UserRole, manager.create(UserRole, {
+              idUsuario: savedUser.id,
+              idRol: dto.idRolTimewise,
+              idEmpresa: dto.idEmpresa,
+              idApp: twApp.id,
+              estado: 1,
+              creadoPor: creator,
+              modificadoPor: creator,
+            }));
+          }
+        }
+        if (dto.crearAccesoKpital && dto.idRolKpital) {
+          const kpApp = await manager.findOne(App, { where: { codigo: 'kpital', estado: 1 } });
+          if (kpApp) {
+            await manager.save(UserRole, manager.create(UserRole, {
+              idUsuario: savedUser.id,
+              idRol: dto.idRolKpital,
+              idEmpresa: dto.idEmpresa,
+              idApp: kpApp.id,
+              estado: 1,
+              creadoPor: creator,
+              modificadoPor: creator,
+            }));
+          }
+        }
       }
 
       // === Paso 4: Crear empleado ===

@@ -13,6 +13,7 @@ import { CreateEmployeeDto } from './dto/create-employee.dto.js';
 import { UpdateEmployeeDto } from './dto/update-employee.dto.js';
 import { EmployeeCreationWorkflow } from '../../workflows/employees/employee-creation.workflow.js';
 import { DOMAIN_EVENTS } from '../../common/events/event-names.js';
+import { AuthService } from '../auth/auth.service.js';
 
 @Injectable()
 export class EmployeesService {
@@ -23,6 +24,7 @@ export class EmployeesService {
     private readonly userCompanyRepo: Repository<UserCompany>,
     private readonly creationWorkflow: EmployeeCreationWorkflow,
     private readonly eventEmitter: EventEmitter2,
+    private readonly authService: AuthService,
   ) {}
 
   async create(dto: CreateEmployeeDto, creatorId?: number) {
@@ -71,6 +73,16 @@ export class EmployeesService {
       throw new ConflictException(
         `Ya existe un empleado con email '${dto.email}'`,
       );
+    }
+
+    // Validar permiso para asignar rol KPITAL si aplica
+    if (dto.crearAccesoKpital && dto.idRolKpital && creatorId != null) {
+      const resolved = await this.authService.resolvePermissions(creatorId, dto.idEmpresa, 'kpital');
+      if (!resolved.permissions.includes('employee:assign-kpital-role')) {
+        throw new ForbiddenException(
+          'No tiene permiso para asignar roles de KPITAL. Requiere employee:assign-kpital-role.',
+        );
+      }
     }
 
     if (dto.crearAccesoTimewise || dto.crearAccesoKpital) {
@@ -275,6 +287,50 @@ export class EmployeesService {
       where: { idUsuario: userId, estado: 1 },
     });
     return rows.map((row) => row.idEmpresa);
+  }
+
+  async findSupervisors(
+    userId: number,
+    idEmpresa: number,
+  ): Promise<{ id: number; nombre: string; apellido1: string }[]> {
+    if (!idEmpresa) return [];
+    await this.assertUserCompanyAccess(userId, idEmpresa);
+    const supervisorRoleCodes = ['SUPERVISOR_TIMEWISE', 'SUPERVISOR_GLOBAL_TIMEWISE'];
+    const employees = await this.repo
+      .createQueryBuilder('e')
+      .innerJoin('sys_usuario_rol', 'ur', 'ur.id_usuario = e.id_usuario AND ur.estado_usuario_rol = 1')
+      .innerJoin('sys_roles', 'r', 'r.id_rol = ur.id_rol AND r.codigo_rol IN (:...codes)', {
+        codes: supervisorRoleCodes,
+      })
+      .innerJoin('sys_apps', 'a', 'a.id_app = ur.id_app AND a.codigo_app = \'timewise\'')
+      .where('e.id_usuario IS NOT NULL')
+      .andWhere('e.id_empresa = :idEmpresa', { idEmpresa })
+      .andWhere('e.estado = 1')
+      .andWhere('(ur.id_empresa = :idEmpresa)')
+      .select(['e.id', 'e.nombre', 'e.apellido1'])
+      .distinct(true)
+      .getMany();
+    const globalSupervisors = await this.repo
+      .createQueryBuilder('e')
+      .innerJoin('sys_usuario_rol_global', 'g', 'g.id_usuario = e.id_usuario AND g.estado_usuario_rol_global = 1')
+      .innerJoin('sys_roles', 'r', 'r.id_rol = g.id_rol AND r.codigo_rol IN (:...codes)', {
+        codes: supervisorRoleCodes,
+      })
+      .innerJoin('sys_apps', 'a', 'a.id_app = g.id_app AND a.codigo_app = \'timewise\'')
+      .where('e.id_usuario IS NOT NULL')
+      .andWhere('e.id_empresa = :idEmpresa', { idEmpresa })
+      .andWhere('e.estado = 1')
+      .select(['e.id', 'e.nombre', 'e.apellido1'])
+      .distinct(true)
+      .getMany();
+    const seen = new Set(employees.map((e) => e.id));
+    for (const g of globalSupervisors) {
+      if (!seen.has(g.id)) {
+        employees.push(g);
+        seen.add(g.id);
+      }
+    }
+    return employees.map((e) => ({ id: e.id, nombre: e.nombre, apellido1: e.apellido1 }));
   }
 
   private async assertUserCompanyAccess(userId: number, idEmpresa: number): Promise<void> {

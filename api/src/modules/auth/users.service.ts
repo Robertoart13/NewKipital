@@ -5,18 +5,35 @@ import {
   ForbiddenException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { In, Repository } from 'typeorm';
 import * as bcrypt from 'bcrypt';
 import { User } from './entities/user.entity.js';
+import { UserApp } from '../access-control/entities/user-app.entity.js';
+import { UserRole } from '../access-control/entities/user-role.entity.js';
+import { UserRoleGlobal } from '../access-control/entities/user-role-global.entity.js';
+import { App } from '../access-control/entities/app.entity.js';
+import { Role } from '../access-control/entities/role.entity.js';
 import { CreateUserDto } from './dto/create-user.dto.js';
 import { UpdateUserDto } from './dto/update-user.dto.js';
 import { UserStatus } from './constants/user-status.enum.js';
+
+const TIMEWISE_SUPERVISOR_ROLES = ['SUPERVISOR_TIMEWISE', 'SUPERVISOR_GLOBAL_TIMEWISE'];
 
 @Injectable()
 export class UsersService {
   constructor(
     @InjectRepository(User)
     private readonly repo: Repository<User>,
+    @InjectRepository(UserApp)
+    private readonly userAppRepo: Repository<UserApp>,
+    @InjectRepository(UserRole)
+    private readonly userRoleRepo: Repository<UserRole>,
+    @InjectRepository(UserRoleGlobal)
+    private readonly userRoleGlobalRepo: Repository<UserRoleGlobal>,
+    @InjectRepository(App)
+    private readonly appRepo: Repository<App>,
+    @InjectRepository(Role)
+    private readonly roleRepo: Repository<Role>,
   ) {}
 
   async create(dto: CreateUserDto, creatorId?: number): Promise<User> {
@@ -62,13 +79,69 @@ export class UsersService {
     return this.sanitize(saved);
   }
 
-  async findAll(includeInactive = false): Promise<User[]> {
+  async findAll(includeInactive = false, configView = false): Promise<User[]> {
     const qb = this.repo.createQueryBuilder('u');
     if (!includeInactive) {
       qb.where('u.estado = :estado', { estado: UserStatus.ACTIVO });
     }
     qb.orderBy('u.apellido', 'ASC').addOrderBy('u.nombre', 'ASC');
-    const users = await qb.getMany();
+    let users = await qb.getMany();
+
+    if (configView && users.length > 0) {
+      const ids = users.map((u) => u.id);
+      const kpitalApp = await this.appRepo.findOne({ where: { codigo: 'kpital', estado: 1 } });
+      const timewiseApp = await this.appRepo.findOne({ where: { codigo: 'timewise', estado: 1 } });
+      if (!kpitalApp || !timewiseApp) {
+        return users.map((u) => this.sanitize(u));
+      }
+      const supervisorRoles = await this.roleRepo.find({
+        where: { codigo: In(TIMEWISE_SUPERVISOR_ROLES), estado: 1 },
+      });
+      const supervisorRoleIds = supervisorRoles.map((r) => r.id);
+      const hasKpital = await this.userAppRepo.find({
+        where: { idUsuario: In(ids), idApp: kpitalApp.id, estado: 1 },
+      });
+      const kpitalUserIds = new Set(hasKpital.map((ua) => ua.idUsuario));
+      const twSupervisorContext = supervisorRoleIds.length > 0
+        ? await this.userRoleRepo.find({
+            where: {
+              idUsuario: In(ids),
+              idRol: In(supervisorRoleIds),
+              estado: 1,
+            },
+          })
+        : [];
+      const twSupervisorGlobal = supervisorRoleIds.length > 0 && timewiseApp
+        ? await this.userRoleGlobalRepo.find({
+            where: {
+              idUsuario: In(ids),
+              idApp: timewiseApp.id,
+              idRol: In(supervisorRoleIds),
+              estado: 1,
+            },
+          })
+        : [];
+      const twSupervisorUserIds = new Set([
+        ...twSupervisorContext.map((ur) => ur.idUsuario),
+        ...twSupervisorGlobal.map((g) => g.idUsuario),
+      ]);
+      const hasTimewise = await this.userAppRepo.find({
+        where: { idUsuario: In(ids), idApp: timewiseApp.id, estado: 1 },
+      });
+      const timewiseOnlyUserIds = new Set(
+        hasTimewise.filter((ua) => !kpitalUserIds.has(ua.idUsuario)).map((ua) => ua.idUsuario),
+      );
+      const configUserIds = new Set<number>();
+      for (const uid of ids) {
+        if (kpitalUserIds.has(uid)) {
+          configUserIds.add(uid);
+        } else if (timewiseOnlyUserIds.has(uid) && twSupervisorUserIds.has(uid)) {
+          configUserIds.add(uid);
+        }
+      }
+      users = users.filter((u) => configUserIds.has(u.id));
+    }
+
     return users.map((u) => this.sanitize(u));
   }
 

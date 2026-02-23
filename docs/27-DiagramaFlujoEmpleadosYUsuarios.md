@@ -268,3 +268,13 @@ Se asigna al crear o editar empleado, en el formulario (Sección Organización).
 | 5 | Un usuario puede ser Admin KPITAL y Empleado TimeWise a la vez. Cada rol es independiente por app. |
 | 6 | Dropdown "Supervisor": solo empleados con rol Supervisor o Supervisor Global en TimeWise. No empleados. |
 | 7 | Supervisor puede ser de otra empresa (cross-empresa permitido). |
+
+---
+
+## 12. Pendientes / Integración Futura
+
+| Tema | Nota |
+|------|------|
+| **employee:liquidate** | Acción de personal (renuncia/despido). Se define cuando se implemente el módulo de Acciones de Personal. No es permiso employee puro. |
+| **Permisos TimeWise** | `timewise:view-team`, `timewise:approve-requests`, `timewise:view-reports`, etc. Se definen cuando se implemente la lógica completa de TimeWise. |
+| **Catálogos** | Acceso a departamentos, puestos, periodos. Por ahora se consume vía employee:create. Revisar si se requiere permiso explícito catalog:* más adelante. |

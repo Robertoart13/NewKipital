@@ -9,6 +9,7 @@ import {
   Form,
   Input,
   Modal,
+  Radio,
   Space,
   Table,
   Tooltip,
@@ -32,6 +33,8 @@ import {
   type SystemPermission,
   type SystemRole,
 } from '../../../api/securityConfig';
+import { canViewConfigRoles, canViewConfigUsers, canViewConfigPermissions } from '../../../store/selectors/permissions.selectors';
+import { useAppSelector } from '../../../store/hooks';
 
 const { Text } = Typography;
 
@@ -41,10 +44,13 @@ const KPITAL_MODULES = ['payroll', 'employee', 'personal-action', 'company', 're
 /** Módulos de TimeWise (asistencia, tiempo). Son permisos distintos a KPITAL. */
 const TIMEWISE_MODULES = ['timewise'];
 
+type AppContext = 'kpital' | 'timewise';
+
 interface RoleFormValues {
   codigo: string;
   nombre: string;
   descripcion?: string;
+  appCode: AppContext;
 }
 
 type MatrixRow = {
@@ -61,6 +67,9 @@ type MatrixRow = {
 export function RolesManagementPage() {
   const { message } = AntdApp.useApp();
   const location = useLocation();
+  const canViewConfigRolesPerm = useAppSelector(canViewConfigRoles);
+  const canViewConfigUsersPerm = useAppSelector(canViewConfigUsers);
+  const canViewConfigPermissionsPerm = useAppSelector(canViewConfigPermissions);
   const [roleForm] = Form.useForm<RoleFormValues>();
   const [roles, setRoles] = useState<SystemRole[]>([]);
   const [permissions, setPermissions] = useState<SystemPermission[]>([]);
@@ -70,12 +79,13 @@ export function RolesManagementPage() {
   const [openRoleModal, setOpenRoleModal] = useState(false);
   const [search, setSearch] = useState('');
   const [dirty, setDirty] = useState(false);
+  const [selectedApp, setSelectedApp] = useState<AppContext>('kpital');
 
   const loadData = async () => {
     setLoading(true);
     try {
       const [rolesData, permissionsData] = await Promise.all([
-        fetchRoles(false),
+        fetchRoles(false, selectedApp),
         fetchPermissionsForRoles({ includeInactive: false }),
       ]);
 
@@ -102,7 +112,7 @@ export function RolesManagementPage() {
 
   useEffect(() => {
     void loadData();
-  }, []);
+  }, [selectedApp]);
 
 
   const modulesWithPermissions = useMemo(() => {
@@ -121,57 +131,86 @@ export function RolesManagementPage() {
 
   const tableData = useMemo<MatrixRow[]>(() => {
     const term = search.trim().toLowerCase();
-    const appSections: { app: 'kpital' | 'timewise'; label: string }[] = [
-      { app: 'kpital', label: 'KPITAL 360' },
-      { app: 'timewise', label: 'TimeWise' },
-    ];
-    const rows: MatrixRow[] = [];
+    const sectionModules = modulesWithPermissions.filter((g) => g.app === selectedApp);
+    const appLabel = selectedApp === 'kpital' ? 'KPITAL 360' : 'TimeWise';
 
-    for (const section of appSections) {
-      const sectionModules = modulesWithPermissions.filter((g) => g.app === section.app);
-      const moduleRows: MatrixRow[] = [];
-
-      for (const group of sectionModules) {
-        const filtered = group.permissions.filter((p) => {
-          if (!term) return true;
-          return (
-            p.codigo.toLowerCase().includes(term) ||
-            p.nombre.toLowerCase().includes(term) ||
-            (p.descripcion ?? '').toLowerCase().includes(term)
-          );
-        });
-        if (filtered.length === 0) continue;
-
-        moduleRows.push({
-          key: `module:${group.moduleName}`,
-          type: 'module',
-          moduleName: group.moduleName,
-          app: section.app,
-          label: group.moduleName,
-          children: filtered.map((p) => ({
-            key: `perm:${p.codigo}`,
-            type: 'permission',
-            moduleName: group.moduleName,
-            label: p.nombre,
-            codigo: p.codigo,
-            descripcion: p.descripcion,
-          })),
-        });
-      }
-
-      if (moduleRows.length > 0) {
-        rows.push({
-          key: `app:${section.app}`,
-          type: 'app',
-          app: section.app,
-          label: section.label,
-          children: moduleRows,
-        });
+    const allFilteredPerms: { p: SystemPermission; moduleName: string }[] = [];
+    for (const group of sectionModules) {
+      const filtered = group.permissions.filter((p) => {
+        if (!term) return true;
+        return (
+          p.codigo.toLowerCase().includes(term) ||
+          p.nombre.toLowerCase().includes(term) ||
+          (p.descripcion ?? '').toLowerCase().includes(term)
+        );
+      });
+      for (const p of filtered) {
+        allFilteredPerms.push({ p, moduleName: group.moduleName });
       }
     }
+    if (allFilteredPerms.length === 0) return [];
 
-    return rows;
-  }, [modulesWithPermissions, search]);
+    const permRows: MatrixRow[] = allFilteredPerms.map(({ p, moduleName }) => ({
+      key: `perm:${p.codigo}`,
+      type: 'permission' as const,
+      moduleName,
+      label: p.nombre,
+      codigo: p.codigo,
+      descripcion: p.descripcion,
+    }));
+
+    if (selectedApp === 'timewise' && sectionModules.length <= 1) {
+      return [
+        {
+          key: `app:${selectedApp}`,
+          type: 'app',
+          app: selectedApp,
+          label: appLabel,
+          children: permRows,
+        },
+      ];
+    }
+
+    const moduleRows: MatrixRow[] = [];
+    for (const group of sectionModules) {
+      const filtered = group.permissions.filter((p) => {
+        if (!term) return true;
+        return (
+          p.codigo.toLowerCase().includes(term) ||
+          p.nombre.toLowerCase().includes(term) ||
+          (p.descripcion ?? '').toLowerCase().includes(term)
+        );
+      });
+      if (filtered.length === 0) continue;
+
+      moduleRows.push({
+        key: `module:${group.moduleName}`,
+        type: 'module',
+        moduleName: group.moduleName,
+        app: selectedApp,
+        label: group.moduleName,
+        children: filtered.map((p) => ({
+          key: `perm:${p.codigo}`,
+          type: 'permission' as const,
+          moduleName: group.moduleName,
+          label: p.nombre,
+          codigo: p.codigo,
+          descripcion: p.descripcion,
+        })),
+      });
+    }
+    if (moduleRows.length === 0) return [];
+
+    return [
+      {
+        key: `app:${selectedApp}`,
+        type: 'app',
+        app: selectedApp,
+        label: appLabel,
+        children: moduleRows,
+      },
+    ];
+  }, [modulesWithPermissions, search, selectedApp]);
 
   const permissionCodesByModule = useMemo(() => {
     const map = new Map<string, string[]>();
@@ -232,6 +271,7 @@ export function RolesManagementPage() {
         codigo: values.codigo.trim().toUpperCase(),
         nombre: values.nombre.trim(),
         descripcion: values.descripcion?.trim(),
+        appCode: values.appCode ?? selectedApp,
       });
       message.success('Rol creado');
       setOpenRoleModal(false);
@@ -244,6 +284,11 @@ export function RolesManagementPage() {
     } finally {
       setSaving(false);
     }
+  };
+
+  const openAddRoleModal = () => {
+    roleForm.setFieldsValue({ appCode: selectedApp });
+    setOpenRoleModal(true);
   };
 
   const roleMenuItems = (_role: SystemRole) => [
@@ -337,17 +382,20 @@ export function RolesManagementPage() {
                   gap: 8,
                 }}
               >
-                {row.app === 'timewise' ? (
-                  <Tooltip title="TimeWise: Control de asistencia y tiempo. Los permisos aquí aplican solo cuando el usuario opera en TimeWise.">
-                    <span>{row.label}</span>
+                <span>{row.label}</span>
+                <Tooltip
+                  title={
+                    row.app === 'timewise'
+                      ? 'TimeWise: Control de asistencia y tiempo. Los permisos aplican solo en TimeWise.'
+                      : 'KPITAL 360: ERP de planillas y RRHH. Los permisos aplican solo en KPITAL.'
+                  }
+                  trigger={['hover']}
+                  overlayInnerStyle={{ whiteSpace: 'nowrap' }}
+                >
+                  <span>
                     <InfoCircleOutlined style={{ fontSize: 12, cursor: 'help' }} />
-                  </Tooltip>
-                ) : (
-                  <Tooltip title="KPITAL 360: ERP de planillas y RRHH. Los permisos aquí aplican solo cuando el usuario opera en KPITAL.">
-                    <span>{row.label}</span>
-                    <InfoCircleOutlined style={{ fontSize: 12, cursor: 'help' }} />
-                  </Tooltip>
-                )}
+                  </span>
+                </Tooltip>
               </div>
             );
           }
@@ -416,6 +464,7 @@ export function RolesManagementPage() {
             </Text>
           </div>
           <div style={{ display: 'flex', marginLeft: 24, gap: 2 }}>
+            {canViewConfigRolesPerm && (
             <Link
               to="/configuration/roles"
               style={{
@@ -427,6 +476,8 @@ export function RolesManagementPage() {
             >
               Roles
             </Link>
+            )}
+            {canViewConfigUsersPerm && (
             <Link
               to="/configuration/users"
               style={{
@@ -438,6 +489,8 @@ export function RolesManagementPage() {
             >
               Usuarios
             </Link>
+            )}
+            {canViewConfigPermissionsPerm && (
             <Link
               to="/configuration/permissions"
               style={{
@@ -449,23 +502,41 @@ export function RolesManagementPage() {
             >
               Permisos
             </Link>
+            )}
           </div>
         </div>
       </div>
 
-      {/* Info neutra */}
+      {/* Selector de aplicación */}
       <div
         style={{
           marginBottom: 16,
-          padding: '12px 16px',
-          background: '#f9fafb',
-          border: '1px solid #e5e7eb',
-          borderRadius: 6,
-          fontSize: 13,
-          color: '#4b5563',
+          display: 'flex',
+          alignItems: 'center',
+          gap: 16,
+          flexWrap: 'wrap',
         }}
       >
-        KPITAL 360 y TimeWise son aplicaciones distintas. Los permisos se configuran por separado. Al guardar, se reemplaza el conjunto completo.
+        <span style={{ fontSize: 14, color: '#4b5563' }}>Aplicación:</span>
+        <div style={{ display: 'flex', gap: 4 }}>
+          <Button
+            type={selectedApp === 'kpital' ? 'primary' : 'default'}
+            onClick={() => setSelectedApp('kpital')}
+          >
+            KPITAL 360
+          </Button>
+          <Button
+            type={selectedApp === 'timewise' ? 'primary' : 'default'}
+            onClick={() => setSelectedApp('timewise')}
+          >
+            TimeWise
+          </Button>
+        </div>
+        <Text type="secondary" style={{ fontSize: 12 }}>
+          {selectedApp === 'kpital'
+            ? 'Planillas y RRHH. Solo roles y permisos de KPITAL.'
+            : 'Asistencia y tiempo. Solo roles y permisos de TimeWise.'}
+        </Text>
       </div>
 
       {/* Main card */}
@@ -491,7 +562,7 @@ export function RolesManagementPage() {
             onChange={(e) => setSearch(e.target.value)}
           />
           <Space size={12}>
-            <Button icon={<PlusOutlined />} onClick={() => setOpenRoleModal(true)}>
+            <Button icon={<PlusOutlined />} onClick={openAddRoleModal}>
               Agregar rol
             </Button>
             <Button
@@ -511,6 +582,12 @@ export function RolesManagementPage() {
           columns={columns}
           dataSource={tableData}
           pagination={false}
+          locale={{
+            emptyText:
+              selectedApp === 'kpital'
+                ? 'No hay permisos de KPITAL configurados.'
+                : 'No hay permisos de TimeWise configurados.',
+          }}
           expandable={{
             defaultExpandAllRows: true,
             childrenColumnName: 'children',
@@ -549,20 +626,30 @@ export function RolesManagementPage() {
         onOk={() => void submitRole()}
         confirmLoading={saving}
       >
-        <Form form={roleForm} layout="vertical">
+        <Form form={roleForm} layout="vertical" initialValues={{ appCode: selectedApp }}>
+          <Form.Item
+            label="Aplicación"
+            name="appCode"
+            rules={[{ required: true, message: 'Seleccione la aplicación del rol' }]}
+          >
+            <Radio.Group>
+              <Radio value="kpital">KPITAL 360 — Planillas y RRHH</Radio>
+              <Radio value="timewise">TimeWise — Asistencia y tiempo</Radio>
+            </Radio.Group>
+          </Form.Item>
           <Form.Item
             label="Código"
             name="codigo"
             rules={[{ required: true, message: 'Requerido' }]}
           >
-            <Input placeholder="Ej: GERENTE_RRHH" />
+            <Input placeholder="Ej: GERENTE_RRHH o SUPERVISOR_AREA" />
           </Form.Item>
           <Form.Item
             label="Nombre"
             name="nombre"
             rules={[{ required: true, message: 'Requerido' }]}
           >
-            <Input placeholder="Gerente de RRHH" />
+            <Input placeholder="Ej: Gerente de RRHH" />
           </Form.Item>
           <Form.Item label="Descripción" name="descripcion">
             <Input.TextArea rows={2} placeholder="Descripción opcional" />

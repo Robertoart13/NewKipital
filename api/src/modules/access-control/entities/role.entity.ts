@@ -8,9 +8,8 @@ import {
 } from 'typeorm';
 
 /**
- * sys_roles — Roles abstractos del sistema.
- * Un rol no tiene empresa, no tiene app. Es abstracto.
- * Ejemplos: ADMIN_SISTEMA, RRHH_MANAGER, EMPLEADO, CONTABILIDAD.
+ * sys_roles — Roles del sistema, asociados a una app.
+ * id_app: NULL = MASTER (global, visible en ambas apps). No NULL = rol exclusivo de esa app.
  *
  * Reglas: NO delete físico. Solo inactivación lógica.
  */
@@ -18,6 +17,9 @@ import {
 export class Role {
   @PrimaryGeneratedColumn({ name: 'id_rol' })
   id: number;
+
+  @Column({ name: 'id_app', type: 'int', nullable: true })
+  idApp: number | null;
 
   @Index('IDX_rol_codigo', { unique: true })
   @Column({ name: 'codigo_rol', type: 'varchar', length: 50, unique: true })

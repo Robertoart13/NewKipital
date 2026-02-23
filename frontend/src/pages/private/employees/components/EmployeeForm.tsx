@@ -6,6 +6,7 @@ import {
   JORNADA_OPTIONS,
   MONEDA_OPTIONS,
 } from '../constants/employee-enums';
+import type { SystemRole } from '../../../api/securityConfig';
 import dayjs from 'dayjs';
 
 interface EmployeeFormProps {
@@ -13,7 +14,9 @@ interface EmployeeFormProps {
   departments: { id: number; nombre: string }[];
   positions: { id: number; nombre: string }[];
   payPeriods: { id: number; nombre: string }[];
-  employees: { id: number; nombre: string; apellido1: string }[];
+  supervisors: { id: number; nombre: string; apellido1: string }[];
+  rolesTimewise?: SystemRole[];
+  rolesKpital?: SystemRole[];
   readOnly?: boolean;
   /** En modo edición, código e id empresa son inmutables */
   editMode?: boolean;
@@ -24,7 +27,9 @@ export function EmployeeForm({
   departments,
   positions,
   payPeriods,
-  employees,
+  supervisors,
+  rolesTimewise = [],
+  rolesKpital = [],
   readOnly = false,
   editMode = false,
 }: EmployeeFormProps) {
@@ -105,7 +110,7 @@ export function EmployeeForm({
         <Select
           allowClear
           placeholder="Seleccionar"
-          options={employees.map((e) => ({
+          options={supervisors.map((e) => ({
             value: e.id,
             label: `${e.nombre} ${e.apellido1}`,
           }))}
@@ -167,7 +172,7 @@ export function EmployeeForm({
         <Input maxLength={50} />
       </Form.Item>
 
-      {!readOnly && (
+      {!readOnly && !editMode && (
         <>
           <Form.Item
             label="Sección 5 — Acceso Digital"
@@ -176,9 +181,27 @@ export function EmployeeForm({
           <Form.Item name="crearAccesoTimewise" label="Crear acceso a TimeWise" valuePropName="checked">
             <Switch />
           </Form.Item>
+          {crearAccesoTimewise && rolesTimewise.length > 0 && (
+            <Form.Item name="idRolTimewise" label="Rol en TimeWise" rules={[{ required: true }]}>
+              <Select
+                allowClear
+                placeholder="Seleccionar rol"
+                options={rolesTimewise.map((r) => ({ value: r.id, label: r.nombre }))}
+              />
+            </Form.Item>
+          )}
           <Form.Item name="crearAccesoKpital" label="Crear acceso a KPITAL" valuePropName="checked">
             <Switch />
           </Form.Item>
+          {crearAccesoKpital && rolesKpital.length > 0 && (
+            <Form.Item name="idRolKpital" label="Rol en KPITAL" rules={[{ required: true }]}>
+              <Select
+                allowClear
+                placeholder="Seleccionar rol"
+                options={rolesKpital.map((r) => ({ value: r.id, label: r.nombre }))}
+              />
+            </Form.Item>
+          )}
           {crearAcceso && (
             <Form.Item
               name="passwordInicial"

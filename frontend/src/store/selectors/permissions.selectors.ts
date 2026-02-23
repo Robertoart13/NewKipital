@@ -49,6 +49,24 @@ export const canViewReports = (state: RootState) =>
 export const canManageCompany = (state: RootState) =>
   selectPermissions(state).includes('company:manage');
 
+/** Permisos para ver secciones de configuración (tabs Roles, Usuarios, Permisos) */
+export const canViewConfigRoles = (state: RootState) =>
+  selectPermissions(state).includes('config:roles');
+export const canViewConfigUsers = (state: RootState) =>
+  selectPermissions(state).includes('config:users');
+export const canViewConfigPermissions = (state: RootState) =>
+  selectPermissions(state).includes('config:permissions');
+
+/** Permisos granulares para la configuración de usuarios (drawer) */
+export const canAssignCompanies = (state: RootState) =>
+  selectPermissions(state).includes('config:users:assign-companies');
+export const canAssignApps = (state: RootState) =>
+  selectPermissions(state).includes('config:users:assign-apps');
+export const canAssignRoles = (state: RootState) =>
+  selectPermissions(state).includes('config:users:assign-roles');
+export const canDenyPermissions = (state: RootState) =>
+  selectPermissions(state).includes('config:users:deny-permissions');
+
 /**
  * Verifica si el usuario tiene un permiso específico.
  */

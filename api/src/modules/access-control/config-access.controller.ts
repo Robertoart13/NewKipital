@@ -108,16 +108,18 @@ export class ConfigAccessController {
   @Get('roles')
   listRoles(
     @Query('includeInactive', new ParseBoolPipe({ optional: true })) includeInactive?: boolean,
+    @Query('appCode') appCode?: string,
   ) {
-    return this.rolesService.findAll(includeInactive ?? false);
+    return this.rolesService.findAll(includeInactive ?? false, appCode);
   }
 
   @RequirePermissions('config:users')
   @Get('users/roles-catalog')
   listRolesForUserConfig(
     @Query('includeInactive', new ParseBoolPipe({ optional: true })) includeInactive?: boolean,
+    @Query('appCode') appCode?: string,
   ) {
-    return this.rolesService.findAll(includeInactive ?? false);
+    return this.rolesService.findAll(includeInactive ?? false, appCode);
   }
 
   @RequirePermissions('config:roles')
@@ -158,22 +160,27 @@ export class ConfigAccessController {
       details.push(`Se agregaron ${this.formatEntityList(added, permissionNameByCode)}.`);
     }
     if (removed.length > 0) {
-      details.push(`Se retiraron ${this.formatEntityList(removed, permissionNameByCode)}.`);
+      const nombresRetirados = this.formatEntityList(removed, permissionNameByCode);
+      details.push(
+        `Se retiraron ${nombresRetirados}. Ya no podrás realizar esas acciones con este rol.`,
+      );
     }
-    if (details.length === 0) {
-      details.push('No hubo cambios en permisos efectivos.');
-    }
+    const hayCambios = added.length > 0 || removed.length > 0;
 
-    await this.notificationsService.dispatch(
-      {
-        tipo: 'PERMISSIONS_CHANGED',
-        titulo: `Cambios en el rol ${role.nombre}`,
-        mensaje: `Se actualizo la matriz de permisos del rol "${role.nombre}". ${details.join(' ')}`,
-        scope: 'ROLE',
-        idRol: id,
-      },
-      user.userId,
-    );
+    if (hayCambios) {
+      await this.notificationsService.dispatch(
+        {
+          tipo: 'PERMISSIONS_CHANGED',
+          titulo: `Cambios en el rol ${role.nombre}`,
+          mensaje: `Se actualizó la matriz de permisos del rol "${role.nombre}". ${details.join(' ')}`,
+          scope: 'ROLE',
+          idRol: id,
+          idApp: role.idApp ?? undefined,
+          idUsuariosAdicionales: [user.userId],
+        },
+        user.userId,
+      );
+    }
 
     return perms;
   }
@@ -184,7 +191,7 @@ export class ConfigAccessController {
     return this.rolesService.getPermissions(id);
   }
 
-  @RequirePermissions('config:users')
+  @RequirePermissions('config:users:assign-companies')
   @Put('users/:id/companies')
   async replaceUserCompanies(
     @Param('id', ParseIntPipe) idUsuario: number,
@@ -232,7 +239,7 @@ export class ConfigAccessController {
     return this.userAssignmentService.getUserRolesSummary(idUsuario, appCode);
   }
 
-  @RequirePermissions('config:users')
+  @RequirePermissions('config:users:assign-roles')
   @Put('users/:id/roles')
   async replaceUserContextRoles(
     @Param('id', ParseIntPipe) idUsuario: number,
@@ -280,7 +287,7 @@ export class ConfigAccessController {
     return result;
   }
 
-  @RequirePermissions('config:users')
+  @RequirePermissions('config:users:assign-roles')
   @Put('users/:id/global-roles')
   async replaceUserGlobalRoles(
     @Param('id', ParseIntPipe) idUsuario: number,
@@ -324,7 +331,7 @@ export class ConfigAccessController {
     return result;
   }
 
-  @RequirePermissions('config:users')
+  @RequirePermissions('config:users:deny-permissions')
   @Put('users/:id/global-permission-denials')
   async replaceUserGlobalPermissionDenials(
     @Param('id', ParseIntPipe) idUsuario: number,
@@ -386,7 +393,7 @@ export class ConfigAccessController {
     return this.userAssignmentService.getUserGlobalRoles(idUsuario, appCode);
   }
 
-  @RequirePermissions('config:users')
+  @RequirePermissions('config:users:assign-roles')
   @Put('users/:id/role-exclusions')
   async replaceUserRoleExclusions(
     @Param('id', ParseIntPipe) idUsuario: number,

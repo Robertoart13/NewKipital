@@ -26,6 +26,8 @@ import {
   type PermissionCatalogMode,
   type SystemPermission,
 } from '../../../api/securityConfig';
+import { canViewConfigRoles, canViewConfigUsers, canViewConfigPermissions } from '../../../store/selectors/permissions.selectors';
+import { useAppSelector } from '../../../store/hooks';
 
 const { Text } = Typography;
 
@@ -40,6 +42,9 @@ interface PermissionFormValues {
 
 export function PermissionsAdminListPage() {
   const { message } = AntdApp.useApp();
+  const canViewConfigRolesPerm = useAppSelector(canViewConfigRoles);
+  const canViewConfigUsersPerm = useAppSelector(canViewConfigUsers);
+  const canViewConfigPermissionsPerm = useAppSelector(canViewConfigPermissions);
   const [form] = Form.useForm<PermissionFormValues>();
   const [items, setItems] = useState<SystemPermission[]>([]);
   const [loading, setLoading] = useState(false);
@@ -237,9 +242,9 @@ export function PermissionsAdminListPage() {
             <Text type="secondary" style={{ fontSize: 12, color: '#6b7280' }}>Catálogo `module:action`</Text>
           </div>
           <div style={{ display: 'flex', marginLeft: 24, gap: 2 }}>
-            <Link to="/configuration/roles" style={{ ...tabBase, color: activeTab === 'roles' ? '#111827' : '#6b7280', fontWeight: activeTab === 'roles' ? 600 : 400, backgroundColor: activeTab === 'roles' ? '#f3f4f6' : 'transparent' }}>Roles</Link>
-            <Link to="/configuration/users" style={{ ...tabBase, color: activeTab === 'users' ? '#111827' : '#6b7280', fontWeight: activeTab === 'users' ? 600 : 400, backgroundColor: activeTab === 'users' ? '#f3f4f6' : 'transparent' }}>Usuarios</Link>
-            <Link to="/configuration/permissions" style={{ ...tabBase, color: activeTab === 'permissions' ? '#111827' : '#6b7280', fontWeight: activeTab === 'permissions' ? 600 : 400, backgroundColor: activeTab === 'permissions' ? '#f3f4f6' : 'transparent' }}>Permisos</Link>
+            {canViewConfigRolesPerm && <Link to="/configuration/roles" style={{ ...tabBase, color: activeTab === 'roles' ? '#111827' : '#6b7280', fontWeight: activeTab === 'roles' ? 600 : 400, backgroundColor: activeTab === 'roles' ? '#f3f4f6' : 'transparent' }}>Roles</Link>}
+            {canViewConfigUsersPerm && <Link to="/configuration/users" style={{ ...tabBase, color: activeTab === 'users' ? '#111827' : '#6b7280', fontWeight: activeTab === 'users' ? 600 : 400, backgroundColor: activeTab === 'users' ? '#f3f4f6' : 'transparent' }}>Usuarios</Link>}
+            {canViewConfigPermissionsPerm && <Link to="/configuration/permissions" style={{ ...tabBase, color: activeTab === 'permissions' ? '#111827' : '#6b7280', fontWeight: activeTab === 'permissions' ? 600 : 400, backgroundColor: activeTab === 'permissions' ? '#f3f4f6' : 'transparent' }}>Permisos</Link>}
           </div>
         </div>
       </div>

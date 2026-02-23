@@ -17,13 +17,13 @@ export class UserAssignmentController {
 
   // --- Usuario ↔ App ---
 
-  @RequirePermissions('config:users')
+  @RequirePermissions('config:users:assign-apps')
   @Post('apps')
   assignApp(@Body() dto: AssignUserAppDto) {
     return this.service.assignApp(dto);
   }
 
-  @RequirePermissions('config:users')
+  @RequirePermissions('config:users:assign-apps')
   @Patch('apps/:idUsuario/:idApp/revoke')
   revokeApp(
     @Param('idUsuario', ParseIntPipe) idUsuario: number,
@@ -40,13 +40,13 @@ export class UserAssignmentController {
 
   // --- Usuario ↔ Empresa ---
 
-  @RequirePermissions('config:users')
+  @RequirePermissions('config:users:assign-companies')
   @Post('companies')
   assignCompany(@Body() dto: AssignUserCompanyDto) {
     return this.service.assignCompany(dto);
   }
 
-  @RequirePermissions('config:users')
+  @RequirePermissions('config:users:assign-companies')
   @Patch('companies/:idUsuario/:idEmpresa/revoke')
   revokeCompany(
     @Param('idUsuario', ParseIntPipe) idUsuario: number,
@@ -63,13 +63,13 @@ export class UserAssignmentController {
 
   // --- Usuario ↔ Rol (scoped Empresa + App) ---
 
-  @RequirePermissions('config:roles')
+  @RequirePermissions('config:users:assign-roles')
   @Post('roles')
   assignRole(@Body() dto: AssignUserRoleDto, @CurrentUser() user: { userId: number }) {
     return this.service.assignRole(dto, user.userId);
   }
 
-  @RequirePermissions('config:roles')
+  @RequirePermissions('config:users:assign-roles')
   @Patch('roles/:idUsuario/:idRol/:idEmpresa/:idApp/revoke')
   revokeRole(
     @Param('idUsuario', ParseIntPipe) idUsuario: number,
@@ -91,7 +91,7 @@ export class UserAssignmentController {
     return this.service.getUserRoles(idUsuario, idEmpresa, idApp);
   }
 
-  @RequirePermissions('config:roles')
+  @RequirePermissions('config:users:assign-roles')
   @Put('roles/:idUsuario/context')
   replaceUserRoles(
     @Param('idUsuario', ParseIntPipe) idUsuario: number,
@@ -107,7 +107,7 @@ export class UserAssignmentController {
     );
   }
 
-  @RequirePermissions('config:permissions')
+  @RequirePermissions('config:users:deny-permissions')
   @Put('permissions/:idUsuario/context')
   replaceUserPermissionOverrides(
     @Param('idUsuario', ParseIntPipe) idUsuario: number,
@@ -124,7 +124,7 @@ export class UserAssignmentController {
     );
   }
 
-  @RequirePermissions('config:permissions')
+  @RequirePermissions('config:users:deny-permissions')
   @Get('permissions/:idUsuario/context')
   getUserPermissionOverrides(
     @Param('idUsuario', ParseIntPipe) idUsuario: number,

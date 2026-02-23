@@ -145,6 +145,10 @@ export class NotificationsService {
       userIds = [...new Set(rows.map((r) => r.idUsuario))];
     }
 
+    if (dto.idUsuariosAdicionales?.length) {
+      userIds = [...new Set([...userIds, ...dto.idUsuariosAdicionales])];
+    }
+
     if (userIds.length === 0 && dto.scope !== 'GLOBAL') {
       return { idNotificacion: 0, recipientsCount: 0 };
     }

@@ -133,6 +133,14 @@ export class CreateEmployeeDto {
   crearAccesoKpital?: boolean;
 
   @IsOptional()
+  @IsInt()
+  idRolTimewise?: number;
+
+  @IsOptional()
+  @IsInt()
+  idRolKpital?: number;
+
+  @IsOptional()
   @IsString()
   @MaxLength(100)
   passwordInicial?: string;

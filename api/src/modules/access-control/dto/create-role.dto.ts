@@ -1,4 +1,4 @@
-import { IsString, IsOptional, MaxLength, MinLength } from 'class-validator';
+import { IsString, IsOptional, MaxLength, MinLength, IsIn } from 'class-validator';
 
 export class CreateRoleDto {
   @IsString()
@@ -14,4 +14,9 @@ export class CreateRoleDto {
   @IsString()
   @MaxLength(300)
   descripcion?: string;
+
+  /** Aplicación del rol: kpital o timewise. Obligatorio al crear. */
+  @IsString()
+  @IsIn(['kpital', 'timewise'])
+  appCode: string;
 }

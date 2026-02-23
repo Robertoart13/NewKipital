@@ -4,10 +4,11 @@ import { Card, Form, Button } from 'antd';
 import { useNavigate } from 'react-router-dom';
 import { useAppSelector } from '../../../store/hooks';
 import { useCreateEmployee } from '../../../queries/employees/useCreateEmployee';
+import { useSupervisors } from '../../../queries/employees/useSupervisors';
 import { useDepartments } from '../../../queries/catalogs/useDepartments';
 import { usePositions } from '../../../queries/catalogs/usePositions';
 import { usePayPeriods } from '../../../queries/catalogs/usePayPeriods';
-import { useEmployees } from '../../../queries/employees/useEmployees';
+import { useRolesByApp } from '../../../queries/roles/useRolesByApp';
 import { EmployeeForm } from './components/EmployeeForm';
 
 export function EmployeeCreatePage() {
@@ -19,15 +20,9 @@ export function EmployeeCreatePage() {
   const { data: departments = [] } = useDepartments();
   const { data: positions = [] } = usePositions();
   const { data: payPeriods = [] } = usePayPeriods();
-  const { data: employeesData } = useEmployees({
-    companyId,
-    filters: { pageSize: 999, page: 1 },
-  });
-  const employees = (employeesData?.data ?? []).map((e) => ({
-    id: e.id,
-    nombre: e.nombre,
-    apellido1: e.apellido1,
-  }));
+  const { data: supervisors = [] } = useSupervisors(companyId);
+  const { data: rolesTimewise = [] } = useRolesByApp('timewise');
+  const { data: rolesKpital = [] } = useRolesByApp('kpital');
 
   const crearAccesoTimewise = Form.useWatch('crearAccesoTimewise', form);
   const crearAccesoKpital = Form.useWatch('crearAccesoKpital', form);
@@ -61,6 +56,8 @@ export function EmployeeCreatePage() {
       idDepartamento: values.idDepartamento || undefined,
       idPuesto: values.idPuesto || undefined,
       idSupervisor: values.idSupervisor || undefined,
+      idRolTimewise: values.idRolTimewise || undefined,
+      idRolKpital: values.idRolKpital || undefined,
       fechaIngreso: values.fechaIngreso
         ? dayjs(values.fechaIngreso).format('YYYY-MM-DD')
         : '',
@@ -107,7 +104,9 @@ export function EmployeeCreatePage() {
         departments={departments}
         positions={positions}
         payPeriods={payPeriods}
-        employees={employees}
+        supervisors={supervisors}
+        rolesTimewise={rolesTimewise}
+        rolesKpital={rolesKpital}
       />
       <Form.Item style={{ marginTop: 16 }}>
         <Button type="primary" onClick={handleSubmit} loading={createMutation.isPending}>

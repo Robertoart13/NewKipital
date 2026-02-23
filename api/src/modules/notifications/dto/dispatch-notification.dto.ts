@@ -36,4 +36,9 @@ export class DispatchNotificationDto {
   @IsArray()
   @IsOptional()
   idUsuarios?: number[];
+
+  /** Usuarios que siempre reciben la notificación (ej. quien realizó el cambio). */
+  @IsArray()
+  @IsOptional()
+  idUsuariosAdicionales?: number[];
 }

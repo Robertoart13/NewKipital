@@ -9,11 +9,13 @@ import { Position } from './entities/position.entity.js';
 import { PayPeriod } from '../payroll/entities/pay-period.entity.js';
 import { UserCompany } from '../access-control/entities/user-company.entity.js';
 import { WorkflowsModule } from '../../workflows/workflows.module.js';
+import { AuthModule } from '../auth/auth.module.js';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([Employee, Department, Position, PayPeriod, UserCompany]),
     WorkflowsModule,
+    AuthModule,
   ],
   controllers: [EmployeesController, CatalogsController],
   providers: [EmployeesService],

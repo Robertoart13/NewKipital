@@ -144,20 +144,31 @@ export async function reactivateConfigPermission(id: number): Promise<SystemPerm
   return ensureOk<SystemPermission>(res, 'Error al reactivar permiso');
 }
 
-export async function fetchRoles(includeInactive = false): Promise<SystemRole[]> {
-  const res = await httpFetch(`/config/roles?includeInactive=${includeInactive}`);
+export async function fetchRoles(includeInactive = false, appCode?: 'kpital' | 'timewise'): Promise<SystemRole[]> {
+  const params = new URLSearchParams();
+  params.set('includeInactive', String(includeInactive));
+  if (appCode) params.set('appCode', appCode);
+  const res = await httpFetch(`/config/roles?${params}`);
   return ensureOk<SystemRole[]>(res, 'Error al cargar roles');
 }
 
-export async function fetchRolesForUsers(includeInactive = false): Promise<SystemRole[]> {
-  const res = await httpFetch(`/config/users/roles-catalog?includeInactive=${includeInactive}`);
+export async function fetchRolesForUsers(includeInactive = false, appCode?: string): Promise<SystemRole[]> {
+  const params = new URLSearchParams();
+  params.set('includeInactive', String(includeInactive));
+  if (appCode) params.set('appCode', appCode);
+  const res = await httpFetch(`/config/users/roles-catalog?${params}`);
   return ensureOk<SystemRole[]>(res, 'Error al cargar roles para usuarios');
+}
+
+export async function fetchRolesByApp(appCode: 'timewise' | 'kpital'): Promise<SystemRole[]> {
+  return fetchRolesForUsers(false, appCode);
 }
 
 export async function createRole(payload: {
   codigo: string;
   nombre: string;
   descripcion?: string;
+  appCode: 'kpital' | 'timewise';
 }): Promise<SystemRole> {
   const res = await httpFetch('/config/roles', {
     method: 'POST',
@@ -200,14 +211,37 @@ export async function reactivateRole(id: number): Promise<SystemRole> {
   return ensureOk<SystemRole>(res, 'Error al reactivar rol');
 }
 
-export async function fetchUsers(includeInactive = false): Promise<SystemUser[]> {
-  const res = await httpFetch(`/users?includeInactive=${includeInactive}`);
+export async function fetchUsers(
+  includeInactive = false,
+  configView = false,
+): Promise<SystemUser[]> {
+  const params = new URLSearchParams();
+  params.set('includeInactive', String(includeInactive));
+  if (configView) params.set('configView', 'true');
+  const res = await httpFetch(`/users?${params}`);
   return ensureOk<SystemUser[]>(res, 'Error al cargar usuarios');
 }
 
 export async function fetchApps(): Promise<SystemApp[]> {
   const res = await httpFetch('/apps');
   return ensureOk<SystemApp[]>(res, 'Error al cargar apps');
+}
+
+export async function fetchUserApps(userId: number): Promise<{ idApp: number }[]> {
+  const res = await httpFetch(`/user-assignments/apps/${userId}`);
+  const data = await ensureOk<{ id: number; idUsuario: number; idApp: number; estado: number }[]>(
+    res,
+    'Error al cargar apps del usuario',
+  );
+  return (data ?? []).filter((a) => a.estado === 1).map((a) => ({ idApp: a.idApp }));
+}
+
+export async function assignUserApp(userId: number, idApp: number): Promise<{ id: number }> {
+  const res = await httpFetch('/user-assignments/apps', {
+    method: 'POST',
+    body: JSON.stringify({ idUsuario: userId, idApp }),
+  });
+  return ensureOk<{ id: number }>(res, 'Error al asignar aplicación');
 }
 
 export async function fetchUserCompanies(userId: number): Promise<UserCompanyAssignment[]> {

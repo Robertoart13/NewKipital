@@ -26,6 +26,19 @@ export class EmployeesController {
   }
 
   @RequirePermissions('employee:view')
+  @Get('supervisors')
+  findSupervisors(
+    @CurrentUser() user: { userId: number },
+    @Query('idEmpresa') idEmpresaRaw: string,
+  ) {
+    const idEmpresa = idEmpresaRaw ? parseInt(idEmpresaRaw, 10) : undefined;
+    if (!idEmpresa || Number.isNaN(idEmpresa)) {
+      return this.service.findSupervisors(user.userId, 0);
+    }
+    return this.service.findSupervisors(user.userId, idEmpresa);
+  }
+
+  @RequirePermissions('employee:view')
   @Get()
   findAll(
     @CurrentUser() user: { userId: number },

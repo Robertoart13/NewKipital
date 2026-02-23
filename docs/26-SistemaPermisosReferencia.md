@@ -67,34 +67,41 @@ Ambas se aplican. Si existe DENY en cualquiera de las dos, el permiso se elimina
 
 ## 3. Vista de Configuración (Usuarios > Configurar)
 
-La ventana de configuración de un usuario tiene tres pestañas:
+La ventana de configuración de un usuario tiene tres pestañas y un selector de aplicación. Las pestañas **Roles**, **Usuarios** y **Permisos** del encabezado se muestran solo si el usuario tiene el permiso correspondiente (`config:roles`, `config:users`, `config:permissions`).
 
 ### 3.1 Selector de Aplicación
 
-- **Aplicación:** KPITAL 360 o TimeWise  
+- **Aplicación:** Solo muestra las apps asignadas al usuario (`sys_usuario_app`). KPITAL 360 o TimeWise.
 - Define el contexto para Roles y Excepciones.
+- **Usuario sin apps:** Se muestra un formulario para asignar aplicaciones (requiere `config:users:assign-apps`). Si el usuario tiene apps, puede agregar más desde "Agregar más aplicaciones" (también requiere `config:users:assign-apps`).
+- Estados de carga: Spinner mientras se cargan las apps del usuario.
 
 ### 3.2 Pestaña Empresas
 
 - **Qué hace:** Asigna empresas (`sys_usuario_empresa`).  
 - **API:** `PUT /api/config/users/:id/companies` (`replaceUserCompanies`).  
+- **Permiso requerido:** `config:users:assign-companies` (además de `config:users` para abrir el drawer).
 - **Regla:** Solo las empresas marcadas. Si está desmarcada, el usuario no ve nada de esa empresa.
+- Si el usuario no tiene permiso, se muestra mensaje compacto indicando el permiso requerido y los controles quedan deshabilitados.
 
 Al guardar empresas, el backend puede auto-asignar la app KPITAL si el usuario tenía empresas pero no app (`ensureUserHasKpitalApp`).
 
 ### 3.3 Pestaña Roles
 
-- **Qué hace:** Asigna roles globales (`sys_usuario_rol_global`).  
+- **Qué hace:** Asigna roles globales (`sys_usuario_rol_global`). Solo muestra roles de la app seleccionada.
 - **API:** `PUT /api/config/users/:id/global-roles` (`replaceUserGlobalRoles`).  
+- **Permiso requerido:** `config:users:assign-roles`.
 - **Regla:** Los roles se aplican a **todas** las empresas del usuario (para la app seleccionada).
-
-**Requisito:** El usuario debe tener al menos una empresa asignada; si no, los roles no tienen efecto.
+- **Requisito:** El usuario debe tener al menos una empresa asignada; si no, los roles no tienen efecto.
+- Al guardar roles, la vista cambia automáticamente a Excepciones y actualiza la lista de roles sin refrescar.
 
 ### 3.4 Pestaña Excepciones
 
 - **Qué hace:** Denegaciones globales (`sys_usuario_permiso_global`).  
 - **API:** `PUT /api/config/users/:id/global-permission-denials` (`replaceUserGlobalPermissionDenials`).  
-- **Regla:** Los permisos marcados **NO** se aplicarán en ninguna empresa para esa app.
+- **Permiso requerido:** `config:users:deny-permissions`.
+- **Regla:** Los permisos marcados **NO** se aplicarán en ninguna empresa para esa app. El selector de rol solo muestra los roles asignados al usuario (de la pestaña Roles).
+- Si el usuario no tiene permiso, se muestra mensaje compacto indicando el permiso requerido y los controles quedan deshabilitados.
 
 **Importante:** La pestaña Excepciones solo escribe en `sys_usuario_permiso_global`. Los registros en `sys_usuario_permiso` pueden venir de flujos anteriores u otras configuraciones; si existen DENY activos ahí, también bloquean permisos.
 
@@ -160,11 +167,24 @@ No se aplican de forma instantánea sin recargar; la sesión actual conserva los
 
 ### 6.3 Permisos de Configuración
 
-Para ver y administrar el menú de Configuración se requieren:
+**Permisos base** (para ver pestañas y acceder a las secciones):
 
-- `config:permissions` — Gestionar permisos  
-- `config:roles` — Gestionar roles  
-- `config:users` — Gestionar usuarios  
+- `config:permissions` — Ver y gestionar catálogo de permisos  
+- `config:roles` — Ver y gestionar roles  
+- `config:users` — Ver y gestionar usuarios (abrir drawer, ver datos)
+
+**Permisos granulares** (para realizar acciones concretas en el drawer de usuarios):
+
+| Permiso | Acción | Endpoints |
+|---------|--------|-----------|
+| `config:users:assign-companies` | Asignar/desasignar empresas | `PUT /config/users/:id/companies`, POST/PATCH companies |
+| `config:users:assign-apps` | Asignar/revocar apps (KPITAL, TimeWise) | `POST /user-assignments/apps`, PATCH revoke |
+| `config:users:assign-roles` | Asignar roles globales y por contexto | `PUT /config/users/:id/global-roles`, PUT roles, PUT role-exclusions |
+| `config:users:deny-permissions` | Denegar permisos globalmente (excepciones) | `PUT /config/users/:id/global-permission-denials` |
+
+Si un usuario tiene `config:users` pero no `config:users:assign-companies`, puede abrir el drawer y ver empresas, pero no modificarlas. El frontend muestra mensaje compacto con el permiso requerido y deshabilita los controles.
+
+**Visibilidad de pestañas:** Las pestañas Roles, Usuarios y Permisos en las páginas de Configuración se muestran solo si el usuario tiene el permiso correspondiente (`config:roles`, `config:users`, `config:permissions`).
 
 Si el rol MASTER no tiene estos permisos en `sys_rol_permiso`, el menú de Configuración no se mostrará.
 

@@ -16,4 +16,15 @@ export default new DataSource({
   migrations: [__dirname + '/database/migrations/*{.ts,.js}'],
   synchronize: false,
   charset: 'utf8mb4',
+  poolSize: parseInt(process.env.DB_POOL_SIZE || '10', 10),
+  extra: {
+    waitForConnections: true,
+    connectionLimit: parseInt(process.env.DB_POOL_SIZE || '10', 10),
+    maxIdle: parseInt(process.env.DB_POOL_MAX_IDLE || '10', 10),
+    idleTimeout: parseInt(process.env.DB_POOL_IDLE_TIMEOUT_MS || '240000', 10),
+    queueLimit: 0,
+    connectTimeout: parseInt(process.env.DB_CONNECT_TIMEOUT_MS || '60000', 10),
+    enableKeepAlive: true,
+    keepAliveInitialDelay: 0,
+  },
 });

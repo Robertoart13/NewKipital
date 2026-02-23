@@ -10,7 +10,7 @@ import { useUpdateEmployee, useInactivateEmployee, useLiquidateEmployee } from '
 import { useDepartments } from '../../../queries/catalogs/useDepartments';
 import { usePositions } from '../../../queries/catalogs/usePositions';
 import { usePayPeriods } from '../../../queries/catalogs/usePayPeriods';
-import { useEmployees } from '../../../queries/employees/useEmployees';
+import { useSupervisors } from '../../../queries/employees/useSupervisors';
 import { EmployeeStatusBadge } from './components/EmployeeStatusBadge';
 import { EmployeeForm } from './components/EmployeeForm';
 import { EmployeeActions } from './components/EmployeeActions';
@@ -30,13 +30,8 @@ export function EmployeeDetailPage() {
   const { data: departments = [] } = useDepartments();
   const { data: positions = [] } = usePositions();
   const { data: payPeriods = [] } = usePayPeriods();
-  const { data: employeesData } = useEmployees({
-    companyId,
-    filters: { pageSize: 999, page: 1 },
-  });
-  const employees = (employeesData?.data ?? [])
-    .filter((e: { id: number }) => e.id !== employee?.id)
-    .map((e: { id: number; nombre: string; apellido1: string }) => ({ id: e.id, nombre: e.nombre, apellido1: e.apellido1 }));
+  const { data: supervisorsRaw = [] } = useSupervisors(companyId);
+  const supervisors = supervisorsRaw.filter((e) => e.id !== employee?.id);
 
   const handleSaveEdit = async () => {
     const values = await form.validateFields();
@@ -152,7 +147,7 @@ export function EmployeeDetailPage() {
             departments={departments}
             positions={positions}
             payPeriods={payPeriods}
-            employees={employees}
+            supervisors={supervisors}
             editMode
           />
         ) : (

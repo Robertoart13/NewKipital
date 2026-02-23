@@ -8,9 +8,12 @@ import {
   Card,
   Checkbox,
   Drawer,
+  Flex,
   Input,
   Select,
+  Skeleton,
   Space,
+  Spin,
   Table,
   Tag,
   Tabs,
@@ -23,12 +26,15 @@ import {
   InfoCircleOutlined,
   SettingOutlined,
   UserOutlined,
+  WarningOutlined,
 } from '@ant-design/icons';
 import {
   fetchConfigPermissions,
   fetchRolePermissions,
   fetchApps,
   fetchRolesForUsers,
+  fetchUserApps,
+  assignUserApp,
   fetchUserCompanies,
   fetchUserRolesSummary,
   fetchUsers,
@@ -42,8 +48,33 @@ import {
   type UserRolesSummary,
 } from '../../../api/securityConfig';
 import { useCompanies } from '../../../queries/companies/useCompanies';
+import {
+  canAssignCompanies,
+  canAssignApps,
+  canAssignRoles,
+  canDenyPermissions,
+  canViewConfigRoles,
+  canViewConfigUsers,
+  canViewConfigPermissions,
+} from '../../../store/selectors/permissions.selectors';
+import { useAppSelector } from '../../../store/hooks';
 
 const { Text } = Typography;
+
+function NoPermissionMessage({ message, required, variant = 'warning' }: { message: string; required: string; variant?: 'warning' | 'danger' }) {
+  const isDanger = variant === 'danger';
+  const color = isDanger ? '#b91c1c' : '#b45309';
+  const bg = isDanger ? '#fef2f2' : 'transparent';
+  const border = isDanger ? '1px solid #fecaca' : 'none';
+  return (
+    <div style={{ fontSize: 12, color, marginBottom: 8, display: 'flex', alignItems: 'flex-start', gap: 6, padding: isDanger ? 8 : 0, background: bg, borderRadius: 6, border }}>
+      <WarningOutlined style={{ marginTop: 1, flexShrink: 0 }} />
+      <span>
+        {message} <Text type="secondary" style={{ fontSize: 11 }}>({required})</Text>
+      </span>
+    </div>
+  );
+}
 
 function getInitials(nombre: string, apellido: string): string {
   const n = nombre?.trim().charAt(0) ?? '';
@@ -55,11 +86,20 @@ export function UsersManagementPage() {
   const { message } = AntdApp.useApp();
   const location = useLocation();
   const { data: companiesData } = useCompanies(false);
+  const canAssignCompaniesPerm = useAppSelector(canAssignCompanies);
+  const canAssignAppsPerm = useAppSelector(canAssignApps);
+  const canAssignRolesPerm = useAppSelector(canAssignRoles);
+  const canDenyPermissionsPerm = useAppSelector(canDenyPermissions);
+  const canViewConfigRolesPerm = useAppSelector(canViewConfigRoles);
+  const canViewConfigUsersPerm = useAppSelector(canViewConfigUsers);
+  const canViewConfigPermissionsPerm = useAppSelector(canViewConfigPermissions);
 
   const [users, setUsers] = useState<SystemUser[]>([]);
   const [apps, setApps] = useState<SystemApp[]>([]);
   const [roles, setRoles] = useState<SystemRole[]>([]);
   const [, setPermissions] = useState<SystemPermission[]>([]);
+  const [userAppIds, setUserAppIds] = useState<number[]>([]);
+  const [rolesForSelectedApp, setRolesForSelectedApp] = useState<SystemRole[]>([]);
   const [userCompanyIds, setUserCompanyIds] = useState<number[]>([]);
   const [selectedUser, setSelectedUser] = useState<SystemUser | null>(null);
   const [selectedApp, setSelectedApp] = useState<SystemApp | null>(null);
@@ -71,6 +111,11 @@ export function UsersManagementPage() {
   const [roleExcepcionPermissions, setRoleExcepcionPermissions] = useState<SystemPermission[]>([]);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [loadingUserApps, setLoadingUserApps] = useState(false);
+  const [loadingRolesForApp, setLoadingRolesForApp] = useState(false);
+  const [loadingRolesSummary, setLoadingRolesSummary] = useState(false);
+  const [savingApps, setSavingApps] = useState(false);
+  const [appsToAssign, setAppsToAssign] = useState<number[]>([]);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [search, setSearch] = useState('');
 
@@ -78,7 +123,7 @@ export function UsersManagementPage() {
     setLoading(true);
     try {
       const [usersData, appsData, rolesData, permsData] = await Promise.all([
-        fetchUsers(false),
+        fetchUsers(false, true),
         fetchApps(),
         fetchRolesForUsers(false),
         fetchConfigPermissions({ includeInactive: false }),
@@ -113,17 +158,68 @@ export function UsersManagementPage() {
     }
   }, [selectedUser]);
 
+  const loadUserApps = useCallback(async () => {
+    if (!selectedUser) {
+      setUserAppIds([]);
+      setLoadingUserApps(false);
+      return;
+    }
+    setLoadingUserApps(true);
+    try {
+      const userApps = await fetchUserApps(selectedUser.id);
+      setUserAppIds(userApps.map((a) => a.idApp));
+    } catch {
+      setUserAppIds([]);
+    } finally {
+      setLoadingUserApps(false);
+    }
+  }, [selectedUser]);
+
+  const loadRolesForSelectedApp = useCallback(async () => {
+    if (!selectedApp) {
+      setRolesForSelectedApp([]);
+      setLoadingRolesForApp(false);
+      return;
+    }
+    setLoadingRolesForApp(true);
+    try {
+      const data = await fetchRolesForUsers(false, selectedApp.codigo);
+      setRolesForSelectedApp(data.filter((r) => r.estado === 1));
+    } catch {
+      setRolesForSelectedApp([]);
+    } finally {
+      setLoadingRolesForApp(false);
+    }
+  }, [selectedApp]);
+
   useEffect(() => {
     void loadUserCompanies();
   }, [loadUserCompanies]);
+
+  useEffect(() => {
+    void loadUserApps();
+  }, [loadUserApps]);
+
+  useEffect(() => {
+    void loadRolesForSelectedApp();
+  }, [loadRolesForSelectedApp]);
+
+  useEffect(() => {
+    if (!selectedUser || selectedApp !== null) return;
+    if (userAppIds.length === 0) return;
+    const first = apps.find((a) => userAppIds.includes(a.id));
+    if (first) setSelectedApp(first);
+  }, [selectedUser, selectedApp, userAppIds, apps]);
 
   const loadRolesSummary = useCallback(async () => {
     if (!selectedUser || !selectedApp) {
       setRolesSummary(null);
       setGlobalRoleIds([]);
       setGlobalPermissionDeny([]);
+      setLoadingRolesSummary(false);
       return;
     }
+    setLoadingRolesSummary(true);
     try {
       const summary = await fetchUserRolesSummary(selectedUser.id, selectedApp.codigo);
       setRolesSummary(summary);
@@ -131,12 +227,20 @@ export function UsersManagementPage() {
       setGlobalPermissionDeny(summary.globalPermissionDeny ?? []);
     } catch {
       setRolesSummary(null);
+    } finally {
+      setLoadingRolesSummary(false);
     }
   }, [selectedUser, selectedApp]);
 
   useEffect(() => {
     void loadRolesSummary();
   }, [loadRolesSummary]);
+
+  useEffect(() => {
+    if (excepcionRoleId && !globalRoleIds.includes(excepcionRoleId)) {
+      setExcepcionRoleId(null);
+    }
+  }, [excepcionRoleId, globalRoleIds]);
 
   const filteredUsers = useMemo(() => {
     const t = search.trim().toLowerCase();
@@ -150,8 +254,10 @@ export function UsersManagementPage() {
 
   const appOptions = useMemo(
     () =>
-      apps.map((a) => ({ value: a.id, label: `${a.nombre} (${a.codigo})` })),
-    [apps],
+      apps
+        .filter((a) => userAppIds.includes(a.id))
+        .map((a) => ({ value: a.id, label: `${a.nombre} (${a.codigo})` })),
+    [apps, userAppIds],
   );
 
   const saveUserCompanies = async () => {
@@ -178,11 +284,29 @@ export function UsersManagementPage() {
         roleIds: globalRoleIds,
       });
       message.success('Roles globales guardados.');
-      void loadRolesSummary();
+      await loadRolesSummary();
+      setDrawerNavTab('excepciones');
     } catch (e) {
       message.error(e instanceof Error ? e.message : 'Error al guardar');
     } finally {
       setSaving(false);
+    }
+  };
+
+  const saveUserApps = async () => {
+    if (!selectedUser || appsToAssign.length === 0) return;
+    try {
+      setSavingApps(true);
+      for (const idApp of appsToAssign) {
+        await assignUserApp(selectedUser.id, idApp);
+      }
+      message.success('Aplicaciones asignadas correctamente.');
+      setAppsToAssign([]);
+      void loadUserApps();
+    } catch (e) {
+      message.error(e instanceof Error ? e.message : 'Error al asignar aplicaciones');
+    } finally {
+      setSavingApps(false);
     }
   };
 
@@ -210,8 +334,14 @@ export function UsersManagementPage() {
     setDrawerNavTab('empresas');
     setExcepcionRoleId(null);
     setRoleExcepcionPermissions([]);
+    setAppsToAssign([]);
     setDrawerOpen(true);
   };
+
+  const appsAvailableToAssign = useMemo(
+    () => apps.filter((a) => !userAppIds.includes(a.id)),
+    [apps, userAppIds],
+  );
 
   useEffect(() => {
     if (!excepcionRoleId) {
@@ -308,9 +438,9 @@ export function UsersManagementPage() {
             </Text>
           </div>
           <div style={{ display: 'flex', marginLeft: 24, gap: 2 }}>
-            <Link to="/configuration/roles" style={{ ...tabBase, color: activeTab === 'roles' ? '#111827' : '#6b7280', fontWeight: activeTab === 'roles' ? 600 : 400, backgroundColor: activeTab === 'roles' ? '#f3f4f6' : 'transparent' }}>Roles</Link>
-            <Link to="/configuration/users" style={{ ...tabBase, color: activeTab === 'users' ? '#111827' : '#6b7280', fontWeight: activeTab === 'users' ? 600 : 400, backgroundColor: activeTab === 'users' ? '#f3f4f6' : 'transparent' }}>Usuarios</Link>
-            <Link to="/configuration/permissions" style={{ ...tabBase, color: activeTab === 'permissions' ? '#111827' : '#6b7280', fontWeight: activeTab === 'permissions' ? 600 : 400, backgroundColor: activeTab === 'permissions' ? '#f3f4f6' : 'transparent' }}>Permisos</Link>
+            {canViewConfigRolesPerm && <Link to="/configuration/roles" style={{ ...tabBase, color: activeTab === 'roles' ? '#111827' : '#6b7280', fontWeight: activeTab === 'roles' ? 600 : 400, backgroundColor: activeTab === 'roles' ? '#f3f4f6' : 'transparent' }}>Roles</Link>}
+            {canViewConfigUsersPerm && <Link to="/configuration/users" style={{ ...tabBase, color: activeTab === 'users' ? '#111827' : '#6b7280', fontWeight: activeTab === 'users' ? 600 : 400, backgroundColor: activeTab === 'users' ? '#f3f4f6' : 'transparent' }}>Usuarios</Link>}
+            {canViewConfigPermissionsPerm && <Link to="/configuration/permissions" style={{ ...tabBase, color: activeTab === 'permissions' ? '#111827' : '#6b7280', fontWeight: activeTab === 'permissions' ? 600 : 400, backgroundColor: activeTab === 'permissions' ? '#f3f4f6' : 'transparent' }}>Permisos</Link>}
           </div>
         </div>
       </div>
@@ -358,14 +488,77 @@ export function UsersManagementPage() {
                     Contexto para roles y permisos <InfoCircleOutlined style={{ marginLeft: 2 }} />
                   </Text>
                 </Tooltip>
-                <Select
-                  placeholder="Seleccione aplicación"
-                  value={selectedApp?.id}
-                  options={appOptions}
-                  onChange={(val) => setSelectedApp(apps.find((a) => a.id === val) ?? null)}
-                  style={{ width: '100%' }}
-                  optionFilterProp="label"
-                />
+                {loadingUserApps ? (
+                  <Flex align="center" gap={8} style={{ padding: '12px 0' }}>
+                    <Spin size="small" />
+                    <Text type="secondary" style={{ fontSize: 12 }}>Cargando aplicaciones…</Text>
+                  </Flex>
+                ) : userAppIds.length === 0 ? (
+                  <div>
+                    <Alert
+                      type="info"
+                      showIcon
+                      message="Sin aplicaciones asignadas"
+                      description={canAssignAppsPerm
+                        ? 'Este usuario no tiene acceso a ninguna aplicación. Seleccione las que desea asignar y guarde.'
+                        : 'Sin permiso. Requiere: config:users:assign-apps'}
+                      style={{ marginBottom: 12 }}
+                    />
+                    {canAssignAppsPerm && (
+                    <>
+                    <div style={{ maxHeight: 140, overflow: 'auto', border: '1px solid #e5e7eb', borderRadius: 8, padding: 12, background: '#fafafa', marginBottom: 8 }}>
+                      <Checkbox.Group
+                        value={appsToAssign}
+                        onChange={(v) => setAppsToAssign(v as number[])}
+                        style={{ display: 'flex', flexDirection: 'column', gap: 8 }}
+                      >
+                        {apps.map((a) => (
+                          <Checkbox key={a.id} value={a.id}>
+                            {a.nombre} <Text type="secondary">({a.codigo})</Text>
+                          </Checkbox>
+                        ))}
+                      </Checkbox.Group>
+                      {apps.length === 0 && <Text type="secondary">No hay aplicaciones disponibles.</Text>}
+                    </div>
+                    <Button type="primary" size="small" loading={savingApps} disabled={appsToAssign.length === 0} onClick={() => void saveUserApps()}>
+                      Asignar aplicaciones
+                    </Button>
+                    </>
+                    )}
+                  </div>
+                ) : (
+                  <div>
+                    <Select
+                      placeholder="Seleccione aplicación"
+                      value={selectedApp?.id}
+                      options={appOptions}
+                      onChange={(val) => setSelectedApp(apps.find((a) => a.id === val) ?? null)}
+                      style={{ width: '100%' }}
+                      optionFilterProp="label"
+                    />
+                    {appsAvailableToAssign.length > 0 && (canAssignAppsPerm ? (
+                      <div style={{ marginTop: 12, padding: 12, border: '1px solid #e5e7eb', borderRadius: 8, background: '#fafafa' }}>
+                        <Text strong style={{ fontSize: 12, display: 'block', marginBottom: 8 }}>Agregar más aplicaciones</Text>
+                        <Checkbox.Group
+                          value={appsToAssign}
+                          onChange={(v) => setAppsToAssign(v as number[])}
+                          style={{ display: 'flex', flexDirection: 'column', gap: 6 }}
+                        >
+                          {appsAvailableToAssign.map((a) => (
+                            <Checkbox key={a.id} value={a.id}>
+                              {a.nombre} <Text type="secondary">({a.codigo})</Text>
+                            </Checkbox>
+                          ))}
+                        </Checkbox.Group>
+                        <Button type="default" size="small" loading={savingApps} disabled={appsToAssign.length === 0} onClick={() => void saveUserApps()} style={{ marginTop: 8 }}>
+                            Asignar seleccionadas
+                          </Button>
+                      </div>
+                    ) : (
+                      <NoPermissionMessage message="Sin permiso para agregar aplicaciones." required="config:users:assign-apps" variant="danger" />
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
 
@@ -381,13 +574,17 @@ export function UsersManagementPage() {
                   label: <span style={{ fontWeight: 500 }}>Empresas</span>,
                   children: (
                     <div style={{ paddingTop: 16 }}>
+                      {!canAssignCompaniesPerm && (
+                        <NoPermissionMessage message="Sin permiso para asignar empresas." required="config:users:assign-companies" variant="danger" />
+                      )}
                       <Text type="secondary" style={{ fontSize: 12, display: 'block', marginBottom: 10 }}>
                         Solo las empresas marcadas. Si está desmarcada, el usuario no ve nada de ella.
                       </Text>
                       <div style={{ maxHeight: 200, overflow: 'auto', border: '1px solid #e5e7eb', borderRadius: 8, padding: 12, background: '#fafafa' }}>
                         <Checkbox.Group
                           value={userCompanyIds}
-                          onChange={(v) => setUserCompanyIds(v as number[])}
+                          onChange={(v) => canAssignCompaniesPerm && setUserCompanyIds(v as number[])}
+                          disabled={!canAssignCompaniesPerm}
                           style={{ display: 'flex', flexDirection: 'column', gap: 8 }}
                         >
                           {(companiesData ?? []).map((c) => (
@@ -399,7 +596,7 @@ export function UsersManagementPage() {
                         </Checkbox.Group>
                         {(!companiesData || companiesData.length === 0) && <Text type="secondary">No hay empresas.</Text>}
                       </div>
-                      <Button type="primary" size="small" loading={saving} onClick={() => void saveUserCompanies()} style={{ marginTop: 10 }}>
+                      <Button type="primary" size="small" loading={saving} disabled={!canAssignCompaniesPerm} onClick={() => void saveUserCompanies()} style={{ marginTop: 10 }}>
                         Guardar empresas
                       </Button>
                     </div>
@@ -410,6 +607,9 @@ export function UsersManagementPage() {
                   label: <span style={{ fontWeight: 500 }}>Roles</span>,
                   children: selectedApp ? (
                     <div style={{ paddingTop: 16 }}>
+                      {!canAssignRolesPerm && (
+                        <NoPermissionMessage message="Sin permiso para asignar roles." required="config:users:assign-roles" variant="danger" />
+                      )}
                       {userCompanyIds.length === 0 && (
                         <Alert
                           type="warning"
@@ -423,22 +623,31 @@ export function UsersManagementPage() {
                       <Text type="secondary" style={{ fontSize: 12, display: 'block', marginBottom: 10 }}>
                         Se aplican automáticamente en todas las empresas del usuario.
                       </Text>
-                      <div style={{ maxHeight: 200, overflow: 'auto', border: '1px solid #e5e7eb', borderRadius: 8, padding: 12, background: '#fafafa' }}>
-                        <Checkbox.Group
-                          value={globalRoleIds}
-                          onChange={(v) => setGlobalRoleIds(v as number[])}
-                          style={{ display: 'flex', flexDirection: 'column', gap: 8 }}
-                        >
-                          {roles.map((r) => (
-                            <Checkbox key={r.id} value={r.id}>
-                              {r.nombre} <Text type="secondary">({r.codigo})</Text>
-                            </Checkbox>
-                          ))}
-                        </Checkbox.Group>
-                      </div>
-                      <Button type="primary" size="small" loading={saving} onClick={() => void saveGlobalRoles()} style={{ marginTop: 10 }}>
-                        Guardar roles globales
-                      </Button>
+                      {loadingRolesForApp ? (
+                        <div style={{ maxHeight: 200, padding: 16 }}>
+                          <Skeleton active paragraph={{ rows: 6 }} />
+                        </div>
+                      ) : (
+                        <>
+                          <div style={{ maxHeight: 200, overflow: 'auto', border: '1px solid #e5e7eb', borderRadius: 8, padding: 12, background: '#fafafa' }}>
+                            <Checkbox.Group
+                              value={globalRoleIds}
+                              onChange={(v) => canAssignRolesPerm && setGlobalRoleIds(v as number[])}
+                              disabled={!canAssignRolesPerm}
+                              style={{ display: 'flex', flexDirection: 'column', gap: 8 }}
+                            >
+                              {rolesForSelectedApp.map((r) => (
+                                <Checkbox key={r.id} value={r.id}>
+                                  {r.nombre} <Text type="secondary">({r.codigo})</Text>
+                                </Checkbox>
+                              ))}
+                            </Checkbox.Group>
+                          </div>
+                          <Button type="primary" size="small" loading={saving} disabled={!canAssignRolesPerm} onClick={() => void saveGlobalRoles()} style={{ marginTop: 10 }}>
+                            Guardar roles globales
+                          </Button>
+                        </>
+                      )}
                     </div>
                   ) : (
                     <div style={{ paddingTop: 16 }}>
@@ -451,6 +660,9 @@ export function UsersManagementPage() {
                   label: <span style={{ fontWeight: 500 }}>Excepciones</span>,
                   children: selectedApp ? (
                     <div style={{ paddingTop: 16 }}>
+                      {!canDenyPermissionsPerm && (
+                        <NoPermissionMessage message="Sin permiso para denegar permisos." required="config:users:deny-permissions" variant="danger" />
+                      )}
                       {userCompanyIds.length === 0 && (
                         <Alert
                           type="warning"
@@ -462,26 +674,36 @@ export function UsersManagementPage() {
                       )}
                       <div
                         style={{
-                          padding: 12,
+                          padding: 8,
                           background: '#fef2f2',
                           border: '1px solid #fecaca',
-                          borderRadius: 8,
-                          fontSize: 13,
+                          borderRadius: 6,
+                          fontSize: 12,
                           color: '#991b1b',
-                          lineHeight: 1.5,
-                          marginBottom: 16,
+                          lineHeight: 1.4,
+                          marginBottom: 12,
                         }}
                       >
-                        <Text strong style={{ color: '#991b1b', display: 'block', marginBottom: 4 }}>Denegar permisos globalmente</Text>
+                        <Text strong style={{ color: '#991b1b', fontSize: 12 }}>Denegar permisos globalmente.</Text>
+                        {' '}
                         Los permisos marcados NO se aplicarán en ninguna empresa. Seleccione un rol para ver sus permisos y revocar los que no debe tener el usuario.
                       </div>
+                      {loadingRolesSummary ? (
+                        <div style={{ padding: '8px 0' }}>
+                          <Skeleton active paragraph={{ rows: 4 }} />
+                        </div>
+                      ) : (
+                        <>
                       <div style={{ marginBottom: 12 }}>
                         <Text strong style={{ fontSize: 13, display: 'block', marginBottom: 6 }}>Rol</Text>
                         <Select
                           placeholder="Seleccione rol"
                           value={excepcionRoleId}
                           onChange={setExcepcionRoleId}
-                          options={roles.map((r) => ({ label: `${r.nombre} (${r.codigo})`, value: r.id }))}
+                          disabled={!canDenyPermissionsPerm}
+                          options={rolesForSelectedApp
+                            .filter((r) => globalRoleIds.includes(r.id))
+                            .map((r) => ({ label: `${r.nombre} (${r.codigo})`, value: r.id }))}
                           style={{ width: '100%' }}
                           allowClear
                         />
@@ -497,7 +719,8 @@ export function UsersManagementPage() {
                           <div style={{ maxHeight: 220, overflow: 'auto', border: '1px solid #fecaca', borderRadius: 8, padding: 12, background: '#fef2f2' }}>
                             <Checkbox.Group
                               value={globalPermissionDeny}
-                              onChange={(v) => setGlobalPermissionDeny(v as string[])}
+                              onChange={(v) => canDenyPermissionsPerm && setGlobalPermissionDeny(v as string[])}
+                              disabled={!canDenyPermissionsPerm}
                               style={{ display: 'flex', flexDirection: 'column', gap: 6 }}
                             >
                               {roleExcepcionPermissions.length > 0
@@ -510,10 +733,12 @@ export function UsersManagementPage() {
                                 : <Text type="secondary" style={{ fontSize: 12 }}>Cargando permisos del rol…</Text>}
                             </Checkbox.Group>
                           </div>
-                          <Button type="default" size="small" loading={saving} onClick={() => void saveGlobalPermissionDenials()} style={{ marginTop: 8 }}>
+                          <Button type="default" size="small" loading={saving} disabled={!canDenyPermissionsPerm} onClick={() => void saveGlobalPermissionDenials()} style={{ marginTop: 8 }}>
                             Guardar denegaciones globales
                           </Button>
                         </div>
+                      )}
+                        </>
                       )}
                     </div>
                   ) : (

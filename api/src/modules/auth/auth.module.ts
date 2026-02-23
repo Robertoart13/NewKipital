@@ -16,6 +16,7 @@ import { UserCompany } from '../access-control/entities/user-company.entity.js';
 import { UserRole } from '../access-control/entities/user-role.entity.js';
 import { UserRoleGlobal } from '../access-control/entities/user-role-global.entity.js';
 import { UserRoleExclusion } from '../access-control/entities/user-role-exclusion.entity.js';
+import { Role } from '../access-control/entities/role.entity.js';
 import { RolePermission } from '../access-control/entities/role-permission.entity.js';
 import { Permission } from '../access-control/entities/permission.entity.js';
 import { UserPermissionOverride } from '../access-control/entities/user-permission-override.entity.js';
@@ -30,7 +31,7 @@ import { AuthRateLimitService } from './auth-rate-limit.service.js';
   imports: [
     TypeOrmModule.forFeature([
       User, App, UserApp, UserCompany, Company,
-      UserRole, UserRoleGlobal, UserRoleExclusion, RolePermission, Permission, UserPermissionOverride, UserPermissionGlobalDeny, RefreshSession,
+      UserRole, UserRoleGlobal, UserRoleExclusion, Role, RolePermission, Permission, UserPermissionOverride, UserPermissionGlobalDeny, RefreshSession,
     ]),
     JwtModule.registerAsync(jwtConfig),
     PassportModule,
