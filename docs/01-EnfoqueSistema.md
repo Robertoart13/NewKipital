@@ -528,7 +528,7 @@ Acción pagada
 
 - Cada transición requiere **permiso específico** del rol del usuario.
 - El flujo de aprobación es **configurable** por tipo de acción y por empresa.
-- Un supervisor solo puede aprobar acciones de **sus subordinados directos**.
+- Un supervisor solo puede aprobar acciones de **sus subordinados directos**. Jerarquía de supervisión (Supervisor Global, Supervisor, Empleado) y reglas de asignación: ver [27-DiagramaFlujoEmpleadosYUsuarios.md](./27-DiagramaFlujoEmpleadosYUsuarios.md).
 - RRHH puede validar acciones de **cualquier empleado** según permisos.
 
 ---

@@ -99,7 +99,7 @@ Un usuario puede:
 - Operar planillas en Empresa A (KPITAL).
 - Ser supervisor en Empresa B (TimeWise).
 - Ser solo empleado en Empresa C.
-- Tener varios roles a la vez (ej: Empleado + Supervisor en TimeWise).
+- Tener varios roles a la vez (ej: Empleado + Supervisor en TimeWise). Jerarquía completa (Supervisor Global, Supervisor, Empleado): [27-DiagramaFlujoEmpleadosYUsuarios.md](./27-DiagramaFlujoEmpleadosYUsuarios.md).
 
 Los permisos siempre están definidos por:
 

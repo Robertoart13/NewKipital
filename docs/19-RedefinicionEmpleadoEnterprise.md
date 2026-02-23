@@ -61,7 +61,7 @@ Columnas ordenadas de más importante a menos importante:
 |---------|------|-------------|
 | `id_departamento` | INT | FK → org_departamentos (nullable) |
 | `id_puesto` | INT | FK → org_puestos (nullable) |
-| `id_supervisor_empleado` | INT | FK → sys_empleados (self-reference, nullable) |
+| `id_supervisor_empleado` | INT | FK → sys_empleados (self-reference, nullable). **Cross-empresa permitido:** el supervisor puede ser empleado de otra empresa (ej: holdings, cuando el supervisor original renunció). Ver Doc 27. |
 
 ### Contrato / Pago
 
@@ -186,6 +186,8 @@ Columnas ordenadas de más importante a menos importante:
 
 - **NO incluye** `idUsuario` (gestionado por workflow).
 - **Incluye flags**: `crearAccesoTimewise`, `crearAccesoKpital`, `passwordInicial`.
+- **Incluye roles** (cuando hay acceso): `idRolTimewise` (si crearAccesoTimewise), `idRolKpital` (si crearAccesoKpital y creador tiene permiso `employee:assign-kpital-role`).
+- **idSupervisor:** dropdown filtrado a empleados con rol Supervisor o Supervisor Global en TimeWise (ver Doc 27). Cross-empresa permitido.
 - Todos los campos enterprise alineados al modelo de tabla.
 - Enums tipados: `GeneroEmpleado`, `EstadoCivilEmpleado`, `TipoContratoEmpleado`, `JornadaEmpleado`, `MonedaSalarioEmpleado`.
 

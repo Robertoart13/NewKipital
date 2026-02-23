@@ -43,6 +43,7 @@ Si ya estás en el proyecto y necesitás referencia puntual, usá esta tabla par
 | 24 | [24-PermisosEnterpriseOperacion.md](./24-PermisosEnterpriseOperacion.md) | Permisos enterprise: KPITAL vs TimeWise, vista Empresas/Roles/Excepciones, flujos operativos, problemas comunes. | 18, 20, 22 |
 | 25 | [25-SistemaNotificacionesEnterprise.md](./25-SistemaNotificacionesEnterprise.md) | Sistema de notificaciones en tiempo real: campanita, badge, WebSocket, modelo enterprise (notificación global + estado por usuario). | 18, 24 |
 | 26 | [26-SistemaPermisosReferencia.md](./26-SistemaPermisosReferencia.md) | **Referencia técnica** del sistema de permisos: tablas, dependencias, flujo de resolución, diagnóstico y scripts. | 18, 24 |
+| 27 | [27-DiagramaFlujoEmpleadosYUsuarios.md](./27-DiagramaFlujoEmpleadosYUsuarios.md) | Flujo empleados, roles por app, vista Configuración Usuarios, jerarquía de supervisión TimeWise (Supervisor Global, Supervisor, Empleado), dropdown supervisor filtrado, cross-empresa. | 16, 19, 24 |
 
 ---
 

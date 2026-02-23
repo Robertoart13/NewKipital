@@ -3,7 +3,7 @@
 **Última actualización:** 2026-02-22  
 **Objetivo:** Documentar cómo funciona el sistema de permisos de KPITAL 360, todas las tablas involucradas, el flujo de resolución y los puntos de fallo conocidos.
 
-Referencias: `24-PermisosEnterpriseOperacion.md`, `18-IdentityCoreEnterprise.md`, `14-ModeloIdentidadEnterprise.md`.
+Referencias: `24-PermisosEnterpriseOperacion.md`, `18-IdentityCoreEnterprise.md`, `14-ModeloIdentidadEnterprise.md`, `27-DiagramaFlujoEmpleadosYUsuarios.md` (roles TimeWise, jerarquía supervisión, filtro Config Usuarios).
 
 ---
 

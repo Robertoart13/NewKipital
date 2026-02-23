@@ -41,6 +41,8 @@ Detalle técnico de tablas, flujo y diagnóstico: ver `26-SistemaPermisosReferen
 
 ## Vista de Configuración (Usuarios > Configurar)
 
+**Filtro de quién aparece:** Solo staff KPITAL (cualquier rol) y usuarios con rol Supervisor (o superior) en TimeWise. No aparecen empleados puros (solo TimeWise + rol Empleado). Ver [27-DiagramaFlujoEmpleadosYUsuarios.md](./27-DiagramaFlujoEmpleadosYUsuarios.md).
+
 La ventana tiene **tres pestañas** y un selector de aplicación:
 
 ### 1. Empresas

@@ -21,9 +21,11 @@ En el alta de empleado se define explícitamente:
 
 | Flag | Efecto |
 |------|--------|
-| `crearAccesoTimewise = true` | Crea usuario + asigna app TIMEWISE + asigna empresa |
-| `crearAccesoKpital = true` | Además asigna app KPITAL (acceso administrativo) |
+| `crearAccesoTimewise = true` | Crea usuario + asigna app TIMEWISE + asigna empresa + **asigna rol** (Empleado, Supervisor o Supervisor Global) |
+| `crearAccesoKpital = true` | Además asigna app KPITAL + **asigna rol KPITAL** (requiere permiso `employee:assign-kpital-role` del creador) |
 | Ambos `false` | Solo crea empleado, `id_usuario = NULL` |
+
+**Asignación de roles:** Ver [27-DiagramaFlujoEmpleadosYUsuarios.md](./27-DiagramaFlujoEmpleadosYUsuarios.md) para el flujo completo de selección de roles por app.
 
 ---
 
@@ -43,7 +45,8 @@ Todo ocurre en **UNA transacción** vía `queryRunner`:
 2. Crear `sys_empleados` enlazando `id_usuario`
 3. Asignar app: insertar en `sys_usuario_app` (TIMEWISE y/o KPITAL)
 4. Asignar empresa: insertar en `sys_usuario_empresa`
-5. **COMMIT**
+5. **Asignar roles:** insertar en `sys_usuario_rol` por cada app (id_usuario, id_rol, id_empresa, id_app). DTO incluye `idRolTimewise` y opcionalmente `idRolKpital` (si creador tiene permiso).
+6. **COMMIT**
 
 Si falla **cualquier paso** → **ROLLBACK total**. No puede existir empleado "a medias".
 
@@ -101,10 +104,19 @@ Si cambia el email del empleado y tiene usuario vinculado:
 
 ---
 
+## DTO — Campos de Acceso Digital (CreateEmployeeDto)
+
+- `crearAccesoTimewise`, `crearAccesoKpital`, `passwordInicial`
+- `idRolTimewise` (obligatorio si crearAccesoTimewise): rol Empleado, Supervisor o Supervisor Global
+- `idRolKpital` (opcional si crearAccesoKpital): requiere que el creador tenga permiso `employee:assign-kpital-role`
+
+Ver Doc 19 y Doc 27 para detalles.
+
+---
+
 ## Implementación
 
 | Componente | Archivo |
-|-----------|---------|
 | Entity | `employees/entities/employee.entity.ts` |
 | DTOs | `employees/dto/create-employee.dto.ts`, `update-employee.dto.ts` |
 | Service | `employees/employees.service.ts` |

@@ -3,7 +3,7 @@
 **Documento:** 23  
 **Para:** Ingeniero Frontend + Backend  
 **De:** Roberto — Arquitecto Funcional / Senior Engineer  
-**Prerrequisito:** Haber leído [19-RedefinicionEmpleadoEnterprise.md](./19-RedefinicionEmpleadoEnterprise.md) + [20-MVPContratosEndpoints.md](./20-MVPContratosEndpoints.md) + [18-IdentityCoreEnterprise.md](./18-IdentityCoreEnterprise.md)  
+**Prerrequisito:** Haber leído [19-RedefinicionEmpleadoEnterprise.md](./19-RedefinicionEmpleadoEnterprise.md) + [20-MVPContratosEndpoints.md](./20-MVPContratosEndpoints.md) + [18-IdentityCoreEnterprise.md](./18-IdentityCoreEnterprise.md) + [27-DiagramaFlujoEmpleadosYUsuarios.md](./27-DiagramaFlujoEmpleadosYUsuarios.md)  
 **Prioridad:** Este es el paso más importante del proyecto. Ejecutar en orden estricto.
 
 ---
@@ -103,7 +103,7 @@ El código base sigue siendo único por empresa. La validación verifica que no 
 | Vista | Ruta | Permiso | Qué hace |
 |-------|------|---------|----------|
 | **Listado** | `/employees` | `employee:view` | Tabla con filtros, paginación, búsqueda, estados. Botón "Nuevo Empleado" abre modal de creación |
-| **Crear** | (modal desde listado) | `employee:create` | Modal `EmployeeCreateModal` con formulario completo (con o sin acceso digital). No hay ruta `/employees/new` |
+| **Crear** | (modal desde listado) | `employee:create` | Modal `EmployeeCreateModal` con formulario completo (con o sin acceso digital). **Selectores de rol por app** (TimeWise: Empleado/Supervisor/Supervisor Global; KPITAL: si creador tiene permiso). **Dropdown Supervisor** filtrado a empleados con rol Supervisor o superior en TimeWise. Ver Doc 27. No hay ruta `/employees/new` |
 | **Detalle/Editar** | `/employees/:id` | `employee:view` / `employee:edit` | Ver y editar empleado existente |
 | **Confirmaciones** | (modals) | `employee:edit` | Inactivar, liquidar con confirmación y motivo |
 
@@ -137,7 +137,7 @@ Probar con Postman/Insomnia (o curl) cada endpoint. Todos requieren cookie de se
 | 3 | Listar empleados | `GET /api/employees?idEmpresa=1` | Array (puede estar vacío) |
 | 4 | Listar con inactivos | `GET /api/employees?idEmpresa=1&includeInactive=true` | Array incluyendo inactivos |
 | 5 | Crear empleado (sin acceso) | `POST /api/employees` con body mínimo | 201 + empleado creado |
-| 6 | Crear empleado (con acceso TW) | `POST /api/employees` con `crearAccesoTimewise=true` | 201 + empleado + usuario + app asignada |
+| 6 | Crear empleado (con acceso TW) | `POST /api/employees` con `crearAccesoTimewise=true` y `idRolTimewise` | 201 + empleado + usuario + app + rol asignados |
 | 7 | Detalle | `GET /api/employees/:id` | Empleado con relaciones (departamento, puesto, periodo pago) |
 | 8 | Actualizar | `PUT /api/employees/:id` | 200 + empleado actualizado |
 | 9 | Inactivar | `PATCH /api/employees/:id/inactivate` | 200 + estado=0 |
