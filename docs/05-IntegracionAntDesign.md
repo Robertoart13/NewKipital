@@ -4,7 +4,19 @@
 **Para:** Ingeniero Frontend  
 **De:** Roberto — Arquitecto Funcional / Senior Engineer  
 **Prerrequisito:** Haber leído [02-ScaffoldingProyecto.md](./02-ScaffoldingProyecto.md)  
-**Última actualización:** 2026-02-23 (Tabs segmentados, banners informativos compactos, iconos suaves)
+**Última actualización:** 2026-02-23 (Tabla y filtros profesionales, ubicación CSS, referencia obligatoria)
+
+---
+
+## Índice rápido
+
+| Sección | Contenido |
+|---------|-----------|
+| [Ubicación del CSS](#ubicación-del-css-obligatorio) | Archivo de estilos compartidos y cómo importarlo |
+| [Tabla y Filtros](#tabla-y-filtros-patrón-oficial-de-listados) | Patrón obligatorio, clases CSS, estructura, ejemplo de uso |
+| [Clases CSS obligatorias](#clases-css-obligatorias-usersmanagementpagemodulecss) | Lista de clases con ubicación en el archivo |
+| [Paleta RRHH](#paleta-rrhh-valores-vigentes) | Colores corporativos (no inventar) |
+| [Referencia de implementación](#referencia-de-implementación) | Páginas y archivos a consultar |
 
 ---
 
@@ -119,34 +131,157 @@ Se definió un tema corporativo en `src/config/theme.ts` con los siguientes toke
 
 ---
 
+## Ubicación del CSS (Obligatorio)
+
+> **Archivo único de estilos compartidos para páginas de configuración.**
+
+| Archivo | Ubicación | Uso |
+|---------|-----------|-----|
+| **Módulo CSS de referencia** | `frontend/src/pages/private/configuration/UsersManagementPage.module.css` | Tablas, filtros, cards, etiquetas, botones, banners, tabs |
+
+**Cómo usar:** importar como CSS Module en tu página:
+```tsx
+import styles from './UsersManagementPage.module.css';
+
+// Aplicar clases: className={styles.configTable}
+```
+
+**Regla:** No duplicar estilos. Nuevas páginas de configuración o listados deben importar este módulo y usar sus clases. Si falta una clase, agregarla aquí.
+
+---
+
 ## Referencia de Implementación
 
-**Archivos de referencia:**
-- `UsersManagementPage.tsx` y `UsersManagementPage.module.css` — Usuarios, Drawer, etiquetas, botones
-- `PermissionsAdminListPage.tsx` — Permisos: encabezado, banner informativo, tabla config, búsqueda
-- `RolesManagementPage.tsx` — Roles: selector de aplicación (KPITAL/TimeWise), matriz de permisos, Agregar rol, Guardar cambios
+| Página | Archivo | Qué ver como referencia |
+|--------|---------|-------------------------|
+| **Empresas** | `CompaniesManagementPage.tsx` | Tabla, filtros expandibles, estructura completa de listado |
+| **Usuarios** | `UsersManagementPage.tsx` | Drawer, etiquetas, botones, tabs |
+| **Permisos** | `PermissionsAdminListPage.tsx` | Encabezado, banner informativo, búsqueda |
+| **Roles** | `RolesManagementPage.tsx` | Selector de aplicación, matriz de permisos |
 
-Ambas páginas comparten `UsersManagementPage.module.css` y aplican la Paleta RRHH de extremo a extremo. **Copiar estas clases y valores** para nuevas pantallas. Los ajustes (verde Activo, danger, etc.) están ya reflejados aquí.
+Todas las páginas anteriores importan `UsersManagementPage.module.css` y aplican la Paleta RRHH.
+
+### Nota de UX para Empresas
+
+- La pantalla `Configuración > Empresas` **no** muestra tabs de navegación cruzada en su encabezado.
+- Empresas es un módulo dedicado: título, subtítulo y acciones del módulo.
+- El modal usa tabs internos (`Información Principal`, `Dirección`, `Información Financiera`).
+
+---
+
+## Tabla y Filtros (Patrón Oficial de Listados)
+
+> **Usar siempre este patrón** para listados en configuración y módulos administrativos.
+
+### Dónde está la referencia
+
+| Tipo | Archivo | Clases CSS |
+|------|---------|------------|
+| **Implementación** | `frontend/src/pages/private/configuration/CompaniesManagementPage.tsx` | — |
+| **Estilos** | `frontend/src/pages/private/configuration/UsersManagementPage.module.css` | `.configTable`, `.companiesTable`, `.filtersCollapse`, `.paneCard`, `.paneOptionsBox`, etc. |
+
+### Estructura obligatoria del listado
+
+1. **Encabezado** — Título de sección (ej. "Registros de Empresas"), icono de filtro, selector "entries per page", toggle "Mostrar inactivas".
+2. **Sección Filtros** — Dentro de `Collapse` con header "Filtros".
+3. **Búsqueda global** — Input "Search" + botones "Collapse All", "Show All", "Limpiar Todo".
+4. **Panes de filtro** — Una tarjeta por campo (`paneCard`), con input, botón buscar, limpiar, expandir/colapsar.
+5. **Lista de opciones** — Al expandir, `paneOptionsBox` con `Checkbox.Group` y `Badge` de conteo.
+6. **Tabla** — Clases `configTable` + `companiesTable`.
+7. **Separación** — `margin-bottom: 24px` entre filtros y tabla (`.filtersCollapse`).
+
+### Clases CSS para tabla y filtros
+
+| Clase | Uso | Ubicación en CSS |
+|-------|-----|------------------|
+| `.configTable` | Tabla base (encabezados, celdas, bordes) | `UsersManagementPage.module.css` |
+| `.companiesTable` | Refuerzo para tablas de empresas/listados | Mismo archivo |
+| `.filtersCollapse` | Collapse de filtros + `margin-bottom: 24px` | Mismo archivo |
+| `.paneCard` | Tarjeta de cada filtro (borde, padding, fondo) | Mismo archivo |
+| `.paneOptionsBox` | Contenedor de checkboxes al expandir filtro | Mismo archivo |
+| `.filterLabel` | Etiqueta de campo de filtro | Mismo archivo |
+| `.filterInput` | Input de filtro con bordes | Mismo archivo |
+| `.searchInput` | Búsqueda global | Mismo archivo |
+| `.registrosTitle` | Título "Registros de X" | Mismo archivo |
+| `.registrosFilterIcon` | Icono de filtro junto al título | Mismo archivo |
+
+### Estilos de tabla (aplicados por `.configTable` y `.companiesTable`)
+
+| Elemento | Estilo |
+|----------|--------|
+| Contenedor | Borde `1px solid #e8ecf0`, border-radius 8px, box-shadow sutil |
+| Encabezados | Fondo `#f2f4f6`, color `#4a5a68`, font-weight 600, uppercase, padding 16px 12px, borde inferior 2px |
+| Celdas | Borde `#e8ecf0`, padding 14px 12px, color texto `#3d4f5c` |
+| Filas alternadas | Pares: `#f9fafb`, impares: blanco |
+| Hover fila | Fondo `#f8f9fa`, transition 0.2s |
+| Esquinas | Primera/última celda de encabezado y última fila con border-radius 8px |
+| Paginación | Botones border-radius 6px, activo borde/texto `#5a6c7d` |
+
+### Reglas funcionales de filtros
+
+- Búsqueda global + filtros por campo (AND entre filtros activos).
+- Cada filtro expandible/colapsable y limpiable individualmente.
+- Controles globales: "Collapse All", "Show All", "Limpiar Todo".
+- Conteos por opción (`Badge`) recalculados según filtros activos.
+- 4-6 panes de filtro por campos clave (nombre, código, estado, email, etc.).
+
+### Ejemplo de uso
+
+```tsx
+import styles from './UsersManagementPage.module.css';
+
+// Tabla
+<Table
+  className={`${styles.configTable} ${styles.companiesTable}`}
+  columns={columns}
+  dataSource={data}
+  pagination={{ showTotal: (t, r) => `Mostrando ${r[0]} a ${r[1]} de ${t} registros` }}
+/>
+
+// Filtros
+<Collapse className={styles.filtersCollapse}>
+  <Collapse.Panel header="Filtros" key="filtros">
+    <div className={styles.paneCard}>
+      {/* input + botones + paneOptionsBox al expandir */}
+    </div>
+  </Collapse.Panel>
+</Collapse>
+```
 
 ### Clases CSS obligatorias (UsersManagementPage.module.css)
 
+**Archivo:** `frontend/src/pages/private/configuration/UsersManagementPage.module.css`
+
+#### Tabla y filtros (ver sección *Tabla y Filtros* arriba)
+| Clase | Uso |
+|-------|-----|
+| `.configTable` | Tabla: bordes, encabezados, filas alternadas, hover |
+| `.companiesTable` | Refuerzo para tablas de listado |
+| `.filtersCollapse` | Sección filtros colapsable + separación con tabla |
+| `.paneCard` | Tarjeta de cada filtro por campo |
+| `.paneOptionsBox` | Lista de opciones (checkboxes) al expandir |
+| `.filterLabel`, `.filterInput`, `.searchInput` | Inputs de filtro |
+| `.registrosTitle`, `.registrosFilterIcon` | Encabezado de listado |
+
+#### Etiquetas, botones y banners
 | Clase | Uso | Valores principales |
 |-------|-----|---------------------|
 | `.tagActivo` | Etiqueta estado Activo | fondo `#b8d9c4`, texto `#3d5a45` |
 | `.tagInactivo` | Etiqueta estado Inactivo | fondo `#f0f2f4`, texto `#6b7a85` |
-| `.exceptionListBox` | Lista dentro de sección danger | fondo `#ecd8d8`, borde `#c99a9a` |
+| `.exceptionListBox` | Lista danger | fondo `#ecd8d8`, borde `#c99a9a` |
 | `.btnPrimary` | Botón principal | fondo `#5a6c7d` |
 | `.btnSecondary` | Botón secundario | borde `#d8dde4`, texto `#5a6b7a` |
-| `.infoBanner` (div) | Banner informativo simple (modo migración, etc.) | fondo `#f2f4f6`, borde `#e4e8ec`, texto `#4a5a68` |
-| `.infoBanner` + `.infoType` (Alert) | Mensajes informativos (Para qué sirve, guías) | Ver sección *Banners informativos* |
-| `.infoBanner` + `.warningType` (Alert) | Advertencias (Denegar permisos, Sin empresas) | Ver sección *Banners informativos* |
-| `.infoBanner` + `.dangerType` (Alert) | Mensajes de error/danger | Ver sección *Banners informativos* |
-| `.pageTabs` / `.pageTab` / `.pageTabActive` | Tabs de página (Roles, Usuarios, Permisos) | Ver sección *Tabs estilo control segmentado* |
-| `.tabsWrapper` | Tabs en Drawer (Empresas, Roles, Excepciones, Acciones) | Ver sección *Tabs estilo control segmentado* |
-| `.configTable` | Tabla de configuración (permisos, roles) | Mismos estilos que `.usersTable` |
-| `.appSelector` | Selector de aplicación (Roles: KPITAL/TimeWise) | Contenedor + `.appSelectorLabel`, `.appSelectorButtons`, `.appSelectorDesc` |
+| `.infoBanner` + `.infoType` (Alert) | Mensajes informativos | Ver *Banners informativos* |
+| `.infoBanner` + `.warningType` / `.dangerType` | Advertencias / errores | Ver *Banners informativos* |
 
-**Regla:** Al crear nuevos componentes de configuración, alertas o etiquetas de estado, usar estos valores. No inventar colores.
+#### Tabs y selectores
+| Clase | Uso |
+|-------|-----|
+| `.pageTabs` / `.pageTab` / `.pageTabActive` | Tabs de página (Roles, Usuarios, Permisos) |
+| `.tabsWrapper` | Tabs en Drawer |
+| `.appSelector` | Selector de aplicación (KPITAL/TimeWise) |
+
+**Regla:** Usar estas clases. No inventar colores ni duplicar estilos.
 
 ---
 
@@ -211,10 +346,10 @@ Todo mensaje informativo (Para qué sirve, Inactivar vs Bloquear, Denegar permis
 ### Qué SÍ hacer
 
 1. **Usar componentes base de AntD directamente:** `Button`, `Table`, `Form`, `Modal`, `Select`, `Input`, `DatePicker`, `Tabs`, `Card`, `Badge`, `Avatar`, `Tag`, `Space`, `Typography`, `Layout`, `Menu`.
-2. **Envolver componentes cuando se necesite personalización recurrente:** `KpButton`, `KpTable` ya existen como wrappers extensibles.
-3. **Usar CSS Modules (`.module.css`) para estilos específicos de componente.**
+2. **Para tablas y filtros:** Usar el patrón de `CompaniesManagementPage.tsx` y las clases `configTable`, `companiesTable`, `filtersCollapse`, `paneCard`, `paneOptionsBox` de `UsersManagementPage.module.css`. Ver sección *Tabla y Filtros*.
+3. **Usar CSS Modules (`.module.css`)** para estilos específicos. Importar `UsersManagementPage.module.css` en páginas de configuración.
 4. **Usar exclusivamente la Paleta RRHH** para colores. No inventar colores fuera de ella.
-5. **Consultar `UsersManagementPage.module.css`** como referencia de clases y valores hex.
+5. **Consultar** `frontend/src/pages/private/configuration/UsersManagementPage.module.css` para clases y valores hex.
 6. **Usar tabs estilo control segmentado** para Empresas, Roles, Excepciones, Acciones y para Roles, Usuarios, Permisos.
 7. **Usar banners informativos compactos** (`infoBanner` + `infoType`/`warningType`/`dangerType`) para mensajes de guía o advertencia.
 

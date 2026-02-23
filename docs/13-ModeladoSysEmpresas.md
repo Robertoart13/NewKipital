@@ -96,6 +96,48 @@ NetSuite, SAP, Oracle — todos funcionan así. Nadie borra empresas.
 
 ---
 
+## Implementacion Actual (Enterprise)
+
+### Backend en uso
+
+- Servicio: `api/src/modules/companies/companies.service.ts`
+- Controlador: `api/src/modules/companies/companies.controller.ts`
+- Entidad: `api/src/modules/companies/entities/company.entity.ts`
+
+Reglas activas:
+- No existe delete fisico para empresas.
+- Inactivacion y reactivacion son cambios de estado logico.
+- Validaciones de unicidad para `cedula_empresa` y `prefijo_empresa`.
+
+### Permisos de Empresas
+
+Permisos granulares activos en diseno:
+- `company:view`
+- `company:create`
+- `company:edit`
+- `company:inactivate`
+- `company:reactivate`
+
+Compatibilidad:
+- `company:manage` se mantiene como permiso legacy que cubre `company:*`.
+
+### UI de Configuracion de Empresas
+
+Pantalla: `frontend/src/pages/private/configuration/CompaniesManagementPage.tsx`
+
+Capacidades implementadas:
+- Listar empresas (activas y opcionalmente inactivas).
+- Buscar por nombre, cedula o prefijo.
+- Crear empresa.
+- Editar empresa.
+- Inactivar/reactivar empresa con confirmacion.
+
+Nota:
+- El bloque de logo en modal esta preparado a nivel UI.
+- Persistencia de logo no esta implementada aun porque `sys_empresas` no tiene columna/tabla de archivo asociada.
+
+---
+
 ## Lo que NO se hace ahora
 
 - No se crean relaciones aún

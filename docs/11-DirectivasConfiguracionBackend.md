@@ -132,4 +132,42 @@ Ver el documento completo para el detalle de cada paso. Resumen:
 
 ---
 
+## Estado Actual Implementado (Empresas y Permisos)
+
+### Módulo Empresas (API)
+
+Controlador: `api/src/modules/companies/companies.controller.ts`
+
+Endpoints protegidos:
+- `POST /api/companies` → `company:create`
+- `GET /api/companies` → `company:view`
+- `GET /api/companies/:id` → `company:view`
+- `PUT /api/companies/:id` → `company:edit`
+- `PATCH /api/companies/:id/inactivate` → `company:inactivate`
+- `PATCH /api/companies/:id/reactivate` → `company:reactivate`
+
+### Compatibilidad Legacy de Permisos
+
+Guard: `api/src/common/guards/permissions.guard.ts`
+
+Regla activa:
+- Si el endpoint requiere `company:*` y el usuario tiene `company:manage`, se autoriza por compatibilidad.
+- Objetivo: no romper ambientes o roles legacy mientras se migra a granularidad.
+
+### Migración de Catálogo de Permisos
+
+Migración: `api/src/database/migrations/1708533400000-SyncPermissionCatalogAndCompanyGranular.ts`
+
+Objetivo:
+- Sincronizar catálogo de permisos enterprise actual.
+- Insertar permisos granulares de empresas (`company:view`, `company:create`, `company:edit`, `company:inactivate`, `company:reactivate`).
+- Mantener `company:manage` (legacy).
+- Asignar permisos de empresa a `MASTER`, `ADMIN_SISTEMA` y a roles que ya tenían `company:manage`.
+
+### Nota Operativa
+
+Si una BD ya existente no refleja estos permisos, ejecutar migraciones pendientes o aplicar el seed idempotente equivalente antes de validar UI.
+
+---
+
 *Este documento es el paso 1 del backend. Se configura, se organiza, se prepara el bus de eventos, se verifica conexión, y se deja listo.*
