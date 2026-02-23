@@ -12,7 +12,6 @@ import {
   Input,
   Select,
   Skeleton,
-  Space,
   Spin,
   Table,
   Tag,
@@ -24,6 +23,7 @@ import type { ColumnsType } from 'antd/es/table';
 import {
   ArrowLeftOutlined,
   InfoCircleOutlined,
+  MailOutlined,
   SettingOutlined,
   UserOutlined,
   WarningOutlined,
@@ -400,45 +400,39 @@ export function UsersManagementPage() {
       ? 'permissions'
       : 'roles';
 
-  const tabBase = {
-    padding: '8px 16px',
-    borderRadius: 6,
-    textDecoration: 'none',
-    fontSize: 14,
-  };
-
   const columns: ColumnsType<SystemUser> = [
     {
       title: 'Usuario',
       key: 'usuario',
       render: (_, user) => (
-        <Space>
-          <Avatar size="small" style={{ backgroundColor: '#374151' }} icon={<UserOutlined />}>
+        <div className={styles.userCell}>
+          <Avatar className={styles.userCellAvatar} icon={<UserOutlined />}>
             {getInitials(user.nombre, user.apellido)}
           </Avatar>
           <div>
-            <div style={{ fontWeight: 500 }}>{`${user.nombre} ${user.apellido}`}</div>
-            <Text type="secondary" style={{ fontSize: 12 }}>{user.email}</Text>
+            <div className={styles.userCellName}>{`${user.nombre} ${user.apellido}`}</div>
+            {user.email && <div className={styles.userCellEmail}>{user.email}</div>}
           </div>
-        </Space>
+        </div>
       ),
     },
     {
       title: 'Estado',
       dataIndex: 'estado',
       key: 'estado',
-      width: 100,
+      width: 120,
       render: (v: number) =>
-        v === 1 ? <Tag color="success">Activo</Tag> : <Tag>Inactivo</Tag>,
+        v === 1 ? <Tag className={styles.tagActivo}>Activo</Tag> : <Tag className={styles.tagInactivo}>Inactivo</Tag>,
     },
     {
       title: '',
       key: 'actions',
-      width: 140,
+      width: 120,
       render: (_, user) => (
         <Button
           type="link"
           size="small"
+          className={styles.linkConfigurar}
           icon={<SettingOutlined />}
           onClick={(e) => { e.stopPropagation(); openConfigDrawer(user); }}
         >
@@ -449,67 +443,101 @@ export function UsersManagementPage() {
   ];
 
   return (
-    <div style={{ width: '100%' }}>
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          marginBottom: 24,
-          flexWrap: 'wrap',
-          gap: 16,
-        }}
-      >
-        <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-          <Link to="/configuration" style={{ color: '#6b7280', display: 'flex', alignItems: 'center' }}>
+    <div className={styles.pageWrapper}>
+      <div className={styles.pageHeader}>
+        <div className={styles.pageHeaderLeft}>
+          <Link to="/configuration" className={styles.pageBackLink}>
             <ArrowLeftOutlined style={{ fontSize: 18 }} />
           </Link>
-          <div>
-            <Text strong style={{ fontSize: 18, color: '#111827', display: 'block' }}>
-              Usuarios
-            </Text>
-            <Text type="secondary" style={{ fontSize: 12, color: '#6b7280' }}>
-              Miembros ({filteredUsers.length})
-            </Text>
+          <div className={styles.pageTitleBlock}>
+            <h1 className={styles.pageTitle}>Usuarios</h1>
+            <p className={styles.pageSubtitle}>Miembros ({filteredUsers.length})</p>
           </div>
-          <div style={{ display: 'flex', marginLeft: 24, gap: 2 }}>
-            {canViewConfigRolesPerm && <Link to="/configuration/roles" style={{ ...tabBase, color: activeTab === 'roles' ? '#111827' : '#6b7280', fontWeight: activeTab === 'roles' ? 600 : 400, backgroundColor: activeTab === 'roles' ? '#f3f4f6' : 'transparent' }}>Roles</Link>}
-            {canViewConfigUsersPerm && <Link to="/configuration/users" style={{ ...tabBase, color: activeTab === 'users' ? '#111827' : '#6b7280', fontWeight: activeTab === 'users' ? 600 : 400, backgroundColor: activeTab === 'users' ? '#f3f4f6' : 'transparent' }}>Usuarios</Link>}
-            {canViewConfigPermissionsPerm && <Link to="/configuration/permissions" style={{ ...tabBase, color: activeTab === 'permissions' ? '#111827' : '#6b7280', fontWeight: activeTab === 'permissions' ? 600 : 400, backgroundColor: activeTab === 'permissions' ? '#f3f4f6' : 'transparent' }}>Permisos</Link>}
+          <div className={styles.pageTabs}>
+            {canViewConfigRolesPerm && (
+              <Link
+                to="/configuration/roles"
+                className={`${styles.pageTab} ${activeTab === 'roles' ? styles.pageTabActive : ''}`}
+              >
+                Roles
+              </Link>
+            )}
+            {canViewConfigUsersPerm && (
+              <Link
+                to="/configuration/users"
+                className={`${styles.pageTab} ${activeTab === 'users' ? styles.pageTabActive : ''}`}
+              >
+                Usuarios
+              </Link>
+            )}
+            {canViewConfigPermissionsPerm && (
+              <Link
+                to="/configuration/permissions"
+                className={`${styles.pageTab} ${activeTab === 'permissions' ? styles.pageTabActive : ''}`}
+              >
+                Permisos
+              </Link>
+            )}
           </div>
         </div>
       </div>
 
-      <Card styles={{ body: { padding: 24 } }} style={{ borderRadius: 6, border: '1px solid #e5e7eb' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, flexWrap: 'wrap', gap: 12 }}>
-          <Input.Search allowClear placeholder="Buscar por nombre o email" style={{ width: 280 }} value={search} onChange={(e) => setSearch(e.target.value)} />
+      <Card className={styles.mainCard} styles={{ body: { padding: 0 } }}>
+        <div className={styles.mainCardBody}>
+          <div className={styles.searchBar}>
+            <Input.Search
+              allowClear
+              placeholder="Buscar por nombre o email"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
+          </div>
+          <Table<SystemUser>
+            className={styles.usersTable}
+            rowKey="id"
+            loading={loading}
+            columns={columns}
+            dataSource={filteredUsers}
+            pagination={{
+              pageSize: 10,
+              showSizeChanger: true,
+              showTotal: (t) => `${t} usuario(s)`,
+            }}
+            size="middle"
+            onRow={(record) => ({ onClick: () => openConfigDrawer(record) })}
+          />
         </div>
-        <Table<SystemUser>
-          rowKey="id"
-          loading={loading}
-          columns={columns}
-          dataSource={filteredUsers}
-          pagination={{ pageSize: 10, showSizeChanger: true, showTotal: (t) => `${t} usuario(s)` }}
-          size="middle"
-          onRow={(record) => ({ onClick: () => openConfigDrawer(record), style: { cursor: 'pointer' } })}
-        />
       </Card>
 
       <Drawer
-        title="Configuración de usuario"
+        className={styles.drawer}
+        title={
+          <div className={styles.drawerTitleRow}>
+            <span className={styles.drawerTitle}>Configuración de usuario</span>
+            {selectedUser && <span className={styles.drawerBadge}>ID #{selectedUser.id}</span>}
+          </div>
+        }
         size={720}
         open={drawerOpen}
         onClose={() => { setDrawerOpen(false); setCompanySearch(''); setRoleSearch(''); setExceptionSearch(''); }}
         footer={null}
-        styles={{ body: { padding: 20, background: '#f8fafc' } }}
+        styles={{ body: { padding: 20, background: '#f5f7f9' } }}
       >
         {selectedUser && (
           <>
             <div className={styles.userCard}>
-              <Avatar className={styles.userCardAvatar} size={48}>
+              <Avatar className={styles.userCardAvatar} size={56}>
                 {getInitials(selectedUser.nombre, selectedUser.apellido)}
               </Avatar>
-              <span className={styles.userCardName}>{`${selectedUser.nombre} ${selectedUser.apellido}`}</span>
+              <div className={styles.userCardInfo}>
+                <p className={styles.userCardName}>{`${selectedUser.nombre} ${selectedUser.apellido}`}</p>
+                {selectedUser.email && (
+                  <p className={styles.userCardEmail}>
+                    <MailOutlined style={{ fontSize: 12, color: '#8c8c8c' }} />
+                    {selectedUser.email}
+                  </p>
+                )}
+              </div>
             </div>
 
             <Card className={styles.sectionCard} bordered={false}>
@@ -552,7 +580,7 @@ export function UsersManagementPage() {
                           </Checkbox.Group>
                           {apps.length === 0 && <span className={styles.emptyHint}>No hay aplicaciones disponibles.</span>}
                         </div>
-                        <Button type="primary" size="small" loading={savingApps} disabled={appsToAssign.length === 0} onClick={() => void saveUserApps()} className={styles.actionButton}>
+                        <Button type="primary" size="small" loading={savingApps} disabled={appsToAssign.length === 0} onClick={() => void saveUserApps()} className={`${styles.actionButton} ${styles.btnPrimary}`}>
                           Asignar aplicaciones
                         </Button>
                       </>
@@ -582,7 +610,7 @@ export function UsersManagementPage() {
                             </Checkbox>
                           ))}
                         </Checkbox.Group>
-                        <Button type="default" size="small" loading={savingApps} disabled={appsToAssign.length === 0} onClick={() => void saveUserApps()} style={{ marginTop: 10 }}>
+                        <Button type="default" size="small" loading={savingApps} disabled={appsToAssign.length === 0} onClick={() => void saveUserApps()} className={`${styles.actionButton} ${styles.btnSecondary}`} style={{ marginTop: 10 }}>
                           Asignar seleccionadas
                         </Button>
                       </div>
@@ -639,7 +667,7 @@ export function UsersManagementPage() {
                           <span className={styles.emptyHint}>Ninguna empresa coincide con la búsqueda.</span>
                         )}
                       </div>
-                      <Button type="primary" size="small" loading={saving} disabled={!canAssignCompaniesPerm} onClick={() => void saveUserCompanies()} className={styles.actionButton}>
+                      <Button type="primary" size="small" loading={saving} disabled={!canAssignCompaniesPerm} onClick={() => void saveUserCompanies()} className={`${styles.actionButton} ${styles.btnPrimary}`}>
                         Guardar empresas
                       </Button>
                     </div>
@@ -696,7 +724,7 @@ export function UsersManagementPage() {
                               <span className={styles.emptyHint}>Ningún rol coincide con la búsqueda.</span>
                             )}
                           </div>
-                          <Button type="primary" size="small" loading={saving} disabled={!canAssignRolesPerm} onClick={() => void saveGlobalRoles()} className={styles.actionButton}>
+                          <Button type="primary" size="small" loading={saving} disabled={!canAssignRolesPerm} onClick={() => void saveGlobalRoles()} className={`${styles.actionButton} ${styles.btnPrimary}`}>
                             Guardar roles globales
                           </Button>
                         </>
@@ -785,7 +813,7 @@ export function UsersManagementPage() {
                               )}
                             </Checkbox.Group>
                           </div>
-                          <Button type="default" size="small" loading={saving} disabled={!canDenyPermissionsPerm} onClick={() => void saveGlobalPermissionDenials()} className={styles.actionButton} style={{ marginTop: 8 }}>
+                          <Button type="default" size="small" loading={saving} disabled={!canDenyPermissionsPerm} onClick={() => void saveGlobalPermissionDenials()} className={`${styles.actionButton} ${styles.btnSecondary}`} style={{ marginTop: 8 }}>
                             Guardar denegaciones globales
                           </Button>
                         </div>

@@ -28,6 +28,7 @@ import {
 } from '../../../api/securityConfig';
 import { canViewConfigRoles, canViewConfigUsers, canViewConfigPermissions } from '../../../store/selectors/permissions.selectors';
 import { useAppSelector } from '../../../store/hooks';
+import styles from './UsersManagementPage.module.css';
 
 const { Text } = Typography;
 
@@ -155,7 +156,8 @@ export function PermissionsAdminListPage() {
     }
   };
 
-  const columns: ColumnsType<SystemPermission> = [
+  const columns: ColumnsType<SystemPermission> = useMemo(() => {
+    const base: ColumnsType<SystemPermission> = [
     {
       title: 'Código',
       dataIndex: 'codigo',
@@ -174,14 +176,15 @@ export function PermissionsAdminListPage() {
       dataIndex: 'modulo',
       key: 'modulo',
       width: 140,
-      render: (value: string) => <Tag style={{ background: '#f3f4f6', color: '#374151', border: 'none' }}>{value}</Tag>,
+      render: (value: string) => <Tag className={styles.tagInactivo}>{value}</Tag>,
     },
     {
       title: 'Estado',
       dataIndex: 'estado',
       key: 'estado',
       width: 120,
-      render: (value: number) => (value === 1 ? <Tag style={{ background: '#f3f4f6', color: '#374151', border: 'none' }}>Activo</Tag> : <Tag style={{ background: '#f3f4f6', color: '#6b7280', border: 'none' }}>Inactivo</Tag>),
+      render: (value: number) =>
+        value === 1 ? <Tag className={styles.tagActivo}>Activo</Tag> : <Tag className={styles.tagInactivo}>Inactivo</Tag>,
     },
     {
       title: 'Auditoria',
@@ -202,82 +205,92 @@ export function PermissionsAdminListPage() {
       ellipsis: true,
       render: (value: string | null) => value || 'Sin descripción',
     },
-    {
-      title: 'Acciones',
-      key: 'actions',
-      width: 180,
-      render: (_, item) => (
-        <Space>
-          <Button disabled={!isEditable} size="small" onClick={() => onOpenEdit(item)}>Editar</Button>
-          <Popconfirm
-            title={item.estado === 1 ? 'Inactivar permiso' : 'Reactivar permiso'}
-            description={`Código: ${item.codigo}`}
-            onConfirm={() => onToggleState(item)}
-            okButtonProps={{ loading: saving }}
-            disabled={!isEditable}
-          >
-            <Button disabled={!isEditable} size="small" danger={item.estado === 1}>
-              {item.estado === 1 ? 'Inactivar' : 'Reactivar'}
-            </Button>
-          </Popconfirm>
-        </Space>
-      ),
-    },
-  ];
+    ];
+    if (isEditable) {
+      base.push({
+        title: 'Acciones',
+        key: 'actions',
+        width: 180,
+        render: (_: unknown, item: SystemPermission) => (
+          <Space>
+            <Button size="small" className={styles.btnSecondary} onClick={() => onOpenEdit(item)}>Editar</Button>
+            <Popconfirm
+              title={item.estado === 1 ? 'Inactivar permiso' : 'Reactivar permiso'}
+              description={`Código: ${item.codigo}`}
+              onConfirm={() => onToggleState(item)}
+              okButtonProps={{ loading: saving }}
+            >
+              <Button size="small" className={styles.btnSecondary}>
+                {item.estado === 1 ? 'Inactivar' : 'Reactivar'}
+              </Button>
+            </Popconfirm>
+          </Space>
+        ),
+      });
+    }
+    return base;
+  }, [isEditable, saving]);
 
   const location = useLocation();
   const activeTab = location.pathname.includes('/users') ? 'users' : location.pathname.includes('/permissions') ? 'permissions' : 'roles';
-  const tabBase = { padding: '8px 16px', borderRadius: 6, textDecoration: 'none', fontSize: 14 };
 
   return (
-    <div style={{ width: '100%' }}>
-      {/* Header */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24, flexWrap: 'wrap', gap: 16 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-          <Link to="/configuration" style={{ color: '#6b7280', display: 'flex', alignItems: 'center' }}>
+    <div className={styles.pageWrapper}>
+      <div className={styles.pageHeader}>
+        <div className={styles.pageHeaderLeft}>
+          <Link to="/configuration" className={styles.pageBackLink}>
             <ArrowLeftOutlined style={{ fontSize: 18 }} />
           </Link>
-          <div>
-            <Text strong style={{ fontSize: 18, color: '#111827', display: 'block' }}>Permisos</Text>
-            <Text type="secondary" style={{ fontSize: 12, color: '#6b7280' }}>Catálogo `module:action`</Text>
+          <div className={styles.pageTitleBlock}>
+            <h1 className={styles.pageTitle}>Permisos</h1>
+            <p className={styles.pageSubtitle}>Catálogo módulo:acción</p>
           </div>
-          <div style={{ display: 'flex', marginLeft: 24, gap: 2 }}>
-            {canViewConfigRolesPerm && <Link to="/configuration/roles" style={{ ...tabBase, color: activeTab === 'roles' ? '#111827' : '#6b7280', fontWeight: activeTab === 'roles' ? 600 : 400, backgroundColor: activeTab === 'roles' ? '#f3f4f6' : 'transparent' }}>Roles</Link>}
-            {canViewConfigUsersPerm && <Link to="/configuration/users" style={{ ...tabBase, color: activeTab === 'users' ? '#111827' : '#6b7280', fontWeight: activeTab === 'users' ? 600 : 400, backgroundColor: activeTab === 'users' ? '#f3f4f6' : 'transparent' }}>Usuarios</Link>}
-            {canViewConfigPermissionsPerm && <Link to="/configuration/permissions" style={{ ...tabBase, color: activeTab === 'permissions' ? '#111827' : '#6b7280', fontWeight: activeTab === 'permissions' ? 600 : 400, backgroundColor: activeTab === 'permissions' ? '#f3f4f6' : 'transparent' }}>Permisos</Link>}
+          <div className={styles.pageTabs}>
+            {canViewConfigRolesPerm && (
+              <Link to="/configuration/roles" className={`${styles.pageTab} ${activeTab === 'roles' ? styles.pageTabActive : ''}`}>Roles</Link>
+            )}
+            {canViewConfigUsersPerm && (
+              <Link to="/configuration/users" className={`${styles.pageTab} ${activeTab === 'users' ? styles.pageTabActive : ''}`}>Usuarios</Link>
+            )}
+            {canViewConfigPermissionsPerm && (
+              <Link to="/configuration/permissions" className={`${styles.pageTab} ${activeTab === 'permissions' ? styles.pageTabActive : ''}`}>Permisos</Link>
+            )}
           </div>
         </div>
       </div>
 
-      <div style={{ marginBottom: 16, padding: '12px 16px', background: '#f9fafb', border: '1px solid #e5e7eb', borderRadius: 6, fontSize: 13, color: '#4b5563' }}>
+      <div className={styles.infoBanner}>
         {isEditable ? 'Modo administración por interfaz.' : 'Modo controlado por migración. Catálogo solo lectura.'}
       </div>
 
-      <Card styles={{ body: { padding: 24 } }} style={{ borderRadius: 6, border: '1px solid #e5e7eb' }}>
-        <Space orientation="vertical" style={{ width: '100%' }} size="middle">
-          <Space wrap>
-            <Input.Search
-              allowClear
-              placeholder="Buscar por código, módulo o descripción"
-              style={{ width: 340 }}
-              value={search}
-              onChange={(event) => setSearch(event.target.value)}
-            />
+      <Card className={styles.mainCard} styles={{ body: { padding: 0 } }}>
+        <div className={styles.mainCardBody}>
+          <div className={styles.controlBar}>
+            <div className={styles.searchBar}>
+              <Input.Search
+                allowClear
+                placeholder="Buscar por código, módulo o descripción"
+                style={{ maxWidth: 340 }}
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+              />
+            </div>
             <Space>
-              <Text>Incluir inactivos</Text>
+              <Text style={{ color: '#4a5a68', fontSize: 14 }}>Incluir inactivos</Text>
               <Switch checked={includeInactive} onChange={setIncludeInactive} />
             </Space>
-            <Button disabled={!isEditable} onClick={onOpenCreate}>Crear permiso</Button>
-          </Space>
+            <Button disabled={!isEditable} onClick={onOpenCreate} className={styles.btnSecondary}>Crear permiso</Button>
+          </div>
 
           <Table<SystemPermission>
+            className={styles.configTable}
             rowKey="id"
             loading={loading}
             columns={columns}
             dataSource={filteredItems}
-            pagination={{ pageSize: 10, showSizeChanger: true }}
+            pagination={{ pageSize: 10, showSizeChanger: true, showTotal: (t) => `${t} permiso(s)` }}
           />
-        </Space>
+        </div>
       </Card>
 
       <Modal

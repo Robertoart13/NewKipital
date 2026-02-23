@@ -2,7 +2,7 @@
 
 **Proyecto:** KPITAL 360 — ERP Multiempresa  
 **Autor:** Roberto — Arquitecto Funcional / Senior Engineer  
-**Última actualización:** 2026-02-22
+**Última actualización:** 2026-02-23
 
 ---
 
@@ -22,7 +22,7 @@ Si ya estás en el proyecto y necesitás referencia puntual, usá esta tabla par
 | 02 | [02-ScaffoldingProyecto.md](./02-ScaffoldingProyecto.md) | Decisión de crear dos proyectos desde cero (Frontend + API). Stack tecnológico. Estructura base. | 01 |
 | 03 | [03-ArquitecturaStateManagement.md](./03-ArquitecturaStateManagement.md) | Arquitectura detallada de estado. Redux + TanStack Query + Context. Boundaries, sincronización, invalidación. | 01, 02 |
 | 04 | [04-DirectivasStateManagement.md](./04-DirectivasStateManagement.md) | Directiva ejecutable paso a paso de state management. Qué implementar y en qué orden. | 03 |
-| 05 | [05-IntegracionAntDesign.md](./05-IntegracionAntDesign.md) | Integración de Ant Design como framework UI. Tema corporativo, componentes base, reglas. | 02 |
+| 05 | [05-IntegracionAntDesign.md](./05-IntegracionAntDesign.md) | Integración de Ant Design. **Paleta RRHH (obligatorio)**, tema corporativo, componentes base, reglas de estilo. | 02 |
 | 06 | [06-DirectivasHeaderMenu.md](./06-DirectivasHeaderMenu.md) | Header de 2 niveles (logo + usuario / menú horizontal). Diseño enterprise, menú data-driven. | 03, 05 |
 | 08 | [08-EstructuraMenus.md](./08-EstructuraMenus.md) | Catálogo exacto de las opciones de menú definidas. Los 4 menús completos. | 06 |
 | 09 | [09-EstadoActualProyecto.md](./09-EstadoActualProyecto.md) | **Estado vivo del proyecto.** Inventario de archivos, directivas completadas, qué falta. | Todos |

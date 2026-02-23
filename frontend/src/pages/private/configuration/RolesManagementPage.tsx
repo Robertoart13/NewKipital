@@ -35,6 +35,7 @@ import {
 } from '../../../api/securityConfig';
 import { canViewConfigRoles, canViewConfigUsers, canViewConfigPermissions } from '../../../store/selectors/permissions.selectors';
 import { useAppSelector } from '../../../store/hooks';
+import styles from './UsersManagementPage.module.css';
 
 const { Text } = Typography;
 
@@ -309,16 +310,16 @@ export function RolesManagementPage() {
             }}
           >
             <div style={{ textAlign: 'center' }}>
-              <Text type="secondary" style={{ fontSize: 10, letterSpacing: '0.5px', display: 'block' }}>
+              <Text type="secondary" style={{ fontSize: 10, letterSpacing: '0.5px', display: 'block', color: '#6b7a85' }}>
                 ROL
               </Text>
-              <Text strong style={{ fontSize: 13 }}>{role.nombre}</Text>
+              <Text strong style={{ fontSize: 13, color: '#3d4f5c' }}>{role.nombre}</Text>
             </div>
           <Dropdown menu={{ items: roleMenuItems(role) }} trigger={['click']}>
             <Button
               type="text"
               size="small"
-              icon={<EllipsisOutlined style={{ fontSize: 14, color: '#9ca3af' }} />}
+              icon={<EllipsisOutlined style={{ fontSize: 14, color: '#6b7a85' }} />}
               onClick={(e) => e.stopPropagation()}
             />
           </Dropdown>
@@ -360,9 +361,9 @@ export function RolesManagementPage() {
       {
         title: (
           <Tooltip title="KPITAL 360 y TimeWise son aplicaciones distintas. Los permisos de cada una se configuran por separado.">
-            <span>
+            <span style={{ color: '#3d4f5c' }}>
               Permisos por aplicación
-              <InfoCircleOutlined style={{ marginLeft: 6, color: '#9ca3af', fontSize: 12 }} />
+              <InfoCircleOutlined style={{ marginLeft: 6, color: '#6b7a85', fontSize: 12 }} />
             </span>
           </Tooltip>
         ),
@@ -376,7 +377,7 @@ export function RolesManagementPage() {
                 style={{
                   fontWeight: 600,
                   fontSize: 14,
-                  color: '#111827',
+                  color: '#3d4f5c',
                   display: 'flex',
                   alignItems: 'center',
                   gap: 8,
@@ -408,11 +409,11 @@ export function RolesManagementPage() {
               </Space>
             );
           }
-          return (
-            <Space size={8} style={{ paddingLeft: 24 }}>
-              <Text style={{ fontSize: 13 }}>{row.label}</Text>
+            return (
+              <Space size={8} style={{ paddingLeft: 24 }}>
+              <Text style={{ fontSize: 13, color: '#3d4f5c' }}>{row.label}</Text>
               <Tooltip title={row.descripcion || row.codigo || 'Sin descripción'}>
-                <InfoCircleOutlined style={{ color: '#9ca3af', fontSize: 13, cursor: 'help' }} />
+                <InfoCircleOutlined style={{ color: '#6b7a85', fontSize: 13, cursor: 'help' }} />
               </Tooltip>
             </Space>
           );
@@ -428,97 +429,34 @@ export function RolesManagementPage() {
       ? 'permissions'
       : 'roles';
 
-  const tabBase = {
-    padding: '8px 16px',
-    borderRadius: 6,
-    textDecoration: 'none',
-    fontSize: 14,
-  };
-
   return (
-    <div style={{ width: '100%' }}>
-      {/* Header */}
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          marginBottom: 24,
-          flexWrap: 'wrap',
-          gap: 16,
-        }}
-      >
-        <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-          <Link
-            to="/configuration"
-            style={{ color: '#6b7280', display: 'flex', alignItems: 'center' }}
-          >
+    <div className={styles.pageWrapper}>
+      <div className={styles.pageHeader}>
+        <div className={styles.pageHeaderLeft}>
+          <Link to="/configuration" className={styles.pageBackLink}>
             <ArrowLeftOutlined style={{ fontSize: 18 }} />
           </Link>
-          <div>
-            <Text strong style={{ fontSize: 18, color: '#111827', display: 'block' }}>
-              Roles
-            </Text>
-            <Text type="secondary" style={{ fontSize: 12, color: '#6b7280' }}>
-              Permisos
-            </Text>
+          <div className={styles.pageTitleBlock}>
+            <h1 className={styles.pageTitle}>Roles</h1>
+            <p className={styles.pageSubtitle}>Permisos por aplicación</p>
           </div>
-          <div style={{ display: 'flex', marginLeft: 24, gap: 2 }}>
+          <div className={styles.pageTabs}>
             {canViewConfigRolesPerm && (
-            <Link
-              to="/configuration/roles"
-              style={{
-                ...tabBase,
-                color: activeTab === 'roles' ? '#111827' : '#6b7280',
-                fontWeight: activeTab === 'roles' ? 600 : 400,
-                backgroundColor: activeTab === 'roles' ? '#f3f4f6' : 'transparent',
-              }}
-            >
-              Roles
-            </Link>
+              <Link to="/configuration/roles" className={`${styles.pageTab} ${activeTab === 'roles' ? styles.pageTabActive : ''}`}>Roles</Link>
             )}
             {canViewConfigUsersPerm && (
-            <Link
-              to="/configuration/users"
-              style={{
-                ...tabBase,
-                color: activeTab === 'users' ? '#111827' : '#6b7280',
-                fontWeight: activeTab === 'users' ? 600 : 400,
-                backgroundColor: activeTab === 'users' ? '#f3f4f6' : 'transparent',
-              }}
-            >
-              Usuarios
-            </Link>
+              <Link to="/configuration/users" className={`${styles.pageTab} ${activeTab === 'users' ? styles.pageTabActive : ''}`}>Usuarios</Link>
             )}
             {canViewConfigPermissionsPerm && (
-            <Link
-              to="/configuration/permissions"
-              style={{
-                ...tabBase,
-                color: activeTab === 'permissions' ? '#111827' : '#6b7280',
-                fontWeight: activeTab === 'permissions' ? 600 : 400,
-                backgroundColor: activeTab === 'permissions' ? '#f3f4f6' : 'transparent',
-              }}
-            >
-              Permisos
-            </Link>
+              <Link to="/configuration/permissions" className={`${styles.pageTab} ${activeTab === 'permissions' ? styles.pageTabActive : ''}`}>Permisos</Link>
             )}
           </div>
         </div>
       </div>
 
-      {/* Selector de aplicación */}
-      <div
-        style={{
-          marginBottom: 16,
-          display: 'flex',
-          alignItems: 'center',
-          gap: 16,
-          flexWrap: 'wrap',
-        }}
-      >
-        <span style={{ fontSize: 14, color: '#4b5563' }}>Aplicación:</span>
-        <div style={{ display: 'flex', gap: 4 }}>
+      <div className={styles.appSelector}>
+        <span className={styles.appSelectorLabel}>Aplicación:</span>
+        <div className={styles.appSelectorButtons}>
           <Button
             type={selectedApp === 'kpital' ? 'primary' : 'default'}
             onClick={() => setSelectedApp('kpital')}
@@ -532,51 +470,43 @@ export function RolesManagementPage() {
             TimeWise
           </Button>
         </div>
-        <Text type="secondary" style={{ fontSize: 12 }}>
+        <p className={styles.appSelectorDesc}>
           {selectedApp === 'kpital'
             ? 'Planillas y RRHH. Solo roles y permisos de KPITAL.'
             : 'Asistencia y tiempo. Solo roles y permisos de TimeWise.'}
-        </Text>
+        </p>
       </div>
 
-      {/* Main card */}
-      <Card
-        styles={{ body: { padding: 24 } }}
-        style={{ borderRadius: 6, border: '1px solid #e5e7eb' }}
-      >
-        <div
-          style={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            marginBottom: 20,
-            flexWrap: 'wrap',
-            gap: 16,
-          }}
-        >
-          <Input.Search
-            allowClear
-            placeholder="Escriba el nombre o código del permiso..."
-            style={{ width: 380 }}
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-          />
-          <Space size={12}>
-            <Button icon={<PlusOutlined />} onClick={openAddRoleModal}>
-              Agregar rol
-            </Button>
-            <Button
-              type={dirty ? 'primary' : 'default'}
-              disabled={!dirty}
-              onClick={() => void saveMatrix()}
-              loading={saving}
-            >
-              Guardar cambios
-            </Button>
-          </Space>
-        </div>
+      <Card className={styles.mainCard} styles={{ body: { padding: 0 } }}>
+        <div className={styles.mainCardBody}>
+          <div className={styles.controlBar}>
+            <div className={styles.searchBar}>
+              <Input.Search
+                allowClear
+                placeholder="Escriba el nombre o código del permiso..."
+                style={{ maxWidth: 380 }}
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+              />
+            </div>
+            <Space size={12}>
+              <Button icon={<PlusOutlined />} onClick={openAddRoleModal} className={styles.btnSecondary}>
+                Agregar rol
+              </Button>
+              <Button
+                type={dirty ? 'primary' : 'default'}
+                disabled={!dirty}
+                onClick={() => void saveMatrix()}
+                loading={saving}
+                className={dirty ? styles.btnPrimary : styles.btnSecondary}
+              >
+                Guardar cambios
+              </Button>
+            </Space>
+          </div>
 
         <Table<MatrixRow>
+          className={styles.configTable}
           rowKey="key"
           loading={loading}
           columns={columns}
@@ -595,7 +525,7 @@ export function RolesManagementPage() {
               (record.type === 'app' || record.type === 'module') ? (
                 <span
                   onClick={(e) => onExpand(record, e)}
-                  style={{ marginRight: 8, cursor: 'pointer', color: '#6b7280' }}
+                  style={{ marginRight: 8, cursor: 'pointer', color: '#6b7a85' }}
                 >
                   {expanded ? <CaretDownOutlined /> : <CaretRightOutlined />}
                 </span>
@@ -608,13 +538,14 @@ export function RolesManagementPage() {
           onRow={(record) => ({
             style:
               record.type === 'app'
-                ? { backgroundColor: '#f9fafb', fontWeight: 600 }
+                ? { backgroundColor: '#f2f4f6', fontWeight: 600 }
                 : record.type === 'module'
-                  ? { backgroundColor: '#fafafa' }
+                  ? { backgroundColor: '#f8f9fa' }
                   : { backgroundColor: '#fff' },
           })}
           style={{ fontSize: 13 }}
         />
+        </div>
       </Card>
 
       <Modal
