@@ -1,7 +1,12 @@
 # compiled output
 dist
+dist-ssr
 node_modules
 build
+.next
+.nuxt
+.output
+*.local
 
 # logs
 logs
