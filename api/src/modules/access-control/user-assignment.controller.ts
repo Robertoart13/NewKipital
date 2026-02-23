@@ -19,8 +19,8 @@ export class UserAssignmentController {
 
   @RequirePermissions('config:users:assign-apps')
   @Post('apps')
-  assignApp(@Body() dto: AssignUserAppDto) {
-    return this.service.assignApp(dto);
+  assignApp(@Body() dto: AssignUserAppDto, @CurrentUser() user: { userId: number }) {
+    return this.service.assignApp(dto, user.userId);
   }
 
   @RequirePermissions('config:users:assign-apps')
@@ -28,8 +28,9 @@ export class UserAssignmentController {
   revokeApp(
     @Param('idUsuario', ParseIntPipe) idUsuario: number,
     @Param('idApp', ParseIntPipe) idApp: number,
+    @CurrentUser() user: { userId: number },
   ) {
-    return this.service.revokeApp(idUsuario, idApp);
+    return this.service.revokeApp(idUsuario, idApp, user.userId);
   }
 
   @RequirePermissions('config:users')
@@ -42,8 +43,8 @@ export class UserAssignmentController {
 
   @RequirePermissions('config:users:assign-companies')
   @Post('companies')
-  assignCompany(@Body() dto: AssignUserCompanyDto) {
-    return this.service.assignCompany(dto);
+  assignCompany(@Body() dto: AssignUserCompanyDto, @CurrentUser() user: { userId: number }) {
+    return this.service.assignCompany(dto, user.userId);
   }
 
   @RequirePermissions('config:users:assign-companies')
@@ -51,8 +52,9 @@ export class UserAssignmentController {
   revokeCompany(
     @Param('idUsuario', ParseIntPipe) idUsuario: number,
     @Param('idEmpresa', ParseIntPipe) idEmpresa: number,
+    @CurrentUser() user: { userId: number },
   ) {
-    return this.service.revokeCompany(idUsuario, idEmpresa);
+    return this.service.revokeCompany(idUsuario, idEmpresa, user.userId);
   }
 
   @RequirePermissions('config:users')

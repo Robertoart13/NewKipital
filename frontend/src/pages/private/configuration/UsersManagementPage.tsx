@@ -10,6 +10,7 @@ import {
   Drawer,
   Flex,
   Input,
+  Popconfirm,
   Select,
   Skeleton,
   Spin,
@@ -32,12 +33,16 @@ import {
   fetchConfigPermissions,
   fetchRolePermissions,
   fetchApps,
+  fetchCompaniesForUserConfig,
   fetchRolesForUsers,
   fetchUserApps,
   assignUserApp,
   fetchUserCompanies,
   fetchUserRolesSummary,
   fetchUsers,
+  inactivateUser,
+  reactivateUser,
+  blockUser,
   replaceUserCompanies,
   replaceUserGlobalRoles,
   replaceUserGlobalPermissionDenials,
@@ -47,7 +52,6 @@ import {
   type SystemUser,
   type UserRolesSummary,
 } from '../../../api/securityConfig';
-import { useCompanies } from '../../../queries/companies/useCompanies';
 import {
   canAssignCompanies,
   canAssignApps,
@@ -86,7 +90,6 @@ function getInitials(nombre: string, apellido: string): string {
 export function UsersManagementPage() {
   const { message } = AntdApp.useApp();
   const location = useLocation();
-  const { data: companiesData } = useCompanies(false);
   const canAssignCompaniesPerm = useAppSelector(canAssignCompanies);
   const canAssignAppsPerm = useAppSelector(canAssignApps);
   const canAssignRolesPerm = useAppSelector(canAssignRoles);
@@ -94,10 +97,12 @@ export function UsersManagementPage() {
   const canViewConfigRolesPerm = useAppSelector(canViewConfigRoles);
   const canViewConfigUsersPerm = useAppSelector(canViewConfigUsers);
   const canViewConfigPermissionsPerm = useAppSelector(canViewConfigPermissions);
+  const authUserId = useAppSelector((state) => Number(state.auth.user?.id ?? 0));
 
   const [users, setUsers] = useState<SystemUser[]>([]);
   const [apps, setApps] = useState<SystemApp[]>([]);
-  const [roles, setRoles] = useState<SystemRole[]>([]);
+  const [companiesData, setCompaniesData] = useState<{ id: number; nombre: string; prefijo?: string | null }[]>([]);
+  const [, setRoles] = useState<SystemRole[]>([]);
   const [, setPermissions] = useState<SystemPermission[]>([]);
   const [userAppIds, setUserAppIds] = useState<number[]>([]);
   const [rolesForSelectedApp, setRolesForSelectedApp] = useState<SystemRole[]>([]);
@@ -126,16 +131,18 @@ export function UsersManagementPage() {
   const loadBaseData = useCallback(async () => {
     setLoading(true);
     try {
-      const [usersData, appsData, rolesData, permsData] = await Promise.all([
+      const [usersData, appsData, rolesData, permsData, companiesCatalog] = await Promise.all([
         fetchUsers(false, true),
         fetchApps(),
         fetchRolesForUsers(false),
         fetchConfigPermissions({ includeInactive: false }),
+        fetchCompaniesForUserConfig(),
       ]);
       setUsers(usersData.filter((u) => u.estado === 1));
       setApps(appsData.filter((a) => a.estado === 1));
       setRoles(rolesData.filter((r) => r.estado === 1));
       setPermissions((permsData ?? []).filter((p) => p.estado === 1));
+      setCompaniesData(companiesCatalog ?? []);
     } catch (e) {
       message.error(e instanceof Error ? e.message : 'Error al cargar datos');
     } finally {
@@ -357,6 +364,30 @@ export function UsersManagementPage() {
       void loadRolesSummary();
     } catch (e) {
       message.error(e instanceof Error ? e.message : 'Error al guardar');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const applyUserStateChange = async (userId: number, action: 'inactivate' | 'reactivate' | 'block') => {
+    try {
+      setSaving(true);
+      if (action === 'inactivate') {
+        await inactivateUser(userId);
+        message.success('Usuario inactivado. Ya no podrá iniciar sesión.');
+      } else if (action === 'reactivate') {
+        await reactivateUser(userId);
+        message.success('Usuario reactivado.');
+      } else {
+        await blockUser(userId);
+        message.success('Usuario bloqueado.');
+      }
+      await loadBaseData();
+      if (selectedUser?.id === userId) {
+        setSelectedUser((prev) => (prev ? { ...prev, estado: action === 'reactivate' ? 1 : 0 } : prev));
+      }
+    } catch (e) {
+      message.error(e instanceof Error ? e.message : 'Error al actualizar estado de usuario');
     } finally {
       setSaving(false);
     }
@@ -632,7 +663,7 @@ export function UsersManagementPage() {
               items={[
                 {
                   key: 'empresas',
-                  label: <span style={{ fontWeight: 500 }}>Empresas</span>,
+                  label: 'Empresas',
                   children: (
                     <div>
                       {!canAssignCompaniesPerm && (
@@ -641,6 +672,14 @@ export function UsersManagementPage() {
                       <p className={styles.sectionDescription}>
                         Solo las empresas marcadas. Si está desmarcada, el usuario no ve nada de ella.
                       </p>
+                      <Alert
+                        className={styles.helpInfoAlert}
+                        type="info"
+                        showIcon
+                        style={{ marginBottom: 12 }}
+                        message={<span className={styles.helpInfoTitle}>Para qué sirve</span>}
+                        description="Define en cuáles empresas puede operar el usuario. Sin empresas asignadas, no tendrá contexto de trabajo."
+                      />
                       <Input
                         placeholder="Buscar por nombre o prefijo de empresa"
                         allowClear
@@ -675,7 +714,7 @@ export function UsersManagementPage() {
                 },
                 {
                   key: 'roles',
-                  label: <span style={{ fontWeight: 500 }}>Roles</span>,
+                  label: 'Roles',
                   children: selectedApp ? (
                     <div>
                       {!canAssignRolesPerm && (
@@ -694,6 +733,14 @@ export function UsersManagementPage() {
                       <p className={styles.sectionDescription}>
                         Se aplican automáticamente en todas las empresas del usuario.
                       </p>
+                      <Alert
+                        className={styles.helpInfoAlert}
+                        type="info"
+                        showIcon
+                        style={{ marginBottom: 12 }}
+                        message={<span className={styles.helpInfoTitle}>Para qué sirve</span>}
+                        description="Asigna capacidades base del usuario para la aplicación seleccionada (KPITAL o TimeWise)."
+                      />
                       {loadingRolesForApp ? (
                         <div style={{ maxHeight: 200, padding: 16 }}>
                           <Skeleton active paragraph={{ rows: 6 }} />
@@ -738,7 +785,7 @@ export function UsersManagementPage() {
                 },
                 {
                   key: 'excepciones',
-                  label: <span style={{ fontWeight: 500 }}>Excepciones</span>,
+                  label: 'Excepciones',
                   children: selectedApp ? (
                     <div style={{ paddingTop: 16 }}>
                       {!canDenyPermissionsPerm && (
@@ -758,6 +805,14 @@ export function UsersManagementPage() {
                         {' '}
                         Los permisos marcados NO se aplicarán en ninguna empresa. Seleccione un rol para ver sus permisos y revocar los que no debe tener el usuario.
                       </div>
+                      <Alert
+                        className={styles.helpInfoAlert}
+                        type="info"
+                        showIcon
+                        style={{ margin: '10px 0 12px 0' }}
+                        message={<span className={styles.helpInfoTitle}>Para qué sirve</span>}
+                        description="Restringe permisos específicos aunque el rol los otorgue. Úselo para excepciones puntuales de seguridad."
+                      />
                       {loadingRolesSummary ? (
                         <div style={{ padding: '8px 0' }}>
                           <Skeleton active paragraph={{ rows: 4 }} />
@@ -827,6 +882,60 @@ export function UsersManagementPage() {
                     </div>
                   ),
                 },
+                {
+                  key: 'acciones',
+                  label: 'Acciones',
+                  children: (
+                    <div style={{ paddingTop: 16 }}>
+                      <p className={styles.sectionTitle}>Acceso al sistema</p>
+                      <p className={styles.sectionDescription}>
+                        Controles de estado del usuario para habilitar o restringir su acceso a la plataforma.
+                      </p>
+                      <Alert
+                        className={styles.helpInfoAlert}
+                        type="info"
+                        showIcon
+                        style={{ marginBottom: 12 }}
+                        message={<span className={styles.helpInfoTitle}>Inactivar vs Bloquear</span>}
+                        description="Inactivar retira acceso por estado inactivo. Bloquear corta acceso inmediato. Reactivar restablece acceso."
+                      />
+                      <Flex gap={8} wrap="wrap">
+                        {selectedUser.estado === 1 ? (
+                          <>
+                            <Popconfirm
+                              title="Inactivar usuario"
+                              description="El usuario perderá acceso al sistema."
+                              onConfirm={() => void applyUserStateChange(selectedUser.id, 'inactivate')}
+                            >
+                              <Button size="small" danger disabled={!canViewConfigUsersPerm || selectedUser.id === authUserId}>
+                                Inactivar
+                              </Button>
+                            </Popconfirm>
+                            <Popconfirm
+                              title="Bloquear usuario"
+                              description="Bloquea el acceso inmediatamente."
+                              onConfirm={() => void applyUserStateChange(selectedUser.id, 'block')}
+                            >
+                              <Button size="small" disabled={!canViewConfigUsersPerm || selectedUser.id === authUserId}>
+                                Bloquear
+                              </Button>
+                            </Popconfirm>
+                          </>
+                        ) : (
+                          <Popconfirm
+                            title="Reactivar usuario"
+                            description="Restablece el acceso al sistema."
+                            onConfirm={() => void applyUserStateChange(selectedUser.id, 'reactivate')}
+                          >
+                            <Button size="small" type="primary" disabled={!canViewConfigUsersPerm}>
+                              Reactivar
+                            </Button>
+                          </Popconfirm>
+                        )}
+                      </Flex>
+                    </div>
+                  ),
+                },
               ]}
             />
             </div>
@@ -837,3 +946,4 @@ export function UsersManagementPage() {
     </div>
   );
 }
+

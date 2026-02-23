@@ -1,6 +1,7 @@
 import { Injectable, NotFoundException, ConflictException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { In, Repository } from 'typeorm';
+import { User } from '../auth/entities/user.entity.js';
 import { UserApp } from './entities/user-app.entity.js';
 import { UserCompany } from './entities/user-company.entity.js';
 import { UserRole } from './entities/user-role.entity.js';
@@ -18,6 +19,8 @@ import { AssignUserRoleDto } from './dto/assign-user-role.dto.js';
 @Injectable()
 export class UserAssignmentService {
   constructor(
+    @InjectRepository(User)
+    private readonly userRepo: Repository<User>,
     @InjectRepository(UserApp)
     private readonly userAppRepo: Repository<UserApp>,
     @InjectRepository(UserCompany)
@@ -42,7 +45,8 @@ export class UserAssignmentService {
 
   // --- Usuario ↔ App ---
 
-  async assignApp(dto: AssignUserAppDto): Promise<UserApp> {
+  async assignApp(dto: AssignUserAppDto, actorUserId?: number): Promise<UserApp> {
+    await this.assertUserCanBeMutated(dto.idUsuario, actorUserId, false);
     const existing = await this.userAppRepo.findOne({
       where: { idUsuario: dto.idUsuario, idApp: dto.idApp },
     });
@@ -53,10 +57,15 @@ export class UserAssignmentService {
     return this.userAppRepo.save(ua);
   }
 
-  async revokeApp(idUsuario: number, idApp: number): Promise<void> {
+  async revokeApp(idUsuario: number, idApp: number, actorUserId?: number): Promise<void> {
+    await this.assertUserCanBeMutated(idUsuario, actorUserId, true);
     const ua = await this.userAppRepo.findOne({ where: { idUsuario, idApp } });
     if (!ua) {
       throw new NotFoundException('Asignación usuario-app no encontrada');
+    }
+    const activeApps = await this.userAppRepo.count({ where: { idUsuario, estado: 1 } });
+    if (ua.estado === 1 && activeApps <= 1) {
+      throw new ConflictException('No se puede revocar la Ãºltima aplicaciÃ³n activa del usuario');
     }
     ua.estado = 0;
     await this.userAppRepo.save(ua);
@@ -68,7 +77,8 @@ export class UserAssignmentService {
 
   // --- Usuario ↔ Empresa ---
 
-  async assignCompany(dto: AssignUserCompanyDto): Promise<UserCompany> {
+  async assignCompany(dto: AssignUserCompanyDto, actorUserId?: number): Promise<UserCompany> {
+    await this.assertUserCanBeMutated(dto.idUsuario, actorUserId, false);
     const existing = await this.userCompanyRepo.findOne({
       where: { idUsuario: dto.idUsuario, idEmpresa: dto.idEmpresa },
     });
@@ -79,7 +89,8 @@ export class UserAssignmentService {
     return this.userCompanyRepo.save(uc);
   }
 
-  async revokeCompany(idUsuario: number, idEmpresa: number): Promise<void> {
+  async revokeCompany(idUsuario: number, idEmpresa: number, actorUserId?: number): Promise<void> {
+    await this.assertUserCanBeMutated(idUsuario, actorUserId, true);
     const uc = await this.userCompanyRepo.findOne({ where: { idUsuario, idEmpresa } });
     if (!uc) {
       throw new NotFoundException('Asignación usuario-empresa no encontrada');
@@ -92,7 +103,12 @@ export class UserAssignmentService {
     return this.userCompanyRepo.find({ where: { idUsuario, estado: 1 } });
   }
 
-  async replaceUserCompanies(idUsuario: number, companyIds: number[]): Promise<{ companyIds: number[] }> {
+  async replaceUserCompanies(
+    idUsuario: number,
+    companyIds: number[],
+    actorUserId?: number,
+  ): Promise<{ companyIds: number[] }> {
+    await this.assertUserCanBeMutated(idUsuario, actorUserId, true);
     const normalized = [...new Set(companyIds)].filter((id) => Number.isInteger(id) && id > 0);
     const existing = await this.userCompanyRepo.find({ where: { idUsuario } });
     const existingById = new Map(existing.map((e) => [e.idEmpresa, e]));
@@ -155,6 +171,7 @@ export class UserAssignmentService {
   // --- Usuario ↔ Rol (scoped por Empresa + App) ---
 
   async assignRole(dto: AssignUserRoleDto, creatorId: number): Promise<UserRole> {
+    await this.assertUserCanBeMutated(dto.idUsuario, creatorId, false);
     const existing = await this.userRoleRepo.findOne({
       where: {
         idUsuario: dto.idUsuario,
@@ -185,6 +202,7 @@ export class UserAssignmentService {
     idApp: number,
     modifierId: number,
   ): Promise<void> {
+    await this.assertUserCanBeMutated(idUsuario, modifierId, true);
     const ur = await this.userRoleRepo.findOne({
       where: { idUsuario, idRol, idEmpresa, idApp },
     });
@@ -222,13 +240,14 @@ export class UserAssignmentService {
     roleIds: number[],
     modifierId: number,
   ): Promise<UserRole[]> {
+    await this.assertUserCanBeMutated(idUsuario, modifierId, true);
     const appId = await this.resolveAppId(appCode);
     await this.ensureUserCompanyAccess(idUsuario, companyId);
 
     const normalizedRoleIds = [...new Set(roleIds)];
     if (normalizedRoleIds.length > 0) {
       const existingRoles = await this.roleRepo.find({
-        where: { id: In(normalizedRoleIds), estado: 1 },
+        where: { id: In(normalizedRoleIds), estado: 1, idApp: appId },
       });
       if (existingRoles.length !== normalizedRoleIds.length) {
         const found = new Set(existingRoles.map((role) => role.id));
@@ -283,12 +302,13 @@ export class UserAssignmentService {
     roleIds: number[],
     modifierId: number,
   ): Promise<{ appCode: string; roleIds: number[] }> {
+    await this.assertUserCanBeMutated(idUsuario, modifierId, true);
     const appId = await this.resolveAppId(appCode);
 
     const normalizedRoleIds = [...new Set(roleIds)];
     if (normalizedRoleIds.length > 0) {
       const existingRoles = await this.roleRepo.find({
-        where: { id: In(normalizedRoleIds), estado: 1 },
+        where: { id: In(normalizedRoleIds), estado: 1, idApp: appId },
       });
       if (existingRoles.length !== normalizedRoleIds.length) {
         const found = new Set(existingRoles.map((r) => r.id));
@@ -353,13 +373,14 @@ export class UserAssignmentService {
     roleIds: number[],
     modifierId: number,
   ): Promise<{ companyId: number; appCode: string; roleIds: number[] }> {
+    await this.assertUserCanBeMutated(idUsuario, modifierId, true);
     const appId = await this.resolveAppId(appCode);
     await this.ensureUserCompanyAccess(idUsuario, companyId);
 
     const normalizedRoleIds = [...new Set(roleIds)];
     if (normalizedRoleIds.length > 0) {
       const existingRoles = await this.roleRepo.find({
-        where: { id: In(normalizedRoleIds), estado: 1 },
+        where: { id: In(normalizedRoleIds), estado: 1, idApp: appId },
       });
       if (existingRoles.length !== normalizedRoleIds.length) {
         const found = new Set(existingRoles.map((r) => r.id));
@@ -541,11 +562,17 @@ export class UserAssignmentService {
     deny: string[],
     modifierId: number,
   ): Promise<{ appCode: string; deny: string[] }> {
+    await this.assertUserCanBeMutated(idUsuario, modifierId, true);
     const appId = await this.resolveAppId(appCode);
     const normalized = [...new Set(deny.map((c) => c.trim().toLowerCase()).filter(Boolean))];
     const permissions =
-      normalized.length > 0 ? await this.permRepo.find({ where: { codigo: In(normalized) } }) : [];
+      normalized.length > 0 ? await this.permRepo.find({ where: { codigo: In(normalized), estado: 1 } }) : [];
     const byCode = new Map(permissions.map((p) => [p.codigo, p]));
+    if (permissions.length !== normalized.length) {
+      const found = new Set(permissions.map((perm) => perm.codigo));
+      const missing = normalized.filter((code) => !found.has(code));
+      throw new NotFoundException(`Permisos no encontrados o inactivos: ${missing.join(', ')}`);
+    }
 
     const existing = await this.userPermGlobalDenyRepo.find({
       where: { idUsuario, idApp: appId, estado: 1 },
@@ -594,6 +621,7 @@ export class UserAssignmentService {
     allow: string[];
     deny: string[];
   }> {
+    await this.assertUserCanBeMutated(idUsuario, modifierId, true);
     const appId = await this.resolveAppId(appCode);
     await this.ensureUserCompanyAccess(idUsuario, companyId);
 
@@ -726,5 +754,140 @@ export class UserAssignmentService {
         `El usuario ${idUsuario} no tiene asignacion activa a la empresa ${companyId}`,
       );
     }
+  }
+
+  private async assertUserCanBeMutated(
+    targetUserId: number,
+    actorUserId: number | undefined,
+    enforceLastAdminProtection: boolean,
+  ): Promise<void> {
+    if (actorUserId && targetUserId === actorUserId) {
+      throw new ConflictException('No puede modificar su propio usuario en esta operaciÃ³n crÃ­tica');
+    }
+
+    if (await this.isProtectedMasterUser(targetUserId)) {
+      throw new ConflictException('El usuario MASTER estÃ¡ protegido y no puede ser modificado');
+    }
+
+    if (!enforceLastAdminProtection) return;
+    const isConfigAdmin = await this.isConfigAdminUser(targetUserId);
+    if (!isConfigAdmin) return;
+
+    const remainingAdmins = await this.countOtherActiveConfigAdmins(targetUserId);
+    if (remainingAdmins === 0) {
+      throw new ConflictException(
+        'No se puede aplicar este cambio porque el usuario es el Ãºltimo administrador de configuraciÃ³n',
+      );
+    }
+  }
+
+  private async isProtectedMasterUser(userId: number): Promise<boolean> {
+    const rows = await this.userRepo.query(
+      `
+      SELECT 1
+      FROM sys_roles r
+      WHERE r.codigo_rol = 'MASTER'
+        AND r.estado_rol = 1
+        AND (
+          EXISTS (
+            SELECT 1 FROM sys_usuario_rol ur
+            WHERE ur.id_usuario = ?
+              AND ur.id_rol = r.id_rol
+              AND ur.estado_usuario_rol = 1
+          )
+          OR EXISTS (
+            SELECT 1 FROM sys_usuario_rol_global urg
+            WHERE urg.id_usuario = ?
+              AND urg.id_rol = r.id_rol
+              AND urg.estado_usuario_rol_global = 1
+          )
+        )
+      LIMIT 1
+      `,
+      [userId, userId],
+    );
+    return rows.length > 0;
+  }
+
+  private async isConfigAdminUser(userId: number): Promise<boolean> {
+    const rows = await this.userRepo.query(
+      `
+      SELECT 1
+      FROM sys_usuarios u
+      WHERE u.id_usuario = ?
+        AND u.estado_usuario = 1
+        AND EXISTS (
+          SELECT 1 FROM sys_usuario_empresa ue
+          WHERE ue.id_usuario = u.id_usuario
+            AND ue.estado_usuario_empresa = 1
+        )
+        AND (
+          EXISTS (
+            SELECT 1
+            FROM sys_usuario_rol ur
+            JOIN sys_roles r ON r.id_rol = ur.id_rol AND r.estado_rol = 1
+            JOIN sys_rol_permiso rp ON rp.id_rol = r.id_rol
+            JOIN sys_permisos p ON p.id_permiso = rp.id_permiso AND p.estado_permiso = 1
+            WHERE ur.id_usuario = u.id_usuario
+              AND ur.estado_usuario_rol = 1
+              AND p.codigo_permiso LIKE 'config:%'
+          )
+          OR EXISTS (
+            SELECT 1
+            FROM sys_usuario_rol_global urg
+            JOIN sys_roles r ON r.id_rol = urg.id_rol AND r.estado_rol = 1
+            JOIN sys_rol_permiso rp ON rp.id_rol = r.id_rol
+            JOIN sys_permisos p ON p.id_permiso = rp.id_permiso AND p.estado_permiso = 1
+            WHERE urg.id_usuario = u.id_usuario
+              AND urg.estado_usuario_rol_global = 1
+              AND p.codigo_permiso LIKE 'config:%'
+          )
+        )
+      LIMIT 1
+      `,
+      [userId],
+    );
+    return rows.length > 0;
+  }
+
+  private async countOtherActiveConfigAdmins(excludedUserId: number): Promise<number> {
+    const rows = await this.userRepo.query(
+      `
+      SELECT COUNT(DISTINCT u.id_usuario) AS total
+      FROM sys_usuarios u
+      WHERE u.estado_usuario = 1
+        AND u.id_usuario <> ?
+        AND EXISTS (
+          SELECT 1 FROM sys_usuario_empresa ue
+          WHERE ue.id_usuario = u.id_usuario
+            AND ue.estado_usuario_empresa = 1
+        )
+        AND (
+          EXISTS (
+            SELECT 1
+            FROM sys_usuario_rol ur
+            JOIN sys_roles r ON r.id_rol = ur.id_rol AND r.estado_rol = 1
+            JOIN sys_rol_permiso rp ON rp.id_rol = r.id_rol
+            JOIN sys_permisos p ON p.id_permiso = rp.id_permiso AND p.estado_permiso = 1
+            WHERE ur.id_usuario = u.id_usuario
+              AND ur.estado_usuario_rol = 1
+              AND p.codigo_permiso LIKE 'config:%'
+          )
+          OR EXISTS (
+            SELECT 1
+            FROM sys_usuario_rol_global urg
+            JOIN sys_roles r ON r.id_rol = urg.id_rol AND r.estado_rol = 1
+            JOIN sys_rol_permiso rp ON rp.id_rol = r.id_rol
+            JOIN sys_permisos p ON p.id_permiso = rp.id_permiso AND p.estado_permiso = 1
+            WHERE urg.id_usuario = u.id_usuario
+              AND urg.estado_usuario_rol_global = 1
+              AND p.codigo_permiso LIKE 'config:%'
+          )
+        )
+      `,
+      [excludedUserId],
+    );
+    const rawTotal = Number(rows?.[0]?.total ?? 0);
+    return Number.isFinite(rawTotal) ? rawTotal : 0;
   }
 }

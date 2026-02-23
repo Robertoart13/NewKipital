@@ -22,6 +22,7 @@ import { UserAssignmentService } from './user-assignment.service.js';
 import { ConfigAccessController } from './config-access.controller.js';
 import { NotificationsModule } from '../notifications/notifications.module.js';
 import { Company } from '../companies/entities/company.entity.js';
+import { User } from '../auth/entities/user.entity.js';
 
 @Module({
   imports: [
@@ -39,6 +40,7 @@ import { Company } from '../companies/entities/company.entity.js';
       UserPermissionOverride,
       UserPermissionGlobalDeny,
       Company,
+      User,
     ]),
   ],
   controllers: [

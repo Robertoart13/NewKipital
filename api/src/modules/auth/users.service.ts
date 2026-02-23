@@ -178,6 +178,9 @@ export class UsersService {
   }
 
   async update(id: number, dto: UpdateUserDto, modifierId?: number): Promise<User> {
+    if (await this.isProtectedMasterUser(id)) {
+      throw new ConflictException('El usuario MASTER estÃ¡ protegido y no puede ser modificado');
+    }
     const user = await this.repo.findOne({ where: { id } });
     if (!user) {
       throw new NotFoundException(`Usuario con ID ${id} no encontrado`);
@@ -210,6 +213,7 @@ export class UsersService {
   }
 
   async inactivate(id: number, modifierId: number, motivo?: string): Promise<User> {
+    await this.assertCanRestrictUser(id, modifierId);
     const user = await this.repo.findOne({ where: { id } });
     if (!user) {
       throw new NotFoundException(`Usuario con ID ${id} no encontrado`);
@@ -238,6 +242,7 @@ export class UsersService {
   }
 
   async block(id: number, modifierId: number, motivo?: string): Promise<User> {
+    await this.assertCanRestrictUser(id, modifierId);
     const user = await this.repo.findOne({ where: { id } });
     if (!user) {
       throw new NotFoundException(`Usuario con ID ${id} no encontrado`);
@@ -316,5 +321,135 @@ export class UsersService {
   private sanitize(user: User): User {
     const { passwordHash: _, ...rest } = user as any;
     return rest as User;
+  }
+
+  private async assertCanRestrictUser(targetUserId: number, actorUserId: number): Promise<void> {
+    if (targetUserId === actorUserId) {
+      throw new ForbiddenException('No puede bloquear o inactivar su propio usuario');
+    }
+
+    if (await this.isProtectedMasterUser(targetUserId)) {
+      throw new ConflictException('El usuario MASTER estÃ¡ protegido y no puede ser bloqueado ni inactivado');
+    }
+
+    const isConfigAdmin = await this.isConfigAdminUser(targetUserId);
+    if (!isConfigAdmin) return;
+
+    const otherAdmins = await this.countOtherActiveConfigAdmins(targetUserId);
+    if (otherAdmins === 0) {
+      throw new ConflictException(
+        'No se puede aplicar el cambio porque el usuario es el Ãºltimo administrador de configuraciÃ³n',
+      );
+    }
+  }
+
+  private async isProtectedMasterUser(userId: number): Promise<boolean> {
+    const rows = await this.repo.query(
+      `
+      SELECT 1
+      FROM sys_roles r
+      WHERE r.codigo_rol = 'MASTER'
+        AND r.estado_rol = 1
+        AND (
+          EXISTS (
+            SELECT 1 FROM sys_usuario_rol ur
+            WHERE ur.id_usuario = ?
+              AND ur.id_rol = r.id_rol
+              AND ur.estado_usuario_rol = 1
+          )
+          OR EXISTS (
+            SELECT 1 FROM sys_usuario_rol_global urg
+            WHERE urg.id_usuario = ?
+              AND urg.id_rol = r.id_rol
+              AND urg.estado_usuario_rol_global = 1
+          )
+        )
+      LIMIT 1
+      `,
+      [userId, userId],
+    );
+    return rows.length > 0;
+  }
+
+  private async isConfigAdminUser(userId: number): Promise<boolean> {
+    const rows = await this.repo.query(
+      `
+      SELECT 1
+      FROM sys_usuarios u
+      WHERE u.id_usuario = ?
+        AND u.estado_usuario = 1
+        AND EXISTS (
+          SELECT 1 FROM sys_usuario_empresa ue
+          WHERE ue.id_usuario = u.id_usuario
+            AND ue.estado_usuario_empresa = 1
+        )
+        AND (
+          EXISTS (
+            SELECT 1
+            FROM sys_usuario_rol ur
+            JOIN sys_roles r ON r.id_rol = ur.id_rol AND r.estado_rol = 1
+            JOIN sys_rol_permiso rp ON rp.id_rol = r.id_rol
+            JOIN sys_permisos p ON p.id_permiso = rp.id_permiso AND p.estado_permiso = 1
+            WHERE ur.id_usuario = u.id_usuario
+              AND ur.estado_usuario_rol = 1
+              AND p.codigo_permiso LIKE 'config:%'
+          )
+          OR EXISTS (
+            SELECT 1
+            FROM sys_usuario_rol_global urg
+            JOIN sys_roles r ON r.id_rol = urg.id_rol AND r.estado_rol = 1
+            JOIN sys_rol_permiso rp ON rp.id_rol = r.id_rol
+            JOIN sys_permisos p ON p.id_permiso = rp.id_permiso AND p.estado_permiso = 1
+            WHERE urg.id_usuario = u.id_usuario
+              AND urg.estado_usuario_rol_global = 1
+              AND p.codigo_permiso LIKE 'config:%'
+          )
+        )
+      LIMIT 1
+      `,
+      [userId],
+    );
+    return rows.length > 0;
+  }
+
+  private async countOtherActiveConfigAdmins(excludedUserId: number): Promise<number> {
+    const rows = await this.repo.query(
+      `
+      SELECT COUNT(DISTINCT u.id_usuario) AS total
+      FROM sys_usuarios u
+      WHERE u.estado_usuario = 1
+        AND u.id_usuario <> ?
+        AND EXISTS (
+          SELECT 1 FROM sys_usuario_empresa ue
+          WHERE ue.id_usuario = u.id_usuario
+            AND ue.estado_usuario_empresa = 1
+        )
+        AND (
+          EXISTS (
+            SELECT 1
+            FROM sys_usuario_rol ur
+            JOIN sys_roles r ON r.id_rol = ur.id_rol AND r.estado_rol = 1
+            JOIN sys_rol_permiso rp ON rp.id_rol = r.id_rol
+            JOIN sys_permisos p ON p.id_permiso = rp.id_permiso AND p.estado_permiso = 1
+            WHERE ur.id_usuario = u.id_usuario
+              AND ur.estado_usuario_rol = 1
+              AND p.codigo_permiso LIKE 'config:%'
+          )
+          OR EXISTS (
+            SELECT 1
+            FROM sys_usuario_rol_global urg
+            JOIN sys_roles r ON r.id_rol = urg.id_rol AND r.estado_rol = 1
+            JOIN sys_rol_permiso rp ON rp.id_rol = r.id_rol
+            JOIN sys_permisos p ON p.id_permiso = rp.id_permiso AND p.estado_permiso = 1
+            WHERE urg.id_usuario = u.id_usuario
+              AND urg.estado_usuario_rol_global = 1
+              AND p.codigo_permiso LIKE 'config:%'
+          )
+        )
+      `,
+      [excludedUserId],
+    );
+    const rawTotal = Number(rows?.[0]?.total ?? 0);
+    return Number.isFinite(rawTotal) ? rawTotal : 0;
   }
 }

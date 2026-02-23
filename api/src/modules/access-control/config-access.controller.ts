@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  ForbiddenException,
   Get,
   Post,
   Param,
@@ -122,6 +123,15 @@ export class ConfigAccessController {
     return this.rolesService.findAll(includeInactive ?? false, appCode);
   }
 
+  @RequirePermissions('config:users')
+  @Get('users/companies-catalog')
+  listCompaniesForUserConfig() {
+    return this.companyRepo.find({
+      where: { estado: 1 },
+      order: { nombre: 'ASC' },
+    });
+  }
+
   @RequirePermissions('config:roles')
   @Post('roles')
   createRole(@Body() dto: CreateRoleDto, @CurrentUser() user: { userId: number }) {
@@ -198,10 +208,17 @@ export class ConfigAccessController {
     @Body() dto: ReplaceUserCompaniesDto,
     @CurrentUser() user: { userId: number },
   ) {
+    if (idUsuario === user.userId) {
+      throw new ForbiddenException('No puede modificar sus propias empresas');
+    }
     const previousAssignments = await this.userAssignmentService.getUserCompanies(idUsuario);
     const previousCompanyIds = previousAssignments.map((assignment) => assignment.idEmpresa);
 
-    const result = await this.userAssignmentService.replaceUserCompanies(idUsuario, dto.companyIds);
+    const result = await this.userAssignmentService.replaceUserCompanies(
+      idUsuario,
+      dto.companyIds,
+      user.userId,
+    );
     const { added, removed } = this.diffNumericSets(previousCompanyIds, result.companyIds);
 
     if (added.length > 0 || removed.length > 0) {
@@ -294,6 +311,9 @@ export class ConfigAccessController {
     @Body() dto: ReplaceUserGlobalRolesDto,
     @CurrentUser() user: { userId: number },
   ) {
+    if (idUsuario === user.userId) {
+      throw new ForbiddenException('No puede modificar sus propios roles globales');
+    }
     const previous = await this.userAssignmentService.getUserGlobalRoles(idUsuario, dto.appCode);
     const result = await this.userAssignmentService.replaceUserGlobalRoles(
       idUsuario,
@@ -338,6 +358,9 @@ export class ConfigAccessController {
     @Body() dto: ReplaceUserGlobalPermissionDenialsDto,
     @CurrentUser() user: { userId: number },
   ) {
+    if (idUsuario === user.userId) {
+      throw new ForbiddenException('No puede modificar sus propias denegaciones globales');
+    }
     const previous = await this.userAssignmentService.getGlobalPermissionDenials(idUsuario, dto.appCode);
     const result = await this.userAssignmentService.replaceGlobalPermissionDenials(
       idUsuario,

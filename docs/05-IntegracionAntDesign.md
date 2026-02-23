@@ -127,6 +127,7 @@ Ambas páginas comparten `UsersManagementPage.module.css` y aplican la Paleta RR
 | `.tagActivo` | Etiqueta estado Activo | fondo `#b8d9c4`, texto `#3d5a45` |
 | `.tagInactivo` | Etiqueta estado Inactivo | fondo `#f0f2f4`, texto `#6b7a85` |
 | `.exceptionBanner` | Banner de advertencia/danger | fondo `#e4cdcd`, borde `#c99a9a`, texto `#4d2e2e` |
+| `.helpInfoAlert` | Mensajes informativos (Para qué sirve / guías operativas) | fondo `#1f2b3d`, borde `#2f3f56`, texto `#ffffff`, ícono `#8fd3ff` |
 | `.exceptionListBox` | Lista dentro de sección danger | fondo `#ecd8d8`, borde `#c99a9a` |
 | `.btnPrimary` | Botón principal | fondo `#5a6c7d` |
 | `.btnSecondary` | Botón secundario | borde `#d8dde4`, texto `#5a6b7a` |
@@ -135,6 +136,12 @@ Ambas páginas comparten `UsersManagementPage.module.css` y aplican la Paleta RR
 | `.appSelector` | Selector de aplicación (Roles: KPITAL/TimeWise) | Contenedor + `.appSelectorLabel`, `.appSelectorButtons`, `.appSelectorDesc` |
 
 **Regla:** Al crear nuevos componentes de configuración, alertas o etiquetas de estado, usar estos valores. No inventar colores.
+
+### Regla Global de Mensajes Informativos
+
+- Todo mensaje informativo de producto (por ejemplo "Para qué sirve") debe usar la clase `.helpInfoAlert`.
+- Debe verse en formato dark: fondo `#1f2b3d`, texto blanco y borde `#2f3f56`.
+- La clase fuerza color blanco en todos los descendientes para evitar letras en negro por herencia de estilos de AntD.
 
 ---
 

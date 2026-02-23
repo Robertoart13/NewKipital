@@ -38,6 +38,13 @@ export interface SystemApp {
   estado: number;
 }
 
+export interface ConfigCompanyItem {
+  id: number;
+  nombre: string;
+  prefijo?: string | null;
+  estado?: number;
+}
+
 export interface UserRoleAssignment {
   idUsuario: number;
   idRol: number;
@@ -164,6 +171,11 @@ export async function fetchRolesByApp(appCode: 'timewise' | 'kpital'): Promise<S
   return fetchRolesForUsers(false, appCode);
 }
 
+export async function fetchCompaniesForUserConfig(): Promise<ConfigCompanyItem[]> {
+  const res = await httpFetch('/config/users/companies-catalog');
+  return ensureOk<ConfigCompanyItem[]>(res, 'Error al cargar empresas para configuración de usuarios');
+}
+
 export async function createRole(payload: {
   codigo: string;
   nombre: string;
@@ -220,6 +232,33 @@ export async function fetchUsers(
   if (configView) params.set('configView', 'true');
   const res = await httpFetch(`/users?${params}`);
   return ensureOk<SystemUser[]>(res, 'Error al cargar usuarios');
+}
+
+export async function inactivateUser(
+  id: number,
+  motivo?: string,
+): Promise<SystemUser> {
+  const res = await httpFetch(`/users/${id}/inactivate`, {
+    method: 'PATCH',
+    body: JSON.stringify({ motivo }),
+  });
+  return ensureOk<SystemUser>(res, 'Error al inactivar usuario');
+}
+
+export async function reactivateUser(id: number): Promise<SystemUser> {
+  const res = await httpFetch(`/users/${id}/reactivate`, { method: 'PATCH' });
+  return ensureOk<SystemUser>(res, 'Error al reactivar usuario');
+}
+
+export async function blockUser(
+  id: number,
+  motivo?: string,
+): Promise<SystemUser> {
+  const res = await httpFetch(`/users/${id}/block`, {
+    method: 'PATCH',
+    body: JSON.stringify({ motivo }),
+  });
+  return ensureOk<SystemUser>(res, 'Error al bloquear usuario');
 }
 
 export async function fetchApps(): Promise<SystemApp[]> {

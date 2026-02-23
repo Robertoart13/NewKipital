@@ -54,16 +54,6 @@ export class PermissionsGuard implements CanActivate {
     if (!companyId) {
       if (allowWithoutCompany) return true;
 
-      const isGlobalPermission = required.every((permission) =>
-        permission.startsWith('config:') || permission === 'company:manage',
-      );
-      if (isGlobalPermission) return true;
-
-      const method = (context.switchToHttp().getRequest<{ method?: string }>()?.method ?? 'GET').toUpperCase();
-      if (method !== 'GET') {
-        throw new ForbiddenException('Falta companyId para validar permisos de seguridad');
-      }
-
       const appCode = this.resolveAppCode(request);
       const resolved = await this.authService.resolvePermissionsAcrossCompanies(userId, appCode);
       const userPermissions = resolved.permissions;

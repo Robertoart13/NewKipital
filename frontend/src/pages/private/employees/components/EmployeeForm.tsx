@@ -6,7 +6,7 @@ import {
   JORNADA_OPTIONS,
   MONEDA_OPTIONS,
 } from '../constants/employee-enums';
-import type { SystemRole } from '../../../api/securityConfig';
+import type { SystemRole } from '../../../../api/securityConfig';
 import dayjs from 'dayjs';
 
 interface EmployeeFormProps {
