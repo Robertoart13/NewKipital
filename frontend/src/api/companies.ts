@@ -1,4 +1,5 @@
 import { httpFetch } from '../interceptors/httpInterceptor';
+import { API_URL } from '../config/api';
 
 export interface CompanyListItem {
   id: number;
@@ -13,6 +14,8 @@ export interface CompanyListItem {
   email?: string | null;
   codigoPostal?: string | null;
   fechaInactivacion?: string | null;
+  logoUrl?: string;
+  logoPath?: string | null;
   estado?: number;
 }
 
@@ -27,6 +30,19 @@ export interface CompanyPayload {
   telefono?: string;
   email?: string;
   codigoPostal?: string;
+}
+
+export interface CompanyLogoTempPayload {
+  tempFileName: string;
+  tempPath: string;
+  size: number;
+  mimeType: string;
+}
+
+export interface CompanyLogoCommitPayload {
+  logoFileName: string;
+  logoPath: string;
+  logoUrl: string;
 }
 
 /**
@@ -96,4 +112,46 @@ export async function reactivateCompany(id: number): Promise<CompanyListItem> {
   const res = await httpFetch(`/companies/${id}/reactivate`, { method: 'PATCH' });
   if (!res.ok) throw new Error('Error al reactivar empresa');
   return res.json();
+}
+
+export function getCompanyLogoUrl(companyId: number, bustCache = false): string {
+  const suffix = bustCache ? `?t=${Date.now()}` : '';
+  return `${API_URL}/companies/${companyId}/logo${suffix}`;
+}
+
+export async function uploadCompanyLogoTemp(file: File): Promise<CompanyLogoTempPayload> {
+  const formData = new FormData();
+  formData.append('file', file);
+  const res = await httpFetch('/companies/logo/temp', {
+    method: 'POST',
+    body: formData,
+  });
+  if (!res.ok) {
+    const error = await res.json().catch(() => null) as { message?: string | string[] } | null;
+    const msg = Array.isArray(error?.message) ? error.message.join(', ') : error?.message;
+    throw new Error(msg || 'Error al subir logo temporal');
+  }
+  return res.json();
+}
+
+export async function commitCompanyLogo(companyId: number, tempFileName: string): Promise<CompanyLogoCommitPayload> {
+  const res = await httpFetch(`/companies/${companyId}/logo/commit`, {
+    method: 'POST',
+    body: JSON.stringify({ tempFileName }),
+  });
+  if (!res.ok) {
+    const error = await res.json().catch(() => null) as { message?: string | string[] } | null;
+    const msg = Array.isArray(error?.message) ? error.message.join(', ') : error?.message;
+    throw new Error(msg || 'Error al confirmar logo');
+  }
+  return res.json();
+}
+
+export async function fetchCompanyLogoBlobUrl(companyId: number): Promise<string> {
+  const res = await httpFetch(`/companies/${companyId}/logo`);
+  if (!res.ok) {
+    throw new Error('Error al cargar logo de empresa');
+  }
+  const blob = await res.blob();
+  return URL.createObjectURL(blob);
 }

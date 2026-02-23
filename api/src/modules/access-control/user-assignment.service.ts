@@ -43,7 +43,7 @@ export class UserAssignmentService {
     private readonly permRepo: Repository<Permission>,
   ) {}
 
-  // --- Usuario ↔ App ---
+  // --- Usuario <-> App ---
 
   async assignApp(dto: AssignUserAppDto, actorUserId?: number): Promise<UserApp> {
     await this.assertUserCanBeMutated(dto.idUsuario, actorUserId, false);
@@ -61,11 +61,11 @@ export class UserAssignmentService {
     await this.assertUserCanBeMutated(idUsuario, actorUserId, true);
     const ua = await this.userAppRepo.findOne({ where: { idUsuario, idApp } });
     if (!ua) {
-      throw new NotFoundException('Asignación usuario-app no encontrada');
+      throw new NotFoundException('Asignacion usuario-app no encontrada');
     }
     const activeApps = await this.userAppRepo.count({ where: { idUsuario, estado: 1 } });
     if (ua.estado === 1 && activeApps <= 1) {
-      throw new ConflictException('No se puede revocar la Ãºltima aplicaciÃ³n activa del usuario');
+      throw new ConflictException('No se puede revocar la ultima aplicacion activa del usuario');
     }
     ua.estado = 0;
     await this.userAppRepo.save(ua);
@@ -75,7 +75,7 @@ export class UserAssignmentService {
     return this.userAppRepo.find({ where: { idUsuario, estado: 1 } });
   }
 
-  // --- Usuario ↔ Empresa ---
+  // --- Usuario <-> Empresa ---
 
   async assignCompany(dto: AssignUserCompanyDto, actorUserId?: number): Promise<UserCompany> {
     await this.assertUserCanBeMutated(dto.idUsuario, actorUserId, false);
@@ -83,7 +83,7 @@ export class UserAssignmentService {
       where: { idUsuario: dto.idUsuario, idEmpresa: dto.idEmpresa },
     });
     if (existing) {
-      throw new ConflictException('El usuario ya está asignado a esa empresa');
+      throw new ConflictException('El usuario ya esta asignado a esa empresa');
     }
     const uc = this.userCompanyRepo.create(dto);
     return this.userCompanyRepo.save(uc);
@@ -93,7 +93,7 @@ export class UserAssignmentService {
     await this.assertUserCanBeMutated(idUsuario, actorUserId, true);
     const uc = await this.userCompanyRepo.findOne({ where: { idUsuario, idEmpresa } });
     if (!uc) {
-      throw new NotFoundException('Asignación usuario-empresa no encontrada');
+      throw new NotFoundException('Asignacion usuario-empresa no encontrada');
     }
     uc.estado = 0;
     await this.userCompanyRepo.save(uc);
@@ -168,7 +168,7 @@ export class UserAssignmentService {
     );
   }
 
-  // --- Usuario ↔ Rol (scoped por Empresa + App) ---
+  // --- Usuario <-> Rol (scoped por Empresa + App) ---
 
   async assignRole(dto: AssignUserRoleDto, creatorId: number): Promise<UserRole> {
     await this.assertUserCanBeMutated(dto.idUsuario, creatorId, false);
@@ -207,7 +207,7 @@ export class UserAssignmentService {
       where: { idUsuario, idRol, idEmpresa, idApp },
     });
     if (!ur) {
-      throw new NotFoundException('Asignación usuario-rol no encontrada');
+      throw new NotFoundException('Asignacion usuario-rol no encontrada');
     }
     ur.estado = 0;
     ur.modificadoPor = modifierId;
@@ -762,11 +762,11 @@ export class UserAssignmentService {
     enforceLastAdminProtection: boolean,
   ): Promise<void> {
     if (actorUserId && targetUserId === actorUserId) {
-      throw new ConflictException('No puede modificar su propio usuario en esta operaciÃ³n crÃ­tica');
+      throw new ConflictException('No puede modificar su propio usuario en esta operacion critica');
     }
 
     if (await this.isProtectedMasterUser(targetUserId)) {
-      throw new ConflictException('El usuario MASTER estÃ¡ protegido y no puede ser modificado');
+      throw new ConflictException('El usuario MASTER esta protegido y no puede ser modificado');
     }
 
     if (!enforceLastAdminProtection) return;
@@ -776,7 +776,7 @@ export class UserAssignmentService {
     const remainingAdmins = await this.countOtherActiveConfigAdmins(targetUserId);
     if (remainingAdmins === 0) {
       throw new ConflictException(
-        'No se puede aplicar este cambio porque el usuario es el Ãºltimo administrador de configuraciÃ³n',
+        'No se puede aplicar este cambio porque el usuario es el ultimo administrador de configuracion',
       );
     }
   }
@@ -891,3 +891,5 @@ export class UserAssignmentService {
     return Number.isFinite(rawTotal) ? rawTotal : 0;
   }
 }
+
+

@@ -4,7 +4,7 @@
 **Para:** Ingeniero Frontend  
 **De:** Roberto — Arquitecto Funcional / Senior Engineer  
 **Prerrequisito:** Haber leído [02-ScaffoldingProyecto.md](./02-ScaffoldingProyecto.md)  
-**Última actualización:** 2026-02-23 (Tabla y filtros profesionales, ubicación CSS, referencia obligatoria)
+**Última actualización:** 2026-02-23 (Patrón de formularios y modales documentado, tablas y filtros)
 
 ---
 
@@ -13,6 +13,7 @@
 | Sección | Contenido |
 |---------|-----------|
 | [Ubicación del CSS](#ubicación-del-css-obligatorio) | Archivo de estilos compartidos y cómo importarlo |
+| [Formularios y Modales](#formularios-y-modales-patrón-oficial) | Patrón obligatorio para modales de creación/edición |
 | [Tabla y Filtros](#tabla-y-filtros-patrón-oficial-de-listados) | Patrón obligatorio, clases CSS, estructura, ejemplo de uso |
 | [Clases CSS obligatorias](#clases-css-obligatorias-usersmanagementpagemodulecss) | Lista de clases con ubicación en el archivo |
 | [Paleta RRHH](#paleta-rrhh-valores-vigentes) | Colores corporativos (no inventar) |
@@ -150,11 +151,119 @@ import styles from './UsersManagementPage.module.css';
 
 ---
 
+## Formularios y Modales (Patrón Oficial)
+
+> **Todos los formularios de creación/edición en modales deben seguir este patrón.** Garantiza coherencia visual y UX en toda la app.
+
+### Dónde está la referencia
+
+| Tipo | Archivo |
+|------|---------|
+| **Implementación** | `frontend/src/pages/private/configuration/CompaniesManagementPage.tsx` |
+| **Estilos** | `frontend/src/pages/private/configuration/UsersManagementPage.module.css` |
+| **Referencia alternativa** | `frontend/src/pages/private/employees/components/EmployeeCreateModal.tsx` |
+
+### Estructura obligatoria del modal
+
+1. **Header del modal**
+   - Fondo `#f5f7fa`, borde inferior `2px solid #e0e6ed`
+   - Izquierda: icono en recuadro (`companyModalHeaderIcon`, 40x40px, fondo `#f0f9ff`, icono `#5a6c7d`) + título
+   - Derecha: bloque Activo/Inactivo (`companyModalEstadoPaper`) + botón cerrar (X)
+   - **Orden:** Título | Activo | Cerrar. No superponer elementos.
+
+2. **Tabs con iconos**
+   - Cada pestaña debe llevar icono a la izquierda del texto (ej. `BankOutlined`, `EnvironmentOutlined`)
+   - Pestaña activa: texto e icono `#5a6c7d`, indicador de subrayado 3px
+   - Pestañas inactivas: texto e icono `#64748b`
+
+3. **Área de logo (si aplica)**
+   - Layout grid: columna izquierda (placeholder ~90px) + columna derecha (info + botón Cargar)
+   - Placeholder: 90x90px, borde punteado `#cbd5e1`, icono gris `#cbd5e1`
+   - Contenedor: fondo `#f8fafc`, borde punteado `#e0e6ed`, hover con `#5a6c7d`
+
+4. **Campos del formulario**
+   - Espaciado compacto: `gutter={[12, 12]}` en `Row`, `margin-bottom: 12px` en `Form.Item`
+   - Distribución por fila según referencia:
+     - Fila 1: 2 campos (`Col span={12}` cada uno)
+     - Filas 2 y 3: 3 campos (`Col span={8}` cada uno)
+   - Inputs: border-radius 8px, hover/focus con borde `#5a6c7d`
+
+5. **Footer**
+   - Fondo `#f5f7fa`, borde superior `2px solid #e0e6ed`
+   - Botones alineados a la derecha: Cancelar (secundario) + Crear/Guardar (principal `#5a6c7d`)
+   - `footer={null}` en Modal, footer custom dentro del contenido
+
+### Clases CSS para modales (UsersManagementPage.module.css)
+
+| Clase | Uso |
+|-------|-----|
+| `.companyModal` | Contenedor del modal (border-radius, sombra) |
+| `.companyModalHeader` | Flex del título + icono |
+| `.companyModalHeaderIcon` | Recuadro del icono (40x40px) |
+| `.companyModalHeaderRight` | Contenedor Activo + cerrar |
+| `.companyModalEstadoPaper` | Paper del switch Activo/Inactivo |
+| `.companyModalCloseBtn` | Botón X para cerrar |
+| `.companyModalTabs` | Tabs con indicador y colores |
+| `.companyModalFooter` | Footer con fondo y borde |
+| `.companyModalBtnCancel` | Botón Cancelar |
+| `.companyModalBtnSubmit` | Botón principal Crear/Guardar |
+| `.companyFormContent` | Contenedor del formulario (inputs, labels) |
+| `.companyFormGrid` | Grid de campos (espaciado compacto) |
+| `.logoUploadArea` | Área de carga de logo |
+| `.logoUploadPlaceholder` | Recuadro placeholder 90x90px |
+| `.logoUploadInfo`, `.logoUploadTitle`, `.logoUploadDesc` | Info del logo |
+
+### Reglas funcionales
+
+- **Solo campos en BD:** No incluir pestañas o campos que no existan en el modelo/API.
+- **Validaciones:** Campos requeridos con `*`, mensajes claros en `rules`.
+- **Estado visual:** Switch Activo/Inactivo solo informativo en header (edición de estado vía Inactivar/Reactivar en el cuerpo).
+- **Botón primario de submit:** Debe iniciar deshabilitado y habilitarse solo cuando los campos requeridos tengan valor válido (trim y reglas de formato). Esta regla aplica a todos los formularios nuevos y existentes.
+- **Acciones críticas:** Crear y Guardar cambios deben pasar por confirmación explícita (`modal.confirm`) antes de ejecutar mutaciones.
+
+### Ejemplo de uso
+
+```tsx
+<Modal
+  className={styles.companyModal}
+  closable={false}
+  footer={null}
+  title={(
+    <Flex justify="space-between" align="center" style={{ width: '100%' }}>
+      <div className={styles.companyModalHeader}>
+        <div className={styles.companyModalHeaderIcon}>
+          <BankOutlined />
+        </div>
+        <span>Crear Nueva Entidad</span>
+      </div>
+      <Flex align="center" gap={12} className={styles.companyModalHeaderRight}>
+        <div className={styles.companyModalEstadoPaper}>
+          <span>Activo</span>
+          <Switch checked disabled />
+        </div>
+        <Button type="text" icon={<CloseOutlined />} onClick={onClose} className={styles.companyModalCloseBtn} />
+      </Flex>
+    </Flex>
+  )}
+>
+  <Form className={styles.companyFormContent}>
+    <Tabs className={`${styles.tabsWrapper} ${styles.companyModalTabs}`} items={tabItems} />
+    <div className={styles.companyModalFooter}>
+      <Button onClick={onClose} className={styles.companyModalBtnCancel}>Cancelar</Button>
+      <Button type="primary" className={styles.companyModalBtnSubmit}>Crear</Button>
+    </div>
+  </Form>
+</Modal>
+```
+
+---
+
 ## Referencia de Implementación
 
 | Página | Archivo | Qué ver como referencia |
 |--------|---------|-------------------------|
-| **Empresas** | `CompaniesManagementPage.tsx` | Tabla, filtros expandibles, estructura completa de listado |
+| **Empresas** | `CompaniesManagementPage.tsx` | Tabla, filtros expandibles, **modal de creación/edición** (patrón formularios) |
+| **Empleados** | `EmployeeCreateModal.tsx` | Modal con header, tabs, footer (referencia visual MUI-style) |
 | **Usuarios** | `UsersManagementPage.tsx` | Drawer, etiquetas, botones, tabs |
 | **Permisos** | `PermissionsAdminListPage.tsx` | Encabezado, banner informativo, búsqueda |
 | **Roles** | `RolesManagementPage.tsx` | Selector de aplicación, matriz de permisos |
@@ -165,7 +274,7 @@ Todas las páginas anteriores importan `UsersManagementPage.module.css` y aplica
 
 - La pantalla `Configuración > Empresas` **no** muestra tabs de navegación cruzada en su encabezado.
 - Empresas es un módulo dedicado: título, subtítulo y acciones del módulo.
-- El modal usa tabs internos (`Información Principal`, `Dirección`, `Información Financiera`).
+- El modal usa tabs internos (`Información Principal`, `Dirección`). Solo incluir pestañas con campos existentes en BD.
 
 ---
 
@@ -278,8 +387,25 @@ import styles from './UsersManagementPage.module.css';
 | Clase | Uso |
 |-------|-----|
 | `.pageTabs` / `.pageTab` / `.pageTabActive` | Tabs de página (Roles, Usuarios, Permisos) |
-| `.tabsWrapper` | Tabs en Drawer |
+| `.tabsWrapper` | Tabs en Drawer o modal |
 | `.appSelector` | Selector de aplicación (KPITAL/TimeWise) |
+
+#### Modales y formularios (ver sección *Formularios y Modales*)
+| Clase | Uso |
+|-------|-----|
+| `.companyModal`, `.companyModalHeader`, `.companyModalHeaderIcon` | Modal, header, icono |
+| `.companyModalHeaderRight`, `.companyModalEstadoPaper`, `.companyModalCloseBtn` | Activo, switch, cerrar |
+| `.companyModalTabs`, `.companyModalFooter`, `.companyModalBtnCancel`, `.companyModalBtnSubmit` | Tabs, footer, botones |
+| `.companyFormContent`, `.companyFormGrid` | Formulario, grid de campos |
+| `.logoUploadArea`, `.logoUploadPlaceholder`, `.logoUploadInfo` | Área de logo |
+
+#### Modales de confirmación
+| Clase | Uso |
+|-------|-----|
+| `.companyConfirmModal` | Modal de confirmación centrado, ancho 420px, estilo Paleta RRHH |
+| `.companyConfirmOk`, `.companyConfirmCancel` | Botones Sí/Cancelar |
+
+**Ejemplo:** `modal.confirm({ rootClassName: styles.companyConfirmModal, icon: <QuestionCircleOutlined style={{ color: '#5a6c7d' }} />, centered: true, width: 420, okButtonProps: { className: styles.companyConfirmOk }, cancelButtonProps: { className: styles.companyConfirmCancel } })`
 
 **Regla:** Usar estas clases. No inventar colores ni duplicar estilos.
 
@@ -346,20 +472,22 @@ Todo mensaje informativo (Para qué sirve, Inactivar vs Bloquear, Denegar permis
 ### Qué SÍ hacer
 
 1. **Usar componentes base de AntD directamente:** `Button`, `Table`, `Form`, `Modal`, `Select`, `Input`, `DatePicker`, `Tabs`, `Card`, `Badge`, `Avatar`, `Tag`, `Space`, `Typography`, `Layout`, `Menu`.
-2. **Para tablas y filtros:** Usar el patrón de `CompaniesManagementPage.tsx` y las clases `configTable`, `companiesTable`, `filtersCollapse`, `paneCard`, `paneOptionsBox` de `UsersManagementPage.module.css`. Ver sección *Tabla y Filtros*.
-3. **Usar CSS Modules (`.module.css`)** para estilos específicos. Importar `UsersManagementPage.module.css` en páginas de configuración.
-4. **Usar exclusivamente la Paleta RRHH** para colores. No inventar colores fuera de ella.
-5. **Consultar** `frontend/src/pages/private/configuration/UsersManagementPage.module.css` para clases y valores hex.
-6. **Usar tabs estilo control segmentado** para Empresas, Roles, Excepciones, Acciones y para Roles, Usuarios, Permisos.
-7. **Usar banners informativos compactos** (`infoBanner` + `infoType`/`warningType`/`dangerType`) para mensajes de guía o advertencia.
+2. **Para formularios y modales de creación/edición:** Usar el patrón de `CompaniesManagementPage.tsx` (modal) y las clases `companyModal*`, `companyFormContent`, `companyFormGrid`, `logoUploadArea` de `UsersManagementPage.module.css`. Ver sección *Formularios y Modales*.
+3. **Para tablas y filtros:** Usar el patrón de `CompaniesManagementPage.tsx` y las clases `configTable`, `companiesTable`, `filtersCollapse`, `paneCard`, `paneOptionsBox` de `UsersManagementPage.module.css`. Ver sección *Tabla y Filtros*.
+4. **Usar CSS Modules (`.module.css`)** para estilos específicos. Importar `UsersManagementPage.module.css` en páginas de configuración.
+5. **Usar exclusivamente la Paleta RRHH** para colores. No inventar colores fuera de ella.
+6. **Consultar** `frontend/src/pages/private/configuration/UsersManagementPage.module.css` para clases y valores hex.
+7. **Usar tabs estilo control segmentado** para Empresas, Roles, Excepciones, Acciones y para Roles, Usuarios, Permisos.
+8. **Usar banners informativos compactos** (`infoBanner` + `infoType`/`warningType`/`dangerType`) para mensajes de guía o advertencia.
 
 ### Qué NO hacer
 
 1. **No usar colores fuertes ni llamativos.** Evitar azul brillante (`#1677ff`), verde fuerte (`#52c41a`), rojos saturados. En banners informativos, usar iconos suaves (ver sección *Iconos de banners informativos*).
 2. **No poner lógica de negocio en componentes UI.** Un `KpTable` no decide qué datos mostrar. Recibe datos procesados.
 3. **No mezclar frameworks.** Si AntD tiene un `Select`, no uses `react-select`. Si AntD tiene un `Modal`, no hagas uno custom con CSS.
-4. **No sobreescribir estilos globales de AntD con `!important`.** Usar tokens del tema o CSS Modules.
-5. **No hardcodear colores fuera de la Paleta RRHH.** Usar los hex documentados en este documento.
+4. **No crear modales o formularios con estilos distintos.** Seguir el patrón documentado en *Formularios y Modales* para mantener coherencia.
+5. **No sobreescribir estilos globales de AntD con `!important`.** Usar tokens del tema o CSS Modules.
+6. **No hardcodear colores fuera de la Paleta RRHH.** Usar los hex documentados en este documento.
 
 ---
 
@@ -411,3 +539,12 @@ Aplicada globalmente en `index.css` y en el tema de AntD (`fontFamily`).
 4. Integrar en `Providers.tsx` como wrapper
 5. Crear componentes envueltos (`KpButton`, `KpTable`)
 6. Migrar layout a componentes AntD (`Layout`, `Menu`, etc.)
+
+---
+
+## Estandar de encoding Frontend (obligatorio)
+
+- Todos los archivos de rontend/src deben guardarse en UTF-8 sin BOM.
+- No se permiten cadenas mojibake en UI (CÃ, Â, Ãƒ, â†’, etc.).
+- Si un entorno presenta problemas con acentos, usar texto sin tilde como fallback funcional.
+- Antes de merge, ejecutar barrido de caracteres corruptos en rontend/src.

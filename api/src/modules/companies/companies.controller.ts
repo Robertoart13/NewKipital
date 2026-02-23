@@ -1,10 +1,41 @@
-import { Controller, Get, Post, Put, Patch, Param, Body, Query, ParseIntPipe, ParseBoolPipe } from '@nestjs/common';
+import {
+  BadRequestException,
+  Body,
+  Controller,
+  Get,
+  Param,
+  ParseBoolPipe,
+  ParseIntPipe,
+  Patch,
+  Post,
+  Put,
+  Query,
+  Res,
+  StreamableFile,
+  UploadedFile,
+  UseInterceptors,
+} from '@nestjs/common';
 import { CompaniesService } from './companies.service.js';
 import { CreateCompanyDto } from './dto/create-company.dto.js';
 import { UpdateCompanyDto } from './dto/update-company.dto.js';
 import { Public } from '../../common/decorators/public.decorator.js';
 import { RequirePermissions } from '../../common/decorators/require-permissions.decorator.js';
 import { CurrentUser } from '../../common/decorators/current-user.decorator.js';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { diskStorage } from 'multer';
+import { basename, extname, join } from 'node:path';
+import { mkdirSync } from 'node:fs';
+import type { Response } from 'express';
+
+const COMPANY_LOGO_TEMP_DIR = join(process.cwd(), 'uploads', 'logoEmpresa', 'temp');
+const MAX_LOGO_SIZE_BYTES = 5 * 1024 * 1024;
+const ALLOWED_IMAGE_MIME_TYPES = new Set([
+  'image/png',
+  'image/jpeg',
+  'image/jpg',
+  'image/webp',
+  'image/svg+xml',
+]);
 
 @Controller('companies')
 export class CompaniesController {
@@ -50,5 +81,65 @@ export class CompaniesController {
   @Patch(':id/reactivate')
   reactivate(@Param('id', ParseIntPipe) id: number, @CurrentUser() user: { userId: number }) {
     return this.service.reactivate(id, user.userId);
+  }
+
+  @RequirePermissions('company:create')
+  @Post('logo/temp')
+  @UseInterceptors(
+    FileInterceptor('file', {
+      storage: diskStorage({
+        destination: (_req, _file, callback) => {
+          mkdirSync(COMPANY_LOGO_TEMP_DIR, { recursive: true });
+          callback(null, COMPANY_LOGO_TEMP_DIR);
+        },
+        filename: (_req, file, callback) => {
+          const extension = extname(file.originalname || '').toLowerCase();
+          const safeExt = extension || '.png';
+          const unique = `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+          callback(null, `${unique}${safeExt}`);
+        },
+      }),
+      limits: { fileSize: MAX_LOGO_SIZE_BYTES },
+      fileFilter: (_req, file, callback) => {
+        if (!ALLOWED_IMAGE_MIME_TYPES.has(file.mimetype)) {
+          return callback(new BadRequestException('Solo se permiten archivos de imagen'), false);
+        }
+        callback(null, true);
+      },
+    }),
+  )
+  uploadTempLogo(
+    @UploadedFile() file: {
+      filename: string;
+      path: string;
+      size: number;
+      mimetype: string;
+    },
+  ) {
+    if (!file) {
+      throw new BadRequestException('Debe adjuntar una imagen');
+    }
+    return this.service.registerTempLogo(file);
+  }
+
+  @RequirePermissions('company:create')
+  @Post(':id/logo/commit')
+  commitLogo(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() body: { tempFileName: string },
+  ) {
+    return this.service.commitTempLogo(id, basename(body?.tempFileName ?? ''));
+  }
+
+  @RequirePermissions('company:view')
+  @Get(':id/logo')
+  async getLogo(
+    @Param('id', ParseIntPipe) id: number,
+    @Res({ passthrough: true }) res: Response,
+  ): Promise<StreamableFile> {
+    const logo = await this.service.resolveCompanyLogo(id);
+    res.setHeader('Content-Type', logo.mimeType);
+    res.setHeader('Cache-Control', 'public, max-age=300');
+    return new StreamableFile(this.service.createLogoReadStream(logo.absolutePath));
   }
 }

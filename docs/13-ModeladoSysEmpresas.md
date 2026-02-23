@@ -133,8 +133,19 @@ Capacidades implementadas:
 - Inactivar/reactivar empresa con confirmacion.
 
 Nota:
-- El bloque de logo en modal esta preparado a nivel UI.
-- Persistencia de logo no esta implementada aun porque `sys_empresas` no tiene columna/tabla de archivo asociada.
+- El logo empresarial ya esta implementado sin agregar columna en `sys_empresas`.
+- Se usa storage en filesystem con flujo temporal + commit:
+  - Temporal: `uploads/logoEmpresa/temp`
+  - Final: `uploads/logoEmpresa/{idEmpresa}.{ext}`
+- Si no existe logo de la empresa, el API entrega imagen por defecto (`imgSEO.jpg`).
+- En edicion, si solo se actualizan campos de texto y no se adjunta nueva imagen, el logo actual se conserva.
+- Validaciones activas de logo: solo tipo imagen, maximo 5MB.
+
+### Endpoints de logo (implementados)
+
+- `POST /api/companies/logo/temp` (subida temporal)
+- `POST /api/companies/:id/logo/commit` (asignacion final por id de empresa)
+- `GET /api/companies/:id/logo` (devuelve logo de empresa o default)
 
 ---
 

@@ -1,7 +1,6 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
-  Alert,
   App as AntdApp,
   Badge,
   Button,
@@ -21,17 +20,22 @@ import {
   Table,
   Tag,
   Tabs,
+  Tooltip,
   Upload,
 } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
+import type { UploadProps } from 'antd';
 import {
   ArrowLeftOutlined,
   BankOutlined,
   CheckCircleOutlined,
+  CloseOutlined,
+  CloudUploadOutlined,
   DownOutlined,
+  EnvironmentOutlined,
   FilterOutlined,
-  InboxOutlined,
   PlusOutlined,
+  QuestionCircleOutlined,
   SearchOutlined,
   SortAscendingOutlined,
   SortDescendingOutlined,
@@ -39,10 +43,13 @@ import {
   UpOutlined,
 } from '@ant-design/icons';
 import {
+  commitCompanyLogo,
   createCompany,
+  fetchCompanyLogoBlobUrl,
   fetchCompanies,
   inactivateCompany,
   reactivateCompany,
+  uploadCompanyLogoTemp,
   updateCompany,
   type CompanyListItem,
   type CompanyPayload,
@@ -82,6 +89,9 @@ interface PaneOption {
   count: number;
 }
 
+const DEFAULT_COMPANY_LOGO = '/assets/images/global/imgSEO.jpg';
+const MAX_LOGO_FILE_SIZE = 5 * 1024 * 1024;
+
 function getPaneValue(company: CompanyListItem, key: PaneKey): string {
   if (key === 'estado') return company.estado === 1 ? 'Activo' : 'Inactivo';
   if (key === 'nombre') return company.nombre ?? '';
@@ -95,9 +105,9 @@ function getPaneValue(company: CompanyListItem, key: PaneKey): string {
 const paneConfig: PaneConfig[] = [
   { key: 'prefijo', title: 'Prefijo Empresa' },
   { key: 'nombre', title: 'Nombre Empresa' },
-  { key: 'cedula', title: 'Cédula Empresa' },
+  { key: 'cedula', title: 'Cedula Empresa' },
   { key: 'idExterno', title: 'ID Externo Empresa' },
-  { key: 'telefono', title: 'Teléfono Empresa' },
+  { key: 'telefono', title: 'Telefono Empresa' },
   { key: 'email', title: 'Email Empresa' },
   { key: 'estado', title: 'Estado Empresa' },
 ];
@@ -118,7 +128,7 @@ function normalizeCompanyPayload(values: CompanyFormValues): CompanyPayload {
 }
 
 export function CompaniesManagementPage() {
-  const { message } = AntdApp.useApp();
+  const { message, modal } = AntdApp.useApp();
   useAppSelector(canViewCompanies);
   const canCreateCompanyPerm = useAppSelector(canCreateCompany);
   const canEditCompanyPerm = useAppSelector(canEditCompany);
@@ -126,6 +136,7 @@ export function CompaniesManagementPage() {
   const canReactivateCompanyPerm = useAppSelector(canReactivateCompany);
 
   const [form] = Form.useForm<CompanyFormValues>();
+  const formValues = Form.useWatch([], form);
   const [companies, setCompanies] = useState<CompanyListItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -163,6 +174,33 @@ export function CompaniesManagementPage() {
   const [openModal, setOpenModal] = useState(false);
   const [editingCompany, setEditingCompany] = useState<CompanyListItem | null>(null);
   const [activeTab, setActiveTab] = useState('principal');
+  const [logoFile, setLogoFile] = useState<File | null>(null);
+  const [logoTempFileName, setLogoTempFileName] = useState<string | null>(null);
+  const [logoPreviewUrl, setLogoPreviewUrl] = useState<string>(DEFAULT_COMPANY_LOGO);
+  const logoObjectUrlRef = useRef<string | null>(null);
+  const canUploadLogo = editingCompany ? canEditCompanyPerm : canCreateCompanyPerm;
+  const canSubmitCompany = useMemo(() => {
+    const values = formValues ?? {};
+    const required = [
+      values.nombre,
+      values.nombreLegal,
+      values.cedula,
+      values.prefijo,
+    ];
+    return required.every((value) => typeof value === 'string' && value.trim().length > 0);
+  }, [formValues]);
+
+  const clearLogoObjectUrl = useCallback(() => {
+    if (!logoObjectUrlRef.current) return;
+    URL.revokeObjectURL(logoObjectUrlRef.current);
+    logoObjectUrlRef.current = null;
+  }, []);
+
+  const setPreviewFromObjectUrl = useCallback((url: string) => {
+    clearLogoObjectUrl();
+    logoObjectUrlRef.current = url;
+    setLogoPreviewUrl(url);
+  }, [clearLogoObjectUrl]);
 
   const loadCompanies = useCallback(async () => {
     setLoading(true);
@@ -257,9 +295,41 @@ export function CompaniesManagementPage() {
     setPaneOpen({ prefijo: false, nombre: false, cedula: false, idExterno: false, telefono: false, email: false, estado: false });
   };
 
+  const logoUploadProps: UploadProps = {
+    accept: 'image/png,image/jpeg,image/jpg,image/webp,image/svg+xml',
+    maxCount: 1,
+    showUploadList: false,
+    beforeUpload: (file) => {
+      const isImage = file.type?.startsWith('image/');
+      if (!isImage) {
+        message.error('Solo se permiten archivos de imagen');
+        return Upload.LIST_IGNORE;
+      }
+      if (file.size > MAX_LOGO_FILE_SIZE) {
+        message.error('La imagen supera el tamano maximo de 5MB');
+        return Upload.LIST_IGNORE;
+      }
+      clearLogoObjectUrl();
+      setLogoFile(file as File);
+      setLogoTempFileName(null);
+      setLogoPreviewUrl(URL.createObjectURL(file));
+      return false;
+    },
+  };
+
+  useEffect(() => {
+    return () => {
+      clearLogoObjectUrl();
+    };
+  }, [clearLogoObjectUrl]);
+
   const openCreateModal = () => {
     setEditingCompany(null);
     setActiveTab('principal');
+    clearLogoObjectUrl();
+    setLogoFile(null);
+    setLogoTempFileName(null);
+    setLogoPreviewUrl(DEFAULT_COMPANY_LOGO);
     form.resetFields();
     setOpenModal(true);
   };
@@ -267,6 +337,10 @@ export function CompaniesManagementPage() {
   const openEditModal = (company: CompanyListItem) => {
     setEditingCompany(company);
     setActiveTab('principal');
+    clearLogoObjectUrl();
+    setLogoFile(null);
+    setLogoTempFileName(null);
+    setLogoPreviewUrl(DEFAULT_COMPANY_LOGO);
     form.setFieldsValue({
       nombre: company.nombre ?? '',
       nombreLegal: company.nombreLegal ?? '',
@@ -282,24 +356,99 @@ export function CompaniesManagementPage() {
     setOpenModal(true);
   };
 
+  const restoreEditingLogoPreview = useCallback(async () => {
+    if (!editingCompany) {
+      setLogoPreviewUrl(DEFAULT_COMPANY_LOGO);
+      return;
+    }
+    try {
+      const blobUrl = await fetchCompanyLogoBlobUrl(editingCompany.id);
+      setPreviewFromObjectUrl(blobUrl);
+    } catch {
+      setLogoPreviewUrl(DEFAULT_COMPANY_LOGO);
+    }
+  }, [editingCompany, setPreviewFromObjectUrl]);
+
+  useEffect(() => {
+    if (!openModal || !editingCompany) return;
+
+    let cancelled = false;
+    const loadLogo = async () => {
+      try {
+        const blobUrl = await fetchCompanyLogoBlobUrl(editingCompany.id);
+        if (cancelled) {
+          URL.revokeObjectURL(blobUrl);
+          return;
+        }
+        setPreviewFromObjectUrl(blobUrl);
+      } catch {
+        if (!cancelled) setLogoPreviewUrl(DEFAULT_COMPANY_LOGO);
+      }
+    };
+
+    void loadLogo();
+    return () => {
+      cancelled = true;
+    };
+  }, [editingCompany, openModal, setPreviewFromObjectUrl]);
+
   const closeModal = () => {
     setOpenModal(false);
     setEditingCompany(null);
+    clearLogoObjectUrl();
+    setLogoFile(null);
+    setLogoTempFileName(null);
+    setLogoPreviewUrl(DEFAULT_COMPANY_LOGO);
     form.resetFields();
   };
 
   const submitCompany = async () => {
     try {
+      const isEditing = Boolean(editingCompany);
+      const confirmed = await new Promise<boolean>((resolve) => {
+        modal.confirm({
+          title: isEditing ? 'Confirmar edición de empresa' : 'Confirmar creación de empresa',
+          content: isEditing
+            ? '¿Está seguro de guardar los cambios de esta empresa?'
+            : '¿Está seguro de crear esta empresa?',
+          icon: <QuestionCircleOutlined style={{ color: '#5a6c7d', fontSize: 40 }} />,
+          okText: isEditing ? 'Sí, guardar cambios' : 'Sí, crear',
+          cancelText: 'Cancelar',
+          centered: true,
+          width: 420,
+          rootClassName: styles.companyConfirmModal,
+          okButtonProps: { className: styles.companyConfirmOk },
+          cancelButtonProps: { className: styles.companyConfirmCancel },
+          onOk: () => resolve(true),
+          onCancel: () => resolve(false),
+        });
+      });
+
+      if (!confirmed) return;
+
       const values = await form.validateFields();
       const payload = normalizeCompanyPayload(values);
       setSaving(true);
 
+      let tempFileName = logoTempFileName;
+      if (logoFile && !tempFileName) {
+        const uploaded = await uploadCompanyLogoTemp(logoFile);
+        tempFileName = uploaded.tempFileName;
+        setLogoTempFileName(tempFileName);
+      }
+
+      let persistedCompany: CompanyListItem;
+
       if (editingCompany) {
-        await updateCompany(editingCompany.id, payload);
+        persistedCompany = await updateCompany(editingCompany.id, payload);
         message.success('Empresa actualizada correctamente');
       } else {
-        await createCompany(payload);
+        persistedCompany = await createCompany(payload);
         message.success('Empresa creada correctamente');
+      }
+
+      if (tempFileName) {
+        await commitCompanyLogo(persistedCompany.id, tempFileName);
       }
 
       closeModal();
@@ -346,11 +495,17 @@ export function CompaniesManagementPage() {
       title: 'NOMBRE EMPRESA',
       dataIndex: 'nombre',
       key: 'nombre',
+      width: 320,
+      ellipsis: true,
       sorter: (a, b) => (a.nombre ?? '').localeCompare(b.nombre ?? ''),
-      render: (_, company) => company.nombre || '-',
+      render: (_, company) => (
+        <Tooltip title={company.nombre || '-'}>
+          <span>{company.nombre || '-'}</span>
+        </Tooltip>
+      ),
     },
     {
-      title: 'CÉDULA EMPRESA',
+      title: 'CEDULA EMPRESA',
       dataIndex: 'cedula',
       key: 'cedula',
       width: 160,
@@ -366,7 +521,7 @@ export function CompaniesManagementPage() {
       render: (value) => value || '-',
     },
     {
-      title: 'TELÉFONO EMPRESA',
+      title: 'TELEFONO EMPRESA',
       dataIndex: 'telefono',
       key: 'telefono',
       width: 140,
@@ -418,21 +573,22 @@ export function CompaniesManagementPage() {
                 <BankOutlined className={styles.gestionIcon} />
               </div>
               <div>
-                <h2 className={styles.gestionTitle}>Gestión de Empresas</h2>
+                <h2 className={styles.gestionTitle}>Gestion de Empresas</h2>
                 <p className={styles.gestionDesc}>
                   Administre y consulte todas las empresas registradas en el sistema
                 </p>
               </div>
             </Flex>
-            <Button
-              type="primary"
-              icon={<PlusOutlined />}
-              className={`${styles.actionButton} ${styles.btnPrimary}`}
-              disabled={!canCreateCompanyPerm}
-              onClick={openCreateModal}
-            >
-              Crear Empresa
-            </Button>
+            {canCreateCompanyPerm ? (
+              <Button
+                type="primary"
+                icon={<PlusOutlined />}
+                className={`${styles.actionButton} ${styles.btnPrimary}`}
+                onClick={openCreateModal}
+              >
+                Crear Empresa
+              </Button>
+            ) : null}
           </Flex>
         </div>
       </Card>
@@ -510,7 +666,7 @@ export function CompaniesManagementPage() {
                           title="Abrir opciones"
                         />
                         <Button size="middle" onClick={() => clearPaneSelection(pane.key)} title="Limpiar">
-                          ×
+                          x
                         </Button>
                         <Button
                           size="middle"
@@ -567,23 +723,40 @@ export function CompaniesManagementPage() {
       </Card>
 
       <Modal
+        className={styles.companyModal}
         open={openModal}
         onCancel={closeModal}
-        onOk={() => void submitCompany()}
-        okText={editingCompany ? 'Guardar cambios' : 'Crear Empresa'}
-        cancelText="Cancelar"
+        closable={false}
+        footer={null}
         confirmLoading={saving}
         width={920}
         destroyOnHidden
+        styles={{
+          header: { marginBottom: 0, padding: 0 },
+          body: { padding: 24 },
+        }}
         title={(
-          <Flex justify="space-between" align="center">
-            <Flex align="center" gap={10}>
-              <BankOutlined />
+          <Flex justify="space-between" align="center" wrap="nowrap" style={{ width: '100%', gap: 16 }}>
+            <div className={styles.companyModalHeader}>
+              <div className={styles.companyModalHeaderIcon}>
+                <BankOutlined />
+              </div>
               <span>{editingCompany ? 'Editar Empresa' : 'Crear Nueva Empresa'}</span>
-            </Flex>
-            <Flex align="center" gap={8}>
-              <span style={{ color: '#6b7a85', fontSize: 13 }}>Activo</span>
-              <Switch checked={editingCompany ? editingCompany.estado === 1 : true} disabled />
+            </div>
+            <Flex align="center" gap={12} className={styles.companyModalHeaderRight}>
+              <div className={styles.companyModalEstadoPaper}>
+                <span style={{ fontWeight: 500, fontSize: 14, color: editingCompany?.estado === 0 ? '#64748b' : '#0369a1' }}>
+                  {editingCompany ? (editingCompany.estado === 1 ? 'Activo' : 'Inactivo') : 'Activo'}
+                </span>
+                <Switch checked={editingCompany ? editingCompany.estado === 1 : true} disabled />
+              </div>
+              <Button
+                type="text"
+                icon={<CloseOutlined />}
+                onClick={closeModal}
+                aria-label="Cerrar"
+                className={styles.companyModalCloseBtn}
+              />
             </Flex>
           </Flex>
         )}
@@ -592,125 +765,157 @@ export function CompaniesManagementPage() {
           layout="vertical"
           form={form}
           preserve={false}
-          initialValues={{ prefijo: '' }}
+          initialValues={{ prefijo: '', idExterno: '0' }}
+          className={styles.companyFormContent}
         >
           {editingCompany && (
             <Flex gap={12} style={{ marginBottom: 16 }} wrap="wrap">
-              {editingCompany.estado === 1 ? (
+              {editingCompany.estado === 1 && canInactivateCompanyPerm ? (
                 <Popconfirm
                   title="¿Inactivar empresa?"
-                  description="La empresa no se elimina. Solo quedará inactiva."
+                  description="La empresa no se elimina. Solo quedara inactiva."
                   onConfirm={async () => {
                     await handleInactivate(editingCompany);
                     closeModal();
                   }}
                   okText="Inactivar"
                   cancelText="Cancelar"
-                  disabled={!canInactivateCompanyPerm}
                 >
                   <Button
                     icon={<StopOutlined />}
-                    disabled={!canInactivateCompanyPerm}
                     className={`${styles.actionButton} ${styles.btnSecondary}`}
                   >
                     Inactivar Empresa
                   </Button>
                 </Popconfirm>
-              ) : (
+              ) : null}
+              {editingCompany.estado !== 1 && canReactivateCompanyPerm ? (
                 <Popconfirm
                   title="¿Reactivar empresa?"
-                  description="La empresa volverá a estar disponible para asignaciones."
+                  description="La empresa volvera a estar disponible para asignaciones."
                   onConfirm={async () => {
                     await handleReactivate(editingCompany);
                     closeModal();
                   }}
                   okText="Reactivar"
                   cancelText="Cancelar"
-                  disabled={!canReactivateCompanyPerm}
                 >
                   <Button
                     icon={<CheckCircleOutlined />}
-                    disabled={!canReactivateCompanyPerm}
                     className={`${styles.actionButton} ${styles.btnSecondary}`}
                   >
                     Reactivar Empresa
                   </Button>
                 </Popconfirm>
-              )}
+              ) : null}
             </Flex>
           )}
           <Tabs
             activeKey={activeTab}
             onChange={setActiveTab}
+            className={`${styles.tabsWrapper} ${styles.companyModalTabs}`}
             items={[
               {
                 key: 'principal',
-                label: 'Información Principal',
+                label: (
+                  <span>
+                    <BankOutlined style={{ marginRight: 8, fontSize: 16 }} />
+                    Informacion Principal
+                  </span>
+                ),
                 children: (
                   <>
-                    <Card variant="borderless" style={{ background: '#f7f8fa', border: '1px solid #e8ecf0', marginBottom: 16 }}>
-                      <Flex align="center" gap={14}>
-                        <Upload.Dragger
-                          name="logo"
-                          multiple={false}
-                          disabled
-                          style={{ maxWidth: 160 }}
-                        >
-                          <p className="ant-upload-drag-icon">
-                            <InboxOutlined />
-                          </p>
-                          <p className="ant-upload-text">Logo</p>
-                        </Upload.Dragger>
-                        <div>
-                          <p style={{ margin: 0, color: '#3d4f5c', fontWeight: 600 }}>Logo de la Empresa</p>
-                          <p style={{ margin: '4px 0 0', color: '#6b7a85', fontSize: 12 }}>
-                            Formato PNG, JPG o SVG. Máximo 5MB (UI preparada para integración).
-                          </p>
-                        </div>
-                      </Flex>
-                    </Card>
-                    <Row gutter={12}>
+                    <div className={styles.logoUploadArea}>
+                      <Row gutter={16} align="middle" style={{ width: '100%' }}>
+                        <Col flex="0 0 90px">
+                          <img
+                            src={logoPreviewUrl || DEFAULT_COMPANY_LOGO}
+                            alt="Logo empresa"
+                            className={styles.logoUploadPreview}
+                            onError={(event) => {
+                              const target = event.currentTarget;
+                              if (!target.src.endsWith(DEFAULT_COMPANY_LOGO)) {
+                                target.src = DEFAULT_COMPANY_LOGO;
+                              }
+                            }}
+                          />
+                        </Col>
+                        <Col flex="1">
+                          <div className={styles.logoUploadInfo}>
+                            <p className={styles.logoUploadTitle}>Logo de la Empresa</p>
+                            <p className={styles.logoUploadDesc}>Formato de imagen (PNG, JPG, SVG) - Maximo 5MB</p>
+                            <Space style={{ marginTop: 8 }}>
+                              {canUploadLogo ? (
+                                <Upload {...logoUploadProps}>
+                                  <Button
+                                    icon={<CloudUploadOutlined />}
+                                    className={`${styles.actionButton} ${styles.btnPrimary}`}
+                                  >
+                                    Cargar
+                                  </Button>
+                                </Upload>
+                              ) : null}
+                              {logoFile && canUploadLogo ? (
+                                <Button
+                                  icon={<CloseOutlined />}
+                                  className={`${styles.actionButton} ${styles.btnSecondary}`}
+                                  onClick={() => {
+                                    setLogoFile(null);
+                                    setLogoTempFileName(null);
+                                    clearLogoObjectUrl();
+                                    if (editingCompany) {
+                                      void restoreEditingLogoPreview();
+                                    } else {
+                                      setLogoPreviewUrl(DEFAULT_COMPANY_LOGO);
+                                    }
+                                  }}
+                                >
+                                  Quitar
+                                </Button>
+                              ) : null}
+                            </Space>
+                          </div>
+                        </Col>
+                      </Row>
+                    </div>
+                    <Row gutter={[12, 12]} className={styles.companyFormGrid}>
                       <Col span={12}>
-                        <Form.Item name="nombre" label="Nombre Empresa" rules={[{ required: true, message: 'Ingrese el nombre de empresa' }]}>
+                        <Form.Item name="nombre" label="Nombre Empresa *" rules={[{ required: true, message: 'Ingrese el nombre de empresa' }]}>
                           <Input maxLength={200} />
                         </Form.Item>
                       </Col>
                       <Col span={12}>
-                        <Form.Item name="nombreLegal" label="Nombre Legal Empresa" rules={[{ required: true, message: 'Ingrese el nombre legal' }]}>
+                        <Form.Item name="nombreLegal" label="Nombre Legal Empresa *" rules={[{ required: true, message: 'Ingrese el nombre legal' }]}>
                           <Input maxLength={300} />
                         </Form.Item>
                       </Col>
-                    </Row>
-                    <Row gutter={12}>
                       <Col span={8}>
-                        <Form.Item name="cedula" label="Cédula Empresa" rules={[{ required: true, message: 'Ingrese la cédula' }]}>
+                        <Form.Item name="cedula" label="Cedula Empresa *" rules={[{ required: true, message: 'Ingrese la cedula' }]}>
                           <Input maxLength={50} />
                         </Form.Item>
                       </Col>
                       <Col span={8}>
-                        <Form.Item name="actividadEconomica" label="Actividad Económica">
+                        <Form.Item name="actividadEconomica" label="Actividad Economica Empresa">
                           <Input maxLength={300} />
                         </Form.Item>
                       </Col>
                       <Col span={8}>
-                        <Form.Item name="prefijo" label="Prefijo Empresa" rules={[{ required: true, message: 'Ingrese el prefijo' }]}>
+                        <Form.Item name="prefijo" label="Prefijo Empresa *" rules={[{ required: true, message: 'Ingrese el prefijo' }]}>
                           <Input maxLength={10} />
                         </Form.Item>
                       </Col>
-                    </Row>
-                    <Row gutter={12}>
                       <Col span={8}>
                         <Form.Item name="idExterno" label="ID Externo Empresa">
-                          <Input maxLength={100} />
+                          <Input maxLength={100} placeholder="0" />
                         </Form.Item>
                       </Col>
                       <Col span={8}>
-                        <Form.Item name="email" label="Email Empresa" rules={[{ type: 'email', message: 'Formato de correo inválido' }]}>
+                        <Form.Item name="email" label="Email 1 Empresa" rules={[{ type: 'email', message: 'Formato de correo invalido' }]}>
                           <Input maxLength={150} />
                         </Form.Item>
                       </Col>
                       <Col span={8}>
-                        <Form.Item name="telefono" label="Teléfono Empresa">
+                        <Form.Item name="telefono" label="Telefono Empresa">
                           <Input maxLength={30} />
                         </Form.Item>
                       </Col>
@@ -720,39 +925,48 @@ export function CompaniesManagementPage() {
               },
               {
                 key: 'direccion',
-                label: 'Dirección',
+                label: (
+                  <span>
+                    <EnvironmentOutlined style={{ marginRight: 8, fontSize: 16 }} />
+                    Direccion
+                  </span>
+                ),
                 children: (
-                  <Row gutter={12}>
+                  <Row gutter={[12, 12]} className={styles.companyFormGrid}>
                     <Col span={16}>
-                      <Form.Item name="direccionExacta" label="Dirección Exacta">
+                      <Form.Item name="direccionExacta" label="Direccion Exacta">
                         <Input.TextArea rows={4} />
                       </Form.Item>
                     </Col>
                     <Col span={8}>
-                      <Form.Item name="codigoPostal" label="Código Postal">
+                      <Form.Item name="codigoPostal" label="Codigo Postal">
                         <Input maxLength={20} />
                       </Form.Item>
                     </Col>
                   </Row>
                 ),
               },
-              {
-                key: 'financiera',
-                label: 'Información Financiera',
-                children: (
-                  <Alert
-                    className={`${styles.infoBanner} ${styles.infoType}`}
-                    type="info"
-                    showIcon
-                    title="Sección de continuidad"
-                    description="Esta sección usa los campos disponibles actualmente en BD. Está preparada para ampliar cuenta bancaria, moneda y tributación en una siguiente iteración."
-                  />
-                ),
-              },
             ]}
           />
+          <div className={styles.companyModalFooter}>
+            <Button onClick={closeModal} className={styles.companyModalBtnCancel}>
+              Cancelar
+            </Button>
+            <Button
+              type="primary"
+              className={styles.companyModalBtnSubmit}
+              loading={saving}
+              disabled={!canSubmitCompany}
+              onClick={() => void submitCompany()}
+              icon={editingCompany ? undefined : <PlusOutlined />}
+            >
+              {editingCompany ? 'Guardar cambios' : 'Crear Empresa'}
+            </Button>
+          </div>
         </Form>
       </Modal>
     </div>
   );
 }
+
+

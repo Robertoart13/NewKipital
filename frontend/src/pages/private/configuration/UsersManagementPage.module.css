@@ -143,6 +143,326 @@
   border-color: #e0e4e8;
 }
 
+/* Formulario modal Empresa (referencia + Paleta RRHH) */
+.companyFormContent :global(.ant-form-item-label > label) {
+  color: #3d4f5c;
+  font-weight: 500;
+}
+
+.companyFormContent :global(.ant-input),
+.companyFormContent :global(.ant-input-affix-wrapper) {
+  border-radius: 8px !important;
+  border-color: #e8ecf0 !important;
+}
+
+.companyFormContent :global(.ant-input:hover),
+.companyFormContent :global(.ant-input:focus),
+.companyFormContent :global(.ant-input-affix-wrapper:hover),
+.companyFormContent :global(.ant-input-affix-wrapper:focus-within) {
+  border-color: #5a6c7d !important;
+  box-shadow: 0 0 0 2px rgba(90, 108, 125, 0.08);
+}
+
+/* Grid compacto - referencia Stack spacing 2 */
+.companyFormGrid :global(.ant-form-item) {
+  margin-bottom: 12px !important;
+}
+
+.companyFormGrid :global(.ant-form-item:last-child),
+.companyFormGrid :global(.ant-row:last-child .ant-form-item) {
+  margin-bottom: 0 !important;
+}
+
+.companyFormContent :global(textarea.ant-input) {
+  border-radius: 8px;
+  border-color: #e8ecf0;
+}
+
+.logoUploadArea {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 20px;
+  margin-bottom: 20px;
+  background: #f8fafc;
+  border: 1px dashed #e0e6ed;
+  border-radius: 10px;
+  transition: all 0.3s ease;
+}
+
+.logoUploadArea:hover {
+  border-color: #5a6c7d;
+  background-color: #f0f9ff;
+}
+
+.logoUploadPlaceholder {
+  width: 90px;
+  height: 90px;
+  min-width: 90px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #fff;
+  border: 2px dashed #cbd5e1;
+  border-radius: 8px;
+}
+
+.logoUploadPreview {
+  width: 90px;
+  height: 90px;
+  min-width: 90px;
+  border-radius: 8px;
+  border: 1px solid #d6dee7;
+  object-fit: cover;
+  background: #fff;
+}
+
+.logoUploadIcon {
+  font-size: 40px;
+  color: #cbd5e1;
+}
+
+.logoUploadInfo {
+  flex: 1;
+}
+
+.logoUploadTitle {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: #3d4f5c;
+}
+
+.logoUploadDesc {
+  margin: 4px 0 0;
+  font-size: 13px;
+  color: #6b7a85;
+}
+
+/* Modal Empresa - estilo Crear Empleado (referencia MUI profesional) */
+.companyModal :global(.ant-modal-content) {
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 4px 20px rgba(27, 46, 94, 0.15);
+}
+
+.companyModal :global(.ant-modal-header) {
+  background-color: #f5f7fa;
+  border-bottom: 2px solid #e0e6ed;
+  padding: 20px 24px;
+}
+
+.companyModal :global(.ant-modal-title) {
+  font-weight: 600;
+  font-size: 1.25rem;
+  color: #1a202c;
+}
+
+.companyModalHeader {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.companyModalHeaderIcon {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  background-color: #f0f9ff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 4px rgba(90, 108, 125, 0.12);
+}
+
+.companyModalHeaderIcon :global(.anticon) {
+  color: #5a6c7d;
+  font-size: 22px;
+}
+
+.companyModalHeaderRight {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-left: auto;
+  flex-shrink: 0;
+}
+
+.companyModalCloseBtn {
+  color: #64748b !important;
+  padding: 4px !important;
+  min-width: 32px;
+  height: 32px;
+}
+
+.companyModalCloseBtn:hover {
+  background-color: #f1f5f9 !important;
+  color: #475569 !important;
+}
+
+.companyModalEstadoPaper {
+  padding: 8px 16px;
+  border-radius: 8px;
+  border: 1px solid #e0e6ed;
+  background-color: #fff;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.companyModalEstadoPaper :global(.ant-switch-checked) {
+  background: #5a6c7d !important;
+}
+
+/* Modal de confirmación - estilo profesional Paleta RRHH (centrado, compacto, ancho) */
+.companyConfirmModal :global(.ant-modal-content) {
+  border-radius: 12px;
+  box-shadow: 0 4px 20px rgba(27, 46, 94, 0.15);
+}
+
+.companyConfirmModal :global(.ant-modal-confirm-body) {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  text-align: center;
+  padding: 20px 16px 8px !important;
+}
+
+.companyConfirmModal :global(.ant-modal-confirm-body > .anticon) {
+  margin-inline-end: 0 !important;
+  margin-bottom: 12px !important;
+}
+
+.companyConfirmModal :global(.ant-modal-confirm-paragraph) {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  max-width: 100% !important;
+}
+
+.companyConfirmModal :global(.ant-modal-confirm-title) {
+  font-weight: 600;
+  font-size: 1rem;
+  color: #3d4f5c;
+  text-align: center;
+}
+
+.companyConfirmModal :global(.ant-modal-confirm-content) {
+  color: #6b7a85 !important;
+  font-size: 14px;
+  margin-top: 4px !important;
+  text-align: center;
+}
+
+.companyConfirmModal :global(.ant-modal-confirm-btns) {
+  margin-top: 20px !important;
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+}
+
+.companyConfirmOk {
+  background-color: #5a6c7d !important;
+  border-color: #5a6c7d !important;
+  font-weight: 600;
+  border-radius: 8px;
+  padding: 6px 20px !important;
+  min-width: 110px;
+}
+
+.companyConfirmOk:hover {
+  background-color: #4a5c6d !important;
+  border-color: #4a5c6d !important;
+}
+
+.companyConfirmCancel {
+  color: #64748b !important;
+  border-color: #e0e6ed !important;
+  font-weight: 600;
+  border-radius: 8px;
+  padding: 6px 20px !important;
+}
+
+.companyConfirmCancel:hover {
+  border-color: #cbd5e1 !important;
+  background-color: #f8fafc !important;
+  color: #475569 !important;
+}
+
+.companyModalTabs :global(.ant-tabs-tab) {
+  min-height: 48px;
+  font-weight: 600;
+  font-size: 14px;
+  color: #64748b;
+}
+
+.companyModalTabs :global(.ant-tabs-tab-active) {
+  color: #5a6c7d !important;
+}
+
+.companyModalTabs :global(.ant-tabs-tab-active .anticon) {
+  color: #5a6c7d !important;
+}
+
+.companyModalTabs :global(.ant-tabs-tab:not(.ant-tabs-tab-active) .anticon) {
+  color: #64748b;
+}
+
+.companyModalTabs :global(.ant-tabs-ink-bar) {
+  background: #5a6c7d !important;
+  height: 3px;
+}
+
+.companyModalTabs :global(.ant-tabs-nav)::before {
+  border-bottom-color: #e0e6ed !important;
+}
+
+.companyModalTabs :global(.ant-tabs-nav-list) {
+  gap: 4px;
+}
+
+.companyModalFooter {
+  margin-top: 20px;
+  padding: 20px 24px;
+  border-top: 2px solid #e0e6ed;
+  background-color: #f5f7fa;
+  margin-left: -24px;
+  margin-right: -24px;
+  margin-bottom: -24px;
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
+.companyModalBtnCancel {
+  color: #64748b !important;
+  border-color: #e0e6ed !important;
+  font-weight: 600;
+  border-radius: 8px;
+  padding: 8px 24px;
+}
+
+.companyModalBtnCancel:hover {
+  border-color: #cbd5e1 !important;
+  background-color: #f8fafc !important;
+  color: #475569 !important;
+}
+
+.companyModalBtnSubmit {
+  background-color: #5a6c7d !important;
+  border-color: #5a6c7d !important;
+  font-weight: 600;
+  border-radius: 8px;
+  padding: 8px 24px;
+  box-shadow: 0 2px 4px rgba(90, 108, 125, 0.2);
+}
+
+.companyModalBtnSubmit:hover {
+  background-color: #4a5c6d !important;
+  border-color: #4a5c6d !important;
+  box-shadow: 0 4px 8px rgba(90, 108, 125, 0.25) !important;
+}
+
 /* Tabla empresas - estilo referencia */
 .companiesTable :global(.ant-table-thead > tr > th) {
   text-transform: uppercase;

@@ -1,4 +1,4 @@
-﻿import { useState } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, List, Typography, Space, Button, Spin, Flex } from 'antd';
 import { BankOutlined, LogoutOutlined } from '@ant-design/icons';
@@ -13,8 +13,8 @@ import type { UserCompanyInfo } from '../store/slices/authSlice';
 const { Title, Text } = Typography;
 
 /**
- * Pantalla intermedia de selecciÃ³n de empresa.
- * Se muestra DESPUÃ‰S del login pero ANTES del dashboard.
+ * Pantalla intermedia de seleccion de empresa.
+ * Se muestra DESPUES del login pero ANTES del dashboard.
  * Las empresas vienen del backend (almacenadas en Redux en login o /me).
  */
 export function CompanySelectionPage() {
@@ -44,7 +44,7 @@ export function CompanySelectionPage() {
         companyId: cid,
       }));
     } catch {
-      // Si falla, el PrivateGuard manejarÃ¡ la falta de permisos
+      // Si falla, el PrivateGuard manejara la falta de permisos
     }
 
     setLoading(false);
@@ -80,7 +80,7 @@ export function CompanySelectionPage() {
         />
         <div>
           <Title level={4} style={{ margin: 0, color: '#262626' }}>Seleccionar Empresa</Title>
-          <Text type="secondary">ElegÃ­ la empresa con la que vas a trabajar</Text>
+          <Text type="secondary">Elija la empresa con la que vas a trabajar</Text>
         </div>
       </Space>
 
@@ -109,9 +109,10 @@ export function CompanySelectionPage() {
         style={{ marginTop: 16, color: '#8c8c8c' }}
         block
       >
-        Cerrar sesiÃ³n
+        Cerrar sesion
       </Button>
     </Card>
   );
 }
+
 

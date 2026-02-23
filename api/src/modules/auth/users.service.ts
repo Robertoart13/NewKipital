@@ -179,7 +179,7 @@ export class UsersService {
 
   async update(id: number, dto: UpdateUserDto, modifierId?: number): Promise<User> {
     if (await this.isProtectedMasterUser(id)) {
-      throw new ConflictException('El usuario MASTER estÃ¡ protegido y no puede ser modificado');
+      throw new ConflictException('El usuario MASTER esta protegido y no puede ser modificado');
     }
     const user = await this.repo.findOne({ where: { id } });
     if (!user) {
@@ -256,7 +256,7 @@ export class UsersService {
 
   /**
    * Valida si un usuario puede autenticarse.
-   * Retorna el usuario CON passwordHash (para verificación interna).
+   * Retorna el usuario CON passwordHash (para verificacion interna).
    * Lanza ForbiddenException si no cumple condiciones.
    */
   async validateForLogin(email: string): Promise<User> {
@@ -264,7 +264,7 @@ export class UsersService {
       where: { email: this.normalizeEmail(email) },
     });
     if (!user) {
-      throw new NotFoundException('Credenciales inválidas');
+      throw new NotFoundException('Credenciales invalidas');
     }
 
     if (user.estado === UserStatus.INACTIVO) {
@@ -299,7 +299,7 @@ export class UsersService {
     if (user.failedAttempts >= maxAttempts) {
       user.lockedUntil = new Date(Date.now() + lockMinutes * 60 * 1000);
       user.estado = UserStatus.BLOQUEADO;
-      user.motivoInactivacion = `Bloqueado automáticamente por ${maxAttempts} intentos fallidos`;
+      user.motivoInactivacion = `Bloqueado automaticamente por ${maxAttempts} intentos fallidos`;
     }
 
     await this.repo.save(user);
@@ -329,7 +329,7 @@ export class UsersService {
     }
 
     if (await this.isProtectedMasterUser(targetUserId)) {
-      throw new ConflictException('El usuario MASTER estÃ¡ protegido y no puede ser bloqueado ni inactivado');
+      throw new ConflictException('El usuario MASTER esta protegido y no puede ser bloqueado ni inactivado');
     }
 
     const isConfigAdmin = await this.isConfigAdminUser(targetUserId);
@@ -338,7 +338,7 @@ export class UsersService {
     const otherAdmins = await this.countOtherActiveConfigAdmins(targetUserId);
     if (otherAdmins === 0) {
       throw new ConflictException(
-        'No se puede aplicar el cambio porque el usuario es el Ãºltimo administrador de configuraciÃ³n',
+        'No se puede aplicar el cambio porque el usuario es el ultimo administrador de configuracion',
       );
     }
   }
@@ -453,3 +453,4 @@ export class UsersService {
     return Number.isFinite(rawTotal) ? rawTotal : 0;
   }
 }
+

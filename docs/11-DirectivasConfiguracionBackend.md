@@ -145,6 +145,14 @@ Endpoints protegidos:
 - `PUT /api/companies/:id` → `company:edit`
 - `PATCH /api/companies/:id/inactivate` → `company:inactivate`
 - `PATCH /api/companies/:id/reactivate` → `company:reactivate`
+- `POST /api/companies/logo/temp` → carga temporal de logo (imagen)
+- `POST /api/companies/:id/logo/commit` → confirmación de logo final por `idEmpresa`
+- `GET /api/companies/:id/logo` → stream de logo actual o imagen por defecto
+
+Validaciones de logo activas:
+- Solo tipos imagen permitidos.
+- Tamaño maximo 5MB.
+- Al confirmar (`commit`) se renombra y guarda por `idEmpresa` en `uploads/logoEmpresa/`.
 
 ### Compatibilidad Legacy de Permisos
 
@@ -171,3 +179,12 @@ Si una BD ya existente no refleja estos permisos, ejecutar migraciones pendiente
 ---
 
 *Este documento es el paso 1 del backend. Se configura, se organiza, se prepara el bus de eventos, se verifica conexión, y se deja listo.*
+
+---
+
+## Estandar de encoding Backend (obligatorio)
+
+- Todos los archivos de pi/src deben guardarse en UTF-8 sin BOM.
+- No se permiten mensajes de error con mojibake (CÃ, Â, Ãƒ, â†’, etc.).
+- Para mensajes operativos y de negocio, priorizar texto estable y legible en cualquier entorno.
+- Antes de release, ejecutar barrido de caracteres corruptos en pi/src.

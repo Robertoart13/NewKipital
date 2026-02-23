@@ -18,7 +18,8 @@ export async function httpFetch(
   const url = path.startsWith('http') ? path : `${API_URL}${path}`;
 
   const headers = new Headers(options.headers);
-  if (!headers.has('Content-Type')) {
+  const isFormDataBody = options.body instanceof FormData;
+  if (!headers.has('Content-Type') && !isFormDataBody) {
     headers.set('Content-Type', 'application/json');
   }
 
