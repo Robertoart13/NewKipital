@@ -118,6 +118,9 @@ export function UsersManagementPage() {
   const [appsToAssign, setAppsToAssign] = useState<number[]>([]);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [search, setSearch] = useState('');
+  const [companySearch, setCompanySearch] = useState('');
+  const [roleSearch, setRoleSearch] = useState('');
+  const [exceptionSearch, setExceptionSearch] = useState('');
 
   const loadBaseData = useCallback(async () => {
     setLoading(true);
@@ -251,6 +254,37 @@ export function UsersManagementPage() {
         (u.email ?? '').toLowerCase().includes(t),
     );
   }, [users, search]);
+
+  const filteredCompanies = useMemo(() => {
+    const list = companiesData ?? [];
+    const t = companySearch.trim().toLowerCase();
+    if (!t) return list;
+    return list.filter(
+      (c) =>
+        (c.nombre ?? '').toLowerCase().includes(t) ||
+        (c.prefijo ?? '').toLowerCase().includes(t),
+    );
+  }, [companiesData, companySearch]);
+
+  const filteredRolesForApp = useMemo(() => {
+    const t = roleSearch.trim().toLowerCase();
+    if (!t) return rolesForSelectedApp;
+    return rolesForSelectedApp.filter(
+      (r) =>
+        (r.nombre ?? '').toLowerCase().includes(t) ||
+        (r.codigo ?? '').toLowerCase().includes(t),
+    );
+  }, [rolesForSelectedApp, roleSearch]);
+
+  const filteredExceptionPermissions = useMemo(() => {
+    const t = exceptionSearch.trim().toLowerCase();
+    if (!t) return roleExcepcionPermissions;
+    return roleExcepcionPermissions.filter(
+      (p) =>
+        (p.codigo ?? '').toLowerCase().includes(t) ||
+        (p.nombre ?? '').toLowerCase().includes(t),
+    );
+  }, [roleExcepcionPermissions, exceptionSearch]);
 
   const appOptions = useMemo(
     () =>
@@ -475,7 +509,7 @@ export function UsersManagementPage() {
         }
         size={720}
         open={drawerOpen}
-        onClose={() => setDrawerOpen(false)}
+        onClose={() => { setDrawerOpen(false); setCompanySearch(''); setRoleSearch(''); setExceptionSearch(''); }}
         footer={null}
       >
         {selectedUser && (
@@ -580,6 +614,13 @@ export function UsersManagementPage() {
                       <Text type="secondary" style={{ fontSize: 12, display: 'block', marginBottom: 10 }}>
                         Solo las empresas marcadas. Si está desmarcada, el usuario no ve nada de ella.
                       </Text>
+                      <Input
+                        placeholder="Buscar por nombre o prefijo de empresa"
+                        allowClear
+                        value={companySearch}
+                        onChange={(e) => setCompanySearch(e.target.value)}
+                        style={{ marginBottom: 10 }}
+                      />
                       <div style={{ maxHeight: 200, overflow: 'auto', border: '1px solid #e5e7eb', borderRadius: 8, padding: 12, background: '#fafafa' }}>
                         <Checkbox.Group
                           value={userCompanyIds}
@@ -587,7 +628,7 @@ export function UsersManagementPage() {
                           disabled={!canAssignCompaniesPerm}
                           style={{ display: 'flex', flexDirection: 'column', gap: 8 }}
                         >
-                          {(companiesData ?? []).map((c) => (
+                          {filteredCompanies.map((c) => (
                             <Checkbox key={c.id} value={c.id}>
                               {c.nombre}
                               {c.prefijo && <Text type="secondary" style={{ marginLeft: 6 }}>({c.prefijo})</Text>}
@@ -595,6 +636,9 @@ export function UsersManagementPage() {
                           ))}
                         </Checkbox.Group>
                         {(!companiesData || companiesData.length === 0) && <Text type="secondary">No hay empresas.</Text>}
+                        {companiesData && companiesData.length > 0 && filteredCompanies.length === 0 && (
+                          <Text type="secondary">Ninguna empresa coincide con la búsqueda.</Text>
+                        )}
                       </div>
                       <Button type="primary" size="small" loading={saving} disabled={!canAssignCompaniesPerm} onClick={() => void saveUserCompanies()} style={{ marginTop: 10 }}>
                         Guardar empresas
@@ -629,6 +673,13 @@ export function UsersManagementPage() {
                         </div>
                       ) : (
                         <>
+                          <Input
+                            placeholder="Buscar por nombre o código de rol"
+                            allowClear
+                            value={roleSearch}
+                            onChange={(e) => setRoleSearch(e.target.value)}
+                            style={{ marginBottom: 10 }}
+                          />
                           <div style={{ maxHeight: 200, overflow: 'auto', border: '1px solid #e5e7eb', borderRadius: 8, padding: 12, background: '#fafafa' }}>
                             <Checkbox.Group
                               value={globalRoleIds}
@@ -636,12 +687,15 @@ export function UsersManagementPage() {
                               disabled={!canAssignRolesPerm}
                               style={{ display: 'flex', flexDirection: 'column', gap: 8 }}
                             >
-                              {rolesForSelectedApp.map((r) => (
+                              {filteredRolesForApp.map((r) => (
                                 <Checkbox key={r.id} value={r.id}>
                                   {r.nombre} <Text type="secondary">({r.codigo})</Text>
                                 </Checkbox>
                               ))}
                             </Checkbox.Group>
+                            {rolesForSelectedApp.length > 0 && filteredRolesForApp.length === 0 && (
+                              <Text type="secondary">Ningún rol coincide con la búsqueda.</Text>
+                            )}
                           </div>
                           <Button type="primary" size="small" loading={saving} disabled={!canAssignRolesPerm} onClick={() => void saveGlobalRoles()} style={{ marginTop: 10 }}>
                             Guardar roles globales
@@ -716,6 +770,13 @@ export function UsersManagementPage() {
                           <Text type="secondary" style={{ fontSize: 12, display: 'block', marginBottom: 8 }}>
                             Marque los que el usuario NO debe tener en ninguna empresa.
                           </Text>
+                          <Input
+                            placeholder="Buscar por código o nombre de permiso"
+                            allowClear
+                            value={exceptionSearch}
+                            onChange={(e) => setExceptionSearch(e.target.value)}
+                            style={{ marginBottom: 10 }}
+                          />
                           <div style={{ maxHeight: 220, overflow: 'auto', border: '1px solid #fecaca', borderRadius: 8, padding: 12, background: '#fef2f2' }}>
                             <Checkbox.Group
                               value={globalPermissionDeny}
@@ -723,14 +784,17 @@ export function UsersManagementPage() {
                               disabled={!canDenyPermissionsPerm}
                               style={{ display: 'flex', flexDirection: 'column', gap: 6 }}
                             >
-                              {roleExcepcionPermissions.length > 0
-                                ? roleExcepcionPermissions.map((p) => (
+                              {roleExcepcionPermissions.length === 0
+                                ? <Text type="secondary" style={{ fontSize: 12 }}>Cargando permisos del rol…</Text>
+                                : filteredExceptionPermissions.map((p) => (
                                     <Checkbox key={p.id} value={p.codigo}>
                                       <Text code style={{ fontSize: 12 }}>{p.codigo}</Text>
                                       <Text type="secondary" style={{ marginLeft: 6, fontSize: 12 }}>— {p.nombre}</Text>
                                     </Checkbox>
-                                  ))
-                                : <Text type="secondary" style={{ fontSize: 12 }}>Cargando permisos del rol…</Text>}
+                                  ))}
+                              {roleExcepcionPermissions.length > 0 && filteredExceptionPermissions.length === 0 && (
+                                <Text type="secondary" style={{ fontSize: 12 }}>Ningún permiso coincide con la búsqueda.</Text>
+                              )}
                             </Checkbox.Group>
                           </div>
                           <Button type="default" size="small" loading={saving} disabled={!canDenyPermissionsPerm} onClick={() => void saveGlobalPermissionDenials()} style={{ marginTop: 8 }}>
