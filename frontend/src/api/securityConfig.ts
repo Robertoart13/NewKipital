@@ -171,6 +171,20 @@ export async function fetchRolesByApp(appCode: 'timewise' | 'kpital'): Promise<S
   return fetchRolesForUsers(false, appCode);
 }
 
+export interface UserAuditTrailItem {
+  id: string;
+  modulo: string;
+  accion: string;
+  entidad: string;
+  entidadId: string | null;
+  actorUserId: number | null;
+  actorNombre: string | null;
+  actorEmail: string | null;
+  descripcion: string;
+  fechaCreacion: string | null;
+  metadata: Record<string, unknown> | null;
+}
+
 export async function fetchCompaniesForUserConfig(): Promise<ConfigCompanyItem[]> {
   const res = await httpFetch('/config/users/companies-catalog');
   return ensureOk<ConfigCompanyItem[]>(res, 'Error al cargar empresas para configuración de usuarios');
@@ -343,6 +357,15 @@ export async function fetchUserRolesSummary(
   const params = new URLSearchParams({ appCode });
   const res = await httpFetch(`/config/users/${userId}/roles-summary?${params}`);
   return ensureOk<UserRolesSummary>(res, 'Error al cargar resumen de roles');
+}
+
+export async function fetchUserAuditTrail(
+  userId: number,
+  limit = 150,
+): Promise<UserAuditTrailItem[]> {
+  const params = new URLSearchParams({ limit: String(limit) });
+  const res = await httpFetch(`/config/users/${userId}/audit-trail?${params}`);
+  return ensureOk<UserAuditTrailItem[]>(res, 'Error al cargar bitacora del usuario');
 }
 
 export async function replaceUserGlobalRoles(

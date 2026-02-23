@@ -157,7 +157,7 @@ export class ConfigAccessController {
   ) {
     const role = await this.rolesService.findOne(id);
     const previousPermissions = await this.rolesService.getPermissions(id);
-    const perms = await this.rolesService.replacePermissionsByCodes(id, dto.permissions);
+    const perms = await this.rolesService.replacePermissionsByCodes(id, dto.permissions, user.userId);
 
     const { added, removed } = this.diffStringSets(
       previousPermissions.map((permission) => permission.codigo),
@@ -254,6 +254,68 @@ export class ConfigAccessController {
     @Query('appCode') appCode: string,
   ) {
     return this.userAssignmentService.getUserRolesSummary(idUsuario, appCode);
+  }
+
+  @RequirePermissions('config:users')
+  @Get('users/:id/audit-trail')
+  async getUserAuditTrail(
+    @Param('id', ParseIntPipe) idUsuario: number,
+    @Query('limit', new ParseIntPipe({ optional: true })) limit?: number,
+  ) {
+    const safeLimit = Math.min(Math.max(Number(limit ?? 100), 1), 500);
+    const userIdAsText = String(idUsuario);
+    const rows = await this.companyRepo.query(
+      `
+      SELECT
+        a.id_auditoria_accion AS id,
+        a.modulo_auditoria AS modulo,
+        a.accion_auditoria AS accion,
+        a.entidad_auditoria AS entidad,
+        a.id_entidad_auditoria AS entidadId,
+        a.id_usuario_actor_auditoria AS actorUserId,
+        a.descripcion_auditoria AS descripcion,
+        a.fecha_creacion_auditoria AS fechaCreacion,
+        a.metadata_auditoria AS metadata,
+        CONCAT_WS(' ', actor.nombre_usuario, actor.apellido_usuario) AS actorNombre,
+        actor.email_usuario AS actorEmail
+      FROM sys_auditoria_acciones a
+      LEFT JOIN sys_usuarios actor
+        ON actor.id_usuario = a.id_usuario_actor_auditoria
+      WHERE
+        (
+          a.entidad_auditoria IN (
+            'user',
+            'user_app',
+            'user_company',
+            'user_role',
+            'user_role_global',
+            'user_role_exclusion',
+            'user_permission_global_deny',
+            'user_permission_override'
+          )
+          AND a.id_entidad_auditoria = ?
+        )
+        OR JSON_UNQUOTE(JSON_EXTRACT(a.payload_after_auditoria, '$.idUsuario')) = ?
+        OR JSON_UNQUOTE(JSON_EXTRACT(a.payload_before_auditoria, '$.idUsuario')) = ?
+      ORDER BY a.fecha_creacion_auditoria DESC
+      LIMIT ?
+      `,
+      [userIdAsText, userIdAsText, userIdAsText, safeLimit],
+    );
+
+    return (rows ?? []).map((row: Record<string, unknown>) => ({
+      id: String(row.id ?? ''),
+      modulo: String(row.modulo ?? ''),
+      accion: String(row.accion ?? ''),
+      entidad: String(row.entidad ?? ''),
+      entidadId: row.entidadId == null ? null : String(row.entidadId),
+      actorUserId: row.actorUserId == null ? null : Number(row.actorUserId),
+      actorNombre: row.actorNombre ? String(row.actorNombre) : null,
+      actorEmail: row.actorEmail ? String(row.actorEmail) : null,
+      descripcion: String(row.descripcion ?? ''),
+      fechaCreacion: row.fechaCreacion ? new Date(String(row.fechaCreacion)).toISOString() : null,
+      metadata: (row.metadata as Record<string, unknown> | null) ?? null,
+    }));
   }
 
   @RequirePermissions('config:users:assign-roles')

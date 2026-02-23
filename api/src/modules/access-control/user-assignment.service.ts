@@ -15,6 +15,7 @@ import { Permission } from './entities/permission.entity.js';
 import { AssignUserAppDto } from './dto/assign-user-app.dto.js';
 import { AssignUserCompanyDto } from './dto/assign-user-company.dto.js';
 import { AssignUserRoleDto } from './dto/assign-user-role.dto.js';
+import { AuditOutboxService } from '../integration/audit-outbox.service.js';
 
 @Injectable()
 export class UserAssignmentService {
@@ -41,7 +42,70 @@ export class UserAssignmentService {
     private readonly roleRepo: Repository<Role>,
     @InjectRepository(Permission)
     private readonly permRepo: Repository<Permission>,
+    private readonly auditOutbox: AuditOutboxService,
   ) {}
+
+  private publishAudit(params: {
+    accion: string;
+    entidad: string;
+    entidadId?: string | number | null;
+    actorUserId?: number | null;
+    descripcion: string;
+    payloadAfter?: Record<string, unknown>;
+    payloadBefore?: Record<string, unknown>;
+    companyContextId?: number | null;
+  }): void {
+    this.auditOutbox.publish({
+      modulo: 'user_assignments',
+      accion: params.accion,
+      entidad: params.entidad,
+      entidadId: params.entidadId ?? null,
+      actorUserId: params.actorUserId ?? null,
+      descripcion: params.descripcion,
+      payloadBefore: params.payloadBefore ?? null,
+      payloadAfter: params.payloadAfter ?? null,
+      companyContextId: params.companyContextId ?? null,
+    });
+  }
+
+  private formatList(values: string[]): string {
+    return values.length > 0 ? values.join(', ') : 'sin elementos';
+  }
+
+  private async getUserLabel(userId: number): Promise<string> {
+    const user = await this.userRepo.findOne({ where: { id: userId } });
+    if (!user) return `usuario #${userId}`;
+    const fullName = `${user.nombre ?? ''} ${user.apellido ?? ''}`.trim();
+    const primary = fullName || user.email || `usuario #${userId}`;
+    return `${primary} (ID ${userId})`;
+  }
+
+  private async getAppLabel(appId: number): Promise<string> {
+    const app = await this.appRepo.findOne({ where: { id: appId } });
+    if (!app) return `app #${appId}`;
+    return `${app.nombre} (${app.codigo})`;
+  }
+
+  private async getCompanyLabel(companyId: number): Promise<string> {
+    const rows = await this.userRepo.query(
+      `
+      SELECT e.nombre_empresa AS nombre
+      FROM sys_empresas e
+      WHERE e.id_empresa = ?
+      LIMIT 1
+      `,
+      [companyId],
+    );
+    const name = String(rows?.[0]?.nombre ?? '').trim();
+    return name ? `${name} (ID ${companyId})` : `empresa #${companyId}`;
+  }
+
+  private async getRoleLabels(roleIds: number[]): Promise<string[]> {
+    if (roleIds.length === 0) return [];
+    const rows = await this.roleRepo.find({ where: { id: In(roleIds) } });
+    const byId = new Map(rows.map((role) => [role.id, `${role.nombre} (${role.codigo})`]));
+    return roleIds.map((roleId) => byId.get(roleId) ?? `rol #${roleId}`);
+  }
 
   // --- Usuario <-> App ---
 
@@ -54,7 +118,20 @@ export class UserAssignmentService {
       throw new ConflictException('El usuario ya tiene acceso a esa app');
     }
     const ua = this.userAppRepo.create(dto);
-    return this.userAppRepo.save(ua);
+    const saved = await this.userAppRepo.save(ua);
+    const [userLabel, appLabel] = await Promise.all([
+      this.getUserLabel(saved.idUsuario),
+      this.getAppLabel(saved.idApp),
+    ]);
+    this.publishAudit({
+      accion: 'assign_app',
+      entidad: 'user_app',
+      entidadId: `${saved.idUsuario}:${saved.idApp}`,
+      actorUserId: actorUserId ?? null,
+      descripcion: `Aplicacion asignada: "${appLabel}" -> "${userLabel}"`,
+      payloadAfter: { idUsuario: saved.idUsuario, idApp: saved.idApp, estado: saved.estado },
+    });
+    return saved;
   }
 
   async revokeApp(idUsuario: number, idApp: number, actorUserId?: number): Promise<void> {
@@ -69,6 +146,18 @@ export class UserAssignmentService {
     }
     ua.estado = 0;
     await this.userAppRepo.save(ua);
+    const [userLabel, appLabel] = await Promise.all([
+      this.getUserLabel(idUsuario),
+      this.getAppLabel(idApp),
+    ]);
+    this.publishAudit({
+      accion: 'revoke_app',
+      entidad: 'user_app',
+      entidadId: `${idUsuario}:${idApp}`,
+      actorUserId: actorUserId ?? null,
+      descripcion: `Aplicacion revocada: "${appLabel}" <- "${userLabel}"`,
+      payloadAfter: { idUsuario, idApp, estado: 0 },
+    });
   }
 
   async getUserApps(idUsuario: number): Promise<UserApp[]> {
@@ -86,7 +175,21 @@ export class UserAssignmentService {
       throw new ConflictException('El usuario ya esta asignado a esa empresa');
     }
     const uc = this.userCompanyRepo.create(dto);
-    return this.userCompanyRepo.save(uc);
+    const saved = await this.userCompanyRepo.save(uc);
+    const [userLabel, companyLabel] = await Promise.all([
+      this.getUserLabel(saved.idUsuario),
+      this.getCompanyLabel(saved.idEmpresa),
+    ]);
+    this.publishAudit({
+      accion: 'assign_company',
+      entidad: 'user_company',
+      entidadId: `${saved.idUsuario}:${saved.idEmpresa}`,
+      actorUserId: actorUserId ?? null,
+      companyContextId: saved.idEmpresa,
+      descripcion: `Empresa asignada: "${companyLabel}" -> "${userLabel}"`,
+      payloadAfter: { idUsuario: saved.idUsuario, idEmpresa: saved.idEmpresa, estado: saved.estado },
+    });
+    return saved;
   }
 
   async revokeCompany(idUsuario: number, idEmpresa: number, actorUserId?: number): Promise<void> {
@@ -97,6 +200,19 @@ export class UserAssignmentService {
     }
     uc.estado = 0;
     await this.userCompanyRepo.save(uc);
+    const [userLabel, companyLabel] = await Promise.all([
+      this.getUserLabel(idUsuario),
+      this.getCompanyLabel(idEmpresa),
+    ]);
+    this.publishAudit({
+      accion: 'revoke_company',
+      entidad: 'user_company',
+      entidadId: `${idUsuario}:${idEmpresa}`,
+      actorUserId: actorUserId ?? null,
+      companyContextId: idEmpresa,
+      descripcion: `Empresa revocada: "${companyLabel}" <- "${userLabel}"`,
+      payloadAfter: { idUsuario, idEmpresa, estado: 0 },
+    });
   }
 
   async getUserCompanies(idUsuario: number): Promise<UserCompany[]> {
@@ -144,7 +260,24 @@ export class UserAssignmentService {
     const result = await this.userCompanyRepo.find({
       where: { idUsuario, estado: 1 },
     });
-    return { companyIds: result.map((r) => r.idEmpresa).sort((a, b) => a - b) };
+    const companyIdsResult = result.map((r) => r.idEmpresa).sort((a, b) => a - b);
+    const userLabel = await this.getUserLabel(idUsuario);
+    const companyLabels = await this.getCompanyLabelList(companyIdsResult);
+    this.publishAudit({
+      accion: 'replace_companies',
+      entidad: 'user_company',
+      entidadId: idUsuario,
+      actorUserId: actorUserId ?? null,
+      descripcion: `Empresas reemplazadas para "${userLabel}". Empresas activas: ${this.formatList(companyLabels)}`,
+      payloadAfter: { idUsuario, companyIds: companyIdsResult },
+    });
+    return { companyIds: companyIdsResult };
+  }
+
+  private async getCompanyLabelList(companyIds: number[]): Promise<string[]> {
+    if (companyIds.length === 0) return [];
+    const labels = await Promise.all(companyIds.map((companyId) => this.getCompanyLabel(companyId)));
+    return labels;
   }
 
   private async ensureUserHasKpitalApp(idUsuario: number): Promise<void> {
@@ -293,7 +426,27 @@ export class UserAssignmentService {
       );
     }
 
-    return this.getUserRoles(idUsuario, companyId, appId);
+    const result = await this.getUserRoles(idUsuario, companyId, appId);
+    const [userLabel, companyLabel, roleLabels] = await Promise.all([
+      this.getUserLabel(idUsuario),
+      this.getCompanyLabel(companyId),
+      this.getRoleLabels(result.map((r) => r.idRol)),
+    ]);
+    this.publishAudit({
+      accion: 'replace_context_roles',
+      entidad: 'user_role',
+      entidadId: idUsuario,
+      actorUserId: modifierId,
+      companyContextId: companyId,
+      descripcion: `Roles por contexto reemplazados para "${userLabel}" en "${companyLabel}" [app: ${appCode.trim().toLowerCase()}]. Roles: ${this.formatList(roleLabels)}`,
+      payloadAfter: {
+        idUsuario,
+        companyId,
+        appCode: appCode.trim().toLowerCase(),
+        roleIds: result.map((r) => r.idRol),
+      },
+    });
+    return result;
   }
 
   async replaceUserGlobalRoles(
@@ -352,7 +505,20 @@ export class UserAssignmentService {
       );
     }
 
-    return { appCode: appCode.trim().toLowerCase(), roleIds: normalizedRoleIds };
+    const result = { appCode: appCode.trim().toLowerCase(), roleIds: normalizedRoleIds };
+    const [userLabel, roleLabels] = await Promise.all([
+      this.getUserLabel(idUsuario),
+      this.getRoleLabels(normalizedRoleIds),
+    ]);
+    this.publishAudit({
+      accion: 'replace_global_roles',
+      entidad: 'user_role_global',
+      entidadId: idUsuario,
+      actorUserId: modifierId,
+      descripcion: `Roles globales reemplazados para "${userLabel}" [app: ${result.appCode}]. Roles: ${this.formatList(roleLabels)}`,
+      payloadAfter: { idUsuario, ...result },
+    });
+    return result;
   }
 
   async getUserGlobalRoles(idUsuario: number, appCode: string): Promise<{ appCode: string; roleIds: number[] }> {
@@ -417,7 +583,22 @@ export class UserAssignmentService {
       );
     }
 
-    return { companyId, appCode: appCode.trim().toLowerCase(), roleIds: normalizedRoleIds };
+    const result = { companyId, appCode: appCode.trim().toLowerCase(), roleIds: normalizedRoleIds };
+    const [userLabel, companyLabel, roleLabels] = await Promise.all([
+      this.getUserLabel(idUsuario),
+      this.getCompanyLabel(companyId),
+      this.getRoleLabels(normalizedRoleIds),
+    ]);
+    this.publishAudit({
+      accion: 'replace_role_exclusions',
+      entidad: 'user_role_exclusion',
+      entidadId: idUsuario,
+      actorUserId: modifierId,
+      companyContextId: companyId,
+      descripcion: `Exclusiones de rol actualizadas para "${userLabel}" en "${companyLabel}" [app: ${result.appCode}]. Roles excluidos: ${this.formatList(roleLabels)}`,
+      payloadAfter: { idUsuario, ...result },
+    });
+    return result;
   }
 
   async getUserRoleExclusions(
@@ -604,7 +785,17 @@ export class UserAssignmentService {
     }
 
     const result = (await this.getGlobalPermissionDenials(idUsuario, appCode)).deny;
-    return { appCode: appCode.trim().toLowerCase(), deny: result };
+    const response = { appCode: appCode.trim().toLowerCase(), deny: result };
+    const userLabel = await this.getUserLabel(idUsuario);
+    this.publishAudit({
+      accion: 'replace_global_permission_denials',
+      entidad: 'user_permission_global_deny',
+      entidadId: idUsuario,
+      actorUserId: modifierId,
+      descripcion: `Denegaciones globales actualizadas para "${userLabel}" [app: ${response.appCode}]. Permisos: ${this.formatList(result)}`,
+      payloadAfter: { idUsuario, ...response },
+    });
+    return response;
   }
 
   async replaceUserPermissionOverridesByContext(
@@ -695,6 +886,19 @@ export class UserAssignmentService {
     }
 
     const current = await this.getUserPermissionOverrides(idUsuario, companyId, appCode);
+    const [userLabel, companyLabel] = await Promise.all([
+      this.getUserLabel(idUsuario),
+      this.getCompanyLabel(companyId),
+    ]);
+    this.publishAudit({
+      accion: 'replace_permission_overrides',
+      entidad: 'user_permission_override',
+      entidadId: idUsuario,
+      actorUserId: modifierId,
+      companyContextId: companyId,
+      descripcion: `Overrides de permisos actualizados para "${userLabel}" en "${companyLabel}" [app: ${current.appCode}]. Allow: ${this.formatList(current.allow)}. Deny: ${this.formatList(current.deny)}`,
+      payloadAfter: current as unknown as Record<string, unknown>,
+    });
     return current;
   }
 

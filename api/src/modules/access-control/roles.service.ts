@@ -8,6 +8,7 @@ import { RolePermission } from './entities/role-permission.entity.js';
 import { CreateRoleDto } from './dto/create-role.dto.js';
 import { AssignRolePermissionDto } from './dto/assign-role-permission.dto.js';
 import { UpdateRoleDto } from './dto/update-role.dto.js';
+import { AuditOutboxService } from '../integration/audit-outbox.service.js';
 
 @Injectable()
 export class RolesService {
@@ -20,6 +21,7 @@ export class RolesService {
     private readonly permissionRepo: Repository<Permission>,
     @InjectRepository(RolePermission)
     private readonly rpRepo: Repository<RolePermission>,
+    private readonly auditOutbox: AuditOutboxService,
   ) {}
 
   async create(dto: CreateRoleDto, userId: number): Promise<Role> {
@@ -44,7 +46,24 @@ export class RolesService {
       creadoPor: userId,
       modificadoPor: userId,
     });
-    return this.roleRepo.save(role);
+    const saved = await this.roleRepo.save(role);
+    this.auditOutbox.publish({
+      modulo: 'roles',
+      accion: 'create',
+      entidad: 'role',
+      entidadId: saved.id,
+      actorUserId: userId,
+      descripcion: `Rol creado: ${saved.codigo}`,
+      payloadAfter: {
+        id: saved.id,
+        codigo: saved.codigo,
+        nombre: saved.nombre,
+        descripcion: saved.descripcion,
+        idApp: saved.idApp,
+        estado: saved.estado,
+      },
+    });
+    return saved;
   }
 
   async findAll(includeInactive = false, appCode?: string): Promise<Role[]> {
@@ -84,21 +103,58 @@ export class RolesService {
     if (dto.descripcion !== undefined) role.descripcion = nextDescripcion || null;
     role.modificadoPor = userId;
 
-    return this.roleRepo.save(role);
+    const saved = await this.roleRepo.save(role);
+    this.auditOutbox.publish({
+      modulo: 'roles',
+      accion: 'update',
+      entidad: 'role',
+      entidadId: saved.id,
+      actorUserId: userId,
+      descripcion: `Rol actualizado: ${saved.codigo}`,
+      payloadAfter: {
+        id: saved.id,
+        codigo: saved.codigo,
+        nombre: saved.nombre,
+        descripcion: saved.descripcion,
+        idApp: saved.idApp,
+        estado: saved.estado,
+      },
+    });
+    return saved;
   }
 
   async inactivate(id: number, userId: number): Promise<Role> {
     const role = await this.findOne(id);
     role.estado = 0;
     role.modificadoPor = userId;
-    return this.roleRepo.save(role);
+    const saved = await this.roleRepo.save(role);
+    this.auditOutbox.publish({
+      modulo: 'roles',
+      accion: 'inactivate',
+      entidad: 'role',
+      entidadId: saved.id,
+      actorUserId: userId,
+      descripcion: `Rol inactivado: ${saved.codigo}`,
+      payloadAfter: { id: saved.id, codigo: saved.codigo, estado: saved.estado },
+    });
+    return saved;
   }
 
   async reactivate(id: number, userId: number): Promise<Role> {
     const role = await this.findOne(id);
     role.estado = 1;
     role.modificadoPor = userId;
-    return this.roleRepo.save(role);
+    const saved = await this.roleRepo.save(role);
+    this.auditOutbox.publish({
+      modulo: 'roles',
+      accion: 'reactivate',
+      entidad: 'role',
+      entidadId: saved.id,
+      actorUserId: userId,
+      descripcion: `Rol reactivado: ${saved.codigo}`,
+      payloadAfter: { id: saved.id, codigo: saved.codigo, estado: saved.estado },
+    });
+    return saved;
   }
 
   async assignPermission(dto: AssignRolePermissionDto): Promise<RolePermission> {
@@ -142,8 +198,8 @@ export class RolesService {
       .getMany();
   }
 
-  async replacePermissionsByCodes(idRol: number, codes: string[]): Promise<Permission[]> {
-    await this.findOne(idRol);
+  async replacePermissionsByCodes(idRol: number, codes: string[], actorUserId?: number): Promise<Permission[]> {
+    const role = await this.findOne(idRol);
 
     const normalized = [...new Set(codes.map((c) => c.trim().toLowerCase()).filter(Boolean))];
     const permissions = normalized.length
@@ -172,6 +228,19 @@ export class RolesService {
       await this.rpRepo.save(toInsert);
     }
 
-    return this.getPermissions(idRol);
+    const result = await this.getPermissions(idRol);
+    this.auditOutbox.publish({
+      modulo: 'roles',
+      accion: 'replace_permissions',
+      entidad: 'role',
+      entidadId: idRol,
+      actorUserId: actorUserId ?? null,
+      descripcion: `Permisos reemplazados para rol "${role.nombre}" (${role.codigo})`,
+      payloadAfter: {
+        idRol,
+        codigos: result.map((p) => p.codigo),
+      },
+    });
+    return result;
   }
 }

@@ -23,10 +23,12 @@ import { ConfigAccessController } from './config-access.controller.js';
 import { NotificationsModule } from '../notifications/notifications.module.js';
 import { Company } from '../companies/entities/company.entity.js';
 import { User } from '../auth/entities/user.entity.js';
+import { IntegrationModule } from '../integration/integration.module.js';
 
 @Module({
   imports: [
     NotificationsModule,
+    IntegrationModule,
     TypeOrmModule.forFeature([
       App,
       UserApp,

@@ -87,7 +87,8 @@ export class RolesController {
   replacePermissions(
     @Param('id', ParseIntPipe) id: number,
     @Body() dto: ReplaceRolePermissionsDto,
+    @CurrentUser() user: { userId: number },
   ) {
-    return this.service.replacePermissionsByCodes(id, dto.permissions);
+    return this.service.replacePermissionsByCodes(id, dto.permissions, user.userId);
   }
 }

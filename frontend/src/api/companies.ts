@@ -45,6 +45,21 @@ export interface CompanyLogoCommitPayload {
   logoUrl: string;
 }
 
+export interface CompanyAuditTrailItem {
+  id: string;
+  modulo: string;
+  accion: string;
+  entidad: string;
+  entidadId: string | null;
+  actorUserId: number | null;
+  actorNombre: string | null;
+  actorEmail: string | null;
+  descripcion: string;
+  fechaCreacion: string | null;
+  metadata: Record<string, unknown> | null;
+  cambios: Array<{ campo: string; antes: string; despues: string }>;
+}
+
 /**
  * GET /companies - Lista empresas (activas por defecto).
  */
@@ -154,4 +169,15 @@ export async function fetchCompanyLogoBlobUrl(companyId: number): Promise<string
   }
   const blob = await res.blob();
   return URL.createObjectURL(blob);
+}
+
+export async function fetchCompanyAuditTrail(companyId: number, limit = 200): Promise<CompanyAuditTrailItem[]> {
+  const qs = new URLSearchParams({ limit: String(limit) });
+  const res = await httpFetch(`/companies/${companyId}/audit-trail?${qs}`);
+  if (!res.ok) {
+    const error = await res.json().catch(() => null) as { message?: string | string[] } | null;
+    const msg = Array.isArray(error?.message) ? error.message.join(', ') : error?.message;
+    throw new Error(msg || 'Error al cargar bitacora de empresa');
+  }
+  return res.json();
 }

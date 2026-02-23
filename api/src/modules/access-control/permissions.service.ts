@@ -10,6 +10,7 @@ import { Repository } from 'typeorm';
 import { CreatePermissionDto } from './dto/create-permission.dto.js';
 import { UpdatePermissionDto } from './dto/update-permission.dto.js';
 import { Permission } from './entities/permission.entity.js';
+import { AuditOutboxService } from '../integration/audit-outbox.service.js';
 
 export type PermissionCatalogMode = 'migration' | 'ui';
 
@@ -19,6 +20,7 @@ export class PermissionsService {
     private readonly configService: ConfigService,
     @InjectRepository(Permission)
     private readonly repo: Repository<Permission>,
+    private readonly auditOutbox: AuditOutboxService,
   ) {}
 
   getCatalogMode(): PermissionCatalogMode {
@@ -51,7 +53,23 @@ export class PermissionsService {
       modificadoPor: actorUserId ?? null,
     });
 
-    return this.repo.save(perm);
+    const saved = await this.repo.save(perm);
+    this.auditOutbox.publish({
+      modulo: 'permissions',
+      accion: 'create',
+      entidad: 'permission',
+      entidadId: saved.id,
+      actorUserId: actorUserId ?? null,
+      descripcion: `Permiso creado: ${saved.codigo}`,
+      payloadAfter: {
+        id: saved.id,
+        codigo: saved.codigo,
+        nombre: saved.nombre,
+        modulo: saved.modulo,
+        estado: saved.estado,
+      },
+    });
+    return saved;
   }
 
   async findAll(modulo?: string, includeInactive = true): Promise<Permission[]> {
@@ -114,7 +132,23 @@ export class PermissionsService {
     perm.modulo = nextModulo;
 
     perm.modificadoPor = actorUserId ?? null;
-    return this.repo.save(perm);
+    const saved = await this.repo.save(perm);
+    this.auditOutbox.publish({
+      modulo: 'permissions',
+      accion: 'update',
+      entidad: 'permission',
+      entidadId: saved.id,
+      actorUserId: actorUserId ?? null,
+      descripcion: `Permiso actualizado: ${saved.codigo}`,
+      payloadAfter: {
+        id: saved.id,
+        codigo: saved.codigo,
+        nombre: saved.nombre,
+        modulo: saved.modulo,
+        estado: saved.estado,
+      },
+    });
+    return saved;
   }
 
   async inactivate(id: number, actorUserId?: number): Promise<Permission> {
@@ -123,7 +157,17 @@ export class PermissionsService {
     const perm = await this.findOne(id);
     perm.estado = 0;
     perm.modificadoPor = actorUserId ?? null;
-    return this.repo.save(perm);
+    const saved = await this.repo.save(perm);
+    this.auditOutbox.publish({
+      modulo: 'permissions',
+      accion: 'inactivate',
+      entidad: 'permission',
+      entidadId: saved.id,
+      actorUserId: actorUserId ?? null,
+      descripcion: `Permiso inactivado: ${saved.codigo}`,
+      payloadAfter: { id: saved.id, codigo: saved.codigo, estado: saved.estado },
+    });
+    return saved;
   }
 
   async reactivate(id: number, actorUserId?: number): Promise<Permission> {
@@ -132,7 +176,17 @@ export class PermissionsService {
     const perm = await this.findOne(id);
     perm.estado = 1;
     perm.modificadoPor = actorUserId ?? null;
-    return this.repo.save(perm);
+    const saved = await this.repo.save(perm);
+    this.auditOutbox.publish({
+      modulo: 'permissions',
+      accion: 'reactivate',
+      entidad: 'permission',
+      entidadId: saved.id,
+      actorUserId: actorUserId ?? null,
+      descripcion: `Permiso reactivado: ${saved.codigo}`,
+      payloadAfter: { id: saved.id, codigo: saved.codigo, estado: saved.estado },
+    });
+    return saved;
   }
 
   private ensureCatalogEditable(): void {

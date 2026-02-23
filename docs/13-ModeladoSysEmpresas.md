@@ -177,3 +177,19 @@ Ese es el **core identity schema**.
 ---
 
 *Primer paso de modelado serio. Consolida el aggregate raíz antes de cualquier otra tabla.*
+
+---
+
+## Reglas enterprise activas en Empresas (nuevo)
+
+1. Visibilidad por asignacion de empresa:
+- GET /api/companies lista solo empresas asignadas al usuario autenticado (sys_usuario_empresa activa).
+- GET /api/companies/:id, PUT, PATCH inactivate/reactivate, GET logo, POST logo/commit validan acceso por asignacion; si no existe retorna 403.
+
+2. Autoasignacion de MASTER al crear empresa:
+- Al crear empresa, en transaccion se asigna automaticamente la nueva empresa a usuarios con rol MASTER activo.
+- Esto evita excepciones de seguridad y mantiene el mismo modelo de control para todos los usuarios.
+
+3. Bitacora de empresas:
+- Crear, editar, inactivar, reactivar y commit de logo publican eventos de auditoria udit.*.
+

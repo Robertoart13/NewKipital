@@ -13,6 +13,11 @@ export class UpdateCompanyDto {
 
   @IsOptional()
   @IsString()
+  @MaxLength(50)
+  cedula?: string;
+
+  @IsOptional()
+  @IsString()
   @MaxLength(300)
   actividadEconomica?: string;
 

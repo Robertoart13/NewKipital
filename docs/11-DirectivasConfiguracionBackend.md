@@ -188,3 +188,21 @@ Si una BD ya existente no refleja estos permisos, ejecutar migraciones pendiente
 - No se permiten mensajes de error con mojibake (CÃ, Â, Ãƒ, â†’, etc.).
 - Para mensajes operativos y de negocio, priorizar texto estable y legible en cualquier entorno.
 - Antes de release, ejecutar barrido de caracteres corruptos en pi/src.
+
+---
+
+## Auditoria operacional asincrona (nuevo)
+
+Implementacion enterprise agregada para acciones de configuracion sin bloquear el flujo del usuario:
+
+- Tabla dedicada: sys_auditoria_acciones (migration 1708533500000-CreateSysAuditoriaAcciones.ts).
+- Outbox existente: sys_domain_events.
+- Publicador: AuditOutboxService publica eventos udit.*.
+- Worker: AuditWorkerService consume eventos ggregate_type='audit' en segundo plano y persiste en sys_auditoria_acciones.
+
+Principios:
+
+- El request principal NO espera la escritura final de bitacora.
+- Si falla auditoria, no rompe la operacion de negocio.
+- Se registra actor, entidad, accion, descripcion y payload before/after en JSON.
+

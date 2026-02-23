@@ -16,6 +16,7 @@ import { Role } from '../access-control/entities/role.entity.js';
 import { CreateUserDto } from './dto/create-user.dto.js';
 import { UpdateUserDto } from './dto/update-user.dto.js';
 import { UserStatus } from './constants/user-status.enum.js';
+import { AuditOutboxService } from '../integration/audit-outbox.service.js';
 
 const TIMEWISE_SUPERVISOR_ROLES = ['SUPERVISOR_TIMEWISE', 'SUPERVISOR_GLOBAL_TIMEWISE'];
 
@@ -34,6 +35,7 @@ export class UsersService {
     private readonly appRepo: Repository<App>,
     @InjectRepository(Role)
     private readonly roleRepo: Repository<Role>,
+    private readonly auditOutbox: AuditOutboxService,
   ) {}
 
   async create(dto: CreateUserDto, creatorId?: number): Promise<User> {
@@ -76,6 +78,22 @@ export class UsersService {
     });
 
     const saved = await this.repo.save(user);
+    this.auditOutbox.publish({
+      modulo: 'users',
+      accion: 'create',
+      entidad: 'user',
+      entidadId: saved.id,
+      actorUserId: creatorId ?? null,
+      descripcion: `Usuario creado: ${saved.email}`,
+      payloadAfter: {
+        id: saved.id,
+        email: saved.email,
+        username: saved.username,
+        nombre: saved.nombre,
+        apellido: saved.apellido,
+        estado: saved.estado,
+      },
+    });
     return this.sanitize(saved);
   }
 
@@ -207,8 +225,33 @@ export class UsersService {
       }
     }
 
+    const before = {
+      id: user.id,
+      email: user.email,
+      username: user.username,
+      nombre: user.nombre,
+      apellido: user.apellido,
+      estado: user.estado,
+    };
     Object.assign(user, dto, { modificadoPor: modifierId ?? null });
     const saved = await this.repo.save(user);
+    this.auditOutbox.publish({
+      modulo: 'users',
+      accion: 'update',
+      entidad: 'user',
+      entidadId: saved.id,
+      actorUserId: modifierId ?? null,
+      descripcion: `Usuario actualizado: ${saved.email}`,
+      payloadBefore: before,
+      payloadAfter: {
+        id: saved.id,
+        email: saved.email,
+        username: saved.username,
+        nombre: saved.nombre,
+        apellido: saved.apellido,
+        estado: saved.estado,
+      },
+    });
     return this.sanitize(saved);
   }
 
@@ -223,6 +266,20 @@ export class UsersService {
     user.motivoInactivacion = motivo ?? null;
     user.modificadoPor = modifierId;
     const saved = await this.repo.save(user);
+    this.auditOutbox.publish({
+      modulo: 'users',
+      accion: 'inactivate',
+      entidad: 'user',
+      entidadId: saved.id,
+      actorUserId: modifierId,
+      descripcion: `Usuario inactivado: ${saved.email}`,
+      payloadAfter: {
+        id: saved.id,
+        email: saved.email,
+        estado: saved.estado,
+        motivo: saved.motivoInactivacion,
+      },
+    });
     return this.sanitize(saved);
   }
 
@@ -238,6 +295,19 @@ export class UsersService {
     user.lockedUntil = null;
     user.modificadoPor = modifierId;
     const saved = await this.repo.save(user);
+    this.auditOutbox.publish({
+      modulo: 'users',
+      accion: 'reactivate',
+      entidad: 'user',
+      entidadId: saved.id,
+      actorUserId: modifierId,
+      descripcion: `Usuario reactivado: ${saved.email}`,
+      payloadAfter: {
+        id: saved.id,
+        email: saved.email,
+        estado: saved.estado,
+      },
+    });
     return this.sanitize(saved);
   }
 
@@ -251,6 +321,20 @@ export class UsersService {
     user.motivoInactivacion = motivo ?? 'Bloqueado manualmente por administrador';
     user.modificadoPor = modifierId;
     const saved = await this.repo.save(user);
+    this.auditOutbox.publish({
+      modulo: 'users',
+      accion: 'block',
+      entidad: 'user',
+      entidadId: saved.id,
+      actorUserId: modifierId,
+      descripcion: `Usuario bloqueado: ${saved.email}`,
+      payloadAfter: {
+        id: saved.id,
+        email: saved.email,
+        estado: saved.estado,
+        motivo: saved.motivoInactivacion,
+      },
+    });
     return this.sanitize(saved);
   }
 

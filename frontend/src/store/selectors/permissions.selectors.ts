@@ -64,6 +64,8 @@ export const canInactivateCompany = (state: RootState) =>
   hasPermissionWithAliases(selectPermissions(state), 'company:inactivate');
 export const canReactivateCompany = (state: RootState) =>
   hasPermissionWithAliases(selectPermissions(state), 'company:reactivate');
+export const canViewCompanyAudit = (state: RootState) =>
+  selectPermissions(state).includes('config:companies:audit');
 
 /** Permisos para ver secciones de configuración (tabs Roles, Usuarios, Permisos) */
 export const canViewConfigRoles = (state: RootState) =>

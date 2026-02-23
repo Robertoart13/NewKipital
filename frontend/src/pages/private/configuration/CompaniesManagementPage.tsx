@@ -51,7 +51,9 @@ import {
   reactivateCompany,
   uploadCompanyLogoTemp,
   updateCompany,
+  fetchCompanyAuditTrail,
   type CompanyListItem,
+  type CompanyAuditTrailItem,
   type CompanyPayload,
 } from '../../../api/companies';
 import {
@@ -59,6 +61,7 @@ import {
   canEditCompany,
   canInactivateCompany,
   canReactivateCompany,
+  canViewCompanyAudit,
   canViewCompanies,
 } from '../../../store/selectors/permissions.selectors';
 import { useAppSelector } from '../../../store/hooks';
@@ -134,6 +137,7 @@ export function CompaniesManagementPage() {
   const canEditCompanyPerm = useAppSelector(canEditCompany);
   const canInactivateCompanyPerm = useAppSelector(canInactivateCompany);
   const canReactivateCompanyPerm = useAppSelector(canReactivateCompany);
+  const canViewCompanyAuditPerm = useAppSelector(canViewCompanyAudit);
 
   const [form] = Form.useForm<CompanyFormValues>();
   const formValues = Form.useWatch([], form);
@@ -177,8 +181,10 @@ export function CompaniesManagementPage() {
   const [logoFile, setLogoFile] = useState<File | null>(null);
   const [logoTempFileName, setLogoTempFileName] = useState<string | null>(null);
   const [logoPreviewUrl, setLogoPreviewUrl] = useState<string>(DEFAULT_COMPANY_LOGO);
+  const [companyAuditTrail, setCompanyAuditTrail] = useState<CompanyAuditTrailItem[]>([]);
+  const [loadingCompanyAuditTrail, setLoadingCompanyAuditTrail] = useState(false);
   const logoObjectUrlRef = useRef<string | null>(null);
-  const canUploadLogo = editingCompany ? canEditCompanyPerm : canCreateCompanyPerm;
+  const canUploadLogo = canEditCompanyPerm;
   const canSubmitCompany = useMemo(() => {
     const values = formValues ?? {};
     const required = [
@@ -341,6 +347,10 @@ export function CompaniesManagementPage() {
     setLogoFile(null);
     setLogoTempFileName(null);
     setLogoPreviewUrl(DEFAULT_COMPANY_LOGO);
+    setOpenModal(true);
+  };
+
+  const applyCompanyToForm = useCallback((company: CompanyListItem) => {
     form.setFieldsValue({
       nombre: company.nombre ?? '',
       nombreLegal: company.nombreLegal ?? '',
@@ -353,8 +363,13 @@ export function CompaniesManagementPage() {
       email: company.email ?? '',
       codigoPostal: company.codigoPostal ?? '',
     });
-    setOpenModal(true);
-  };
+  }, [form]);
+
+  useEffect(() => {
+    if (!openModal) return;
+    if (!editingCompany) return;
+    applyCompanyToForm(editingCompany);
+  }, [applyCompanyToForm, editingCompany, openModal]);
 
   const restoreEditingLogoPreview = useCallback(async () => {
     if (!editingCompany) {
@@ -399,8 +414,34 @@ export function CompaniesManagementPage() {
     setLogoFile(null);
     setLogoTempFileName(null);
     setLogoPreviewUrl(DEFAULT_COMPANY_LOGO);
+    setCompanyAuditTrail([]);
     form.resetFields();
   };
+
+  const loadCompanyAuditTrail = useCallback(async () => {
+    if (!editingCompany || !canViewCompanyAuditPerm) {
+      setCompanyAuditTrail([]);
+      setLoadingCompanyAuditTrail(false);
+      return;
+    }
+    setLoadingCompanyAuditTrail(true);
+    try {
+      const rows = await fetchCompanyAuditTrail(editingCompany.id, 200);
+      setCompanyAuditTrail(rows ?? []);
+    } catch (error) {
+      setCompanyAuditTrail([]);
+      message.error(error instanceof Error ? error.message : 'Error al cargar bitacora');
+    } finally {
+      setLoadingCompanyAuditTrail(false);
+    }
+  }, [editingCompany, canViewCompanyAuditPerm, message]);
+
+  useEffect(() => {
+    if (!openModal || !editingCompany) return;
+    if (activeTab !== 'bitacora') return;
+    if (!canViewCompanyAuditPerm) return;
+    void loadCompanyAuditTrail();
+  }, [openModal, editingCompany, activeTab, canViewCompanyAuditPerm, loadCompanyAuditTrail]);
 
   const submitCompany = async () => {
     try {
@@ -546,6 +587,73 @@ export function CompaniesManagementPage() {
           {company.estado === 1 ? 'Activo' : 'Inactivo'}
         </Tag>
       ),
+    },
+  ];
+
+  const companyAuditColumns: ColumnsType<CompanyAuditTrailItem> = [
+    {
+      title: 'Fecha y hora',
+      dataIndex: 'fechaCreacion',
+      key: 'fechaCreacion',
+      width: 160,
+      render: (value: string | null) => (value ? new Date(value).toLocaleString() : '-'),
+    },
+    {
+      title: 'Quien lo hizo',
+      key: 'actor',
+      width: 210,
+      render: (_, row) => {
+        const actorLabel = row.actorNombre?.trim() || row.actorEmail?.trim() || (row.actorUserId ? `Usuario ID ${row.actorUserId}` : 'Sistema');
+        return (
+          <div>
+            <div style={{ fontWeight: 600, color: '#3d4f5c' }}>{actorLabel}</div>
+            {row.actorEmail && <div style={{ color: '#8c8c8c', fontSize: 12 }}>{row.actorEmail}</div>}
+          </div>
+        );
+      },
+    },
+    {
+      title: 'Accion',
+      key: 'accion',
+      width: 170,
+      render: (_, row) => (
+        <Flex gap={6} wrap="wrap">
+          <Tag className={styles.tagInactivo}>{row.modulo}</Tag>
+          <Tag className={styles.tagActivo}>{row.accion}</Tag>
+        </Flex>
+      ),
+    },
+    {
+      title: 'Detalle',
+      dataIndex: 'descripcion',
+      key: 'descripcion',
+      render: (value: string, row) => {
+        const changes = row.cambios ?? [];
+        const tooltipContent = (
+          <div style={{ maxWidth: 520 }}>
+            <div style={{ fontWeight: 600, marginBottom: 8 }}>{value}</div>
+            {changes.length > 0 ? (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                {changes.map((change, index) => (
+                  <div key={`${row.id}-${change.campo}-${index}`} style={{ fontSize: 12, lineHeight: 1.4 }}>
+                    <div><strong>{change.campo}</strong></div>
+                    <div>Antes: {change.antes}</div>
+                    <div>Despues: {change.despues}</div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div style={{ fontSize: 12 }}>Sin detalle de campos para esta accion.</div>
+            )}
+          </div>
+        );
+
+        return (
+          <Tooltip title={tooltipContent}>
+            <div className={styles.auditDetailCell}>{value}</div>
+          </Tooltip>
+        );
+      },
     },
   ];
 
@@ -726,11 +834,17 @@ export function CompaniesManagementPage() {
         className={styles.companyModal}
         open={openModal}
         onCancel={closeModal}
+        afterOpenChange={(opened) => {
+          if (opened && editingCompany) {
+            applyCompanyToForm(editingCompany);
+          }
+        }}
         closable={false}
         footer={null}
         confirmLoading={saving}
         width={920}
         destroyOnHidden
+        forceRender
         styles={{
           header: { marginBottom: 0, padding: 0 },
           body: { padding: 24 },
@@ -946,6 +1060,39 @@ export function CompaniesManagementPage() {
                   </Row>
                 ),
               },
+              ...(editingCompany && canViewCompanyAuditPerm
+                ? [{
+                    key: 'bitacora',
+                    label: (
+                      <span>
+                        <SearchOutlined style={{ marginRight: 8, fontSize: 16 }} />
+                        Bitacora
+                      </span>
+                    ),
+                    children: (
+                      <div style={{ paddingTop: 8 }}>
+                        <p className={styles.sectionTitle}>Historial de cambios de la empresa</p>
+                        <p className={styles.sectionDescription}>
+                          Muestra quien hizo el cambio, cuando lo hizo y el detalle registrado en bitacora.
+                        </p>
+                        <Table<CompanyAuditTrailItem>
+                          rowKey="id"
+                          size="small"
+                          loading={loadingCompanyAuditTrail}
+                          columns={companyAuditColumns}
+                          dataSource={companyAuditTrail}
+                          className={`${styles.configTable} ${styles.auditTableCompact}`}
+                          pagination={{
+                            pageSize: 8,
+                            showSizeChanger: true,
+                            showTotal: (total) => `${total} registro(s)`,
+                          }}
+                          locale={{ emptyText: 'No hay registros de bitacora para esta empresa.' }}
+                        />
+                      </div>
+                    ),
+                  }]
+                : []),
             ]}
           />
           <div className={styles.companyModalFooter}>

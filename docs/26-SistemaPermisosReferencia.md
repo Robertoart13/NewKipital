@@ -231,3 +231,12 @@ El sistema de permisos está alineado con un modelo RBAC enterprise estilo NetSu
 - Denegación global por app.  
 
 La documentación operativa de flujos y pantallas está en `24-PermisosEnterpriseOperacion.md`. Este documento (26) es la referencia técnica para implementación y diagnóstico.
+
+---
+
+## Regla operativa de acceso a empresas (nuevo)
+
+- El acceso efectivo a empresas se resuelve por sys_usuario_empresa.
+- No se debe exponer ni permitir mutacion de empresas fuera del set asignado al usuario autenticado.
+- Esta validacion se aplica en backend (fuente de verdad), no solo en frontend.
+

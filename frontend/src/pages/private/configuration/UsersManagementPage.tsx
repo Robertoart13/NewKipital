@@ -37,6 +37,7 @@ import {
   fetchUserApps,
   assignUserApp,
   fetchUserCompanies,
+  fetchUserAuditTrail,
   fetchUserRolesSummary,
   fetchUsers,
   inactivateUser,
@@ -49,6 +50,7 @@ import {
   type SystemPermission,
   type SystemRole,
   type SystemUser,
+  type UserAuditTrailItem,
   type UserRolesSummary,
 } from '../../../api/securityConfig';
 import {
@@ -125,6 +127,8 @@ export function UsersManagementPage() {
   const [companySearch, setCompanySearch] = useState('');
   const [roleSearch, setRoleSearch] = useState('');
   const [exceptionSearch, setExceptionSearch] = useState('');
+  const [auditTrail, setAuditTrail] = useState<UserAuditTrailItem[]>([]);
+  const [loadingAuditTrail, setLoadingAuditTrail] = useState(false);
 
   const loadBaseData = useCallback(async () => {
     setLoading(true);
@@ -263,6 +267,28 @@ export function UsersManagementPage() {
   useEffect(() => {
     void loadRolesSummary();
   }, [loadRolesSummary]);
+
+  const loadUserAuditTrail = useCallback(async () => {
+    if (!selectedUser) {
+      setAuditTrail([]);
+      setLoadingAuditTrail(false);
+      return;
+    }
+    setLoadingAuditTrail(true);
+    try {
+      const rows = await fetchUserAuditTrail(selectedUser.id, 200);
+      setAuditTrail(rows ?? []);
+    } catch {
+      setAuditTrail([]);
+    } finally {
+      setLoadingAuditTrail(false);
+    }
+  }, [selectedUser]);
+
+  useEffect(() => {
+    if (!drawerOpen || drawerNavTab !== 'bitacora') return;
+    void loadUserAuditTrail();
+  }, [drawerOpen, drawerNavTab, loadUserAuditTrail]);
 
   useEffect(() => {
     if (excepcionRoleId && !globalRoleIds.includes(excepcionRoleId)) {
@@ -418,6 +444,7 @@ export function UsersManagementPage() {
     setExcepcionRoleId(null);
     setRoleExcepcionPermissions([]);
     setAppsToAssign([]);
+    setAuditTrail([]);
     setDrawerOpen(true);
   };
 
@@ -489,6 +516,54 @@ export function UsersManagementPage() {
       ),
     },
   ];
+
+  const auditColumns: ColumnsType<UserAuditTrailItem> = useMemo(
+    () => [
+      {
+        title: 'Fecha y hora',
+        dataIndex: 'fechaCreacion',
+        key: 'fechaCreacion',
+        width: 150,
+        render: (value: string | null) => (value ? new Date(value).toLocaleString() : '-'),
+      },
+      {
+        title: 'Quien lo hizo',
+        key: 'actor',
+        width: 190,
+        render: (_, row) => {
+          const actorLabel = row.actorNombre?.trim() || row.actorEmail?.trim() || (row.actorUserId ? `Usuario ID ${row.actorUserId}` : 'Sistema');
+          return (
+            <div>
+              <div style={{ fontWeight: 600, color: '#3d4f5c' }}>{actorLabel}</div>
+              {row.actorEmail && <div style={{ color: '#8c8c8c', fontSize: 12 }}>{row.actorEmail}</div>}
+            </div>
+          );
+        },
+      },
+      {
+        title: 'Accion',
+        key: 'accion',
+        width: 160,
+        render: (_, row) => (
+          <Flex gap={6} wrap="wrap">
+            <Tag className={styles.tagInactivo}>{row.modulo}</Tag>
+            <Tag className={styles.tagActivo}>{row.accion}</Tag>
+          </Flex>
+        ),
+      },
+      {
+        title: 'Detalle',
+        dataIndex: 'descripcion',
+        key: 'descripcion',
+        render: (value: string) => (
+          <Tooltip title={value}>
+            <div className={styles.auditDetailCell}>{value}</div>
+          </Tooltip>
+        ),
+      },
+    ],
+    [],
+  );
 
   return (
     <div className={styles.pageWrapper}>
@@ -948,6 +1023,39 @@ export function UsersManagementPage() {
                           </Popconfirm>
                         )}
                       </Flex>
+                    </div>
+                  ),
+                },
+                {
+                  key: 'bitacora',
+                  label: 'Bitacora',
+                  children: (
+                    <div style={{ paddingTop: 16 }}>
+                      <p className={styles.sectionTitle}>Historial de cambios</p>
+                      <p className={styles.sectionDescription}>
+                        Muestra quien hizo el cambio, cuando se hizo y el detalle registrado en bitacora.
+                      </p>
+                      <Alert
+                        className={`${styles.infoBanner} ${styles.infoType}`}
+                        type="info"
+                        showIcon
+                        message="Informacion de sistema"
+                        description="Se listan las acciones aplicadas al usuario en orden de la mas reciente a la mas antigua."
+                      />
+                      <Table<UserAuditTrailItem>
+                        className={`${styles.configTable} ${styles.auditTableCompact}`}
+                        rowKey="id"
+                        loading={loadingAuditTrail}
+                        columns={auditColumns}
+                        dataSource={auditTrail}
+                        size="small"
+                        pagination={{
+                          pageSize: 8,
+                          showSizeChanger: true,
+                          showTotal: (total) => `${total} registro(s)`,
+                        }}
+                        locale={{ emptyText: 'No hay registros de bitacora para este usuario.' }}
+                      />
                     </div>
                   ),
                 },

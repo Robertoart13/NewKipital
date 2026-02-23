@@ -55,14 +55,17 @@ export class CompaniesController {
 
   @RequirePermissions('company:view')
   @Get()
-  findAll(@Query('includeInactive', new ParseBoolPipe({ optional: true })) includeInactive?: boolean) {
-    return this.service.findAll(includeInactive ?? false);
+  findAll(
+    @Query('includeInactive', new ParseBoolPipe({ optional: true })) includeInactive: boolean | undefined,
+    @CurrentUser() user: { userId: number },
+  ) {
+    return this.service.findAll(includeInactive ?? false, user.userId);
   }
 
   @RequirePermissions('company:view')
   @Get(':id')
-  findOne(@Param('id', ParseIntPipe) id: number) {
-    return this.service.findOne(id);
+  findOne(@Param('id', ParseIntPipe) id: number, @CurrentUser() user: { userId: number }) {
+    return this.service.findOne(id, user.userId);
   }
 
   @RequirePermissions('company:edit')
@@ -83,7 +86,7 @@ export class CompaniesController {
     return this.service.reactivate(id, user.userId);
   }
 
-  @RequirePermissions('company:create')
+  @RequirePermissions('company:edit')
   @Post('logo/temp')
   @UseInterceptors(
     FileInterceptor('file', {
@@ -122,13 +125,14 @@ export class CompaniesController {
     return this.service.registerTempLogo(file);
   }
 
-  @RequirePermissions('company:create')
+  @RequirePermissions('company:edit')
   @Post(':id/logo/commit')
   commitLogo(
     @Param('id', ParseIntPipe) id: number,
     @Body() body: { tempFileName: string },
+    @CurrentUser() user: { userId: number },
   ) {
-    return this.service.commitTempLogo(id, basename(body?.tempFileName ?? ''));
+    return this.service.commitTempLogo(id, basename(body?.tempFileName ?? ''), user.userId);
   }
 
   @RequirePermissions('company:view')
@@ -136,10 +140,21 @@ export class CompaniesController {
   async getLogo(
     @Param('id', ParseIntPipe) id: number,
     @Res({ passthrough: true }) res: Response,
+    @CurrentUser() user: { userId: number },
   ): Promise<StreamableFile> {
-    const logo = await this.service.resolveCompanyLogo(id);
+    const logo = await this.service.resolveCompanyLogo(id, user.userId);
     res.setHeader('Content-Type', logo.mimeType);
     res.setHeader('Cache-Control', 'public, max-age=300');
     return new StreamableFile(this.service.createLogoReadStream(logo.absolutePath));
+  }
+
+  @RequirePermissions('config:companies:audit')
+  @Get(':id/audit-trail')
+  getAuditTrail(
+    @Param('id', ParseIntPipe) id: number,
+    @Query('limit', new ParseIntPipe({ optional: true })) limit: number | undefined,
+    @CurrentUser() user: { userId: number },
+  ) {
+    return this.service.getAuditTrail(id, user.userId, limit ?? 100);
   }
 }
