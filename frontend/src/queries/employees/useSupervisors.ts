@@ -2,10 +2,11 @@ import { useQuery } from '@tanstack/react-query';
 import { fetchSupervisors } from '../../api/employees';
 import { employeeKeys } from './keys';
 
-export function useSupervisors(companyId: string | null) {
+/** Lista de supervisores (rol Supervisor / Supervisor Global / Master) de todas las empresas del usuario. */
+export function useSupervisors() {
   return useQuery({
-    queryKey: employeeKeys.supervisors(companyId ?? ''),
-    queryFn: () => fetchSupervisors(companyId!),
-    enabled: !!companyId,
+    queryKey: employeeKeys.supervisors(),
+    queryFn: fetchSupervisors,
+    enabled: true,
   });
 }

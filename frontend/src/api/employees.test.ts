@@ -1,4 +1,4 @@
-﻿import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock('../interceptors/httpInterceptor', () => ({
   httpFetch: vi.fn(),
@@ -24,7 +24,7 @@ function okJson<T>(data: T) {
 describe('employees api', () => {
   beforeEach(() => vi.clearAllMocks());
 
-  it('fetchEmployees builds query params correctly', async () => {
+  it('fetchEmployees builds query params correctly with single company', async () => {
     mockHttpFetch.mockResolvedValue(okJson({ data: [], total: 0, page: 1, pageSize: 20 }));
     await fetchEmployees('3', { page: 2, search: 'test', includeInactive: true });
     const url = mockHttpFetch.mock.calls[0][0] as string;
@@ -32,6 +32,13 @@ describe('employees api', () => {
     expect(url).toContain('page=2');
     expect(url).toContain('search=test');
     expect(url).toContain('includeInactive=true');
+  });
+
+  it('fetchEmployees builds query params with multiple companies', async () => {
+    mockHttpFetch.mockResolvedValue(okJson({ data: [], total: 0, page: 1, pageSize: 20 }));
+    await fetchEmployees(null, { companyIds: [3, 5] });
+    const url = mockHttpFetch.mock.calls[1][0] as string;
+    expect(url).toContain('idEmpresas=3,5');
   });
 
   it('fetchEmployees throws on error response', async () => {
@@ -78,7 +85,7 @@ describe('employees api', () => {
 
   it('fetchSupervisors returns empty array on error', async () => {
     mockHttpFetch.mockResolvedValue({ ok: false } as any);
-    const result = await fetchSupervisors('1');
+    const result = await fetchSupervisors();
     expect(result).toEqual([]);
   });
 });

@@ -1,4 +1,4 @@
-﻿import {
+import {
   Injectable,
   NotFoundException,
   ConflictException,
@@ -6,7 +6,7 @@
   BadRequestException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { DataSource, Repository } from 'typeorm';
+import { DataSource, Repository, In, IsNull } from 'typeorm';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { Employee, MonedaSalarioEmpleado } from './entities/employee.entity';
 import {
@@ -21,6 +21,24 @@ import { EmployeeCreationWorkflow } from '../../workflows/employees/employee-cre
 import { DOMAIN_EVENTS } from '../../common/events/event-names';
 import { AuthService } from '../auth/auth.service';
 import { EmployeeSensitiveDataService } from '../../common/services/employee-sensitive-data.service';
+import {
+  PersonalAction,
+  PersonalActionEstado,
+} from '../personal-actions/entities/personal-action.entity';
+import {
+  EstadoCalendarioNomina,
+  PayrollCalendar,
+} from '../payroll/entities/payroll-calendar.entity';
+
+/** Estados de planilla que bloquean inactivar empleado (DOC-34 UC-01). */
+const PLANILLA_ESTADOS_BLOQUEANTES = [
+  EstadoCalendarioNomina.ABIERTA,
+  EstadoCalendarioNomina.EN_PROCESO,
+  EstadoCalendarioNomina.VERIFICADA,
+];
+
+/** Estados de acción de personal que bloquean inactivar empleado si no están asociadas a planilla (DOC-34 UC-02). */
+const ACCION_ESTADOS_BLOQUEANTES = [PersonalActionEstado.PENDIENTE, PersonalActionEstado.APROBADA];
 
 @Injectable()
 export class EmployeesService {
@@ -33,6 +51,10 @@ export class EmployeesService {
     private readonly userCompanyRepo: Repository<UserCompany>,
     @InjectRepository(User)
     private readonly userRepo: Repository<User>,
+    @InjectRepository(PayrollCalendar)
+    private readonly payrollCalendarRepo: Repository<PayrollCalendar>,
+    @InjectRepository(PersonalAction)
+    private readonly personalActionRepo: Repository<PersonalAction>,
     private readonly creationWorkflow: EmployeeCreationWorkflow,
     private readonly eventEmitter: EventEmitter2,
     private readonly authService: AuthService,
@@ -101,8 +123,13 @@ export class EmployeesService {
     }
 
     if (dto.crearAccesoTimewise && dto.idRolTimewise && creatorId != null) {
-      const resolved = await this.authService.resolvePermissions(creatorId, dto.idEmpresa, 'timewise');
-      if (!resolved.permissions.includes('employee:assign-timewise-role')) {
+      const [resolvedTimewise, resolvedKpital] = await Promise.all([
+        this.authService.resolvePermissions(creatorId, dto.idEmpresa, 'timewise'),
+        this.authService.resolvePermissions(creatorId, dto.idEmpresa, 'kpital'),
+      ]);
+      const hasAssign = resolvedTimewise.permissions.includes('employee:assign-timewise-role')
+        || resolvedKpital.permissions.includes('employee:assign-timewise-role');
+      if (!hasAssign) {
         throw new ForbiddenException(
           'No tiene permiso para asignar roles de TimeWise. Requiere employee:assign-timewise-role.',
         );
@@ -178,6 +205,7 @@ export class EmployeesService {
       estado?: number;
       sort?: string;
       order?: 'ASC' | 'DESC';
+      companyIds?: number[];
     } = {},
   ): Promise<{ data: Employee[]; total: number; page: number; pageSize: number }> {
     const page = Math.max(1, opts.page ?? 1);
@@ -191,18 +219,25 @@ export class EmployeesService {
       .leftJoinAndSelect('e.puesto', 'puesto')
       .where('1=1');
 
+    const requestedCompanyIds = opts.companyIds?.length
+      ? Array.from(new Set(opts.companyIds.filter((id) => Number.isInteger(id) && id > 0)))
+      : [];
     let scopeCompanyIds: number[] = [];
-    if (idEmpresa != null) {
+    if (requestedCompanyIds.length > 0) {
+      for (const companyId of requestedCompanyIds) {
+        await this.assertUserCompanyAccess(userId, companyId);
+      }
+      scopeCompanyIds = requestedCompanyIds;
+    } else if (idEmpresa != null) {
       await this.assertUserCompanyAccess(userId, idEmpresa);
-      qb.andWhere('e.idEmpresa = :idEmpresa', { idEmpresa });
       scopeCompanyIds = [idEmpresa];
     } else {
       scopeCompanyIds = await this.getUserCompanyIds(userId);
-      if (scopeCompanyIds.length === 0) {
-        return { data: [], total: 0, page, pageSize };
-      }
-      qb.andWhere('e.idEmpresa IN (:...companyIds)', { companyIds: scopeCompanyIds });
     }
+    if (scopeCompanyIds.length === 0) {
+      return { data: [], total: 0, page, pageSize };
+    }
+    qb.andWhere('e.idEmpresa IN (:...companyIds)', { companyIds: scopeCompanyIds });
 
     if (!opts.includeInactive && opts.estado === undefined) {
       qb.andWhere('e.estado = 1');
@@ -330,6 +365,16 @@ export class EmployeesService {
       if (dto.jornada !== undefined) current.jornada = dto.jornada;
       if (dto.idPeriodoPago !== undefined) current.idPeriodoPago = dto.idPeriodoPago;
       if (dto.monedaSalario !== undefined) current.monedaSalario = dto.monedaSalario;
+      if (dto.vacacionesAcumuladas !== undefined) {
+        current.vacacionesAcumuladas = dto.vacacionesAcumuladas == null || dto.vacacionesAcumuladas === ''
+          ? null
+          : this.sensitiveDataService.encrypt(dto.vacacionesAcumuladas);
+      }
+      if (dto.cesantiaAcumulada !== undefined) {
+        current.cesantiaAcumulada = dto.cesantiaAcumulada == null || dto.cesantiaAcumulada === ''
+          ? null
+          : this.sensitiveDataService.encrypt(dto.cesantiaAcumulada);
+      }
 
       current.modificadoPor = modifierId;
       current.datosEncriptados = 1;
@@ -358,9 +403,58 @@ export class EmployeesService {
 
   async inactivate(id: number, modifierId: number): Promise<Employee> {
     const emp = await this.findOne(id, modifierId);
+    await this.assertCanInactivateEmployee(emp);
     emp.estado = 0;
     emp.modificadoPor = modifierId;
     return this.repo.save(emp);
+  }
+
+  /**
+   * DOC-34 UC-01, UC-02: No permitir inactivar si hay planillas activas en la empresa del empleado
+   * o acciones de personal pendientes/aprobadas sin asociar a planilla.
+   */
+  private async assertCanInactivateEmployee(emp: Employee): Promise<void> {
+    const planillasActivas = await this.payrollCalendarRepo.find({
+      where: {
+        idEmpresa: emp.idEmpresa,
+        estado: In(PLANILLA_ESTADOS_BLOQUEANTES),
+        esInactivo: 0,
+      },
+      select: { id: true, fechaInicioPeriodo: true, fechaFinPeriodo: true, estado: true, tipoPlanilla: true },
+    });
+    if (planillasActivas.length > 0) {
+      throw new ConflictException({
+        message: 'El empleado tiene planillas activas en su empresa. Debe cerrarlas o aplicarlas primero.',
+        code: 'PLANILLAS_ACTIVAS',
+        planillas: planillasActivas.map((p) => ({
+          id: p.id,
+          fechaInicioPeriodo: p.fechaInicioPeriodo,
+          fechaFinPeriodo: p.fechaFinPeriodo,
+          estado: p.estado,
+          tipoPlanilla: p.tipoPlanilla,
+        })),
+      });
+    }
+    const accionesBloqueantes = await this.personalActionRepo.find({
+      where: {
+        idEmpleado: emp.id,
+        estado: In(ACCION_ESTADOS_BLOQUEANTES),
+        idCalendarioNomina: IsNull(),
+      },
+      select: { id: true, tipoAccion: true, estado: true, fechaEfecto: true },
+    });
+    if (accionesBloqueantes.length > 0) {
+      throw new ConflictException({
+        message: 'El empleado tiene acciones de personal pendientes o aprobadas sin asociar a planilla. Debe completarlas o cancelarlas primero.',
+        code: 'ACCIONES_PENDIENTES',
+        acciones: accionesBloqueantes.map((a) => ({
+          id: a.id,
+          tipoAccion: a.tipoAccion,
+          estado: a.estado,
+          fechaEfecto: a.fechaEfecto,
+        })),
+      });
+    }
   }
 
   async reactivate(id: number, modifierId: number): Promise<Employee> {
@@ -389,13 +483,19 @@ export class EmployeesService {
     return rows.map((row) => row.idEmpresa);
   }
 
+  /**
+   * Lista empleados elegibles como supervisores (rol Supervisor, Supervisor Global o Master en TimeWise).
+   * No filtra por empresa: devuelve todos los de las empresas a las que el usuario tiene acceso,
+   * para permitir que un supervisor de otra subsidiaria tome el rol temporalmente (mismo dueño).
+   */
   async findSupervisors(
     userId: number,
-    idEmpresa: number,
   ): Promise<{ id: number; nombre: string; apellido1: string }[]> {
-    if (!idEmpresa) return [];
-    await this.assertUserCompanyAccess(userId, idEmpresa);
-    const supervisorRoleCodes = ['SUPERVISOR_TIMEWISE', 'SUPERVISOR_GLOBAL_TIMEWISE'];
+    const companyIds = await this.getUserCompanyIds(userId);
+    if (!companyIds.length) return [];
+
+    const supervisorRoleCodes = ['SUPERVISOR_TIMEWISE', 'SUPERVISOR_GLOBAL_TIMEWISE', 'MASTER'];
+
     const employees = await this.repo
       .createQueryBuilder('e')
       .innerJoin('sys_usuario_rol', 'ur', 'ur.id_usuario = e.id_usuario AND ur.estado_usuario_rol = 1')
@@ -404,25 +504,28 @@ export class EmployeesService {
       })
       .innerJoin('sys_apps', 'a', "a.id_app = ur.id_app AND a.codigo_app = 'timewise'")
       .where('e.id_usuario IS NOT NULL')
-      .andWhere('e.id_empresa = :idEmpresa', { idEmpresa })
+      .andWhere('e.id_empresa IN (:...companyIds)', { companyIds })
       .andWhere('e.estado = 1')
-      .andWhere('(ur.id_empresa = :idEmpresa)')
-      .select(['e.id', 'e.nombre', 'e.apellido1'])
+      .andWhere('ur.id_empresa IN (:...companyIds)', { companyIds })
+      .select(['e.id', 'e.nombre', 'e.apellido1', 'e.idEmpresa'])
       .distinct(true)
       .getMany();
+
     const globalSupervisors = await this.repo
       .createQueryBuilder('e')
       .innerJoin('sys_usuario_rol_global', 'g', 'g.id_usuario = e.id_usuario AND g.estado_usuario_rol_global = 1')
       .innerJoin('sys_roles', 'r', 'r.id_rol = g.id_rol AND r.codigo_rol IN (:...codes)', {
         codes: supervisorRoleCodes,
       })
-      .innerJoin('sys_apps', 'a', "a.id_app = g.id_app AND a.codigo_app = 'timewise'")
+      .leftJoin('sys_apps', 'a', "a.id_app = g.id_app AND a.codigo_app = 'timewise'")
       .where('e.id_usuario IS NOT NULL')
-      .andWhere('e.id_empresa = :idEmpresa', { idEmpresa })
+      .andWhere('e.id_empresa IN (:...companyIds)', { companyIds })
       .andWhere('e.estado = 1')
-      .select(['e.id', 'e.nombre', 'e.apellido1'])
+      .andWhere("(a.id_app IS NOT NULL OR r.codigo_rol = 'MASTER')")
+      .select(['e.id', 'e.nombre', 'e.apellido1', 'e.idEmpresa'])
       .distinct(true)
       .getMany();
+
     const seen = new Set(employees.map((e) => e.id));
     for (const g of globalSupervisors) {
       if (!seen.has(g.id)) {
@@ -431,8 +534,9 @@ export class EmployeesService {
       }
     }
 
-    const canSeeSensitive = await this.hasSensitivePermission(userId, idEmpresa);
+    const sensitiveMap = await this.resolveSensitivePermissionMap(userId, companyIds);
     return employees.map((e) => {
+      const canSeeSensitive = sensitiveMap.get(e.idEmpresa) ?? false;
       const readable = this.toReadableEmployee(e, canSeeSensitive);
       return {
         id: readable.id,
@@ -502,4 +606,3 @@ export class EmployeesService {
     return map;
   }
 }
-

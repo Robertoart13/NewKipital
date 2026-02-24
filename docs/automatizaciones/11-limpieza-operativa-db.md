@@ -13,6 +13,8 @@ Este runbook define:
 Cuando se solicite "limpiar base para pruebas":
 
 ### Conservar (NO borrar)
+**Catálogos únicos:** Departamento, Puesto y Periodo de Pago son catálogos de referencia; **no se borran** en limpieza porque son únicos y son necesarios para empleados y nómina.
+
 - `sys_apps`
 - `sys_empresas`
 - `sys_permisos`
@@ -20,6 +22,7 @@ Cuando se solicite "limpiar base para pruebas":
 - `sys_rol_permiso`
 - `org_departamentos`
 - `org_puestos`
+- `nom_periodos_pago`
 - `migrations`
 
 ### Usuarios
@@ -40,7 +43,6 @@ Cuando se solicite "limpiar base para pruebas":
 - `sys_empleado_identity_queue`
 - `sys_empleado_encrypt_queue`
 - `sys_empleados`
-- `nom_periodos_pago`
 - `nom_calendarios_nomina`
 - `sys_notificacion_usuarios`
 - `sys_notificaciones`
@@ -65,8 +67,7 @@ DELETE FROM sys_empleado_identity_queue;
 DELETE FROM sys_empleado_encrypt_queue;
 DELETE FROM sys_empleados;
 
--- 2) Nomina operativa
-DELETE FROM nom_periodos_pago;
+-- 2) Nomina operativa (nom_periodos_pago NO se borra: catálogo único, ver "Conservar")
 DELETE FROM nom_calendarios_nomina;
 
 -- 3) Notificaciones, eventos, sesiones, auditoria
@@ -97,7 +98,7 @@ SELECT COUNT(*) AS empleados FROM sys_empleados;
 SELECT COUNT(*) AS identity_queue FROM sys_empleado_identity_queue;
 SELECT COUNT(*) AS encrypt_queue FROM sys_empleado_encrypt_queue;
 SELECT COUNT(*) AS provisiones FROM sys_empleado_provision_aguinaldo;
-SELECT COUNT(*) AS periodos_pago FROM nom_periodos_pago;
+SELECT COUNT(*) AS periodos_pago FROM nom_periodos_pago;  -- debe conservarse (catálogo único)
 SELECT COUNT(*) AS notificaciones FROM sys_notificaciones;
 SELECT COUNT(*) AS sesiones FROM sys_refresh_sessions;
 SELECT COUNT(*) AS auditoria FROM sys_auditoria_acciones;
@@ -107,7 +108,7 @@ SELECT COUNT(*) AS usuario_app_fuera_12 FROM sys_usuario_app WHERE id_usuario NO
 SELECT COUNT(*) AS usuario_empresa_fuera_12 FROM sys_usuario_empresa WHERE id_usuario NOT IN (1,2);
 SELECT COUNT(*) AS usuario_rol_fuera_12 FROM sys_usuario_rol WHERE id_usuario NOT IN (1,2);
 
--- Catalogos que deben permanecer
+-- Catalogos que deben permanecer (departamento, puesto, periodo de pago: únicos, no se borran)
 SELECT COUNT(*) AS apps FROM sys_apps;
 SELECT COUNT(*) AS empresas FROM sys_empresas;
 SELECT COUNT(*) AS permisos FROM sys_permisos;
@@ -115,6 +116,7 @@ SELECT COUNT(*) AS roles FROM sys_roles;
 SELECT COUNT(*) AS rol_permiso FROM sys_rol_permiso;
 SELECT COUNT(*) AS departamentos FROM org_departamentos;
 SELECT COUNT(*) AS puestos FROM org_puestos;
+SELECT COUNT(*) AS periodos_pago FROM nom_periodos_pago;
 ```
 
 ## Regla operativa para futuras solicitudes

@@ -20,7 +20,7 @@ export function EmployeeCreatePage() {
   const { data: departments = [] } = useDepartments();
   const { data: positions = [] } = usePositions();
   const { data: payPeriods = [] } = usePayPeriods();
-  const { data: supervisors = [] } = useSupervisors(companyId);
+  const { data: supervisors = [] } = useSupervisors();
   const { data: rolesTimewise = [] } = useRolesByApp('timewise');
   const { data: rolesKpital = [] } = useRolesByApp('kpital');
 

@@ -10,6 +10,8 @@ import { EmployeeEncryptQueue } from './entities/employee-encrypt-queue.entity';
 import { Department } from './entities/department.entity';
 import { Position } from './entities/position.entity';
 import { PayPeriod } from '../payroll/entities/pay-period.entity';
+import { PayrollCalendar } from '../payroll/entities/payroll-calendar.entity';
+import { PersonalAction } from '../personal-actions/entities/personal-action.entity';
 import { UserCompany } from '../access-control/entities/user-company.entity';
 import { UserApp } from '../access-control/entities/user-app.entity';
 import { UserRole } from '../access-control/entities/user-role.entity';
@@ -23,7 +25,16 @@ import { EmployeeDataAutomationWorkerService } from './services/employee-data-au
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Employee, EmployeeAguinaldoProvision, Department, Position, PayPeriod, UserCompany]),
+    TypeOrmModule.forFeature([
+      Employee,
+      EmployeeAguinaldoProvision,
+      Department,
+      Position,
+      PayPeriod,
+      PayrollCalendar,
+      PersonalAction,
+      UserCompany,
+    ]),
     TypeOrmModule.forFeature([
       EmployeeIdentityQueue,
       EmployeeEncryptQueue,

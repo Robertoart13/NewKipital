@@ -103,11 +103,20 @@ El código base sigue siendo único por empresa. La validación verifica que no 
 | Vista | Ruta | Permiso | Qué hace |
 |-------|------|---------|----------|
 | **Listado** | `/employees` | `employee:view` | Tabla con filtros, paginación, búsqueda, estados. Botón "Nuevo Empleado" abre modal de creación |
-| **Crear** | (modal desde listado) | `employee:create` | Modal `EmployeeCreateModal` con formulario completo (con o sin acceso digital). **Selectores de rol por app** (TimeWise: Empleado/Supervisor/Supervisor Global; KPITAL: si creador tiene permiso). **Dropdown Supervisor** filtrado a empleados con rol Supervisor o superior en TimeWise. Ver Doc 27. No hay ruta `/employees/new` |
+| **Crear** | (modal desde listado) | `employee:create` | Modal `EmployeeCreateModal` con formulario completo (con o sin acceso digital). **Selectores de rol por app** (TimeWise: Empleado/Supervisor/Supervisor Global; KPITAL: si creador tiene permiso). **Dropdown Supervisor** según regla abajo (sin filtro por empresa). Ver Doc 27. No hay ruta `/employees/new` |
 | **Detalle/Editar** | `/employees/:id` | `employee:view` / `employee:edit` | Ver y editar empleado existente |
 | **Confirmaciones** | (modals) | `employee:edit` | Inactivar, liquidar con confirmación y motivo |
 
 **Menú:** Empleados aparece en **Configuración → Gestión Organizacional** (no en nivel superior).
+
+### Regla: Lista de supervisores sin filtro por empresa (2026-02-24)
+
+**Estipulación:** El selector de Supervisor en crear/editar empleado **no** filtra por empresa.
+
+- **Endpoint:** `GET /api/employees/supervisors` (sin query `idEmpresa`).
+- **Criterio:** Se listan todos los empleados con rol **Supervisor TimeWise**, **Supervisor Global TimeWise** o **Master** en TimeWise, de **cualquier empresa** a la que el usuario tenga acceso.
+- **Motivo:** Las subsidiarias pertenecen al mismo dueño; un supervisor de otra empresa puede asumir el rol temporalmente. Solo se muestran roles por encima de “Empleado”.
+- **Seguridad:** Solo se incluyen empleados de empresas en `sys_usuario_empresa` del usuario; se respeta `employee:view-sensitive` por empresa del empleado para desencriptar nombre/apellidos.
 
 ### Extensión 2026-02-24 - Histórico Laboral en creación
 
@@ -321,6 +330,7 @@ src/
 - **Post-submit:** No cambiar empresa activa. Cerrar modal, invalidar lista y permanecer en el listado (empleados de la empresa activa).
 
 **Selects del backend:** Departamento, Puesto, Periodo de Pago (catalogos globales, no filtrados por empresa en el request).  
+**Regla de limpieza de BD:** Departamento, Puesto y Periodo de Pago **no se borran** en limpieza operativa porque son catálogos únicos de referencia (ver `docs/automatizaciones/11-limpieza-operativa-db.md` — se conservan `org_departamentos`, `org_puestos`, `nom_periodos_pago`).  
 **ENUMs locales:** Género, Estado Civil, Tipo Contrato, Jornada, Moneda, Tiene Cónyuge.
 
 **Al guardar:** Mutation POST → cerrar modal → invalidar lista → mostrar notificación de éxito.

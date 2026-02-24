@@ -1,10 +1,11 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { notification } from 'antd';
+import { App } from 'antd';
 import { reactivateEmployee } from '../../api/employees';
 import { employeeKeys } from './keys';
 
 export function useReactivateEmployee() {
   const queryClient = useQueryClient();
+  const { notification } = App.useApp();
 
   return useMutation({
     mutationFn: ({ id }: { id: number }) => reactivateEmployee(id),

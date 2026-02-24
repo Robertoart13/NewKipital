@@ -1,11 +1,12 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { notification } from 'antd';
+import { App } from 'antd';
 import { updateEmployee } from '../../api/employees';
 import type { UpdateEmployeePayload } from '../../api/employees';
 import { employeeKeys } from './keys';
 
 export function useUpdateEmployee() {
   const queryClient = useQueryClient();
+  const { notification } = App.useApp();
 
   return useMutation({
     mutationFn: ({ id, payload }: { id: number; payload: UpdateEmployeePayload }) =>

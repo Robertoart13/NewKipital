@@ -42,7 +42,7 @@ export function EmployeeDetailPage() {
   const { data: departments = [] } = useDepartments();
   const { data: positions = [] } = usePositions();
   const { data: payPeriods = [] } = usePayPeriods();
-  const { data: supervisorsRaw = [] } = useSupervisors(companyId);
+  const { data: supervisorsRaw = [] } = useSupervisors();
   const supervisors = supervisorsRaw.filter((e) => e.id !== employee?.id);
 
   const handleSaveEdit = async () => {

@@ -688,7 +688,7 @@ export function UsersManagementPage() {
               </div>
             </div>
 
-            <Card className={styles.sectionCard} bordered={false}>
+            <Card className={styles.sectionCard} variant="borderless">
               <div className={styles.sectionCardBody}>
                 <p className={styles.sectionTitle}>Aplicación</p>
                 <Tooltip title="KPITAL 360: planillas y RRHH. TimeWise: asistencia. Cada aplicación tiene su propio catálogo.">
@@ -706,7 +706,7 @@ export function UsersManagementPage() {
                     <Alert
                       type="info"
                       showIcon
-                      message="Sin aplicaciones asignadas"
+                      title="Sin aplicaciones asignadas"
                       description={canAssignAppsPerm
                         ? 'Este usuario no tiene acceso a ninguna aplicación. Seleccione las que desea asignar y guarde.'
                         : 'Sin permiso. Requiere: config:users:assign-apps'}
@@ -793,7 +793,7 @@ export function UsersManagementPage() {
                         className={`${styles.infoBanner} ${styles.infoType}`}
                         type="info"
                         showIcon
-                        message="Para qué sirve"
+                        title="Para qué sirve"
                         description="Define en cuáles empresas puede operar el usuario. Sin empresas asignadas, no tendrá contexto de trabajo."
                       />
                       <Input
@@ -841,7 +841,7 @@ export function UsersManagementPage() {
                           className={`${styles.infoBanner} ${styles.warningType}`}
                           type="warning"
                           showIcon
-                          message="Sin empresas asignadas los roles no tienen efecto"
+                          title="Sin empresas asignadas los roles no tienen efecto"
                           description="Los roles globales solo aplican si el usuario tiene al menos una empresa asignada en la pestaña Empresas. Guarde las empresas primero."
                         />
                       )}
@@ -853,7 +853,7 @@ export function UsersManagementPage() {
                         className={`${styles.infoBanner} ${styles.infoType}`}
                         type="info"
                         showIcon
-                        message="Para qué sirve"
+                        title="Para qué sirve"
                         description="Asigna capacidades base del usuario para la aplicación seleccionada (KPITAL o TimeWise)."
                       />
                       {loadingRolesForApp ? (
@@ -911,7 +911,7 @@ export function UsersManagementPage() {
                           className={`${styles.infoBanner} ${styles.warningType}`}
                           type="warning"
                           showIcon
-                          message="Sin empresas asignadas las excepciones no tienen efecto"
+                          title="Sin empresas asignadas las excepciones no tienen efecto"
                           description="Asigne al menos una empresa en la pestaña Empresas para que los roles y permisos apliquen al refrescar el perfil."
                         />
                       )}
@@ -919,14 +919,14 @@ export function UsersManagementPage() {
                         className={`${styles.infoBanner} ${styles.warningType}`}
                         type="warning"
                         showIcon
-                        message="Denegar permisos globalmente"
+                        title="Denegar permisos globalmente"
                         description="Los permisos marcados NO se aplicarán en ninguna empresa. Seleccione un rol para ver sus permisos y revocar los que no debe tener el usuario."
                       />
                       <Alert
                         className={`${styles.infoBanner} ${styles.infoType}`}
                         type="info"
                         showIcon
-                        message="Para qué sirve"
+                        title="Para qué sirve"
                         description="Restringe permisos específicos aunque el rol los otorgue. Úselo para excepciones puntuales de seguridad."
                       />
                       {loadingRolesSummary ? (
@@ -1011,7 +1011,7 @@ export function UsersManagementPage() {
                         className={`${styles.infoBanner} ${styles.infoType}`}
                         type="info"
                         showIcon
-                        message="Inactivar vs Bloquear"
+                        title="Inactivar vs Bloquear"
                         description="Inactivar retira acceso por estado inactivo. Bloquear corta acceso inmediato. Reactivar restablece acceso."
                       />
                       <Flex gap={8} wrap="wrap">
@@ -1064,7 +1064,7 @@ export function UsersManagementPage() {
                         className={`${styles.infoBanner} ${styles.infoType}`}
                         type="info"
                         showIcon
-                        message="Informacion de sistema"
+                        title="Informacion de sistema"
                         description="Se listan las acciones aplicadas al usuario en orden de la mas reciente a la mas antigua."
                       />
                       <Table<UserAuditTrailItem>

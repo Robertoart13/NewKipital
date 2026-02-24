@@ -26,6 +26,7 @@ import { usePositions } from '../../../../queries/catalogs/usePositions';
 import { usePayPeriods } from '../../../../queries/catalogs/usePayPeriods';
 import { useAllCompaniesForHistory } from '../../../../queries/companies/useAllCompaniesForHistory';
 import { useRolesByApp } from '../../../../queries/roles/useRolesByApp';
+import { useSupervisors } from '../../../../queries/employees/useSupervisors';
 import {
   GENERO_OPTIONS,
   ESTADO_CIVIL_OPTIONS,
@@ -98,8 +99,9 @@ export function EmployeeCreateModal({ open, onClose, onSuccess }: EmployeeCreate
   const currencySymbol = getCurrencySymbol(monedaSalarioSeleccionada);
   const empresaLaboralSeleccionada = Form.useWatch('idEmpresa', form) as number | undefined;
   const estadoInactivo = !activo;
+  const { data: supervisors = [] } = useSupervisors();
   const empresaLaboralActual =
-    companies.length === 1 ? companies[0].id : empresaLaboralSeleccionada;
+    companies.length === 1 ? companies[0]?.id : empresaLaboralSeleccionada;
 
   const canSubmit = useMemo(() => {
     const v = formValues ?? {};
@@ -253,6 +255,11 @@ export function EmployeeCreateModal({ open, onClose, onSuccess }: EmployeeCreate
           <Col span={12}>
             <Form.Item name="apellido1" label="Apellido *" rules={textRules({ required: true, max: 100 })}>
               <Input maxLength={100} />
+            </Form.Item>
+          </Col>
+          <Col span={12}>
+            <Form.Item name="apellido2" label="Segundo apellido" rules={textRules({ max: 100 })}>
+              <Input maxLength={100} placeholder="Opcional" />
             </Form.Item>
           </Col>
           <Col span={8}>
@@ -480,6 +487,20 @@ export function EmployeeCreateModal({ open, onClose, onSuccess }: EmployeeCreate
       ),
       children: (
         <>
+          <Row gutter={[12, 12]} className={styles.companyFormGrid}>
+            <Col span={24}>
+              <Form.Item name="idSupervisor" label="Supervisor" extra="Empleados con rol Supervisor, Supervisor Global o Master en TimeWise (según empresa seleccionada).">
+                <Select
+                  allowClear
+                  placeholder="Seleccionar"
+                  options={supervisors.map((s: { id: number; nombre: string; apellido1: string }) => ({
+                    value: s.id,
+                    label: `${s.nombre} ${s.apellido1}`.trim(),
+                  }))}
+                />
+              </Form.Item>
+            </Col>
+          </Row>
           {estadoInactivo && (
             <p style={{ color: '#64748b', fontSize: '13px', marginBottom: 16 }}>
               Para habilitar el acceso al sistema, active primero el empleado en el bloque Estado (arriba).

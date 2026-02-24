@@ -27,15 +27,8 @@ export class EmployeesController {
 
   @RequirePermissions('employee:view')
   @Get('supervisors')
-  findSupervisors(
-    @CurrentUser() user: { userId: number },
-    @Query('idEmpresa') idEmpresaRaw: string,
-  ) {
-    const idEmpresa = idEmpresaRaw ? parseInt(idEmpresaRaw, 10) : undefined;
-    if (!idEmpresa || Number.isNaN(idEmpresa)) {
-      return this.service.findSupervisors(user.userId, 0);
-    }
-    return this.service.findSupervisors(user.userId, idEmpresa);
+  findSupervisors(@CurrentUser() user: { userId: number }) {
+    return this.service.findSupervisors(user.userId);
   }
 
   @RequirePermissions('employee:view')
@@ -52,8 +45,15 @@ export class EmployeesController {
     @Query('estado') estado?: string,
     @Query('sort') sort?: string,
     @Query('order') order?: 'ASC' | 'DESC',
+    @Query('idEmpresas') idEmpresasRaw?: string,
   ) {
     const idEmpresa = idEmpresaRaw ? parseInt(idEmpresaRaw, 10) : undefined;
+    const companyIds = idEmpresasRaw
+      ? idEmpresasRaw
+          .split(',')
+          .map((value) => parseInt(value.trim(), 10))
+          .filter((n) => !Number.isNaN(n) && n > 0)
+      : undefined;
     return this.service.findAll(user.userId, Number.isNaN(idEmpresa!) ? undefined : idEmpresa, {
       includeInactive: includeInactive ?? false,
       page: page ? parseInt(page, 10) : undefined,
@@ -64,6 +64,7 @@ export class EmployeesController {
       estado: estado !== undefined ? parseInt(estado, 10) : undefined,
       sort: sort || undefined,
       order: order ?? undefined,
+      companyIds,
     });
   }
 

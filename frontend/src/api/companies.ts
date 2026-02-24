@@ -131,7 +131,13 @@ export async function updateCompany(id: number, payload: Partial<CompanyPayload>
  */
 export async function inactivateCompany(id: number): Promise<CompanyListItem> {
   const res = await httpFetch(`/companies/${id}/inactivate`, { method: 'PATCH' });
-  if (!res.ok) throw new Error('Error al inactivar empresa');
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}));
+    const msg = body.message ?? 'Error al inactivar empresa';
+    const e = new Error(msg) as Error & { response?: { code?: string; planillas?: { id: number }[] } };
+    e.response = body;
+    throw e;
+  }
   return res.json();
 }
 

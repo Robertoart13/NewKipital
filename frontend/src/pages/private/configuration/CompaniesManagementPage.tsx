@@ -589,7 +589,15 @@ export function CompaniesManagementPage() {
       message.success(`Empresa ${company.nombre} inactivada`);
       await loadCompanies();
     } catch (error) {
-      message.error(error instanceof Error ? error.message : 'Error al inactivar empresa');
+      const err = error as Error & { response?: { planillas?: { id: number }[] } };
+      const detail =
+        err.response?.planillas?.length
+          ? ` Planillas activas: ${err.response.planillas.map((p) => `#${p.id}`).join(', ')}.`
+          : '';
+      message.error({
+        content: (err instanceof Error ? err.message : 'Error al inactivar empresa') + detail,
+        duration: 8,
+      });
     }
   };
 

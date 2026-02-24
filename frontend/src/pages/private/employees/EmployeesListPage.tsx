@@ -31,10 +31,11 @@ import {
   UpOutlined,
 } from '@ant-design/icons';
 import { useAppSelector } from '../../../store/hooks';
-import { canCreateEmployee } from '../../../store/selectors/permissions.selectors';
+import { canCreateEmployee, canEditEmployee } from '../../../store/selectors/permissions.selectors';
 import { useEmployees } from '../../../queries/employees/useEmployees';
 import { employeeKeys } from '../../../queries/employees/keys';
 import { EmployeeCreateModal } from './components/EmployeeCreateModal';
+import { EmployeeEditModal } from './components/EmployeeEditModal';
 import type { EmployeeFilters as EmployeeFiltersType, EmployeeListItem } from '../../../api/employees';
 import styles from '../configuration/UsersManagementPage.module.css';
 
@@ -86,8 +87,11 @@ export function EmployeesListPage() {
   const companyId = useAppSelector((s) => s.activeCompany.company?.id ?? null);
   const companies = useAppSelector((s) => s.auth.companies);
   const canCreate = useAppSelector(canCreateEmployee);
+  const canEdit = useAppSelector(canEditEmployee);
 
   const [createModalOpen, setCreateModalOpen] = useState(false);
+  const [editModalOpen, setEditModalOpen] = useState(false);
+  const [editingEmployeeId, setEditingEmployeeId] = useState<number | null>(null);
   const [search, setSearch] = useState('');
   const [showInactive, setShowInactive] = useState(false);
   const [pageSize, setPageSize] = useState(10);
@@ -119,15 +123,24 @@ export function EmployeesListPage() {
     telefono: false,
     estado: false,
   });
-  const [filters, setFilters] = useState<EmployeeFiltersType>({
+  const [filters, setFilters] = useState<EmployeeFiltersType & { companyIds?: number[] }>({
     page: 1,
     pageSize: 10,
     includeInactive: false,
   });
+  const [selectedCompanyIds, setSelectedCompanyIds] = useState<number[]>([]);
+
+  const companyKey = selectedCompanyIds.length
+    ? [...selectedCompanyIds].sort((a, b) => a - b).join(',')
+    : companyId != null
+      ? String(companyId)
+      : 'all';
+  const shouldFetchEmployees = selectedCompanyIds.length > 0;
 
   const { data, isLoading, isError, refetch } = useEmployees({
-    companyId,
+    companyKey,
     filters,
+    enabled: shouldFetchEmployees,
   });
 
   const companyNameById = useMemo(() => {
@@ -138,7 +151,9 @@ export function EmployeesListPage() {
     return map;
   }, [companies]);
 
-  const paginated = data ?? { data: [], total: 0, page: 1, pageSize };
+  const paginated = shouldFetchEmployees
+    ? data ?? { data: [], total: 0, page: 1, pageSize }
+    : { data: [], total: 0, page: 1, pageSize };
 
   const matchesGlobalSearch = (employee: EmployeeListItem): boolean => {
     const term = search.trim().toLowerCase();
@@ -288,12 +303,14 @@ export function EmployeesListPage() {
       estado: false,
     });
     setShowInactive(false);
+    setSelectedCompanyIds([]);
     setFilters((current) => ({
       ...current,
       page: 1,
       includeInactive: false,
       estado: 1,
       search: undefined,
+      companyIds: undefined,
     }));
   };
 
@@ -396,6 +413,26 @@ export function EmployeesListPage() {
                 }}
                 size="small"
               />
+              <Select
+                mode="multiple"
+                allowClear
+                placeholder="Filtrar por empresa(s)"
+                value={selectedCompanyIds}
+                onChange={(values) => {
+                  const next = values as number[];
+                  setSelectedCompanyIds(next);
+                  setFilters((current) => ({
+                    ...current,
+                    page: 1,
+                    companyIds: next.length ? next : undefined,
+                  }));
+                }}
+                options={companies.map((company) => ({
+                  value: company.id,
+                  label: company.nombre,
+                }))}
+                style={{ minWidth: 220 }}
+              />
             </Flex>
           </Flex>
 
@@ -403,133 +440,159 @@ export function EmployeesListPage() {
             activeKey={filtersExpanded ? ['filtros'] : []}
             onChange={(keys) => setFiltersExpanded(keys.includes('filtros'))}
             className={styles.filtersCollapse}
-          >
-            <Collapse.Panel header="Filtros" key="filtros">
-              <Flex justify="space-between" align="center" wrap="wrap" gap={12} style={{ marginBottom: 16 }}>
-                <Input
-                  placeholder="Search"
-                  prefix={<SearchOutlined />}
-                  value={search}
-                  onChange={(event) => {
-                    const value = event.target.value;
-                    setSearch(value);
-                    applyFilters({ search: value || undefined });
-                  }}
-                  allowClear
-                  className={styles.searchInput}
-                  style={{ maxWidth: 240 }}
-                />
-                <Flex gap={8}>
-                  <Button size="small" onClick={collapseAllPanes}>Collapse All</Button>
-                  <Button size="small" onClick={openAllPanes}>Show All</Button>
-                  <Button size="small" onClick={clearAllFilters}>Limpiar Todo</Button>
-                </Flex>
-              </Flex>
-
-              <Row gutter={[12, 12]}>
-                {paneConfig.map((pane) => (
-                  <Col xs={24} md={12} xl={8} key={pane.key}>
-                    <div className={styles.paneCard}>
-                      <Flex gap={6} align="center" wrap="wrap">
-                        <Input
-                          value={paneSearch[pane.key]}
-                          onChange={(event) => setPaneSearch((prev) => ({ ...prev, [pane.key]: event.target.value }))}
-                          placeholder={pane.title}
-                          prefix={<SearchOutlined style={{ fontSize: 12, color: '#8c8c8c' }} />}
-                          suffix={(
-                            <Flex gap={2}>
-                              <SortAscendingOutlined style={{ fontSize: 10, color: '#8c8c8c' }} />
-                              <SortDescendingOutlined style={{ fontSize: 10, color: '#8c8c8c' }} />
-                            </Flex>
-                          )}
-                          size="middle"
-                          className={styles.filterInput}
-                          style={{ flex: 1, minWidth: 120 }}
-                        />
-                        <Button
-                          size="middle"
-                          icon={<SearchOutlined />}
-                          onClick={() => setPaneOpen((prev) => ({ ...prev, [pane.key]: true }))}
-                          title="Abrir opciones"
-                        />
-                        <Button size="middle" onClick={() => clearPaneSelection(pane.key)} title="Limpiar">
-                          x
-                        </Button>
-                        <Button
-                          size="middle"
-                          icon={paneOpen[pane.key] ? <UpOutlined /> : <DownOutlined />}
-                          onClick={() => setPaneOpen((prev) => ({ ...prev, [pane.key]: !prev[pane.key] }))}
-                          title={paneOpen[pane.key] ? 'Colapsar' : 'Expandir'}
-                        />
+            items={[
+              {
+                key: 'filtros',
+                label: 'Filtros',
+                children: (
+                  <>
+                    <Flex justify="space-between" align="center" wrap="wrap" gap={12} style={{ marginBottom: 16 }}>
+                      <Input
+                        placeholder="Search"
+                        prefix={<SearchOutlined />}
+                        value={search}
+                        onChange={(event) => {
+                          const value = event.target.value;
+                          setSearch(value);
+                          applyFilters({ search: value || undefined });
+                        }}
+                        allowClear
+                        className={styles.searchInput}
+                        style={{ maxWidth: 240 }}
+                      />
+                      <Flex gap={8}>
+                        <Button size="small" onClick={collapseAllPanes}>Collapse All</Button>
+                        <Button size="small" onClick={openAllPanes}>Show All</Button>
+                        <Button size="small" onClick={clearAllFilters}>Limpiar Todo</Button>
                       </Flex>
-                      {paneOpen[pane.key] && (
-                        <div className={styles.paneOptionsBox}>
-                          <Checkbox.Group
-                            value={paneSelections[pane.key]}
-                            onChange={(values) => setPaneSelections((prev) => ({ ...prev, [pane.key]: values as string[] }))}
-                            style={{ display: 'flex', flexDirection: 'column', gap: 8 }}
-                          >
-                            {paneOptions[pane.key].map((option) => (
-                              <Checkbox key={`${pane.key}:${option.value}`} value={option.value}>
-                                <Space>
-                                  <span>{option.value}</span>
-                                  <Badge count={option.count} style={{ backgroundColor: '#5a6c7d' }} />
-                                </Space>
-                              </Checkbox>
-                            ))}
-                          </Checkbox.Group>
-                          {paneOptions[pane.key].length === 0 && (
-                            <span className={styles.emptyHint}>Sin valores para este filtro</span>
-                          )}
-                        </div>
-                      )}
-                    </div>
-                  </Col>
-                ))}
-              </Row>
-            </Collapse.Panel>
-          </Collapse>
+                    </Flex>
+
+                    <Row gutter={[12, 12]}>
+                      {paneConfig.map((pane) => (
+                        <Col xs={24} md={12} xl={8} key={pane.key}>
+                          <div className={styles.paneCard}>
+                            <Flex gap={6} align="center" wrap="wrap">
+                              <Input
+                                value={paneSearch[pane.key]}
+                                onChange={(event) => setPaneSearch((prev) => ({ ...prev, [pane.key]: event.target.value }))}
+                                placeholder={pane.title}
+                                prefix={<SearchOutlined style={{ fontSize: 12, color: '#8c8c8c' }} />}
+                                suffix={(
+                                  <Flex gap={2}>
+                                    <SortAscendingOutlined style={{ fontSize: 10, color: '#8c8c8c' }} />
+                                    <SortDescendingOutlined style={{ fontSize: 10, color: '#8c8c8c' }} />
+                                  </Flex>
+                                )}
+                                size="middle"
+                                className={styles.filterInput}
+                                style={{ flex: 1, minWidth: 120 }}
+                              />
+                              <Button
+                                size="middle"
+                                icon={<SearchOutlined />}
+                                onClick={() => setPaneOpen((prev) => ({ ...prev, [pane.key]: true }))}
+                                title="Abrir opciones"
+                              />
+                              <Button size="middle" onClick={() => clearPaneSelection(pane.key)} title="Limpiar">
+                                x
+                              </Button>
+                              <Button
+                                size="middle"
+                                icon={paneOpen[pane.key] ? <UpOutlined /> : <DownOutlined />}
+                                onClick={() => setPaneOpen((prev) => ({ ...prev, [pane.key]: !prev[pane.key] }))}
+                                title={paneOpen[pane.key] ? 'Colapsar' : 'Expandir'}
+                              />
+                            </Flex>
+                            {paneOpen[pane.key] && (
+                              <div className={styles.paneOptionsBox}>
+                                <Checkbox.Group
+                                  value={paneSelections[pane.key]}
+                                  onChange={(values) => setPaneSelections((prev) => ({ ...prev, [pane.key]: values as string[] }))}
+                                  style={{ display: 'flex', flexDirection: 'column', gap: 8 }}
+                                >
+                                  {paneOptions[pane.key].map((option) => (
+                                    <Checkbox key={`${pane.key}:${option.value}`} value={option.value}>
+                                      <Space>
+                                        <span>{option.value}</span>
+                                        <Badge count={option.count} style={{ backgroundColor: '#5a6c7d' }} />
+                                      </Space>
+                                    </Checkbox>
+                                  ))}
+                                </Checkbox.Group>
+                                {paneOptions[pane.key].length === 0 && (
+                                  <span className={styles.emptyHint}>Sin valores para este filtro</span>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        </Col>
+                      ))}
+                    </Row>
+                  </>
+                ),
+              },
+            ]}
+          />
 
           {isError ? (
             <Empty description="Error al cargar empleados" image={Empty.PRESENTED_IMAGE_SIMPLE}>
               <Button onClick={() => refetch()}>Reintentar</Button>
             </Empty>
           ) : (
-            <Table<EmployeeListItem>
-              rowKey="id"
-              loading={isLoading}
-              columns={columns}
-              dataSource={filteredEmployees}
-              className={`${styles.configTable} ${styles.companiesTable}`}
-              locale={{
-                emptyText: 'No hay empleados registrados',
-              }}
-              pagination={{
-                current: paginated.page,
-                pageSize: paginated.pageSize,
-                total: paginated.total,
-                showSizeChanger: false,
-                onChange: (page, size) => {
-                  setFilters((current) => ({ ...current, page, pageSize: size }));
-                },
-                showTotal: (total, range) => `Mostrando ${range[0]} a ${range[1]} de ${total} registros`,
-              }}
-              onRow={(record) => ({
-                onClick: () => navigate(`/employees/${record.id}`),
-                style: { cursor: 'pointer' },
-              })}
-            />
-          )}
-        </div>
-      </Card>
+              <Table<EmployeeListItem>
+                rowKey="id"
+                loading={isLoading}
+                columns={columns}
+                dataSource={filteredEmployees}
+                className={`${styles.configTable} ${styles.companiesTable}`}
+                locale={{
+                  emptyText: 'No hay empleados registrados',
+                }}
+                pagination={{
+                  current: paginated.page,
+                  pageSize: paginated.pageSize,
+                  total: paginated.total,
+                  showSizeChanger: false,
+                  onChange: (page, size) => {
+                    setFilters((current) => ({ ...current, page, pageSize: size }));
+                  },
+                  showTotal: (total, range) => `Mostrando ${range[0]} a ${range[1]} de ${total} registros`,
+                }}
+                onRow={(record) => ({
+                    onClick: () => {
+                      if (canEdit) {
+                        setEditingEmployeeId(record.id);
+                        setEditModalOpen(true);
+                        return;
+                      }
+                      navigate(`/employees/${record.id}`);
+                    },
+                  style: { cursor: 'pointer' },
+                })}
+              />
+            )}
+          </div>
+        </Card>
 
-      <EmployeeCreateModal
-        open={createModalOpen}
-        onClose={() => setCreateModalOpen(false)}
-        onSuccess={() => {
-          queryClient.invalidateQueries({ queryKey: employeeKeys.all(companyId ?? 'all') });
-        }}
-      />
-    </div>
+        <EmployeeCreateModal
+          open={createModalOpen}
+          onClose={() => setCreateModalOpen(false)}
+          onSuccess={() => {
+            queryClient.invalidateQueries({ queryKey: employeeKeys.all(companyKey) });
+          }}
+        />
+
+        <EmployeeEditModal
+          employeeId={editingEmployeeId ?? undefined}
+          open={editModalOpen}
+          onClose={() => {
+            setEditModalOpen(false);
+            setEditingEmployeeId(null);
+          }}
+          onSuccess={() => {
+            queryClient.invalidateQueries({ queryKey: employeeKeys.all(companyKey) });
+          }}
+        />
+      </div>
   );
 }

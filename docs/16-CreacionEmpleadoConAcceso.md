@@ -37,6 +37,8 @@ En el alta de empleado se define explícitamente:
 2. `sys_empleados.id_usuario = NULL`
 3. No se crean roles/permisos/apps
 
+**Empleado creado manualmente en la BD:** Si se inserta solo el registro en `sys_empleados` (por script o SQL directo), ese empleado **no absorbe ningún rol**. Los roles viven en `sys_usuario_rol` / `sys_usuario_rol_global` y se asocian al **usuario** (`id_usuario`), no al empleado. Por tanto, hasta que no exista un registro en `sys_usuarios` vinculado (`id_usuario` en `sys_empleados`) y se inserten filas en `sys_usuario_rol` (y opcionalmente `sys_usuario_empresa`, `sys_usuario_app`), el empleado no tiene rol en TimeWise ni KPITAL. Si más adelante se le asigna usuario y roles por flujo o por datos, entonces tendrá el rol que se le asigne (p. ej. `EMPLEADO_TIMEWISE`).
+
 ### Caso B — Empleado CON acceso (transacción única)
 
 Todo ocurre en **UNA transacción** vía `queryRunner`:

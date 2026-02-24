@@ -10,5 +10,5 @@ export const employeeKeys = {
   list: (companyId: number | string, filters?: EmployeeFilters) =>
     ['employees', companyId, 'list', filters ?? {}] as const,
   detail: (id: number) => ['employee', id] as const,
-  supervisors: (companyId: number | string) => ['employees', companyId, 'supervisors'] as const,
+  supervisors: () => ['employees', 'supervisors'] as const,
 };

@@ -50,6 +50,10 @@ Si ya estás en el proyecto y necesitás referencia puntual, usá esta tabla par
 | 31 | [31-CifradoIdentidadYProvisionamiento.md](./31-CifradoIdentidadYProvisionamiento.md) | Ejecución operativa de cifrado, sincronización empleado-usuario y provisionamiento automático TimeWise con colas/workers idempotentes. | 23, 30 |
 | 32 | [31-ValidacionFormulariosFrontend.md](./31-ValidacionFormulariosFrontend.md) | Validación unificada de formularios: anti-SQL, textRules, emailRules, optionalNoSqlInjection. Trazabilidad en EmployeeCreateModal y CompaniesManagementPage. | 05, 23, 29 |
 | 33 | [32-INFORME-VALIDACION-CIFRADO-IDENTIDAD.md](./32-INFORME-VALIDACION-CIFRADO-IDENTIDAD.md) | Informe técnico de validación de cifrado e identidad (Directiva 31). Plan de validación, evidencia BD, observaciones. | 31 |
+| 34 | [34-CasosUsoCriticosPlanillaRRHH.md](./34-CasosUsoCriticosPlanillaRRHH.md) | **Casos de uso críticos Planilla y RRHH (DOC-34 v1.1).** Catálogo UC-01 a UC-31, checklist 21 ítems en 4 áreas, directivas. Registro de cambios en Sección 7. | 21, 23, 28 |
+| 35 | [35-EstadoDOC34Implementacion.md](./35-EstadoDOC34Implementacion.md) | **Estado DOC-34 vs implementación:** qué SÍ hay / qué NO hay, checklist 21 ítems por área. Referencia permanente para planillas y RRHH. Alineado con Reporte Comité v2.0. | 34 |
+| 36 | [36-ComparativoSistemaVsReporteComiteDOC34.md](./36-ComparativoSistemaVsReporteComiteDOC34.md) | Comparativo sistema actual vs Reporte Ejecutivo Comité DOC-34 v1.0: semáforos, implementado vs pendiente. | 34, 35 |
+| 37 | [37-ReporteEjecutivoDOC34-ComiteTecnico.md](./37-ReporteEjecutivoDOC34-ComiteTecnico.md) | **Reporte Ejecutivo Comité Técnico DOC-34 v2.0** (post-auditoría): estado global, semáforo por área, decisiones negocio, roadmap por sprint, riesgos. Documento oficial de seguimiento. | 34, 35 |
 
 ---
 

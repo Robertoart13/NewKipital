@@ -1,6 +1,6 @@
 import {
   IsString, IsEmail, IsOptional, IsInt, IsNumber,
-  IsDateString, IsEnum, MaxLength, Min, MinLength,
+  IsDateString, IsEnum, MaxLength, Min, MinLength, Matches,
 } from 'class-validator';
 import {
   GeneroEmpleado, EstadoCivilEmpleado, TipoContratoEmpleado,
@@ -120,4 +120,14 @@ export class UpdateEmployeeDto {
   @IsOptional()
   @IsString()
   motivoSalida?: string;
+
+  @IsOptional()
+  @IsString()
+  @Matches(/^(0|[1-9]\d*)(\.\d+)?$/, { message: 'vacacionesAcumuladas debe ser un número no negativo' })
+  vacacionesAcumuladas?: string;
+
+  @IsOptional()
+  @IsString()
+  @Matches(/^(0|[1-9]\d*)(\.\d+)?$/, { message: 'cesantiaAcumulada debe ser un número no negativo' })
+  cesantiaAcumulada?: string;
 }

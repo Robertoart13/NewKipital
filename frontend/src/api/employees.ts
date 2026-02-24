@@ -10,6 +10,7 @@ export interface EmployeeFilters {
   includeInactive?: boolean;
   sort?: string;
   order?: 'ASC' | 'DESC';
+  companyIds?: number[];
 }
 
 export interface PaginatedResponse<T> {
@@ -140,6 +141,7 @@ export interface UpdateEmployeePayload {
   idSupervisor?: number;
   fechaIngreso?: string;
   fechaSalida?: string;
+  motivoSalida?: string;
   tipoContrato?: string;
   jornada?: string;
   idPeriodoPago?: number;
@@ -147,13 +149,16 @@ export interface UpdateEmployeePayload {
   monedaSalario?: string;
   numeroCcss?: string;
   cuentaBanco?: string;
+  vacacionesAcumuladas?: string;
+  cesantiaAcumulada?: string;
 }
 
 /**
- * GET /employees/supervisors?idEmpresa=N - Lista empleados elegibles como supervisores (rol Supervisor o Supervisor Global en TimeWise).
+ * GET /employees/supervisors - Lista empleados elegibles como supervisores (rol Supervisor, Supervisor Global o Master en TimeWise).
+ * Incluye todas las empresas a las que el usuario tiene acceso (un supervisor de otra subsidiaria puede asumir el rol).
  */
-export async function fetchSupervisors(companyId: string): Promise<{ id: number; nombre: string; apellido1: string }[]> {
-  const res = await httpFetch(`/employees/supervisors?idEmpresa=${companyId}`);
+export async function fetchSupervisors(): Promise<{ id: number; nombre: string; apellido1: string }[]> {
+  const res = await httpFetch('/employees/supervisors');
   if (!res.ok) return [];
   return res.json();
 }
@@ -166,7 +171,11 @@ export async function fetchEmployees(
   filters?: EmployeeFilters,
 ): Promise<PaginatedResponse<EmployeeListItem>> {
   const params = new URLSearchParams();
-  if (companyId) params.set('idEmpresa', companyId);
+  if (filters?.companyIds?.length) {
+    params.set('idEmpresas', filters.companyIds.join(','));
+  } else if (companyId) {
+    params.set('idEmpresa', companyId);
+  }
   if (filters?.includeInactive) params.set('includeInactive', 'true');
   if (filters?.page) params.set('page', String(filters.page));
   if (filters?.pageSize) params.set('pageSize', String(filters.pageSize));
@@ -235,8 +244,11 @@ export async function inactivateEmployee(id: number, motivo?: string): Promise<E
     body: motivo ? JSON.stringify({ motivo }) : undefined,
   });
   if (!res.ok) {
-    const err = await res.json().catch(() => ({}));
-    throw new Error(err.message || 'Error al inactivar empleado');
+    const body = await res.json().catch(() => ({}));
+    const msg = body.message || 'Error al inactivar empleado';
+    const e = new Error(msg) as Error & { response?: { code?: string; planillas?: unknown[]; acciones?: unknown[] } };
+    e.response = body;
+    throw e;
   }
   return res.json();
 }

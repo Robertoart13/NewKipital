@@ -6,8 +6,12 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { EntityManager, Repository } from 'typeorm';
+import { EntityManager, In, Repository } from 'typeorm';
 import { Company } from './entities/company.entity';
+import {
+  EstadoCalendarioNomina,
+  PayrollCalendar,
+} from '../payroll/entities/payroll-calendar.entity';
 import { CreateCompanyDto } from './dto/create-company.dto';
 import { UpdateCompanyDto } from './dto/update-company.dto';
 import { createReadStream } from 'node:fs';
@@ -59,9 +63,18 @@ export interface CompanyAuditTrailItem {
 
 @Injectable()
 export class CompaniesService {
+  /** Estados de planilla que bloquean inactivar empresa (DOC-34 UC-18, PEND-001). */
+  private static readonly PLANILLA_ESTADOS_BLOQUEANTES = [
+    EstadoCalendarioNomina.ABIERTA,
+    EstadoCalendarioNomina.EN_PROCESO,
+    EstadoCalendarioNomina.VERIFICADA,
+  ];
+
   constructor(
     @InjectRepository(Company)
     private readonly repo: Repository<Company>,
+    @InjectRepository(PayrollCalendar)
+    private readonly payrollCalendarRepo: Repository<PayrollCalendar>,
     private readonly auditOutbox: AuditOutboxService,
   ) {}
 
@@ -352,6 +365,27 @@ export class CompaniesService {
     const company = await this.repo.findOne({ where: { id } });
     if (!company) {
       throw new NotFoundException(`Empresa con ID ${id} no encontrada`);
+    }
+    const planillasActivas = await this.payrollCalendarRepo.find({
+      where: {
+        idEmpresa: id,
+        estado: In(CompaniesService.PLANILLA_ESTADOS_BLOQUEANTES),
+        esInactivo: 0,
+      },
+      select: { id: true, fechaInicioPeriodo: true, fechaFinPeriodo: true, estado: true, tipoPlanilla: true },
+    });
+    if (planillasActivas.length > 0) {
+      throw new ConflictException({
+        message: 'La empresa tiene planillas activas. Debe cerrarlas o aplicarlas primero.',
+        code: 'PLANILLAS_ACTIVAS',
+        planillas: planillasActivas.map((p) => ({
+          id: p.id,
+          fechaInicioPeriodo: p.fechaInicioPeriodo,
+          fechaFinPeriodo: p.fechaFinPeriodo,
+          estado: p.estado,
+          tipoPlanilla: p.tipoPlanilla,
+        })),
+      });
     }
     const before = this.toAuditSnapshot(company);
 
