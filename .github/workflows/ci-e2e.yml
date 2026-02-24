@@ -46,6 +46,7 @@ jobs:
       DB_PASSWORD: root
       DB_DATABASE: kpital360
       NODE_ENV: test
+      E2E_DISABLE_CSRF: 'true'
       JWT_SECRET: ci-e2e-jwt-secret-min-32-chars-long
 
     steps:

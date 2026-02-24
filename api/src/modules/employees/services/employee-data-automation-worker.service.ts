@@ -63,6 +63,9 @@ export class EmployeeDataAutomationWorkerService implements OnModuleInit, OnModu
   ) {}
 
   onModuleInit(): void {
+    if (process.env.NODE_ENV === 'test') {
+      return;
+    }
     const intervalMs = 5000;
     this.logger.log(`Worker started id=${this.workerId} intervalMs=${intervalMs}`);
     this.timer = setInterval(() => {

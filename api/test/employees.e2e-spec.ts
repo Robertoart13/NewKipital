@@ -22,8 +22,8 @@ describe('EmployeesController (e2e)', () => {
     const loginResponse = await request(app.getHttpServer())
       .post('/auth/login')
       .send({
-        email: 'test@example.com',
-        password: 'ValidPassword123!',
+        email: 'ana.garcia@roccacr.com',
+        password: 'Demo2026!',
       });
 
     accessToken = loginResponse.body.accessToken;

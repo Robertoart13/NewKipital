@@ -21,8 +21,8 @@ describe('CompaniesController (e2e)', () => {
     const loginResponse = await request(app.getHttpServer())
       .post('/auth/login')
       .send({
-        email: 'test@example.com',
-        password: 'ValidPassword123!',
+        email: 'ana.garcia@roccacr.com',
+        password: 'Demo2026!',
       });
 
     accessToken = loginResponse.body.accessToken;
@@ -371,12 +371,12 @@ describe('CompaniesController (e2e)', () => {
     });
   });
 
-  describe('POST /companies/logo/upload', () => {
+  describe('POST /companies/logo/temp', () => {
     it('should upload temp logo', () => {
       return request(app.getHttpServer())
-        .post('/companies/logo/upload')
+        .post('/companies/logo/temp')
         .set('Authorization', `Bearer ${accessToken}`)
-        .attach('logo', Buffer.from('fake-image-data'), 'test-logo.png')
+        .attach('file', Buffer.from('fake-image-data'), 'test-logo.png')
         .expect((response) => {
           // May succeed (200) or fail (400) depending on file validation
           expect([200, 400]).toContain(response.status);
@@ -385,8 +385,8 @@ describe('CompaniesController (e2e)', () => {
 
     it('should reject upload without authentication', () => {
       return request(app.getHttpServer())
-        .post('/companies/logo/upload')
-        .attach('logo', Buffer.from('fake-image-data'), 'test-logo.png')
+        .post('/companies/logo/temp')
+        .attach('file', Buffer.from('fake-image-data'), 'test-logo.png')
         .expect(401);
     });
   });
