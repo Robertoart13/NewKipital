@@ -65,16 +65,20 @@ export class Employee {
   codigo: string;
 
   @Index('IDX_empleado_cedula')
-  @Column({ name: 'cedula_empleado', type: 'varchar', length: 30 })
+  @Column({ name: 'cedula_empleado', type: 'varchar', length: 255 })
   cedula: string;
 
-  @Column({ name: 'nombre_empleado', type: 'varchar', length: 100 })
+  @Index('IDX_empleado_cedula_hash', { unique: true })
+  @Column({ name: 'cedula_hash_empleado', type: 'varchar', length: 128, nullable: true })
+  cedulaHash: string | null;
+
+  @Column({ name: 'nombre_empleado', type: 'varchar', length: 255 })
   nombre: string;
 
-  @Column({ name: 'apellido1_empleado', type: 'varchar', length: 100 })
+  @Column({ name: 'apellido1_empleado', type: 'varchar', length: 255 })
   apellido1: string;
 
-  @Column({ name: 'apellido2_empleado', type: 'varchar', length: 100, nullable: true })
+  @Column({ name: 'apellido2_empleado', type: 'varchar', length: 255, nullable: true })
   apellido2: string | null;
 
   // ═══════════════════════════════ DATOS PERSONALES ═══════════════════════
@@ -88,7 +92,7 @@ export class Employee {
   @Column({ name: 'cantidad_hijos_empleado', type: 'int', default: 0 })
   cantidadHijos: number;
 
-  @Column({ name: 'telefono_empleado', type: 'varchar', length: 30, nullable: true })
+  @Column({ name: 'telefono_empleado', type: 'varchar', length: 255, nullable: true })
   telefono: string | null;
 
   @Column({ name: 'direccion_empleado', type: 'text', nullable: true })
@@ -97,8 +101,12 @@ export class Employee {
   // ═══════════════════════════════ CONTACTO / LOGIN ═══════════════════════
 
   @Index('IDX_empleado_email', { unique: true })
-  @Column({ name: 'email_empleado', type: 'varchar', length: 150, unique: true })
+  @Column({ name: 'email_empleado', type: 'varchar', length: 255, unique: true })
   email: string;
+
+  @Index('IDX_empleado_email_hash', { unique: true })
+  @Column({ name: 'email_hash_empleado', type: 'varchar', length: 128, nullable: true })
+  emailHash: string | null;
 
   // ═══════════════════════════════ RELACIONES ORG ═════════════════════════
 
@@ -151,24 +159,24 @@ export class Employee {
   @JoinColumn({ name: 'id_periodos_pago' })
   periodoPago: PayPeriod | null;
 
-  @Column({ name: 'salario_base_empleado', type: 'decimal', precision: 12, scale: 2, nullable: true })
-  salarioBase: number | null;
+  @Column({ name: 'salario_base_empleado', type: 'varchar', length: 255, nullable: true })
+  salarioBase: string | null;
 
   @Column({ name: 'moneda_salario_empleado', type: 'enum', enum: MonedaSalarioEmpleado, default: MonedaSalarioEmpleado.CRC })
   monedaSalario: MonedaSalarioEmpleado;
 
-  @Column({ name: 'numero_ccss_empleado', type: 'varchar', length: 30, nullable: true })
+  @Column({ name: 'numero_ccss_empleado', type: 'varchar', length: 255, nullable: true })
   numeroCcss: string | null;
 
-  @Column({ name: 'cuenta_banco_empleado', type: 'varchar', length: 50, nullable: true })
+  @Column({ name: 'cuenta_banco_empleado', type: 'varchar', length: 255, nullable: true })
   cuentaBanco: string | null;
 
   // ═══════════════════════════════ ACUMULADOS HR ══════════════════════════
 
-  @Column({ name: 'vacaciones_acumuladas_empleado', type: 'varchar', length: 200, nullable: true })
+  @Column({ name: 'vacaciones_acumuladas_empleado', type: 'varchar', length: 255, nullable: true })
   vacacionesAcumuladas: string | null;
 
-  @Column({ name: 'cesantia_acumulada_empleado', type: 'varchar', length: 200, nullable: true })
+  @Column({ name: 'cesantia_acumulada_empleado', type: 'varchar', length: 255, nullable: true })
   cesantiaAcumulada: string | null;
 
   // ═══════════════════════════ VÍNCULO IDENTIDAD ═════════════════════════
@@ -195,4 +203,13 @@ export class Employee {
 
   @Column({ name: 'modificado_por_empleado', type: 'int', nullable: true })
   modificadoPor: number | null;
+
+  @Column({ name: 'datos_encriptados_empleado', type: 'tinyint', width: 1, default: 0 })
+  datosEncriptados: number;
+
+  @Column({ name: 'version_encriptacion_empleado', type: 'varchar', length: 10, nullable: true })
+  versionEncriptacion: string | null;
+
+  @Column({ name: 'fecha_encriptacion_empleado', type: 'datetime', nullable: true })
+  fechaEncriptacion: Date | null;
 }

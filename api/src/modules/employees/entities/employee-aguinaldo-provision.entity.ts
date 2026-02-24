@@ -25,8 +25,8 @@ export class EmployeeAguinaldoProvision {
   @Column({ name: 'id_empresa', type: 'int' })
   idEmpresa: number;
 
-  @Column({ name: 'monto_provisionado', type: 'decimal', precision: 12, scale: 2, default: 0 })
-  montoProvisionado: number;
+  @Column({ name: 'monto_provisionado', type: 'varchar', length: 255, nullable: false })
+  montoProvisionado: string;
 
   @Column({ name: 'fecha_inicio_laboral', type: 'date' })
   fechaInicioLaboral: Date;
@@ -57,4 +57,13 @@ export class EmployeeAguinaldoProvision {
 
   @Column({ name: 'modificado_por_provision_aguinaldo', type: 'int', nullable: true })
   modificadoPor: number | null;
+
+  @Column({ name: 'datos_encriptados_provision', type: 'tinyint', width: 1, default: 0 })
+  datosEncriptados: number;
+
+  @Column({ name: 'version_encriptacion_provision', type: 'varchar', length: 10, nullable: true })
+  versionEncriptacion: string | null;
+
+  @Column({ name: 'fecha_encriptacion_provision', type: 'datetime', nullable: true })
+  fechaEncriptacion: Date | null;
 }

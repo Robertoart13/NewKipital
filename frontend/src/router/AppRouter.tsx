@@ -12,6 +12,7 @@ import {
   RolesManagementPage,
   UsersManagementPage,
   CompaniesManagementPage,
+  AutomationMonitoringPage,
 } from '../pages/private';
 
 /**
@@ -94,6 +95,17 @@ export function AppRouter() {
           )}
           path="/configuration/empresas"
         />
+        <Route
+          element={(
+            <PrivateLayout>
+              <PermissionGuard requiredPermission="automation:monitor">
+                <AutomationMonitoringPage />
+              </PermissionGuard>
+            </PrivateLayout>
+          )}
+          path="/monitoring/automation"
+        />
+        <Route path="/monitoring" element={<Navigate to="/monitoring/automation" replace />} />
       </Route>
 
       {/* --- Fallback --- */}

@@ -125,6 +125,7 @@ Documentación específica:
 Estándar de moneda obligatorio para este flujo:
 
 - `docs/29-EstandarFormatoMoneda.md`
+- `docs/31-CifradoIdentidadYProvisionamiento.md`
 
 Validación de formularios (texto, email, anti-SQL):
 

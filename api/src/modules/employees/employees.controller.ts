@@ -76,7 +76,7 @@ export class EmployeesController {
     return this.service.findOne(id, user.userId);
   }
 
-  @RequirePermissions('employee:edit')
+  @RequirePermissions('employee:edit', 'employee:view-sensitive')
   @Put(':id')
   update(
     @Param('id', ParseIntPipe) id: number,
@@ -98,7 +98,7 @@ export class EmployeesController {
     return this.service.reactivate(id, user.userId);
   }
 
-  @RequirePermissions('employee:edit')
+  @RequirePermissions('employee:edit', 'employee:view-sensitive')
   @Patch(':id/liquidar')
   liquidar(
     @Param('id', ParseIntPipe) id: number,

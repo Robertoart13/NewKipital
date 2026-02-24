@@ -5,6 +5,7 @@ import { EmployeeCreationWorkflow } from './employees/employee-creation.workflow
 import { IdentitySyncWorkflow } from './identity/identity-sync.workflow.js';
 import { EmployeeMovedWorkflow } from './employees/employee-moved.workflow.js';
 import { PayrollAppliedWorkflow } from './payroll/payroll-applied.workflow.js';
+import { EmployeeSensitiveDataService } from '../common/services/employee-sensitive-data.service.js';
 
 @Module({
   imports: [
@@ -15,6 +16,7 @@ import { PayrollAppliedWorkflow } from './payroll/payroll-applied.workflow.js';
     IdentitySyncWorkflow,
     EmployeeMovedWorkflow,
     PayrollAppliedWorkflow,
+    EmployeeSensitiveDataService,
   ],
   exports: [
     EmployeeCreationWorkflow,

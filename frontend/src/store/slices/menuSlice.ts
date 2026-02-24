@@ -176,6 +176,12 @@ const initialMenuConfig: MenuItem[] = [
       },
     ],
   },
+  {
+    id: 'monitoring',
+    label: 'Monitoreo',
+    path: '/monitoring/automation',
+    requiredPermission: 'automation:monitor',
+  },
 ];
 
 

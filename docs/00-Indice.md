@@ -47,6 +47,7 @@ Si ya estás en el proyecto y necesitás referencia puntual, usá esta tabla par
 | 28 | [28-PendientesAccion.md](./28-PendientesAccion.md) | Pendientes abiertos y acciones por ejecutar del proyecto. | Todos |
 | 29 | [29-EstandarFormatoMoneda.md](./29-EstandarFormatoMoneda.md) | Estándar único de formato/parseo/validación monetaria para toda la app (CRC/USD), helper compartido y reglas obligatorias. | 05, 23 |
 | 30 | [30-HistorialLaboralEmpleado.md](./30-HistorialLaboralEmpleado.md) | Lógica funcional y técnica de Historial Laboral en creación de empleado: acumulados, provisión de aguinaldo, validaciones y persistencia. | 23, 29 |
+| 31 | [31-CifradoIdentidadYProvisionamiento.md](./31-CifradoIdentidadYProvisionamiento.md) | Ejecución operativa de cifrado, sincronización empleado-usuario y provisionamiento automático TimeWise con colas/workers idempotentes. | 23, 30 |
 | 31 | [31-ValidacionFormulariosFrontend.md](./31-ValidacionFormulariosFrontend.md) | Validación unificada de formularios: anti-SQL, textRules, emailRules, optionalNoSqlInjection. Trazabilidad en EmployeeCreateModal y CompaniesManagementPage. | 05, 23, 29 |
 
 ---
@@ -83,3 +84,21 @@ La aplicación usa **un único menú horizontal en el header** (sin sidebar/men�
 
 
 
+
+---
+
+## Nuevo Bloque - Automatizaciones
+
+Se agrego documentacion formal de transferencia en la carpeta `docs/automatizaciones`:
+
+- `01-vision-general.md`
+- `02-arquitectura.md`
+- `03-modelo-datos.md`
+- `04-worker.md`
+- `05-reglas-negocio.md`
+- `06-monitoreo.md`
+- `07-semaforo.md`
+- `08-pruebas.md`
+- `09-operacion.md`
+- `10-seguridad.md`
+- `11-limpieza-operativa-db.md`

@@ -25,6 +25,7 @@ import {
   DollarOutlined,
   ApartmentOutlined,
   SolutionOutlined,
+  DashboardOutlined,
 } from '@ant-design/icons';
 
 /**
@@ -59,4 +60,6 @@ export const menuIconMap: Record<string, React.ReactNode> = {
   'cuentas-contables': <DollarOutlined />,
   departamentos: <ApartmentOutlined />,
   puestos: <SolutionOutlined />,
+  monitoring: <DashboardOutlined />,
+  'automation-monitor': <DashboardOutlined />,
 };

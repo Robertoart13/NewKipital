@@ -18,11 +18,13 @@
     "test:cov": "jest --coverage",
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
     "test:e2e": "jest --config ./test/jest-e2e.json",
-    "migration:generate": "npx typeorm migration:generate -d dist/typeorm.config.js",
-    "migration:run": "npx typeorm migration:run -d dist/typeorm.config.js",
-    "migration:revert": "npx typeorm migration:revert -d dist/typeorm.config.js",
+    "migration:generate": "npx typeorm migration:generate -d dist/src/typeorm.config.js",
+    "migration:run": "npx typeorm migration:run -d dist/src/typeorm.config.js",
+    "migration:revert": "npx typeorm migration:revert -d dist/src/typeorm.config.js",
     "script:fix-users-app": "npx ts-node -r tsconfig-paths/register scripts/run-fix-users-app.ts",
-    "script:limpiar-ana": "npx ts-node -r tsconfig-paths/register scripts/run-limpiar-ana.ts"
+    "script:limpiar-ana": "npx ts-node -r tsconfig-paths/register scripts/run-limpiar-ana.ts",
+    "script:validacion-cifrado": "npx ts-node -r tsconfig-paths/register scripts/run-validacion-cifrado-identidad.ts",
+    "script:validacion-cifrado:stress": "npx ts-node -r tsconfig-paths/register scripts/run-validacion-cifrado-identidad.ts --stress=400"
   },
   "dependencies": {
     "@nestjs/common": "^11.0.1",

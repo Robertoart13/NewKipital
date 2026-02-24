@@ -12,6 +12,7 @@ import { PayrollModule } from './modules/payroll/payroll.module.js';
 import { AccessControlModule } from './modules/access-control/access-control.module.js';
 import { IntegrationModule } from './modules/integration/integration.module.js';
 import { NotificationsModule } from './modules/notifications/notifications.module.js';
+import { OpsModule } from './modules/ops/ops.module.js';
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard.js';
 import { CsrfGuard } from './common/guards/csrf.guard.js';
 import { PermissionsGuard } from './common/guards/permissions.guard.js';
@@ -29,6 +30,7 @@ import { PermissionsGuard } from './common/guards/permissions.guard.js';
     AccessControlModule,
     IntegrationModule,
     NotificationsModule,
+    OpsModule,
   ],
   providers: [
     { provide: APP_GUARD, useClass: JwtAuthGuard },
