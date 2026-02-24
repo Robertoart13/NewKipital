@@ -127,6 +127,7 @@ KPITAL 360 es un ERP multiempresa enfocado en gestión de RRHH, planillas y acci
 | `api/personalActions.ts` | `fetchPersonalActions()`, `fetchPersonalAction()` → GET /personal-actions | Completo |
 | `config/api.ts` | API_URL configurable (VITE_API_URL o localhost:3000) | Completo |
 | `hooks/useSessionRestore.ts` | Restaura sesión desde cookie httpOnly al cargar app | Completo |
+| `lib/formatDate.ts` | `formatDateTime12h()` — formato fecha/hora 12h obligatorio (ver Doc 05) | Completo |
 
 ---
 
@@ -316,3 +317,4 @@ Detalle completo en [08-EstructuraMenus.md](./08-EstructuraMenus.md).
 | 2026-02-22 | RBAC + Overrides por usuario: nueva tabla `sys_usuario_permiso`, resolucion `roles + overrides` con precedencia `DENY > ALLOW`, endpoints admin bajo `/api/config/*` y vista frontend para listar permisos administrativos. |
 | 2026-02-23 | Hardening de sesión/refresh: frontend con timeout en `httpInterceptor` y `tryRefreshSession` para evitar bloqueo en "Verificando sesión..."; backend `AuthService.refreshSession` maneja errores transientes de DB (`ECONNRESET`, etc.) y responde `401` controlado para forzar relogin seguro. |
 | 2026-02-23 | Corrección flujo Microsoft popup: se evita race condition en callback OAuth (`/auth/login?code=...`) que abría `/dashboard` dentro de la ventana emergente. Se agregó detección de callback para saltar `session restore` y redirección de `PublicGuard` durante el handshake `postMessage + close`. |
+| 2026-02-23 | **Convenciones UI y bitácora:** Formato de fecha 12h (AM/PM) documentado en Doc 05 — `formatDateTime12h()` en `src/lib/formatDate.ts`. Estándar de mensajes de bitácora documentado en Doc 11 — mensajes autosuficientes con antes/después, lenguaje humano, payloadBefore/After. |

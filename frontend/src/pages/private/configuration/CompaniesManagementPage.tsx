@@ -2,9 +2,11 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
   App as AntdApp,
+  Avatar,
   Badge,
   Button,
   Card,
+  Spin,
   Checkbox,
   Col,
   Collapse,
@@ -12,7 +14,6 @@ import {
   Form,
   Input,
   Modal,
-  Popconfirm,
   Row,
   Select,
   Space,
@@ -28,7 +29,7 @@ import type { UploadProps } from 'antd';
 import {
   ArrowLeftOutlined,
   BankOutlined,
-  CheckCircleOutlined,
+  LoadingOutlined,
   CloseOutlined,
   CloudUploadOutlined,
   DownOutlined,
@@ -39,14 +40,15 @@ import {
   SearchOutlined,
   SortAscendingOutlined,
   SortDescendingOutlined,
-  StopOutlined,
   UpOutlined,
 } from '@ant-design/icons';
+import { formatDateTime12h } from '../../../lib/formatDate';
 import {
   commitCompanyLogo,
   createCompany,
   fetchCompanyLogoBlobUrl,
   fetchCompanies,
+  getCompanyLogoUrl,
   inactivateCompany,
   reactivateCompany,
   uploadCompanyLogoTemp,
@@ -64,7 +66,9 @@ import {
   canViewCompanyAudit,
   canViewCompanies,
 } from '../../../store/selectors/permissions.selectors';
-import { useAppSelector } from '../../../store/hooks';
+import { useAppDispatch, useAppSelector } from '../../../store/hooks';
+import { setPermissions } from '../../../store/slices/permissionsSlice';
+import { fetchPermissionsForApp, fetchPermissionsForCompany } from '../../../api/permissions';
 import styles from './UsersManagementPage.module.css';
 
 interface CompanyFormValues {
@@ -92,8 +96,28 @@ interface PaneOption {
   count: number;
 }
 
-const DEFAULT_COMPANY_LOGO = '/assets/images/global/imgSEO.jpg';
+const DEFAULT_COMPANY_LOGO = '/assets/images/global/LogoSmall.png';
 const MAX_LOGO_FILE_SIZE = 5 * 1024 * 1024;
+
+function CompanyLogoNameCell({ company }: { company: CompanyListItem }) {
+  const [imgError, setImgError] = useState(false);
+  const logoUrl = getCompanyLogoUrl(company.id);
+  return (
+    <div className={styles.userCell}>
+      <Avatar
+        className={styles.userCellAvatar}
+        src={!imgError ? logoUrl : undefined}
+        icon={<BankOutlined />}
+        onError={() => { setImgError(true); return false; }}
+        alt=""
+      />
+      <div>
+        <div className={styles.userCellName}>{company.nombre || '-'}</div>
+        {company.prefijo && <div className={styles.userCellEmail}>{company.prefijo}</div>}
+      </div>
+    </div>
+  );
+}
 
 function getPaneValue(company: CompanyListItem, key: PaneKey): string {
   if (key === 'estado') return company.estado === 1 ? 'Activo' : 'Inactivo';
@@ -131,13 +155,47 @@ function normalizeCompanyPayload(values: CompanyFormValues): CompanyPayload {
 }
 
 export function CompaniesManagementPage() {
+  const dispatch = useAppDispatch();
   const { message, modal } = AntdApp.useApp();
+  const activeApp = useAppSelector((s) => s.activeApp.app);
+  const activeCompany = useAppSelector((s) => s.activeCompany.company);
   useAppSelector(canViewCompanies);
   const canCreateCompanyPerm = useAppSelector(canCreateCompany);
   const canEditCompanyPerm = useAppSelector(canEditCompany);
   const canInactivateCompanyPerm = useAppSelector(canInactivateCompany);
   const canReactivateCompanyPerm = useAppSelector(canReactivateCompany);
   const canViewCompanyAuditPerm = useAppSelector(canViewCompanyAudit);
+
+  useEffect(() => {
+    const app = activeApp;
+    const company = activeCompany;
+    fetchPermissionsForApp(app)
+      .then(({ permissions, roles }) => {
+        dispatch(setPermissions({ permissions, roles, appId: app }));
+      })
+      .catch(() => {});
+
+    return () => {
+      if (company?.id) {
+        fetchPermissionsForCompany(String(company.id), app)
+          .then(({ permissions, roles }) => {
+            dispatch(setPermissions({
+              permissions,
+              roles,
+              appId: app,
+              companyId: String(company.id),
+            }));
+          })
+          .catch(() => {});
+      } else {
+        fetchPermissionsForApp(app)
+          .then(({ permissions, roles }) => {
+            dispatch(setPermissions({ permissions, roles, appId: app }));
+          })
+          .catch(() => {});
+      }
+    };
+  }, [activeApp, activeCompany?.id, dispatch]);
 
   const [form] = Form.useForm<CompanyFormValues>();
   const formValues = Form.useWatch([], form);
@@ -146,7 +204,7 @@ export function CompaniesManagementPage() {
   const [saving, setSaving] = useState(false);
   const [showInactive, setShowInactive] = useState(false);
   const [pageSize, setPageSize] = useState(10);
-  const [filtersExpanded, setFiltersExpanded] = useState(true);
+  const [filtersExpanded, setFiltersExpanded] = useState(false);
   const [search, setSearch] = useState('');
   const [paneSearch, setPaneSearch] = useState<Record<PaneKey, string>>({
     prefijo: '',
@@ -181,6 +239,7 @@ export function CompaniesManagementPage() {
   const [logoFile, setLogoFile] = useState<File | null>(null);
   const [logoTempFileName, setLogoTempFileName] = useState<string | null>(null);
   const [logoPreviewUrl, setLogoPreviewUrl] = useState<string>(DEFAULT_COMPANY_LOGO);
+  const [logoLoading, setLogoLoading] = useState(false);
   const [companyAuditTrail, setCompanyAuditTrail] = useState<CompanyAuditTrailItem[]>([]);
   const [loadingCompanyAuditTrail, setLoadingCompanyAuditTrail] = useState(false);
   const logoObjectUrlRef = useRef<string | null>(null);
@@ -336,6 +395,7 @@ export function CompaniesManagementPage() {
     setLogoFile(null);
     setLogoTempFileName(null);
     setLogoPreviewUrl(DEFAULT_COMPANY_LOGO);
+    setLogoLoading(false);
     form.resetFields();
     setOpenModal(true);
   };
@@ -347,6 +407,7 @@ export function CompaniesManagementPage() {
     setLogoFile(null);
     setLogoTempFileName(null);
     setLogoPreviewUrl(DEFAULT_COMPANY_LOGO);
+    setLogoLoading(true);
     setOpenModal(true);
   };
 
@@ -385,7 +446,10 @@ export function CompaniesManagementPage() {
   }, [editingCompany, setPreviewFromObjectUrl]);
 
   useEffect(() => {
-    if (!openModal || !editingCompany) return;
+    if (!openModal || !editingCompany) {
+      setLogoLoading(false);
+      return;
+    }
 
     let cancelled = false;
     const loadLogo = async () => {
@@ -398,6 +462,8 @@ export function CompaniesManagementPage() {
         setPreviewFromObjectUrl(blobUrl);
       } catch {
         if (!cancelled) setLogoPreviewUrl(DEFAULT_COMPANY_LOGO);
+      } finally {
+        if (!cancelled) setLogoLoading(false);
       }
     };
 
@@ -414,6 +480,7 @@ export function CompaniesManagementPage() {
     setLogoFile(null);
     setLogoTempFileName(null);
     setLogoPreviewUrl(DEFAULT_COMPANY_LOGO);
+    setLogoLoading(false);
     setCompanyAuditTrail([]);
     form.resetFields();
   };
@@ -446,6 +513,14 @@ export function CompaniesManagementPage() {
   const submitCompany = async () => {
     try {
       const isEditing = Boolean(editingCompany);
+      if (isEditing && !canEditCompanyPerm) {
+        message.error('No tiene permiso para editar empresas.');
+        return;
+      }
+      if (!isEditing && !canCreateCompanyPerm) {
+        message.error('No tiene permiso para crear empresas.');
+        return;
+      }
       const confirmed = await new Promise<boolean>((resolve) => {
         modal.confirm({
           title: isEditing ? 'Confirmar edición de empresa' : 'Confirmar creación de empresa',
@@ -504,6 +579,10 @@ export function CompaniesManagementPage() {
   };
 
   const handleInactivate = async (company: CompanyListItem) => {
+    if (!canInactivateCompanyPerm) {
+      message.error('No tiene permiso para inactivar empresas.');
+      return;
+    }
     try {
       await inactivateCompany(company.id);
       message.success(`Empresa ${company.nombre} inactivada`);
@@ -514,6 +593,10 @@ export function CompaniesManagementPage() {
   };
 
   const handleReactivate = async (company: CompanyListItem) => {
+    if (!canReactivateCompanyPerm) {
+      message.error('No tiene permiso para reactivar empresas.');
+      return;
+    }
     try {
       await reactivateCompany(company.id);
       message.success(`Empresa ${company.nombre} reactivada`);
@@ -541,7 +624,7 @@ export function CompaniesManagementPage() {
       sorter: (a, b) => (a.nombre ?? '').localeCompare(b.nombre ?? ''),
       render: (_, company) => (
         <Tooltip title={company.nombre || '-'}>
-          <span>{company.nombre || '-'}</span>
+          <CompanyLogoNameCell company={company} />
         </Tooltip>
       ),
     },
@@ -596,7 +679,7 @@ export function CompaniesManagementPage() {
       dataIndex: 'fechaCreacion',
       key: 'fechaCreacion',
       width: 160,
-      render: (value: string | null) => (value ? new Date(value).toLocaleString() : '-'),
+      render: (value: string | null) => formatDateTime12h(value),
     },
     {
       title: 'Quien lo hizo',
@@ -862,7 +945,51 @@ export function CompaniesManagementPage() {
                 <span style={{ fontWeight: 500, fontSize: 14, color: editingCompany?.estado === 0 ? '#64748b' : '#0369a1' }}>
                   {editingCompany ? (editingCompany.estado === 1 ? 'Activo' : 'Inactivo') : 'Activo'}
                 </span>
-                <Switch checked={editingCompany ? editingCompany.estado === 1 : true} disabled />
+                <Switch
+                  checked={editingCompany ? editingCompany.estado === 1 : true}
+                  disabled={
+                    !editingCompany ||
+                    (editingCompany.estado === 1 ? !canInactivateCompanyPerm : !canReactivateCompanyPerm)
+                  }
+                  onChange={(checked) => {
+                    if (!editingCompany) return;
+                    if (checked) {
+                      modal.confirm({
+                        title: '¿Reactivar empresa?',
+                        content: 'La empresa volvera a estar disponible para asignaciones.',
+                        okText: 'Reactivar',
+                        cancelText: 'Cancelar',
+                        icon: <QuestionCircleOutlined style={{ color: '#5a6c7d', fontSize: 40 }} />,
+                        centered: true,
+                        width: 420,
+                        rootClassName: styles.companyConfirmModal,
+                        okButtonProps: { className: styles.companyConfirmOk },
+                        cancelButtonProps: { className: styles.companyConfirmCancel },
+                        onOk: async () => {
+                          await handleReactivate(editingCompany);
+                          closeModal();
+                        },
+                      });
+                    } else {
+                      modal.confirm({
+                        title: '¿Inactivar empresa?',
+                        content: 'La empresa no se elimina. Solo quedara inactiva.',
+                        okText: 'Inactivar',
+                        cancelText: 'Cancelar',
+                        icon: <QuestionCircleOutlined style={{ color: '#5a6c7d', fontSize: 40 }} />,
+                        centered: true,
+                        width: 420,
+                        rootClassName: styles.companyConfirmModal,
+                        okButtonProps: { className: styles.companyConfirmOk },
+                        cancelButtonProps: { className: styles.companyConfirmCancel },
+                        onOk: async () => {
+                          await handleInactivate(editingCompany);
+                          closeModal();
+                        },
+                      });
+                    }
+                  }}
+                />
               </div>
               <Button
                 type="text"
@@ -882,48 +1009,6 @@ export function CompaniesManagementPage() {
           initialValues={{ prefijo: '', idExterno: '0' }}
           className={styles.companyFormContent}
         >
-          {editingCompany && (
-            <Flex gap={12} style={{ marginBottom: 16 }} wrap="wrap">
-              {editingCompany.estado === 1 && canInactivateCompanyPerm ? (
-                <Popconfirm
-                  title="¿Inactivar empresa?"
-                  description="La empresa no se elimina. Solo quedara inactiva."
-                  onConfirm={async () => {
-                    await handleInactivate(editingCompany);
-                    closeModal();
-                  }}
-                  okText="Inactivar"
-                  cancelText="Cancelar"
-                >
-                  <Button
-                    icon={<StopOutlined />}
-                    className={`${styles.actionButton} ${styles.btnSecondary}`}
-                  >
-                    Inactivar Empresa
-                  </Button>
-                </Popconfirm>
-              ) : null}
-              {editingCompany.estado !== 1 && canReactivateCompanyPerm ? (
-                <Popconfirm
-                  title="¿Reactivar empresa?"
-                  description="La empresa volvera a estar disponible para asignaciones."
-                  onConfirm={async () => {
-                    await handleReactivate(editingCompany);
-                    closeModal();
-                  }}
-                  okText="Reactivar"
-                  cancelText="Cancelar"
-                >
-                  <Button
-                    icon={<CheckCircleOutlined />}
-                    className={`${styles.actionButton} ${styles.btnSecondary}`}
-                  >
-                    Reactivar Empresa
-                  </Button>
-                </Popconfirm>
-              ) : null}
-            </Flex>
-          )}
           <Tabs
             activeKey={activeTab}
             onChange={setActiveTab}
@@ -942,17 +1027,23 @@ export function CompaniesManagementPage() {
                     <div className={styles.logoUploadArea}>
                       <Row gutter={16} align="middle" style={{ width: '100%' }}>
                         <Col flex="0 0 90px">
-                          <img
-                            src={logoPreviewUrl || DEFAULT_COMPANY_LOGO}
-                            alt="Logo empresa"
-                            className={styles.logoUploadPreview}
-                            onError={(event) => {
-                              const target = event.currentTarget;
-                              if (!target.src.endsWith(DEFAULT_COMPANY_LOGO)) {
-                                target.src = DEFAULT_COMPANY_LOGO;
-                              }
-                            }}
-                          />
+                          <div className={styles.logoUploadPlaceholder} style={{ flexDirection: 'column', gap: 4 }}>
+                            {logoLoading && editingCompany ? (
+                              <Spin size="default" indicator={<LoadingOutlined style={{ fontSize: 28, color: '#1f2937' }} spin />} />
+                            ) : (
+                              <img
+                                src={logoPreviewUrl || DEFAULT_COMPANY_LOGO}
+                                alt="Logo empresa"
+                                className={styles.logoUploadPreview}
+                                onError={(event) => {
+                                  const target = event.currentTarget;
+                                  if (!target.src.endsWith(DEFAULT_COMPANY_LOGO)) {
+                                    target.src = DEFAULT_COMPANY_LOGO;
+                                  }
+                                }}
+                              />
+                            )}
+                          </div>
                         </Col>
                         <Col flex="1">
                           <div className={styles.logoUploadInfo}>
@@ -1103,7 +1194,10 @@ export function CompaniesManagementPage() {
               type="primary"
               className={styles.companyModalBtnSubmit}
               loading={saving}
-              disabled={!canSubmitCompany}
+              disabled={
+                !canSubmitCompany ||
+                (editingCompany ? !canEditCompanyPerm : !canCreateCompanyPerm)
+              }
               onClick={() => void submitCompany()}
               icon={editingCompany ? undefined : <PlusOutlined />}
             >

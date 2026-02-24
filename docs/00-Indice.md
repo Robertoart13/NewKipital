@@ -2,7 +2,7 @@
 
 **Proyecto:** KPITAL 360 — ERP Multiempresa  
 **Autor:** Roberto — Arquitecto Funcional / Senior Engineer  
-**Última actualización:** 2026-02-23
+**Última actualización:** 2026-02-23 (Convenciones: formato fecha 12h, mensajes bitácora)
 
 ---
 

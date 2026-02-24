@@ -217,3 +217,24 @@ Principios:
 - Endpoint de bitacora de usuario ya operativo:
   - `GET /api/config/users/:id/audit-trail?limit=N`
 
+### Estándar de mensajes de bitácora (2026-02-23)
+
+Los mensajes de auditoría deben ser **autosuficientes** y **legibles** para RRHH, TI y directivos. Inspirado en NetSuite.
+
+| Regla | Descripción |
+|-------|-------------|
+| Incluir antes/después | En operaciones de reemplazo (empresas, roles, permisos), siempre incluir estado anterior y estado nuevo en `descripcion` y en `payloadBefore`/`payloadAfter`. |
+| Lenguaje humano | No usar códigos técnicos en la descripción legible. Usar etiquetas como "Asignación de empresas modificada" en lugar de "replace_companies". |
+| Verbos claros | Usar "modificada", "asignada", "revocada", "actualizada". Evitar jerga técnica. |
+| Formato descripcion | `{Acción} para {afectado}. Antes: {estado anterior}. Después: {estado nuevo}.` |
+| payloadBefore/payloadAfter | Siempre enviar ambos en operaciones de reemplazo para auditoría técnica. |
+
+**Ejemplo correcto:**
+```
+descripcion: "Asignación de empresas modificada para Ana María García López (ID 2). Antes: Empresa test 1. Después: Rocca Master Company, Rocca Subsidiaria, Empresa test 2."
+payloadBefore: { idUsuario, companyIds: [...] }
+payloadAfter: { idUsuario, companyIds: [...] }
+```
+
+**Mapeo modulo+accion → etiqueta legible (frontend):** Ver `UsersManagementPage.tsx` función `getAuditActionLabel()`.
+

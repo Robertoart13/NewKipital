@@ -61,11 +61,17 @@ export interface CompanyAuditTrailItem {
 }
 
 /**
- * GET /companies - Lista empresas (activas por defecto).
+ * GET /companies - Lista empresas.
+ * - showInactive=false: solo activas
+ * - showInactive=true: solo inactivas (para no traer todo al inicio)
  */
-export async function fetchCompanies(includeInactive = false): Promise<CompanyListItem[]> {
-  const qs = includeInactive ? '?includeInactive=true' : '';
-  const res = await httpFetch(`/companies${qs}`);
+export async function fetchCompanies(showInactive = false): Promise<CompanyListItem[]> {
+  const params = new URLSearchParams();
+  if (showInactive) {
+    params.set('inactiveOnly', 'true');
+  }
+  const qs = params.toString();
+  const res = await httpFetch(`/companies${qs ? `?${qs}` : ''}`);
   if (!res.ok) throw new Error('Error al cargar empresas');
   return res.json();
 }

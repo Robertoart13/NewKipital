@@ -192,7 +192,7 @@ Si un usuario tiene `config:users` pero no `config:users:assign-companies`, pued
 
 **Visibilidad de pestañas:** Las pestañas Roles, Usuarios y Permisos en las páginas de Configuración se muestran solo si el usuario tiene el permiso correspondiente (`config:roles`, `config:users`, `config:permissions`).
 
-Si el rol MASTER no tiene estos permisos en `sys_rol_permiso`, el menú de Configuración no se mostrará.
+**Visibilidad de opciones de menú:** Cada opción del menú (Configuración > Seguridad, Configuración > Gestión Organizacional, etc.) tiene un `requiredPermission`. Si el permiso **no existe en la BD** o **no está asignado al usuario autenticado**, la opción se **oculta**. Ej.: Reglas de Distribución usa `config:reglas-distribucion`; si ese permiso no existe en `sys_permisos` o no está asignado al rol del usuario, la opción no aparece. Ver doc 08 (Estructura de Menús).
 
 ---
 
@@ -247,4 +247,31 @@ La documentación operativa de flujos y pantallas está en `24-PermisosEnterpris
 - El acceso efectivo a empresas se resuelve por sys_usuario_empresa.
 - No se debe exponer ni permitir mutacion de empresas fuera del set asignado al usuario autenticado.
 - Esta validacion se aplica en backend (fuente de verdad), no solo en frontend.
+
+---
+
+## 10. Incidente Documentado (2026-02-24) - 403 Intermitente en Configuracion
+
+Escenario observado:
+
+1. Usuario con sesion previa entra a `/configuration/users`.
+2. La pantalla carga inicialmente con datos correctos.
+3. Segundos despues aparece `Acceso denegado` para `config:users`.
+4. Re-login corrige temporalmente.
+
+Causa raiz:
+
+- Requests concurrentes de restauracion/cambio de contexto podian resolver en distinto orden.
+- Una respuesta tardia o fallo transitorio podia pisar permisos efectivos a `[]` en frontend.
+
+Decision de arquitectura:
+
+1. No ejecutar recargas de permisos cuando no hay cambio real de contexto.
+2. No vaciar permisos en frontend por fallos transitorios.
+3. Mantener backend como fuente unica de autorizacion.
+
+Implicacion para futuros sistemas:
+
+- El flujo de sesion/permisos debe disenarse como "last valid state wins" ante errores transitorios.
+- Las politicas fail-closed aplican a backend; en frontend se evita degradacion falsa de UI por condiciones de carrera.
 

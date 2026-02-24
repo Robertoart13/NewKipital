@@ -75,26 +75,39 @@ Gestion Planilla
 
 ### Configuracion
 
-Permiso requerido: `company:manage`
+Cada opción tiene su propio permiso. Si el permiso no existe en la BD o no está asignado al usuario autenticado, la opción se **oculta**.
 
 ```
 Configuracion
-├── [Seguridad]                           ← título de grupo
-│   ├── Roles y Permisos >
-│   │   ├── Lista de permisos administrativo
-│   │   └── Lista de permisos supervisor
-│   └── Usuarios
+├── [Seguridad]
+│   ├── Permisos        → config:permissions
+│   ├── Roles           → config:roles
+│   └── Usuarios        → config:users
 │
-└── [Gestion de Organizacional]           ← título de grupo
-    ├── Reglas de Distribución
-    ├── Empresas
-    ├── Empleados
-    ├── Clases
-    ├── Proyectos
-    ├── Cuentas Contables
-    ├── Departamentos
-    └── Puestos
+└── [Gestion de Organizacional]
+    ├── Reglas de Distribución  → config:reglas-distribucion
+    ├── Empresas                → company:view
+    ├── Empleados               → employee:view
+    ├── Clases                  → config:clases
+    ├── Proyectos               → config:proyectos
+    ├── Cuentas Contables       → config:cuentas-contables
+    ├── Departamentos           → config:departamentos
+    └── Puestos                 → config:puestos
 ```
+
+**Regla:** Las opciones sin permiso definido en BD (ej. `config:clases`, `config:proyectos`) permanecen ocultas hasta que el permiso se cree y se asigne a roles.
+
+---
+
+## Regla de visibilidad por permisos
+
+**Toda opción de menú debe tener `requiredPermission`.** El selector `getVisibleMenuItems` filtra según los permisos del usuario autenticado:
+
+- Si el permiso **no existe en la BD**: nadie lo tiene → la opción queda oculta.
+- Si el permiso **existe pero no está asignado** al usuario (vía roles/overrides): la opción queda oculta.
+- Solo se muestra cuando el permiso existe en `sys_permisos` y el usuario lo tiene asignado.
+
+Las opciones que aún no tienen permiso creado en BD (ej. Reglas de Distribución, Clases, Proyectos) permanecen ocultas hasta que se defina el permiso y se asigne a roles en Configuración > Roles.
 
 ---
 

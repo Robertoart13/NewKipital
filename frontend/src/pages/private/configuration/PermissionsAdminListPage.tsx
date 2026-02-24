@@ -28,6 +28,7 @@ import {
 } from '../../../api/securityConfig';
 import { canViewConfigRoles, canViewConfigUsers, canViewConfigPermissions } from '../../../store/selectors/permissions.selectors';
 import { useAppSelector } from '../../../store/hooks';
+import { formatDateTime12h } from '../../../lib/formatDate';
 import styles from './UsersManagementPage.module.css';
 
 const { Text } = Typography;
@@ -192,8 +193,8 @@ export function PermissionsAdminListPage() {
       width: 230,
       render: (_, item) => (
         <Space orientation="vertical" size={0}>
-          <Text type="secondary">Creado: {item.fechaCreacion ? new Date(item.fechaCreacion).toLocaleString() : '-'}</Text>
-          <Text type="secondary">Actualizado: {item.fechaModificacion ? new Date(item.fechaModificacion).toLocaleString() : '-'}</Text>
+          <Text type="secondary">Creado: {formatDateTime12h(item.fechaCreacion)}</Text>
+          <Text type="secondary">Actualizado: {formatDateTime12h(item.fechaModificacion)}</Text>
           <Text type="secondary">Usuario: {item.modificadoPor ?? item.creadoPor ?? '-'}</Text>
         </Space>
       ),

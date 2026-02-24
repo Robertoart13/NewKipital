@@ -63,9 +63,35 @@ import {
   canViewConfigPermissions,
 } from '../../../store/selectors/permissions.selectors';
 import { useAppSelector } from '../../../store/hooks';
+import { formatDateTime12h } from '../../../lib/formatDate';
 import styles from './UsersManagementPage.module.css';
 
 const { Text } = Typography;
+
+/** Mapea modulo+accion técnicos a etiquetas legibles para la bitácora (inspirado en NetSuite). */
+function getAuditActionLabel(modulo: string | undefined, accion: string | undefined): string {
+  const m = (modulo ?? '').toLowerCase();
+  const a = (accion ?? '').toLowerCase();
+  const key = `${m}:${a}`;
+  const map: Record<string, string> = {
+    'user_assignments:assign_app': 'Asignación de aplicación',
+    'user_assignments:revoke_app': 'Revocación de aplicación',
+    'user_assignments:assign_company': 'Asignación de empresa',
+    'user_assignments:revoke_company': 'Revocación de empresa',
+    'user_assignments:replace_companies': 'Cambio de empresas',
+    'user_assignments:replace_context_roles': 'Cambio de roles por empresa',
+    'user_assignments:replace_global_roles': 'Cambio de roles globales',
+    'user_assignments:replace_role_exclusions': 'Cambio de exclusiones de rol',
+    'user_assignments:replace_global_permission_denials': 'Cambio de permisos denegados',
+    'user_assignments:replace_permission_overrides': 'Cambio de excepciones de permisos',
+    'users:create': 'Creación de usuario',
+    'users:update': 'Actualización de usuario',
+    'users:inactivate': 'Desactivación de usuario',
+    'users:reactivate': 'Reactivación de usuario',
+    'users:block': 'Bloqueo de usuario',
+  };
+  return map[key] || `${m || '—'} / ${a || '—'}`;
+}
 
 function NoPermissionMessage({ message, required, variant = 'warning' }: { message: string; required: string; variant?: 'warning' | 'danger' }) {
   const isDanger = variant === 'danger';
@@ -524,7 +550,7 @@ export function UsersManagementPage() {
         dataIndex: 'fechaCreacion',
         key: 'fechaCreacion',
         width: 150,
-        render: (value: string | null) => (value ? new Date(value).toLocaleString() : '-'),
+        render: (value: string | null) => formatDateTime12h(value),
       },
       {
         title: 'Quien lo hizo',
@@ -541,18 +567,17 @@ export function UsersManagementPage() {
         },
       },
       {
-        title: 'Accion',
+        title: 'Tipo de acción',
         key: 'accion',
-        width: 160,
+        width: 200,
         render: (_, row) => (
-          <Flex gap={6} wrap="wrap">
-            <Tag className={styles.tagInactivo}>{row.modulo}</Tag>
-            <Tag className={styles.tagActivo}>{row.accion}</Tag>
-          </Flex>
+          <span style={{ fontWeight: 500, color: '#3d4f5c' }}>
+            {getAuditActionLabel(row.modulo ?? undefined, row.accion ?? undefined)}
+          </span>
         ),
       },
       {
-        title: 'Detalle',
+        title: 'Detalle del cambio',
         dataIndex: 'descripcion',
         key: 'descripcion',
         render: (value: string) => (

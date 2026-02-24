@@ -205,7 +205,7 @@ Y adicionalmente:
 
 Con esta implementacion, el nucleo de hardening solicitado quedo aplicado en codigo y documentado. El sistema pasa de arquitectura enterprise conceptual a una postura de seguridad enterprise operativa de fase 1.
 
-## 1.12 Correccion de estabilidad en restauracion de permisos (2026-02-24)
+## 7) Anexo - Correccion de estabilidad en restauracion de permisos (2026-02-24)
 
 1. Problema detectado:
    - En restauracion de sesion, acciones de contexto podian disparar recargas redundantes de permisos.

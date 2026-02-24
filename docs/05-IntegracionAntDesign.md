@@ -4,7 +4,7 @@
 **Para:** Ingeniero Frontend  
 **De:** Roberto — Arquitecto Funcional / Senior Engineer  
 **Prerrequisito:** Haber leído [02-ScaffoldingProyecto.md](./02-ScaffoldingProyecto.md)  
-**Última actualización:** 2026-02-23 (Nomenclatura y convenciones unificadas)
+**Última actualización:** 2026-02-23 (Formato de fecha 12h, nomenclatura y convenciones unificadas)
 
 ---
 
@@ -19,6 +19,7 @@
 | [Paleta RRHH](#paleta-rrhh-valores-vigentes) | Colores corporativos (no inventar) |
 | [Referencia de implementación](#referencia-de-implementación) | Páginas y archivos a consultar |
 | [Nomenclatura](#nomenclatura-y-convenciones) | Prefijos, patrones de nombres, textos estándar |
+| [Formato de fecha y hora](#formato-de-fecha-y-hora-obligatorio) | Formato 12h (AM/PM), locale es-ES |
 
 ---
 
@@ -58,6 +59,31 @@ Para nuevas entidades (ej. Proveedores, Sucursales), reutilizar las mismas clase
 ### Modales de confirmación
 
 Usar siempre `companyConfirmModal`, `companyConfirmOk`, `companyConfirmCancel` con `modal.confirm`. Ver clase en *Clases CSS obligatorias > Modales de confirmación*.
+
+### Formato de fecha y hora (obligatorio)
+
+Toda fecha y hora mostrada al usuario (bitácora, fechas de creación/actualización, etc.) debe usar el formato de **12 horas (AM/PM)** para consistencia corporativa.
+
+| Regla | Valor |
+|-------|-------|
+| Función a usar | `formatDateTime12h()` de `src/lib/formatDate.ts` |
+| Locale | `es-ES` |
+| Formato hora | 12 horas (AM/PM) |
+| Ejemplo | `23/02/2026, 10:30 a. m.` |
+
+**No usar** `toLocaleString()` sin opciones, `new Date().toLocaleString()`, ni formateadores que devuelvan 24h.
+
+```ts
+import { formatDateTime12h } from '../../../lib/formatDate';
+
+// Correcto
+<span>{formatDateTime12h(row.fechaCreacion)}</span>
+
+// Incorrecto
+<span>{row.fechaCreacion ? new Date(row.fechaCreacion).toLocaleString() : '-'}</span>
+```
+
+Referencia implementada: `UsersManagementPage.tsx`, `CompaniesManagementPage.tsx`, `PermissionsAdminListPage.tsx`.
 
 ---
 
@@ -316,6 +342,10 @@ Todas las páginas anteriores importan `UsersManagementPage.module.css` y aplica
 - Empresas es un módulo dedicado: título, subtítulo y acciones del módulo.
 - El modal usa tabs internos (`Información Principal`, `Dirección`). Solo incluir pestañas con campos existentes en BD.
 
+### Actualización de tabla tras mutaciones (obligatorio)
+
+Tras **cualquier acción** que modifique datos en listados (crear, editar, inactivar, reactivar, etc.), la tabla **debe refrescar** para mostrar los datos actualizados. Esto aplica a Empresas y a cualquier otro listado similar (empleados, usuarios, etc.). Implementación: invocar la función de recarga del listado después de cada mutación exitosa.
+
 ---
 
 ## Tabla y Filtros (Patrón Oficial de Listados)
@@ -445,9 +475,9 @@ import styles from './UsersManagementPage.module.css';
 | `.companyConfirmModal` | Modal de confirmación centrado, ancho 420px, estilo Paleta RRHH |
 | `.companyConfirmOk`, `.companyConfirmCancel` | Botones Sí/Cancelar |
 
-**Ejemplo:** `modal.confirm({ rootClassName: styles.companyConfirmModal, icon: <QuestionCircleOutlined style={{ color: '#5a6c7d' }} />, centered: true, width: 420, okButtonProps: { className: styles.companyConfirmOk }, cancelButtonProps: { className: styles.companyConfirmCancel } })`
+**Ejemplo:** `modal.confirm({ rootClassName: styles.companyConfirmModal, icon: <QuestionCircleOutlined style={{ color: '#5a6c7d', fontSize: 40 }} />, centered: true, width: 420, okButtonProps: { className: styles.companyConfirmOk }, cancelButtonProps: { className: styles.companyConfirmCancel } })`
 
-**Regla:** Usar estas clases. No inventar colores ni duplicar estilos.
+**Regla:** Usar estas clases en *todos* los modales de confirmación (crear, editar, inactivar, reactivar, etc.). No inventar colores ni duplicar estilos. El icono debe ser `QuestionCircleOutlined` color `#5a6c7d`; no usar el icono amarillo de advertencia por defecto.
 
 ---
 

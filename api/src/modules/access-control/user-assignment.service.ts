@@ -128,7 +128,7 @@ export class UserAssignmentService {
       entidad: 'user_app',
       entidadId: `${saved.idUsuario}:${saved.idApp}`,
       actorUserId: actorUserId ?? null,
-      descripcion: `Aplicacion asignada: "${appLabel}" -> "${userLabel}"`,
+      descripcion: `Se asignó la aplicación ${appLabel} al usuario ${userLabel}.`,
       payloadAfter: { idUsuario: saved.idUsuario, idApp: saved.idApp, estado: saved.estado },
     });
     return saved;
@@ -155,7 +155,7 @@ export class UserAssignmentService {
       entidad: 'user_app',
       entidadId: `${idUsuario}:${idApp}`,
       actorUserId: actorUserId ?? null,
-      descripcion: `Aplicacion revocada: "${appLabel}" <- "${userLabel}"`,
+      descripcion: `Se revocó el acceso a la aplicación ${appLabel} del usuario ${userLabel}.`,
       payloadAfter: { idUsuario, idApp, estado: 0 },
     });
   }
@@ -186,7 +186,7 @@ export class UserAssignmentService {
       entidadId: `${saved.idUsuario}:${saved.idEmpresa}`,
       actorUserId: actorUserId ?? null,
       companyContextId: saved.idEmpresa,
-      descripcion: `Empresa asignada: "${companyLabel}" -> "${userLabel}"`,
+      descripcion: `Se asignó la empresa ${companyLabel} al usuario ${userLabel}.`,
       payloadAfter: { idUsuario: saved.idUsuario, idEmpresa: saved.idEmpresa, estado: saved.estado },
     });
     return saved;
@@ -210,7 +210,7 @@ export class UserAssignmentService {
       entidadId: `${idUsuario}:${idEmpresa}`,
       actorUserId: actorUserId ?? null,
       companyContextId: idEmpresa,
-      descripcion: `Empresa revocada: "${companyLabel}" <- "${userLabel}"`,
+      descripcion: `Se revocó el acceso a la empresa ${companyLabel} del usuario ${userLabel}.`,
       payloadAfter: { idUsuario, idEmpresa, estado: 0 },
     });
   }
@@ -229,6 +229,9 @@ export class UserAssignmentService {
     const existing = await this.userCompanyRepo.find({ where: { idUsuario } });
     const existingById = new Map(existing.map((e) => [e.idEmpresa, e]));
     const targetSet = new Set(normalized);
+
+    const beforeCompanyIds = existing.filter((e) => e.estado === 1).map((e) => e.idEmpresa).sort((a, b) => a - b);
+    const beforeLabels = await this.getCompanyLabelList(beforeCompanyIds);
 
     for (const e of existing) {
       if (targetSet.has(e.idEmpresa)) {
@@ -262,13 +265,16 @@ export class UserAssignmentService {
     });
     const companyIdsResult = result.map((r) => r.idEmpresa).sort((a, b) => a - b);
     const userLabel = await this.getUserLabel(idUsuario);
-    const companyLabels = await this.getCompanyLabelList(companyIdsResult);
+    const afterLabels = await this.getCompanyLabelList(companyIdsResult);
+    const antes = beforeLabels.length > 0 ? this.formatList(beforeLabels) : 'ninguna';
+    const despues = afterLabels.length > 0 ? this.formatList(afterLabels) : 'ninguna';
     this.publishAudit({
       accion: 'replace_companies',
       entidad: 'user_company',
       entidadId: idUsuario,
       actorUserId: actorUserId ?? null,
-      descripcion: `Empresas reemplazadas para "${userLabel}". Empresas activas: ${this.formatList(companyLabels)}`,
+      descripcion: `Asignación de empresas modificada para ${userLabel}. Antes: ${antes}. Después: ${despues}.`,
+      payloadBefore: { idUsuario, companyIds: beforeCompanyIds },
       payloadAfter: { idUsuario, companyIds: companyIdsResult },
     });
     return { companyIds: companyIdsResult };
@@ -393,6 +399,8 @@ export class UserAssignmentService {
       where: { idUsuario, idEmpresa: companyId, idApp: appId },
     });
     const byRoleId = new Map(existingAssignments.map((assignment) => [assignment.idRol, assignment]));
+    const beforeRoleIds = existingAssignments.filter((a) => a.estado === 1).map((a) => a.idRol);
+    const beforeRoleLabels = await this.getRoleLabels(beforeRoleIds);
 
     for (const assignment of existingAssignments) {
       if (!normalizedRoleIds.includes(assignment.idRol) && assignment.estado === 1) {
@@ -427,22 +435,26 @@ export class UserAssignmentService {
     }
 
     const result = await this.getUserRoles(idUsuario, companyId, appId);
-    const [userLabel, companyLabel, roleLabels] = await Promise.all([
+    const [userLabel, companyLabel, afterRoleLabels] = await Promise.all([
       this.getUserLabel(idUsuario),
       this.getCompanyLabel(companyId),
       this.getRoleLabels(result.map((r) => r.idRol)),
     ]);
+    const appCodeNorm = appCode.trim().toLowerCase();
+    const antes = beforeRoleLabels.length > 0 ? this.formatList(beforeRoleLabels) : 'ninguno';
+    const despues = afterRoleLabels.length > 0 ? this.formatList(afterRoleLabels) : 'ninguno';
     this.publishAudit({
       accion: 'replace_context_roles',
       entidad: 'user_role',
       entidadId: idUsuario,
       actorUserId: modifierId,
       companyContextId: companyId,
-      descripcion: `Roles por contexto reemplazados para "${userLabel}" en "${companyLabel}" [app: ${appCode.trim().toLowerCase()}]. Roles: ${this.formatList(roleLabels)}`,
+      descripcion: `Roles modificados para ${userLabel} en ${companyLabel} (${appCodeNorm}). Antes: ${antes}. Después: ${despues}.`,
+      payloadBefore: { idUsuario, companyId, appCode: appCodeNorm, roleIds: beforeRoleIds },
       payloadAfter: {
         idUsuario,
         companyId,
-        appCode: appCode.trim().toLowerCase(),
+        appCode: appCodeNorm,
         roleIds: result.map((r) => r.idRol),
       },
     });
@@ -474,6 +486,8 @@ export class UserAssignmentService {
       where: { idUsuario, idApp: appId, estado: 1 },
     });
     const byRoleId = new Map(existing.map((g) => [g.idRol, g]));
+    const beforeRoleIds = existing.map((g) => g.idRol);
+    const beforeRoleLabels = await this.getRoleLabels(beforeRoleIds);
 
     for (const g of existing) {
       if (!normalizedRoleIds.includes(g.idRol)) {
@@ -506,16 +520,19 @@ export class UserAssignmentService {
     }
 
     const result = { appCode: appCode.trim().toLowerCase(), roleIds: normalizedRoleIds };
-    const [userLabel, roleLabels] = await Promise.all([
+    const [userLabel, afterRoleLabels] = await Promise.all([
       this.getUserLabel(idUsuario),
       this.getRoleLabels(normalizedRoleIds),
     ]);
+    const antes = beforeRoleLabels.length > 0 ? this.formatList(beforeRoleLabels) : 'ninguno';
+    const despues = afterRoleLabels.length > 0 ? this.formatList(afterRoleLabels) : 'ninguno';
     this.publishAudit({
       accion: 'replace_global_roles',
       entidad: 'user_role_global',
       entidadId: idUsuario,
       actorUserId: modifierId,
-      descripcion: `Roles globales reemplazados para "${userLabel}" [app: ${result.appCode}]. Roles: ${this.formatList(roleLabels)}`,
+      descripcion: `Roles globales modificados para ${userLabel} (app ${result.appCode}). Antes: ${antes}. Después: ${despues}.`,
+      payloadBefore: { idUsuario, appCode: result.appCode, roleIds: beforeRoleIds },
       payloadAfter: { idUsuario, ...result },
     });
     return result;
@@ -559,6 +576,8 @@ export class UserAssignmentService {
       where: { idUsuario, idEmpresa: companyId, idApp: appId, estado: 1 },
     });
     const byRoleId = new Map(existing.map((e) => [e.idRol, e]));
+    const beforeRoleIds = existing.map((e) => e.idRol);
+    const beforeRoleLabels = await this.getRoleLabels(beforeRoleIds);
 
     for (const e of existing) {
       if (!normalizedRoleIds.includes(e.idRol)) {
@@ -584,18 +603,21 @@ export class UserAssignmentService {
     }
 
     const result = { companyId, appCode: appCode.trim().toLowerCase(), roleIds: normalizedRoleIds };
-    const [userLabel, companyLabel, roleLabels] = await Promise.all([
+    const [userLabel, companyLabel, afterRoleLabels] = await Promise.all([
       this.getUserLabel(idUsuario),
       this.getCompanyLabel(companyId),
       this.getRoleLabels(normalizedRoleIds),
     ]);
+    const antes = beforeRoleLabels.length > 0 ? this.formatList(beforeRoleLabels) : 'ninguno';
+    const despues = afterRoleLabels.length > 0 ? this.formatList(afterRoleLabels) : 'ninguno';
     this.publishAudit({
       accion: 'replace_role_exclusions',
       entidad: 'user_role_exclusion',
       entidadId: idUsuario,
       actorUserId: modifierId,
       companyContextId: companyId,
-      descripcion: `Exclusiones de rol actualizadas para "${userLabel}" en "${companyLabel}" [app: ${result.appCode}]. Roles excluidos: ${this.formatList(roleLabels)}`,
+      descripcion: `Exclusiones de rol modificadas para ${userLabel} en ${companyLabel} (${result.appCode}). Antes: ${antes}. Después: ${despues}.`,
+      payloadBefore: { idUsuario, companyId, appCode: result.appCode, roleIds: beforeRoleIds },
       payloadAfter: { idUsuario, ...result },
     });
     return result;
@@ -759,6 +781,13 @@ export class UserAssignmentService {
       where: { idUsuario, idApp: appId, estado: 1 },
     });
     const existingPermIds = new Set(existing.map((e) => e.idPermiso));
+    const allPermIdsForBefore = [...existingPermIds];
+    const allPermsForBefore =
+      allPermIdsForBefore.length > 0
+        ? await this.permRepo.find({ where: { id: In(allPermIdsForBefore) } })
+        : [];
+    const permByIdForBefore = new Map(allPermsForBefore.map((p) => [p.id, p.codigo]));
+    const beforeDenyCodes = existing.map((e) => permByIdForBefore.get(e.idPermiso)).filter(Boolean) as string[];
 
     const targetPermIds = new Set(normalized.map((c) => byCode.get(c)?.id).filter((id): id is number => id != null));
 
@@ -787,12 +816,15 @@ export class UserAssignmentService {
     const result = (await this.getGlobalPermissionDenials(idUsuario, appCode)).deny;
     const response = { appCode: appCode.trim().toLowerCase(), deny: result };
     const userLabel = await this.getUserLabel(idUsuario);
+    const antes = beforeDenyCodes.length > 0 ? this.formatList(beforeDenyCodes) : 'ninguno';
+    const despues = result.length > 0 ? this.formatList(result) : 'ninguno';
     this.publishAudit({
       accion: 'replace_global_permission_denials',
       entidad: 'user_permission_global_deny',
       entidadId: idUsuario,
       actorUserId: modifierId,
-      descripcion: `Denegaciones globales actualizadas para "${userLabel}" [app: ${response.appCode}]. Permisos: ${this.formatList(result)}`,
+      descripcion: `Permisos denegados globalmente modificados para ${userLabel} (app ${response.appCode}). Antes: ${antes}. Después: ${despues}.`,
+      payloadBefore: { idUsuario, appCode: response.appCode, deny: beforeDenyCodes },
       payloadAfter: { idUsuario, ...response },
     });
     return response;
@@ -849,6 +881,14 @@ export class UserAssignmentService {
     });
     const existingByPermId = new Map(existingOverrides.map((override) => [override.idPermiso, override]));
 
+    const beforeAllowIds = existingOverrides.filter((o) => o.estado === 1 && o.efecto === 'ALLOW').map((o) => o.idPermiso);
+    const beforeDenyIds = existingOverrides.filter((o) => o.estado === 1 && o.efecto === 'DENY').map((o) => o.idPermiso);
+    const allPermIds = [...new Set([...beforeAllowIds, ...beforeDenyIds, ...permissionByCode.keys()])];
+    const allPerms = allPermIds.length > 0 ? await this.permRepo.find({ where: { id: In(allPermIds) } }) : [];
+    const permCodeById = new Map(allPerms.map((p) => [p.id, p.codigo]));
+    const beforeAllow = beforeAllowIds.map((id) => permCodeById.get(id)).filter(Boolean) as string[];
+    const beforeDeny = beforeDenyIds.map((id) => permCodeById.get(id)).filter(Boolean) as string[];
+
     for (const override of existingOverrides) {
       const desiredEffect = desiredByPermId.get(override.idPermiso);
       if (!desiredEffect) {
@@ -890,13 +930,18 @@ export class UserAssignmentService {
       this.getUserLabel(idUsuario),
       this.getCompanyLabel(companyId),
     ]);
+    const allowAntes = beforeAllow.length > 0 ? this.formatList(beforeAllow) : 'ninguno';
+    const allowDespues = current.allow.length > 0 ? this.formatList(current.allow) : 'ninguno';
+    const denyAntes = beforeDeny.length > 0 ? this.formatList(beforeDeny) : 'ninguno';
+    const denyDespues = current.deny.length > 0 ? this.formatList(current.deny) : 'ninguno';
     this.publishAudit({
       accion: 'replace_permission_overrides',
       entidad: 'user_permission_override',
       entidadId: idUsuario,
       actorUserId: modifierId,
       companyContextId: companyId,
-      descripcion: `Overrides de permisos actualizados para "${userLabel}" en "${companyLabel}" [app: ${current.appCode}]. Allow: ${this.formatList(current.allow)}. Deny: ${this.formatList(current.deny)}`,
+      descripcion: `Excepciones de permisos modificadas para ${userLabel} en ${companyLabel} (${current.appCode}). Allow — Antes: ${allowAntes}. Después: ${allowDespues}. Deny — Antes: ${denyAntes}. Después: ${denyDespues}.`,
+      payloadBefore: { idUsuario, companyId, appCode: current.appCode, allow: beforeAllow, deny: beforeDeny },
       payloadAfter: current as unknown as Record<string, unknown>,
     });
     return current;

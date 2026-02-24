@@ -132,12 +132,16 @@ Capacidades implementadas:
 - Editar empresa.
 - Inactivar/reactivar empresa con confirmacion.
 
+Regla de actualizacion de tabla (obligatorio):
+- Tras **cualquier accion** que modifique datos (crear, editar, inactivar, reactivar), la tabla debe **refrescar** para mostrar el listado actualizado.
+- Implementacion: llamar a `loadCompanies()` despues de cada mutacion exitosa.
+
 Nota:
 - El logo empresarial ya esta implementado sin agregar columna en `sys_empresas`.
 - Se usa storage en filesystem con flujo temporal + commit:
   - Temporal: `uploads/logoEmpresa/temp`
   - Final: `uploads/logoEmpresa/{idEmpresa}.{ext}`
-- Si no existe logo de la empresa, el API entrega imagen por defecto (`imgSEO.jpg`).
+- Si no existe logo de la empresa, el API entrega imagen por defecto (`LogoSmall.png`).
 - En edicion, si solo se actualizan campos de texto y no se adjunta nueva imagen, el logo actual se conserva.
 - Validaciones activas de logo: solo tipo imagen, maximo 5MB.
 

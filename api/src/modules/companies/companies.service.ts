@@ -20,8 +20,8 @@ const COMPANY_LOGO_TEMP_DIR = join(COMPANY_LOGO_DIR, 'temp');
 const ALLOWED_LOGO_EXTENSIONS = ['.png', '.jpg', '.jpeg', '.webp', '.svg'];
 const DEFAULT_LOGO_CANDIDATES = [
   process.env.COMPANY_DEFAULT_LOGO_PATH?.trim(),
-  join(process.cwd(), '..', 'frontend', 'public', 'assets', 'images', 'global', 'imgSEO.jpg'),
-  join(process.cwd(), 'public', 'assets', 'images', 'global', 'imgSEO.jpg'),
+  join(process.cwd(), '..', 'frontend', 'public', 'assets', 'images', 'global', 'LogoSmall.png'),
+  join(process.cwd(), 'public', 'assets', 'images', 'global', 'LogoSmall.png'),
 ].filter((v): v is string => Boolean(v));
 
 export interface CompanyLogoTempResult {
@@ -180,7 +180,7 @@ export class CompaniesService {
       }
     }
     throw new NotFoundException(
-      'No se encontro imagen por defecto. Configure COMPANY_DEFAULT_LOGO_PATH o verifique imgSEO.jpg',
+      'No se encontro imagen por defecto. Configure COMPANY_DEFAULT_LOGO_PATH o verifique LogoSmall.png',
     );
   }
 
@@ -270,7 +270,11 @@ export class CompaniesService {
     return this.mapCompanyWithLogo(saved);
   }
 
-  async findAll(includeInactive = false, userId: number): Promise<Array<Company & { logoUrl: string; logoPath: string | null }>> {
+  async findAll(
+    includeInactive = false,
+    userId: number,
+    inactiveOnly = false,
+  ): Promise<Array<Company & { logoUrl: string; logoPath: string | null }>> {
     const qb = this.repo.createQueryBuilder('company')
       .innerJoin(
         'sys_usuario_empresa',
@@ -280,7 +284,9 @@ export class CompaniesService {
       )
       .orderBy('company.nombre', 'ASC');
 
-    if (!includeInactive) {
+    if (inactiveOnly) {
+      qb.andWhere('company.estado = 0');
+    } else if (!includeInactive) {
       qb.andWhere('company.estado = 1');
     }
 
