@@ -76,6 +76,15 @@ export async function fetchCompanies(showInactive = false): Promise<CompanyListI
   return res.json();
 }
 
+export async function fetchAllCompaniesForHistory(): Promise<CompanyListItem[]> {
+  const params = new URLSearchParams();
+  params.set('includeInactive', 'true');
+  params.set('all', 'true');
+  const res = await httpFetch(`/companies?${params.toString()}`);
+  if (!res.ok) throw new Error('Error al cargar empresas de historial');
+  return res.json();
+}
+
 /**
  * GET /companies/:id - Detalle de empresa.
  */

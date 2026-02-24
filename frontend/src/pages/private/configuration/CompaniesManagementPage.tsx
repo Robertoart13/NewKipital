@@ -43,6 +43,7 @@ import {
   UpOutlined,
 } from '@ant-design/icons';
 import { formatDateTime12h } from '../../../lib/formatDate';
+import { textRules, emailRules, optionalNoSqlInjection } from '../../../lib/formValidation';
 import {
   commitCompanyLogo,
   createCompany,
@@ -1085,42 +1086,42 @@ export function CompaniesManagementPage() {
                     </div>
                     <Row gutter={[12, 12]} className={styles.companyFormGrid}>
                       <Col span={12}>
-                        <Form.Item name="nombre" label="Nombre Empresa *" rules={[{ required: true, message: 'Ingrese el nombre de empresa' }]}>
+                        <Form.Item name="nombre" label="Nombre Empresa *" rules={textRules({ required: true, max: 200 })}>
                           <Input maxLength={200} />
                         </Form.Item>
                       </Col>
                       <Col span={12}>
-                        <Form.Item name="nombreLegal" label="Nombre Legal Empresa *" rules={[{ required: true, message: 'Ingrese el nombre legal' }]}>
+                        <Form.Item name="nombreLegal" label="Nombre Legal Empresa *" rules={textRules({ required: true, max: 300 })}>
                           <Input maxLength={300} />
                         </Form.Item>
                       </Col>
                       <Col span={8}>
-                        <Form.Item name="cedula" label="Cedula Empresa *" rules={[{ required: true, message: 'Ingrese la cedula' }]}>
+                        <Form.Item name="cedula" label="Cedula Empresa *" rules={textRules({ required: true, max: 50 })}>
                           <Input maxLength={50} />
                         </Form.Item>
                       </Col>
                       <Col span={8}>
-                        <Form.Item name="actividadEconomica" label="Actividad Economica Empresa">
+                        <Form.Item name="actividadEconomica" label="Actividad Economica Empresa" rules={[{ validator: optionalNoSqlInjection }]}>
                           <Input maxLength={300} />
                         </Form.Item>
                       </Col>
                       <Col span={8}>
-                        <Form.Item name="prefijo" label="Prefijo Empresa *" rules={[{ required: true, message: 'Ingrese el prefijo' }]}>
+                        <Form.Item name="prefijo" label="Prefijo Empresa *" rules={textRules({ required: true, max: 10 })}>
                           <Input maxLength={10} />
                         </Form.Item>
                       </Col>
                       <Col span={8}>
-                        <Form.Item name="idExterno" label="ID Externo Empresa">
+                        <Form.Item name="idExterno" label="ID Externo Empresa" rules={[{ validator: optionalNoSqlInjection }]}>
                           <Input maxLength={100} placeholder="0" />
                         </Form.Item>
                       </Col>
                       <Col span={8}>
-                        <Form.Item name="email" label="Email 1 Empresa" rules={[{ type: 'email', message: 'Formato de correo invalido' }]}>
+                        <Form.Item name="email" label="Email 1 Empresa" rules={emailRules(false)}>
                           <Input maxLength={150} />
                         </Form.Item>
                       </Col>
                       <Col span={8}>
-                        <Form.Item name="telefono" label="Telefono Empresa">
+                        <Form.Item name="telefono" label="Telefono Empresa" rules={[{ validator: optionalNoSqlInjection }]}>
                           <Input maxLength={30} />
                         </Form.Item>
                       </Col>
@@ -1139,12 +1140,12 @@ export function CompaniesManagementPage() {
                 children: (
                   <Row gutter={[12, 12]} className={styles.companyFormGrid}>
                     <Col span={16}>
-                      <Form.Item name="direccionExacta" label="Direccion Exacta">
+                      <Form.Item name="direccionExacta" label="Direccion Exacta" rules={[{ validator: optionalNoSqlInjection }]}>
                         <Input.TextArea rows={4} />
                       </Form.Item>
                     </Col>
                     <Col span={8}>
-                      <Form.Item name="codigoPostal" label="Codigo Postal">
+                      <Form.Item name="codigoPostal" label="Codigo Postal" rules={[{ validator: optionalNoSqlInjection }]}>
                         <Input maxLength={20} />
                       </Form.Item>
                     </Col>

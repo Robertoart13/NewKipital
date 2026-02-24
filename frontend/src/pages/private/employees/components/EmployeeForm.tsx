@@ -8,6 +8,13 @@ import {
 } from '../constants/employee-enums';
 import type { SystemRole } from '../../../../api/securityConfig';
 import dayjs from 'dayjs';
+import {
+  MAX_MONEY_AMOUNT,
+  formatCurrencyInput,
+  getCurrencySymbol,
+  isMoneyOverMax,
+  parseCurrencyInput,
+} from '../../../../lib/currencyFormat';
 
 interface EmployeeFormProps {
   form: ReturnType<typeof Form.useForm>[0];
@@ -35,6 +42,8 @@ export function EmployeeForm({
 }: EmployeeFormProps) {
   const crearAccesoTimewise = Form.useWatch('crearAccesoTimewise', form) ?? false;
   const crearAccesoKpital = Form.useWatch('crearAccesoKpital', form) ?? false;
+  const monedaSalarioSeleccionada = (Form.useWatch('monedaSalario', form) as string | undefined) ?? 'CRC';
+  const currencySymbol = getCurrencySymbol(monedaSalarioSeleccionada);
   const crearAcceso = crearAccesoTimewise || crearAccesoKpital;
 
   return (
@@ -155,8 +164,28 @@ export function EmployeeForm({
           options={payPeriods.map((p) => ({ value: p.id, label: p.nombre }))}
         />
       </Form.Item>
-      <Form.Item name="salarioBase" label="Salario Base">
-        <InputNumber min={0} style={{ width: '100%' }} />
+      <Form.Item
+        name="salarioBase"
+        label="Salario Base"
+        initialValue={0}
+        rules={[
+          { validator: (_, v) => {
+            if (v == null || v === '') return Promise.resolve();
+            const n = Number(v);
+            if (isNaN(n) || n <= 0) return Promise.reject(new Error('El salario debe ser mayor a cero'));
+            if (isMoneyOverMax(n)) return Promise.reject(new Error('Monto demasiado alto'));
+            return Promise.resolve();
+          } },
+        ]}
+      >
+        <InputNumber
+          min={0.01}
+          max={MAX_MONEY_AMOUNT}
+          precision={2}
+          formatter={(value) => formatCurrencyInput(value, currencySymbol)}
+          parser={parseCurrencyInput}
+          style={{ width: '100%' }}
+        />
       </Form.Item>
       <Form.Item name="monedaSalario" label="Moneda" initialValue="CRC">
         <Select options={MONEDA_OPTIONS.map((o) => ({ value: o.value, label: o.label }))} />

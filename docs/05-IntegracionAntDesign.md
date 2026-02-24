@@ -4,7 +4,7 @@
 **Para:** Ingeniero Frontend  
 **De:** Roberto — Arquitecto Funcional / Senior Engineer  
 **Prerrequisito:** Haber leído [02-ScaffoldingProyecto.md](./02-ScaffoldingProyecto.md)  
-**Última actualización:** 2026-02-23 (Formato de fecha 12h, nomenclatura y convenciones unificadas)
+**Última actualización:** 2026-02-23 (Validación formularios, estilos Histórico Laboral, tabs scroll, símbolo CRC)
 
 ---
 
@@ -20,6 +20,7 @@
 | [Referencia de implementación](#referencia-de-implementación) | Páginas y archivos a consultar |
 | [Nomenclatura](#nomenclatura-y-convenciones) | Prefijos, patrones de nombres, textos estándar |
 | [Formato de fecha y hora](#formato-de-fecha-y-hora-obligatorio) | Formato 12h (AM/PM), locale es-ES |
+| [Formato de moneda](#formato-de-moneda-obligatorio) | Regla única para inputs monetarios CRC/USD |
 
 ---
 
@@ -84,6 +85,28 @@ import { formatDateTime12h } from '../../../lib/formatDate';
 ```
 
 Referencia implementada: `UsersManagementPage.tsx`, `CompaniesManagementPage.tsx`, `PermissionsAdminListPage.tsx`.
+
+### Formato de moneda (obligatorio)
+
+Toda entrada monetaria visual en formularios debe usar el helper compartido:
+
+- `frontend/src/lib/currencyFormat.ts`
+
+Reglas obligatorias:
+
+1. Simbolo dinamico por moneda (`CRC => "CRC"`, `USD => "$"`). Ver doc 29 para nota de encoding.
+2. Formato visual con 2 decimales.
+3. Parser robusto para evitar inflado de ceros al blur/focus.
+4. Tope maximo unificado: `MAX_MONEY_AMOUNT`.
+5. Prohibido duplicar formatter/parser inline en componentes.
+
+Referencia detallada:
+
+- `docs/29-EstandarFormatoMoneda.md`
+
+**Validación de formularios (campos de texto, email, anti-SQL):**
+
+- `docs/31-ValidacionFormulariosFrontend.md`
 
 ---
 
@@ -229,7 +252,7 @@ import styles from './UsersManagementPage.module.css';
 |------|---------|
 | **Implementación** | `frontend/src/pages/private/configuration/CompaniesManagementPage.tsx` |
 | **Estilos** | `frontend/src/pages/private/configuration/UsersManagementPage.module.css` |
-| **Referencia alternativa** | `frontend/src/pages/private/employees/components/EmployeeCreateModal.tsx` |
+| **Referencia alternativa** | `frontend/src/pages/private/employees/components/EmployeeCreateModal.tsx` — Usa el mismo patrón y estilos que Empresas (companyModal*, companyFormGrid, etc.). |
 
 ### Estructura obligatoria del modal
 
@@ -284,7 +307,7 @@ import styles from './UsersManagementPage.module.css';
 ### Reglas funcionales
 
 - **Solo campos en BD:** No incluir pestañas o campos que no existan en el modelo/API.
-- **Validaciones:** Campos requeridos con `*`, mensajes claros en `rules`.
+- **Validaciones:** Usar `formValidation.ts` (textRules, emailRules, optionalNoSqlInjection) para campos de texto y email. Ver `docs/31-ValidacionFormulariosFrontend.md`. Campos requeridos con `*`, mensajes claros en `rules`.
 - **Estado visual:** Switch Activo/Inactivo solo informativo en header (edición de estado vía Inactivar/Reactivar en el cuerpo).
 - **Botón primario de submit:** Debe iniciar deshabilitado y habilitarse solo cuando los campos requeridos tengan valor válido (trim y reglas de formato). Esta regla aplica a todos los formularios nuevos y existentes.
 - **Acciones críticas:** Crear y Guardar cambios deben pasar por confirmación explícita (`modal.confirm`) antes de ejecutar mutaciones.
@@ -331,7 +354,7 @@ import styles from './UsersManagementPage.module.css';
 | Página | Archivo | Qué ver como referencia |
 |--------|---------|-------------------------|
 | **Empresas** | `CompaniesManagementPage.tsx` | Tabla, filtros expandibles, **modal de creación/edición** (patrón formularios) |
-| **Empleados** | `EmployeeCreateModal.tsx` | Modal con header, tabs, footer (referencia visual MUI-style) |
+| **Empleados** | `EmployeeCreateModal.tsx` | Modal de creación con el mismo patrón que Empresas (header, tabs, footer, Paleta RRHH) |
 | **Usuarios** | `UsersManagementPage.tsx` | Drawer, etiquetas, botones, tabs |
 | **Permisos** | `PermissionsAdminListPage.tsx` | Encabezado, banner informativo, búsqueda |
 | **Roles** | `RolesManagementPage.tsx` | Selector de aplicación, matriz de permisos |
@@ -470,6 +493,8 @@ import styles from './UsersManagementPage.module.css';
 | `.companyModalTabs`, `.companyModalFooter`, `.companyModalBtnCancel`, `.companyModalBtnSubmit` | Tabs, footer, botones |
 | `.companyFormContent`, `.companyFormGrid` | Formulario, grid de campos |
 | `.logoUploadArea`, `.logoUploadPlaceholder`, `.logoUploadInfo` | Área de logo |
+| `.employeeModalTabsScroll` | Tabs con scroll horizontal (empleados): muestra nombres completos, oculta menú "Más" y nav-operations, padding-right para evitar corte visual al scroll |
+| `.historicoProvisionBlock`, `.historicoTableWrap`, `.historicoTableHeader`, `.historicoTableRow`, `.historicoAddBtn` | Sección Provisión de Aguinaldo: tarjeta blanca estilo sectionCard, tabla estilo configTable, botón principal |
 
 #### Modales de confirmación
 | Clase | Uso |

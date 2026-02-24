@@ -72,6 +72,8 @@ export interface EmployeeDetail extends EmployeeListItem {
   monedaSalario?: string;
   numeroCcss?: string | null;
   cuentaBanco?: string | null;
+  vacacionesAcumuladas?: string | null;
+  cesantiaAcumulada?: string | null;
   idUsuario?: number | null;
   fechaCreacion?: string;
   fechaModificacion?: string;
@@ -103,11 +105,23 @@ export interface CreateEmployeePayload {
   monedaSalario?: string;
   numeroCcss?: string;
   cuentaBanco?: string;
+  vacacionesAcumuladas?: string;
+  cesantiaAcumulada?: string;
+  provisionesAguinaldo?: EmployeeAguinaldoProvisionPayload[];
   crearAccesoTimewise?: boolean;
   crearAccesoKpital?: boolean;
   idRolTimewise?: number;
   idRolKpital?: number;
   passwordInicial?: string;
+}
+
+export interface EmployeeAguinaldoProvisionPayload {
+  idEmpresa: number;
+  montoProvisionado: number;
+  fechaInicioLaboral: string;
+  fechaFinLaboral?: string;
+  registroEmpresa?: string;
+  estado?: 1 | 2;
 }
 
 export interface UpdateEmployeePayload {

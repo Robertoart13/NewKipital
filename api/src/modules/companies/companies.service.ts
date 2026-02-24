@@ -274,15 +274,19 @@ export class CompaniesService {
     includeInactive = false,
     userId: number,
     inactiveOnly = false,
+    includeAll = false,
   ): Promise<Array<Company & { logoUrl: string; logoPath: string | null }>> {
     const qb = this.repo.createQueryBuilder('company')
-      .innerJoin(
+      .orderBy('company.nombre', 'ASC');
+
+    if (!includeAll) {
+      qb.innerJoin(
         'sys_usuario_empresa',
         'ue',
         'ue.id_empresa = company.id_empresa AND ue.id_usuario = :userId AND ue.estado_usuario_empresa = 1',
         { userId },
-      )
-      .orderBy('company.nombre', 'ASC');
+      );
+    }
 
     if (inactiveOnly) {
       qb.andWhere('company.estado = 0');

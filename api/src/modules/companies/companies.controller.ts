@@ -58,9 +58,10 @@ export class CompaniesController {
   findAll(
     @Query('includeInactive', new ParseBoolPipe({ optional: true })) includeInactive: boolean | undefined,
     @Query('inactiveOnly', new ParseBoolPipe({ optional: true })) inactiveOnly: boolean | undefined,
+    @Query('all', new ParseBoolPipe({ optional: true })) all: boolean | undefined,
     @CurrentUser() user: { userId: number },
   ) {
-    return this.service.findAll(includeInactive ?? false, user.userId, inactiveOnly ?? false);
+    return this.service.findAll(includeInactive ?? false, user.userId, inactiveOnly ?? false, all ?? false);
   }
 
   @RequirePermissions('company:view')

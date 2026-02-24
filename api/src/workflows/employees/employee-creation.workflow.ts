@@ -3,6 +3,7 @@ import { DataSource } from 'typeorm';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import * as bcrypt from 'bcrypt';
 import { Employee, MonedaSalarioEmpleado } from '../../modules/employees/entities/employee.entity.js';
+import { EmployeeAguinaldoProvision, EstadoProvisionAguinaldoEmpleado } from '../../modules/employees/entities/employee-aguinaldo-provision.entity.js';
 import { User } from '../../modules/auth/entities/user.entity.js';
 import { App } from '../../modules/access-control/entities/app.entity.js';
 import { UserApp } from '../../modules/access-control/entities/user-app.entity.js';
@@ -174,6 +175,8 @@ export class EmployeeCreationWorkflow {
         monedaSalario: dto.monedaSalario ?? MonedaSalarioEmpleado.CRC,
         numeroCcss: dto.numeroCcss ?? null,
         cuentaBanco: dto.cuentaBanco ?? null,
+        vacacionesAcumuladas: dto.vacacionesAcumuladas ?? null,
+        cesantiaAcumulada: dto.cesantiaAcumulada ?? null,
         estado: 1,
         creadoPor: creatorId ?? null,
         modificadoPor: creatorId ?? null,
@@ -183,6 +186,21 @@ export class EmployeeCreationWorkflow {
       const codigoFinal = `KPid-${savedEmployee.id}-${codigoBase}`;
       await manager.update(Employee, savedEmployee.id, { codigo: codigoFinal });
       savedEmployee = { ...savedEmployee, codigo: codigoFinal };
+
+      if (dto.provisionesAguinaldo?.length) {
+        const provisions = dto.provisionesAguinaldo.map((item) => manager.create(EmployeeAguinaldoProvision, {
+          idEmpleado: savedEmployee.id,
+          idEmpresa: item.idEmpresa,
+          montoProvisionado: item.montoProvisionado,
+          fechaInicioLaboral: new Date(item.fechaInicioLaboral),
+          fechaFinLaboral: item.fechaFinLaboral ? new Date(item.fechaFinLaboral) : null,
+          registroEmpresa: item.registroEmpresa?.trim() || null,
+          estado: item.estado ?? EstadoProvisionAguinaldoEmpleado.PENDIENTE,
+          creadoPor: creatorId ?? null,
+          modificadoPor: creatorId ?? null,
+        }));
+        await manager.save(EmployeeAguinaldoProvision, provisions);
+      }
 
       // === COMMIT ===
       await queryRunner.commitTransaction();

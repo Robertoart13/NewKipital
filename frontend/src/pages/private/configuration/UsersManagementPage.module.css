@@ -421,6 +421,42 @@
   gap: 4px;
 }
 
+/* Tabs con scroll horizontal: muestra nombres completos, desplaza al seleccionar */
+.employeeModalTabsScroll :global(.ant-tabs-nav-wrap) {
+  overflow-x: auto !important;
+  overflow-y: hidden;
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
+}
+
+.employeeModalTabsScroll :global(.ant-tabs-nav-wrap)::-webkit-scrollbar {
+  height: 6px;
+}
+
+.employeeModalTabsScroll :global(.ant-tabs-nav-wrap)::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 3px;
+}
+
+.employeeModalTabsScroll :global(.ant-tabs-nav-wrap)::-webkit-scrollbar-track {
+  background: #f1f5f9;
+}
+
+.employeeModalTabsScroll :global(.ant-tabs-nav-list) {
+  flex-wrap: nowrap !important;
+  padding-right: 8px; /* evita corte brusco al hacer scroll a la derecha */
+}
+
+.employeeModalTabsScroll :global(.ant-tabs-tab) {
+  white-space: nowrap !important;
+  flex-shrink: 0;
+}
+
+.employeeModalTabsScroll :global(.ant-tabs-nav-more),
+.employeeModalTabsScroll :global(.ant-tabs-nav-operations) {
+  display: none !important;
+}
+
 .companyModalFooter {
   margin-top: 20px;
   padding: 20px 24px;
@@ -929,6 +965,120 @@
   color: #8c8c8c;
   margin: 0 0 14px 0;
   line-height: 1.5;
+}
+
+.historicoSection {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+/* Bloque Provisión Aguinaldo: mismo estilo que sectionCard (tarjeta blanca, sombra, bordes) */
+.historicoProvisionBlock {
+  background: #fff;
+  border-radius: 12px;
+  border: 1px solid #e8ecf0;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
+  padding: 20px 24px;
+  margin-top: 16px;
+}
+
+/* Tabla: mismo estilo que configTable/companiesTable */
+.historicoTableWrap {
+  border: 1px solid #e8ecf0;
+  border-radius: 8px;
+  overflow-x: auto;
+  margin-bottom: 16px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+}
+
+.historicoTableRow {
+  display: grid;
+  grid-template-columns: minmax(180px, 1.3fr) minmax(160px, 1fr) minmax(160px, 1fr) minmax(160px, 1fr) minmax(180px, 1.2fr) minmax(130px, 0.9fr) 72px;
+  gap: 8px;
+  min-width: 1040px;
+  padding: 14px 12px;
+  align-items: start;
+}
+
+.historicoTableHeader {
+  background: #f2f4f6 !important;
+  color: #4a5a68;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border-bottom: 2px solid #e0e4e8 !important;
+  padding: 16px 12px !important;
+}
+
+.historicoTableHeader > div {
+  white-space: nowrap;
+}
+
+.historicoTableRow:not(.historicoTableHeader) {
+  border-bottom: 1px solid #e8ecf0;
+  background-color: #fff;
+}
+
+.historicoTableRow:not(.historicoTableHeader):nth-child(even) {
+  background-color: #f9fafb !important;
+}
+
+.historicoTableRow:not(.historicoTableHeader):last-child {
+  border-bottom: 0;
+}
+
+.historicoTableRow:not(.historicoTableHeader):hover {
+  background-color: #f8f9fa !important;
+}
+
+.historicoCellItem {
+  margin-bottom: 0 !important;
+}
+
+.historicoCellItem :global(.ant-input),
+.historicoCellItem :global(.ant-input-number),
+.historicoCellItem :global(.ant-select-selector) {
+  border-radius: 8px !important;
+  border-color: #e8ecf0 !important;
+}
+
+.historicoCellItem :global(.ant-picker) {
+  border-radius: 8px !important;
+  border-color: #e8ecf0 !important;
+}
+
+.historicoActionHeader {
+  text-align: center;
+}
+
+.historicoActionCell {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 40px;
+}
+
+.historicoEmptyHint {
+  font-size: 13px;
+  color: #6b7a85;
+  margin: 0 0 16px 0;
+}
+
+/* Botón Agregar: mismo estilo que btnPrimary / companyModalBtnSubmit */
+.historicoAddBtn {
+  border-radius: 8px !important;
+  font-weight: 600 !important;
+  background: #5a6c7d !important;
+  border-color: #5a6c7d !important;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+}
+
+.historicoAddBtn:hover {
+  background: #4a5c6d !important;
+  border-color: #4a5c6d !important;
+  box-shadow: 0 2px 4px rgba(90, 108, 125, 0.15);
 }
 
 .listBox {

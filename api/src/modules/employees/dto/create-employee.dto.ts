@@ -1,11 +1,13 @@
 import {
   IsString, IsEmail, IsOptional, IsInt, IsBoolean,
-  IsDateString, IsNumber, IsEnum, MaxLength, MinLength, Min,
+  IsDateString, IsNumber, IsEnum, MaxLength, MinLength, Min, Matches, IsArray, ValidateNested,
 } from 'class-validator';
+import { Type } from 'class-transformer';
 import {
   GeneroEmpleado, EstadoCivilEmpleado, TipoContratoEmpleado,
   JornadaEmpleado, MonedaSalarioEmpleado,
 } from '../entities/employee.entity.js';
+import { CreateEmployeeAguinaldoProvisionDto } from './create-employee-aguinaldo-provision.dto.js';
 
 /**
  * DTO para crear empleado.
@@ -119,6 +121,20 @@ export class CreateEmployeeDto {
   @IsString()
   @MaxLength(50)
   cuentaBanco?: string;
+
+  @IsOptional()
+  @Matches(/^(0|[1-9]\d*)(\.\d+)?$/)
+  vacacionesAcumuladas?: string;
+
+  @IsOptional()
+  @Matches(/^(0|[1-9]\d*)(\.\d+)?$/)
+  cesantiaAcumulada?: string;
+
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => CreateEmployeeAguinaldoProvisionDto)
+  provisionesAguinaldo?: CreateEmployeeAguinaldoProvisionDto[];
 
   // ═══════════ FLAGS DE ACCESO DIGITAL ═══════════
   // Controlan si el workflow crea usuario + asigna app.

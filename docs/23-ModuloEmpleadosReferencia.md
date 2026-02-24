@@ -109,6 +109,29 @@ El código base sigue siendo único por empresa. La validación verifica que no 
 
 **Menú:** Empleados aparece en **Configuración → Gestión Organizacional** (no en nivel superior).
 
+### Extensión 2026-02-24 - Histórico Laboral en creación
+
+Se agrega en `EmployeeCreateModal` la pestaña `Histórico Laboral` con:
+
+1. Acumulados monetarios (`vacacionesAcumuladas`, `cesantiaAcumulada`).
+2. Tabla dinámica de `provisionesAguinaldo` por empresa.
+3. Validaciones de fechas no futuras y consistencia inicio/fin.
+4. Persistencia relacionada en tabla `sys_empleado_provision_aguinaldo`.
+
+Documentación específica:
+
+- `docs/30-HistorialLaboralEmpleado.md`
+
+Estándar de moneda obligatorio para este flujo:
+
+- `docs/29-EstandarFormatoMoneda.md`
+
+Validación de formularios (texto, email, anti-SQL):
+
+- `docs/31-ValidacionFormulariosFrontend.md`
+
+**Reglas de validación aplicadas:** textRules, emailRules, optionalNoSqlInjection en campos de texto. Salario base: mayor a 0 (valor por defecto 0; al crear debe indicar error si es 0). Tabs del modal con scroll horizontal (employeeModalTabsScroll); sección Histórico Laboral con estilos alineados a configTable (historicoProvisionBlock, historicoTableWrap).
+
 ### Backend — Ya existe, verificar y ajustar
 
 | Componente | Estado | Acción |
@@ -238,8 +261,7 @@ src/
 │           ├── EmployeesListPage.tsx        # Listado principal (abre modal de creación)
 │           ├── EmployeeDetailPage.tsx       # Detalle + edición
 │           ├── components/
-│           │   ├── EmployeeCreateModal.tsx  # Modal de creación (NO página separada)
-│           │   ├── EmployeeCreateModal.module.css  # Estilos del modal
+│           │   ├── EmployeeCreateModal.tsx  # Modal de creación (NO página separada); estilos en UsersManagementPage.module.css
 │           │   ├── EmployeesTable.tsx       # Tabla Ant Design (recibe datos, no fetcha)
 │           │   ├── EmployeeForm.tsx         # Formulario compartido (editar)
 │           │   ├── EmployeeFilters.tsx      # Barra de filtros

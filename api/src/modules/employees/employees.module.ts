@@ -4,6 +4,7 @@ import { EmployeesController } from './employees.controller.js';
 import { EmployeesService } from './employees.service.js';
 import { CatalogsController } from './catalogs.controller.js';
 import { Employee } from './entities/employee.entity.js';
+import { EmployeeAguinaldoProvision } from './entities/employee-aguinaldo-provision.entity.js';
 import { Department } from './entities/department.entity.js';
 import { Position } from './entities/position.entity.js';
 import { PayPeriod } from '../payroll/entities/pay-period.entity.js';
@@ -13,7 +14,7 @@ import { AuthModule } from '../auth/auth.module.js';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Employee, Department, Position, PayPeriod, UserCompany]),
+    TypeOrmModule.forFeature([Employee, EmployeeAguinaldoProvision, Department, Position, PayPeriod, UserCompany]),
     WorkflowsModule,
     AuthModule,
   ],

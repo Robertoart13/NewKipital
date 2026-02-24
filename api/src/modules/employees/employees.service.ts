@@ -3,11 +3,13 @@ import {
   NotFoundException,
   ConflictException,
   ForbiddenException,
+  BadRequestException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { Employee, MonedaSalarioEmpleado } from './entities/employee.entity.js';
+import { EmployeeAguinaldoProvision, EstadoProvisionAguinaldoEmpleado } from './entities/employee-aguinaldo-provision.entity.js';
 import { UserCompany } from '../access-control/entities/user-company.entity.js';
 import { CreateEmployeeDto } from './dto/create-employee.dto.js';
 import { UpdateEmployeeDto } from './dto/update-employee.dto.js';
@@ -20,6 +22,8 @@ export class EmployeesService {
   constructor(
     @InjectRepository(Employee)
     private readonly repo: Repository<Employee>,
+    @InjectRepository(EmployeeAguinaldoProvision)
+    private readonly aguinaldoProvisionRepo: Repository<EmployeeAguinaldoProvision>,
     @InjectRepository(UserCompany)
     private readonly userCompanyRepo: Repository<UserCompany>,
     private readonly creationWorkflow: EmployeeCreationWorkflow,
@@ -28,6 +32,9 @@ export class EmployeesService {
   ) {}
 
   async create(dto: CreateEmployeeDto, creatorId?: number) {
+    this.assertAcumulados(dto);
+    this.assertProvisionesAguinaldo(dto);
+
     if (creatorId != null) {
       const hasAccess = await this.userCompanyRepo.findOne({
         where: {
@@ -124,6 +131,8 @@ export class EmployeesService {
       monedaSalario: dto.monedaSalario ?? MonedaSalarioEmpleado.CRC,
       numeroCcss: dto.numeroCcss ?? null,
       cuentaBanco: dto.cuentaBanco ?? null,
+      vacacionesAcumuladas: dto.vacacionesAcumuladas ?? null,
+      cesantiaAcumulada: dto.cesantiaAcumulada ?? null,
       estado: 1,
       creadoPor: creatorId ?? null,
       modificadoPor: creatorId ?? null,
@@ -133,6 +142,7 @@ export class EmployeesService {
     const codigoFinal = `KPid-${saved.id}-${codigoBase}`;
     await this.repo.update(saved.id, { codigo: codigoFinal });
     saved = { ...saved, codigo: codigoFinal };
+    await this.saveAguinaldoProvisions(saved.id, dto, creatorId);
 
     this.eventEmitter.emit(DOMAIN_EVENTS.EMPLOYEE.CREATED, {
       eventName: DOMAIN_EVENTS.EMPLOYEE.CREATED,
@@ -145,6 +155,79 @@ export class EmployeesService {
     });
 
     return { success: true, data: { employee: saved, appsAssigned: [] } };
+  }
+
+  private assertAcumulados(dto: CreateEmployeeDto): void {
+    const acumulados: Array<{ key: 'vacacionesAcumuladas' | 'cesantiaAcumulada'; label: string }> = [
+      { key: 'vacacionesAcumuladas', label: 'Vacaciones acumuladas' },
+      { key: 'cesantiaAcumulada', label: 'Cesantia acumulada' },
+    ];
+    for (const item of acumulados) {
+      const raw = dto[item.key];
+      if (raw == null || raw === '') continue;
+      const value = Number(raw);
+      if (Number.isNaN(value) || value < 0) {
+        throw new BadRequestException(`${item.label} debe ser 0 o mayor.`);
+      }
+    }
+  }
+
+  private assertProvisionesAguinaldo(dto: CreateEmployeeDto): void {
+    if (!dto.provisionesAguinaldo?.length) return;
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    for (const [index, provision] of dto.provisionesAguinaldo.entries()) {
+      if (!provision.idEmpresa || provision.idEmpresa <= 0) {
+        throw new BadRequestException(`La empresa es requerida en la fila ${index + 1} de provisiones de aguinaldo.`);
+      }
+      if (Number(provision.montoProvisionado) < 0) {
+        throw new BadRequestException(`El monto provisionado no puede ser negativo en la fila ${index + 1}.`);
+      }
+
+      const fechaInicio = new Date(provision.fechaInicioLaboral);
+      if (Number.isNaN(fechaInicio.getTime())) {
+        throw new BadRequestException(`Fecha inicio laboral invalida en la fila ${index + 1}.`);
+      }
+      fechaInicio.setHours(0, 0, 0, 0);
+      if (fechaInicio > today) {
+        throw new BadRequestException(`La fecha inicio laboral no puede ser futura en la fila ${index + 1}.`);
+      }
+
+      if (provision.fechaFinLaboral) {
+        const fechaFin = new Date(provision.fechaFinLaboral);
+        if (Number.isNaN(fechaFin.getTime())) {
+          throw new BadRequestException(`Fecha fin laboral invalida en la fila ${index + 1}.`);
+        }
+        fechaFin.setHours(0, 0, 0, 0);
+        if (fechaFin > today) {
+          throw new BadRequestException(`La fecha fin laboral no puede ser futura en la fila ${index + 1}.`);
+        }
+        if (fechaFin < fechaInicio) {
+          throw new BadRequestException(`La fecha fin laboral no puede ser menor a la fecha inicio en la fila ${index + 1}.`);
+        }
+      }
+    }
+  }
+
+  private async saveAguinaldoProvisions(
+    employeeId: number,
+    dto: CreateEmployeeDto,
+    creatorId?: number,
+  ): Promise<void> {
+    if (!dto.provisionesAguinaldo?.length) return;
+    const records = dto.provisionesAguinaldo.map((provision) => this.aguinaldoProvisionRepo.create({
+      idEmpleado: employeeId,
+      idEmpresa: provision.idEmpresa,
+      montoProvisionado: provision.montoProvisionado,
+      fechaInicioLaboral: new Date(provision.fechaInicioLaboral),
+      fechaFinLaboral: provision.fechaFinLaboral ? new Date(provision.fechaFinLaboral) : null,
+      registroEmpresa: provision.registroEmpresa?.trim() || null,
+      estado: provision.estado ?? EstadoProvisionAguinaldoEmpleado.PENDIENTE,
+      creadoPor: creatorId ?? null,
+      modificadoPor: creatorId ?? null,
+    }));
+    await this.aguinaldoProvisionRepo.save(records);
   }
 
   async findAll(

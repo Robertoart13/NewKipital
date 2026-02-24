@@ -2,7 +2,7 @@
 
 **Proyecto:** KPITAL 360 — ERP Multiempresa  
 **Autor:** Roberto — Arquitecto Funcional / Senior Engineer  
-**Última actualización:** 2026-02-23 (Convenciones: formato fecha 12h, mensajes bitácora)
+**Última actualización:** 2026-02-23 (Doc 31 validación formularios, actualizaciones 29/30/05)
 
 ---
 
@@ -44,6 +44,10 @@ Si ya estás en el proyecto y necesitás referencia puntual, usá esta tabla par
 | 25 | [25-SistemaNotificacionesEnterprise.md](./25-SistemaNotificacionesEnterprise.md) | Sistema de notificaciones en tiempo real: campanita, badge, WebSocket, modelo enterprise (notificación global + estado por usuario). | 18, 24 |
 | 26 | [26-SistemaPermisosReferencia.md](./26-SistemaPermisosReferencia.md) | **Referencia técnica** del sistema de permisos: tablas, dependencias, flujo de resolución, diagnóstico y scripts. | 18, 24 |
 | 27 | [27-DiagramaFlujoEmpleadosYUsuarios.md](./27-DiagramaFlujoEmpleadosYUsuarios.md) | Flujo empleados, roles por app, vista Configuración Usuarios, jerarquía de supervisión TimeWise (Supervisor Global, Supervisor, Empleado), dropdown supervisor filtrado, cross-empresa. | 16, 19, 24 |
+| 28 | [28-PendientesAccion.md](./28-PendientesAccion.md) | Pendientes abiertos y acciones por ejecutar del proyecto. | Todos |
+| 29 | [29-EstandarFormatoMoneda.md](./29-EstandarFormatoMoneda.md) | Estándar único de formato/parseo/validación monetaria para toda la app (CRC/USD), helper compartido y reglas obligatorias. | 05, 23 |
+| 30 | [30-HistorialLaboralEmpleado.md](./30-HistorialLaboralEmpleado.md) | Lógica funcional y técnica de Historial Laboral en creación de empleado: acumulados, provisión de aguinaldo, validaciones y persistencia. | 23, 29 |
+| 31 | [31-ValidacionFormulariosFrontend.md](./31-ValidacionFormulariosFrontend.md) | Validación unificada de formularios: anti-SQL, textRules, emailRules, optionalNoSqlInjection. Trazabilidad en EmployeeCreateModal y CompaniesManagementPage. | 05, 23, 29 |
 
 ---
 
