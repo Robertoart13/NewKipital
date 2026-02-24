@@ -942,7 +942,7 @@ export function CompaniesManagementPage() {
             </div>
             <Flex align="center" gap={12} className={styles.companyModalHeaderRight}>
               <div className={styles.companyModalEstadoPaper}>
-                <span style={{ fontWeight: 500, fontSize: 14, color: editingCompany?.estado === 0 ? '#64748b' : '#0369a1' }}>
+                <span style={{ fontWeight: 500, fontSize: 14, color: editingCompany?.estado === 0 ? '#64748b' : '#20638d' }}>
                   {editingCompany ? (editingCompany.estado === 1 ? 'Activo' : 'Inactivo') : 'Activo'}
                 </span>
                 <Switch

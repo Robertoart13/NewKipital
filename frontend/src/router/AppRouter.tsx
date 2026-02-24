@@ -34,8 +34,26 @@ export function AppRouter() {
       <Route element={<PrivateGuard />}>
         <Route element={<PrivateLayout><DashboardPage /></PrivateLayout>} path="/dashboard" />
         <Route element={<PrivateLayout><ProfilePage /></PrivateLayout>} path="/profile" />
-        <Route element={<PrivateLayout><EmployeeDetailPage /></PrivateLayout>} path="/employees/:id" />
-        <Route element={<PrivateLayout><EmployeesListPage /></PrivateLayout>} path="/employees" />
+        <Route
+          element={(
+            <PrivateLayout>
+              <PermissionGuard requiredPermission="employee:view">
+                <EmployeeDetailPage />
+              </PermissionGuard>
+            </PrivateLayout>
+          )}
+          path="/employees/:id"
+        />
+        <Route
+          element={(
+            <PrivateLayout>
+              <PermissionGuard requiredPermission="employee:view">
+                <EmployeesListPage />
+              </PermissionGuard>
+            </PrivateLayout>
+          )}
+          path="/employees"
+        />
         <Route
           element={(
             <PrivateLayout>

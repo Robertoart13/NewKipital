@@ -140,7 +140,7 @@ Controlador: `api/src/modules/companies/companies.controller.ts`
 
 Endpoints protegidos:
 - `POST /api/companies` → `company:create`
-- `GET /api/companies` → `company:view`
+- `GET /api/companies` → `company:view` (query: `?inactiveOnly=true` para listar solo inactivas; sin param lista solo activas)
 - `GET /api/companies/:id` → `company:view`
 - `PUT /api/companies/:id` → `company:edit`
 - `PATCH /api/companies/:id/inactivate` → `company:inactivate`

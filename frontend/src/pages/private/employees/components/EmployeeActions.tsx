@@ -6,18 +6,26 @@ import type { EmployeeDetail } from '../../../../api/employees';
 interface EmployeeActionsProps {
   employee: EmployeeDetail;
   canEdit: boolean;
+  canInactivate: boolean;
+  canReactivate: boolean;
   onInactivate: (id: number, motivo?: string) => void;
+  onReactivate: (id: number) => void;
   onLiquidate: (id: number, fechaSalida: string, motivo?: string) => void;
   inactivatePending?: boolean;
+  reactivatePending?: boolean;
   liquidatePending?: boolean;
 }
 
 export function EmployeeActions({
   employee,
   canEdit,
+  canInactivate,
+  canReactivate,
   onInactivate,
+  onReactivate,
   onLiquidate,
   inactivatePending = false,
+  reactivatePending = false,
   liquidatePending = false,
 }: EmployeeActionsProps) {
   const [inactivateModal, setInactivateModal] = useState(false);
@@ -48,12 +56,12 @@ export function EmployeeActions({
     });
   };
 
-  if (!canEdit) return null;
+  if (!canEdit && !canInactivate && !canReactivate) return null;
 
   return (
     <>
       <div style={{ display: 'flex', gap: 8 }}>
-        {isActive && (
+        {isActive && canInactivate && (
           <>
             <Button danger onClick={() => setInactivateModal(true)} loading={inactivatePending}>
               Inactivar
@@ -62,6 +70,11 @@ export function EmployeeActions({
               Liquidar
             </Button>
           </>
+        )}
+        {!isActive && canReactivate && (
+          <Button type="primary" onClick={() => onReactivate(employee.id)} loading={reactivatePending}>
+            Reactivar
+          </Button>
         )}
       </div>
 

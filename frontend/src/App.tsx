@@ -28,7 +28,7 @@ function App() {
         }}
       >
         <SafetyCertificateOutlined
-          style={{ fontSize: 40, color: '#1677ff', opacity: 0.85 }}
+          style={{ fontSize: 40, color: '#20638d', opacity: 0.85 }}
           aria-hidden
         />
         <Spin size="large" />

@@ -5,11 +5,11 @@ import type { ThemeConfig } from 'antd';
  * Paleta profesional para ERP empresarial.
  */
 export const KPITAL_THEME: ThemeConfig['token'] = {
-  colorPrimary: '#0d6efd',
+  colorPrimary: '#20638d',
   colorSuccess: '#198754',
   colorWarning: '#ffc107',
   colorError: '#dc3545',
-  colorInfo: '#0dcaf0',
+  colorInfo: '#20638d',
   borderRadius: 6,
   fontSize: 14,
   fontFamily: '"Public Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',

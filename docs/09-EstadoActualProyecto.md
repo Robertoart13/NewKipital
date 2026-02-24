@@ -1,7 +1,7 @@
 # KPITAL 360 — Estado Actual del Proyecto
 
 **Documento:** 09  
-**Última actualización:** 2026-02-23  
+**Última actualización:** 2026-02-24  
 **Propósito:** Registro vivo del avance. Se actualiza cada vez que se completa una directiva o se hace un cambio significativo.
 
 ---
@@ -318,3 +318,5 @@ Detalle completo en [08-EstructuraMenus.md](./08-EstructuraMenus.md).
 | 2026-02-23 | Hardening de sesión/refresh: frontend con timeout en `httpInterceptor` y `tryRefreshSession` para evitar bloqueo en "Verificando sesión..."; backend `AuthService.refreshSession` maneja errores transientes de DB (`ECONNRESET`, etc.) y responde `401` controlado para forzar relogin seguro. |
 | 2026-02-23 | Corrección flujo Microsoft popup: se evita race condition en callback OAuth (`/auth/login?code=...`) que abría `/dashboard` dentro de la ventana emergente. Se agregó detección de callback para saltar `session restore` y redirección de `PublicGuard` durante el handshake `postMessage + close`. |
 | 2026-02-23 | **Convenciones UI y bitácora:** Formato de fecha 12h (AM/PM) documentado en Doc 05 — `formatDateTime12h()` en `src/lib/formatDate.ts`. Estándar de mensajes de bitácora documentado en Doc 11 — mensajes autosuficientes con antes/después, lenguaje humano, payloadBefore/After. |
+| 2026-02-24 | **Empresas — UX y permisos:** Switch unificado para inactivar/reactivar (sin botones separados). Permisos agregados al entrar a página Empresas. Validación de permisos en formulario (crear, editar, inactivar, reactivar). API `GET /companies?inactiveOnly=true` para traer solo inactivas (evitar carga completa). Tabla refresca tras mutaciones. Modales de confirmación con estilo corporativo. Filtros colapsados por defecto. |
+| 2026-02-24 | **Menú y paleta:** Opciones de menú requieren permiso; se ocultan si no existe en BD o no está asignado al usuario (Doc 08, 26). Color corporativo `#20638d` reemplaza celeste en tema, menú, dropdown hover (Doc 05). |

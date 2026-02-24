@@ -69,25 +69,25 @@
 
 .menu :global(.ant-menu-item-selected),
 .menu :global(.ant-menu-submenu-selected) :global(.ant-menu-submenu-title) {
-  color: #0d6efd;
-  border-bottom: 2px solid #0d6efd;
+  color: #20638d;
+  border-bottom: 2px solid #20638d;
 }
 
-/* Dropdown popup — íconos celeste, hover celeste claro */
+/* Dropdown popup — íconos y hover con color corporativo */
 :global(.ant-menu-submenu-popup) :global(.ant-menu-item) :global(.anticon),
 :global(.ant-menu-submenu-popup) :global(.ant-menu-submenu-title) :global(.anticon) {
-  color: #0d6efd;
+  color: #20638d;
 }
 
 :global(.ant-menu-submenu-popup) :global(.ant-menu-item):hover,
 :global(.ant-menu-submenu-popup) :global(.ant-menu-submenu-title):hover {
-  background: #e6f4ff !important;
+  background: rgba(32, 99, 141, 0.08) !important;
   color: #20638d !important;
 }
 
 :global(.ant-menu-submenu-popup) :global(.ant-menu-item-selected) {
-  background: #e6f4ff !important;
-  color: #0d6efd !important;
+  background: rgba(32, 99, 141, 0.08) !important;
+  color: #20638d !important;
 }
 
 /* Grupos dentro de popups — título estilizado como label, items consistentes */

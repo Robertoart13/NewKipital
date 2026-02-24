@@ -106,11 +106,13 @@ Se utilizan colores **poco saturados, tonos slate y grises neutros**. Referencia
 
 > **Última actualización:** Ajustes aplicados — verde Activo más visible (`#b8d9c4`), danger más identificable (borde `#c99a9a`). Usar exclusivamente estos valores.
 
-### Acentos principales (slate / azul-gris)
+### Acentos principales (slate / azul corporativo)
 
 | Uso | Color | Hex |
 |-----|-------|-----|
-| Acciones, links, focus, paginación activa | Slate principal | `#5a6c7d` |
+| Menú activo, subrayado seleccionado, links principales, tema Ant Design | Azul corporativo | `#20638d` |
+| Hover en opciones del menú (dropdown) | Fondo suave | `rgba(32, 99, 141, 0.08)` |
+| Acciones, links secundarios, focus | Slate principal | `#5a6c7d` |
 | Hover de botones y links | Slate oscuro | `#4a5c6d` |
 | Avatar de usuario en Drawer | Gris-azul | `#6b7c8c` |
 
@@ -362,7 +364,7 @@ Tras **cualquier acción** que modifique datos en listados (crear, editar, inact
 ### Estructura obligatoria del listado
 
 1. **Encabezado** — Título de sección (ej. "Registros de Empresas"), icono de filtro, selector "entries per page", toggle "Mostrar inactivas".
-2. **Sección Filtros** — Dentro de `Collapse` con header "Filtros".
+2. **Sección Filtros** — Dentro de `Collapse` con header "Filtros". **Colapsada por defecto** (`filtersExpanded` inicial en `false`); el usuario la expande al hacer clic.
 3. **Búsqueda global** — Input "Search" + botones "Collapse All", "Show All", "Limpiar Todo".
 4. **Panes de filtro** — Una tarjeta por campo (`paneCard`), con input, botón buscar, limpiar, expandir/colapsar.
 5. **Lista de opciones** — Al expandir, `paneOptionsBox` con `Checkbox.Group` y `Badge` de conteo.

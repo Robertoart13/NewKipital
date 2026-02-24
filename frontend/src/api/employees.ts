@@ -37,12 +37,14 @@ export interface PayPeriodRef {
 
 export interface EmployeeListItem {
   id: number;
+  idEmpresa: number;
   codigo: string;
   cedula: string;
   nombre: string;
   apellido1: string;
   apellido2?: string | null;
   email: string;
+  telefono?: string | null;
   estado: number;
   departamento?: DepartmentRef | null;
   puesto?: PositionRef | null;
@@ -240,6 +242,20 @@ export async function liquidateEmployee(
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
     throw new Error(err.message || 'Error al liquidar empleado');
+  }
+  return res.json();
+}
+
+/**
+ * PATCH /employees/:id/reactivate - Reactivar empleado.
+ */
+export async function reactivateEmployee(id: number): Promise<EmployeeDetail> {
+  const res = await httpFetch(`/employees/${id}/reactivate`, {
+    method: 'PATCH',
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message || 'Error al reactivar empleado');
   }
   return res.json();
 }

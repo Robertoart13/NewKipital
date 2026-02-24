@@ -40,6 +40,18 @@ export const canEditEmployee = (state: RootState) =>
 export const canViewEmployee = (state: RootState) =>
   selectPermissions(state).includes('employee:view');
 
+export const canInactivateEmployee = (state: RootState) =>
+  selectPermissions(state).includes('employee:inactivate');
+
+export const canReactivateEmployee = (state: RootState) =>
+  selectPermissions(state).includes('employee:reactivate');
+
+export const canAssignKpitalRoleOnEmployeeCreate = (state: RootState) =>
+  selectPermissions(state).includes('employee:assign-kpital-role');
+
+export const canAssignTimewiseRoleOnEmployeeCreate = (state: RootState) =>
+  selectPermissions(state).includes('employee:assign-timewise-role');
+
 export const canCreatePersonalAction = (state: RootState) =>
   selectPermissions(state).includes('personal-action:create');
 

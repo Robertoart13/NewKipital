@@ -85,6 +85,16 @@ export class EmployeesService {
       }
     }
 
+    // Validar permiso para asignar rol TimeWise si aplica
+    if (dto.crearAccesoTimewise && dto.idRolTimewise && creatorId != null) {
+      const resolved = await this.authService.resolvePermissions(creatorId, dto.idEmpresa, 'timewise');
+      if (!resolved.permissions.includes('employee:assign-timewise-role')) {
+        throw new ForbiddenException(
+          'No tiene permiso para asignar roles de TimeWise. Requiere employee:assign-timewise-role.',
+        );
+      }
+    }
+
     if (dto.crearAccesoTimewise || dto.crearAccesoKpital) {
       return this.creationWorkflow.execute(dto, creatorId);
     }
@@ -269,6 +279,13 @@ export class EmployeesService {
   async inactivate(id: number, modifierId: number): Promise<Employee> {
     const emp = await this.findOne(id, modifierId);
     emp.estado = 0;
+    emp.modificadoPor = modifierId;
+    return this.repo.save(emp);
+  }
+
+  async reactivate(id: number, modifierId: number): Promise<Employee> {
+    const emp = await this.findOne(id, modifierId);
+    emp.estado = 1;
     emp.modificadoPor = modifierId;
     return this.repo.save(emp);
   }

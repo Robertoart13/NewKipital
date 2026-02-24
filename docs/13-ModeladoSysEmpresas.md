@@ -126,11 +126,18 @@ Compatibilidad:
 Pantalla: `frontend/src/pages/private/configuration/CompaniesManagementPage.tsx`
 
 Capacidades implementadas:
-- Listar empresas (activas y opcionalmente inactivas).
+- Listar empresas (activas o inactivas; no ambas a la vez para optimizar carga).
 - Buscar por nombre, cedula o prefijo.
 - Crear empresa.
 - Editar empresa.
-- Inactivar/reactivar empresa con confirmacion.
+- Inactivar/reactivar empresa mediante un **Switch unificado** en el header del modal (no botones separados).
+
+Reglas de carga y filtrado:
+- **Toggle "Mostrar inactivas"**: Si OFF, el API trae solo activas (`GET /companies`). Si ON, trae solo inactivas (`GET /companies?inactiveOnly=true`). Nunca carga ambas a la vez.
+- **Permisos**: Al entrar a la pagina Empresas, se cargan permisos **agregados** (todas las empresas) para habilitar Inactivar/Reactivar aunque el usuario tenga empresa distinta seleccionada.
+
+Validacion de permisos en formulario:
+- Crear, editar, inactivar y reactivar validan permiso antes de ejecutar. Botones y Switch deshabilitados si falta permiso.
 
 Regla de actualizacion de tabla (obligatorio):
 - Tras **cualquier accion** que modifique datos (crear, editar, inactivar, reactivar), la tabla debe **refrescar** para mostrar el listado actualizado.

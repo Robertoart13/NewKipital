@@ -4,9 +4,18 @@ import { Link, useParams } from 'react-router-dom';
 import { EditOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import { useAppSelector } from '../../../store/hooks';
-import { canEditEmployee } from '../../../store/selectors/permissions.selectors';
+import {
+  canEditEmployee,
+  canInactivateEmployee,
+  canReactivateEmployee,
+} from '../../../store/selectors/permissions.selectors';
 import { useEmployee } from '../../../queries/employees/useEmployee';
-import { useUpdateEmployee, useInactivateEmployee, useLiquidateEmployee } from '../../../queries/employees';
+import {
+  useUpdateEmployee,
+  useInactivateEmployee,
+  useLiquidateEmployee,
+  useReactivateEmployee,
+} from '../../../queries/employees';
 import { useDepartments } from '../../../queries/catalogs/useDepartments';
 import { usePositions } from '../../../queries/catalogs/usePositions';
 import { usePayPeriods } from '../../../queries/catalogs/usePayPeriods';
@@ -21,11 +30,14 @@ export function EmployeeDetailPage() {
   const [editing, setEditing] = useState(false);
   const companyId = useAppSelector((s) => s.activeCompany.company?.id ?? null);
   const canEdit = useAppSelector(canEditEmployee);
+  const canInactivate = useAppSelector(canInactivateEmployee);
+  const canReactivate = useAppSelector(canReactivateEmployee);
 
   const { data: employee, isLoading } = useEmployee(id ? parseInt(id, 10) : null);
   const updateMutation = useUpdateEmployee();
   const inactivateMutation = useInactivateEmployee();
   const liquidateMutation = useLiquidateEmployee();
+  const reactivateMutation = useReactivateEmployee();
 
   const { data: departments = [] } = useDepartments();
   const { data: positions = [] } = usePositions();
@@ -130,11 +142,15 @@ export function EmployeeDetailPage() {
               <EmployeeActions
                 employee={employee}
                 canEdit={canEdit}
+                canInactivate={canInactivate}
+                canReactivate={canReactivate}
                 onInactivate={(id, motivo) => inactivateMutation.mutate({ id, motivo })}
+                onReactivate={(id) => reactivateMutation.mutate({ id })}
                 onLiquidate={(id, fecha, motivo) =>
                   liquidateMutation.mutate({ id, fechaSalida: fecha, motivo })
                 }
                 inactivatePending={inactivateMutation.isPending}
+                reactivatePending={reactivateMutation.isPending}
                 liquidatePending={liquidateMutation.isPending}
               />
             )}

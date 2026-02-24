@@ -12,6 +12,11 @@ import {
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import { useAppSelector } from '../../../../store/hooks';
+import {
+  canCreateEmployee,
+  canAssignKpitalRoleOnEmployeeCreate,
+  canAssignTimewiseRoleOnEmployeeCreate,
+} from '../../../../store/selectors/permissions.selectors';
 import { useCreateEmployee } from '../../../../queries/employees/useCreateEmployee';
 import { useDepartments } from '../../../../queries/catalogs/useDepartments';
 import { usePositions } from '../../../../queries/catalogs/usePositions';
@@ -42,6 +47,9 @@ export function EmployeeCreateModal({ open, onClose, onSuccess }: EmployeeCreate
   const [form] = Form.useForm();
   const companies = useAppSelector((s) => s.auth.companies);
   const activeCompany = useAppSelector((s) => s.activeCompany.company);
+  const canCreate = useAppSelector(canCreateEmployee);
+  const canAssignKpitalRole = useAppSelector(canAssignKpitalRoleOnEmployeeCreate);
+  const canAssignTimewiseRole = useAppSelector(canAssignTimewiseRoleOnEmployeeCreate);
 
   const createMutation = useCreateEmployee();
   const { data: departments = [] } = useDepartments();
@@ -64,6 +72,7 @@ export function EmployeeCreateModal({ open, onClose, onSuccess }: EmployeeCreate
   }, [open, form, companies, activeCompany?.id]);
 
   const handleSubmit = async () => {
+    if (!canCreate) return;
     const values = await form.validateFields().catch(() => null);
     const idEmpresa =
       companies.length === 1 ? companies[0].id : (values?.idEmpresa as number | undefined);
@@ -97,6 +106,8 @@ export function EmployeeCreateModal({ open, onClose, onSuccess }: EmployeeCreate
       cuentaBanco: values.cuentaBanco || undefined,
       crearAccesoTimewise: !estadoInactivo && !!values.crearAccesoTimewise,
       crearAccesoKpital: !estadoInactivo && !!values.crearAccesoKpital,
+      idRolTimewise: canAssignTimewiseRole ? values.idRolTimewise || undefined : undefined,
+      idRolKpital: canAssignKpitalRole ? values.idRolKpital || undefined : undefined,
       passwordInicial: values.passwordInicial || undefined,
     };
 
@@ -314,11 +325,21 @@ export function EmployeeCreateModal({ open, onClose, onSuccess }: EmployeeCreate
           )}
           <div className={styles.formCompact}>
             <Form.Item name="crearAccesoTimewise" label="Crear acceso a TimeWise" valuePropName="checked">
-              <Switch disabled={estadoInactivo} />
+              <Switch disabled={estadoInactivo || !canAssignTimewiseRole} />
             </Form.Item>
+            {!canAssignTimewiseRole && (
+              <p style={{ color: '#64748b', fontSize: '12px', marginTop: -8, marginBottom: 8 }}>
+                Sin permiso para asignar roles TimeWise al crear empleado.
+              </p>
+            )}
             <Form.Item name="crearAccesoKpital" label="Crear acceso a KPITAL" valuePropName="checked">
-              <Switch disabled={estadoInactivo} />
+              <Switch disabled={estadoInactivo || !canAssignKpitalRole} />
             </Form.Item>
+            {!canAssignKpitalRole && (
+              <p style={{ color: '#64748b', fontSize: '12px', marginTop: -8, marginBottom: 8 }}>
+                Sin permiso para asignar roles KPITAL al crear empleado.
+              </p>
+            )}
             {crearAcceso && !estadoInactivo && (
               <Form.Item
                 name="passwordInicial"
@@ -410,6 +431,7 @@ export function EmployeeCreateModal({ open, onClose, onSuccess }: EmployeeCreate
             htmlType="submit"
             icon={<UserAddOutlined />}
             loading={createMutation.isPending}
+            disabled={!canCreate}
             className={styles.btnCreate}
           >
             Crear Empleado

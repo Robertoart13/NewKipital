@@ -86,10 +86,16 @@ export class EmployeesController {
     return this.service.update(id, dto, user.userId);
   }
 
-  @RequirePermissions('employee:edit')
+  @RequirePermissions('employee:inactivate')
   @Patch(':id/inactivate')
   inactivate(@Param('id', ParseIntPipe) id: number, @CurrentUser() user: { userId: number }) {
     return this.service.inactivate(id, user.userId);
+  }
+
+  @RequirePermissions('employee:reactivate')
+  @Patch(':id/reactivate')
+  reactivate(@Param('id', ParseIntPipe) id: number, @CurrentUser() user: { userId: number }) {
+    return this.service.reactivate(id, user.userId);
   }
 
   @RequirePermissions('employee:edit')
