@@ -182,6 +182,12 @@ No se aplican de forma instantánea sin recargar; la sesión actual conserva los
 | `config:users:assign-roles` | Asignar roles globales y por contexto | `PUT /config/users/:id/global-roles`, PUT roles, PUT role-exclusions |
 | `config:users:deny-permissions` | Denegar permisos globalmente (excepciones) | `PUT /config/users/:id/global-permission-denials` |
 
+Permisos granulares adicionales (configuracion de empresas):
+
+| Permiso | Accion | Endpoints |
+|---------|--------|-----------|
+| `config:companies:audit` | Ver bitacora de empresa en modal Editar Empresa | `GET /companies/:id/audit-trail` |
+
 Si un usuario tiene `config:users` pero no `config:users:assign-companies`, puede abrir el drawer y ver empresas, pero no modificarlas. El frontend muestra mensaje compacto con el permiso requerido y deshabilita los controles.
 
 **Visibilidad de pestañas:** Las pestañas Roles, Usuarios y Permisos en las páginas de Configuración se muestran solo si el usuario tiene el permiso correspondiente (`config:roles`, `config:users`, `config:permissions`).
@@ -201,6 +207,8 @@ Si el rol MASTER no tiene estos permisos en `sys_rol_permiso`, el menú de Confi
 | `PUT /api/config/users/:id/global-roles` | Reemplazo total de roles globales |
 | `PUT /api/config/users/:id/global-permission-denials` | Reemplazo total de denegaciones globales |
 | `PUT /api/config/roles/:id/permissions` | Reemplazo total de permisos del rol |
+| `GET /api/config/users/:id/audit-trail` | Bitacora de cambios de configuracion por usuario |
+| `GET /api/companies/:id/audit-trail` | Bitacora de cambios por empresa (incluye diff de campos cuando aplica) |
 
 ---
 

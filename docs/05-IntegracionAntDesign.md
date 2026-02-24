@@ -4,7 +4,7 @@
 **Para:** Ingeniero Frontend  
 **De:** Roberto — Arquitecto Funcional / Senior Engineer  
 **Prerrequisito:** Haber leído [02-ScaffoldingProyecto.md](./02-ScaffoldingProyecto.md)  
-**Última actualización:** 2026-02-23 (Patrón de formularios y modales documentado, tablas y filtros)
+**Última actualización:** 2026-02-23 (Nomenclatura y convenciones unificadas)
 
 ---
 
@@ -18,6 +18,46 @@
 | [Clases CSS obligatorias](#clases-css-obligatorias-usersmanagementpagemodulecss) | Lista de clases con ubicación en el archivo |
 | [Paleta RRHH](#paleta-rrhh-valores-vigentes) | Colores corporativos (no inventar) |
 | [Referencia de implementación](#referencia-de-implementación) | Páginas y archivos a consultar |
+| [Nomenclatura](#nomenclatura-y-convenciones) | Prefijos, patrones de nombres, textos estándar |
+
+---
+
+## Nomenclatura y convenciones
+
+> **Toda la app debe seguir estas convenciones** para mantener coherencia entre páginas y módulos.
+
+### Prefijos de clases CSS
+
+| Prefijo | Uso | Ejemplos |
+|---------|-----|----------|
+| `company*` | Modales, formularios y confirmaciones de entidades (empresas, empleados, etc.) | `companyModal`, `companyFormGrid`, `companyConfirmModal` |
+| `config*` | Tablas de configuración/listados | `configTable` |
+| `pane*` | Paneles de filtro expandibles | `paneCard`, `paneOptionsBox` |
+| `tag*` | Etiquetas de estado | `tagActivo`, `tagInactivo` |
+| `btn*` | Botones (si se necesita clase propia) | `btnPrimary`, `btnSecondary` |
+| `infoBanner` + `*Type` | Banners informativos | `infoType`, `warningType`, `dangerType` |
+
+Para nuevas entidades (ej. Proveedores, Sucursales), reutilizar las mismas clases (`companyModal`, `companyFormContent`, etc.); no crear `providerModal` o similares salvo que el patrón sea realmente distinto.
+
+### Patrón de nombres de páginas
+
+- Páginas de listado/CRUD: `{Entidad}ManagementPage` (ej. `CompaniesManagementPage`, `UsersManagementPage`).
+- Modales de creación: `{Entidad}CreateModal` o integrado en la página con `openModal` / `setOpenModal`.
+
+### Textos estándar de UI
+
+| Contexto | Texto a usar |
+|----------|--------------|
+| Botón cerrar/cancelar | `Cancelar` |
+| Confirmación crear | `Confirmar creación de {entidad}`, `¿Está seguro de crear esta {entidad}?`, `Sí, crear` |
+| Confirmación actualizar | `Confirmar actualización`, `¿Desea guardar los cambios?`, `Sí, guardar` |
+| Botón crear | `Crear {Entidad}` (ej. `Crear Empresa`) |
+| Botón guardar cambios | `Guardar cambios` |
+| Estado | `Activo` / `Inactivo` |
+
+### Modales de confirmación
+
+Usar siempre `companyConfirmModal`, `companyConfirmOk`, `companyConfirmCancel` con `modal.confirm`. Ver clase en *Clases CSS obligatorias > Modales de confirmación*.
 
 ---
 
@@ -479,6 +519,7 @@ Todo mensaje informativo (Para qué sirve, Inactivar vs Bloquear, Denegar permis
 6. **Consultar** `frontend/src/pages/private/configuration/UsersManagementPage.module.css` para clases y valores hex.
 7. **Usar tabs estilo control segmentado** para Empresas, Roles, Excepciones, Acciones y para Roles, Usuarios, Permisos.
 8. **Usar banners informativos compactos** (`infoBanner` + `infoType`/`warningType`/`dangerType`) para mensajes de guía o advertencia.
+9. **Seguir la nomenclatura documentada** en *Nomenclatura y convenciones* para clases, páginas y textos.
 
 ### Qué NO hacer
 

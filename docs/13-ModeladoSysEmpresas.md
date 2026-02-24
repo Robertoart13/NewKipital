@@ -193,3 +193,20 @@ Ese es el **core identity schema**.
 3. Bitacora de empresas:
 - Crear, editar, inactivar, reactivar y commit de logo publican eventos de auditoria udit.*.
 
+## Actualizacion 2026-02-24 - Bitacora de Empresa en Edicion
+
+- Se agrego endpoint de consulta de bitacora por empresa:
+  - `GET /api/companies/:id/audit-trail?limit=N`
+  - Permiso requerido: `config:companies:audit`
+- El endpoint valida acceso por empresa asignada antes de devolver historial.
+- La respuesta incluye:
+  - quien lo hizo (`actorNombre`, `actorEmail`, `actorUserId`)
+  - cuando (`fechaCreacion`)
+  - detalle (`descripcion`)
+  - diff de campos (`cambios[]` con `campo`, `antes`, `despues`) cuando existe `payload_before/payload_after`.
+
+Regla UI:
+- La pestaña `Bitacora` aparece solo en modo edicion de empresa.
+- La pestaña `Bitacora` se muestra solo si el usuario autenticado tiene `config:companies:audit`.
+- El detalle completo de cambios se ve en hover (tooltip) para mantener tabla compacta.
+

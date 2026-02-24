@@ -206,3 +206,14 @@ Principios:
 - Si falla auditoria, no rompe la operacion de negocio.
 - Se registra actor, entidad, accion, descripcion y payload before/after en JSON.
 
+### Actualizacion 2026-02-24
+
+- Permiso nuevo de configuracion para auditoria de empresas:
+  - `config:companies:audit`
+  - Migracion: `1708533600000-AddCompanyAuditPermission.ts`
+- Endpoint nuevo:
+  - `GET /api/companies/:id/audit-trail?limit=N`
+  - Requiere `config:companies:audit` y valida acceso por empresa asignada.
+- Endpoint de bitacora de usuario ya operativo:
+  - `GET /api/config/users/:id/audit-trail?limit=N`
+
