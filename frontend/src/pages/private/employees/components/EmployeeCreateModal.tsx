@@ -25,6 +25,7 @@ import { useDepartments } from '../../../../queries/catalogs/useDepartments';
 import { usePositions } from '../../../../queries/catalogs/usePositions';
 import { usePayPeriods } from '../../../../queries/catalogs/usePayPeriods';
 import { useAllCompaniesForHistory } from '../../../../queries/companies/useAllCompaniesForHistory';
+import { useRolesByApp } from '../../../../queries/roles/useRolesByApp';
 import {
   GENERO_OPTIONS,
   ESTADO_CIVIL_OPTIONS,
@@ -72,6 +73,8 @@ export function EmployeeCreateModal({ open, onClose, onSuccess }: EmployeeCreate
   const { data: departments = [] } = useDepartments();
   const { data: positions = [] } = usePositions();
   const { data: payPeriods = [] } = usePayPeriods();
+  const { data: rolesTimewise = [] } = useRolesByApp('timewise');
+  const { data: rolesKpital = [] } = useRolesByApp('kpital');
   const { data: allCompanies = [] } = useAllCompaniesForHistory();
   const historialCompanies = allCompanies.length
     ? allCompanies
@@ -115,8 +118,19 @@ export function EmployeeCreateModal({ open, onClose, onSuccess }: EmployeeCreate
     const idEmp = companies.length === 1 ? companies[0].id : v.idEmpresa;
     if (!idEmp) return false;
     if (!estadoInactivo && crearAcceso && !v.passwordInicial?.trim()) return false;
+    if (!estadoInactivo && crearAccesoTimewise && canAssignTimewiseRole && !v.idRolTimewise) return false;
+    if (!estadoInactivo && crearAccesoKpital && canAssignKpitalRole && !v.idRolKpital) return false;
     return true;
-  }, [formValues, companies, estadoInactivo, crearAcceso]);
+  }, [
+    formValues,
+    companies,
+    estadoInactivo,
+    crearAcceso,
+    crearAccesoTimewise,
+    crearAccesoKpital,
+    canAssignTimewiseRole,
+    canAssignKpitalRole,
+  ]);
 
   useEffect(() => {
     if (!open) {
@@ -481,6 +495,15 @@ export function EmployeeCreateModal({ open, onClose, onSuccess }: EmployeeCreate
                   Sin permiso para asignar roles TimeWise.
                 </p>
               )}
+              {crearAccesoTimewise && !estadoInactivo && canAssignTimewiseRole && (
+                <Form.Item name="idRolTimewise" label="Rol en TimeWise *" rules={[{ required: true, message: 'Seleccione rol TimeWise' }]}>
+                  <Select
+                    allowClear
+                    placeholder="Seleccionar rol TimeWise"
+                    options={rolesTimewise.map((role) => ({ value: role.id, label: role.nombre }))}
+                  />
+                </Form.Item>
+              )}
             </Col>
             <Col span={12}>
               <Form.Item name="crearAccesoKpital" label="Crear acceso a KPITAL" valuePropName="checked">
@@ -490,6 +513,15 @@ export function EmployeeCreateModal({ open, onClose, onSuccess }: EmployeeCreate
                 <p style={{ color: '#64748b', fontSize: '12px', marginTop: -8, marginBottom: 0 }}>
                   Sin permiso para asignar roles KPITAL.
                 </p>
+              )}
+              {crearAccesoKpital && !estadoInactivo && canAssignKpitalRole && (
+                <Form.Item name="idRolKpital" label="Rol en KPITAL *" rules={[{ required: true, message: 'Seleccione rol KPITAL' }]}>
+                  <Select
+                    allowClear
+                    placeholder="Seleccionar rol KPITAL"
+                    options={rolesKpital.map((role) => ({ value: role.id, label: role.nombre }))}
+                  />
+                </Form.Item>
               )}
             </Col>
             {crearAcceso && !estadoInactivo && (
