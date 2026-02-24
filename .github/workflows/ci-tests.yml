@@ -70,12 +70,11 @@ jobs:
       - name: Run coverage
         run: npm run test:cov -- --runInBand
 
-      # Jest escribe en ../coverage (raíz del repo) por coverageDirectory en api/package.json
       - name: Upload backend coverage artifact
         uses: actions/upload-artifact@v4
         with:
           name: backend-coverage
-          path: coverage
+          path: api/coverage
           if-no-files-found: error
 
   frontend-tests:
