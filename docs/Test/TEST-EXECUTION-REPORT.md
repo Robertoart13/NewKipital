@@ -1,4 +1,4 @@
-﻿# Test Execution Report - KPITAL 360
+# Test Execution Report - KPITAL 360
 
 Documento de control por fases de ejecucion de pruebas.
 
@@ -39,30 +39,6 @@ Resultados:
 
 Estado de fase: Cerrada
 
-## Fase 4 - 2026-02-24 10:29
-Alcance: Expansion de comportamiento en backend y frontend API
-
-Comandos ejecutados:
-- `cd api && npm.cmd test -- --runInBand`
-- `cd frontend && npm.cmd test`
-
-Resultados:
-- Backend: 137/137
-- Frontend: 184/184
-- Total: 321/321
-- Fallos: 0
-
-Cambios incorporados en Fase 4:
-- Backend nuevos specs:
-  - `api/src/modules/ops/ops.service.spec.ts`
-  - `api/src/modules/notifications/notifications.service.spec.ts`
-  - `api/src/modules/integration/domain-events.service.spec.ts`
-- Frontend nuevos tests:
-  - `frontend/src/api/companies.test.ts`
-  - `frontend/src/api/payroll-personal-actions.test.ts`
-
-Estado de fase: Cerrada
-
 ## Fase 3 - 2026-02-24 10:22
 Alcance: Expansion P0 de cobertura + smoke transversal
 
@@ -89,6 +65,30 @@ Cambios incorporados en Fase 3:
 
 Estado de fase: Cerrada
 
+## Fase 4 - 2026-02-24 10:29
+Alcance: Expansion de comportamiento en backend y frontend API
+
+Comandos ejecutados:
+- `cd api && npm.cmd test -- --runInBand`
+- `cd frontend && npm.cmd test`
+
+Resultados:
+- Backend: 137/137
+- Frontend: 184/184
+- Total: 321/321
+- Fallos: 0
+
+Cambios incorporados en Fase 4:
+- Backend nuevos specs:
+  - `api/src/modules/ops/ops.service.spec.ts`
+  - `api/src/modules/notifications/notifications.service.spec.ts`
+  - `api/src/modules/integration/domain-events.service.spec.ts`
+- Frontend nuevos tests:
+  - `frontend/src/api/companies.test.ts`
+  - `frontend/src/api/payroll-personal-actions.test.ts`
+
+Estado de fase: Cerrada
+
 ## Tabla comparativa de fases
 | Fase | Backend | Frontend | Total | Fallos |
 |---|---:|---:|---:|---:|
@@ -100,3 +100,4 @@ Estado de fase: Cerrada
 ## Lectura operativa
 - Si se requiere validacion integral rapida, ejecutar los comandos de Fase 4.
 - Si se requiere auditoria historica, revisar evolucion por fases en este archivo.
+- Analisis completo del proyecto: `docs/Test/ANALISIS-ESTADO-PROYECTO-FASE4.md`

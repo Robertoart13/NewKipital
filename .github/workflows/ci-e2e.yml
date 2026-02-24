@@ -1,0 +1,94 @@
+# CI - E2E (segundo workflow: MySQL + migraciones + seed)
+#
+# Los E2E no van en ci-tests.yml porque dependen de BD/seed y pueden romper el PR
+# si no se aprovisiona entorno. Este workflow corre E2E con MySQL en servicio.
+#
+# Se dispara en push a main/develop, por etiqueta o manual (no en todos los PR para no alargar el ciclo).
+name: CI - E2E
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+  workflow_dispatch:
+
+concurrency:
+  group: ci-e2e-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  backend-e2e:
+    name: Backend E2E (Jest + MySQL)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: api
+
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: kpital360
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h localhost -u root -proot"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+
+    env:
+      DB_HOST: 127.0.0.1
+      DB_PORT: 3306
+      DB_USERNAME: root
+      DB_PASSWORD: root
+      DB_DATABASE: kpital360
+      NODE_ENV: test
+      JWT_SECRET: ci-e2e-jwt-secret-min-32-chars-long
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: api/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build
+        run: npm run build
+
+      - name: Wait for MySQL
+        run: |
+          n=0
+          until node -e "
+            require('mysql2/promise').createConnection({
+              host: process.env.DB_HOST,
+              port: parseInt(process.env.DB_PORT, 10),
+              user: process.env.DB_USERNAME,
+              password: process.env.DB_PASSWORD,
+              database: process.env.DB_DATABASE
+            }).then(c => c.end()).then(() => process.exit(0)).catch(() => process.exit(1));
+          "; do
+            n=$((n+1))
+            if [ "$n" -ge 30 ]; then echo "MySQL did not become ready in time."; exit 1; fi
+            echo "Waiting for MySQL ($n/30)..."
+            sleep 2
+          done
+          echo "MySQL is ready."
+
+      - name: Run migrations
+        run: npm run migration:run
+
+      - name: Seed (opcional)
+        run: node scripts/seed-empresa-y-usuario-demo.js || true
+
+      - name: Run E2E tests
+        run: npm run test:e2e

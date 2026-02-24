@@ -40,7 +40,7 @@ KPITAL 360 es un ERP multiempresa enfocado en gestión de RRHH, planillas y acci
 
 ---
 
-## Inventario de Archivos — Frontend (44 archivos)
+## Inventario de Archivos — Frontend (~111 archivos TS/TSX)
 
 ### Store (Redux Toolkit) — 10 archivos
 
@@ -131,7 +131,19 @@ KPITAL 360 es un ERP multiempresa enfocado en gestión de RRHH, planillas y acci
 
 ---
 
-## Inventario de Archivos — API (~60 archivos)
+## Inventario de Testing (vigente 2026-02-24)
+
+| Capa | Specs/Tests | Pruebas | Estado |
+|------|-------------|---------|--------|
+| Backend (Jest) | 15 archivos .spec.ts + 4 E2E | 137/137 | Pasando |
+| Frontend (Vitest) | 6 archivos .test.ts | 184/184 | Pasando |
+| **Total** | 21 archivos | **321/321** | 100% |
+
+Cobertura: auth, employees, companies, workflows, access-control (apps, roles, permissions), payroll, personal-actions, notifications, ops, integration (domain-events), smoke tests. Ver `docs/Test/GUIA-TESTING.md` y `docs/Test/TEST-EXECUTION-REPORT.md`.
+
+---
+
+## Inventario de Archivos — API (~176 archivos TS)
 
 ### Raíz y Configuración
 
@@ -280,10 +292,10 @@ Detalle completo en [08-EstructuraMenus.md](./08-EstructuraMenus.md).
 | ~~Autenticación real (JWT)~~ | ~~Login real, JWT, cookie httpOnly, /me, /switch-company~~ | ✅ Completado |
 | ~~Guards reales~~ | ~~JwtAuthGuard, PermissionsGuard, @RequirePermissions~~ | ✅ Completado |
 | ~~Conexión frontend → backend~~ | ~~Login real, session restore, permisos dinámicos~~ | ✅ Completado |
-| **Rutas/Páginas** | Dashboard, Empleados, Planillas, etc. — ninguna construida en frontend | Media |
+| ~~Rutas/Páginas~~ | Páginas Empleados, Empresas, Usuarios construidas. Dashboard, Planillas en avance. | ✅ Parcial |
 | ~~Queries reales~~ | ~~Hooks TanStack placeholder~~ | ✅ Conectados: employees, companies, payrolls, personal-actions |
 | **Eventos de dominio** | emit() en EmployeesService y workflows. @OnEvent en IdentitySyncWorkflow. Faltan listeners en otros módulos. | En progreso |
-| **Módulos de negocio** | Employees: CRUD + workflow completo. Payroll, Personal Actions: solo health checks | Depende de Auth real |
+| ~~Módulos de negocio~~ | ~~Payroll, Personal Actions: solo health checks~~ | ✅ Payroll y Personal Actions con lógica y specs |
 
 ---
 
@@ -320,3 +332,4 @@ Detalle completo en [08-EstructuraMenus.md](./08-EstructuraMenus.md).
 | 2026-02-23 | **Convenciones UI y bitácora:** Formato de fecha 12h (AM/PM) documentado en Doc 05 — `formatDateTime12h()` en `src/lib/formatDate.ts`. Estándar de mensajes de bitácora documentado en Doc 11 — mensajes autosuficientes con antes/después, lenguaje humano, payloadBefore/After. |
 | 2026-02-24 | **Empresas — UX y permisos:** Switch unificado para inactivar/reactivar (sin botones separados). Permisos agregados al entrar a página Empresas. Validación de permisos en formulario (crear, editar, inactivar, reactivar). API `GET /companies?inactiveOnly=true` para traer solo inactivas (evitar carga completa). Tabla refresca tras mutaciones. Modales de confirmación con estilo corporativo. Filtros colapsados por defecto. |
 | 2026-02-24 | **Menú y paleta:** Opciones de menú requieren permiso; se ocultan si no existe en BD o no está asignado al usuario (Doc 08, 26). Color corporativo `#20638d` reemplaza celeste en tema, menú, dropdown hover (Doc 05). |
+| 2026-02-24 | **Inventario de testing:** Agregada sección Testing vigente: 321/321 pruebas (Backend 137, Frontend 184), 15 specs + 4 E2E backend, 6 test files frontend. Actualizado conteo API (~176 TS) y Frontend (~111 TS/TSX). |

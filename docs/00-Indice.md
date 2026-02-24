@@ -2,7 +2,7 @@
 
 **Proyecto:** KPITAL 360 — ERP Multiempresa  
 **Autor:** Roberto — Arquitecto Funcional / Senior Engineer  
-**Última actualización:** 2026-02-23 (Doc 31 validación formularios, actualizaciones 29/30/05)
+**Última actualización:** 2026-02-24 (Fase 4 testing 321/321, correccion numeracion 31→32, 33)
 
 ---
 
@@ -48,7 +48,8 @@ Si ya estás en el proyecto y necesitás referencia puntual, usá esta tabla par
 | 29 | [29-EstandarFormatoMoneda.md](./29-EstandarFormatoMoneda.md) | Estándar único de formato/parseo/validación monetaria para toda la app (CRC/USD), helper compartido y reglas obligatorias. | 05, 23 |
 | 30 | [30-HistorialLaboralEmpleado.md](./30-HistorialLaboralEmpleado.md) | Lógica funcional y técnica de Historial Laboral en creación de empleado: acumulados, provisión de aguinaldo, validaciones y persistencia. | 23, 29 |
 | 31 | [31-CifradoIdentidadYProvisionamiento.md](./31-CifradoIdentidadYProvisionamiento.md) | Ejecución operativa de cifrado, sincronización empleado-usuario y provisionamiento automático TimeWise con colas/workers idempotentes. | 23, 30 |
-| 31 | [31-ValidacionFormulariosFrontend.md](./31-ValidacionFormulariosFrontend.md) | Validación unificada de formularios: anti-SQL, textRules, emailRules, optionalNoSqlInjection. Trazabilidad en EmployeeCreateModal y CompaniesManagementPage. | 05, 23, 29 |
+| 32 | [31-ValidacionFormulariosFrontend.md](./31-ValidacionFormulariosFrontend.md) | Validación unificada de formularios: anti-SQL, textRules, emailRules, optionalNoSqlInjection. Trazabilidad en EmployeeCreateModal y CompaniesManagementPage. | 05, 23, 29 |
+| 33 | [32-INFORME-VALIDACION-CIFRADO-IDENTIDAD.md](./32-INFORME-VALIDACION-CIFRADO-IDENTIDAD.md) | Informe técnico de validación de cifrado e identidad (Directiva 31). Plan de validación, evidencia BD, observaciones. | 31 |
 
 ---
 
@@ -84,6 +85,16 @@ La aplicación usa **un único menú horizontal en el header** (sin sidebar/men�
 
 
 
+
+---
+
+## Bloque - Testing
+
+Documentacion de pruebas en `docs/Test/`:
+- `GUIA-TESTING.md` — Estado vigente (321/321), historial por fases
+- `TEST-EXECUTION-REPORT.md` — Reporte por fases de ejecucion
+- `MANUAL-PRUEBAS.md` — Procedimiento operativo
+- `ANALISIS-ESTADO-PROYECTO-FASE4.md` — Calificacion por dimension (10/10)
 
 ---
 
