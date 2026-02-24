@@ -143,3 +143,19 @@ providers/
 ---
 
 **Referencia técnica detallada:** [03-ArquitecturaStateManagement.md](./03-ArquitecturaStateManagement.md)
+
+---
+
+## Actualizacion Operativa (2026-02-24) - Robustez de Permisos
+
+Regla obligatoria para desarrollo futuro:
+
+1. No recargar permisos si no hubo cambio real de contexto (`app` o `company`).
+2. Si una recarga de permisos falla por error transitorio de red/API, no sobrescribir permisos actuales con `[]`.
+3. Limpiar permisos solo por eventos de seguridad explicitos: `logout`, `401` final no recuperable, o sesion no autenticada.
+4. El frontend controla visibilidad de UI, pero la autorizacion final siempre se valida en backend.
+5. El token de sesion no se guarda en Redux/localStorage/sessionStorage; permanece en cookie `httpOnly`.
+
+Riesgo que evita:
+
+- 403 falso positivo despues de restaurar sesion por condiciones de carrera entre requests concurrentes.

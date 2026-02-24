@@ -204,3 +204,18 @@ Y adicionalmente:
 ## 6) Conclusion
 
 Con esta implementacion, el nucleo de hardening solicitado quedo aplicado en codigo y documentado. El sistema pasa de arquitectura enterprise conceptual a una postura de seguridad enterprise operativa de fase 1.
+
+## 1.12 Correccion de estabilidad en restauracion de permisos (2026-02-24)
+
+1. Problema detectado:
+   - En restauracion de sesion, acciones de contexto podian disparar recargas redundantes de permisos.
+   - Si una llamada fallaba o llegaba tarde, podia sobrescribir el estado con permisos vacios y provocar 403 falso positivo.
+2. Correccion aplicada en frontend:
+   - Middleware de contexto ignora eventos sin cambio real (`app` y `company`).
+   - Fallos transitorios en recarga de permisos ya no pisan permisos vigentes.
+3. Validacion de seguridad:
+   - No se agrego persistencia sensible en navegador.
+   - JWT continua en cookie `httpOnly`.
+   - Autorizacion final permanece en backend con guards.
+4. Resultado esperado:
+   - El usuario no pierde acceso visual por condiciones de carrera cuando la sesion sigue siendo valida.

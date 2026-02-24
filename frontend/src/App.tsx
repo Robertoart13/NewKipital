@@ -1,4 +1,5 @@
 import { Spin, Flex } from 'antd';
+import { SafetyCertificateOutlined } from '@ant-design/icons';
 import { AppRouter } from './router/AppRouter';
 import { useSessionRestore } from './hooks/useSessionRestore';
 import { useAppSelector } from './store/hooks';
@@ -16,8 +17,29 @@ function App() {
 
   if (sessionLoading && !isMicrosoftPopupCallback) {
     return (
-      <Flex align="center" justify="center" style={{ minHeight: '100vh', background: '#f5f7fa' }}>
-        <Spin size="large" description="Verificando sesión..." />
+      <Flex
+        align="center"
+        justify="center"
+        vertical
+        gap={24}
+        style={{
+          minHeight: '100vh',
+          background: '#f5f7fa',
+        }}
+      >
+        <SafetyCertificateOutlined
+          style={{ fontSize: 40, color: '#1677ff', opacity: 0.85 }}
+          aria-hidden
+        />
+        <Spin size="large" />
+        <Flex vertical align="center" gap={6}>
+          <span style={{ fontSize: 15, fontWeight: 600, color: '#1f2937' }}>
+            Verificando sesión segura
+          </span>
+          <span style={{ fontSize: 13, color: '#64748b' }}>
+            Tu información está protegida.
+          </span>
+        </Flex>
       </Flex>
     );
   }

@@ -14,7 +14,9 @@ import type { RootState } from '../store';
  * - setActiveApp → limpia permisos (se recargan con nuevo contexto), invalida queries
  */
 export const companyChangeListener: Middleware = (store) => (next) => (action) => {
+  const previousState = store.getState() as RootState;
   const result = next(action);
+  const nextState = store.getState() as RootState;
 
   if (logout.match(action)) {
     store.dispatch(clearPermissions());
@@ -25,8 +27,12 @@ export const companyChangeListener: Middleware = (store) => (next) => (action) =
 
   if (setActiveCompany.match(action)) {
     const { payload: company } = action;
-    const state = store.getState() as RootState;
-    const appCode = state.activeApp.app;
+    const previousCompanyId = previousState.activeCompany.company?.id ?? null;
+    const nextCompanyId = nextState.activeCompany.company?.id ?? null;
+    if (previousCompanyId === nextCompanyId) {
+      return result;
+    }
+    const appCode = nextState.activeApp.app;
 
     if (company === null) {
       fetchPermissionsForApp(appCode)
@@ -38,11 +44,7 @@ export const companyChangeListener: Middleware = (store) => (next) => (action) =
           }));
         })
         .catch(() => {
-          store.dispatch(setPermissions({
-            permissions: [],
-            roles: [],
-            appId: appCode,
-          }));
+          // Mantener permisos actuales ante errores transitorios
         });
     } else {
       fetchPermissionsForCompany(company.id, appCode)
@@ -55,12 +57,7 @@ export const companyChangeListener: Middleware = (store) => (next) => (action) =
           }));
         })
         .catch(() => {
-          store.dispatch(setPermissions({
-            permissions: [],
-            roles: [],
-            appId: appCode,
-            companyId: company.id,
-          }));
+          // Mantener permisos actuales ante errores transitorios
         });
     }
 
@@ -68,8 +65,11 @@ export const companyChangeListener: Middleware = (store) => (next) => (action) =
   }
 
   if (setActiveApp.match(action)) {
-    const state = store.getState() as RootState;
-    const company = state.activeCompany.company;
+    if (previousState.activeApp.app === nextState.activeApp.app) {
+      return result;
+    }
+
+    const company = nextState.activeCompany.company;
     const appCode = action.payload;
 
     if (company?.id) {
@@ -83,12 +83,7 @@ export const companyChangeListener: Middleware = (store) => (next) => (action) =
           }));
         })
         .catch(() => {
-          store.dispatch(setPermissions({
-            permissions: [],
-            roles: [],
-            appId: appCode,
-            companyId: company.id,
-          }));
+          // Mantener permisos actuales ante errores transitorios
         });
     } else {
       fetchPermissionsForApp(appCode)
@@ -100,11 +95,7 @@ export const companyChangeListener: Middleware = (store) => (next) => (action) =
           }));
         })
         .catch(() => {
-          store.dispatch(setPermissions({
-            permissions: [],
-            roles: [],
-            appId: appCode,
-          }));
+          // Mantener permisos actuales ante errores transitorios
         });
     }
 
