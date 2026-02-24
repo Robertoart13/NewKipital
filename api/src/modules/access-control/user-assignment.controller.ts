@@ -2,14 +2,14 @@ import {
   Controller, Get, Post, Put, Patch, Param, Body, Query,
   ParseIntPipe,
 } from '@nestjs/common';
-import { UserAssignmentService } from './user-assignment.service.js';
-import { AssignUserAppDto } from './dto/assign-user-app.dto.js';
-import { AssignUserCompanyDto } from './dto/assign-user-company.dto.js';
-import { AssignUserRoleDto } from './dto/assign-user-role.dto.js';
-import { ReplaceUserContextRolesDto } from './dto/replace-user-context-roles.dto.js';
-import { ReplaceUserPermissionOverridesDto } from './dto/replace-user-permission-overrides.dto.js';
-import { RequirePermissions } from '../../common/decorators/require-permissions.decorator.js';
-import { CurrentUser } from '../../common/decorators/current-user.decorator.js';
+import { UserAssignmentService } from './user-assignment.service';
+import { AssignUserAppDto } from './dto/assign-user-app.dto';
+import { AssignUserCompanyDto } from './dto/assign-user-company.dto';
+import { AssignUserRoleDto } from './dto/assign-user-role.dto';
+import { ReplaceUserContextRolesDto } from './dto/replace-user-context-roles.dto';
+import { ReplaceUserPermissionOverridesDto } from './dto/replace-user-permission-overrides.dto';
+import { RequirePermissions } from '../../common/decorators/require-permissions.decorator';
+import { CurrentUser } from '../../common/decorators/current-user.decorator';
 
 @Controller('user-assignments')
 export class UserAssignmentController {

@@ -8,19 +8,19 @@
 import { InjectRepository } from '@nestjs/typeorm';
 import { DataSource, Repository } from 'typeorm';
 import { EventEmitter2 } from '@nestjs/event-emitter';
-import { Employee, MonedaSalarioEmpleado } from './entities/employee.entity.js';
+import { Employee, MonedaSalarioEmpleado } from './entities/employee.entity';
 import {
   EmployeeAguinaldoProvision,
   EstadoProvisionAguinaldoEmpleado,
-} from './entities/employee-aguinaldo-provision.entity.js';
-import { UserCompany } from '../access-control/entities/user-company.entity.js';
-import { User } from '../auth/entities/user.entity.js';
-import { CreateEmployeeDto } from './dto/create-employee.dto.js';
-import { UpdateEmployeeDto } from './dto/update-employee.dto.js';
-import { EmployeeCreationWorkflow } from '../../workflows/employees/employee-creation.workflow.js';
-import { DOMAIN_EVENTS } from '../../common/events/event-names.js';
-import { AuthService } from '../auth/auth.service.js';
-import { EmployeeSensitiveDataService } from '../../common/services/employee-sensitive-data.service.js';
+} from './entities/employee-aguinaldo-provision.entity';
+import { UserCompany } from '../access-control/entities/user-company.entity';
+import { User } from '../auth/entities/user.entity';
+import { CreateEmployeeDto } from './dto/create-employee.dto';
+import { UpdateEmployeeDto } from './dto/update-employee.dto';
+import { EmployeeCreationWorkflow } from '../../workflows/employees/employee-creation.workflow';
+import { DOMAIN_EVENTS } from '../../common/events/event-names';
+import { AuthService } from '../auth/auth.service';
+import { EmployeeSensitiveDataService } from '../../common/services/employee-sensitive-data.service';
 
 @Injectable()
 export class EmployeesService {

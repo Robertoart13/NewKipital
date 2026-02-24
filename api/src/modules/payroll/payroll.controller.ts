@@ -2,11 +2,11 @@ import {
   Controller, Get, Post, Patch, Param, Body, Query,
   ParseIntPipe, ParseBoolPipe,
 } from '@nestjs/common';
-import { PayrollService } from './payroll.service.js';
-import { CreatePayrollDto } from './dto/create-payroll.dto.js';
-import { Public } from '../../common/decorators/public.decorator.js';
-import { RequirePermissions } from '../../common/decorators/require-permissions.decorator.js';
-import { CurrentUser } from '../../common/decorators/current-user.decorator.js';
+import { PayrollService } from './payroll.service';
+import { CreatePayrollDto } from './dto/create-payroll.dto';
+import { Public } from '../../common/decorators/public.decorator';
+import { RequirePermissions } from '../../common/decorators/require-permissions.decorator';
+import { CurrentUser } from '../../common/decorators/current-user.decorator';
 
 @Controller('payroll')
 export class PayrollController {

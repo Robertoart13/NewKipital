@@ -1,7 +1,7 @@
 import { Controller, Get, Post, Patch, Param, Body, ParseIntPipe } from '@nestjs/common';
-import { AppsService } from './apps.service.js';
-import { CreateAppDto } from './dto/create-app.dto.js';
-import { RequirePermissions } from '../../common/decorators/require-permissions.decorator.js';
+import { AppsService } from './apps.service';
+import { CreateAppDto } from './dto/create-app.dto';
+import { RequirePermissions } from '../../common/decorators/require-permissions.decorator';
 
 @Controller('apps')
 export class AppsController {

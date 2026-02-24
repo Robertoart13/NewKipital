@@ -1,4 +1,4 @@
-import { DomainEvent } from '../../../common/events/domain-event.interface.js';
+import { DomainEvent } from '../../../common/events/domain-event.interface';
 
 export interface PayrollOpenedEvent extends DomainEvent<{
   payrollId: string;

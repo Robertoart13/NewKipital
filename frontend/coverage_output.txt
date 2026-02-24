@@ -1,0 +1,358 @@
+
+> frontend@0.0.0 test:coverage
+> vitest run --coverage
+
+
+[1m[46m RUN [49m[22m [36mv4.0.18 [39m[90mC:/Users/RobertoCarlosZuñigaA/Documents/ROCCA ARCHIVOS/Desarrollo/PROYECTOS DESAROLLOS/KPITAL 360/NewKipital/frontend[39m
+      [2mCoverage enabled with [22m[33mv8[39m
+
+ [32m✓[39m src/store/slices/authSlice.test.ts [2m([22m[2m27 tests[22m[2m)[22m[32m 14[2mms[22m[39m
+ [31m❯[39m src/lib/currencyFormat.test.ts [2m([22m[2m59 tests[22m[2m | [22m[31m6 failed[39m[2m)[22m[32m 41[2mms[22m[39m
+       [32m✓[39m should return $ for USD[32m 2[2mms[22m[39m
+       [32m✓[39m should return CRC for CRC[32m 0[2mms[22m[39m
+       [32m✓[39m should return CRC for undefined[32m 0[2mms[22m[39m
+       [32m✓[39m should return CRC for other currencies[32m 0[2mms[22m[39m
+       [32m✓[39m should return CRC for empty string[32m 0[2mms[22m[39m
+       [32m✓[39m should format number with CRC by default[32m 15[2mms[22m[39m
+       [32m✓[39m should format number with USD symbol[32m 0[2mms[22m[39m
+       [32m✓[39m should format number with $ symbol[32m 0[2mms[22m[39m
+       [32m✓[39m should format string number[32m 0[2mms[22m[39m
+       [32m✓[39m should format decimal numbers with 2 decimal places[32m 0[2mms[22m[39m
+       [32m✓[39m should round to 2 decimal places[32m 0[2mms[22m[39m
+       [32m✓[39m should format zero[32m 0[2mms[22m[39m
+       [32m✓[39m should format large numbers with thousand separators[32m 0[2mms[22m[39m
+       [32m✓[39m should return empty string for null[32m 0[2mms[22m[39m
+       [32m✓[39m should return empty string for undefined[32m 0[2mms[22m[39m
+       [32m✓[39m should return empty string for empty string[32m 0[2mms[22m[39m
+       [32m✓[39m should return empty string for NaN[32m 0[2mms[22m[39m
+       [32m✓[39m should handle negative numbers[32m 0[2mms[22m[39m
+       [32m✓[39m should format very small decimal numbers[32m 0[2mms[22m[39m
+       [32m✓[39m should format numbers with trailing zeros[32m 0[2mms[22m[39m
+       [32m✓[39m should handle custom currency symbol[32m 0[2mms[22m[39m
+       [32m✓[39m should parse simple number string[32m 0[2mms[22m[39m
+[31m       [31m×[31m should parse number with thousand separators[39m[32m 8[2mms[22m[39m
+[31m       [31m×[31m should parse number with multiple thousand separators[39m[32m 1[2mms[22m[39m
+       [32m✓[39m should parse number with decimal point[32m 0[2mms[22m[39m
+       [32m✓[39m should parse number with comma as decimal separator[32m 0[2mms[22m[39m
+       [32m✓[39m should parse formatted currency string with CRC[32m 0[2mms[22m[39m
+       [32m✓[39m should parse formatted currency string with $[32m 0[2mms[22m[39m
+       [32m✓[39m should remove currency symbols and spaces[32m 0[2mms[22m[39m
+       [32m✓[39m should return 0 for empty string[32m 0[2mms[22m[39m
+       [32m✓[39m should return 0 for undefined[32m 0[2mms[22m[39m
+       [32m✓[39m should return 0 for null[32m 0[2mms[22m[39m
+       [32m✓[39m should return 0 for invalid string[32m 0[2mms[22m[39m
+       [32m✓[39m should handle negative numbers[32m 0[2mms[22m[39m
+       [32m✓[39m should handle strings with only symbols[32m 0[2mms[22m[39m
+       [32m✓[39m should parse decimal numbers correctly[32m 0[2mms[22m[39m
+[31m       [31m×[31m should handle mixed separators[39m[32m 1[2mms[22m[39m
+       [32m✓[39m should parse very large numbers[32m 0[2mms[22m[39m
+       [32m✓[39m should return false for valid amounts[32m 0[2mms[22m[39m
+       [32m✓[39m should return false for MAX_MONEY_AMOUNT[32m 0[2mms[22m[39m
+       [32m✓[39m should return true for amounts over MAX_MONEY_AMOUNT[32m 0[2mms[22m[39m
+       [32m✓[39m should return false for zero[32m 0[2mms[22m[39m
+       [32m✓[39m should return false for negative numbers[32m 0[2mms[22m[39m
+       [32m✓[39m should return false for NaN[32m 0[2mms[22m[39m
+       [32m✓[39m should return false for null[32m 0[2mms[22m[39m
+       [32m✓[39m should return false for undefined[32m 0[2mms[22m[39m
+       [32m✓[39m should return false for non-numeric strings[32m 0[2mms[22m[39m
+       [32m✓[39m should handle string numbers[32m 0[2mms[22m[39m
+       [32m✓[39m should validate against the correct MAX_MONEY_AMOUNT[32m 0[2mms[22m[39m
+[31m       [31m×[31m should handle Infinity[39m[32m 2[2mms[22m[39m
+[31m       [31m×[31m should handle -Infinity[39m[32m 1[2mms[22m[39m
+       [32m✓[39m should handle very precise decimals[32m 0[2mms[22m[39m
+[31m       [31m×[31m should handle scientific notation strings[39m[32m 0[2mms[22m[39m
+       [32m✓[39m should handle whitespace[32m 0[2mms[22m[39m
+       [32m✓[39m should handle multiple decimal points[32m 0[2mms[22m[39m
+       [32m✓[39m should format and parse round-trip correctly[32m 0[2mms[22m[39m
+       [32m✓[39m should handle CRC round-trip[32m 0[2mms[22m[39m
+       [32m✓[39m should handle zero round-trip[32m 0[2mms[22m[39m
+       [32m✓[39m should validate MAX_MONEY_AMOUNT workflow[32m 0[2mms[22m[39m
+ [31m❯[39m src/lib/formValidation.test.ts [2m([22m[2m45 tests[22m[2m | [22m[31m7 failed[39m[2m)[22m[32m 37[2mms[22m[39m
+       [32m✓[39m should return false for safe strings[32m 2[2mms[22m[39m
+       [32m✓[39m should detect single quote[32m 0[2mms[22m[39m
+       [32m✓[39m should detect double quote[32m 0[2mms[22m[39m
+       [32m✓[39m should detect semicolon[32m 0[2mms[22m[39m
+       [32m✓[39m should detect SQL comment patterns[32m 0[2mms[22m[39m
+[31m       [31m×[31m should detect SQL keywords (case insensitive)[39m[32m 9[2mms[22m[39m
+[31m       [31m×[31m should detect null byte[39m[32m 1[2mms[22m[39m
+       [32m✓[39m should return false for null[32m 0[2mms[22m[39m
+       [32m✓[39m should return false for undefined[32m 0[2mms[22m[39m
+       [32m✓[39m should return false for empty string[32m 0[2mms[22m[39m
+       [32m✓[39m should return false for numbers[32m 0[2mms[22m[39m
+       [32m✓[39m should return false for objects[32m 0[2mms[22m[39m
+[31m       [31m×[31m should handle strings with SQL-like words that are safe[39m[32m 0[2mms[22m[39m
+[31m       [31m×[31m should trim whitespace before checking[39m[32m 1[2mms[22m[39m
+       [32m✓[39m should resolve for safe strings[32m 1[2mms[22m[39m
+[31m       [31m×[31m should reject strings with SQL injection attempts[39m[32m 3[2mms[22m[39m
+       [32m✓[39m should resolve for null[32m 0[2mms[22m[39m
+       [32m✓[39m should resolve for undefined[32m 0[2mms[22m[39m
+       [32m✓[39m should resolve for empty string[32m 0[2mms[22m[39m
+       [32m✓[39m should be usable as Ant Design validator[32m 0[2mms[22m[39m
+       [32m✓[39m should return rules for required field[32m 1[2mms[22m[39m
+       [32m✓[39m should return rules for optional field[32m 0[2mms[22m[39m
+       [32m✓[39m should include min length validation[32m 1[2mms[22m[39m
+       [32m✓[39m should include max length validation[32m 0[2mms[22m[39m
+       [32m✓[39m should include min and max length validation[32m 0[2mms[22m[39m
+       [32m✓[39m should always include SQL injection validator[32m 0[2mms[22m[39m
+       [32m✓[39m should reject SQL injection in text fields[32m 0[2mms[22m[39m
+       [32m✓[39m should accept empty values for optional fields during length validation[32m 0[2mms[22m[39m
+       [32m✓[39m should return rules for required email[32m 1[2mms[22m[39m
+       [32m✓[39m should return rules for optional email[32m 1[2mms[22m[39m
+       [32m✓[39m should validate correct email format[32m 2[2mms[22m[39m
+       [32m✓[39m should reject invalid email format[32m 1[2mms[22m[39m
+[31m       [31m×[31m should reject email with SQL injection[39m[32m 2[2mms[22m[39m
+       [32m✓[39m should accept empty email when optional[32m 0[2mms[22m[39m
+       [32m✓[39m should trim whitespace before validation[32m 0[2mms[22m[39m
+       [32m✓[39m should resolve for safe strings[32m 0[2mms[22m[39m
+       [32m✓[39m should reject strings with SQL injection[32m 0[2mms[22m[39m
+       [32m✓[39m should resolve for null[32m 0[2mms[22m[39m
+       [32m✓[39m should resolve for undefined[32m 0[2mms[22m[39m
+       [32m✓[39m should resolve for empty string[32m 0[2mms[22m[39m
+       [32m✓[39m should resolve for whitespace-only string[32m 0[2mms[22m[39m
+[31m       [31m×[31m should reject non-empty malicious strings[39m[32m 1[2mms[22m[39m
+       [32m✓[39m should work with Ant Design Form field validation[32m 1[2mms[22m[39m
+       [32m✓[39m should work with email field validation[32m 1[2mms[22m[39m
+       [32m✓[39m should validate complex user input scenarios[32m 1[2mms[22m[39m
+
+[31m⎯⎯⎯⎯⎯⎯[39m[1m[41m Failed Tests 13 [49m[22m[31m⎯⎯⎯⎯⎯⎯⎯[39m
+
+[41m[1m FAIL [22m[49m src/lib/currencyFormat.test.ts[2m > [22mcurrencyFormat[2m > [22mparseCurrencyInput[2m > [22mshould parse number with thousand separators
+[31m[1mAssertionError[22m: expected 1 to be 1000 // Object.is equality[39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- 1000[39m
+[31m+ 1[39m
+
+[36m [2m❯[22m src/lib/currencyFormat.test.ts:[2m106:43[22m[39m
+    [90m104| [39m
+    [90m105| [39m    [34mit[39m([32m'should parse number with thousand separators'[39m[33m,[39m () [33m=>[39m {
+    [90m106| [39m      [34mexpect[39m([34mparseCurrencyInput[39m([32m'1,000'[39m))[33m.[39m[34mtoBe[39m([34m1000[39m)[33m;[39m
+    [90m   | [39m                                          [31m^[39m
+    [90m107| [39m    })[33m;[39m
+    [90m108| [39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/13]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m src/lib/currencyFormat.test.ts[2m > [22mcurrencyFormat[2m > [22mparseCurrencyInput[2m > [22mshould parse number with multiple thousand separators
+[31m[1mAssertionError[22m: expected +0 to be 1000000 // Object.is equality[39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- 1000000[39m
+[31m+ 0[39m
+
+[36m [2m❯[22m src/lib/currencyFormat.test.ts:[2m110:47[22m[39m
+    [90m108| [39m
+    [90m109| [39m    [34mit[39m([32m'should parse number with multiple thousand separators'[39m[33m,[39m () [33m=>[39m {
+    [90m110| [39m      [34mexpect[39m([34mparseCurrencyInput[39m([32m'1,000,000'[39m))[33m.[39m[34mtoBe[39m([34m1000000[39m)[33m;[39m
+    [90m   | [39m                                              [31m^[39m
+    [90m111| [39m    })[33m;[39m
+    [90m112| [39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/13]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m src/lib/currencyFormat.test.ts[2m > [22mcurrencyFormat[2m > [22mparseCurrencyInput[2m > [22mshould handle mixed separators
+[31m[1mAssertionError[22m: expected 1.0005 to be 1000.5 // Object.is equality[39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- 1000.5[39m
+[31m+ 1.0005[39m
+
+[36m [2m❯[22m src/lib/currencyFormat.test.ts:[2m164:46[22m[39m
+    [90m162| [39m
+    [90m163| [39m    [34mit[39m([32m'should handle mixed separators'[39m[33m,[39m () [33m=>[39m {
+    [90m164| [39m      [34mexpect[39m([34mparseCurrencyInput[39m([32m'1.000,50'[39m))[33m.[39m[34mtoBe[39m([34m1000.50[39m)[33m;[39m
+    [90m   | [39m                                             [31m^[39m
+    [90m165| [39m    })[33m;[39m
+    [90m166| [39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/13]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m src/lib/currencyFormat.test.ts[2m > [22mcurrencyFormat[2m > [22mEdge Cases[2m > [22mshould handle Infinity
+[31m[1mAssertionError[22m: expected 'CRC ∞' to be 'CRC Infinity' // Object.is equality[39m
+
+Expected: [32m"CRC [7mInfinity[27m"[39m
+Received: [31m"CRC [7m∞[27m"[39m
+
+[36m [2m❯[22m src/lib/currencyFormat.test.ts:[2m224:45[22m[39m
+    [90m222| [39m  [34mdescribe[39m([32m'Edge Cases'[39m[33m,[39m () [33m=>[39m {
+    [90m223| [39m    [34mit[39m([32m'should handle Infinity'[39m[33m,[39m () [33m=>[39m {
+    [90m224| [39m      [34mexpect[39m([34mformatCurrencyInput[39m([33mInfinity[39m))[33m.[39m[34mtoBe[39m([32m'CRC Infinity'[39m)[33m;[39m
+    [90m   | [39m                                            [31m^[39m
+    [90m225| [39m      [34mexpect[39m([34mparseCurrencyInput[39m([32m'Infinity'[39m))[33m.[39m[34mtoBe[39m([34m0[39m)[33m;[39m
+    [90m226| [39m      [34mexpect[39m([34misMoneyOverMax[39m([33mInfinity[39m))[33m.[39m[34mtoBe[39m([35mtrue[39m)[33m;[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/13]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m src/lib/currencyFormat.test.ts[2m > [22mcurrencyFormat[2m > [22mEdge Cases[2m > [22mshould handle -Infinity
+[31m[1mAssertionError[22m: expected 'CRC -∞' to be 'CRC -Infinity' // Object.is equality[39m
+
+Expected: [32m"CRC -[7mInfinity[27m"[39m
+Received: [31m"CRC -[7m∞[27m"[39m
+
+[36m [2m❯[22m src/lib/currencyFormat.test.ts:[2m230:46[22m[39m
+    [90m228| [39m
+    [90m229| [39m    [34mit[39m([32m'should handle -Infinity'[39m[33m,[39m () [33m=>[39m {
+    [90m230| [39m      [34mexpect[39m([34mformatCurrencyInput[39m([33m-[39m[33mInfinity[39m))[33m.[39m[34mtoBe[39m([32m'CRC -Infinity'[39m)[33m;[39m
+    [90m   | [39m                                             [31m^[39m
+    [90m231| [39m      [34mexpect[39m([34misMoneyOverMax[39m([33m-[39m[33mInfinity[39m))[33m.[39m[34mtoBe[39m([35mfalse[39m)[33m;[39m
+    [90m232| [39m    })[33m;[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[5/13]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m src/lib/currencyFormat.test.ts[2m > [22mcurrencyFormat[2m > [22mEdge Cases[2m > [22mshould handle scientific notation strings
+[31m[1mAssertionError[22m: expected 16 to be 1000000 // Object.is equality[39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- 1000000[39m
+[31m+ 16[39m
+
+[36m [2m❯[22m src/lib/currencyFormat.test.ts:[2m240:41[22m[39m
+    [90m238| [39m
+    [90m239| [39m    [34mit[39m([32m'should handle scientific notation strings'[39m[33m,[39m () [33m=>[39m {
+    [90m240| [39m      [34mexpect[39m([34mparseCurrencyInput[39m([32m'1e6'[39m))[33m.[39m[34mtoBe[39m([34m1000000[39m)[33m;[39m
+    [90m   | [39m                                        [31m^[39m
+    [90m241| [39m      [34mexpect[39m([34mparseCurrencyInput[39m([32m'1.5e3'[39m))[33m.[39m[34mtoBe[39m([34m1500[39m)[33m;[39m
+    [90m242| [39m    })[33m;[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[6/13]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m src/lib/formValidation.test.ts[2m > [22mformValidation[2m > [22mhasSqlInjectionAttempt[2m > [22mshould detect SQL keywords (case insensitive)
+[31m[1mAssertionError[22m: expected false to be true // Object.is equality[39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- true[39m
+[31m+ false[39m
+
+[36m [2m❯[22m src/lib/formValidation.test.ts:[2m39:61[22m[39m
+    [90m 37| [39m
+    [90m 38| [39m    [34mit[39m([32m'should detect SQL keywords (case insensitive)'[39m[33m,[39m () [33m=>[39m {
+    [90m 39| [39m      [34mexpect[39m([34mhasSqlInjectionAttempt[39m([32m'SELECT * FROM users'[39m))[33m.[39m[34mtoBe[39m([35mtrue[39m)[33m;[39m
+    [90m   | [39m                                                            [31m^[39m
+    [90m 40| [39m      [34mexpect[39m([34mhasSqlInjectionAttempt[39m([32m'select * from users'[39m))[33m.[39m[34mtoBe[39m([35mtrue[39m)[33m;[39m
+    [90m 41| [39m      [34mexpect[39m([34mhasSqlInjectionAttempt[39m([32m'INSERT INTO table'[39m))[33m.[39m[34mtoBe[39m([35mtrue[39m)[33m;[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[7/13]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m src/lib/formValidation.test.ts[2m > [22mformValidation[2m > [22mhasSqlInjectionAttempt[2m > [22mshould detect null byte
+[31m[1mAssertionError[22m: expected false to be true // Object.is equality[39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- true[39m
+[31m+ false[39m
+
+[36m [2m❯[22m src/lib/formValidation.test.ts:[2m53:49[22m[39m
+    [90m 51| [39m    [34mit[39m([32m'should detect null byte'[39m[33m,[39m () [33m=>[39m {
+    [90m 52| [39m      [34mexpect[39m([34mhasSqlInjectionAttempt[39m([32m'test\\x00'[39m))[33m.[39m[34mtoBe[39m([35mtrue[39m)[33m;[39m
+    [90m 53| [39m      [34mexpect[39m([34mhasSqlInjectionAttempt[39m([32m'test\\b'[39m))[33m.[39m[34mtoBe[39m([35mtrue[39m)[33m;[39m
+    [90m   | [39m                                                [31m^[39m
+    [90m 54| [39m    })[33m;[39m
+    [90m 55| [39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[8/13]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m src/lib/formValidation.test.ts[2m > [22mformValidation[2m > [22mhasSqlInjectionAttempt[2m > [22mshould handle strings with SQL-like words that are safe
+[31m[1mAssertionError[22m: expected false to be true // Object.is equality[39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- true[39m
+[31m+ false[39m
+
+[36m [2m❯[22m src/lib/formValidation.test.ts:[2m78:60[22m[39m
+    [90m 76| [39m    it('should handle strings with SQL-like words that are safe', () =…
+    [90m 77| [39m      // "selection" contains "select" but should pass when used in no…
+    [90m 78| [39m      expect(hasSqlInjectionAttempt('I made a selection')).toBe(true);…
+    [90m   | [39m                                                           [31m^[39m
+    [90m 79| [39m    })[33m;[39m
+    [90m 80| [39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[9/13]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m src/lib/formValidation.test.ts[2m > [22mformValidation[2m > [22mhasSqlInjectionAttempt[2m > [22mshould trim whitespace before checking
+[31m[1mAssertionError[22m: expected false to be true // Object.is equality[39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- true[39m
+[31m+ false[39m
+
+[36m [2m❯[22m src/lib/formValidation.test.ts:[2m83:61[22m[39m
+    [90m 81| [39m    [34mit[39m([32m'should trim whitespace before checking'[39m[33m,[39m () [33m=>[39m {
+    [90m 82| [39m      [34mexpect[39m([34mhasSqlInjectionAttempt[39m([32m'   normal text   '[39m))[33m.[39m[34mtoBe[39m([35mfalse[39m)[33m;[39m
+    [90m 83| [39m      [34mexpect[39m([34mhasSqlInjectionAttempt[39m([32m'   SELECT * FROM   '[39m))[33m.[39m[34mtoBe[39m([35mtrue[39m)[33m;[39m
+    [90m   | [39m                                                            [31m^[39m
+    [90m 84| [39m    })[33m;[39m
+    [90m 85| [39m  })[33m;[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[10/13]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m src/lib/formValidation.test.ts[2m > [22mformValidation[2m > [22mnoSqlInjection[2m > [22mshould reject strings with SQL injection attempts
+[31m[1mAssertionError[22m: promise resolved "undefined" instead of rejecting[39m
+
+[32m- Expected:[39m 
+Error {
+  "message": "rejected promise",
+}
+
+[31m+ Received:[39m 
+undefined
+
+[36m [2m❯[22m src/lib/formValidation.test.ts:[2m97:68[22m[39m
+    [90m 95| [39m        [32m'Caracteres o patrones no permitidos'[39m[33m,[39m
+    [90m 96| [39m      )[33m;[39m
+    [90m 97| [39m      await expect(noSqlInjection(undefined, 'SELECT * FROM users')).r…
+    [90m   | [39m                                                                   [31m^[39m
+    [90m 98| [39m        [32m'Caracteres o patrones no permitidos'[39m[33m,[39m
+    [90m 99| [39m      )[33m;[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[11/13]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m src/lib/formValidation.test.ts[2m > [22mformValidation[2m > [22memailRules[2m > [22mshould reject email with SQL injection
+[31m[1mAssertionError[22m: expected [Function] to throw error including 'Caracteres no permitidos' but got 'Formato de correo inválido'[39m
+
+Expected: [32m"[7mCaracteres no permit[27mido[7ms[27m"[39m
+Received: [31m"[7mFormato de correo invál[27mido"[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[12/13]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m src/lib/formValidation.test.ts[2m > [22mformValidation[2m > [22moptionalNoSqlInjection[2m > [22mshould reject non-empty malicious strings
+[31m[1mAssertionError[22m: promise resolved "undefined" instead of rejecting[39m
+
+[32m- Expected:[39m 
+Error {
+  "message": "rejected promise",
+}
+
+[31m+ Received:[39m 
+undefined
+
+[36m [2m❯[22m src/lib/formValidation.test.ts:[2m285:73[22m[39m
+    [90m283| [39m
+    [90m284| [39m    [34mit[39m([32m'should reject non-empty malicious strings'[39m[33m,[39m [35masync[39m () [33m=>[39m {
+    [90m285| [39m      await expect(optionalNoSqlInjection(undefined, 'DROP TABLE users…
+    [90m   | [39m                                                                        [31m^[39m
+    [90m286| [39m    })[33m;[39m
+    [90m287| [39m  })[33m;[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[13/13]⎯[22m[39m
+
+
+[2m Test Files [22m [1m[31m2 failed[39m[22m[2m | [22m[1m[32m1 passed[39m[22m[90m (3)[39m
+[2m      Tests [22m [1m[31m13 failed[39m[22m[2m | [22m[1m[32m118 passed[39m[22m[90m (131)[39m
+[2m   Start at [22m 09:45:31
+[2m   Duration [22m 1.64s[2m (transform 257ms, setup 754ms, import 272ms, tests 92ms, environment 2.70s)[22m
+

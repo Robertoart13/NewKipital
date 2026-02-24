@@ -1,9 +1,9 @@
 import { Controller, Get, Post, Param, Query, ParseIntPipe } from '@nestjs/common';
-import { CurrentUser } from '../../common/decorators/current-user.decorator.js';
-import { NotificationsService } from './notifications.service.js';
+import { CurrentUser } from '../../common/decorators/current-user.decorator';
+import { NotificationsService } from './notifications.service';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { App } from '../access-control/entities/app.entity.js';
+import { App } from '../access-control/entities/app.entity';
 
 @Controller('notifications')
 export class NotificationsController {

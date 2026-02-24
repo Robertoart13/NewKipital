@@ -2,9 +2,9 @@ import {
   Entity, PrimaryGeneratedColumn, Column, Index,
   CreateDateColumn, UpdateDateColumn, ManyToOne, JoinColumn,
 } from 'typeorm';
-import { Department } from './department.entity.js';
-import { Position } from './position.entity.js';
-import { PayPeriod } from '../../payroll/entities/pay-period.entity.js';
+import { Department } from './department.entity';
+import { Position } from './position.entity';
+import { PayPeriod } from '../../payroll/entities/pay-period.entity';
 
 export enum GeneroEmpleado {
   MASCULINO = 'Masculino',

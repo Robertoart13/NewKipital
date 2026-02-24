@@ -5,7 +5,7 @@ import {
 import {
   GeneroEmpleado, EstadoCivilEmpleado, TipoContratoEmpleado,
   JornadaEmpleado, MonedaSalarioEmpleado,
-} from '../entities/employee.entity.js';
+} from '../entities/employee.entity';
 
 /**
  * DTO para actualizar empleado.

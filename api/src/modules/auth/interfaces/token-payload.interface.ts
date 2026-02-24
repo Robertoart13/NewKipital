@@ -1,4 +1,4 @@
-import type { PlatformApp } from '../../../common/constants/apps.js';
+import type { PlatformApp } from '../../../common/constants/apps';
 
 /**
  * Payload que viaja dentro del JWT.

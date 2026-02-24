@@ -2,12 +2,12 @@ import {
   Controller, Get, Post, Put, Patch, Param, Body, Query,
   ParseIntPipe, ParseBoolPipe,
 } from '@nestjs/common';
-import { EmployeesService } from './employees.service.js';
-import { CreateEmployeeDto } from './dto/create-employee.dto.js';
-import { UpdateEmployeeDto } from './dto/update-employee.dto.js';
-import { Public } from '../../common/decorators/public.decorator.js';
-import { RequirePermissions } from '../../common/decorators/require-permissions.decorator.js';
-import { CurrentUser } from '../../common/decorators/current-user.decorator.js';
+import { EmployeesService } from './employees.service';
+import { CreateEmployeeDto } from './dto/create-employee.dto';
+import { UpdateEmployeeDto } from './dto/update-employee.dto';
+import { Public } from '../../common/decorators/public.decorator';
+import { RequirePermissions } from '../../common/decorators/require-permissions.decorator';
+import { CurrentUser } from '../../common/decorators/current-user.decorator';
 
 @Controller('employees')
 export class EmployeesController {

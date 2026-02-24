@@ -1,11 +1,11 @@
 import { Controller, Get } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { Department } from './entities/department.entity.js';
-import { Position } from './entities/position.entity.js';
-import { PayPeriod } from '../payroll/entities/pay-period.entity.js';
-import { RequirePermissions } from '../../common/decorators/require-permissions.decorator.js';
-import { AllowWithoutCompany } from '../../common/decorators/allow-without-company.decorator.js';
+import { Department } from './entities/department.entity';
+import { Position } from './entities/position.entity';
+import { PayPeriod } from '../payroll/entities/pay-period.entity';
+import { RequirePermissions } from '../../common/decorators/require-permissions.decorator';
+import { AllowWithoutCompany } from '../../common/decorators/allow-without-company.decorator';
 
 @Controller('catalogs')
 @AllowWithoutCompany()

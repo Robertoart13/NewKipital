@@ -3,7 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import { PassportStrategy } from '@nestjs/passport';
 import { Strategy } from 'passport-jwt';
 import { Request } from 'express';
-import { COOKIE_NAME } from '../../config/cookie.config.js';
+import { COOKIE_NAME } from '../../config/cookie.config';
 
 export interface TokenPayload {
   sub: number;

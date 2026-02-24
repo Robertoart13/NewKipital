@@ -1,11 +1,11 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { Employee } from '../employees/entities/employee.entity.js';
-import { EmployeeIdentityQueue } from '../employees/entities/employee-identity-queue.entity.js';
-import { EmployeeEncryptQueue } from '../employees/entities/employee-encrypt-queue.entity.js';
-import { EmployeeDataAutomationWorkerService } from '../employees/services/employee-data-automation-worker.service.js';
-import { ListQueueJobsDto, QueueType } from './dto/list-queue-jobs.dto.js';
+import { Employee } from '../employees/entities/employee.entity';
+import { EmployeeIdentityQueue } from '../employees/entities/employee-identity-queue.entity';
+import { EmployeeEncryptQueue } from '../employees/entities/employee-encrypt-queue.entity';
+import { EmployeeDataAutomationWorkerService } from '../employees/services/employee-data-automation-worker.service';
+import { ListQueueJobsDto, QueueType } from './dto/list-queue-jobs.dto';
 
 type QueueRow = {
   id_queue: number;

@@ -1,5 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { DomainEventsService } from './domain-events.service.js';
+import { DomainEventsService } from './domain-events.service';
 
 export interface AuditOutboxPayload {
   modulo: string;

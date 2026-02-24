@@ -1,14 +1,14 @@
 import { Injectable, NotFoundException, ConflictException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { In, Repository } from 'typeorm';
-import { Role } from './entities/role.entity.js';
-import { App } from './entities/app.entity.js';
-import { Permission } from './entities/permission.entity.js';
-import { RolePermission } from './entities/role-permission.entity.js';
-import { CreateRoleDto } from './dto/create-role.dto.js';
-import { AssignRolePermissionDto } from './dto/assign-role-permission.dto.js';
-import { UpdateRoleDto } from './dto/update-role.dto.js';
-import { AuditOutboxService } from '../integration/audit-outbox.service.js';
+import { Role } from './entities/role.entity';
+import { App } from './entities/app.entity';
+import { Permission } from './entities/permission.entity';
+import { RolePermission } from './entities/role-permission.entity';
+import { CreateRoleDto } from './dto/create-role.dto';
+import { AssignRolePermissionDto } from './dto/assign-role-permission.dto';
+import { UpdateRoleDto } from './dto/update-role.dto';
+import { AuditOutboxService } from '../integration/audit-outbox.service';
 
 @Injectable()
 export class RolesService {

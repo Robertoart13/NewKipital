@@ -13,26 +13,26 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { In, Repository } from 'typeorm';
-import { RequirePermissions } from '../../common/decorators/require-permissions.decorator.js';
-import { CurrentUser } from '../../common/decorators/current-user.decorator.js';
-import { PermissionsService } from './permissions.service.js';
-import { RolesService } from './roles.service.js';
-import { UserAssignmentService } from './user-assignment.service.js';
-import { CreatePermissionDto } from './dto/create-permission.dto.js';
-import { CreateRoleDto } from './dto/create-role.dto.js';
-import { ReplaceRolePermissionsDto } from './dto/replace-role-permissions.dto.js';
-import { ReplaceUserContextRolesDto } from './dto/replace-user-context-roles.dto.js';
-import { ReplaceUserGlobalRolesDto } from './dto/replace-user-global-roles.dto.js';
-import { ReplaceUserRoleExclusionsDto } from './dto/replace-user-role-exclusions.dto.js';
-import { ReplaceUserPermissionOverridesDto } from './dto/replace-user-permission-overrides.dto.js';
-import { ReplaceUserGlobalPermissionDenialsDto } from './dto/replace-user-global-permission-denials.dto.js';
-import { ReplaceUserCompaniesDto } from './dto/replace-user-companies.dto.js';
-import { UpdatePermissionDto } from './dto/update-permission.dto.js';
-import { UpdateRoleDto } from './dto/update-role.dto.js';
-import { NotificationsService } from '../notifications/notifications.service.js';
-import { Company } from '../companies/entities/company.entity.js';
-import { Role } from './entities/role.entity.js';
-import { Permission } from './entities/permission.entity.js';
+import { RequirePermissions } from '../../common/decorators/require-permissions.decorator';
+import { CurrentUser } from '../../common/decorators/current-user.decorator';
+import { PermissionsService } from './permissions.service';
+import { RolesService } from './roles.service';
+import { UserAssignmentService } from './user-assignment.service';
+import { CreatePermissionDto } from './dto/create-permission.dto';
+import { CreateRoleDto } from './dto/create-role.dto';
+import { ReplaceRolePermissionsDto } from './dto/replace-role-permissions.dto';
+import { ReplaceUserContextRolesDto } from './dto/replace-user-context-roles.dto';
+import { ReplaceUserGlobalRolesDto } from './dto/replace-user-global-roles.dto';
+import { ReplaceUserRoleExclusionsDto } from './dto/replace-user-role-exclusions.dto';
+import { ReplaceUserPermissionOverridesDto } from './dto/replace-user-permission-overrides.dto';
+import { ReplaceUserGlobalPermissionDenialsDto } from './dto/replace-user-global-permission-denials.dto';
+import { ReplaceUserCompaniesDto } from './dto/replace-user-companies.dto';
+import { UpdatePermissionDto } from './dto/update-permission.dto';
+import { UpdateRoleDto } from './dto/update-role.dto';
+import { NotificationsService } from '../notifications/notifications.service';
+import { Company } from '../companies/entities/company.entity';
+import { Role } from './entities/role.entity';
+import { Permission } from './entities/permission.entity';
 
 /**
  * Endpoints enterprise de administracion bajo prefijo /config.

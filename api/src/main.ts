@@ -2,7 +2,7 @@ import { NestFactory } from '@nestjs/core';
 import { BadRequestException, ValidationError, ValidationPipe } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import cookieParser from 'cookie-parser';
-import { AppModule } from './app.module.js';
+import { AppModule } from './app.module';
 
 function flattenValidationErrors(errors: ValidationError[]): string[] {
   const result: string[] = [];

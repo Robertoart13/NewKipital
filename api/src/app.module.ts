@@ -3,19 +3,19 @@ import { APP_GUARD } from '@nestjs/core';
 import { ConfigModule } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { EventEmitterModule } from '@nestjs/event-emitter';
-import { databaseConfig } from './config/database.config.js';
-import { AuthModule } from './modules/auth/auth.module.js';
-import { CompaniesModule } from './modules/companies/companies.module.js';
-import { EmployeesModule } from './modules/employees/employees.module.js';
-import { PersonalActionsModule } from './modules/personal-actions/personal-actions.module.js';
-import { PayrollModule } from './modules/payroll/payroll.module.js';
-import { AccessControlModule } from './modules/access-control/access-control.module.js';
-import { IntegrationModule } from './modules/integration/integration.module.js';
-import { NotificationsModule } from './modules/notifications/notifications.module.js';
-import { OpsModule } from './modules/ops/ops.module.js';
-import { JwtAuthGuard } from './common/guards/jwt-auth.guard.js';
-import { CsrfGuard } from './common/guards/csrf.guard.js';
-import { PermissionsGuard } from './common/guards/permissions.guard.js';
+import { databaseConfig } from './config/database.config';
+import { AuthModule } from './modules/auth/auth.module';
+import { CompaniesModule } from './modules/companies/companies.module';
+import { EmployeesModule } from './modules/employees/employees.module';
+import { PersonalActionsModule } from './modules/personal-actions/personal-actions.module';
+import { PayrollModule } from './modules/payroll/payroll.module';
+import { AccessControlModule } from './modules/access-control/access-control.module';
+import { IntegrationModule } from './modules/integration/integration.module';
+import { NotificationsModule } from './modules/notifications/notifications.module';
+import { OpsModule } from './modules/ops/ops.module';
+import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
+import { CsrfGuard } from './common/guards/csrf.guard';
+import { PermissionsGuard } from './common/guards/permissions.guard';
 
 @Module({
   imports: [

@@ -15,12 +15,12 @@ import {
   UploadedFile,
   UseInterceptors,
 } from '@nestjs/common';
-import { CompaniesService } from './companies.service.js';
-import { CreateCompanyDto } from './dto/create-company.dto.js';
-import { UpdateCompanyDto } from './dto/update-company.dto.js';
-import { Public } from '../../common/decorators/public.decorator.js';
-import { RequirePermissions } from '../../common/decorators/require-permissions.decorator.js';
-import { CurrentUser } from '../../common/decorators/current-user.decorator.js';
+import { CompaniesService } from './companies.service';
+import { CreateCompanyDto } from './dto/create-company.dto';
+import { UpdateCompanyDto } from './dto/update-company.dto';
+import { Public } from '../../common/decorators/public.decorator';
+import { RequirePermissions } from '../../common/decorators/require-permissions.decorator';
+import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
 import { basename, extname, join } from 'node:path';

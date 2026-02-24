@@ -2,21 +2,21 @@
 import { DataSource } from 'typeorm';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import * as bcrypt from 'bcrypt';
-import { Employee, MonedaSalarioEmpleado } from '../../modules/employees/entities/employee.entity.js';
+import { Employee, MonedaSalarioEmpleado } from '../../modules/employees/entities/employee.entity';
 import {
   EmployeeAguinaldoProvision,
   EstadoProvisionAguinaldoEmpleado,
-} from '../../modules/employees/entities/employee-aguinaldo-provision.entity.js';
-import { User } from '../../modules/auth/entities/user.entity.js';
-import { App } from '../../modules/access-control/entities/app.entity.js';
-import { UserApp } from '../../modules/access-control/entities/user-app.entity.js';
-import { UserCompany } from '../../modules/access-control/entities/user-company.entity.js';
-import { UserRole } from '../../modules/access-control/entities/user-role.entity.js';
-import { WorkflowResult } from '../common/workflow.interface.js';
-import { DOMAIN_EVENTS } from '../../common/events/event-names.js';
-import { CreateEmployeeDto } from '../../modules/employees/dto/create-employee.dto.js';
-import { UserStatus } from '../../modules/auth/constants/user-status.enum.js';
-import { EmployeeSensitiveDataService } from '../../common/services/employee-sensitive-data.service.js';
+} from '../../modules/employees/entities/employee-aguinaldo-provision.entity';
+import { User } from '../../modules/auth/entities/user.entity';
+import { App } from '../../modules/access-control/entities/app.entity';
+import { UserApp } from '../../modules/access-control/entities/user-app.entity';
+import { UserCompany } from '../../modules/access-control/entities/user-company.entity';
+import { UserRole } from '../../modules/access-control/entities/user-role.entity';
+import { WorkflowResult } from '../common/workflow.interface';
+import { DOMAIN_EVENTS } from '../../common/events/event-names';
+import { CreateEmployeeDto } from '../../modules/employees/dto/create-employee.dto';
+import { UserStatus } from '../../modules/auth/constants/user-status.enum';
+import { EmployeeSensitiveDataService } from '../../common/services/employee-sensitive-data.service';
 
 export interface EmployeeCreationResult {
   employee: Employee;

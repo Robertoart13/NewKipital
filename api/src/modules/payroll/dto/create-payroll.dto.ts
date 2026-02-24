@@ -1,5 +1,5 @@
 import { IsInt, IsDateString, IsOptional, IsEnum, IsString, MaxLength } from 'class-validator';
-import { TipoPlanilla, MonedaCalendario } from '../entities/payroll-calendar.entity.js';
+import { TipoPlanilla, MonedaCalendario } from '../entities/payroll-calendar.entity';
 
 export class CreatePayrollDto {
   @IsInt()

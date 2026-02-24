@@ -1,5 +1,5 @@
 import { SetMetadata } from '@nestjs/common';
-import { PlatformApp } from '../constants/apps.js';
+import { PlatformApp } from '../constants/apps';
 
 export const REQUIRE_APP_KEY = 'requireApp';
 

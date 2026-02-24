@@ -1,3 +1,3 @@
-export { CreateEmployeeDto } from './create-employee.dto.js';
-export { CreateEmployeeAguinaldoProvisionDto } from './create-employee-aguinaldo-provision.dto.js';
-export { UpdateEmployeeDto } from './update-employee.dto.js';
+export { CreateEmployeeDto } from './create-employee.dto';
+export { CreateEmployeeAguinaldoProvisionDto } from './create-employee-aguinaldo-provision.dto';
+export { UpdateEmployeeDto } from './update-employee.dto';

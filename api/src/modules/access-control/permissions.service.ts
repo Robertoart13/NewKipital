@@ -7,10 +7,10 @@ import {
 import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { CreatePermissionDto } from './dto/create-permission.dto.js';
-import { UpdatePermissionDto } from './dto/update-permission.dto.js';
-import { Permission } from './entities/permission.entity.js';
-import { AuditOutboxService } from '../integration/audit-outbox.service.js';
+import { CreatePermissionDto } from './dto/create-permission.dto';
+import { UpdatePermissionDto } from './dto/update-permission.dto';
+import { Permission } from './entities/permission.entity';
+import { AuditOutboxService } from '../integration/audit-outbox.service';
 
 export type PermissionCatalogMode = 'migration' | 'ui';
 

@@ -1,1 +1,1 @@
-export type { TokenPayload } from './token-payload.interface.js';
+export type { TokenPayload } from './token-payload.interface';

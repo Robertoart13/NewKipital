@@ -3,8 +3,8 @@ import { OnEvent } from '@nestjs/event-emitter';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { User } from '../../modules/auth/entities/user.entity.js';
-import { DOMAIN_EVENTS } from '../../common/events/event-names.js';
+import { User } from '../../modules/auth/entities/user.entity';
+import { DOMAIN_EVENTS } from '../../common/events/event-names';
 
 interface EmployeeEmailChangedPayload {
   employeeId: string;

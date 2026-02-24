@@ -5,22 +5,22 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, In, IsNull, MoreThan, QueryFailedError } from 'typeorm';
 import * as bcrypt from 'bcrypt';
 import { randomUUID } from 'crypto';
-import { User } from './entities/user.entity.js';
-import { UsersService } from './users.service.js';
-import { App } from '../access-control/entities/app.entity.js';
-import { UserApp } from '../access-control/entities/user-app.entity.js';
-import { UserCompany } from '../access-control/entities/user-company.entity.js';
-import { UserRole } from '../access-control/entities/user-role.entity.js';
-import { UserRoleGlobal } from '../access-control/entities/user-role-global.entity.js';
-import { UserRoleExclusion } from '../access-control/entities/user-role-exclusion.entity.js';
-import { Role } from '../access-control/entities/role.entity.js';
-import { RolePermission } from '../access-control/entities/role-permission.entity.js';
-import { Permission } from '../access-control/entities/permission.entity.js';
-import { UserPermissionOverride } from '../access-control/entities/user-permission-override.entity.js';
-import { UserPermissionGlobalDeny } from '../access-control/entities/user-permission-global-deny.entity.js';
-import { Company } from '../companies/entities/company.entity.js';
-import type { TokenPayload } from '../../common/strategies/jwt.strategy.js';
-import { RefreshSession } from './entities/refresh-session.entity.js';
+import { User } from './entities/user.entity';
+import { UsersService } from './users.service';
+import { App } from '../access-control/entities/app.entity';
+import { UserApp } from '../access-control/entities/user-app.entity';
+import { UserCompany } from '../access-control/entities/user-company.entity';
+import { UserRole } from '../access-control/entities/user-role.entity';
+import { UserRoleGlobal } from '../access-control/entities/user-role-global.entity';
+import { UserRoleExclusion } from '../access-control/entities/user-role-exclusion.entity';
+import { Role } from '../access-control/entities/role.entity';
+import { RolePermission } from '../access-control/entities/role-permission.entity';
+import { Permission } from '../access-control/entities/permission.entity';
+import { UserPermissionOverride } from '../access-control/entities/user-permission-override.entity';
+import { UserPermissionGlobalDeny } from '../access-control/entities/user-permission-global-deny.entity';
+import { Company } from '../companies/entities/company.entity';
+import type { TokenPayload } from '../../common/strategies/jwt.strategy';
+import { RefreshSession } from './entities/refresh-session.entity';
 
 export interface SessionData {
   user: {
@@ -206,7 +206,7 @@ export class AuthService {
         );
         throw new UnauthorizedException('Sesion expirada o no valida');
       }
-      throw error;
+      throw new UnauthorizedException('Refresh token invalido o revocado');
     }
   }
 

@@ -1,5 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { DOMAIN_EVENTS } from '../../common/events/event-names.js';
+import { DOMAIN_EVENTS } from '../../common/events/event-names';
 
 /**
  * PayrollAppliedWorkflow — Efectos al aplicar planilla.

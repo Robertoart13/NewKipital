@@ -2,13 +2,13 @@ import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { JwtModule } from '@nestjs/jwt';
 import { ConfigModule, ConfigService } from '@nestjs/config';
-import { Notification } from './entities/notification.entity.js';
-import { NotificationUser } from './entities/notification-user.entity.js';
-import { UserRole } from '../access-control/entities/user-role.entity.js';
-import { App } from '../access-control/entities/app.entity.js';
-import { NotificationsService } from './notifications.service.js';
-import { NotificationsController } from './notifications.controller.js';
-import { NotificationsGateway } from './notifications.gateway.js';
+import { Notification } from './entities/notification.entity';
+import { NotificationUser } from './entities/notification-user.entity';
+import { UserRole } from '../access-control/entities/user-role.entity';
+import { App } from '../access-control/entities/app.entity';
+import { NotificationsService } from './notifications.service';
+import { NotificationsController } from './notifications.controller';
+import { NotificationsGateway } from './notifications.gateway';
 
 @Module({
   imports: [

@@ -7,7 +7,7 @@ import {
   ManyToOne,
   JoinColumn,
 } from 'typeorm';
-import { Notification } from './notification.entity.js';
+import { Notification } from './notification.entity';
 
 export type NotificationUserEstado = 'UNREAD' | 'READ' | 'DELETED';
 

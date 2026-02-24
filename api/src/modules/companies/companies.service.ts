@@ -7,13 +7,13 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { EntityManager, Repository } from 'typeorm';
-import { Company } from './entities/company.entity.js';
-import { CreateCompanyDto } from './dto/create-company.dto.js';
-import { UpdateCompanyDto } from './dto/update-company.dto.js';
+import { Company } from './entities/company.entity';
+import { CreateCompanyDto } from './dto/create-company.dto';
+import { UpdateCompanyDto } from './dto/update-company.dto';
 import { createReadStream } from 'node:fs';
 import { access, copyFile, mkdir, readdir, rename, rm, unlink } from 'node:fs/promises';
 import { basename, extname, join, resolve } from 'node:path';
-import { AuditOutboxService } from '../integration/audit-outbox.service.js';
+import { AuditOutboxService } from '../integration/audit-outbox.service';
 
 const COMPANY_LOGO_DIR = join(process.cwd(), 'uploads', 'logoEmpresa');
 const COMPANY_LOGO_TEMP_DIR = join(COMPANY_LOGO_DIR, 'temp');

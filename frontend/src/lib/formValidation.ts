@@ -1,12 +1,8 @@
-import validator from 'validator';
+﻿import validator from 'validator';
 
-/** Caracteres y patrones típicos de inyección SQL - rechaza si se detectan */
-const SQL_DANGER_PATTERN = /('|"|;|\-\-|\/\*|\*\/|\\x00|\\b(union|select|insert|update|delete|drop|exec|execute|script)\b)/i;
+const SQL_DANGER_PATTERN =
+  /('|"|;|\-\-|\/\*|\*\/|\x00|\\x00|\\b|union|select|insert|update|delete|drop|exec|execute|<script)/i;
 
-/**
- * Valida que el texto no contenga patrones de inyección SQL.
- * Uso: capa extra en frontend; la protección real está en backend (consultas parametrizadas).
- */
 export function hasSqlInjectionAttempt(value: unknown): boolean {
   if (value == null || typeof value !== 'string') return false;
   const s = String(value).trim();
@@ -14,9 +10,6 @@ export function hasSqlInjectionAttempt(value: unknown): boolean {
   return SQL_DANGER_PATTERN.test(s);
 }
 
-/**
- * Validador para Ant Design Form que rechaza intentos de inyección SQL en campos de texto.
- */
 export function noSqlInjection(_: unknown, value: unknown) {
   if (hasSqlInjectionAttempt(value)) {
     return Promise.reject(new Error('Caracteres o patrones no permitidos'));
@@ -24,9 +17,6 @@ export function noSqlInjection(_: unknown, value: unknown) {
   return Promise.resolve();
 }
 
-/**
- * Reglas combinadas para campos de texto: longitud + sin inyección SQL.
- */
 export function textRules(options: { required?: boolean; min?: number; max?: number }) {
   const rules: Array<{ required?: boolean; message?: string } | { validator: (a: unknown, v: unknown) => Promise<void> }> = [];
   if (options.required) {
@@ -53,9 +43,6 @@ export function textRules(options: { required?: boolean; min?: number; max?: num
   return rules;
 }
 
-/**
- * Validador de email: formato válido + sin inyección.
- */
 export function emailRules(required = true) {
   const rules: Array<{ required?: boolean; message?: string } | { validator: (a: unknown, v: unknown) => Promise<void> }> = [];
   if (required) {
@@ -65,17 +52,14 @@ export function emailRules(required = true) {
     validator: (_, v) => {
       if (v == null || String(v).trim() === '') return Promise.resolve();
       const s = String(v).trim();
-      if (!validator.isEmail(s)) return Promise.reject(new Error('Formato de correo inválido'));
       if (hasSqlInjectionAttempt(s)) return Promise.reject(new Error('Caracteres no permitidos'));
+      if (!validator.isEmail(s)) return Promise.reject(new Error('Formato de correo inválido'));
       return Promise.resolve();
     },
   });
   return rules;
 }
 
-/**
- * Regla simple: solo rechazar inyección SQL (para campos opcionales).
- */
 export function optionalNoSqlInjection(_: unknown, value: unknown) {
   if (value == null || String(value).trim() === '') return Promise.resolve();
   return noSqlInjection(_, value);

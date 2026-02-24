@@ -1,8 +1,8 @@
 import { CanActivate, ExecutionContext, ForbiddenException, Injectable } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { Request } from 'express';
-import { SKIP_CSRF_KEY } from '../decorators/skip-csrf.decorator.js';
-import { CSRF_COOKIE_NAME, CSRF_HEADER_NAME } from '../../config/cookie.config.js';
+import { SKIP_CSRF_KEY } from '../decorators/skip-csrf.decorator';
+import { CSRF_COOKIE_NAME, CSRF_HEADER_NAME } from '../../config/cookie.config';
 
 const MUTATING_METHODS = new Set(['POST', 'PUT', 'PATCH', 'DELETE']);
 

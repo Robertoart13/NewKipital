@@ -1,20 +1,20 @@
 import { Injectable, Logger, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { Employee } from '../entities/employee.entity.js';
-import { EmployeeAguinaldoProvision } from '../entities/employee-aguinaldo-provision.entity.js';
+import { Employee } from '../entities/employee.entity';
+import { EmployeeAguinaldoProvision } from '../entities/employee-aguinaldo-provision.entity';
 import {
   EmployeeIdentityQueue,
   EmployeeQueueStatus,
-} from '../entities/employee-identity-queue.entity.js';
-import { EmployeeEncryptQueue } from '../entities/employee-encrypt-queue.entity.js';
-import { User } from '../../auth/entities/user.entity.js';
-import { UserCompany } from '../../access-control/entities/user-company.entity.js';
-import { UserApp } from '../../access-control/entities/user-app.entity.js';
-import { UserRole } from '../../access-control/entities/user-role.entity.js';
-import { App } from '../../access-control/entities/app.entity.js';
-import { Role } from '../../access-control/entities/role.entity.js';
-import { EmployeeSensitiveDataService } from '../../../common/services/employee-sensitive-data.service.js';
+} from '../entities/employee-identity-queue.entity';
+import { EmployeeEncryptQueue } from '../entities/employee-encrypt-queue.entity';
+import { User } from '../../auth/entities/user.entity';
+import { UserCompany } from '../../access-control/entities/user-company.entity';
+import { UserApp } from '../../access-control/entities/user-app.entity';
+import { UserRole } from '../../access-control/entities/user-role.entity';
+import { App } from '../../access-control/entities/app.entity';
+import { Role } from '../../access-control/entities/role.entity';
+import { EmployeeSensitiveDataService } from '../../../common/services/employee-sensitive-data.service';
 
 class QueueTerminalError extends Error {
   constructor(

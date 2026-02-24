@@ -2,12 +2,12 @@ import {
   Controller, Get, Post, Patch, Param, Body, Query,
   ParseIntPipe,
 } from '@nestjs/common';
-import { PersonalActionsService } from './personal-actions.service.js';
-import { CreatePersonalActionDto } from './dto/create-personal-action.dto.js';
-import { PersonalActionEstado } from './entities/personal-action.entity.js';
-import { Public } from '../../common/decorators/public.decorator.js';
-import { RequirePermissions } from '../../common/decorators/require-permissions.decorator.js';
-import { CurrentUser } from '../../common/decorators/current-user.decorator.js';
+import { PersonalActionsService } from './personal-actions.service';
+import { CreatePersonalActionDto } from './dto/create-personal-action.dto';
+import { PersonalActionEstado } from './entities/personal-action.entity';
+import { Public } from '../../common/decorators/public.decorator';
+import { RequirePermissions } from '../../common/decorators/require-permissions.decorator';
+import { CurrentUser } from '../../common/decorators/current-user.decorator';
 
 @Controller('personal-actions')
 export class PersonalActionsController {

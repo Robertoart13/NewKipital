@@ -7,7 +7,7 @@ import {
 import { Server, Socket } from 'socket.io';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
-import { COOKIE_NAME } from '../../config/cookie.config.js';
+import { COOKIE_NAME } from '../../config/cookie.config';
 
 const USER_ROOM_PREFIX = 'user:';
 

@@ -1,11 +1,11 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { Notification } from './entities/notification.entity.js';
-import { NotificationUser, type NotificationUserEstado } from './entities/notification-user.entity.js';
-import { DispatchNotificationDto } from './dto/dispatch-notification.dto.js';
-import { NotificationsGateway } from './notifications.gateway.js';
-import { UserRole } from '../access-control/entities/user-role.entity.js';
+import { Notification } from './entities/notification.entity';
+import { NotificationUser, type NotificationUserEstado } from './entities/notification-user.entity';
+import { DispatchNotificationDto } from './dto/dispatch-notification.dto';
+import { NotificationsGateway } from './notifications.gateway';
+import { UserRole } from '../access-control/entities/user-role.entity';
 
 export interface NotificationListItem {
   id: number;

@@ -1,21 +1,21 @@
 import { Injectable, NotFoundException, ConflictException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { In, Repository } from 'typeorm';
-import { User } from '../auth/entities/user.entity.js';
-import { UserApp } from './entities/user-app.entity.js';
-import { UserCompany } from './entities/user-company.entity.js';
-import { UserRole } from './entities/user-role.entity.js';
-import { UserRoleGlobal } from './entities/user-role-global.entity.js';
-import { UserRoleExclusion } from './entities/user-role-exclusion.entity.js';
-import { UserPermissionOverride } from './entities/user-permission-override.entity.js';
-import { UserPermissionGlobalDeny } from './entities/user-permission-global-deny.entity.js';
-import { App } from './entities/app.entity.js';
-import { Role } from './entities/role.entity.js';
-import { Permission } from './entities/permission.entity.js';
-import { AssignUserAppDto } from './dto/assign-user-app.dto.js';
-import { AssignUserCompanyDto } from './dto/assign-user-company.dto.js';
-import { AssignUserRoleDto } from './dto/assign-user-role.dto.js';
-import { AuditOutboxService } from '../integration/audit-outbox.service.js';
+import { User } from '../auth/entities/user.entity';
+import { UserApp } from './entities/user-app.entity';
+import { UserCompany } from './entities/user-company.entity';
+import { UserRole } from './entities/user-role.entity';
+import { UserRoleGlobal } from './entities/user-role-global.entity';
+import { UserRoleExclusion } from './entities/user-role-exclusion.entity';
+import { UserPermissionOverride } from './entities/user-permission-override.entity';
+import { UserPermissionGlobalDeny } from './entities/user-permission-global-deny.entity';
+import { App } from './entities/app.entity';
+import { Role } from './entities/role.entity';
+import { Permission } from './entities/permission.entity';
+import { AssignUserAppDto } from './dto/assign-user-app.dto';
+import { AssignUserCompanyDto } from './dto/assign-user-company.dto';
+import { AssignUserRoleDto } from './dto/assign-user-role.dto';
+import { AuditOutboxService } from '../integration/audit-outbox.service';
 
 @Injectable()
 export class UserAssignmentService {

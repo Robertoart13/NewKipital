@@ -1,1 +1,1 @@
-export { EmployeeCreationWorkflow } from './employee-creation.workflow.js';
+export { EmployeeCreationWorkflow } from './employee-creation.workflow';

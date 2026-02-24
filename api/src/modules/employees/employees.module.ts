@@ -1,25 +1,25 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { EmployeesController } from './employees.controller.js';
-import { EmployeesService } from './employees.service.js';
-import { CatalogsController } from './catalogs.controller.js';
-import { Employee } from './entities/employee.entity.js';
-import { EmployeeAguinaldoProvision } from './entities/employee-aguinaldo-provision.entity.js';
-import { EmployeeIdentityQueue } from './entities/employee-identity-queue.entity.js';
-import { EmployeeEncryptQueue } from './entities/employee-encrypt-queue.entity.js';
-import { Department } from './entities/department.entity.js';
-import { Position } from './entities/position.entity.js';
-import { PayPeriod } from '../payroll/entities/pay-period.entity.js';
-import { UserCompany } from '../access-control/entities/user-company.entity.js';
-import { UserApp } from '../access-control/entities/user-app.entity.js';
-import { UserRole } from '../access-control/entities/user-role.entity.js';
-import { Role } from '../access-control/entities/role.entity.js';
-import { App } from '../access-control/entities/app.entity.js';
-import { User } from '../auth/entities/user.entity.js';
-import { WorkflowsModule } from '../../workflows/workflows.module.js';
-import { AuthModule } from '../auth/auth.module.js';
-import { EmployeeSensitiveDataService } from '../../common/services/employee-sensitive-data.service.js';
-import { EmployeeDataAutomationWorkerService } from './services/employee-data-automation-worker.service.js';
+import { EmployeesController } from './employees.controller';
+import { EmployeesService } from './employees.service';
+import { CatalogsController } from './catalogs.controller';
+import { Employee } from './entities/employee.entity';
+import { EmployeeAguinaldoProvision } from './entities/employee-aguinaldo-provision.entity';
+import { EmployeeIdentityQueue } from './entities/employee-identity-queue.entity';
+import { EmployeeEncryptQueue } from './entities/employee-encrypt-queue.entity';
+import { Department } from './entities/department.entity';
+import { Position } from './entities/position.entity';
+import { PayPeriod } from '../payroll/entities/pay-period.entity';
+import { UserCompany } from '../access-control/entities/user-company.entity';
+import { UserApp } from '../access-control/entities/user-app.entity';
+import { UserRole } from '../access-control/entities/user-role.entity';
+import { Role } from '../access-control/entities/role.entity';
+import { App } from '../access-control/entities/app.entity';
+import { User } from '../auth/entities/user.entity';
+import { WorkflowsModule } from '../../workflows/workflows.module';
+import { AuthModule } from '../auth/auth.module';
+import { EmployeeSensitiveDataService } from '../../common/services/employee-sensitive-data.service';
+import { EmployeeDataAutomationWorkerService } from './services/employee-data-automation-worker.service';
 
 @Module({
   imports: [

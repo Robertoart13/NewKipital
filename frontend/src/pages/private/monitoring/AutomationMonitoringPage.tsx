@@ -3,10 +3,8 @@ import {
   App as AntdApp,
   Button,
   Card,
-  Col,
   Collapse,
   InputNumber,
-  Row,
   Select,
   Space,
   Switch,
@@ -350,225 +348,234 @@ export function AutomationMonitoringPage() {
 
   return (
     <div className={styles.pageWrapper}>
-      <div className={styles.pageHeader}>
+      <header className={styles.pageHeader}>
         <div className={styles.pageHeaderLeft}>
           <div className={styles.pageTitleBlock}>
             <h1 className={styles.pageTitle}>Monitoreo</h1>
             <p className={styles.pageSubtitle}>Automatizaciones (Colas)</p>
           </div>
         </div>
-      </div>
+      </header>
 
-      <Card className={styles.mainCard} styles={{ body: { padding: 16 } }}>
-        <Collapse
-          style={{ marginBottom: 16 }}
-          items={[
-            {
-              key: 'info-monitoreo',
-              label: 'Que significa este monitoreo?',
-              children: (
-                <Space direction="vertical" size={8} style={{ width: '100%' }}>
-                  <Text strong>Que estoy viendo aqui?</Text>
-                  <Text>
-                    Este panel muestra el estado de los procesos automaticos que garantizan que los datos de los
-                    empleados esten correctamente asociados y protegidos.
-                  </Text>
-                  <Text>El sistema funciona en dos fases:</Text>
-                  <Text>1. Identidad: se crea o valida el usuario digital del empleado.</Text>
-                  <Text>2. Cifrado: se protegen los datos sensibles para cumplir estandares de seguridad.</Text>
-                  <Text strong>Que significan los estados?</Text>
-                  <Text>Pendiente: el proceso esta en fila para ejecutarse.</Text>
-                  <Text>En proceso: actualmente se esta ejecutando.</Text>
-                  <Text>Procesado: finalizo correctamente.</Text>
-                  <Text>Error: ocurrio un problema que requiere revision.</Text>
-                  <Text strong>Que deberia observar?</Text>
-                  <Text>Si Pendientes baja progresivamente, el sistema esta trabajando.</Text>
-                  <Text>Si Datos sin cifrar baja, la proteccion esta avanzando.</Text>
-                  <Text>Si Pendientes no baja por varios minutos, podria existir congestion.</Text>
-                </Space>
-              ),
-            },
-          ]}
-        />
+      <Card className={styles.mainCard} styles={{ body: { padding: 0 } }}>
+        <div className={styles.mainCardBody}>
+          <Collapse
+            className={styles.filtersCollapse}
+            items={[
+              {
+                key: 'info-monitoreo',
+                label: '¿Qué significa este monitoreo?',
+                children: (
+                  <Space direction="vertical" size={8} style={{ width: '100%' }}>
+                    <Text strong style={{ color: '#3d4f5c' }}>¿Qué estoy viendo aquí?</Text>
+                    <Text style={{ color: '#6b7a85', fontSize: 13 }}>
+                      Este panel muestra el estado de los procesos automáticos que garantizan que los datos de los
+                      empleados estén correctamente asociados y protegidos.
+                    </Text>
+                    <Text strong style={{ color: '#3d4f5c' }}>El sistema funciona en dos fases:</Text>
+                    <Text style={{ color: '#6b7a85', fontSize: 13 }}>1. Identidad: se crea o valida el usuario digital del empleado.</Text>
+                    <Text style={{ color: '#6b7a85', fontSize: 13 }}>2. Cifrado: se protegen los datos sensibles para cumplir estándares de seguridad.</Text>
+                    <Text strong style={{ color: '#3d4f5c' }}>¿Qué significan los estados?</Text>
+                    <Text style={{ color: '#6b7a85', fontSize: 13 }}>Pendiente: el proceso está en fila para ejecutarse. En proceso: actualmente se está ejecutando. Procesado: finalizó correctamente. Error: ocurrió un problema que requiere revisión.</Text>
+                    <Text strong style={{ color: '#3d4f5c' }}>¿Qué debería observar?</Text>
+                    <Text style={{ color: '#6b7a85', fontSize: 13 }}>Si Pendientes baja progresivamente, el sistema está trabajando. Si Datos sin cifrar baja, la protección está avanzando. Si Pendientes no baja por varios minutos, podría existir congestión.</Text>
+                  </Space>
+                ),
+              },
+            ]}
+          />
 
-        <Space style={{ width: '100%', justifyContent: 'space-between' }} wrap>
-          <Space wrap>
-            <Tabs
-              activeKey={vista}
-              onChange={(key) => setVista(key as 'operativo' | 'historial')}
-              items={[
-                { key: 'operativo', label: 'Operativo' },
-                { key: 'historial', label: 'Historial de procesados' },
-              ]}
-            />
-            <Select
-              allowClear
-              style={{ width: 170 }}
-              placeholder="Estado"
-              value={filters.estado}
-              options={(vista === 'operativo' ? STATUS_OPTIONS_OPERATIVO : STATUS_OPTIONS_HISTORIAL).map((s) => ({
-                label: getStatusLabel(s),
-                value: s,
-              }))}
-              onChange={(estado) => setFilters((prev) => ({ ...prev, estado, page: 1 }))}
-            />
-            <InputNumber
-              placeholder="ID Empleado"
-              value={filters.idEmpleado}
-              onChange={(idEmpleado) => setFilters((prev) => ({ ...prev, idEmpleado: idEmpleado ?? undefined, page: 1 }))}
-            />
-            {vista === 'operativo' ? (
-              <>
-                <InputNumber
-                  min={0}
-                  placeholder="Intentos >="
-                  value={filters.attemptsMin}
-                  onChange={(attemptsMin) => setFilters((prev) => ({ ...prev, attemptsMin: attemptsMin ?? 0, page: 1 }))}
-                />
+          <div className={styles.monitoringControlBar}>
+            <div className={styles.monitoringControlBarLeft}>
+              <div className={styles.pageTabs}>
+                <button
+                  type="button"
+                  className={`${styles.pageTab} ${vista === 'operativo' ? styles.pageTabActive : ''}`}
+                  onClick={() => setVista('operativo')}
+                >
+                  Operativo
+                </button>
+                <button
+                  type="button"
+                  className={`${styles.pageTab} ${vista === 'historial' ? styles.pageTabActive : ''}`}
+                  onClick={() => setVista('historial')}
+                >
+                  Historial de procesados
+                </button>
+              </div>
+              <Select
+                allowClear
+                style={{ width: 180 }}
+                placeholder="Estado"
+                value={filters.estado}
+                options={(vista === 'operativo' ? STATUS_OPTIONS_OPERATIVO : STATUS_OPTIONS_HISTORIAL).map((s) => ({
+                  label: getStatusLabel(s),
+                  value: s,
+                }))}
+                onChange={(estado) => setFilters((prev) => ({ ...prev, estado, page: 1 }))}
+              />
+              <InputNumber
+                placeholder="ID Empleado"
+                value={filters.idEmpleado}
+                min={1}
+                className={styles.filterInput}
+                onChange={(idEmpleado) => setFilters((prev) => ({ ...prev, idEmpleado: idEmpleado ?? undefined, page: 1 }))}
+              />
+              {vista === 'operativo' ? (
+                <>
+                  <InputNumber
+                    min={0}
+                    placeholder="Intentos ≥"
+                    value={filters.attemptsMin}
+                    onChange={(attemptsMin) => setFilters((prev) => ({ ...prev, attemptsMin: attemptsMin ?? 0, page: 1 }))}
+                  />
+                  <Select
+                    allowClear
+                    style={{ width: 160 }}
+                    placeholder="Filtro de bloqueo"
+                    onChange={(value) =>
+                      setFilters((prev) => ({
+                        ...prev,
+                        lockedOnly: value === 'locked' ? 1 : 0,
+                        stuckOnly: value === 'stuck' ? 1 : 0,
+                        page: 1,
+                      }))
+                    }
+                    options={[
+                      { label: 'Solo bloqueados', value: 'locked' },
+                      { label: 'Solo atascados', value: 'stuck' },
+                    ]}
+                  />
+                </>
+              ) : (
                 <Select
-                  allowClear
-                  style={{ width: 160 }}
-                  placeholder="Filtro de bloqueo"
-                  onChange={(value) =>
-                    setFilters((prev) => ({
-                      ...prev,
-                      lockedOnly: value === 'locked' ? 1 : 0,
-                      stuckOnly: value === 'stuck' ? 1 : 0,
-                      page: 1,
-                    }))
-                  }
+                  style={{ width: 180 }}
+                  value={rangoHistorial}
+                  onChange={(value) => setRangoHistorial(value as '24h' | '7d' | '30d')}
                   options={[
-                    { label: 'Solo bloqueados', value: 'locked' },
-                    { label: 'Solo atascados', value: 'stuck' },
+                    { label: 'Últimas 24 horas', value: '24h' },
+                    { label: 'Últimos 7 días', value: '7d' },
+                    { label: 'Últimos 30 días', value: '30d' },
                   ]}
                 />
-              </>
-            ) : (
-              <Select
-                style={{ width: 170 }}
-                value={rangoHistorial}
-                onChange={(value) => setRangoHistorial(value as '24h' | '7d' | '30d')}
-                options={[
-                  { label: 'Ultimas 24 horas', value: '24h' },
-                  { label: 'Ultimos 7 dias', value: '7d' },
-                  { label: 'Ultimos 30 dias', value: '30d' },
-                ]}
-              />
-            )}
-          </Space>
+              )}
+            </div>
+            <div className={styles.monitoringControlBarRight}>
+              <Text type="secondary" style={{ fontSize: 13 }}>Actualización automática 15s</Text>
+              <Switch checked={autoRefresh} onChange={setAutoRefresh} />
+              <Button onClick={() => void loadData()} className={styles.btnSecondary}>
+                Actualizar ahora
+              </Button>
+              {canOperate && (
+                <>
+                  <Button
+                    className={styles.btnSecondary}
+                    onClick={async () => {
+                      try {
+                        await rescanQueues();
+                        message.success('Reanálisis ejecutado');
+                        await loadData();
+                      } catch (error) {
+                        message.error(error instanceof Error ? error.message : 'Error al reanalizar');
+                      }
+                    }}
+                  >
+                    Reanalizar ahora
+                  </Button>
+                  <Button
+                    className={styles.btnSecondary}
+                    onClick={async () => {
+                      try {
+                        await releaseStuckQueues();
+                        message.success('Procesos bloqueados liberados');
+                        await loadData();
+                      } catch (error) {
+                        message.error(error instanceof Error ? error.message : 'Error al liberar procesos bloqueados');
+                      }
+                    }}
+                  >
+                    Liberar procesos bloqueados
+                  </Button>
+                </>
+              )}
+            </div>
+          </div>
 
-          <Space>
-            <Text type="secondary">Actualizacion automatica 15s</Text>
-            <Switch checked={autoRefresh} onChange={setAutoRefresh} />
-            <Button onClick={() => void loadData()} className={styles.btnSecondary}>
-              Actualizar ahora
-            </Button>
-            {canOperate && (
-              <>
-                <Button
-                  className={styles.btnSecondary}
-                  onClick={async () => {
-                    try {
-                      await rescanQueues();
-                      message.success('Reanalisis ejecutado');
-                      await loadData();
-                    } catch (error) {
-                      message.error(error instanceof Error ? error.message : 'Error al reanalizar');
-                    }
-                  }}
-                >
-                  Reanalizar ahora
-                </Button>
-                <Button
-                  className={styles.btnSecondary}
-                  onClick={async () => {
-                    try {
-                      await releaseStuckQueues();
-                      message.success('Procesos bloqueados liberados');
-                      await loadData();
-                    } catch (error) {
-                      message.error(error instanceof Error ? error.message : 'Error al liberar procesos bloqueados');
-                    }
-                  }}
-                >
-                  Liberar procesos bloqueados
-                </Button>
-              </>
-            )}
-          </Space>
-        </Space>
+          <div className={styles.semaforoBlock}>
+            <span className={styles.semaforoLabel}>Semáforo de salud del sistema</span>
+            <Tag color={healthStatus.color}>{healthStatus.label}</Tag>
+            <Text type="secondary" style={{ fontSize: 13, margin: 0 }}>{healthStatus.detail}</Text>
+          </div>
 
-        <Card size="small" style={{ marginTop: 16 }}>
-          <Space direction="vertical" size={4}>
-            <Text type="secondary">Semaforo de salud del sistema</Text>
-            <Space>
-              <Tag color={healthStatus.color}>{healthStatus.label}</Tag>
-              <Text>{healthStatus.detail}</Text>
-            </Space>
-          </Space>
-        </Card>
-
-        <Row gutter={[12, 12]} style={{ marginTop: 16 }}>
-          {cards.map((card) => (
-            <Col key={card.title} xs={24} sm={12} md={8} lg={6}>
-              <Card size="small">
-                <Space size={6}>
-                  <Text type="secondary">{card.title}</Text>
+          <div className={styles.metricsGrid}>
+            {cards.map((card) => (
+              <div key={card.title} className={styles.metricCard}>
+                <div className={styles.metricCardTitle}>
+                  {card.title}
                   <Tooltip title={card.tooltip}>
                     <InfoCircleOutlined />
                   </Tooltip>
-                </Space>
-                <div style={{ fontSize: 18, fontWeight: 600 }}>{card.value}</div>
-              </Card>
-            </Col>
-          ))}
-        </Row>
+                </div>
+                <p className={styles.metricCardValue}>{card.value}</p>
+              </div>
+            ))}
+          </div>
 
-        <Tabs
-          style={{ marginTop: 16 }}
-          activeKey={activeTab}
-          onChange={(key) => setActiveTab(key as 'identity' | 'encrypt')}
-          items={[
-            {
-              key: 'identity',
-              label: `Cola de Identidad (${identityTotal})`,
-              children: (
-                <Table<QueueJobItem>
-                  rowKey="idQueue"
-                  loading={loading}
-                  columns={commonColumns}
-                  dataSource={identityData}
-                  scroll={{ x: 1900 }}
-                  pagination={{
-                    current: filters.page ?? 1,
-                    pageSize: filters.pageSize ?? 25,
-                    total: identityTotal,
-                    onChange: (page, pageSize) => setFilters((prev) => ({ ...prev, page, pageSize })),
-                  }}
-                />
-              ),
-            },
-            {
-              key: 'encrypt',
-              label: `Cola de Cifrado (${encryptTotal})`,
-              children: (
-                <Table<QueueJobItem>
-                  rowKey="idQueue"
-                  loading={loading}
-                  columns={commonColumns}
-                  dataSource={encryptData}
-                  scroll={{ x: 1900 }}
-                  pagination={{
-                    current: filters.page ?? 1,
-                    pageSize: filters.pageSize ?? 25,
-                    total: encryptTotal,
-                    onChange: (page, pageSize) => setFilters((prev) => ({ ...prev, page, pageSize })),
-                  }}
-                />
-              ),
-            },
-          ]}
-        />
+          <div className={styles.tabsWrapper} style={{ marginTop: 24 }}>
+            <Tabs
+              activeKey={activeTab}
+              onChange={(key) => setActiveTab(key as 'identity' | 'encrypt')}
+              items={[
+                {
+                  key: 'identity',
+                  label: `Cola de Identidad (${identityTotal})`,
+                  children: (
+                    <Table<QueueJobItem>
+                      className={styles.configTable}
+                      rowKey="idQueue"
+                      loading={loading}
+                      columns={commonColumns}
+                      dataSource={identityData}
+                      scroll={{ x: 1900 }}
+                      pagination={{
+                        current: filters.page ?? 1,
+                        pageSize: filters.pageSize ?? 25,
+                        total: identityTotal,
+                        showSizeChanger: true,
+                        showTotal: (total) => `${total} registro(s)`,
+                        onChange: (page, pageSize) => setFilters((prev) => ({ ...prev, page, pageSize })),
+                      }}
+                      locale={{ emptyText: 'No hay datos' }}
+                    />
+                  ),
+                },
+                {
+                  key: 'encrypt',
+                  label: `Cola de Cifrado (${encryptTotal})`,
+                  children: (
+                    <Table<QueueJobItem>
+                      className={styles.configTable}
+                      rowKey="idQueue"
+                      loading={loading}
+                      columns={commonColumns}
+                      dataSource={encryptData}
+                      scroll={{ x: 1900 }}
+                      pagination={{
+                        current: filters.page ?? 1,
+                        pageSize: filters.pageSize ?? 25,
+                        total: encryptTotal,
+                        showSizeChanger: true,
+                        showTotal: (total) => `${total} registro(s)`,
+                        onChange: (page, pageSize) => setFilters((prev) => ({ ...prev, page, pageSize })),
+                      }}
+                      locale={{ emptyText: 'No hay datos' }}
+                    />
+                  ),
+                },
+              ]}
+            />
+          </div>
+        </div>
       </Card>
     </div>
   );

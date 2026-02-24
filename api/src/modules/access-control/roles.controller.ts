@@ -2,14 +2,14 @@ import {
   Controller, Get, Post, Patch, Put, Delete, Param, Body, Query,
   ParseIntPipe, ParseBoolPipe,
 } from '@nestjs/common';
-import { RolesService } from './roles.service.js';
-import { CreateRoleDto } from './dto/create-role.dto.js';
-import { AssignRolePermissionDto } from './dto/assign-role-permission.dto.js';
-import { UpdateRoleDto } from './dto/update-role.dto.js';
-import { ReplaceRolePermissionsDto } from './dto/replace-role-permissions.dto.js';
-import { Public } from '../../common/decorators/public.decorator.js';
-import { RequirePermissions } from '../../common/decorators/require-permissions.decorator.js';
-import { CurrentUser } from '../../common/decorators/current-user.decorator.js';
+import { RolesService } from './roles.service';
+import { CreateRoleDto } from './dto/create-role.dto';
+import { AssignRolePermissionDto } from './dto/assign-role-permission.dto';
+import { UpdateRoleDto } from './dto/update-role.dto';
+import { ReplaceRolePermissionsDto } from './dto/replace-role-permissions.dto';
+import { Public } from '../../common/decorators/public.decorator';
+import { RequirePermissions } from '../../common/decorators/require-permissions.decorator';
+import { CurrentUser } from '../../common/decorators/current-user.decorator';
 
 @Controller('roles')
 export class RolesController {

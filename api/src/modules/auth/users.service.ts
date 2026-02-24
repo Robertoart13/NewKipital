@@ -7,16 +7,16 @@ import {
 import { InjectRepository } from '@nestjs/typeorm';
 import { In, Repository } from 'typeorm';
 import * as bcrypt from 'bcrypt';
-import { User } from './entities/user.entity.js';
-import { UserApp } from '../access-control/entities/user-app.entity.js';
-import { UserRole } from '../access-control/entities/user-role.entity.js';
-import { UserRoleGlobal } from '../access-control/entities/user-role-global.entity.js';
-import { App } from '../access-control/entities/app.entity.js';
-import { Role } from '../access-control/entities/role.entity.js';
-import { CreateUserDto } from './dto/create-user.dto.js';
-import { UpdateUserDto } from './dto/update-user.dto.js';
-import { UserStatus } from './constants/user-status.enum.js';
-import { AuditOutboxService } from '../integration/audit-outbox.service.js';
+import { User } from './entities/user.entity';
+import { UserApp } from '../access-control/entities/user-app.entity';
+import { UserRole } from '../access-control/entities/user-role.entity';
+import { UserRoleGlobal } from '../access-control/entities/user-role-global.entity';
+import { App } from '../access-control/entities/app.entity';
+import { Role } from '../access-control/entities/role.entity';
+import { CreateUserDto } from './dto/create-user.dto';
+import { UpdateUserDto } from './dto/update-user.dto';
+import { UserStatus } from './constants/user-status.enum';
+import { AuditOutboxService } from '../integration/audit-outbox.service';
 
 const TIMEWISE_SUPERVISOR_ROLES = ['SUPERVISOR_TIMEWISE', 'SUPERVISOR_GLOBAL_TIMEWISE'];
 

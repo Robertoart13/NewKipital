@@ -1,1 +1,1 @@
-export type { WorkflowResult } from './workflow.interface.js';
+export type { WorkflowResult } from './workflow.interface';

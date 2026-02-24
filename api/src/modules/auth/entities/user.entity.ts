@@ -6,7 +6,7 @@ import {
   CreateDateColumn,
   UpdateDateColumn,
 } from 'typeorm';
-import { UserStatus } from '../constants/user-status.enum.js';
+import { UserStatus } from '../constants/user-status.enum';
 
 /**
  * sys_usuarios — Root de autenticación del sistema.

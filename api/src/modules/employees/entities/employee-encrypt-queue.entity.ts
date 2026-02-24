@@ -1,5 +1,5 @@
 import { Column, CreateDateColumn, Entity, Index, PrimaryGeneratedColumn, UpdateDateColumn } from 'typeorm';
-import { EmployeeQueueStatus } from './employee-identity-queue.entity.js';
+import { EmployeeQueueStatus } from './employee-identity-queue.entity';
 
 @Entity('sys_empleado_encrypt_queue')
 @Index('UQ_employee_encrypt_queue_dedupe', ['dedupeKey'], { unique: true })

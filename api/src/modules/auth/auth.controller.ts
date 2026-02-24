@@ -15,13 +15,13 @@ import {
 import { IsEmail, IsString, MinLength } from 'class-validator';
 import { ConfigService } from '@nestjs/config';
 import type { Request, Response } from 'express';
-import { AuthService } from './auth.service.js';
-import { UsersService } from './users.service.js';
-import { MicrosoftAuthService } from './microsoft-auth.service.js';
-import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard.js';
-import { CurrentUser } from '../../common/decorators/current-user.decorator.js';
-import { Public } from '../../common/decorators/public.decorator.js';
-import { SkipCsrf } from '../../common/decorators/skip-csrf.decorator.js';
+import { AuthService } from './auth.service';
+import { UsersService } from './users.service';
+import { MicrosoftAuthService } from './microsoft-auth.service';
+import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
+import { CurrentUser } from '../../common/decorators/current-user.decorator';
+import { Public } from '../../common/decorators/public.decorator';
+import { SkipCsrf } from '../../common/decorators/skip-csrf.decorator';
 import {
   COOKIE_NAME,
   CSRF_COOKIE_NAME,
@@ -32,10 +32,10 @@ import {
   getCookieOptions,
   getCsrfCookieOptions,
   getRefreshCookieOptions,
-} from '../../config/cookie.config.js';
-import { AuthAuditService } from './auth-audit.service.js';
-import { AuthRateLimitService } from './auth-rate-limit.service.js';
-import { DomainEventsService } from '../integration/domain-events.service.js';
+} from '../../config/cookie.config';
+import { AuthAuditService } from './auth-audit.service';
+import { AuthRateLimitService } from './auth-rate-limit.service';
+import { DomainEventsService } from '../integration/domain-events.service';
 
 class LoginDto {
   @IsEmail()

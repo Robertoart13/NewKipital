@@ -6,8 +6,8 @@ import { Type } from 'class-transformer';
 import {
   GeneroEmpleado, EstadoCivilEmpleado, TipoContratoEmpleado,
   JornadaEmpleado, MonedaSalarioEmpleado,
-} from '../entities/employee.entity.js';
-import { CreateEmployeeAguinaldoProvisionDto } from './create-employee-aguinaldo-provision.dto.js';
+} from '../entities/employee.entity';
+import { CreateEmployeeAguinaldoProvisionDto } from './create-employee-aguinaldo-provision.dto';
 
 /**
  * DTO para crear empleado.

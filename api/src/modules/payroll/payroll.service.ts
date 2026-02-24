@@ -13,11 +13,11 @@ import {
   EstadoCalendarioNomina,
   TipoPlanilla,
   MonedaCalendario,
-} from './entities/payroll-calendar.entity.js';
-import { CreatePayrollDto } from './dto/create-payroll.dto.js';
-import { DOMAIN_EVENTS } from '../../common/events/event-names.js';
-import { DomainEventsService } from '../integration/domain-events.service.js';
-import { UserCompany } from '../access-control/entities/user-company.entity.js';
+} from './entities/payroll-calendar.entity';
+import { CreatePayrollDto } from './dto/create-payroll.dto';
+import { DOMAIN_EVENTS } from '../../common/events/event-names';
+import { DomainEventsService } from '../integration/domain-events.service';
+import { UserCompany } from '../access-control/entities/user-company.entity';
 
 const ESTADOS_OPERATIVOS = [
   EstadoCalendarioNomina.ABIERTA,

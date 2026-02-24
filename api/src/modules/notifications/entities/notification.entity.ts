@@ -8,7 +8,7 @@ import {
   OneToMany,
   JoinColumn,
 } from 'typeorm';
-import { NotificationUser } from './notification-user.entity.js';
+import { NotificationUser } from './notification-user.entity';
 
 @Entity('sys_notificaciones')
 export class Notification {

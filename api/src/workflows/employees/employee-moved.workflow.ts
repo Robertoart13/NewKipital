@@ -1,5 +1,5 @@
 import { Injectable, Logger, BadRequestException } from '@nestjs/common';
-import { DOMAIN_EVENTS } from '../../common/events/event-names.js';
+import { DOMAIN_EVENTS } from '../../common/events/event-names';
 
 /**
  * EmployeeMovedWorkflow — Política P3: Bloquear hasta resolver.

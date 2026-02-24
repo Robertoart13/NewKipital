@@ -8,7 +8,7 @@ import {
   MaxLength,
   Min,
 } from 'class-validator';
-import { EstadoProvisionAguinaldoEmpleado } from '../entities/employee-aguinaldo-provision.entity.js';
+import { EstadoProvisionAguinaldoEmpleado } from '../entities/employee-aguinaldo-provision.entity';
 
 export class CreateEmployeeAguinaldoProvisionDto {
   @IsInt()

@@ -1,7 +1,7 @@
 import { Body, Controller, Get, Param, ParseIntPipe, Post, Query } from '@nestjs/common';
-import { RequirePermissions } from '../../common/decorators/require-permissions.decorator.js';
-import { ListQueueJobsDto, QueueTypeDto, RequeueJobDto } from './dto/list-queue-jobs.dto.js';
-import { OpsService } from './ops.service.js';
+import { RequirePermissions } from '../../common/decorators/require-permissions.decorator';
+import { ListQueueJobsDto, QueueTypeDto, RequeueJobDto } from './dto/list-queue-jobs.dto';
+import { OpsService } from './ops.service';
 
 @Controller('ops/queues')
 export class OpsController {

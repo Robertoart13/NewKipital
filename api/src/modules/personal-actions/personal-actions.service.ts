@@ -7,10 +7,10 @@ import {
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { EventEmitter2 } from '@nestjs/event-emitter';
-import { PersonalAction, PersonalActionEstado } from './entities/personal-action.entity.js';
-import { CreatePersonalActionDto } from './dto/create-personal-action.dto.js';
-import { DOMAIN_EVENTS } from '../../common/events/event-names.js';
-import { UserCompany } from '../access-control/entities/user-company.entity.js';
+import { PersonalAction, PersonalActionEstado } from './entities/personal-action.entity';
+import { CreatePersonalActionDto } from './dto/create-personal-action.dto';
+import { DOMAIN_EVENTS } from '../../common/events/event-names';
+import { UserCompany } from '../access-control/entities/user-company.entity';
 
 @Injectable()
 export class PersonalActionsService {

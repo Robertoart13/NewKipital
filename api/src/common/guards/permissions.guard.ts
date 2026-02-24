@@ -6,9 +6,9 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
-import { REQUIRE_PERMISSIONS_KEY } from '../decorators/require-permissions.decorator.js';
-import { ALLOW_WITHOUT_COMPANY_KEY } from '../decorators/allow-without-company.decorator.js';
-import { AuthService } from '../../modules/auth/auth.service.js';
+import { REQUIRE_PERMISSIONS_KEY } from '../decorators/require-permissions.decorator';
+import { ALLOW_WITHOUT_COMPANY_KEY } from '../decorators/allow-without-company.decorator';
+import { AuthService } from '../../modules/auth/auth.service';
 
 type RequestWithUser = {
   user?: {

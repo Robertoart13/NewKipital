@@ -10,11 +10,11 @@ import {
   Put,
   Query,
 } from '@nestjs/common';
-import { CurrentUser } from '../../common/decorators/current-user.decorator.js';
-import { RequirePermissions } from '../../common/decorators/require-permissions.decorator.js';
-import { CreatePermissionDto } from './dto/create-permission.dto.js';
-import { UpdatePermissionDto } from './dto/update-permission.dto.js';
-import { PermissionsService } from './permissions.service.js';
+import { CurrentUser } from '../../common/decorators/current-user.decorator';
+import { RequirePermissions } from '../../common/decorators/require-permissions.decorator';
+import { CreatePermissionDto } from './dto/create-permission.dto';
+import { UpdatePermissionDto } from './dto/update-permission.dto';
+import { PermissionsService } from './permissions.service';
 
 @Controller('permissions')
 export class PermissionsController {
