@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useCallback, useState } from 'react';
+import { useEffect, useMemo, useCallback, useState } from 'react';
 import { App as AntdApp, Modal, Form, Input, Select, DatePicker, InputNumber, Switch, Tabs, Button, Flex, Row, Col } from 'antd';
 import {
   UserOutlined,
@@ -86,15 +86,7 @@ export function EmployeeCreateModal({ open, onClose, onSuccess }: EmployeeCreate
     ? allCompanies
     : companies.map((company) => ({ id: company.id, nombre: company.nombre }));
 
-  const tabsContainerRef = useRef<HTMLDivElement>(null);
   const [activeTabKey, setActiveTabKey] = useState('personal');
-
-  const scrollActiveTabIntoView = useCallback(() => {
-    setTimeout(() => {
-      const activeEl = tabsContainerRef.current?.querySelector('.ant-tabs-tab-active');
-      activeEl?.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
-    }, 50);
-  }, []);
 
   const crearAccesoTimewise = Form.useWatch('crearAccesoTimewise', form) ?? false;
   const crearAccesoKpital = Form.useWatch('crearAccesoKpital', form) ?? false;
@@ -865,17 +857,12 @@ export function EmployeeCreateModal({ open, onClose, onSuccess }: EmployeeCreate
         initialValues={{ activo: true }}
         className={styles.companyFormContent}
       >
-        <div ref={tabsContainerRef}>
-          <Tabs
-            activeKey={activeTabKey}
-            onChange={(key) => {
-              setActiveTabKey(key);
-              scrollActiveTabIntoView();
-            }}
-            items={tabItems}
-            className={`${styles.tabsWrapper} ${styles.companyModalTabs} ${styles.employeeModalTabsScroll}`}
-          />
-        </div>
+        <Tabs
+          activeKey={activeTabKey}
+          onChange={setActiveTabKey}
+          items={tabItems}
+          className={`${styles.tabsWrapper} ${styles.companyModalTabs} ${styles.employeeModalTabsScroll}`}
+        />
         <div className={styles.companyModalFooter}>
           <Button onClick={onClose} className={styles.companyModalBtnCancel}>
             Cancelar

@@ -421,37 +421,72 @@
   gap: 4px;
 }
 
-/* Tabs con scroll horizontal: muestra nombres completos, desplaza al seleccionar */
-.employeeModalTabsScroll :global(.ant-tabs-nav-wrap) {
+.employeeFlowTabs {
+  position: relative;
+}
+
+.employeeFlowTabs :global(.ant-tabs-nav-wrap) {
   overflow-x: auto !important;
   overflow-y: hidden;
   scroll-behavior: smooth;
   -webkit-overflow-scrolling: touch;
+  padding-bottom: 4px;
+  box-shadow: inset 6px 0 18px -12px rgba(0, 0, 0, 0.25);
+  overscroll-behavior-inline: contain;
+  scroll-snap-type: x proximity;
 }
 
-.employeeModalTabsScroll :global(.ant-tabs-nav-wrap)::-webkit-scrollbar {
-  height: 6px;
-}
-
-.employeeModalTabsScroll :global(.ant-tabs-nav-wrap)::-webkit-scrollbar-thumb {
-  background: #cbd5e1;
-  border-radius: 3px;
-}
-
-.employeeModalTabsScroll :global(.ant-tabs-nav-wrap)::-webkit-scrollbar-track {
-  background: #f1f5f9;
-}
-
-.employeeModalTabsScroll :global(.ant-tabs-nav-list) {
+.employeeFlowTabs :global(.ant-tabs-nav-list) {
+  gap: 16px;
+  transition: transform 0.2s ease;
   flex-wrap: nowrap !important;
-  padding-right: 8px; /* evita corte brusco al hacer scroll a la derecha */
+  align-items: center;
+  scroll-snap-align: start;
 }
 
+.employeeFlowTabs :global(.ant-tabs-tab) {
+  transition: color 0.25s ease, transform 0.25s ease, background 0.25s ease;
+  padding: 10px 16px;
+  border-radius: 12px;
+  background: rgba(90, 108, 125, 0.05);
+}
+
+.employeeFlowTabs :global(.ant-tabs-tab-active) {
+  background: #ffffff !important;
+  color: #1f2a37 !important;
+  box-shadow: 0 4px 12px rgba(33, 56, 88, 0.1);
+  transform: translateY(-2px);
+}
+
+.employeeFlowTabs :global(.ant-tabs-ink-bar) {
+  transition: all 0.3s ease;
+  height: 0;
+}
+
+/* Tabs en modal empleado: wrap a 2 líneas para que todos estén siempre visibles (sin scroll horizontal) */
+.employeeModalTabsScroll :global(.ant-tabs-nav) {
+  min-width: 0;
+  overflow: visible !important;
+}
+.employeeModalTabsScroll :global(.ant-tabs-nav-wrap) {
+  overflow: visible !important;
+  min-width: 0;
+}
+.employeeModalTabsScroll :global(.ant-tabs-nav-list) {
+  flex-wrap: wrap !important;
+  gap: 6px 8px;
+  padding-right: 0;
+  margin-bottom: 0;
+}
 .employeeModalTabsScroll :global(.ant-tabs-tab) {
   white-space: nowrap !important;
   flex-shrink: 0;
+  margin: 0 !important;
 }
-
+.employeeModalTabsScroll :global(.ant-tabs-ink-bar) {
+  display: block;
+}
+/* Ocultar flechas/more (no hay overflow con wrap) */
 .employeeModalTabsScroll :global(.ant-tabs-nav-more),
 .employeeModalTabsScroll :global(.ant-tabs-nav-operations) {
   display: none !important;

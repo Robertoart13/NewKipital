@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useCallback, useState } from 'react';
+import { useEffect, useMemo, useCallback, useState } from 'react';
 import { App as AntdApp, Modal, Form, Input, Select, DatePicker, InputNumber, Switch, Tabs, Button, Flex, Row, Col, Spin, Table, Tag, Tooltip } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import {
@@ -111,18 +111,10 @@ export function EmployeeEditModal({ employeeId, open, onClose, onSuccess }: Empl
   const { data: positions = [] } = usePositions();
   const { data: payPeriods = [] } = usePayPeriods();
 
-  const tabsContainerRef = useRef<HTMLDivElement>(null);
   const [activeTabKey, setActiveTabKey] = useState('personal');
   const [auditTrail, setAuditTrail] = useState<EmployeeAuditTrailItem[]>([]);
   const [loadingAuditTrail, setLoadingAuditTrail] = useState(false);
   const [auditLoadedForId, setAuditLoadedForId] = useState<number | null>(null);
-
-  const scrollActiveTabIntoView = useCallback(() => {
-    setTimeout(() => {
-      const activeEl = tabsContainerRef.current?.querySelector('.ant-tabs-tab-active');
-      activeEl?.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
-    }, 50);
-  }, []);
 
   const activo = Form.useWatch('activo', form) ?? true;
   const canToggleActivo = (activo && canInactivate) || (!activo && canReactivate);
@@ -772,17 +764,15 @@ export function EmployeeEditModal({ employeeId, open, onClose, onSuccess }: Empl
           initialValues={mapEmployeeToFormValues(employee!)}
           className={styles.companyFormContent}
         >
-          <div ref={tabsContainerRef}>
-            <Tabs
-              activeKey={activeTabKey}
-              onChange={(key) => {
-                setActiveTabKey(key);
-                scrollActiveTabIntoView();
-              }}
-              items={tabItems}
-              className={`${styles.tabsWrapper} ${styles.companyModalTabs} ${styles.employeeModalTabsScroll}`}
-            />
-          </div>
+          <Tabs
+            activeKey={activeTabKey}
+            onChange={setActiveTabKey}
+            items={tabItems}
+            animated={{ inkBar: true, tabPane: false }}
+            tabBarGutter={24}
+            tabBarStyle={{ padding: '10px 12px 6px', background: 'transparent' }}
+            className={`${styles.tabsWrapper} ${styles.companyModalTabs} ${styles.employeeModalTabsScroll}`}
+          />
           <div className={styles.companyModalFooter}>
             <Button onClick={onClose} className={styles.companyModalBtnCancel}>
               Cancelar
@@ -807,4 +797,3 @@ export function EmployeeEditModal({ employeeId, open, onClose, onSuccess }: Empl
     </Modal>
   );
 }
-
