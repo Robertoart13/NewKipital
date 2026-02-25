@@ -12,10 +12,12 @@ import { Company } from './entities/company.entity';
 import { AuditOutboxService } from '../integration/audit-outbox.service';
 import { CreateCompanyDto } from './dto/create-company.dto';
 import { UpdateCompanyDto } from './dto/update-company.dto';
+import { PayrollCalendar } from '../payroll/entities/payroll-calendar.entity';
 
 describe('CompaniesService', () => {
   let service: CompaniesService;
   let companyRepo: jest.Mocked<Repository<Company>>;
+  let payrollCalendarRepo: jest.Mocked<Repository<PayrollCalendar>>;
   let auditOutbox: jest.Mocked<AuditOutboxService>;
 
   const mockCompany: Company = {
@@ -68,12 +70,14 @@ describe('CompaniesService', () => {
       providers: [
         CompaniesService,
         { provide: getRepositoryToken(Company), useValue: mockRepository },
+        { provide: getRepositoryToken(PayrollCalendar), useValue: { find: jest.fn().mockResolvedValue([]) } },
         { provide: AuditOutboxService, useValue: mockAuditOutbox },
       ],
     }).compile();
 
     service = module.get<CompaniesService>(CompaniesService);
     companyRepo = module.get(getRepositoryToken(Company));
+    payrollCalendarRepo = module.get(getRepositoryToken(PayrollCalendar));
     auditOutbox = module.get(AuditOutboxService);
   });
 

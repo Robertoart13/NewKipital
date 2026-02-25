@@ -4,9 +4,9 @@ Documento de control por fases de ejecucion de pruebas.
 
 ## Resumen vigente
 - Estado actual: Completo
-- Total: 321/321 pasando
-- Backend: 137/137
-- Frontend: 184/184
+- Total: 502/502 pasando
+- Backend: 179/179
+- Frontend: 323/323
 - Fallos abiertos: 0
 
 ## Fase 1 - 2026-02-24 09:42
@@ -89,6 +89,112 @@ Cambios incorporados en Fase 4:
 
 Estado de fase: Cerrada
 
+## Fase 5 - 2026-02-25 10:06
+Alcance: Vacaciones acumuladas enterprise + revalidacion integral
+
+Comandos ejecutados:
+- `cd api && npm.cmd run build`
+- `cd api && npm.cmd test -- --runInBand`
+- `cd frontend && npm.cmd test`
+
+Resultados:
+- Backend: 179/179
+- Frontend: 323/323
+- Total: 502/502
+- Fallos: 0
+
+Cambios incorporados en Fase 5:
+- Backend:
+  - Cuenta y ledger de vacaciones por empleado.
+  - Provision mensual por dia ancla (cierre del dia) e idempotencia por periodo.
+  - Descuento de vacaciones al aplicar planilla.
+  - Restricciones de negocio en empleados (dias iniciales inmutables, fecha ingreso 1..28).
+- Frontend:
+  - Formularios crear/editar empleados ajustados a reglas de vacaciones acumuladas.
+  - Validaciones de enteros para dias de vacaciones.
+- Base de datos:
+  - Migracion `1708534100000-CreateEmployeeVacationLedger.ts` agregada.
+  - Verificacion en `hr_pro`: migracion aun no aplicada (`tablas_vacaciones = 0`).
+
+Estado de fase: Cerrada
+
+## Fase 6 - 2026-02-25 10:15
+Alcance: Aplicacion en hr_pro + pruebas reales de BD + rerun completo
+
+Comandos ejecutados:
+- `cd api && npm.cmd test -- --runInBand`
+- `cd frontend && npm.cmd test`
+
+Resultados:
+- Backend: 179/179
+- Frontend: 323/323
+- Total: 502/502
+- Fallos: 0
+
+Validaciones adicionales en hr_pro:
+- Migracion aplicada manualmente por SQL equivalente:
+  - `sys_empleado_vacaciones_cuenta`
+  - `sys_empleado_vacaciones_ledger`
+  - `sys_empleado_vacaciones_provision_monto`
+- Registro de migracion en tabla `migrations`:
+  - `CreateEmployeeVacationLedger1708534100000`
+- Prueba real controlada en BD:
+  - Escenario negativo: `-4` por `VACATION_USAGE`.
+  - Recuperacion por provision mensual: `-3`, `-2`, `-1`.
+  - Reversa: `+4` (`REVERSAL`) validada.
+  - Limpieza aplicada al final: sin residuos `QA_VALIDATION`.
+
+Estado de fase: Cerrada
+
+## Fase 7 - 2026-02-25 10:30
+Alcance: Fix corrimiento de fechas DATE + validacion E2E de vacaciones
+
+Comandos ejecutados:
+- `cd api && npm.cmd run build`
+- `cd api && npm.cmd test -- --runInBand`
+- `cd frontend && npm.cmd test`
+
+Resultados:
+- Backend: 179/179
+- Frontend: 323/323
+- Total: 502/502
+- Fallos: 0
+
+Validacion E2E adicional:
+- Creacion real de empleado por API con usuario master (`rzuniga@roccacr.com`).
+- Verificacion en BD `hr_pro`:
+  - `sys_empleados.fecha_ingreso_empleado` sin corrimiento.
+  - `sys_empleado_vacaciones_cuenta.fecha_ingreso_ancla_vacaciones` y `dia_ancla_vacaciones` consistentes.
+  - `sys_empleado_vacaciones_ledger` con provisiones mensuales en dia ancla esperado (26).
+- Bloqueo de edicion de vacaciones iniciales sigue vigente (400 esperado).
+
+Estado de fase: Cerrada
+
+## Fase 8 - 2026-02-25 10:39
+Alcance: E2E empresas (crear/editar/inactivar/reactivar) + validacion BD
+
+Comandos ejecutados:
+- `cd api && npm.cmd test -- --runInBand`
+- `cd frontend && npm.cmd test`
+
+Resultados:
+- Backend: 179/179
+- Frontend: 323/323
+- Total: 502/502
+- Fallos: 0
+
+Validacion E2E adicional:
+- Creacion real de empresa por API con usuario master.
+- Edicion real de empresa (nombre, telefono, actividad, direccion, codigo postal).
+- Validacion de conflicto de prefijo duplicado (409 esperado).
+- Inactivacion y reactivacion por API (estado 0 -> 1), luego limpieza dejando empresas QA inactivas.
+- Verificacion en `hr_pro`:
+  - Persistencia en `sys_empresas`.
+  - Autoasignacion en `sys_usuario_empresa`.
+  - Trazas de auditoria en `sys_auditoria_acciones`.
+
+Estado de fase: Cerrada
+
 ## Tabla comparativa de fases
 | Fase | Backend | Frontend | Total | Fallos |
 |---|---:|---:|---:|---:|
@@ -96,8 +202,12 @@ Estado de fase: Cerrada
 | Fase 2 | 99/99 | 131/131 | 230/230 | 0 |
 | Fase 3 | 122/122 | 162/162 | 284/284 | 0 |
 | Fase 4 | 137/137 | 184/184 | 321/321 | 0 |
+| Fase 5 | 179/179 | 323/323 | 502/502 | 0 |
+| Fase 6 | 179/179 | 323/323 | 502/502 | 0 |
+| Fase 7 | 179/179 | 323/323 | 502/502 | 0 |
+| Fase 8 | 179/179 | 323/323 | 502/502 | 0 |
 
 ## Lectura operativa
-- Si se requiere validacion integral rapida, ejecutar los comandos de Fase 4.
+- Si se requiere validacion integral rapida, ejecutar los comandos de Fase 5.
 - Si se requiere auditoria historica, revisar evolucion por fases en este archivo.
 - Analisis completo del proyecto: `docs/Test/ANALISIS-ESTADO-PROYECTO-FASE4.md`

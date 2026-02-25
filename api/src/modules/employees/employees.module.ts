@@ -5,6 +5,9 @@ import { EmployeesService } from './employees.service';
 import { CatalogsController } from './catalogs.controller';
 import { Employee } from './entities/employee.entity';
 import { EmployeeAguinaldoProvision } from './entities/employee-aguinaldo-provision.entity';
+import { EmployeeVacationAccount } from './entities/employee-vacation-account.entity';
+import { EmployeeVacationLedger } from './entities/employee-vacation-ledger.entity';
+import { EmployeeVacationMonetaryProvision } from './entities/employee-vacation-monetary-provision.entity';
 import { EmployeeIdentityQueue } from './entities/employee-identity-queue.entity';
 import { EmployeeEncryptQueue } from './entities/employee-encrypt-queue.entity';
 import { Department } from './entities/department.entity';
@@ -22,12 +25,16 @@ import { WorkflowsModule } from '../../workflows/workflows.module';
 import { AuthModule } from '../auth/auth.module';
 import { EmployeeSensitiveDataService } from '../../common/services/employee-sensitive-data.service';
 import { EmployeeDataAutomationWorkerService } from './services/employee-data-automation-worker.service';
+import { EmployeeVacationService } from './services/employee-vacation.service';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([
       Employee,
       EmployeeAguinaldoProvision,
+      EmployeeVacationAccount,
+      EmployeeVacationLedger,
+      EmployeeVacationMonetaryProvision,
       Department,
       Position,
       PayPeriod,
@@ -48,7 +55,12 @@ import { EmployeeDataAutomationWorkerService } from './services/employee-data-au
     AuthModule,
   ],
   controllers: [EmployeesController, CatalogsController],
-  providers: [EmployeesService, EmployeeSensitiveDataService, EmployeeDataAutomationWorkerService],
-  exports: [EmployeesService, EmployeeDataAutomationWorkerService],
+  providers: [
+    EmployeesService,
+    EmployeeSensitiveDataService,
+    EmployeeDataAutomationWorkerService,
+    EmployeeVacationService,
+  ],
+  exports: [EmployeesService, EmployeeDataAutomationWorkerService, EmployeeVacationService],
 })
 export class EmployeesModule {}

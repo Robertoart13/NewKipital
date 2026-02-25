@@ -54,7 +54,7 @@ interface EmployeeEditModalProps {
 
 /** Solo campos que devuelve la API del empleado (sin inventar fecha nacimiento, código postal, etc.) */
 function mapEmployeeToFormValues(emp: EmployeeDetail) {
-  const vacaciones = emp.vacacionesAcumuladas != null ? parseFloat(emp.vacacionesAcumuladas) : undefined;
+  const vacaciones = emp.vacacionesAcumuladas != null ? parseInt(emp.vacacionesAcumuladas, 10) : undefined;
   const cesantia = emp.cesantiaAcumulada != null ? parseFloat(emp.cesantiaAcumulada) : undefined;
   const salario = emp.salarioBase != null ? (typeof emp.salarioBase === 'string' ? parseFloat(emp.salarioBase) : emp.salarioBase) : undefined;
   return {
@@ -119,7 +119,6 @@ export function EmployeeEditModal({ employeeId, open, onClose, onSuccess }: Empl
   const canToggleActivo = (activo && canInactivate) || (!activo && canReactivate);
   const monedaSalarioSeleccionada = (Form.useWatch('monedaSalario', form) as string | undefined) ?? 'CRC';
   const currencySymbol = getCurrencySymbol(monedaSalarioSeleccionada);
-  const empresaLaboralSeleccionada = Form.useWatch('idEmpresa', form) as number | undefined;
   const { data: supervisors = [] } = useSupervisors();
 
   const canSubmit = useMemo(() => {
@@ -213,6 +212,7 @@ export function EmployeeEditModal({ employeeId, open, onClose, onSuccess }: Empl
       vacacionesAcumuladas: values.vacacionesAcumuladas != null ? String(values.vacacionesAcumuladas) : undefined,
       cesantiaAcumulada: values.cesantiaAcumulada != null ? String(values.cesantiaAcumulada) : undefined,
     };
+    delete payload.vacacionesAcumuladas;
 
     updateMutation.mutate(
       { id: employeeId, payload },
@@ -492,32 +492,29 @@ export function EmployeeEditModal({ employeeId, open, onClose, onSuccess }: Empl
             <Col span={12}>
               <Form.Item
                 name="vacacionesAcumuladas"
-                label="Vacaciones Acumuladas"
+                label="Días Iniciales de Vacaciones"
                 rules={[
                   {
                     validator: (_, value) => {
                       if (value == null || value === '') return Promise.resolve();
                       const numericValue = Number(value);
-                      if (Number.isNaN(numericValue) || numericValue < 0) {
-                        return Promise.reject(new Error('Solo montos positivos o cero'));
-                      }
-                      if (isMoneyOverMax(numericValue)) {
-                        return Promise.reject(new Error('Monto demasiado alto'));
+                      if (Number.isNaN(numericValue) || numericValue < 0 || !Number.isInteger(numericValue)) {
+                        return Promise.reject(new Error('Debe ser un número entero de 0 o mayor'));
                       }
                       return Promise.resolve();
                     },
                   },
                 ]}
-                extra="Monto en moneda, 0 o mayor"
+                extra="Solo lectura. El saldo inicial no es editable."
               >
                 <InputNumber
                   min={0}
-                  max={MAX_MONEY_AMOUNT}
-                  precision={2}
-                  formatter={(value) => formatCurrencyInput(value, currencySymbol)}
-                  parser={parseCurrencyInput}
+                  max={99999}
+                  precision={0}
+                  step={1}
+                  disabled
                   style={{ width: '100%' }}
-                  placeholder={`${currencySymbol} 0.00`}
+                  placeholder="0"
                 />
               </Form.Item>
             </Col>

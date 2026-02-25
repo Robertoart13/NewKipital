@@ -6,9 +6,14 @@ import { PayPeriod } from './entities/pay-period.entity';
 import { PayrollCalendar } from './entities/payroll-calendar.entity';
 import { IntegrationModule } from '../integration/integration.module';
 import { UserCompany } from '../access-control/entities/user-company.entity';
+import { EmployeesModule } from '../employees/employees.module';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([PayPeriod, PayrollCalendar, UserCompany]), IntegrationModule],
+  imports: [
+    TypeOrmModule.forFeature([PayPeriod, PayrollCalendar, UserCompany]),
+    IntegrationModule,
+    EmployeesModule,
+  ],
   controllers: [PayrollController],
   providers: [PayrollService],
 })

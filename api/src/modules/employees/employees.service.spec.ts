@@ -17,6 +17,9 @@ import { EmployeeCreationWorkflow } from '../../workflows/employees/employee-cre
 import { AuthService } from '../auth/auth.service';
 import { EmployeeSensitiveDataService } from '../../common/services/employee-sensitive-data.service';
 import { CreateEmployeeDto } from './dto/create-employee.dto';
+import { PayrollCalendar } from '../payroll/entities/payroll-calendar.entity';
+import { PersonalAction } from '../personal-actions/entities/personal-action.entity';
+import { EmployeeVacationService } from './services/employee-vacation.service';
 
 describe('EmployeesService', () => {
   let service: EmployeesService;
@@ -75,7 +78,7 @@ describe('EmployeesService', () => {
 
   beforeEach(async () => {
     const mockRepository = () => ({
-      find: jest.fn(),
+      find: jest.fn().mockResolvedValue([]),
       findOne: jest.fn(),
       save: jest.fn(),
       create: jest.fn(),
@@ -128,11 +131,14 @@ describe('EmployeesService', () => {
         { provide: getRepositoryToken(EmployeeAguinaldoProvision), useValue: mockRepository() },
         { provide: getRepositoryToken(UserCompany), useValue: mockRepository() },
         { provide: getRepositoryToken(User), useValue: mockRepository() },
+        { provide: getRepositoryToken(PayrollCalendar), useValue: mockRepository() },
+        { provide: getRepositoryToken(PersonalAction), useValue: mockRepository() },
         { provide: EmployeeCreationWorkflow, useValue: mockCreationWorkflow },
         { provide: EventEmitter2, useValue: mockEventEmitter },
         { provide: AuthService, useValue: mockAuthService },
         { provide: DataSource, useValue: mockDataSource },
         { provide: EmployeeSensitiveDataService, useValue: mockSensitiveDataService },
+        { provide: EmployeeVacationService, useValue: { syncAccountAnchorOnJoinDateChange: jest.fn() } },
       ],
     }).compile();
 
@@ -370,7 +376,18 @@ describe('EmployeesService', () => {
         BadRequestException,
       );
       await expect(service.create(dtoWithInvalidVacaciones, 1)).rejects.toThrow(
-        'Vacaciones acumuladas debe ser 0 o mayor',
+        'Vacaciones acumuladas debe ser un entero de 0 o mayor',
+      );
+    });
+
+    it('should throw BadRequestException when fecha ingreso day is greater than 28', async () => {
+      const dtoWithInvalidFecha: CreateEmployeeDto = {
+        ...mockCreateDto,
+        fechaIngreso: '2026-01-31',
+      };
+      await expect(service.create(dtoWithInvalidFecha, 1)).rejects.toThrow(BadRequestException);
+      await expect(service.create(dtoWithInvalidFecha, 1)).rejects.toThrow(
+        'Fecha de ingreso debe estar entre el día 1 y 28 del mes.',
       );
     });
 
@@ -556,6 +573,28 @@ describe('EmployeesService', () => {
       await expect(service.update(1, { nombre: 'Jane' }, undefined as any)).rejects.toThrow(
         ForbiddenException,
       );
+    });
+
+    it('should reject editing vacacionesAcumuladas in update payload', async () => {
+      employeeRepo.findOne.mockResolvedValue(mockEmployee);
+      userCompanyRepo.findOne.mockResolvedValue({ idUsuario: 1, idEmpresa: 1, estado: 1 } as any);
+      authService.resolvePermissions.mockResolvedValue({
+        permissions: ['employee:view-sensitive'],
+        roles: [],
+      });
+      sensitiveDataService.decrypt.mockImplementation((val) => val);
+
+      const mockDataSource = {
+        transaction: jest.fn(async (callback) => callback({
+          findOne: jest.fn().mockResolvedValue(mockEmployee),
+          save: jest.fn().mockResolvedValue(mockEmployee),
+        })),
+      };
+      (service as any).dataSource = mockDataSource;
+
+      await expect(
+        service.update(1, { vacacionesAcumuladas: '10' }, 1),
+      ).rejects.toThrow(BadRequestException);
     });
   });
 

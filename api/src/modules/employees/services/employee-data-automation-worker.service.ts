@@ -15,6 +15,7 @@ import { UserRole } from '../../access-control/entities/user-role.entity';
 import { App } from '../../access-control/entities/app.entity';
 import { Role } from '../../access-control/entities/role.entity';
 import { EmployeeSensitiveDataService } from '../../../common/services/employee-sensitive-data.service';
+import { EmployeeVacationService } from './employee-vacation.service';
 
 class QueueTerminalError extends Error {
   constructor(
@@ -37,6 +38,7 @@ export class EmployeeDataAutomationWorkerService implements OnModuleInit, OnModu
   private readonly workerId = `employee-worker-${process.pid}`;
   private lastBacklogLogAt = 0;
   private lastRetentionRunAt = 0;
+  private lastVacationProvisionRunAt = 0;
 
   constructor(
     @InjectRepository(Employee)
@@ -60,6 +62,7 @@ export class EmployeeDataAutomationWorkerService implements OnModuleInit, OnModu
     @InjectRepository(Role)
     private readonly roleRepo: Repository<Role>,
     private readonly sensitiveDataService: EmployeeSensitiveDataService,
+    private readonly vacationService: EmployeeVacationService,
   ) {}
 
   onModuleInit(): void {
@@ -94,6 +97,7 @@ export class EmployeeDataAutomationWorkerService implements OnModuleInit, OnModu
 
       const processedIdentity = await this.processIdentityBatch(25);
       const processedEncrypt = await this.processEncryptBatch(50);
+      await this.runVacationProvisionIfDue();
       this.logger.log(
         `Poll cycle processed identity=${processedIdentity} encrypt=${processedEncrypt}`,
       );
@@ -636,5 +640,16 @@ export class EmployeeDataAutomationWorkerService implements OnModuleInit, OnModu
       this.releaseStuckJobs(this.encryptQueueRepo),
     ]);
     return { identityReleased, encryptReleased };
+  }
+
+  private async runVacationProvisionIfDue(): Promise<void> {
+    const now = Date.now();
+    if (now - this.lastVacationProvisionRunAt < 60 * 60_000) return;
+    this.lastVacationProvisionRunAt = now;
+
+    const report = await this.vacationService.runDailyProvision();
+    this.logger.log(
+      `Vacation provision run processedEmployees=${report.processedEmployees} accrualsCreated=${report.accrualsCreated} accrualsSkipped=${report.accrualsSkipped} errors=${report.errors}`,
+    );
   }
 }

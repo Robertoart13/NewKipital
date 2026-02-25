@@ -7,6 +7,11 @@ import {
   EmployeeAguinaldoProvision,
   EstadoProvisionAguinaldoEmpleado,
 } from '../../modules/employees/entities/employee-aguinaldo-provision.entity';
+import { EmployeeVacationAccount } from '../../modules/employees/entities/employee-vacation-account.entity';
+import {
+  EmployeeVacationLedger,
+  VacationMovementType,
+} from '../../modules/employees/entities/employee-vacation-ledger.entity';
 import { User } from '../../modules/auth/entities/user.entity';
 import { App } from '../../modules/access-control/entities/app.entity';
 import { UserApp } from '../../modules/access-control/entities/user-app.entity';
@@ -160,6 +165,8 @@ export class EmployeeCreationWorkflow {
       }
 
       const codigoBase = dto.codigo.trim();
+      const fechaIngresoEmpleado = this.parseDateOnlyForDb(dto.fechaIngreso);
+
       const employee = manager.create(Employee, {
         idUsuario: savedUser?.id ?? null,
         idEmpresa: dto.idEmpresa,
@@ -179,7 +186,7 @@ export class EmployeeCreationWorkflow {
         idDepartamento: dto.idDepartamento ?? null,
         idPuesto: dto.idPuesto ?? null,
         idSupervisor: dto.idSupervisor ?? null,
-        fechaIngreso: new Date(dto.fechaIngreso),
+        fechaIngreso: fechaIngresoEmpleado,
         tipoContrato: dto.tipoContrato ?? null,
         jornada: dto.jornada ?? null,
         idPeriodoPago: dto.idPeriodoPago ?? null,
@@ -203,6 +210,45 @@ export class EmployeeCreationWorkflow {
       await manager.update(Employee, savedEmployee.id, { codigo: codigoFinal });
       savedEmployee = { ...savedEmployee, codigo: codigoFinal };
 
+      const vacationInitialDaysRaw = dto.vacacionesAcumuladas ?? '0';
+      const vacationInitialDays = Number.parseInt(vacationInitialDaysRaw, 10);
+      const validInitialDays = Number.isInteger(vacationInitialDays) && vacationInitialDays >= 0
+        ? vacationInitialDays
+        : 0;
+
+      const fechaIngreso = this.parseDateOnlyForDb(dto.fechaIngreso);
+      const anchorDay = fechaIngreso.getDate();
+
+      const vacationAccount = manager.create(EmployeeVacationAccount, {
+        idEmpleado: savedEmployee.id,
+        idEmpresa: savedEmployee.idEmpresa,
+        diasIniciales: validInitialDays,
+        inicialBloqueado: 1,
+        diaAncla: anchorDay,
+        fechaIngresoAncla: fechaIngreso,
+        ultimaFechaProvision: null,
+        estado: 1,
+        creadoPor: creatorId ?? null,
+        modificadoPor: creatorId ?? null,
+      });
+
+      const savedVacationAccount = await manager.save(EmployeeVacationAccount, vacationAccount);
+
+      const initialLedger = manager.create(EmployeeVacationLedger, {
+        idEmpleado: savedEmployee.id,
+        idEmpresa: savedEmployee.idEmpresa,
+        idVacacionesCuenta: savedVacationAccount.id,
+        tipoMovimiento: VacationMovementType.INITIAL,
+        diasDelta: validInitialDays,
+        saldoResultante: validInitialDays,
+        fechaEfectiva: fechaIngreso,
+        sourceType: 'EMPLOYEE_CREATE',
+        sourceId: savedEmployee.id,
+        descripcion: 'Saldo inicial de vacaciones',
+        creadoPor: creatorId ?? null,
+      });
+      await manager.save(EmployeeVacationLedger, initialLedger);
+
       if (dto.provisionesAguinaldo?.length) {
         const provisions = dto.provisionesAguinaldo.map((item) =>
           manager.create(EmployeeAguinaldoProvision, {
@@ -210,8 +256,8 @@ export class EmployeeCreationWorkflow {
             idEmpresa: item.idEmpresa,
             montoProvisionado:
               this.sensitiveDataService.encrypt(String(item.montoProvisionado)) ?? '0',
-            fechaInicioLaboral: new Date(item.fechaInicioLaboral),
-            fechaFinLaboral: item.fechaFinLaboral ? new Date(item.fechaFinLaboral) : null,
+            fechaInicioLaboral: this.parseDateOnlyForDb(item.fechaInicioLaboral),
+            fechaFinLaboral: item.fechaFinLaboral ? this.parseDateOnlyForDb(item.fechaFinLaboral) : null,
             registroEmpresa: this.sensitiveDataService.encrypt(item.registroEmpresa?.trim() || null),
             estado: item.estado ?? EstadoProvisionAguinaldoEmpleado.PENDIENTE,
             creadoPor: creatorId ?? null,
@@ -256,5 +302,33 @@ export class EmployeeCreationWorkflow {
       await queryRunner.release();
     }
   }
-}
 
+  /**
+   * Convierte una fecha YYYY-MM-DD a Date estable para columnas DATE en MySQL,
+   * evitando corrimientos por zona horaria.
+   */
+  private parseDateOnlyForDb(dateValue: string): Date {
+    const raw = dateValue.trim();
+    const onlyDate = raw.includes('T') ? raw.split('T')[0] : raw;
+    const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(onlyDate);
+    if (!match) {
+      throw new Error(`Fecha invalida para persistencia: ${dateValue}`);
+    }
+
+    const year = Number(match[1]);
+    const month = Number(match[2]);
+    const day = Number(match[3]);
+    const normalized = new Date(year, month - 1, day, 12, 0, 0, 0);
+
+    if (
+      Number.isNaN(normalized.getTime())
+      || normalized.getFullYear() !== year
+      || normalized.getMonth() !== month - 1
+      || normalized.getDate() !== day
+    ) {
+      throw new Error(`Fecha invalida para persistencia: ${dateValue}`);
+    }
+
+    return normalized;
+  }
+}

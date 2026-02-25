@@ -1,4 +1,4 @@
-import {
+﻿import {
   IsString, IsEmail, IsOptional, IsInt, IsNumber,
   IsDateString, IsEnum, MaxLength, Min, MinLength, Matches,
 } from 'class-validator';
@@ -13,8 +13,6 @@ import {
  * Todos los campos opcionales.
  */
 export class UpdateEmployeeDto {
-  // ═══════════ IDENTIDAD ═══════════
-
   @IsOptional()
   @IsString()
   @MaxLength(100)
@@ -34,8 +32,6 @@ export class UpdateEmployeeDto {
   @IsString()
   @MaxLength(30)
   cedula?: string;
-
-  // ═══════════ DATOS PERSONALES ═══════════
 
   @IsOptional()
   @IsEnum(GeneroEmpleado)
@@ -59,14 +55,10 @@ export class UpdateEmployeeDto {
   @IsString()
   direccion?: string;
 
-  // ═══════════ CONTACTO ═══════════
-
   @IsOptional()
   @IsEmail()
   @MaxLength(150)
   email?: string;
-
-  // ═══════════ RELACIONES ORG ═══════════
 
   @IsOptional()
   @IsInt()
@@ -79,8 +71,6 @@ export class UpdateEmployeeDto {
   @IsOptional()
   @IsInt()
   idSupervisor?: number;
-
-  // ═══════════ CONTRATO / PAGO ═══════════
 
   @IsOptional()
   @IsEnum(TipoContratoEmpleado)
@@ -115,6 +105,10 @@ export class UpdateEmployeeDto {
 
   @IsOptional()
   @IsDateString()
+  fechaIngreso?: string;
+
+  @IsOptional()
+  @IsDateString()
   fechaSalida?: string;
 
   @IsOptional()
@@ -123,11 +117,11 @@ export class UpdateEmployeeDto {
 
   @IsOptional()
   @IsString()
-  @Matches(/^(0|[1-9]\d*)(\.\d+)?$/, { message: 'vacacionesAcumuladas debe ser un número no negativo' })
+  @Matches(/^(0|[1-9]\d*)$/, { message: 'vacacionesAcumuladas debe ser un entero de 0 o mayor' })
   vacacionesAcumuladas?: string;
 
   @IsOptional()
   @IsString()
-  @Matches(/^(0|[1-9]\d*)(\.\d+)?$/, { message: 'cesantiaAcumulada debe ser un número no negativo' })
+  @Matches(/^(0|[1-9]\d*)(\.\d+)?$/, { message: 'cesantiaAcumulada debe ser un nÃºmero no negativo' })
   cesantiaAcumulada?: string;
 }

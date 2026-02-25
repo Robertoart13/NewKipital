@@ -50,6 +50,13 @@ export class OpsController {
   }
 
   @RequirePermissions('automation:admin')
+  @Post('vacations/provision-now')
+  async provisionVacationsNow() {
+    const data = await this.opsService.runVacationProvisionNow();
+    return { success: true, data, message: 'Provision de vacaciones ejecutada', error: null };
+  }
+
+  @RequirePermissions('automation:admin')
   @Post('requeue/:id')
   async requeue(
     @Param('id', ParseIntPipe) id: number,

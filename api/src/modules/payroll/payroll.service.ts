@@ -18,6 +18,7 @@ import { CreatePayrollDto } from './dto/create-payroll.dto';
 import { DOMAIN_EVENTS } from '../../common/events/event-names';
 import { DomainEventsService } from '../integration/domain-events.service';
 import { UserCompany } from '../access-control/entities/user-company.entity';
+import { EmployeeVacationService } from '../employees/services/employee-vacation.service';
 
 const ESTADOS_OPERATIVOS = [
   EstadoCalendarioNomina.ABIERTA,
@@ -34,6 +35,7 @@ export class PayrollService {
     private readonly userCompanyRepo: Repository<UserCompany>,
     private readonly eventEmitter: EventEmitter2,
     private readonly domainEvents: DomainEventsService,
+    private readonly vacationService: EmployeeVacationService,
   ) {}
 
   async findAll(userId: number, idEmpresa?: number, includeInactive = false): Promise<PayrollCalendar[]> {
@@ -184,6 +186,12 @@ export class PayrollService {
     }
 
     const saved = await this.findOne(id, userId);
+
+    await this.vacationService.applyVacationUsageFromPayroll(
+      saved.id,
+      saved.fechaAplicacion ?? new Date(),
+      userId ?? undefined,
+    );
 
     this.eventEmitter.emit(DOMAIN_EVENTS.PAYROLL.APPLIED, {
       eventName: DOMAIN_EVENTS.PAYROLL.APPLIED,

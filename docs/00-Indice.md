@@ -1,8 +1,8 @@
-# KPITAL 360 — Índice de Documentación
+﻿# KPITAL 360 — Índice de Documentación
 
 **Proyecto:** KPITAL 360 — ERP Multiempresa  
 **Autor:** Roberto — Arquitecto Funcional / Senior Engineer  
-**Última actualización:** 2026-02-24 (Fase 4 testing 321/321, correccion numeracion 31→32, 33)
+**Última actualización:** 2026-02-25 (Reglas enterprise vacaciones acumuladas)
 
 ---
 
@@ -54,7 +54,7 @@ Si ya estás en el proyecto y necesitás referencia puntual, usá esta tabla par
 | 35 | [35-EstadoDOC34Implementacion.md](./35-EstadoDOC34Implementacion.md) | **Estado DOC-34 vs implementación:** qué SÍ hay / qué NO hay, checklist 21 ítems por área. Referencia permanente para planillas y RRHH. Alineado con Reporte Comité v2.0. | 34 |
 | 36 | [36-ComparativoSistemaVsReporteComiteDOC34.md](./36-ComparativoSistemaVsReporteComiteDOC34.md) | Comparativo sistema actual vs Reporte Ejecutivo Comité DOC-34 v1.0: semáforos, implementado vs pendiente. | 34, 35 |
 | 37 | [37-ReporteEjecutivoDOC34-ComiteTecnico.md](./37-ReporteEjecutivoDOC34-ComiteTecnico.md) | **Reporte Ejecutivo Comité Técnico DOC-34 v2.0** (post-auditoría): estado global, semáforo por área, decisiones negocio, roadmap por sprint, riesgos. Documento oficial de seguimiento. | 34, 35 |
-
+| 38 | [38-VacacionesAcumuladasEnterprise.md](./38-VacacionesAcumuladasEnterprise.md) | Reglas oficiales enterprise de vacaciones acumuladas: saldo inicial inmutable, provisión mensual por día ancla (1..28), ledger de movimientos, descuento por planilla aplicada, saldo negativo permitido, historial de monto provisionado y control de permisos. | 23, 30, 34 |
 ---
 
 ## Estado del Proyecto
@@ -117,3 +117,6 @@ Se agrego documentacion formal de transferencia en la carpeta `docs/automatizaci
 - `09-operacion.md`
 - `10-seguridad.md`
 - `11-limpieza-operativa-db.md`
+
+
+

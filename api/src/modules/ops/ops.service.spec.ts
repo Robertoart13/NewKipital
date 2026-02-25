@@ -6,6 +6,7 @@ import { Employee } from '../employees/entities/employee.entity';
 import { EmployeeIdentityQueue } from '../employees/entities/employee-identity-queue.entity';
 import { EmployeeEncryptQueue } from '../employees/entities/employee-encrypt-queue.entity';
 import { EmployeeDataAutomationWorkerService } from '../employees/services/employee-data-automation-worker.service';
+import { EmployeeVacationService } from '../employees/services/employee-vacation.service';
 
 describe('OpsService', () => {
   let service: OpsService;
@@ -13,6 +14,7 @@ describe('OpsService', () => {
   let identityQueueRepo: jest.Mocked<Repository<EmployeeIdentityQueue>>;
   let encryptQueueRepo: jest.Mocked<Repository<EmployeeEncryptQueue>>;
   let workerService: { runRescanNow: jest.Mock; releaseStuckNow: jest.Mock };
+  let vacationService: { runDailyProvision: jest.Mock };
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -25,6 +27,10 @@ describe('OpsService', () => {
           provide: EmployeeDataAutomationWorkerService,
           useValue: { runRescanNow: jest.fn(), releaseStuckNow: jest.fn() },
         },
+        {
+          provide: EmployeeVacationService,
+          useValue: { runDailyProvision: jest.fn() },
+        },
       ],
     }).compile();
 
@@ -33,6 +39,7 @@ describe('OpsService', () => {
     identityQueueRepo = module.get(getRepositoryToken(EmployeeIdentityQueue));
     encryptQueueRepo = module.get(getRepositoryToken(EmployeeEncryptQueue));
     workerService = module.get(EmployeeDataAutomationWorkerService);
+    vacationService = module.get(EmployeeVacationService);
   });
 
   it('getSummary should aggregate queue and throughput metrics', async () => {
@@ -147,5 +154,10 @@ describe('OpsService', () => {
 
     await expect(service.rescanNow()).resolves.toEqual({ ok: true });
     await expect(service.releaseStuckNow()).resolves.toEqual({ released: 2 });
+  });
+
+  it('runVacationProvisionNow should delegate to vacation service', async () => {
+    vacationService.runDailyProvision.mockResolvedValue({ processedEmployees: 1 });
+    await expect(service.runVacationProvisionNow()).resolves.toEqual({ processedEmployees: 1 });
   });
 });

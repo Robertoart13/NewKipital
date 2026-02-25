@@ -59,6 +59,11 @@ const defaultIdEmpresa = (companies: { id: number }[], activeId: string | undefi
 };
 
 const disabledFutureDate = (current: dayjs.Dayjs) => current.isAfter(dayjs().endOf('day'));
+const isIngresoDateAllowed = (value?: dayjs.Dayjs) => {
+  if (!value) return true;
+  const day = dayjs(value).date();
+  return day >= 1 && day <= 28;
+};
 
 export function EmployeeCreateModal({ open, onClose, onSuccess }: EmployeeCreateModalProps) {
   const { modal } = AntdApp.useApp();
@@ -382,7 +387,15 @@ export function EmployeeCreateModal({ open, onClose, onSuccess }: EmployeeCreate
                 { required: true },
                 {
                   validator: (_, v) =>
-                    !v || dayjs(v).isBefore(dayjs().add(1, 'day')) ? Promise.resolve() : Promise.reject('No puede ser futura'),
+                    !v || dayjs(v).isBefore(dayjs().add(1, 'day'))
+                      ? Promise.resolve()
+                      : Promise.reject('No puede ser futura'),
+                },
+                {
+                  validator: (_, v) =>
+                    isIngresoDateAllowed(v)
+                      ? Promise.resolve()
+                      : Promise.reject('La fecha de ingreso solo permite días del 1 al 28'),
                 },
               ]}
             >
@@ -574,33 +587,29 @@ export function EmployeeCreateModal({ open, onClose, onSuccess }: EmployeeCreate
             <Col span={12}>
               <Form.Item
                 name="vacacionesAcumuladas"
-                label="Vacaciones Acumuladas"
+                label="Días Iniciales de Vacaciones"
                 initialValue={0}
                 rules={[
                   {
                     validator: (_, value) => {
                       if (value == null || value === '') return Promise.resolve();
                       const numericValue = Number(value);
-                      if (Number.isNaN(numericValue) || numericValue < 0) {
-                        return Promise.reject(new Error('Solo montos positivos o cero'));
-                      }
-                      if (isMoneyOverMax(numericValue)) {
-                        return Promise.reject(new Error('Monto demasiado alto'));
+                      if (Number.isNaN(numericValue) || numericValue < 0 || !Number.isInteger(numericValue)) {
+                        return Promise.reject(new Error('Debe ser un número entero de 0 o mayor'));
                       }
                       return Promise.resolve();
                     },
                   },
                 ]}
-                extra="Monto en moneda, 0 o mayor"
+                extra="Cantidad de días iniciales (entero). Este valor queda bloqueado luego de crear."
               >
                 <InputNumber
                   min={0}
-                  max={MAX_MONEY_AMOUNT}
-                  precision={2}
-                  formatter={(value) => formatCurrencyInput(value, currencySymbol)}
-                  parser={parseCurrencyInput}
+                  max={99999}
+                  precision={0}
+                  step={1}
                   style={{ width: '100%' }}
-                  placeholder={`${currencySymbol} 0.00`}
+                  placeholder="0"
                 />
               </Form.Item>
             </Col>

@@ -16,6 +16,12 @@ import {
   parseCurrencyInput,
 } from '../../../../lib/currencyFormat';
 
+const isIngresoDateAllowed = (value?: dayjs.Dayjs) => {
+  if (!value) return true;
+  const day = dayjs(value).date();
+  return day >= 1 && day <= 28;
+};
+
 interface EmployeeFormProps {
   form: ReturnType<typeof Form.useForm>[0];
   departments: { id: number; nombre: string }[];
@@ -140,6 +146,12 @@ export function EmployeeForm({
               !v || dayjs(v).isBefore(dayjs().add(1, 'day'))
                 ? Promise.resolve()
                 : Promise.reject('No puede ser futura'),
+          },
+          {
+            validator: (_, v) =>
+              isIngresoDateAllowed(v)
+                ? Promise.resolve()
+                : Promise.reject('La fecha de ingreso solo permite días del 1 al 28'),
           },
         ]}
       >

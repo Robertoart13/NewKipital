@@ -5,6 +5,7 @@ import { Employee } from '../employees/entities/employee.entity';
 import { EmployeeIdentityQueue } from '../employees/entities/employee-identity-queue.entity';
 import { EmployeeEncryptQueue } from '../employees/entities/employee-encrypt-queue.entity';
 import { EmployeeDataAutomationWorkerService } from '../employees/services/employee-data-automation-worker.service';
+import { EmployeeVacationService } from '../employees/services/employee-vacation.service';
 import { ListQueueJobsDto, QueueType } from './dto/list-queue-jobs.dto';
 
 type QueueRow = {
@@ -30,6 +31,7 @@ export class OpsService {
     @InjectRepository(EmployeeEncryptQueue)
     private readonly encryptQueueRepo: Repository<EmployeeEncryptQueue>,
     private readonly workerService: EmployeeDataAutomationWorkerService,
+    private readonly vacationService: EmployeeVacationService,
   ) {}
 
   async getSummary() {
@@ -265,6 +267,10 @@ export class OpsService {
     );
 
     return { ok: true };
+  }
+
+  async runVacationProvisionNow() {
+    return this.vacationService.runDailyProvision();
   }
 
   private groupStatus(rows: Array<{ estado_queue: string; cnt: number }>) {

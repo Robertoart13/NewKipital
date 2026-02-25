@@ -1,4 +1,4 @@
-import {
+﻿import {
   Injectable,
   NotFoundException,
   ConflictException,
@@ -21,6 +21,7 @@ import { EmployeeCreationWorkflow } from '../../workflows/employees/employee-cre
 import { DOMAIN_EVENTS } from '../../common/events/event-names';
 import { AuthService } from '../auth/auth.service';
 import { EmployeeSensitiveDataService } from '../../common/services/employee-sensitive-data.service';
+import { EmployeeVacationService } from './services/employee-vacation.service';
 import {
   PersonalAction,
   PersonalActionEstado,
@@ -37,7 +38,7 @@ const PLANILLA_ESTADOS_BLOQUEANTES = [
   EstadoCalendarioNomina.VERIFICADA,
 ];
 
-/** Estados de acción de personal que bloquean inactivar empleado si no están asociadas a planilla (DOC-34 UC-02). */
+/** Estados de acciÃ³n de personal que bloquean inactivar empleado si no estÃ¡n asociadas a planilla (DOC-34 UC-02). */
 const ACCION_ESTADOS_BLOQUEANTES = [PersonalActionEstado.PENDIENTE, PersonalActionEstado.APROBADA];
 
 @Injectable()
@@ -60,9 +61,11 @@ export class EmployeesService {
     private readonly authService: AuthService,
     private readonly dataSource: DataSource,
     private readonly sensitiveDataService: EmployeeSensitiveDataService,
+    private readonly vacationService: EmployeeVacationService,
   ) {}
 
   async create(dto: CreateEmployeeDto, creatorId?: number) {
+    this.assertJoinDate(dto.fechaIngreso);
     this.assertAcumulados(dto);
     this.assertProvisionesAguinaldo(dto);
 
@@ -148,9 +151,20 @@ export class EmployeesService {
       const raw = dto[item.key];
       if (raw == null || raw === '') continue;
       const value = Number(raw);
-      if (Number.isNaN(value) || value < 0) {
-        throw new BadRequestException(`${item.label} debe ser 0 o mayor.`);
+      if (Number.isNaN(value) || value < 0 || !Number.isInteger(value)) {
+        throw new BadRequestException(`${item.label} debe ser un entero de 0 o mayor.`);
       }
+    }
+  }
+
+  private assertJoinDate(fechaIngresoRaw: string): void {
+    const fechaIngreso = this.parseDateOnlyForDb(fechaIngresoRaw);
+    if (Number.isNaN(fechaIngreso.getTime())) {
+      throw new BadRequestException('Fecha de ingreso invÃ¡lida.');
+    }
+    const day = fechaIngreso.getDate();
+    if (day < 1 || day > 28) {
+      throw new BadRequestException('Fecha de ingreso debe estar entre el día 1 y 28 del mes.');
     }
   }
 
@@ -169,7 +183,7 @@ export class EmployeesService {
 
       const fechaInicio = new Date(provision.fechaInicioLaboral);
       if (Number.isNaN(fechaInicio.getTime())) {
-        throw new BadRequestException(`Fecha inicio laboral inválida en la fila ${index + 1}.`);
+        throw new BadRequestException(`Fecha inicio laboral invÃ¡lida en la fila ${index + 1}.`);
       }
       fechaInicio.setHours(0, 0, 0, 0);
       if (fechaInicio > today) {
@@ -179,7 +193,7 @@ export class EmployeesService {
       if (provision.fechaFinLaboral) {
         const fechaFin = new Date(provision.fechaFinLaboral);
         if (Number.isNaN(fechaFin.getTime())) {
-          throw new BadRequestException(`Fecha fin laboral inválida en la fila ${index + 1}.`);
+          throw new BadRequestException(`Fecha fin laboral invÃ¡lida en la fila ${index + 1}.`);
         }
         fechaFin.setHours(0, 0, 0, 0);
         if (fechaFin > today) {
@@ -352,8 +366,16 @@ export class EmployeesService {
       }
       if (dto.numeroCcss !== undefined) current.numeroCcss = this.sensitiveDataService.encrypt(dto.numeroCcss ?? null);
       if (dto.cuentaBanco !== undefined) current.cuentaBanco = this.sensitiveDataService.encrypt(dto.cuentaBanco ?? null);
-      if (dto.fechaSalida) current.fechaSalida = new Date(dto.fechaSalida);
+      if (dto.fechaSalida) current.fechaSalida = this.parseDateOnlyForDb(dto.fechaSalida);
       if (dto.motivoSalida !== undefined) current.motivoSalida = this.sensitiveDataService.encrypt(dto.motivoSalida ?? null);
+      if (dto.fechaIngreso !== undefined) {
+        const isMaster = await this.isMasterUser(modifierId, current.idEmpresa);
+        if (!isMaster) {
+          throw new ForbiddenException('Solo el usuario Master puede modificar la fecha de ingreso del empleado.');
+        }
+        this.assertJoinDate(dto.fechaIngreso);
+        current.fechaIngreso = this.parseDateOnlyForDb(dto.fechaIngreso);
+      }
 
       if (dto.genero !== undefined) current.genero = dto.genero;
       if (dto.estadoCivil !== undefined) current.estadoCivil = dto.estadoCivil;
@@ -366,9 +388,9 @@ export class EmployeesService {
       if (dto.idPeriodoPago !== undefined) current.idPeriodoPago = dto.idPeriodoPago;
       if (dto.monedaSalario !== undefined) current.monedaSalario = dto.monedaSalario;
       if (dto.vacacionesAcumuladas !== undefined) {
-        current.vacacionesAcumuladas = dto.vacacionesAcumuladas == null || dto.vacacionesAcumuladas === ''
-          ? null
-          : this.sensitiveDataService.encrypt(dto.vacacionesAcumuladas);
+        throw new BadRequestException(
+          'Vacaciones acumuladas iniciales no es editable. Use ajustes con permiso especial.',
+        );
       }
       if (dto.cesantiaAcumulada !== undefined) {
         current.cesantiaAcumulada = dto.cesantiaAcumulada == null || dto.cesantiaAcumulada === ''
@@ -382,6 +404,14 @@ export class EmployeesService {
       current.fechaEncriptacion = new Date();
 
       const saved = await manager.save(Employee, current);
+
+      if (dto.fechaIngreso !== undefined) {
+        await this.vacationService.syncAccountAnchorOnJoinDateChange(
+          manager,
+          saved,
+          modifierId,
+        );
+      }
 
       if (normalizedEmail && normalizedEmail !== oldEmail && saved.idUsuario) {
         this.eventEmitter.emit(DOMAIN_EVENTS.EMPLOYEE.EMAIL_CHANGED, {
@@ -467,7 +497,7 @@ export class EmployeesService {
   async liquidar(id: number, modifierId: number, fechaSalida?: string, motivo?: string): Promise<Employee> {
     const emp = await this.findOne(id, modifierId);
     emp.estado = 0;
-    emp.fechaSalida = fechaSalida ? new Date(fechaSalida) : new Date();
+    emp.fechaSalida = fechaSalida ? this.parseDateOnlyForDb(fechaSalida) : new Date();
     emp.motivoSalida = this.sensitiveDataService.encrypt(motivo ?? null);
     emp.modificadoPor = modifierId;
     emp.datosEncriptados = 1;
@@ -486,7 +516,7 @@ export class EmployeesService {
   /**
    * Lista empleados elegibles como supervisores (rol Supervisor, Supervisor Global o Master en TimeWise).
    * No filtra por empresa: devuelve todos los de las empresas a las que el usuario tiene acceso,
-   * para permitir que un supervisor de otra subsidiaria tome el rol temporalmente (mismo dueño).
+   * para permitir que un supervisor de otra subsidiaria tome el rol temporalmente (mismo dueÃ±o).
    */
   async findSupervisors(
     userId: number,
@@ -551,7 +581,7 @@ export class EmployeesService {
       where: { idUsuario: userId, idEmpresa, estado: 1 },
     });
     if (!hasAccess) {
-      throw new ForbiddenException(`No tiene acceso a la empresa ${idEmpresa} para esta operación.`);
+      throw new ForbiddenException(`No tiene acceso a la empresa ${idEmpresa} para esta operaciÃ³n.`);
     }
   }
 
@@ -605,4 +635,41 @@ export class EmployeesService {
     }
     return map;
   }
+
+  private async isMasterUser(userId: number, companyId: number): Promise<boolean> {
+    const [timewise, kpital] = await Promise.all([
+      this.authService.resolvePermissions(userId, companyId, 'timewise'),
+      this.authService.resolvePermissions(userId, companyId, 'kpital'),
+    ]);
+    return timewise.roles.includes('MASTER') || kpital.roles.includes('MASTER');
+  }
+  /**
+   * Convierte YYYY-MM-DD a Date estable para columnas DATE sin corrimiento por zona horaria.
+   */
+  private parseDateOnlyForDb(dateValue: string): Date {
+    const raw = dateValue.trim();
+    const onlyDate = raw.includes('T') ? raw.split('T')[0] : raw;
+    const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(onlyDate);
+    if (!match) {
+      throw new BadRequestException('Fecha invalida.');
+    }
+
+    const year = Number(match[1]);
+    const month = Number(match[2]);
+    const day = Number(match[3]);
+    const normalized = new Date(year, month - 1, day, 12, 0, 0, 0);
+
+    if (
+      Number.isNaN(normalized.getTime())
+      || normalized.getFullYear() !== year
+      || normalized.getMonth() !== month - 1
+      || normalized.getDate() !== day
+    ) {
+      throw new BadRequestException('Fecha invalida.');
+    }
+
+    return normalized;
+  }
 }
+
+

@@ -123,7 +123,7 @@ export class CreateEmployeeDto {
   cuentaBanco?: string;
 
   @IsOptional()
-  @Matches(/^(0|[1-9]\d*)(\.\d+)?$/)
+  @Matches(/^(0|[1-9]\d*)$/, { message: 'vacacionesAcumuladas debe ser un entero de 0 o mayor' })
   vacacionesAcumuladas?: string;
 
   @IsOptional()

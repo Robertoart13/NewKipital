@@ -37,8 +37,8 @@ describe('employees api', () => {
   it('fetchEmployees builds query params with multiple companies', async () => {
     mockHttpFetch.mockResolvedValue(okJson({ data: [], total: 0, page: 1, pageSize: 20 }));
     await fetchEmployees(null, { companyIds: [3, 5] });
-    const url = mockHttpFetch.mock.calls[1][0] as string;
-    expect(url).toContain('idEmpresas=3,5');
+    const url = mockHttpFetch.mock.calls[0][0] as string;
+    expect(url).toContain('idEmpresas=3%2C5');
   });
 
   it('fetchEmployees throws on error response', async () => {
