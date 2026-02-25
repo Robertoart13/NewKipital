@@ -5,13 +5,13 @@ Version: 9.0
 Estado: Vigente
 
 ## 1. Estado vigente
-- Total de pruebas ejecutadas: 515
-- Pasando: 515
+- Total de pruebas ejecutadas: 518
+- Pasando: 518
 - Fallando: 0
 - Exito global: 100%
 
 Desglose vigente:
-- Backend (Jest): 184/184
+- Backend (Jest): 187/187
 - Frontend (Vitest): 331/331
 
 ## 2. Historial por fases
@@ -87,6 +87,37 @@ Desglose vigente:
   - Frontend: pagina `/configuration/clases` con listado, boton crear y edicion por fila.
   - DB: tabla `org_clases`, permisos de clases y asignacion a roles administrativos.
   - Prueba real API + validacion en `hr_pro`.
+
+### Fase 10 - Modulo Proyectos enterprise + validacion real
+- Resultado: 517/517
+- Fallos: 0
+- Estado: Cerrada
+- Alcance agregado:
+  - Backend: modulo `projects` con create/list/update/inactivate/reactivate y permisos granulares.
+  - Frontend: pagina `/configuration/proyectos` con listado, boton crear y edicion por fila.
+  - DB: tabla `org_proyectos`, permisos de proyectos y asignacion a roles administrativos.
+  - Bitacora: permiso `config:proyectos:audit` y trazas en `sys_auditoria_acciones`.
+
+### Fase 11 - Modulo Departamentos enterprise + validacion real
+- Resultado: 517/517
+- Fallos: 0
+- Estado: Cerrada
+- Alcance agregado:
+  - Backend: modulo `departments` con create/list/update/inactivate/reactivate y permisos granulares.
+  - Frontend: pagina `/configuration/departamentos` con listado, boton crear y edicion por fila.
+  - DB: tabla `org_departamentos`, permisos `config:departamentos`, `department:*` y `config:departamentos:audit`.
+  - Bitacora: trazas de cambios en `sys_auditoria_acciones`.
+
+### Fase 12 - Modulo Puestos enterprise + validacion real
+- Resultado: 518/518
+- Fallos: 0
+- Estado: Cerrada
+- Alcance agregado:
+  - Backend: modulo `positions` con create/list/update/inactivate/reactivate y permisos granulares.
+  - Frontend: pagina `/configuration/puestos` con listado, boton crear y edicion por fila.
+  - DB: tabla `org_puestos`, permisos `position:*`, `position:view` y `config:puestos:audit`.
+  - Bitacora: trazas de cambios en `sys_auditoria_acciones`.
+  - Validacion E2E real en `hr_pro`: create/update/inactivate/reactivate con trazas en `sys_domain_events` y `sys_auditoria_acciones`.
 
 ## 3. Inventario de tests actual
 Backend (src):

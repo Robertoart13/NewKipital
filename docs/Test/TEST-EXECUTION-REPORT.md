@@ -4,8 +4,8 @@ Documento de control por fases de ejecucion de pruebas.
 
 ## Resumen vigente
 - Estado actual: Completo
-- Total: 515/515 pasando
-- Backend: 184/184
+- Total: 518/518 pasando
+- Backend: 187/187
 - Frontend: 331/331
 - Fallos abiertos: 0
 
@@ -207,6 +207,9 @@ Estado de fase: Cerrada
 | Fase 7 | 179/179 | 323/323 | 502/502 | 0 |
 | Fase 8 | 179/179 | 323/323 | 502/502 | 0 |
 | Fase 9 | 184/184 | 331/331 | 515/515 | 0 |
+| Fase 10 | 186/186 | 331/331 | 517/517 | 0 |
+| Fase 11 | 186/186 | 331/331 | 517/517 | 0 |
+| Fase 12 | 187/187 | 331/331 | 518/518 | 0 |
 
 ## Fase 9 - 2026-02-25 10:52
 Alcance: Modulo Clases (create/list/update/inactivate/reactivate) + permisos + validacion real
@@ -234,6 +237,77 @@ Validacion E2E adicional:
 - Verificacion en BD:
   - Persistencia de `org_clases` correcta
   - Permisos y asignacion a roles administrativos creados
+
+Estado de fase: Cerrada
+
+## Fase 10 - 2026-02-25
+Alcance: Modulo Proyectos (create/list/update/inactivate/reactivate) + permisos + bitacora
+
+Comandos ejecutados:
+- `cd api && npm.cmd test`
+- `cd frontend && npm.cmd test`
+
+Resultados:
+- Backend: 186/186
+- Frontend: 331/331
+- Total: 517/517
+- Fallos: 0
+
+Validacion E2E adicional:
+- Migracion aplicada en `hr_pro`:
+  - Tabla `org_proyectos`
+  - Permisos `config:proyectos`, `project:create`, `project:edit`, `project:inactivate`, `project:reactivate`, `config:proyectos:audit`
+- Flujo real por API: Pendiente
+- Verificacion en BD: Pendiente
+
+Estado de fase: Cerrada
+
+## Fase 11 - 2026-02-25
+Alcance: Modulo Departamentos (create/list/update/inactivate/reactivate) + permisos + bitacora
+
+Comandos ejecutados:
+- `cd api && npm.cmd test`
+- `cd frontend && npm.cmd test`
+
+Resultados:
+- Backend: 186/186
+- Frontend: 331/331
+- Total: 517/517
+- Fallos: 0
+
+Validacion E2E adicional:
+- Migracion aplicada en `hr_pro`:
+  - Tabla `org_departamentos`
+  - Permisos `config:departamentos`, `department:create`, `department:edit`, `department:inactivate`, `department:reactivate`, `config:departamentos:audit`, `department:view`
+- Flujo real por API: Pendiente
+- Verificacion en BD: Pendiente
+
+Estado de fase: Cerrada
+
+## Fase 12 - 2026-02-25
+Alcance: Modulo Puestos (create/list/update/inactivate/reactivate) + permisos + bitacora
+
+Comandos ejecutados:
+- `cd api && npm.cmd test`
+- `cd frontend && npm.cmd test`
+
+Resultados:
+- Backend: 187/187
+- Frontend: 331/331
+- Total: 518/518
+- Fallos: 0
+
+Validacion E2E adicional:
+- Migracion aplicada en `hr_pro`:
+  - Tabla `org_puestos`
+  - Permisos `position:view`, `position:create`, `position:edit`, `position:inactivate`, `position:reactivate`, `config:puestos:audit`
+- Flujo real por API:
+  - Crear puesto: `QA Puesto 20260225-152707`
+  - Editar descripcion, inactivar, reactivar y dejar inactivo al final
+- Verificacion en BD:
+  - `org_puestos`: registro id=14, estado=0, descripcion actualizada
+  - `sys_domain_events`: eventos audit.positions.* en estado processed
+  - `sys_auditoria_acciones`: create/update/inactivate/reactivate presentes
 
 Estado de fase: Cerrada
 

@@ -140,7 +140,7 @@ Validación de formularios (texto, email, anti-SQL):
 
 - `docs/31-ValidacionFormulariosFrontend.md`
 
-**Reglas de validación aplicadas:** textRules, emailRules, optionalNoSqlInjection en campos de texto. Salario base: mayor a 0 (valor por defecto 0; al crear debe indicar error si es 0). Tabs del modal con scroll horizontal (employeeModalTabsScroll); sección Histórico Laboral con estilos alineados a configTable (historicoProvisionBlock, historicoTableWrap).
+**Reglas de validación aplicadas:** textRules, emailRules, optionalNoSqlInjection en campos de texto. Salario base: mayor a 0 (valor por defecto 0; al crear debe indicar error si es 0). Comportamiento de tabs y bitácora: ver sección **UX — Modales de Empleado (Tabs y Bitácora)** más abajo.
 
 ### Backend — Ya existe, verificar y ajustar
 
@@ -360,6 +360,36 @@ src/
 | `employee:create` | Ve botón "+ Nuevo Empleado" y ruta `/employees/new` |
 | `employee:edit` | Ve botones Editar, Inactivar, Liquidar |
 | Sin permiso | Menú no muestra Empleados. URL directa → redirect dashboard |
+
+### UX — Modales de Empleado (Tabs y Bitácora)
+
+**Objetivo:** Documentar cómo se manejan los tabs y la bitácora en los modales de Crear y Editar empleado para mantener consistencia y evitar regresiones.
+
+#### Tabs en los modales
+
+- **Componentes afectados:** `EmployeeCreateModal`, `EmployeeEditModal`.
+- **Clase CSS:** `employeeModalTabsScroll` (junto con `tabsWrapper`, `companyModalTabs`) en `UsersManagementPage.module.css`.
+- **Comportamiento:**
+  - **Wrap a dos líneas:** Los tabs **no** usan scroll horizontal. La lista de tabs tiene `flex-wrap: wrap`: si no caben en una sola fila, pasan a una segunda línea. Así **todos los tabs están siempre visibles** y no se pierden al navegar.
+  - No se usa scroll programático ni `scrollIntoView`. El `onChange` del `Tabs` solo actualiza el estado (`setActiveTabKey`).
+  - No hay flechas de overflow ni dropdown "más"; al hacer wrap, no hay overflow.
+- **Tabs en Crear:** Información Personal, Información de Contacto, Información Laboral, Información Financiera, Autogestión, Histórico Laboral.
+- **Tabs en Editar:** Los mismos anteriores más **Bitácora** (tab independiente, al mismo nivel que Histórico Laboral). El tab Bitácora solo se muestra cuando hay `employeeId` (empleado cargado).
+
+#### Bitácora (solo modal Editar)
+
+- **Ubicación:** Tab propio **"Bitácora"**, a la par de "Histórico Laboral" (no dentro de él).
+- **Permiso:** `config:employees:audit`. Si el usuario no tiene el permiso, el tab se muestra igual pero el contenido es el mensaje: "No tiene permiso para ver la bitácora de este empleado."
+- **Contenido:** Tabla con historial de cambios del empleado (quién, cuándo, acción, detalle). Carga **diferida**: los datos se piden al abrir el tab Bitácora (`GET /employees/:id/audit-trail`).
+- **Backend:** Permiso insertado/asignado por migración `1708534500000-AddEmployeeAuditPermission.ts` (roles MASTER, ADMIN_SISTEMA). Endpoint protegido con `@RequirePermissions('config:employees:audit')`.
+
+#### Resumen de reglas para implementación
+
+| Tema | Regla |
+|------|--------|
+| Tabs | Wrap en 2 líneas; sin scroll horizontal; sin ref ni scroll programático en los modales. |
+| Bitácora | Tab separado en Editar; visible siempre (con mensaje si no hay permiso); carga al abrir el tab. |
+| Estilos | `employeeModalTabsScroll` con `overflow: visible`, `flex-wrap: wrap` en la lista de tabs. |
 
 ---
 

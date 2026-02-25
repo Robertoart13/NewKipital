@@ -13,27 +13,27 @@ import {
 import { Public } from '../../common/decorators/public.decorator';
 import { RequirePermissions } from '../../common/decorators/require-permissions.decorator';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
-import { ClassesService } from './classes.service';
-import { CreateClassDto } from './dto/create-class.dto';
-import { UpdateClassDto } from './dto/update-class.dto';
+import { DepartmentsService } from './departments.service';
+import { CreateDepartmentDto } from './dto/create-department.dto';
+import { UpdateDepartmentDto } from './dto/update-department.dto';
 
-@Controller('classes')
-export class ClassesController {
-  constructor(private readonly service: ClassesService) {}
+@Controller('departments')
+export class DepartmentsController {
+  constructor(private readonly service: DepartmentsService) {}
 
   @Public()
   @Get('health')
   health() {
-    return { status: 'ok', module: 'classes' };
+    return { status: 'ok', module: 'departments' };
   }
 
-  @RequirePermissions('class:create')
+  @RequirePermissions('department:create')
   @Post()
-  create(@Body() dto: CreateClassDto, @CurrentUser() user: { userId: number }) {
+  create(@Body() dto: CreateDepartmentDto, @CurrentUser() user: { userId: number }) {
     return this.service.create(dto, user.userId);
   }
 
-  @RequirePermissions('class:view')
+  @RequirePermissions('department:view')
   @Get()
   findAll(
     @Query('includeInactive', new ParseBoolPipe({ optional: true })) includeInactive?: boolean,
@@ -42,35 +42,35 @@ export class ClassesController {
     return this.service.findAll(includeInactive ?? false, inactiveOnly ?? false);
   }
 
-  @RequirePermissions('class:view')
+  @RequirePermissions('department:view')
   @Get(':id')
   findOne(@Param('id', ParseIntPipe) id: number) {
     return this.service.findOne(id);
   }
 
-  @RequirePermissions('class:edit')
+  @RequirePermissions('department:edit')
   @Put(':id')
   update(
     @Param('id', ParseIntPipe) id: number,
-    @Body() dto: UpdateClassDto,
+    @Body() dto: UpdateDepartmentDto,
     @CurrentUser() user: { userId: number },
   ) {
     return this.service.update(id, dto, user.userId);
   }
 
-  @RequirePermissions('class:inactivate')
+  @RequirePermissions('department:inactivate')
   @Patch(':id/inactivate')
   inactivate(@Param('id', ParseIntPipe) id: number, @CurrentUser() user: { userId: number }) {
     return this.service.inactivate(id, user.userId);
   }
 
-  @RequirePermissions('class:reactivate')
+  @RequirePermissions('department:reactivate')
   @Patch(':id/reactivate')
   reactivate(@Param('id', ParseIntPipe) id: number, @CurrentUser() user: { userId: number }) {
     return this.service.reactivate(id, user.userId);
   }
 
-  @RequirePermissions('config:clases:audit')
+  @RequirePermissions('config:departamentos:audit')
   @Get(':id/audit-trail')
   getAuditTrail(
     @Param('id', ParseIntPipe) id: number,

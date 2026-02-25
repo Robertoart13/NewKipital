@@ -13,64 +13,65 @@ import {
 import { Public } from '../../common/decorators/public.decorator';
 import { RequirePermissions } from '../../common/decorators/require-permissions.decorator';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
-import { ClassesService } from './classes.service';
-import { CreateClassDto } from './dto/create-class.dto';
-import { UpdateClassDto } from './dto/update-class.dto';
+import { ProjectsService } from './projects.service';
+import { CreateProjectDto } from './dto/create-project.dto';
+import { UpdateProjectDto } from './dto/update-project.dto';
 
-@Controller('classes')
-export class ClassesController {
-  constructor(private readonly service: ClassesService) {}
+@Controller('projects')
+export class ProjectsController {
+  constructor(private readonly service: ProjectsService) {}
 
   @Public()
   @Get('health')
   health() {
-    return { status: 'ok', module: 'classes' };
+    return { status: 'ok', module: 'projects' };
   }
 
-  @RequirePermissions('class:create')
+  @RequirePermissions('project:create')
   @Post()
-  create(@Body() dto: CreateClassDto, @CurrentUser() user: { userId: number }) {
+  create(@Body() dto: CreateProjectDto, @CurrentUser() user: { userId: number }) {
     return this.service.create(dto, user.userId);
   }
 
-  @RequirePermissions('class:view')
+  @RequirePermissions('project:view')
   @Get()
   findAll(
     @Query('includeInactive', new ParseBoolPipe({ optional: true })) includeInactive?: boolean,
     @Query('inactiveOnly', new ParseBoolPipe({ optional: true })) inactiveOnly?: boolean,
+    @Query('idEmpresa', new ParseIntPipe({ optional: true })) idEmpresa?: number,
   ) {
-    return this.service.findAll(includeInactive ?? false, inactiveOnly ?? false);
+    return this.service.findAll(includeInactive ?? false, inactiveOnly ?? false, idEmpresa);
   }
 
-  @RequirePermissions('class:view')
+  @RequirePermissions('project:view')
   @Get(':id')
   findOne(@Param('id', ParseIntPipe) id: number) {
     return this.service.findOne(id);
   }
 
-  @RequirePermissions('class:edit')
+  @RequirePermissions('project:edit')
   @Put(':id')
   update(
     @Param('id', ParseIntPipe) id: number,
-    @Body() dto: UpdateClassDto,
+    @Body() dto: UpdateProjectDto,
     @CurrentUser() user: { userId: number },
   ) {
     return this.service.update(id, dto, user.userId);
   }
 
-  @RequirePermissions('class:inactivate')
+  @RequirePermissions('project:inactivate')
   @Patch(':id/inactivate')
   inactivate(@Param('id', ParseIntPipe) id: number, @CurrentUser() user: { userId: number }) {
     return this.service.inactivate(id, user.userId);
   }
 
-  @RequirePermissions('class:reactivate')
+  @RequirePermissions('project:reactivate')
   @Patch(':id/reactivate')
   reactivate(@Param('id', ParseIntPipe) id: number, @CurrentUser() user: { userId: number }) {
     return this.service.reactivate(id, user.userId);
   }
 
-  @RequirePermissions('config:clases:audit')
+  @RequirePermissions('config:proyectos:audit')
   @Get(':id/audit-trail')
   getAuditTrail(
     @Param('id', ParseIntPipe) id: number,

@@ -38,38 +38,36 @@ import {
   UpOutlined,
 } from '@ant-design/icons';
 import {
-  canCreateClass,
-  canEditClass,
-  canInactivateClass,
-  canReactivateClass,
-  canViewClasses,
-  canViewClassAudit,
+  canCreateDepartment,
+  canEditDepartment,
+  canInactivateDepartment,
+  canReactivateDepartment,
+  canViewDepartments,
+  canViewDepartmentAudit,
 } from '../../../store/selectors/permissions.selectors';
 import { useAppSelector } from '../../../store/hooks';
 import { formatDateTime12h } from '../../../lib/formatDate';
 import { optionalNoSqlInjection, textRules } from '../../../lib/formValidation';
 import {
-  createClass,
-  fetchClass,
-  fetchClassAuditTrail,
-  fetchClasses,
-  inactivateClass,
-  reactivateClass,
-  updateClass,
-  type ClassAuditTrailItem,
-  type ClassListItem,
-  type ClassPayload,
-} from '../../../api/classes';
+  createDepartment,
+  fetchDepartment,
+  fetchDepartmentAuditTrail,
+  fetchDepartmentsAdmin,
+  inactivateDepartment,
+  reactivateDepartment,
+  updateDepartment,
+  type DepartmentAuditTrailItem,
+  type DepartmentListItem,
+  type DepartmentPayload,
+} from '../../../api/departments-admin';
 import styles from './UsersManagementPage.module.css';
 
-interface ClassFormValues {
+interface DepartmentFormValues {
   nombre: string;
-  descripcion?: string;
-  codigo: string;
   idExterno?: string;
 }
 
-type PaneKey = 'nombre' | 'codigo' | 'idExterno' | 'estado';
+type PaneKey = 'nombre' | 'idExterno' | 'estado';
 
 interface PaneConfig {
   key: PaneKey;
@@ -82,68 +80,60 @@ interface PaneOption {
 }
 
 const paneConfig: PaneConfig[] = [
-  { key: 'nombre', title: 'Nombre Clase' },
-  { key: 'codigo', title: 'Codigo Clase' },
-  { key: 'idExterno', title: 'ID Externo Clase' },
-  { key: 'estado', title: 'Estado Clase' },
+  { key: 'nombre', title: 'Nombre Departamento' },
+  { key: 'idExterno', title: 'ID Externo Departamento' },
+  { key: 'estado', title: 'Estado Departamento' },
 ];
 
-function normalizePayload(values: ClassFormValues): ClassPayload {
+function normalizePayload(values: DepartmentFormValues): DepartmentPayload {
   return {
     nombre: values.nombre.trim(),
-    descripcion: values.descripcion?.trim() || undefined,
-    codigo: values.codigo.trim(),
     idExterno: values.idExterno?.trim() || undefined,
   };
 }
 
-function getPaneValue(row: ClassListItem, key: PaneKey): string {
+function getPaneValue(row: DepartmentListItem, key: PaneKey): string {
   if (key === 'nombre') return row.nombre ?? '';
-  if (key === 'codigo') return row.codigo ?? '';
   if (key === 'idExterno') return row.idExterno ?? '';
-  return row.esInactivo === 1 ? 'Inactivo' : 'Activo';
+  return row.estado === 0 ? 'Inactivo' : 'Activo';
 }
 
-export function ClassesManagementPage() {
+export function DepartmentsManagementPage() {
   const { message, modal } = AntdApp.useApp();
-  const [form] = Form.useForm<ClassFormValues>();
+  const [form] = Form.useForm<DepartmentFormValues>();
 
-  const canView = useAppSelector(canViewClasses);
-  const canCreate = useAppSelector(canCreateClass);
-  const canEdit = useAppSelector(canEditClass);
-  const canInactivate = useAppSelector(canInactivateClass);
-  const canReactivate = useAppSelector(canReactivateClass);
-  const canViewAudit = useAppSelector(canViewClassAudit);
+  const canView = useAppSelector(canViewDepartments);
+  const canCreate = useAppSelector(canCreateDepartment);
+  const canEdit = useAppSelector(canEditDepartment);
+  const canInactivate = useAppSelector(canInactivateDepartment);
+  const canReactivate = useAppSelector(canReactivateDepartment);
+  const canViewAudit = useAppSelector(canViewDepartmentAudit);
 
-  const [rows, setRows] = useState<ClassListItem[]>([]);
+  const [rows, setRows] = useState<DepartmentListItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [showInactive, setShowInactive] = useState(false);
   const [openModal, setOpenModal] = useState(false);
-  const [editing, setEditing] = useState<ClassListItem | null>(null);
+  const [editing, setEditing] = useState<DepartmentListItem | null>(null);
   const editingId = editing?.id ?? null;
   const [search, setSearch] = useState('');
   const [pageSize, setPageSize] = useState(10);
   const [activeTab, setActiveTab] = useState('principal');
-  const [auditTrail, setAuditTrail] = useState<ClassAuditTrailItem[]>([]);
+  const [auditTrail, setAuditTrail] = useState<DepartmentAuditTrailItem[]>([]);
   const [loadingAuditTrail, setLoadingAuditTrail] = useState(false);
-  const [loadingDetail, setLoadingDetail] = useState(false);
   const [filtersExpanded, setFiltersExpanded] = useState(false);
   const [paneSearch, setPaneSearch] = useState<Record<PaneKey, string>>({
     nombre: '',
-    codigo: '',
     idExterno: '',
     estado: '',
   });
   const [paneSelections, setPaneSelections] = useState<Record<PaneKey, string[]>>({
     nombre: [],
-    codigo: [],
     idExterno: [],
     estado: [],
   });
   const [paneOpen, setPaneOpen] = useState<Record<PaneKey, boolean>>({
     nombre: false,
-    codigo: false,
     idExterno: false,
     estado: false,
   });
@@ -151,10 +141,10 @@ export function ClassesManagementPage() {
   const loadRows = useCallback(async () => {
     setLoading(true);
     try {
-      const data = await fetchClasses(showInactive);
+      const data = await fetchDepartmentsAdmin(showInactive);
       setRows(data);
     } catch (error) {
-      message.error(error instanceof Error ? error.message : 'Error al cargar clases');
+      message.error(error instanceof Error ? error.message : 'Error al cargar departamentos');
       setRows([]);
     } finally {
       setLoading(false);
@@ -165,14 +155,12 @@ export function ClassesManagementPage() {
     void loadRows();
   }, [loadRows]);
 
-  const matchesGlobalSearch = useCallback((row: ClassListItem) => {
+  const matchesGlobalSearch = useCallback((row: DepartmentListItem) => {
     const term = search.trim().toLowerCase();
     if (!term) return true;
     return (
       (row.nombre ?? '').toLowerCase().includes(term)
-      || (row.codigo ?? '').toLowerCase().includes(term)
       || (row.idExterno ?? '').toLowerCase().includes(term)
-      || (row.descripcion ?? '').toLowerCase().includes(term)
     );
   }, [search]);
 
@@ -193,7 +181,6 @@ export function ClassesManagementPage() {
   const paneOptions = useMemo(() => {
     const result: Record<PaneKey, PaneOption[]> = {
       nombre: [],
-      codigo: [],
       idExterno: [],
       estado: [],
     };
@@ -221,9 +208,9 @@ export function ClassesManagementPage() {
 
   const clearAllFilters = () => {
     setSearch('');
-    setPaneSearch({ nombre: '', codigo: '', idExterno: '', estado: '' });
-    setPaneSelections({ nombre: [], codigo: [], idExterno: [], estado: [] });
-    setPaneOpen({ nombre: false, codigo: false, idExterno: false, estado: false });
+    setPaneSearch({ nombre: '', idExterno: '', estado: '' });
+    setPaneSelections({ nombre: [], idExterno: [], estado: [] });
+    setPaneOpen({ nombre: false, idExterno: false, estado: false });
   };
 
   const clearPaneSelection = (key: PaneKey) => {
@@ -232,11 +219,11 @@ export function ClassesManagementPage() {
   };
 
   const openAllPanes = () => {
-    setPaneOpen({ nombre: true, codigo: true, idExterno: true, estado: true });
+    setPaneOpen({ nombre: true, idExterno: true, estado: true });
   };
 
   const collapseAllPanes = () => {
-    setPaneOpen({ nombre: false, codigo: false, idExterno: false, estado: false });
+    setPaneOpen({ nombre: false, idExterno: false, estado: false });
   };
 
   const openCreateModal = () => {
@@ -246,12 +233,12 @@ export function ClassesManagementPage() {
     setOpenModal(true);
   };
 
-  const openEditModal = (row: ClassListItem) => {
+  const openEditModal = (row: DepartmentListItem) => {
     if (!canEdit) return;
     setEditing(row);
     setActiveTab('principal');
     setOpenModal(true);
-    applyClassToForm(row);
+    applyDepartmentToForm(row);
   };
 
   const closeModal = () => {
@@ -261,35 +248,30 @@ export function ClassesManagementPage() {
     form.resetFields();
   };
 
-  const applyClassToForm = useCallback((row: ClassListItem) => {
+  const applyDepartmentToForm = useCallback((row: DepartmentListItem) => {
     form.setFieldsValue({
       nombre: row.nombre ?? '',
-      descripcion: row.descripcion ?? '',
-      codigo: row.codigo ?? '',
       idExterno: row.idExterno ?? '',
     });
   }, [form]);
 
-  const loadClassDetail = useCallback(async (id: number) => {
-    setLoadingDetail(true);
+  const loadDepartmentDetail = useCallback(async (id: number) => {
     try {
-      const detail = await fetchClass(id);
+      const detail = await fetchDepartment(id);
       setEditing(detail);
-      applyClassToForm(detail);
+      applyDepartmentToForm(detail);
     } catch {
       // Keep current form values if detail fetch fails
-    } finally {
-      setLoadingDetail(false);
     }
-  }, [applyClassToForm]);
+  }, [applyDepartmentToForm]);
 
   useEffect(() => {
     if (!openModal || !editingId) return;
-    applyClassToForm(editing);
-    void loadClassDetail(editingId);
-  }, [openModal, editingId, loadClassDetail, applyClassToForm]);
+    applyDepartmentToForm(editing);
+    void loadDepartmentDetail(editingId);
+  }, [openModal, editingId, loadDepartmentDetail, applyDepartmentToForm]);
 
-  const loadClassAuditTrail = useCallback(async (id: number) => {
+  const loadDepartmentAuditTrail = useCallback(async (id: number) => {
     if (!canViewAudit) {
       setAuditTrail([]);
       setLoadingAuditTrail(false);
@@ -297,7 +279,7 @@ export function ClassesManagementPage() {
     }
     setLoadingAuditTrail(true);
     try {
-      const rows = await fetchClassAuditTrail(id, 200);
+      const rows = await fetchDepartmentAuditTrail(id, 200);
       setAuditTrail(rows ?? []);
     } catch (error) {
       setAuditTrail([]);
@@ -311,24 +293,24 @@ export function ClassesManagementPage() {
     if (!openModal || !editingId) return;
     if (activeTab !== 'bitacora') return;
     if (!canViewAudit) return;
-    void loadClassAuditTrail(editingId);
-  }, [openModal, editingId, activeTab, canViewAudit, loadClassAuditTrail]);
+    void loadDepartmentAuditTrail(editingId);
+  }, [openModal, editingId, activeTab, canViewAudit, loadDepartmentAuditTrail]);
 
-  const submitClass = async () => {
+  const submitDepartment = async () => {
     try {
       if (!editing && !canCreate) {
-        message.error('No tiene permiso para crear clases.');
+        message.error('No tiene permiso para crear departamentos.');
         return;
       }
       if (editing && !canEdit) {
-        message.error('No tiene permiso para editar clases.');
+        message.error('No tiene permiso para editar departamentos.');
         return;
       }
 
       const confirmed = await new Promise<boolean>((resolve) => {
         modal.confirm({
-          title: editing ? 'Confirmar edicion de clase' : 'Confirmar creacion de clase',
-          content: editing ? 'Se guardaran los cambios.' : 'Se creara la nueva clase.',
+          title: editing ? 'Confirmar edicion de departamento' : 'Confirmar creacion de departamento',
+          content: editing ? 'Se guardaran los cambios.' : 'Se creara el nuevo departamento.',
           icon: <QuestionCircleOutlined style={{ color: '#5a6c7d', fontSize: 40 }} />,
           okText: editing ? 'Guardar cambios' : 'Crear',
           cancelText: 'Cancelar',
@@ -348,11 +330,11 @@ export function ClassesManagementPage() {
       setSaving(true);
 
       if (editing) {
-        await updateClass(editing.id, payload);
-        message.success('Clase actualizada correctamente');
+        await updateDepartment(editing.id, payload);
+        message.success('Departamento actualizado correctamente');
       } else {
-        await createClass(payload);
-        message.success('Clase creada correctamente');
+        await createDepartment(payload);
+        message.success('Departamento creado correctamente');
       }
 
       closeModal();
@@ -366,27 +348,27 @@ export function ClassesManagementPage() {
     }
   };
 
-  const handleInactivate = async (row: ClassListItem) => {
+  const handleInactivate = async (row: DepartmentListItem) => {
     if (!canInactivate) {
-      message.error('No tiene permiso para inactivar clases.');
+      message.error('No tiene permiso para inactivar departamentos.');
       return;
     }
-    await inactivateClass(row.id);
-    message.success(`Clase ${row.nombre} inactivada`);
+    await inactivateDepartment(row.id);
+    message.success(`Departamento ${row.nombre} inactivado`);
     await loadRows();
   };
 
-  const handleReactivate = async (row: ClassListItem) => {
+  const handleReactivate = async (row: DepartmentListItem) => {
     if (!canReactivate) {
-      message.error('No tiene permiso para reactivar clases.');
+      message.error('No tiene permiso para reactivar departamentos.');
       return;
     }
-    await reactivateClass(row.id);
-    message.success(`Clase ${row.nombre} reactivada`);
+    await reactivateDepartment(row.id);
+    message.success(`Departamento ${row.nombre} reactivado`);
     await loadRows();
   };
 
-  const columns: ColumnsType<ClassListItem> = [
+  const columns: ColumnsType<DepartmentListItem> = [
     {
       title: 'Nombre',
       dataIndex: 'nombre',
@@ -399,12 +381,6 @@ export function ClassesManagementPage() {
       ),
     },
     {
-      title: 'Codigo',
-      dataIndex: 'codigo',
-      key: 'codigo',
-      width: 160,
-    },
-    {
       title: 'ID Externo',
       dataIndex: 'idExterno',
       key: 'idExterno',
@@ -412,18 +388,12 @@ export function ClassesManagementPage() {
       render: (value) => value || '-',
     },
     {
-      title: 'Descripcion',
-      dataIndex: 'descripcion',
-      key: 'descripcion',
-      render: (value) => value || '-',
-    },
-    {
       title: 'Estado',
       key: 'estado',
       width: 120,
       render: (_, row) => (
-        <Tag className={row.esInactivo === 1 ? styles.tagInactivo : styles.tagActivo}>
-          {row.esInactivo === 1 ? 'Inactivo' : 'Activo'}
+        <Tag className={row.estado === 0 ? styles.tagInactivo : styles.tagActivo}>
+          {row.estado === 0 ? 'Inactivo' : 'Activo'}
         </Tag>
       ),
     },
@@ -436,7 +406,7 @@ export function ClassesManagementPage() {
     },
   ];
 
-  const auditColumns: ColumnsType<ClassAuditTrailItem> = [
+  const auditColumns: ColumnsType<DepartmentAuditTrailItem> = [
     {
       title: 'Fecha y hora',
       dataIndex: 'fechaCreacion',
@@ -519,9 +489,9 @@ export function ClassesManagementPage() {
             <ArrowLeftOutlined />
           </Link>
           <div className={styles.pageTitleBlock}>
-            <h1 className={styles.pageTitle}>Listado de Clases</h1>
+            <h1 className={styles.pageTitle}>Listado de Departamentos</h1>
             <p className={styles.pageSubtitle}>
-              Visualice y gestione todas las clases registradas en el sistema de recursos humanos
+              Visualice y gestione todos los departamentos registrados en el sistema de recursos humanos
             </p>
           </div>
         </div>
@@ -535,9 +505,9 @@ export function ClassesManagementPage() {
                 <AppstoreOutlined className={styles.gestionIcon} />
               </div>
               <div>
-                <h2 className={styles.gestionTitle}>Gestion de Clases</h2>
+                <h2 className={styles.gestionTitle}>Gestion de Departamentos</h2>
                 <p className={styles.gestionDesc}>
-                  Administre y consulte todas las clases registradas en el sistema
+                  Administre y consulte todos los departamentos registrados en el sistema
                 </p>
               </div>
             </Flex>
@@ -548,7 +518,7 @@ export function ClassesManagementPage() {
                 className={`${styles.actionButton} ${styles.btnPrimary}`}
                 onClick={openCreateModal}
               >
-                Crear Clase
+                Crear Departamento
               </Button>
             ) : null}
           </Flex>
@@ -561,7 +531,7 @@ export function ClassesManagementPage() {
             <Flex align="center" gap={12} wrap="wrap">
               <Flex align="center" gap={8}>
                 <FilterOutlined className={styles.registrosFilterIcon} />
-                <h3 className={styles.registrosTitle}>Registros de Clases</h3>
+                <h3 className={styles.registrosTitle}>Registros de Departamentos</h3>
               </Flex>
               <Flex align="center" gap={6}>
                 <Select
@@ -574,7 +544,7 @@ export function ClassesManagementPage() {
               </Flex>
             </Flex>
             <Flex align="center" gap={8}>
-              <span style={{ color: '#6b7a85', fontSize: 14 }}>Mostrar inactivas</span>
+              <span style={{ color: '#6b7a85', fontSize: 14 }}>Mostrar inactivos</span>
               <Switch checked={showInactive} onChange={setShowInactive} size="small" />
             </Flex>
           </Flex>
@@ -698,24 +668,24 @@ export function ClassesManagementPage() {
               <div className={styles.companyModalHeaderIcon}>
                 <AppstoreOutlined />
               </div>
-              <span>{editing ? 'Editar Clase' : 'Crear Clase'}</span>
+              <span>{editing ? 'Editar Departamento' : 'Crear Departamento'}</span>
             </div>
             <Flex align="center" gap={12} className={styles.companyModalHeaderRight}>
               {editing ? (
                 <div className={styles.companyModalEstadoPaper}>
-                  <span style={{ fontWeight: 500, fontSize: 14, color: editing.esInactivo === 1 ? '#64748b' : '#20638d' }}>
-                    {editing.esInactivo === 1 ? 'Inactivo' : 'Activo'}
+                  <span style={{ fontWeight: 500, fontSize: 14, color: editing.estado === 0 ? '#64748b' : '#20638d' }}>
+                    {editing.estado === 0 ? 'Inactivo' : 'Activo'}
                   </span>
                   <Switch
-                    checked={editing.esInactivo === 0}
-                    disabled={editing.esInactivo === 0 ? !canInactivate : !canReactivate}
+                    checked={editing.estado === 1}
+                    disabled={editing.estado === 1 ? !canInactivate : !canReactivate}
                     onChange={(checked) => {
                       if (!editing) return;
                       modal.confirm({
-                        title: checked ? 'Reactivar clase' : 'Inactivar clase',
+                        title: checked ? 'Reactivar departamento' : 'Inactivar departamento',
                         content: checked
-                          ? 'La clase volvera a estar disponible.'
-                          : 'La clase quedara inactiva.',
+                          ? 'El departamento volvera a estar disponible.'
+                          : 'El departamento quedara inactivo.',
                         okText: checked ? 'Reactivar' : 'Inactivar',
                         cancelText: 'Cancelar',
                         centered: true,
@@ -748,7 +718,7 @@ export function ClassesManagementPage() {
           </Flex>
         )}
       >
-        <Form<ClassFormValues> layout="vertical" form={form} preserve={false} className={styles.companyFormContent}>
+        <Form<DepartmentFormValues> layout="vertical" form={form} preserve={false} className={styles.companyFormContent}>
           <Tabs
             activeKey={activeTab}
             onChange={setActiveTab}
@@ -763,22 +733,14 @@ export function ClassesManagementPage() {
                   </span>
                 ),
                 children: (
-                  <Spin spinning={loadingDetail}>
-                    <div className={styles.companyFormGrid}>
-                    <Form.Item name="nombre" label="Nombre Clase *" rules={textRules({ required: true, max: 255 })}>
-                      <Input maxLength={255} />
+                  <div className={styles.companyFormGrid}>
+                    <Form.Item name="nombre" label="Nombre Departamento *" rules={textRules({ required: true, max: 100 })}>
+                      <Input maxLength={100} />
                     </Form.Item>
-                    <Form.Item name="codigo" label="Codigo Clase *" rules={textRules({ required: true, max: 50 })}>
-                      <Input maxLength={50} />
-                    </Form.Item>
-                    <Form.Item name="idExterno" label="ID Externo Clase" rules={[{ validator: optionalNoSqlInjection }]}>
+                    <Form.Item name="idExterno" label="ID Externo Departamento" rules={[{ validator: optionalNoSqlInjection }]}>
                       <Input maxLength={45} />
                     </Form.Item>
-                    <Form.Item name="descripcion" label="Descripcion Clase" rules={[{ validator: optionalNoSqlInjection }]}>
-                      <Input.TextArea rows={4} />
-                    </Form.Item>
-                    </div>
-                  </Spin>
+                  </div>
                 ),
               },
               ...(editing && canViewAudit
@@ -792,11 +754,11 @@ export function ClassesManagementPage() {
                     ),
                     children: (
                       <div style={{ paddingTop: 8 }}>
-                        <p className={styles.sectionTitle}>Historial de cambios de la clase</p>
+                        <p className={styles.sectionTitle}>Historial de cambios del departamento</p>
                         <p className={styles.sectionDescription}>
                           Muestra quien hizo el cambio, cuando lo hizo y el detalle registrado en bitacora.
                         </p>
-                        <Table<ClassAuditTrailItem>
+                        <Table<DepartmentAuditTrailItem>
                           rowKey="id"
                           size="small"
                           loading={loadingAuditTrail}
@@ -808,7 +770,7 @@ export function ClassesManagementPage() {
                             showSizeChanger: true,
                             showTotal: (total) => `${total} registro(s)`,
                           }}
-                          locale={{ emptyText: 'No hay registros de bitacora para esta clase.' }}
+                          locale={{ emptyText: 'No hay registros de bitacora para este departamento.' }}
                         />
                       </div>
                     ),
@@ -824,11 +786,11 @@ export function ClassesManagementPage() {
               type="primary"
               className={styles.companyModalBtnSubmit}
               loading={saving}
-              onClick={() => void submitClass()}
+              onClick={() => void submitDepartment()}
               icon={editing ? <EditOutlined /> : <PlusOutlined />}
               disabled={editing ? !canEdit : !canCreate}
             >
-              {editing ? 'Guardar cambios' : 'Crear Clase'}
+              {editing ? 'Guardar cambios' : 'Crear Departamento'}
             </Button>
           </div>
         </Form>

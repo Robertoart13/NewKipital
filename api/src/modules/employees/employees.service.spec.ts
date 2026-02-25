@@ -542,6 +542,7 @@ describe('EmployeesService', () => {
     it('should update employee successfully', async () => {
       // Arrange
       employeeRepo.findOne.mockResolvedValue(mockEmployee);
+      employeeRepo.save.mockResolvedValue({ ...mockEmployee, nombre: 'encrypted-Jane' });
       userCompanyRepo.findOne.mockResolvedValue({ idUsuario: 1, idEmpresa: 1, estado: 1 } as any);
       authService.resolvePermissions.mockResolvedValue({
         permissions: ['employee:view-sensitive'],

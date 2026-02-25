@@ -13,6 +13,9 @@ import {
   UsersManagementPage,
   CompaniesManagementPage,
   ClassesManagementPage,
+  ProjectsManagementPage,
+  DepartmentsManagementPage,
+  PositionsManagementPage,
   AutomationMonitoringPage,
 } from '../pages/private';
 
@@ -99,12 +102,42 @@ export function AppRouter() {
         <Route
           element={(
             <PrivateLayout>
-              <PermissionGuard requiredPermission="config:clases">
+              <PermissionGuard requiredPermission="class:view">
                 <ClassesManagementPage />
               </PermissionGuard>
             </PrivateLayout>
           )}
           path="/configuration/clases"
+        />
+        <Route
+          element={(
+            <PrivateLayout>
+              <PermissionGuard requiredPermission="project:view">
+                <ProjectsManagementPage />
+              </PermissionGuard>
+            </PrivateLayout>
+          )}
+          path="/configuration/proyectos"
+        />
+        <Route
+          element={(
+            <PrivateLayout>
+              <PermissionGuard requiredPermission="department:view">
+                <DepartmentsManagementPage />
+              </PermissionGuard>
+            </PrivateLayout>
+          )}
+          path="/configuration/departamentos"
+        />
+        <Route
+          element={(
+            <PrivateLayout>
+              <PermissionGuard requiredPermission="position:view">
+                <PositionsManagementPage />
+              </PermissionGuard>
+            </PrivateLayout>
+          )}
+          path="/configuration/puestos"
         />
         <Route
           element={(

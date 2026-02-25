@@ -7,6 +7,9 @@ import { databaseConfig } from './config/database.config';
 import { AuthModule } from './modules/auth/auth.module';
 import { CompaniesModule } from './modules/companies/companies.module';
 import { ClassesModule } from './modules/classes/classes.module';
+import { ProjectsModule } from './modules/projects/projects.module';
+import { DepartmentsModule } from './modules/departments/departments.module';
+import { PositionsModule } from './modules/positions/positions.module';
 import { EmployeesModule } from './modules/employees/employees.module';
 import { PersonalActionsModule } from './modules/personal-actions/personal-actions.module';
 import { PayrollModule } from './modules/payroll/payroll.module';
@@ -26,6 +29,9 @@ import { PermissionsGuard } from './common/guards/permissions.guard';
     AuthModule,
     CompaniesModule,
     ClassesModule,
+    ProjectsModule,
+    DepartmentsModule,
+    PositionsModule,
     EmployeesModule,
     PersonalActionsModule,
     PayrollModule,

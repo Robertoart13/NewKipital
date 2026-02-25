@@ -34,6 +34,15 @@ import { AuditWorkerService } from './integration/audit-worker.service';
 import { ClassesModule } from './classes/classes.module';
 import { ClassesController } from './classes/classes.controller';
 import { ClassesService } from './classes/classes.service';
+import { ProjectsModule } from './projects/projects.module';
+import { ProjectsController } from './projects/projects.controller';
+import { ProjectsService } from './projects/projects.service';
+import { DepartmentsModule } from './departments/departments.module';
+import { DepartmentsController } from './departments/departments.controller';
+import { DepartmentsService } from './departments/departments.service';
+import { PositionsModule } from './positions/positions.module';
+import { PositionsController } from './positions/positions.controller';
+import { PositionsService } from './positions/positions.service';
 
 describe('Modules Smoke', () => {
   it('loads access-control classes', () => {
@@ -77,5 +86,23 @@ describe('Modules Smoke', () => {
     expect(ClassesModule).toBeDefined();
     expect(ClassesController).toBeDefined();
     expect(ClassesService).toBeDefined();
+  });
+
+  it('loads projects module', () => {
+    expect(ProjectsModule).toBeDefined();
+    expect(ProjectsController).toBeDefined();
+    expect(ProjectsService).toBeDefined();
+  });
+
+  it('loads departments module', () => {
+    expect(DepartmentsModule).toBeDefined();
+    expect(DepartmentsController).toBeDefined();
+    expect(DepartmentsService).toBeDefined();
+  });
+
+  it('loads positions module', () => {
+    expect(PositionsModule).toBeDefined();
+    expect(PositionsController).toBeDefined();
+    expect(PositionsService).toBeDefined();
   });
 });

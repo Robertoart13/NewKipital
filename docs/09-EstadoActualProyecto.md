@@ -249,6 +249,25 @@ Solo existe el **menú horizontal superior** (header). No hay sidebar/menú late
 3. **Gestion Planilla** — Definido: Planillas (Generar, Listado, Aplicadas, Carga Masiva), Traslado Interempresas
 4. **Configuracion** — Definido con 2 grupos: Seguridad (Roles y Permisos, Usuarios) + Gestion Organizacional (Reglas, Empresas, Empleados, Clases, Proyectos, Cuentas Contables, Departamentos, Puestos)
 
+### 4.x Regla de UX - Bitacora en modales de edicion
+- La pestaña **Bitacora** solo debe mostrarse cuando:
+  - El registro existe (modo edicion).
+  - El usuario tiene el permiso de bitacora correspondiente.
+- Si el permiso no existe, la pestaña **no se muestra** (no se deja tab vacio).
+- El contenido de Bitacora se carga **solo al abrir la pestaña** (lazy load) para evitar peticiones innecesarias.
+
+Permisos por modulo:
+- Clases: `config:clases:audit`
+- Proyectos: `config:proyectos:audit`
+- Departamentos: `config:departamentos:audit`
+- Puestos: `config:puestos:audit`
+
+### 4.x Regla de UX - Selector de empresa en Proyectos
+- **Crear Proyecto:** solo permite seleccionar empresas activas.
+- **Editar Proyecto:**  
+  - Si la empresa actual esta activa, el selector es editable.  
+  - Si la empresa actual esta inactiva, se muestra el valor actual como solo lectura con badge “Inactiva” y se habilita un selector adicional para cambiar a una empresa activa.
+
 Detalle completo en [08-EstructuraMenus.md](./08-EstructuraMenus.md).
 
 ---

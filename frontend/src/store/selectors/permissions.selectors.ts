@@ -83,7 +83,7 @@ export const canViewCompanyAudit = (state: RootState) =>
   selectPermissions(state).includes('config:companies:audit');
 
 export const canViewClasses = (state: RootState) =>
-  selectPermissions(state).includes('config:clases');
+  selectPermissions(state).includes('class:view');
 export const canCreateClass = (state: RootState) =>
   selectPermissions(state).includes('class:create');
 export const canEditClass = (state: RootState) =>
@@ -94,6 +94,45 @@ export const canReactivateClass = (state: RootState) =>
   selectPermissions(state).includes('class:reactivate');
 export const canViewClassAudit = (state: RootState) =>
   selectPermissions(state).includes('config:clases:audit');
+
+export const canViewProjects = (state: RootState) =>
+  selectPermissions(state).includes('project:view');
+export const canCreateProject = (state: RootState) =>
+  selectPermissions(state).includes('project:create');
+export const canEditProject = (state: RootState) =>
+  selectPermissions(state).includes('project:edit');
+export const canInactivateProject = (state: RootState) =>
+  selectPermissions(state).includes('project:inactivate');
+export const canReactivateProject = (state: RootState) =>
+  selectPermissions(state).includes('project:reactivate');
+export const canViewProjectAudit = (state: RootState) =>
+  selectPermissions(state).includes('config:proyectos:audit');
+
+export const canViewDepartments = (state: RootState) =>
+  selectPermissions(state).includes('department:view');
+export const canCreateDepartment = (state: RootState) =>
+  selectPermissions(state).includes('department:create');
+export const canEditDepartment = (state: RootState) =>
+  selectPermissions(state).includes('department:edit');
+export const canInactivateDepartment = (state: RootState) =>
+  selectPermissions(state).includes('department:inactivate');
+export const canReactivateDepartment = (state: RootState) =>
+  selectPermissions(state).includes('department:reactivate');
+export const canViewDepartmentAudit = (state: RootState) =>
+  selectPermissions(state).includes('config:departamentos:audit');
+
+export const canViewPositions = (state: RootState) =>
+  selectPermissions(state).includes('position:view');
+export const canCreatePosition = (state: RootState) =>
+  selectPermissions(state).includes('position:create');
+export const canEditPosition = (state: RootState) =>
+  selectPermissions(state).includes('position:edit');
+export const canInactivatePosition = (state: RootState) =>
+  selectPermissions(state).includes('position:inactivate');
+export const canReactivatePosition = (state: RootState) =>
+  selectPermissions(state).includes('position:reactivate');
+export const canViewPositionAudit = (state: RootState) =>
+  selectPermissions(state).includes('config:puestos:audit');
 
 /** Permisos para ver secciones de configuración (tabs Roles, Usuarios, Permisos) */
 export const canViewConfigRoles = (state: RootState) =>

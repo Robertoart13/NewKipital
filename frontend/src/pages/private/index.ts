@@ -7,4 +7,7 @@ export { RolesManagementPage } from './configuration/RolesManagementPage';
 export { UsersManagementPage } from './configuration/UsersManagementPage';
 export { CompaniesManagementPage } from './configuration/CompaniesManagementPage';
 export { ClassesManagementPage } from './configuration/ClassesManagementPage';
+export { ProjectsManagementPage } from './configuration/ProjectsManagementPage';
+export { DepartmentsManagementPage } from './configuration/DepartmentsManagementPage';
+export { PositionsManagementPage } from './configuration/PositionsManagementPage';
 export { AutomationMonitoringPage } from './monitoring/AutomationMonitoringPage';

@@ -77,6 +77,9 @@ function mapEmployeeToFormValues(emp: EmployeeDetail) {
     idDepartamento: emp.idDepartamento ?? undefined,
     idPuesto: emp.idPuesto ?? undefined,
     idSupervisor: emp.idSupervisor ?? undefined,
+    idDepartamentoCambio: undefined,
+    idPuestoCambio: undefined,
+    idPeriodoPagoCambio: undefined,
     fechaIngreso: emp.fechaIngreso ? dayjs(emp.fechaIngreso) : undefined,
     tipoContrato: emp.tipoContrato ?? undefined,
     idPeriodoPago: emp.idPeriodoPago ?? undefined,
@@ -110,6 +113,10 @@ export function EmployeeEditModal({ employeeId, open, onClose, onSuccess }: Empl
   const { data: departments = [] } = useDepartments();
   const { data: positions = [] } = usePositions();
   const { data: payPeriods = [] } = usePayPeriods();
+  const activeCompanyIds = useMemo(() => new Set(companies.map((c) => c.id)), [companies]);
+  const activeDepartmentIds = useMemo(() => new Set(departments.map((d: { id: number }) => d.id)), [departments]);
+  const activePositionIds = useMemo(() => new Set(positions.map((p: { id: number }) => p.id)), [positions]);
+  const activePayPeriodIds = useMemo(() => new Set(payPeriods.map((p: { id: number }) => p.id)), [payPeriods]);
 
   const [activeTabKey, setActiveTabKey] = useState('personal');
   const [auditTrail, setAuditTrail] = useState<EmployeeAuditTrailItem[]>([]);
@@ -124,6 +131,10 @@ export function EmployeeEditModal({ employeeId, open, onClose, onSuccess }: Empl
 
   const canSubmit = useMemo(() => {
     const v = formValues ?? {};
+    const empresaValue = v.idEmpresa;
+    const departamentoValue = v.idDepartamentoCambio ?? v.idDepartamento;
+    const puestoValue = v.idPuestoCambio ?? v.idPuesto;
+    const periodoValue = v.idPeriodoPagoCambio ?? v.idPeriodoPago;
     return !!(
       v.nombre?.trim() &&
       v.apellido1?.trim() &&
@@ -131,9 +142,10 @@ export function EmployeeEditModal({ employeeId, open, onClose, onSuccess }: Empl
       v.email?.trim() &&
       v.codigo?.trim() &&
       v.fechaIngreso &&
-      v.idDepartamento &&
-      v.idPuesto &&
-      v.idPeriodoPago
+      empresaValue &&
+      departamentoValue &&
+      puestoValue &&
+      periodoValue
     );
   }, [formValues]);
 
@@ -209,6 +221,9 @@ export function EmployeeEditModal({ employeeId, open, onClose, onSuccess }: Empl
     if (!confirmed) return;
     const values = await form.validateFields().catch(() => null);
     if (!values) return;
+    const resolvedDepartamento = values.idDepartamentoCambio ?? values.idDepartamento;
+    const resolvedPuesto = values.idPuestoCambio ?? values.idPuesto;
+    const resolvedPeriodoPago = values.idPeriodoPagoCambio ?? values.idPeriodoPago;
 
     const activoChanged = employee != null && (values.activo ?? true) !== (employee.estado === 1);
     const doClose = () => {
@@ -236,12 +251,12 @@ export function EmployeeEditModal({ employeeId, open, onClose, onSuccess }: Empl
       cantidadHijos: values.cantidadHijos ?? undefined,
       telefono: values.telefono || undefined,
       direccion: values.direccion || undefined,
-      idDepartamento: values.idDepartamento || undefined,
-      idPuesto: values.idPuesto || undefined,
+      idDepartamento: resolvedDepartamento || undefined,
+      idPuesto: resolvedPuesto || undefined,
       idSupervisor: values.idSupervisor ?? undefined,
       tipoContrato: values.tipoContrato || undefined,
       jornada: values.jornada || undefined,
-      idPeriodoPago: values.idPeriodoPago || undefined,
+      idPeriodoPago: resolvedPeriodoPago || undefined,
       salarioBase: values.salarioBase ?? undefined,
       monedaSalario: values.monedaSalario || undefined,
       numeroCcss: values.numeroCcss?.trim() || undefined,
@@ -416,15 +431,27 @@ export function EmployeeEditModal({ employeeId, open, onClose, onSuccess }: Empl
       ),
       children: (
         <Row gutter={[12, 12]} className={styles.companyFormGrid}>
-          {companies.length === 1 ? (
+          {employee?.idEmpresa && !activeCompanyIds.has(employee.idEmpresa) ? (
             <Col span={12}>
-              <Form.Item label="Empresa *">
+              <Form.Item name="idEmpresa" hidden>
+                <Input />
+              </Form.Item>
+              <Form.Item label="Empresa actual">
+                <Flex align="center" gap={8}>
+                  <Input value={`Empresa #${employee.idEmpresa}`} disabled />
+                  <Tag className={styles.tagInactivo}>Inactivo</Tag>
+                </Flex>
+              </Form.Item>
+            </Col>
+          ) : companies.length === 1 ? (
+            <Col span={12}>
+              <Form.Item name="idEmpresa" label="Empresa *" rules={[{ required: true }]}>
                 <Input value={companies[0].nombre} disabled />
               </Form.Item>
             </Col>
           ) : (
             <Col span={12}>
-              <Form.Item name="idEmpresa" label="Empresa *">
+              <Form.Item name="idEmpresa" label="Empresa *" rules={[{ required: true }]}>
                 <Select
                   disabled
                   showSearch
@@ -439,14 +466,60 @@ export function EmployeeEditModal({ employeeId, open, onClose, onSuccess }: Empl
             </Col>
           )}
           <Col span={8}>
-            <Form.Item name="idDepartamento" label="Departamento *" rules={[{ required: true }]}>
-              <Select placeholder="Seleccionar" options={departments.map((d: { id: number; nombre: string }) => ({ value: d.id, label: d.nombre }))} />
-            </Form.Item>
+            {employee?.idDepartamento && !activeDepartmentIds.has(employee.idDepartamento) ? (
+              <>
+                <Form.Item name="idDepartamento" hidden>
+                  <Input />
+                </Form.Item>
+                <Form.Item label="Departamento actual">
+                  <Flex align="center" gap={8}>
+                    <Input value={employee.departamento?.nombre ?? `Departamento #${employee.idDepartamento}`} disabled />
+                    <Tag className={styles.tagInactivo}>Inactivo</Tag>
+                  </Flex>
+                </Form.Item>
+                <Form.Item name="idDepartamentoCambio" label="Cambiar a departamento activo">
+                  <Select
+                    placeholder="Seleccionar"
+                    options={departments.map((d: { id: number; nombre: string }) => ({ value: d.id, label: d.nombre }))}
+                  />
+                </Form.Item>
+              </>
+            ) : (
+              <Form.Item name="idDepartamento" label="Departamento *" rules={[{ required: true }]}>
+                <Select
+                  placeholder="Seleccionar"
+                  options={departments.map((d: { id: number; nombre: string }) => ({ value: d.id, label: d.nombre }))}
+                />
+              </Form.Item>
+            )}
           </Col>
           <Col span={8}>
-            <Form.Item name="idPuesto" label="Puesto *" rules={[{ required: true }]}>
-              <Select placeholder="Seleccionar" options={positions.map((p: { id: number; nombre: string }) => ({ value: p.id, label: p.nombre }))} />
-            </Form.Item>
+            {employee?.idPuesto && !activePositionIds.has(employee.idPuesto) ? (
+              <>
+                <Form.Item name="idPuesto" hidden>
+                  <Input />
+                </Form.Item>
+                <Form.Item label="Puesto actual">
+                  <Flex align="center" gap={8}>
+                    <Input value={employee.puesto?.nombre ?? `Puesto #${employee.idPuesto}`} disabled />
+                    <Tag className={styles.tagInactivo}>Inactivo</Tag>
+                  </Flex>
+                </Form.Item>
+                <Form.Item name="idPuestoCambio" label="Cambiar a puesto activo">
+                  <Select
+                    placeholder="Seleccionar"
+                    options={positions.map((p: { id: number; nombre: string }) => ({ value: p.id, label: p.nombre }))}
+                  />
+                </Form.Item>
+              </>
+            ) : (
+              <Form.Item name="idPuesto" label="Puesto *" rules={[{ required: true }]}>
+                <Select
+                  placeholder="Seleccionar"
+                  options={positions.map((p: { id: number; nombre: string }) => ({ value: p.id, label: p.nombre }))}
+                />
+              </Form.Item>
+            )}
           </Col>
           <Col span={8}>
             <Form.Item
@@ -463,9 +536,32 @@ export function EmployeeEditModal({ employeeId, open, onClose, onSuccess }: Empl
             </Form.Item>
           </Col>
           <Col span={8}>
-            <Form.Item name="idPeriodoPago" label="Periodo de Pago *" rules={[{ required: true }]}>
-              <Select placeholder="Seleccionar" options={payPeriods.map((p: { id: number; nombre: string }) => ({ value: p.id, label: p.nombre }))} />
-            </Form.Item>
+            {employee?.idPeriodoPago && !activePayPeriodIds.has(employee.idPeriodoPago) ? (
+              <>
+                <Form.Item name="idPeriodoPago" hidden>
+                  <Input />
+                </Form.Item>
+                <Form.Item label="Periodo de Pago actual">
+                  <Flex align="center" gap={8}>
+                    <Input value={employee.periodoPago?.nombre ?? `Periodo #${employee.idPeriodoPago}`} disabled />
+                    <Tag className={styles.tagInactivo}>Inactivo</Tag>
+                  </Flex>
+                </Form.Item>
+                <Form.Item name="idPeriodoPagoCambio" label="Cambiar a periodo activo">
+                  <Select
+                    placeholder="Seleccionar"
+                    options={payPeriods.map((p: { id: number; nombre: string }) => ({ value: p.id, label: p.nombre }))}
+                  />
+                </Form.Item>
+              </>
+            ) : (
+              <Form.Item name="idPeriodoPago" label="Periodo de Pago *" rules={[{ required: true }]}> 
+                <Select
+                  placeholder="Seleccionar"
+                  options={payPeriods.map((p: { id: number; nombre: string }) => ({ value: p.id, label: p.nombre }))}
+                />
+              </Form.Item>
+            )}
           </Col>
           <Col span={8}>
             <Form.Item name="jornada" label="Tipo de Jornada">
@@ -661,7 +757,7 @@ export function EmployeeEditModal({ employeeId, open, onClose, onSuccess }: Empl
         </div>
       ),
     },
-    ...(employeeId != null
+    ...(employeeId != null && canViewAudit
       ? [
           {
             key: 'bitacora',
@@ -677,26 +773,20 @@ export function EmployeeEditModal({ employeeId, open, onClose, onSuccess }: Empl
                 <p className={styles.sectionDescription} style={{ marginBottom: 16 }}>
                   Muestra quién hizo el cambio, cuándo lo hizo y el detalle registrado en bitácora.
                 </p>
-                {canViewAudit ? (
-                  <Table<EmployeeAuditTrailItem>
-                    rowKey="id"
-                    size="small"
-                    loading={loadingAuditTrail}
-                    columns={auditColumns}
-                    dataSource={auditTrail}
-                    className={`${styles.configTable} ${styles.auditTableCompact}`}
-                    pagination={{
-                      pageSize: 8,
-                      showSizeChanger: true,
-                      showTotal: (total) => `${total} registro(s)`,
-                    }}
-                    locale={{ emptyText: 'No hay registros de bitácora para este empleado.' }}
-                  />
-                ) : (
-                  <p className={styles.sectionDescription} style={{ color: '#64748b' }}>
-                    No tiene permiso para ver la bitácora de este empleado.
-                  </p>
-                )}
+                <Table<EmployeeAuditTrailItem>
+                  rowKey="id"
+                  size="small"
+                  loading={loadingAuditTrail}
+                  columns={auditColumns}
+                  dataSource={auditTrail}
+                  className={`${styles.configTable} ${styles.auditTableCompact}`}
+                  pagination={{
+                    pageSize: 8,
+                    showSizeChanger: true,
+                    showTotal: (total) => `${total} registro(s)`,
+                  }}
+                  locale={{ emptyText: 'No hay registros de bitácora para este empleado.' }}
+                />
               </div>
             ),
           },
