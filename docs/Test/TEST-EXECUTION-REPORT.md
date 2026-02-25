@@ -4,9 +4,9 @@ Documento de control por fases de ejecucion de pruebas.
 
 ## Resumen vigente
 - Estado actual: Completo
-- Total: 502/502 pasando
-- Backend: 179/179
-- Frontend: 323/323
+- Total: 515/515 pasando
+- Backend: 184/184
+- Frontend: 331/331
 - Fallos abiertos: 0
 
 ## Fase 1 - 2026-02-24 09:42
@@ -206,8 +206,38 @@ Estado de fase: Cerrada
 | Fase 6 | 179/179 | 323/323 | 502/502 | 0 |
 | Fase 7 | 179/179 | 323/323 | 502/502 | 0 |
 | Fase 8 | 179/179 | 323/323 | 502/502 | 0 |
+| Fase 9 | 184/184 | 331/331 | 515/515 | 0 |
+
+## Fase 9 - 2026-02-25 10:52
+Alcance: Modulo Clases (create/list/update/inactivate/reactivate) + permisos + validacion real
+
+Comandos ejecutados:
+- `cd api && npm.cmd run build`
+- `cd api && npm.cmd test -- --runInBand`
+- `cd frontend && npm.cmd test`
+
+Resultados:
+- Backend: 184/184
+- Frontend: 331/331
+- Total: 515/515
+- Fallos: 0
+
+Validacion E2E adicional:
+- Migracion aplicada en `hr_pro`:
+  - Tabla `org_clases`
+  - Permisos `config:clases`, `class:create`, `class:edit`, `class:inactivate`, `class:reactivate`
+- Flujo real por API con usuario master:
+  - Crear clase
+  - Editar clase
+  - Validar conflicto por codigo duplicado (409)
+  - Inactivar/reactivar clase
+- Verificacion en BD:
+  - Persistencia de `org_clases` correcta
+  - Permisos y asignacion a roles administrativos creados
+
+Estado de fase: Cerrada
 
 ## Lectura operativa
-- Si se requiere validacion integral rapida, ejecutar los comandos de Fase 5.
+- Si se requiere validacion integral rapida, ejecutar los comandos de Fase 9.
 - Si se requiere auditoria historica, revisar evolucion por fases en este archivo.
 - Analisis completo del proyecto: `docs/Test/ANALISIS-ESTADO-PROYECTO-FASE4.md`

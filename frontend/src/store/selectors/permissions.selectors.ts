@@ -79,6 +79,17 @@ export const canReactivateCompany = (state: RootState) =>
 export const canViewCompanyAudit = (state: RootState) =>
   selectPermissions(state).includes('config:companies:audit');
 
+export const canViewClasses = (state: RootState) =>
+  selectPermissions(state).includes('config:clases');
+export const canCreateClass = (state: RootState) =>
+  selectPermissions(state).includes('class:create');
+export const canEditClass = (state: RootState) =>
+  selectPermissions(state).includes('class:edit');
+export const canInactivateClass = (state: RootState) =>
+  selectPermissions(state).includes('class:inactivate');
+export const canReactivateClass = (state: RootState) =>
+  selectPermissions(state).includes('class:reactivate');
+
 /** Permisos para ver secciones de configuración (tabs Roles, Usuarios, Permisos) */
 export const canViewConfigRoles = (state: RootState) =>
   selectPermissions(state).includes('config:roles');

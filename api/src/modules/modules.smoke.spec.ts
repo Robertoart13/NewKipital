@@ -31,6 +31,9 @@ import { IntegrationModule } from './integration/integration.module';
 import { DomainEventsService } from './integration/domain-events.service';
 import { AuditOutboxService } from './integration/audit-outbox.service';
 import { AuditWorkerService } from './integration/audit-worker.service';
+import { ClassesModule } from './classes/classes.module';
+import { ClassesController } from './classes/classes.controller';
+import { ClassesService } from './classes/classes.service';
 
 describe('Modules Smoke', () => {
   it('loads access-control classes', () => {
@@ -68,5 +71,11 @@ describe('Modules Smoke', () => {
     expect(DomainEventsService).toBeDefined();
     expect(AuditOutboxService).toBeDefined();
     expect(AuditWorkerService).toBeDefined();
+  });
+
+  it('loads classes module', () => {
+    expect(ClassesModule).toBeDefined();
+    expect(ClassesController).toBeDefined();
+    expect(ClassesService).toBeDefined();
   });
 });

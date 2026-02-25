@@ -6,6 +6,7 @@ import { EventEmitterModule } from '@nestjs/event-emitter';
 import { databaseConfig } from './config/database.config';
 import { AuthModule } from './modules/auth/auth.module';
 import { CompaniesModule } from './modules/companies/companies.module';
+import { ClassesModule } from './modules/classes/classes.module';
 import { EmployeesModule } from './modules/employees/employees.module';
 import { PersonalActionsModule } from './modules/personal-actions/personal-actions.module';
 import { PayrollModule } from './modules/payroll/payroll.module';
@@ -24,6 +25,7 @@ import { PermissionsGuard } from './common/guards/permissions.guard';
     EventEmitterModule.forRoot(),
     AuthModule,
     CompaniesModule,
+    ClassesModule,
     EmployeesModule,
     PersonalActionsModule,
     PayrollModule,

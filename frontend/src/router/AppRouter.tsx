@@ -12,6 +12,7 @@ import {
   RolesManagementPage,
   UsersManagementPage,
   CompaniesManagementPage,
+  ClassesManagementPage,
   AutomationMonitoringPage,
 } from '../pages/private';
 
@@ -94,6 +95,16 @@ export function AppRouter() {
             </PrivateLayout>
           )}
           path="/configuration/empresas"
+        />
+        <Route
+          element={(
+            <PrivateLayout>
+              <PermissionGuard requiredPermission="config:clases">
+                <ClassesManagementPage />
+              </PermissionGuard>
+            </PrivateLayout>
+          )}
+          path="/configuration/clases"
         />
         <Route
           element={(

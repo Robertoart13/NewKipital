@@ -6,4 +6,5 @@ export { PermissionsAdminListPage } from './configuration/PermissionsAdminListPa
 export { RolesManagementPage } from './configuration/RolesManagementPage';
 export { UsersManagementPage } from './configuration/UsersManagementPage';
 export { CompaniesManagementPage } from './configuration/CompaniesManagementPage';
+export { ClassesManagementPage } from './configuration/ClassesManagementPage';
 export { AutomationMonitoringPage } from './monitoring/AutomationMonitoringPage';

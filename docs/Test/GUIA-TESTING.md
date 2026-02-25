@@ -1,18 +1,18 @@
 ﻿# Guia de Testing - KPITAL 360
 
 Fecha: 2026-02-25  
-Version: 8.0  
+Version: 9.0  
 Estado: Vigente
 
 ## 1. Estado vigente
-- Total de pruebas ejecutadas: 502
-- Pasando: 502
+- Total de pruebas ejecutadas: 515
+- Pasando: 515
 - Fallando: 0
 - Exito global: 100%
 
 Desglose vigente:
-- Backend (Jest): 179/179
-- Frontend (Vitest): 323/323
+- Backend (Jest): 184/184
+- Frontend (Vitest): 331/331
 
 ## 2. Historial por fases
 ### Fase 1 - Baseline inicial
@@ -78,13 +78,23 @@ Desglose vigente:
   - Prueba real de inactivacion/reactivacion y validacion de reglas de conflicto.
   - Verificacion en BD (`sys_empresas`, `sys_usuario_empresa`, `sys_auditoria_acciones`).
 
+### Fase 9 - Modulo Clases enterprise + validacion real
+- Resultado: 515/515
+- Fallos: 0
+- Estado: Cerrada
+- Alcance agregado:
+  - Backend: modulo `classes` con create/list/update/inactivate/reactivate y permisos granulares.
+  - Frontend: pagina `/configuration/clases` con listado, boton crear y edicion por fila.
+  - DB: tabla `org_clases`, permisos de clases y asignacion a roles administrativos.
+  - Prueba real API + validacion en `hr_pro`.
+
 ## 3. Inventario de tests actual
 Backend (src):
-- 21 archivos `.spec.ts` unit/integration internos.
+- 22 archivos `.spec.ts` unit/integration internos.
 - 4 archivos E2E (`api/test/*.e2e-spec.ts`).
 
 Frontend (src):
-- 18 archivos de test (`.test.ts` / `.test.tsx`).
+- 19 archivos de test (`.test.ts` / `.test.tsx`).
 
 ## 4. Cobertura funcional lograda
 - Todas las suites existentes ejecutan en verde.
