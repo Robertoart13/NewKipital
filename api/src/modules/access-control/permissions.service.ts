@@ -11,6 +11,7 @@ import { CreatePermissionDto } from './dto/create-permission.dto';
 import { UpdatePermissionDto } from './dto/update-permission.dto';
 import { Permission } from './entities/permission.entity';
 import { AuditOutboxService } from '../integration/audit-outbox.service';
+import { AuthzVersionService } from '../authz/authz-version.service';
 
 export type PermissionCatalogMode = 'migration' | 'ui';
 
@@ -21,6 +22,7 @@ export class PermissionsService {
     @InjectRepository(Permission)
     private readonly repo: Repository<Permission>,
     private readonly auditOutbox: AuditOutboxService,
+    private readonly authzVersionService: AuthzVersionService,
   ) {}
 
   getCatalogMode(): PermissionCatalogMode {
@@ -54,6 +56,7 @@ export class PermissionsService {
     });
 
     const saved = await this.repo.save(perm);
+    await this.authzVersionService.bumpGlobal();
     this.auditOutbox.publish({
       modulo: 'permissions',
       accion: 'create',
@@ -133,6 +136,7 @@ export class PermissionsService {
 
     perm.modificadoPor = actorUserId ?? null;
     const saved = await this.repo.save(perm);
+    await this.authzVersionService.bumpGlobal();
     this.auditOutbox.publish({
       modulo: 'permissions',
       accion: 'update',
@@ -158,6 +162,7 @@ export class PermissionsService {
     perm.estado = 0;
     perm.modificadoPor = actorUserId ?? null;
     const saved = await this.repo.save(perm);
+    await this.authzVersionService.bumpGlobal();
     this.auditOutbox.publish({
       modulo: 'permissions',
       accion: 'inactivate',
@@ -177,6 +182,7 @@ export class PermissionsService {
     perm.estado = 1;
     perm.modificadoPor = actorUserId ?? null;
     const saved = await this.repo.save(perm);
+    await this.authzVersionService.bumpGlobal();
     this.auditOutbox.publish({
       modulo: 'permissions',
       accion: 'reactivate',

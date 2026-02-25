@@ -1,4 +1,4 @@
-﻿import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
   App as AntdApp,
@@ -18,7 +18,9 @@ import {
   Spin,
   Switch,
   Table,
+  Tabs,
   Tag,
+  Tooltip,
 } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import {
@@ -27,6 +29,7 @@ import {
   CloseOutlined,
   DownOutlined,
   EditOutlined,
+  FilterOutlined,
   PlusOutlined,
   QuestionCircleOutlined,
   SearchOutlined,
@@ -40,16 +43,20 @@ import {
   canInactivateClass,
   canReactivateClass,
   canViewClasses,
+  canViewClassAudit,
 } from '../../../store/selectors/permissions.selectors';
 import { useAppSelector } from '../../../store/hooks';
 import { formatDateTime12h } from '../../../lib/formatDate';
 import { optionalNoSqlInjection, textRules } from '../../../lib/formValidation';
 import {
   createClass,
+  fetchClass,
+  fetchClassAuditTrail,
   fetchClasses,
   inactivateClass,
   reactivateClass,
   updateClass,
+  type ClassAuditTrailItem,
   type ClassListItem,
   type ClassPayload,
 } from '../../../api/classes';
@@ -106,6 +113,7 @@ export function ClassesManagementPage() {
   const canEdit = useAppSelector(canEditClass);
   const canInactivate = useAppSelector(canInactivateClass);
   const canReactivate = useAppSelector(canReactivateClass);
+  const canViewAudit = useAppSelector(canViewClassAudit);
 
   const [rows, setRows] = useState<ClassListItem[]>([]);
   const [loading, setLoading] = useState(false);
@@ -113,8 +121,12 @@ export function ClassesManagementPage() {
   const [showInactive, setShowInactive] = useState(false);
   const [openModal, setOpenModal] = useState(false);
   const [editing, setEditing] = useState<ClassListItem | null>(null);
+  const editingId = editing?.id ?? null;
   const [search, setSearch] = useState('');
   const [pageSize, setPageSize] = useState(10);
+  const [activeTab, setActiveTab] = useState('principal');
+  const [auditTrail, setAuditTrail] = useState<ClassAuditTrailItem[]>([]);
+  const [loadingAuditTrail, setLoadingAuditTrail] = useState(false);
   const [filtersExpanded, setFiltersExpanded] = useState(false);
   const [paneSearch, setPaneSearch] = useState<Record<PaneKey, string>>({
     nombre: '',
@@ -228,6 +240,7 @@ export function ClassesManagementPage() {
 
   const openCreateModal = () => {
     setEditing(null);
+    setActiveTab('principal');
     form.resetFields();
     setOpenModal(true);
   };
@@ -235,20 +248,67 @@ export function ClassesManagementPage() {
   const openEditModal = (row: ClassListItem) => {
     if (!canEdit) return;
     setEditing(row);
+    setActiveTab('principal');
+    setOpenModal(true);
+    applyClassToForm(row);
+  };
+
+  const closeModal = () => {
+    setOpenModal(false);
+    setEditing(null);
+    setAuditTrail([]);
+    form.resetFields();
+  };
+
+  const applyClassToForm = useCallback((row: ClassListItem) => {
     form.setFieldsValue({
       nombre: row.nombre ?? '',
       descripcion: row.descripcion ?? '',
       codigo: row.codigo ?? '',
       idExterno: row.idExterno ?? '',
     });
-    setOpenModal(true);
-  };
+  }, [form]);
 
-  const closeModal = () => {
-    setOpenModal(false);
-    setEditing(null);
-    form.resetFields();
-  };
+  const loadClassDetail = useCallback(async (id: number) => {
+    try {
+      const detail = await fetchClass(id);
+      setEditing(detail);
+      applyClassToForm(detail);
+    } catch {
+      // Keep current form values if detail fetch fails
+    }
+  }, [applyClassToForm]);
+
+  useEffect(() => {
+    if (!openModal || !editingId) return;
+    applyClassToForm(editing);
+    void loadClassDetail(editingId);
+  }, [openModal, editingId, loadClassDetail, applyClassToForm]);
+
+  const loadClassAuditTrail = useCallback(async (id: number) => {
+    if (!canViewAudit) {
+      setAuditTrail([]);
+      setLoadingAuditTrail(false);
+      return;
+    }
+    setLoadingAuditTrail(true);
+    try {
+      const rows = await fetchClassAuditTrail(id, 200);
+      setAuditTrail(rows ?? []);
+    } catch (error) {
+      setAuditTrail([]);
+      message.error(error instanceof Error ? error.message : 'Error al cargar bitacora');
+    } finally {
+      setLoadingAuditTrail(false);
+    }
+  }, [canViewAudit, message]);
+
+  useEffect(() => {
+    if (!openModal || !editingId) return;
+    if (activeTab !== 'bitacora') return;
+    if (!canViewAudit) return;
+    void loadClassAuditTrail(editingId);
+  }, [openModal, editingId, activeTab, canViewAudit, loadClassAuditTrail]);
 
   const submitClass = async () => {
     try {
@@ -357,7 +417,11 @@ export function ClassesManagementPage() {
       title: 'Estado',
       key: 'estado',
       width: 120,
-      render: (_, row) => (row.esInactivo === 1 ? <Tag color="default">Inactivo</Tag> : <Tag color="blue">Activo</Tag>),
+      render: (_, row) => (
+        <Tag className={row.esInactivo === 1 ? styles.tagInactivo : styles.tagActivo}>
+          {row.esInactivo === 1 ? 'Inactivo' : 'Activo'}
+        </Tag>
+      ),
     },
     {
       title: 'Ultima Modificacion',
@@ -368,47 +432,146 @@ export function ClassesManagementPage() {
     },
   ];
 
+  const auditColumns: ColumnsType<ClassAuditTrailItem> = [
+    {
+      title: 'Fecha y hora',
+      dataIndex: 'fechaCreacion',
+      key: 'fechaCreacion',
+      width: 160,
+      render: (value: string | null) => formatDateTime12h(value),
+    },
+    {
+      title: 'Quien lo hizo',
+      key: 'actor',
+      width: 210,
+      render: (_, row) => {
+        const actorLabel = row.actorNombre?.trim() || row.actorEmail?.trim() || (row.actorUserId ? `Usuario ID ${row.actorUserId}` : 'Sistema');
+        return (
+          <div>
+            <div style={{ fontWeight: 600, color: '#3d4f5c' }}>{actorLabel}</div>
+            {row.actorEmail && <div style={{ color: '#8c8c8c', fontSize: 12 }}>{row.actorEmail}</div>}
+          </div>
+        );
+      },
+    },
+    {
+      title: 'Accion',
+      key: 'accion',
+      width: 170,
+      render: (_, row) => (
+        <Flex gap={6} wrap="wrap">
+          <Tag className={styles.tagInactivo}>{row.modulo}</Tag>
+          <Tag className={styles.tagActivo}>{row.accion}</Tag>
+        </Flex>
+      ),
+    },
+    {
+      title: 'Detalle',
+      dataIndex: 'descripcion',
+      key: 'descripcion',
+      render: (value: string, row) => {
+        const changes = row.cambios ?? [];
+        const tooltipContent = (
+          <div style={{ maxWidth: 520 }}>
+            <div style={{ fontWeight: 600, marginBottom: 8 }}>{value}</div>
+            {changes.length > 0 ? (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                {changes.map((change, index) => (
+                  <div key={`${row.id}-${change.campo}-${index}`} style={{ fontSize: 12, lineHeight: 1.4 }}>
+                    <div><strong>{change.campo}</strong></div>
+                    <div>Antes: {change.antes}</div>
+                    <div>Despues: {change.despues}</div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div style={{ fontSize: 12 }}>Sin detalle de campos para esta accion.</div>
+            )}
+          </div>
+        );
+
+        return (
+          <Tooltip title={tooltipContent}>
+            <div className={styles.auditDetailCell}>{value}</div>
+          </Tooltip>
+        );
+      },
+    },
+  ];
+
   if (!canView) {
     return (
-      <div className={styles.permissionsPage}>
+      <div className={styles.pageWrapper}>
         <Spin />
       </div>
     );
   }
 
   return (
-    <div className={styles.permissionsPage}>
-      <div className={styles.permissionsHeader}>
-        <Link to="/dashboard" className={styles.backButton}>
-          <ArrowLeftOutlined />
-          <span>Volver</span>
-        </Link>
+    <div className={styles.pageWrapper}>
+      <div className={styles.pageHeader}>
+        <div className={styles.pageHeaderLeft}>
+          <Link className={styles.pageBackLink} to="/configuration">
+            <ArrowLeftOutlined />
+          </Link>
+          <div className={styles.pageTitleBlock}>
+            <h1 className={styles.pageTitle}>Listado de Clases</h1>
+            <p className={styles.pageSubtitle}>
+              Visualice y gestione todas las clases registradas en el sistema de recursos humanos
+            </p>
+          </div>
+        </div>
       </div>
 
-      <Card className={styles.permissionsCard}>
-        <div className={styles.permissionsCardBody}>
-          <Flex justify="space-between" align="center" style={{ marginBottom: 16 }} wrap="wrap" gap={12}>
-            <Flex align="center" gap={12}>
-              <h3 className={styles.registrosTitle}>Registros de Clases</h3>
+      <Card className={styles.mainCard} style={{ marginBottom: 20 }}>
+        <div className={styles.mainCardBody}>
+          <Flex align="center" justify="space-between" wrap="wrap" gap={16}>
+            <Flex align="center" gap={16}>
+              <div className={styles.gestionIconWrap}>
+                <AppstoreOutlined className={styles.gestionIcon} />
+              </div>
+              <div>
+                <h2 className={styles.gestionTitle}>Gestion de Clases</h2>
+                <p className={styles.gestionDesc}>
+                  Administre y consulte todas las clases registradas en el sistema
+                </p>
+              </div>
             </Flex>
-            <Flex align="center" gap={8}>
-              <Select
-                value={pageSize}
-                onChange={setPageSize}
-                options={[10, 20, 50, 100].map((n) => ({ label: String(n), value: n }))}
-                style={{ width: 70 }}
-              />
-              <span style={{ color: '#6b7a85', fontSize: 14 }}>entries per page</span>
-              <span style={{ color: '#6b7a85', fontSize: 14 }}>Mostrar inactivas</span>
-              <Switch checked={showInactive} onChange={setShowInactive} size="small" />
+            {canCreate ? (
               <Button
+                type="primary"
                 icon={<PlusOutlined />}
                 className={`${styles.actionButton} ${styles.btnPrimary}`}
                 onClick={openCreateModal}
-                disabled={!canCreate}
               >
                 Crear Clase
               </Button>
+            ) : null}
+          </Flex>
+        </div>
+      </Card>
+
+      <Card className={styles.mainCard}>
+        <div className={styles.mainCardBody}>
+          <Flex align="center" justify="space-between" wrap="wrap" gap={12} className={styles.registrosHeader}>
+            <Flex align="center" gap={12} wrap="wrap">
+              <Flex align="center" gap={8}>
+                <FilterOutlined className={styles.registrosFilterIcon} />
+                <h3 className={styles.registrosTitle}>Registros de Clases</h3>
+              </Flex>
+              <Flex align="center" gap={6}>
+                <Select
+                  value={pageSize}
+                  onChange={setPageSize}
+                  options={[10, 20, 50, 100].map((n) => ({ label: String(n), value: n }))}
+                  style={{ width: 70 }}
+                />
+                <span style={{ color: '#6b7a85', fontSize: 14 }}>entries per page</span>
+              </Flex>
+            </Flex>
+            <Flex align="center" gap={8}>
+              <span style={{ color: '#6b7a85', fontSize: 14 }}>Mostrar inactivas</span>
+              <Switch checked={showInactive} onChange={setShowInactive} size="small" />
             </Flex>
           </Flex>
 
@@ -582,20 +745,71 @@ export function ClassesManagementPage() {
         )}
       >
         <Form<ClassFormValues> layout="vertical" form={form} preserve={false} className={styles.companyFormContent}>
-          <div className={styles.companyFormGrid}>
-            <Form.Item name="nombre" label="Nombre Clase *" rules={textRules({ required: true, max: 255 })}>
-              <Input maxLength={255} />
-            </Form.Item>
-            <Form.Item name="codigo" label="Codigo Clase *" rules={textRules({ required: true, max: 50 })}>
-              <Input maxLength={50} />
-            </Form.Item>
-            <Form.Item name="idExterno" label="ID Externo Clase" rules={[{ validator: optionalNoSqlInjection }]}>
-              <Input maxLength={45} />
-            </Form.Item>
-            <Form.Item name="descripcion" label="Descripcion Clase" rules={[{ validator: optionalNoSqlInjection }]}>
-              <Input.TextArea rows={4} />
-            </Form.Item>
-          </div>
+          <Tabs
+            activeKey={activeTab}
+            onChange={setActiveTab}
+            className={`${styles.tabsWrapper} ${styles.companyModalTabs}`}
+            items={[
+              {
+                key: 'principal',
+                label: (
+                  <span>
+                    <AppstoreOutlined style={{ marginRight: 8, fontSize: 16 }} />
+                    Informacion Principal
+                  </span>
+                ),
+                children: (
+                  <div className={styles.companyFormGrid}>
+                    <Form.Item name="nombre" label="Nombre Clase *" rules={textRules({ required: true, max: 255 })}>
+                      <Input maxLength={255} />
+                    </Form.Item>
+                    <Form.Item name="codigo" label="Codigo Clase *" rules={textRules({ required: true, max: 50 })}>
+                      <Input maxLength={50} />
+                    </Form.Item>
+                    <Form.Item name="idExterno" label="ID Externo Clase" rules={[{ validator: optionalNoSqlInjection }]}>
+                      <Input maxLength={45} />
+                    </Form.Item>
+                    <Form.Item name="descripcion" label="Descripcion Clase" rules={[{ validator: optionalNoSqlInjection }]}>
+                      <Input.TextArea rows={4} />
+                    </Form.Item>
+                  </div>
+                ),
+              },
+              ...(editing && canViewAudit
+                ? [{
+                    key: 'bitacora',
+                    label: (
+                      <span>
+                        <SearchOutlined style={{ marginRight: 8, fontSize: 16 }} />
+                        Bitacora
+                      </span>
+                    ),
+                    children: (
+                      <div style={{ paddingTop: 8 }}>
+                        <p className={styles.sectionTitle}>Historial de cambios de la clase</p>
+                        <p className={styles.sectionDescription}>
+                          Muestra quien hizo el cambio, cuando lo hizo y el detalle registrado en bitacora.
+                        </p>
+                        <Table<ClassAuditTrailItem>
+                          rowKey="id"
+                          size="small"
+                          loading={loadingAuditTrail}
+                          columns={auditColumns}
+                          dataSource={auditTrail}
+                          className={`${styles.configTable} ${styles.auditTableCompact}`}
+                          pagination={{
+                            pageSize: 8,
+                            showSizeChanger: true,
+                            showTotal: (total) => `${total} registro(s)`,
+                          }}
+                          locale={{ emptyText: 'No hay registros de bitacora para esta clase.' }}
+                        />
+                      </div>
+                    ),
+                  }]
+                : []),
+            ]}
+          />
           <div className={styles.companyModalFooter}>
             <Button onClick={closeModal} className={styles.companyModalBtnCancel}>
               Cancelar

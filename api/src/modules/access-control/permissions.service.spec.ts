@@ -6,6 +6,7 @@ import { Repository } from 'typeorm';
 import { PermissionsService } from './permissions.service';
 import { Permission } from './entities/permission.entity';
 import { AuditOutboxService } from '../integration/audit-outbox.service';
+import { AuthzVersionService } from '../authz/authz-version.service';
 
 describe('PermissionsService', () => {
   let service: PermissionsService;
@@ -28,6 +29,7 @@ describe('PermissionsService', () => {
 
     const mockConfig = { get: jest.fn().mockReturnValue('ui') };
     const mockAudit = { publish: jest.fn() };
+    const mockAuthz = { bumpGlobal: jest.fn() };
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -35,6 +37,7 @@ describe('PermissionsService', () => {
         { provide: ConfigService, useValue: mockConfig },
         { provide: getRepositoryToken(Permission), useValue: mockRepo },
         { provide: AuditOutboxService, useValue: mockAudit },
+        { provide: AuthzVersionService, useValue: mockAuthz },
       ],
     }).compile();
 

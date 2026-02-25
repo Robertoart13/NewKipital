@@ -9,6 +9,7 @@ import { CreateRoleDto } from './dto/create-role.dto';
 import { AssignRolePermissionDto } from './dto/assign-role-permission.dto';
 import { UpdateRoleDto } from './dto/update-role.dto';
 import { AuditOutboxService } from '../integration/audit-outbox.service';
+import { AuthzVersionService } from '../authz/authz-version.service';
 
 @Injectable()
 export class RolesService {
@@ -22,6 +23,7 @@ export class RolesService {
     @InjectRepository(RolePermission)
     private readonly rpRepo: Repository<RolePermission>,
     private readonly auditOutbox: AuditOutboxService,
+    private readonly authzVersionService: AuthzVersionService,
   ) {}
 
   async create(dto: CreateRoleDto, userId: number): Promise<Role> {
@@ -47,6 +49,7 @@ export class RolesService {
       modificadoPor: userId,
     });
     const saved = await this.roleRepo.save(role);
+    await this.authzVersionService.bumpGlobal();
     this.auditOutbox.publish({
       modulo: 'roles',
       accion: 'create',
@@ -104,6 +107,7 @@ export class RolesService {
     role.modificadoPor = userId;
 
     const saved = await this.roleRepo.save(role);
+    await this.authzVersionService.bumpGlobal();
     this.auditOutbox.publish({
       modulo: 'roles',
       accion: 'update',
@@ -128,6 +132,7 @@ export class RolesService {
     role.estado = 0;
     role.modificadoPor = userId;
     const saved = await this.roleRepo.save(role);
+    await this.authzVersionService.bumpGlobal();
     this.auditOutbox.publish({
       modulo: 'roles',
       accion: 'inactivate',
@@ -145,6 +150,7 @@ export class RolesService {
     role.estado = 1;
     role.modificadoPor = userId;
     const saved = await this.roleRepo.save(role);
+    await this.authzVersionService.bumpGlobal();
     this.auditOutbox.publish({
       modulo: 'roles',
       accion: 'reactivate',
@@ -172,7 +178,9 @@ export class RolesService {
     }
 
     const rp = this.rpRepo.create(dto);
-    return this.rpRepo.save(rp);
+    const saved = await this.rpRepo.save(rp);
+    await this.authzVersionService.bumpGlobal();
+    return saved;
   }
 
   async removePermission(idRol: number, idPermiso: number): Promise<void> {
@@ -181,6 +189,7 @@ export class RolesService {
       throw new NotFoundException('Asignación rol-permiso no encontrada');
     }
     await this.rpRepo.remove(rp);
+    await this.authzVersionService.bumpGlobal();
   }
 
   async getPermissions(idRol: number): Promise<Permission[]> {
@@ -229,6 +238,7 @@ export class RolesService {
     }
 
     const result = await this.getPermissions(idRol);
+    await this.authzVersionService.bumpGlobal();
     this.auditOutbox.publish({
       modulo: 'roles',
       accion: 'replace_permissions',

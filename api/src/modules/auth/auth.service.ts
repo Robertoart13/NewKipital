@@ -21,6 +21,8 @@ import { UserPermissionGlobalDeny } from '../access-control/entities/user-permis
 import { Company } from '../companies/entities/company.entity';
 import type { TokenPayload } from '../../common/strategies/jwt.strategy';
 import { RefreshSession } from './entities/refresh-session.entity';
+import { AuthzVersionService } from '../authz/authz-version.service';
+import { PermissionsCacheService } from '../authz/permissions-cache.service';
 
 export interface SessionData {
   user: {
@@ -75,6 +77,8 @@ export class AuthService {
     private readonly userPermGlobalDenyRepo: Repository<UserPermissionGlobalDeny>,
     @InjectRepository(RefreshSession)
     private readonly refreshSessionRepo: Repository<RefreshSession>,
+    private readonly authzVersionService: AuthzVersionService,
+    private readonly permissionsCache: PermissionsCacheService,
   ) {}
 
   async login(email: string, password: string, ip?: string, userAgent?: string): Promise<IssuedSession> {
@@ -266,15 +270,31 @@ export class AuthService {
     userId: number,
     companyId: number,
     appCode: string,
+    options?: { bypassCache?: boolean },
   ): Promise<{ permissions: string[]; roles: string[] }> {
     const normalizedAppCode = appCode.trim().toLowerCase();
+    const versionToken = await this.authzVersionService.getToken(userId);
+    const cacheKey = this.buildPermissionCacheKey(userId, companyId, normalizedAppCode, versionToken);
+    if (!options?.bypassCache) {
+      const cached = this.permissionsCache.get<{ permissions: string[]; roles: string[] }>(cacheKey);
+      if (cached) return cached;
+    }
+
     const app = await this.appRepo.findOne({ where: { codigo: normalizedAppCode, estado: 1 } });
-    if (!app) return { permissions: [], roles: [] };
+    if (!app) {
+      const empty = { permissions: [], roles: [] };
+      this.persistPermissionCache(cacheKey, empty, options);
+      return empty;
+    }
 
     const userCompany = await this.userCompanyRepo.findOne({
       where: { idUsuario: userId, idEmpresa: companyId, estado: 1 },
     });
-    if (!userCompany) return { permissions: [], roles: [] };
+    if (!userCompany) {
+      const empty = { permissions: [], roles: [] };
+      this.persistPermissionCache(cacheKey, empty, options);
+      return empty;
+    }
 
     // Roles por empresa (contexto específico)
     const userRoles = await this.userRoleRepo.find({
@@ -373,28 +393,41 @@ export class AuthService {
       roleIds.length > 0 ? await this.permRepo.manager.find(Role, { where: { id: In(roleIds) } }) : [];
     const uniqueRoleCodes = roleEntities.map((r) => r.codigo);
 
-    return {
+    const result = {
       permissions: Array.from(effective).sort(),
       roles: uniqueRoleCodes.sort(),
     };
+    this.persistPermissionCache(cacheKey, result, options);
+    return result;
   }
 
   async resolvePermissionsAcrossCompanies(
     userId: number,
     appCode: string,
+    options?: { bypassCache?: boolean },
   ): Promise<{ permissions: string[]; roles: string[] }> {
+    const normalizedAppCode = appCode.trim().toLowerCase();
+    const versionToken = await this.authzVersionService.getToken(userId);
+    const cacheKey = this.buildPermissionCacheKey(userId, 0, normalizedAppCode, versionToken);
+    if (!options?.bypassCache) {
+      const cached = this.permissionsCache.get<{ permissions: string[]; roles: string[] }>(cacheKey);
+      if (cached) return cached;
+    }
+
     const userCompanies = await this.userCompanyRepo.find({
       where: { idUsuario: userId, estado: 1 },
     });
     if (userCompanies.length === 0) {
-      return { permissions: [], roles: [] };
+      const empty = { permissions: [], roles: [] };
+      this.persistPermissionCache(cacheKey, empty, options);
+      return empty;
     }
 
     const permissionSet = new Set<string>();
     const roleSet = new Set<string>();
 
     for (const uc of userCompanies) {
-      const resolved = await this.resolvePermissions(userId, uc.idEmpresa, appCode);
+      const resolved = await this.resolvePermissions(userId, uc.idEmpresa, normalizedAppCode, options);
       for (const permission of resolved.permissions) {
         permissionSet.add(permission);
       }
@@ -403,10 +436,12 @@ export class AuthService {
       }
     }
 
-    return {
+    const result = {
       permissions: Array.from(permissionSet).sort(),
       roles: Array.from(roleSet).sort(),
     };
+    this.persistPermissionCache(cacheKey, result, options);
+    return result;
   }
 
   private async getEnabledApps(userId: number): Promise<string[]> {
@@ -535,6 +570,33 @@ export class AuthService {
       default:
         return value * 24 * 60 * 60 * 1000;
     }
+  }
+
+  private buildPermissionCacheKey(
+    userId: number,
+    companyId: number,
+    appCode: string,
+    versionToken: string,
+  ): string {
+    return `perm:${userId}:${companyId}:${appCode}:${versionToken}`;
+  }
+
+  private persistPermissionCache(
+    cacheKey: string,
+    value: { permissions: string[]; roles: string[] },
+    options?: { bypassCache?: boolean },
+  ): void {
+    if (options?.bypassCache) return;
+    const ttlMs = this.getPermissionsCacheTtlMs();
+    if (ttlMs <= 0) return;
+    this.permissionsCache.pruneExpired(5000);
+    this.permissionsCache.set(cacheKey, value, ttlMs);
+  }
+
+  private getPermissionsCacheTtlMs(): number {
+    const raw = this.config.get<string>('AUTHZ_CACHE_TTL_MS', '60000');
+    const parsed = Number(raw);
+    return Number.isFinite(parsed) ? Math.max(parsed, 0) : 60000;
   }
 
   private isTransientDatabaseConnectionError(error: unknown): boolean {

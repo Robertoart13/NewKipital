@@ -12,6 +12,7 @@ import {
 } from '@nestjs/common';
 import { Public } from '../../common/decorators/public.decorator';
 import { RequirePermissions } from '../../common/decorators/require-permissions.decorator';
+import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { ClassesService } from './classes.service';
 import { CreateClassDto } from './dto/create-class.dto';
 import { UpdateClassDto } from './dto/update-class.dto';
@@ -28,8 +29,8 @@ export class ClassesController {
 
   @RequirePermissions('class:create')
   @Post()
-  create(@Body() dto: CreateClassDto) {
-    return this.service.create(dto);
+  create(@Body() dto: CreateClassDto, @CurrentUser() user: { userId: number }) {
+    return this.service.create(dto, user.userId);
   }
 
   @RequirePermissions('config:clases')
@@ -49,20 +50,32 @@ export class ClassesController {
 
   @RequirePermissions('class:edit')
   @Put(':id')
-  update(@Param('id', ParseIntPipe) id: number, @Body() dto: UpdateClassDto) {
-    return this.service.update(id, dto);
+  update(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: UpdateClassDto,
+    @CurrentUser() user: { userId: number },
+  ) {
+    return this.service.update(id, dto, user.userId);
   }
 
   @RequirePermissions('class:inactivate')
   @Patch(':id/inactivate')
-  inactivate(@Param('id', ParseIntPipe) id: number) {
-    return this.service.inactivate(id);
+  inactivate(@Param('id', ParseIntPipe) id: number, @CurrentUser() user: { userId: number }) {
+    return this.service.inactivate(id, user.userId);
   }
 
   @RequirePermissions('class:reactivate')
   @Patch(':id/reactivate')
-  reactivate(@Param('id', ParseIntPipe) id: number) {
-    return this.service.reactivate(id);
+  reactivate(@Param('id', ParseIntPipe) id: number, @CurrentUser() user: { userId: number }) {
+    return this.service.reactivate(id, user.userId);
+  }
+
+  @RequirePermissions('config:clases:audit')
+  @Get(':id/audit-trail')
+  getAuditTrail(
+    @Param('id', ParseIntPipe) id: number,
+    @Query('limit', new ParseIntPipe({ optional: true })) limit?: number,
+  ) {
+    return this.service.getAuditTrail(id, limit);
   }
 }
-

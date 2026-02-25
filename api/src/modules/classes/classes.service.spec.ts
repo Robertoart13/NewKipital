@@ -4,6 +4,7 @@ import { getRepositoryToken } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { ClassesService } from './classes.service';
 import { OrgClass } from './entities/class.entity';
+import { AuditOutboxService } from '../integration/audit-outbox.service';
 
 describe('ClassesService', () => {
   let service: ClassesService;
@@ -35,8 +36,10 @@ describe('ClassesService', () => {
               orderBy: jest.fn().mockReturnThis(),
               getMany: jest.fn().mockResolvedValue([mockClass]),
             })),
+            query: jest.fn(),
           },
         },
+        { provide: AuditOutboxService, useValue: { publish: jest.fn() } },
       ],
     }).compile();
 
@@ -54,7 +57,7 @@ describe('ClassesService', () => {
       descripcion: 'Descripcion QA',
       codigo: 'CL-QA',
       idExterno: 'EXT-QA',
-    });
+    }, 1);
 
     expect(result.id).toBe(1);
     expect(repo.save).toHaveBeenCalled();
@@ -67,7 +70,7 @@ describe('ClassesService', () => {
       service.create({
         nombre: 'Clase QA',
         codigo: 'CL-QA',
-      }),
+      }, 1),
     ).rejects.toThrow(ConflictException);
   });
 
@@ -82,7 +85,7 @@ describe('ClassesService', () => {
       nombre: 'Clase Editada',
       codigo: 'CL-QA-NEW',
       idExterno: 'EXT-NEW',
-    });
+    }, 1);
 
     expect(result.nombre).toBe('Clase Editada');
   });
@@ -92,4 +95,3 @@ describe('ClassesService', () => {
     await expect(service.findOne(999)).rejects.toThrow(NotFoundException);
   });
 });
-

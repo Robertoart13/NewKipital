@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useCallback, useState } from 'react';
-import { App as AntdApp, Modal, Form, Input, Select, DatePicker, InputNumber, Switch, Tabs, Button, Flex, Row, Col, Spin } from 'antd';
+import { App as AntdApp, Modal, Form, Input, Select, DatePicker, InputNumber, Switch, Tabs, Button, Flex, Row, Col, Spin, Table, Tag, Tooltip } from 'antd';
+import type { ColumnsType } from 'antd/es/table';
 import {
   UserOutlined,
   EditOutlined,
@@ -10,6 +11,7 @@ import {
   HistoryOutlined,
   CloseOutlined,
   QuestionCircleOutlined,
+  SearchOutlined,
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import { useAppSelector } from '../../../../store/hooks';
@@ -17,13 +19,15 @@ import {
   canEditEmployee,
   canInactivateEmployee,
   canReactivateEmployee,
+  canViewEmployeeAudit,
 } from '../../../../store/selectors/permissions.selectors';
 import { useEmployee } from '../../../../queries/employees/useEmployee';
 import { useUpdateEmployee } from '../../../../queries/employees/useUpdateEmployee';
 import { useInactivateEmployee } from '../../../../queries/employees/useInactivateEmployee';
 import { useReactivateEmployee } from '../../../../queries/employees/useReactivateEmployee';
 import type { UpdateEmployeePayload } from '../../../../api/employees';
-import type { EmployeeDetail } from '../../../../api/employees';
+import type { EmployeeDetail, EmployeeAuditTrailItem } from '../../../../api/employees';
+import { fetchEmployeeAuditTrail } from '../../../../api/employees';
 import { useDepartments } from '../../../../queries/catalogs/useDepartments';
 import { usePositions } from '../../../../queries/catalogs/usePositions';
 import { usePayPeriods } from '../../../../queries/catalogs/usePayPeriods';
@@ -44,6 +48,7 @@ import {
   isMoneyOverMax,
   parseCurrencyInput,
 } from '../../../../lib/currencyFormat';
+import { formatDateTime12h } from '../../../../lib/formatDate';
 
 interface EmployeeEditModalProps {
   employeeId: number | undefined;
@@ -88,13 +93,14 @@ function mapEmployeeToFormValues(emp: EmployeeDetail) {
 }
 
 export function EmployeeEditModal({ employeeId, open, onClose, onSuccess }: EmployeeEditModalProps) {
-  const { modal } = AntdApp.useApp();
+  const { modal, message } = AntdApp.useApp();
   const [form] = Form.useForm();
   const formValues = Form.useWatch([], form);
   const companies = useAppSelector((s) => s.auth.companies);
   const canEdit = useAppSelector(canEditEmployee);
   const canInactivate = useAppSelector(canInactivateEmployee);
   const canReactivate = useAppSelector(canReactivateEmployee);
+  const canViewAudit = useAppSelector(canViewEmployeeAudit);
 
   const { data: employee, isLoading: loadingEmployee } = useEmployee(open && employeeId != null ? employeeId! : null);
   const updateMutation = useUpdateEmployee();
@@ -107,6 +113,9 @@ export function EmployeeEditModal({ employeeId, open, onClose, onSuccess }: Empl
 
   const tabsContainerRef = useRef<HTMLDivElement>(null);
   const [activeTabKey, setActiveTabKey] = useState('personal');
+  const [auditTrail, setAuditTrail] = useState<EmployeeAuditTrailItem[]>([]);
+  const [loadingAuditTrail, setLoadingAuditTrail] = useState(false);
+  const [auditLoadedForId, setAuditLoadedForId] = useState<number | null>(null);
 
   const scrollActiveTabIntoView = useCallback(() => {
     setTimeout(() => {
@@ -150,6 +159,42 @@ export function EmployeeEditModal({ employeeId, open, onClose, onSuccess }: Empl
   useEffect(() => {
     if (open) setActiveTabKey('personal');
   }, [open]);
+
+  useEffect(() => {
+    if (open) {
+      setAuditTrail([]);
+      setLoadingAuditTrail(false);
+      setAuditLoadedForId(null);
+    }
+  }, [open, employeeId]);
+
+  const loadAuditTrail = useCallback(async (id: number) => {
+    if (!canViewAudit) {
+      setAuditTrail([]);
+      setLoadingAuditTrail(false);
+      setAuditLoadedForId(id);
+      return;
+    }
+    setLoadingAuditTrail(true);
+    try {
+      const rows = await fetchEmployeeAuditTrail(id, 200);
+      setAuditTrail(rows ?? []);
+    } catch (error) {
+      setAuditTrail([]);
+      message.error(error instanceof Error ? error.message : 'Error al cargar bitacora');
+    } finally {
+      setLoadingAuditTrail(false);
+      setAuditLoadedForId(id);
+    }
+  }, [canViewAudit, message]);
+
+  // Carga diferida de bitácora al abrir el tab Bitácora
+  useEffect(() => {
+    if (!open || activeTabKey !== 'bitacora' || !employeeId) return;
+    if (!canViewAudit) return;
+    if (auditLoadedForId === employeeId) return;
+    void loadAuditTrail(employeeId);
+  }, [open, activeTabKey, employeeId, canViewAudit, auditLoadedForId, loadAuditTrail]);
 
   const handleSubmit = async () => {
     if (!canEdit || employeeId == null) return;
@@ -224,6 +269,73 @@ export function EmployeeEditModal({ employeeId, open, onClose, onSuccess }: Empl
       },
     );
   };
+
+  const auditColumns: ColumnsType<EmployeeAuditTrailItem> = useMemo(() => [
+    {
+      title: 'Fecha y hora',
+      dataIndex: 'fechaCreacion',
+      key: 'fechaCreacion',
+      width: 160,
+      render: (value: string | null) => formatDateTime12h(value),
+    },
+    {
+      title: 'Quien lo hizo',
+      key: 'actor',
+      width: 210,
+      render: (_, row) => {
+        const actorLabel = row.actorNombre?.trim() || row.actorEmail?.trim() || (row.actorUserId ? `Usuario ID ${row.actorUserId}` : 'Sistema');
+        return (
+          <div>
+            <div style={{ fontWeight: 600, color: '#3d4f5c' }}>{actorLabel}</div>
+            {row.actorEmail && <div style={{ color: '#8c8c8c', fontSize: 12 }}>{row.actorEmail}</div>}
+          </div>
+        );
+      },
+    },
+    {
+      title: 'Accion',
+      key: 'accion',
+      width: 170,
+      render: (_, row) => (
+        <Flex gap={6} wrap="wrap">
+          <Tag className={styles.tagInactivo}>{row.modulo}</Tag>
+          <Tag className={styles.tagActivo}>{row.accion}</Tag>
+        </Flex>
+      ),
+    },
+    {
+      title: 'Detalle',
+      dataIndex: 'descripcion',
+      key: 'descripcion',
+      render: (value: string, row) => {
+        const changes = row.cambios ?? [];
+        const tooltipContent = (
+          <div style={{ maxWidth: 520 }}>
+            <div style={{ fontWeight: 600, marginBottom: 8 }}>{value}</div>
+            {changes.length > 0 ? (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                {changes.map((change, index) => (
+                  <div key={`${row.id}-${change.campo}-${index}`} style={{ fontSize: 12, lineHeight: 1.4 }}>
+                    <div><strong>{change.campo}</strong></div>
+                    <div>Antes: {change.antes}</div>
+                    <div>Despues: {change.despues}</div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div style={{ fontSize: 12 }}>Sin detalle de campos para esta accion.</div>
+            )}
+          </div>
+        );
+
+        return (
+          <Tooltip title={tooltipContent}>
+            <div className={styles.auditDetailCell}>{value}</div>
+          </Tooltip>
+        );
+      },
+    },
+  ], []);
 
   const tabItems = [
     {
@@ -557,6 +669,47 @@ export function EmployeeEditModal({ employeeId, open, onClose, onSuccess }: Empl
         </div>
       ),
     },
+    ...(employeeId != null
+      ? [
+          {
+            key: 'bitacora',
+            label: (
+              <span>
+                <SearchOutlined style={{ marginRight: 8, fontSize: 16 }} />
+                Bitácora
+              </span>
+            ),
+            children: (
+              <div className={styles.historicoSection}>
+                <p className={styles.sectionTitle}>Historial de cambios del empleado</p>
+                <p className={styles.sectionDescription} style={{ marginBottom: 16 }}>
+                  Muestra quién hizo el cambio, cuándo lo hizo y el detalle registrado en bitácora.
+                </p>
+                {canViewAudit ? (
+                  <Table<EmployeeAuditTrailItem>
+                    rowKey="id"
+                    size="small"
+                    loading={loadingAuditTrail}
+                    columns={auditColumns}
+                    dataSource={auditTrail}
+                    className={`${styles.configTable} ${styles.auditTableCompact}`}
+                    pagination={{
+                      pageSize: 8,
+                      showSizeChanger: true,
+                      showTotal: (total) => `${total} registro(s)`,
+                    }}
+                    locale={{ emptyText: 'No hay registros de bitácora para este empleado.' }}
+                  />
+                ) : (
+                  <p className={styles.sectionDescription} style={{ color: '#64748b' }}>
+                    No tiene permiso para ver la bitácora de este empleado.
+                  </p>
+                )}
+              </div>
+            ),
+          },
+        ]
+      : []),
   ];
 
   const loading = loadingEmployee && open && employeeId != null;
@@ -654,3 +807,4 @@ export function EmployeeEditModal({ employeeId, open, onClose, onSuccess }: Empl
     </Modal>
   );
 }
+

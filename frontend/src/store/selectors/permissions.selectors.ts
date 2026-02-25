@@ -46,6 +46,9 @@ export const canInactivateEmployee = (state: RootState) =>
 export const canReactivateEmployee = (state: RootState) =>
   selectPermissions(state).includes('employee:reactivate');
 
+export const canViewEmployeeAudit = (state: RootState) =>
+  selectPermissions(state).includes('config:employees:audit');
+
 export const canAssignKpitalRoleOnEmployeeCreate = (state: RootState) =>
   selectPermissions(state).includes('employee:assign-kpital-role');
 
@@ -89,6 +92,8 @@ export const canInactivateClass = (state: RootState) =>
   selectPermissions(state).includes('class:inactivate');
 export const canReactivateClass = (state: RootState) =>
   selectPermissions(state).includes('class:reactivate');
+export const canViewClassAudit = (state: RootState) =>
+  selectPermissions(state).includes('config:clases:audit');
 
 /** Permisos para ver secciones de configuración (tabs Roles, Usuarios, Permisos) */
 export const canViewConfigRoles = (state: RootState) =>

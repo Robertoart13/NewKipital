@@ -153,6 +153,27 @@ export interface UpdateEmployeePayload {
   cesantiaAcumulada?: string;
 }
 
+export interface EmployeeAuditTrailChange {
+  campo: string;
+  antes: string;
+  despues: string;
+}
+
+export interface EmployeeAuditTrailItem {
+  id: string;
+  modulo: string;
+  accion: string;
+  entidad: string;
+  entidadId?: string | null;
+  actorUserId?: number | null;
+  actorNombre?: string | null;
+  actorEmail?: string | null;
+  descripcion: string;
+  fechaCreacion?: string | null;
+  metadata?: Record<string, unknown> | null;
+  cambios?: EmployeeAuditTrailChange[];
+}
+
 /**
  * GET /employees/supervisors - Lista empleados elegibles como supervisores (rol Supervisor, Supervisor Global o Master en TimeWise).
  * Incluye todas las empresas a las que el usuario tiene acceso (un supervisor de otra subsidiaria puede asumir el rol).
@@ -282,6 +303,20 @@ export async function reactivateEmployee(id: number): Promise<EmployeeDetail> {
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
     throw new Error(err.message || 'Error al reactivar empleado');
+  }
+  return res.json();
+}
+
+/**
+ * GET /employees/:id/audit-trail - Historial de cambios del empleado.
+ */
+export async function fetchEmployeeAuditTrail(id: number, limit = 200): Promise<EmployeeAuditTrailItem[]> {
+  const params = new URLSearchParams();
+  params.set('limit', String(limit));
+  const res = await httpFetch(`/employees/${id}/audit-trail?${params.toString()}`);
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message || 'Error al cargar bitacora del empleado');
   }
   return res.json();
 }

@@ -109,4 +109,14 @@ export class EmployeesController {
   ) {
     return this.service.liquidar(id, user.userId, fechaSalida, motivo);
   }
+
+  @RequirePermissions('config:employees:audit')
+  @Get(':id/audit-trail')
+  getAuditTrail(
+    @Param('id', ParseIntPipe) id: number,
+    @CurrentUser() user: { userId: number },
+    @Query('limit', new ParseIntPipe({ optional: true })) limit?: number,
+  ) {
+    return this.service.getAuditTrail(id, user.userId, limit);
+  }
 }

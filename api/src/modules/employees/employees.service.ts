@@ -30,6 +30,7 @@ import {
   EstadoCalendarioNomina,
   PayrollCalendar,
 } from '../payroll/entities/payroll-calendar.entity';
+import { AuditOutboxService } from '../integration/audit-outbox.service';
 
 /** Estados de planilla que bloquean inactivar empleado (DOC-34 UC-01). */
 const PLANILLA_ESTADOS_BLOQUEANTES = [
@@ -62,7 +63,34 @@ export class EmployeesService {
     private readonly dataSource: DataSource,
     private readonly sensitiveDataService: EmployeeSensitiveDataService,
     private readonly vacationService: EmployeeVacationService,
+    private readonly auditOutbox: AuditOutboxService,
   ) {}
+
+  private readonly auditFieldLabels: Record<string, string> = {
+    nombre: 'Nombre',
+    apellido1: 'Primer apellido',
+    apellido2: 'Segundo apellido',
+    cedula: 'Cedula',
+    email: 'Email',
+    telefono: 'Telefono',
+    direccion: 'Direccion',
+    idDepartamento: 'Departamento',
+    idPuesto: 'Puesto',
+    idSupervisor: 'Supervisor',
+    fechaIngreso: 'Fecha ingreso',
+    fechaSalida: 'Fecha salida',
+    motivoSalida: 'Motivo salida',
+    tipoContrato: 'Tipo contrato',
+    jornada: 'Jornada',
+    idPeriodoPago: 'Periodo pago',
+    salarioBase: 'Salario base',
+    monedaSalario: 'Moneda salario',
+    numeroCcss: 'Numero CCSS',
+    cuentaBanco: 'Cuenta bancaria',
+    vacacionesAcumuladas: 'Vacaciones acumuladas',
+    cesantiaAcumulada: 'Cesantia acumulada',
+    estado: 'Estado',
+  };
 
   async create(dto: CreateEmployeeDto, creatorId?: number) {
     this.assertJoinDate(dto.fechaIngreso);
@@ -333,6 +361,7 @@ export class EmployeesService {
       if (!current) {
         throw new NotFoundException(`Empleado con ID ${id} no encontrado`);
       }
+      const payloadBefore = this.buildAuditPayloadFromEncrypted(current);
 
       const oldEmail = this.sensitiveDataService.decrypt(current.email) ?? '';
       if (current.idUsuario) {
@@ -404,6 +433,18 @@ export class EmployeesService {
       current.fechaEncriptacion = new Date();
 
       const saved = await manager.save(Employee, current);
+      const payloadAfter = this.buildAuditPayloadFromEncrypted(saved);
+
+      this.auditOutbox.publish({
+        modulo: 'employees',
+        accion: 'update',
+        entidad: 'employee',
+        entidadId: saved.id,
+        actorUserId: modifierId,
+        descripcion: `Empleado actualizado: ${payloadAfter.nombre ?? saved.id}`,
+        payloadBefore,
+        payloadAfter,
+      });
 
       if (dto.fechaIngreso !== undefined) {
         await this.vacationService.syncAccountAnchorOnJoinDateChange(
@@ -434,9 +475,21 @@ export class EmployeesService {
   async inactivate(id: number, modifierId: number): Promise<Employee> {
     const emp = await this.findOne(id, modifierId);
     await this.assertCanInactivateEmployee(emp);
+    const payloadBefore = this.buildAuditPayloadFromEncrypted(emp as Employee);
     emp.estado = 0;
     emp.modificadoPor = modifierId;
-    return this.repo.save(emp);
+    const saved = await this.repo.save(emp);
+    this.auditOutbox.publish({
+      modulo: 'employees',
+      accion: 'inactivate',
+      entidad: 'employee',
+      entidadId: saved.id,
+      actorUserId: modifierId,
+      descripcion: `Empleado inactivado: ${saved.id}`,
+      payloadBefore,
+      payloadAfter: this.buildAuditPayloadFromEncrypted(saved as Employee),
+    });
+    return saved;
   }
 
   /**
@@ -489,13 +542,26 @@ export class EmployeesService {
 
   async reactivate(id: number, modifierId: number): Promise<Employee> {
     const emp = await this.findOne(id, modifierId);
+    const payloadBefore = this.buildAuditPayloadFromEncrypted(emp as Employee);
     emp.estado = 1;
     emp.modificadoPor = modifierId;
-    return this.repo.save(emp);
+    const saved = await this.repo.save(emp);
+    this.auditOutbox.publish({
+      modulo: 'employees',
+      accion: 'reactivate',
+      entidad: 'employee',
+      entidadId: saved.id,
+      actorUserId: modifierId,
+      descripcion: `Empleado reactivado: ${saved.id}`,
+      payloadBefore,
+      payloadAfter: this.buildAuditPayloadFromEncrypted(saved as Employee),
+    });
+    return saved;
   }
 
   async liquidar(id: number, modifierId: number, fechaSalida?: string, motivo?: string): Promise<Employee> {
     const emp = await this.findOne(id, modifierId);
+    const payloadBefore = this.buildAuditPayloadFromEncrypted(emp as Employee);
     emp.estado = 0;
     emp.fechaSalida = fechaSalida ? this.parseDateOnlyForDb(fechaSalida) : new Date();
     emp.motivoSalida = this.sensitiveDataService.encrypt(motivo ?? null);
@@ -503,7 +569,69 @@ export class EmployeesService {
     emp.datosEncriptados = 1;
     emp.versionEncriptacion = EmployeeSensitiveDataService.getEncryptedVersion();
     emp.fechaEncriptacion = new Date();
-    return this.repo.save(emp);
+    const saved = await this.repo.save(emp);
+    this.auditOutbox.publish({
+      modulo: 'employees',
+      accion: 'liquidate',
+      entidad: 'employee',
+      entidadId: saved.id,
+      actorUserId: modifierId,
+      descripcion: `Empleado liquidado: ${saved.id}`,
+      payloadBefore,
+      payloadAfter: this.buildAuditPayloadFromEncrypted(saved as Employee),
+    });
+    return saved;
+  }
+
+  async getAuditTrail(id: number, actorUserId: number, limit = 100) {
+    const emp = await this.findOne(id, actorUserId);
+    const safeLimit = Math.min(Math.max(Number(limit || 100), 1), 500);
+    const idAsText = String(emp.id);
+    const rows = await this.repo.query(
+      `
+      SELECT
+        a.id_auditoria_accion AS id,
+        a.modulo_auditoria AS modulo,
+        a.accion_auditoria AS accion,
+        a.entidad_auditoria AS entidad,
+        a.id_entidad_auditoria AS entidadId,
+        a.id_usuario_actor_auditoria AS actorUserId,
+        a.descripcion_auditoria AS descripcion,
+        a.fecha_creacion_auditoria AS fechaCreacion,
+        a.metadata_auditoria AS metadata,
+        a.payload_before_auditoria AS payloadBefore,
+        a.payload_after_auditoria AS payloadAfter,
+        CONCAT_WS(' ', actor.nombre_usuario, actor.apellido_usuario) AS actorNombre,
+        actor.email_usuario AS actorEmail
+      FROM sys_auditoria_acciones a
+      LEFT JOIN sys_usuarios actor
+        ON actor.id_usuario = a.id_usuario_actor_auditoria
+      WHERE a.entidad_auditoria = 'employee'
+        AND a.id_entidad_auditoria = ?
+      ORDER BY a.fecha_creacion_auditoria DESC
+      LIMIT ?
+      `,
+      [idAsText, safeLimit],
+    );
+
+    return (rows ?? []).map((row: Record<string, unknown>) => {
+      const payloadBefore = (row.payloadBefore as Record<string, unknown> | null) ?? null;
+      const payloadAfter = (row.payloadAfter as Record<string, unknown> | null) ?? null;
+      return {
+        id: String(row.id ?? ''),
+        modulo: String(row.modulo ?? ''),
+        accion: String(row.accion ?? ''),
+        entidad: String(row.entidad ?? ''),
+        entidadId: row.entidadId == null ? null : String(row.entidadId),
+        actorUserId: row.actorUserId == null ? null : Number(row.actorUserId),
+        actorNombre: row.actorNombre ? String(row.actorNombre) : null,
+        actorEmail: row.actorEmail ? String(row.actorEmail) : null,
+        descripcion: String(row.descripcion ?? ''),
+        fechaCreacion: row.fechaCreacion ? new Date(String(row.fechaCreacion)).toISOString() : null,
+        metadata: (row.metadata as Record<string, unknown> | null) ?? null,
+        cambios: this.buildAuditChanges(payloadBefore, payloadAfter),
+      };
+    });
   }
 
   private async getUserCompanyIds(userId: number): Promise<number[]> {
@@ -618,6 +746,67 @@ export class EmployeesService {
     employee.motivoSalida = this.sensitiveDataService.decrypt(employee.motivoSalida);
 
     return employee;
+  }
+
+  private buildAuditPayloadFromEncrypted(employee: Employee): Record<string, unknown> {
+    const readable = this.toReadableEmployee({ ...employee }, true);
+    return {
+      nombre: readable.nombre ?? null,
+      apellido1: readable.apellido1 ?? null,
+      apellido2: readable.apellido2 ?? null,
+      cedula: readable.cedula ?? null,
+      email: readable.email ?? null,
+      telefono: readable.telefono ?? null,
+      direccion: readable.direccion ?? null,
+      idDepartamento: readable.idDepartamento ?? null,
+      idPuesto: readable.idPuesto ?? null,
+      idSupervisor: readable.idSupervisor ?? null,
+      fechaIngreso: readable.fechaIngreso ? new Date(readable.fechaIngreso as unknown as string).toISOString().slice(0, 10) : null,
+      fechaSalida: readable.fechaSalida ? new Date(readable.fechaSalida as unknown as string).toISOString().slice(0, 10) : null,
+      motivoSalida: readable.motivoSalida ?? null,
+      tipoContrato: readable.tipoContrato ?? null,
+      jornada: readable.jornada ?? null,
+      idPeriodoPago: readable.idPeriodoPago ?? null,
+      salarioBase: readable.salarioBase ?? null,
+      monedaSalario: readable.monedaSalario ?? null,
+      numeroCcss: readable.numeroCcss ?? null,
+      cuentaBanco: readable.cuentaBanco ?? null,
+      vacacionesAcumuladas: readable.vacacionesAcumuladas ?? null,
+      cesantiaAcumulada: readable.cesantiaAcumulada ?? null,
+      estado: readable.estado === 1 ? 'Activo' : 'Inactivo',
+    };
+  }
+
+  private normalizeAuditValue(value: unknown): string {
+    if (value === null || value === undefined) return '(vacio)';
+    if (typeof value === 'boolean') return value ? 'Si' : 'No';
+    if (typeof value === 'object') return JSON.stringify(value);
+    const text = String(value).trim();
+    return text.length > 0 ? text : '(vacio)';
+  }
+
+  private buildAuditChanges(
+    payloadBefore: Record<string, unknown> | null,
+    payloadAfter: Record<string, unknown> | null,
+  ): Array<{ campo: string; antes: string; despues: string }> {
+    if (!payloadBefore || !payloadAfter) return [];
+    const keys = new Set<string>([
+      ...Object.keys(payloadBefore),
+      ...Object.keys(payloadAfter),
+    ]);
+    const changes: Array<{ campo: string; antes: string; despues: string }> = [];
+    for (const key of keys) {
+      if (!(key in this.auditFieldLabels)) continue;
+      const beforeValue = this.normalizeAuditValue(payloadBefore[key]);
+      const afterValue = this.normalizeAuditValue(payloadAfter[key]);
+      if (beforeValue === afterValue) continue;
+      changes.push({
+        campo: this.auditFieldLabels[key] ?? key,
+        antes: beforeValue,
+        despues: afterValue,
+      });
+    }
+    return changes;
   }
 
   private async hasSensitivePermission(userId: number, companyId: number): Promise<boolean> {

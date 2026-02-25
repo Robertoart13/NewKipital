@@ -26,6 +26,7 @@ import { RefreshSession } from './entities/refresh-session.entity';
 import { IntegrationModule } from '../integration/integration.module';
 import { AuthAuditService } from './auth-audit.service';
 import { AuthRateLimitService } from './auth-rate-limit.service';
+import { AuthzModule } from '../authz/authz.module';
 
 @Module({
   imports: [
@@ -36,6 +37,7 @@ import { AuthRateLimitService } from './auth-rate-limit.service';
     JwtModule.registerAsync(jwtConfig),
     PassportModule,
     IntegrationModule,
+    AuthzModule,
   ],
   controllers: [AuthController, UsersController],
   providers: [

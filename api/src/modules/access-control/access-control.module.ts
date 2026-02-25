@@ -24,11 +24,13 @@ import { NotificationsModule } from '../notifications/notifications.module';
 import { Company } from '../companies/entities/company.entity';
 import { User } from '../auth/entities/user.entity';
 import { IntegrationModule } from '../integration/integration.module';
+import { AuthzModule } from '../authz/authz.module';
 
 @Module({
   imports: [
     NotificationsModule,
     IntegrationModule,
+    AuthzModule,
     TypeOrmModule.forFeature([
       App,
       UserApp,

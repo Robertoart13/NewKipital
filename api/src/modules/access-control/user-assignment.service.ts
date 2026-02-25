@@ -16,6 +16,7 @@ import { AssignUserAppDto } from './dto/assign-user-app.dto';
 import { AssignUserCompanyDto } from './dto/assign-user-company.dto';
 import { AssignUserRoleDto } from './dto/assign-user-role.dto';
 import { AuditOutboxService } from '../integration/audit-outbox.service';
+import { AuthzVersionService } from '../authz/authz-version.service';
 
 @Injectable()
 export class UserAssignmentService {
@@ -43,6 +44,7 @@ export class UserAssignmentService {
     @InjectRepository(Permission)
     private readonly permRepo: Repository<Permission>,
     private readonly auditOutbox: AuditOutboxService,
+    private readonly authzVersionService: AuthzVersionService,
   ) {}
 
   private publishAudit(params: {
@@ -70,6 +72,10 @@ export class UserAssignmentService {
 
   private formatList(values: string[]): string {
     return values.length > 0 ? values.join(', ') : 'sin elementos';
+  }
+
+  private async bumpUserAuthz(userId: number): Promise<void> {
+    await this.authzVersionService.bumpUsers([userId]);
   }
 
   private async getUserLabel(userId: number): Promise<string> {
@@ -131,6 +137,7 @@ export class UserAssignmentService {
       descripcion: `Se asignó la aplicación ${appLabel} al usuario ${userLabel}.`,
       payloadAfter: { idUsuario: saved.idUsuario, idApp: saved.idApp, estado: saved.estado },
     });
+    await this.bumpUserAuthz(saved.idUsuario);
     return saved;
   }
 
@@ -158,6 +165,7 @@ export class UserAssignmentService {
       descripcion: `Se revocó el acceso a la aplicación ${appLabel} del usuario ${userLabel}.`,
       payloadAfter: { idUsuario, idApp, estado: 0 },
     });
+    await this.bumpUserAuthz(idUsuario);
   }
 
   async getUserApps(idUsuario: number): Promise<UserApp[]> {
@@ -189,6 +197,7 @@ export class UserAssignmentService {
       descripcion: `Se asignó la empresa ${companyLabel} al usuario ${userLabel}.`,
       payloadAfter: { idUsuario: saved.idUsuario, idEmpresa: saved.idEmpresa, estado: saved.estado },
     });
+    await this.bumpUserAuthz(saved.idUsuario);
     return saved;
   }
 
@@ -213,6 +222,7 @@ export class UserAssignmentService {
       descripcion: `Se revocó el acceso a la empresa ${companyLabel} del usuario ${userLabel}.`,
       payloadAfter: { idUsuario, idEmpresa, estado: 0 },
     });
+    await this.bumpUserAuthz(idUsuario);
   }
 
   async getUserCompanies(idUsuario: number): Promise<UserCompany[]> {
@@ -277,6 +287,7 @@ export class UserAssignmentService {
       payloadBefore: { idUsuario, companyIds: beforeCompanyIds },
       payloadAfter: { idUsuario, companyIds: companyIdsResult },
     });
+    await this.bumpUserAuthz(idUsuario);
     return { companyIds: companyIdsResult };
   }
 
@@ -331,7 +342,9 @@ export class UserAssignmentService {
       creadoPor: creatorId,
       modificadoPor: creatorId,
     });
-    return this.userRoleRepo.save(ur);
+    const saved = await this.userRoleRepo.save(ur);
+    await this.bumpUserAuthz(dto.idUsuario);
+    return saved;
   }
 
   async revokeRole(
@@ -351,6 +364,7 @@ export class UserAssignmentService {
     ur.estado = 0;
     ur.modificadoPor = modifierId;
     await this.userRoleRepo.save(ur);
+    await this.bumpUserAuthz(idUsuario);
   }
 
   async getUserRoles(
@@ -458,6 +472,7 @@ export class UserAssignmentService {
         roleIds: result.map((r) => r.idRol),
       },
     });
+    await this.bumpUserAuthz(idUsuario);
     return result;
   }
 
@@ -535,6 +550,7 @@ export class UserAssignmentService {
       payloadBefore: { idUsuario, appCode: result.appCode, roleIds: beforeRoleIds },
       payloadAfter: { idUsuario, ...result },
     });
+    await this.bumpUserAuthz(idUsuario);
     return result;
   }
 
@@ -620,6 +636,7 @@ export class UserAssignmentService {
       payloadBefore: { idUsuario, companyId, appCode: result.appCode, roleIds: beforeRoleIds },
       payloadAfter: { idUsuario, ...result },
     });
+    await this.bumpUserAuthz(idUsuario);
     return result;
   }
 
@@ -827,6 +844,7 @@ export class UserAssignmentService {
       payloadBefore: { idUsuario, appCode: response.appCode, deny: beforeDenyCodes },
       payloadAfter: { idUsuario, ...response },
     });
+    await this.bumpUserAuthz(idUsuario);
     return response;
   }
 
@@ -944,6 +962,7 @@ export class UserAssignmentService {
       payloadBefore: { idUsuario, companyId, appCode: current.appCode, allow: beforeAllow, deny: beforeDeny },
       payloadAfter: current as unknown as Record<string, unknown>,
     });
+    await this.bumpUserAuthz(idUsuario);
     return current;
   }
 
@@ -1140,5 +1159,3 @@ export class UserAssignmentService {
     return Number.isFinite(rawTotal) ? rawTotal : 0;
   }
 }
-
-

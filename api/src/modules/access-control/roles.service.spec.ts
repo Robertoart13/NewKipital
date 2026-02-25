@@ -8,6 +8,7 @@ import { App } from './entities/app.entity';
 import { Permission } from './entities/permission.entity';
 import { RolePermission } from './entities/role-permission.entity';
 import { AuditOutboxService } from '../integration/audit-outbox.service';
+import { AuthzVersionService } from '../authz/authz-version.service';
 
 describe('RolesService', () => {
   let service: RolesService;
@@ -57,6 +58,7 @@ describe('RolesService', () => {
         { provide: getRepositoryToken(Permission), useValue: permissionRepoMock },
         { provide: getRepositoryToken(RolePermission), useValue: rpRepoMock },
         { provide: AuditOutboxService, useValue: { publish: jest.fn() } },
+        { provide: AuthzVersionService, useValue: { bumpGlobal: jest.fn() } },
       ],
     }).compile();
 

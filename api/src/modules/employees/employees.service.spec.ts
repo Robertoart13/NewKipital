@@ -20,6 +20,7 @@ import { CreateEmployeeDto } from './dto/create-employee.dto';
 import { PayrollCalendar } from '../payroll/entities/payroll-calendar.entity';
 import { PersonalAction } from '../personal-actions/entities/personal-action.entity';
 import { EmployeeVacationService } from './services/employee-vacation.service';
+import { AuditOutboxService } from '../integration/audit-outbox.service';
 
 describe('EmployeesService', () => {
   let service: EmployeesService;
@@ -83,6 +84,7 @@ describe('EmployeesService', () => {
       save: jest.fn(),
       create: jest.fn(),
       update: jest.fn(),
+      query: jest.fn(),
       createQueryBuilder: jest.fn(() => ({
         leftJoinAndSelect: jest.fn().mockReturnThis(),
         where: jest.fn().mockReturnThis(),
@@ -114,6 +116,7 @@ describe('EmployeesService', () => {
       encrypt: jest.fn(),
       decrypt: jest.fn(),
     };
+    mockSensitiveDataService.decrypt.mockImplementation((value) => value as string);
 
     const mockEventEmitter = {
       emit: jest.fn(),
@@ -139,6 +142,7 @@ describe('EmployeesService', () => {
         { provide: DataSource, useValue: mockDataSource },
         { provide: EmployeeSensitiveDataService, useValue: mockSensitiveDataService },
         { provide: EmployeeVacationService, useValue: { syncAccountAnchorOnJoinDateChange: jest.fn() } },
+        { provide: AuditOutboxService, useValue: { publish: jest.fn() } },
       ],
     }).compile();
 

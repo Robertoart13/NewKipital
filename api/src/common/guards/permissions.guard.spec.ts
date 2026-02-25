@@ -110,7 +110,7 @@ describe('PermissionsGuard', () => {
 
       // Assert
       expect(result).toBe(true);
-      expect(authService.resolvePermissions).toHaveBeenCalledWith(1, 123, 'kpital');
+      expect(authService.resolvePermissions).toHaveBeenCalledWith(1, 123, 'kpital', { bypassCache: false });
     });
 
     it('should throw ForbiddenException when user lacks required permissions', async () => {
@@ -184,7 +184,7 @@ describe('PermissionsGuard', () => {
 
       // Assert
       expect(result).toBe(true);
-      expect(authService.resolvePermissions).toHaveBeenCalledWith(1, 456, 'kpital');
+      expect(authService.resolvePermissions).toHaveBeenCalledWith(1, 456, 'kpital', { bypassCache: false });
     });
 
     it('should extract companyId from body', async () => {
@@ -209,7 +209,7 @@ describe('PermissionsGuard', () => {
 
       // Assert
       expect(result).toBe(true);
-      expect(authService.resolvePermissions).toHaveBeenCalledWith(1, 789, 'kpital');
+      expect(authService.resolvePermissions).toHaveBeenCalledWith(1, 789, 'kpital', { bypassCache: false });
     });
 
     it('should support legacy company:manage permission for granular permissions', async () => {
@@ -255,7 +255,7 @@ describe('PermissionsGuard', () => {
       await guard.canActivate(context);
 
       // Assert
-      expect(authService.resolvePermissions).toHaveBeenCalledWith(1, 123, 'kpital');
+      expect(authService.resolvePermissions).toHaveBeenCalledWith(1, 123, 'kpital', { bypassCache: false });
     });
 
     it('should extract appCode from query parameter', async () => {
@@ -278,7 +278,7 @@ describe('PermissionsGuard', () => {
       await guard.canActivate(context);
 
       // Assert
-      expect(authService.resolvePermissions).toHaveBeenCalledWith(1, 123, 'timewise');
+      expect(authService.resolvePermissions).toHaveBeenCalledWith(1, 123, 'timewise', { bypassCache: false });
     });
 
     it('should extract appCode from body', async () => {
@@ -302,7 +302,7 @@ describe('PermissionsGuard', () => {
       await guard.canActivate(context);
 
       // Assert
-      expect(authService.resolvePermissions).toHaveBeenCalledWith(1, 123, 'timewise');
+      expect(authService.resolvePermissions).toHaveBeenCalledWith(1, 123, 'timewise', { bypassCache: false });
     });
 
     it('should extract appCode from headers', async () => {
@@ -327,7 +327,7 @@ describe('PermissionsGuard', () => {
       await guard.canActivate(context);
 
       // Assert
-      expect(authService.resolvePermissions).toHaveBeenCalledWith(1, 123, 'timewise');
+      expect(authService.resolvePermissions).toHaveBeenCalledWith(1, 123, 'timewise', { bypassCache: false });
     });
 
     it('should normalize appCode to lowercase', async () => {
@@ -350,7 +350,7 @@ describe('PermissionsGuard', () => {
       await guard.canActivate(context);
 
       // Assert
-      expect(authService.resolvePermissions).toHaveBeenCalledWith(1, 123, 'timewise');
+      expect(authService.resolvePermissions).toHaveBeenCalledWith(1, 123, 'timewise', { bypassCache: false });
     });
 
     it('should inject resolved permissions and roles into request.user', async () => {

@@ -69,7 +69,11 @@ export class PermissionsGuard implements CanActivate {
       if (allowWithoutCompany) return true;
 
       const appCode = this.resolveAppCode(request);
-      const resolved = await this.authService.resolvePermissionsAcrossCompanies(userId, appCode);
+      const resolved = await this.authService.resolvePermissionsAcrossCompanies(
+        userId,
+        appCode,
+        { bypassCache: this.shouldBypassCache(request) },
+      );
       const userPermissions = resolved.permissions;
 
       request.user = {
@@ -87,7 +91,12 @@ export class PermissionsGuard implements CanActivate {
     }
 
     const appCode = this.resolveAppCode(request);
-    const resolved = await this.authService.resolvePermissions(userId, companyId, appCode);
+    const resolved = await this.authService.resolvePermissions(
+      userId,
+      companyId,
+      appCode,
+      { bypassCache: this.shouldBypassCache(request) },
+    );
     const userPermissions = resolved.permissions;
 
     request.user = {
@@ -122,5 +131,18 @@ export class PermissionsGuard implements CanActivate {
 
     const value = (queryApp ?? bodyApp ?? headerApp ?? 'kpital') as string;
     return String(value).trim().toLowerCase() || 'kpital';
+  }
+
+  private shouldBypassCache(request: RequestWithUser): boolean {
+    const queryRefresh = request.query?.refreshPermissions ?? request.query?.refreshAuthz;
+    const bodyRefresh = request.body?.refreshPermissions ?? request.body?.refreshAuthz;
+    const headerRefresh = request.headers?.['x-authz-refresh'] ?? request.headers?.['x-permissions-refresh'];
+
+    const raw = (queryRefresh ?? bodyRefresh ?? headerRefresh ?? '') as string | number | boolean;
+    if (raw === true || raw === 1) return true;
+    if (typeof raw === 'string') {
+      return ['1', 'true', 'yes', 'y'].includes(raw.trim().toLowerCase());
+    }
+    return false;
   }
 }

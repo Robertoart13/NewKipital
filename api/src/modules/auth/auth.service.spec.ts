@@ -20,6 +20,8 @@ import { Permission } from '../access-control/entities/permission.entity';
 import { UserPermissionOverride } from '../access-control/entities/user-permission-override.entity';
 import { UserPermissionGlobalDeny } from '../access-control/entities/user-permission-global-deny.entity';
 import { RefreshSession } from './entities/refresh-session.entity';
+import { AuthzVersionService } from '../authz/authz-version.service';
+import { PermissionsCacheService } from '../authz/permissions-cache.service';
 
 jest.mock('bcrypt', () => ({
   ...jest.requireActual('bcrypt'),
@@ -119,6 +121,8 @@ describe('AuthService', () => {
         { provide: getRepositoryToken(UserPermissionOverride), useValue: createMockRepository() },
         { provide: getRepositoryToken(UserPermissionGlobalDeny), useValue: createMockRepository() },
         { provide: getRepositoryToken(RefreshSession), useValue: createMockRepository() },
+        { provide: AuthzVersionService, useValue: { getToken: jest.fn().mockResolvedValue('1-1') } },
+        { provide: PermissionsCacheService, useValue: { get: jest.fn(), set: jest.fn(), pruneExpired: jest.fn() } },
       ],
     }).compile();
 

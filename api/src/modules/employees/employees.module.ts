@@ -26,6 +26,7 @@ import { AuthModule } from '../auth/auth.module';
 import { EmployeeSensitiveDataService } from '../../common/services/employee-sensitive-data.service';
 import { EmployeeDataAutomationWorkerService } from './services/employee-data-automation-worker.service';
 import { EmployeeVacationService } from './services/employee-vacation.service';
+import { IntegrationModule } from '../integration/integration.module';
 
 @Module({
   imports: [
@@ -53,6 +54,7 @@ import { EmployeeVacationService } from './services/employee-vacation.service';
     ]),
     WorkflowsModule,
     AuthModule,
+    IntegrationModule,
   ],
   controllers: [EmployeesController, CatalogsController],
   providers: [
