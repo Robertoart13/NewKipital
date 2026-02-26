@@ -43,6 +43,12 @@ import { DepartmentsService } from './departments/departments.service';
 import { PositionsModule } from './positions/positions.module';
 import { PositionsController } from './positions/positions.controller';
 import { PositionsService } from './positions/positions.service';
+import { AccountingAccountsModule } from './accounting-accounts/accounting-accounts.module';
+import { AccountingAccountsController } from './accounting-accounts/accounting-accounts.controller';
+import { AccountingAccountsService } from './accounting-accounts/accounting-accounts.service';
+import { PayrollArticlesModule } from './payroll-articles/payroll-articles.module';
+import { PayrollArticlesController } from './payroll-articles/payroll-articles.controller';
+import { PayrollArticlesService } from './payroll-articles/payroll-articles.service';
 
 describe('Modules Smoke', () => {
   it('loads access-control classes', () => {
@@ -104,5 +110,17 @@ describe('Modules Smoke', () => {
     expect(PositionsModule).toBeDefined();
     expect(PositionsController).toBeDefined();
     expect(PositionsService).toBeDefined();
+  });
+
+  it('loads accounting accounts module', () => {
+    expect(AccountingAccountsModule).toBeDefined();
+    expect(AccountingAccountsController).toBeDefined();
+    expect(AccountingAccountsService).toBeDefined();
+  });
+
+  it('loads payroll articles module', () => {
+    expect(PayrollArticlesModule).toBeDefined();
+    expect(PayrollArticlesController).toBeDefined();
+    expect(PayrollArticlesService).toBeDefined();
   });
 });

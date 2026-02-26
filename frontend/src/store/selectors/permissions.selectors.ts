@@ -108,6 +108,32 @@ export const canReactivateProject = (state: RootState) =>
 export const canViewProjectAudit = (state: RootState) =>
   selectPermissions(state).includes('config:proyectos:audit');
 
+export const canViewAccountingAccounts = (state: RootState) =>
+  selectPermissions(state).includes('accounting-account:view');
+export const canCreateAccountingAccount = (state: RootState) =>
+  selectPermissions(state).includes('accounting-account:create');
+export const canEditAccountingAccount = (state: RootState) =>
+  selectPermissions(state).includes('accounting-account:edit');
+export const canInactivateAccountingAccount = (state: RootState) =>
+  selectPermissions(state).includes('accounting-account:inactivate');
+export const canReactivateAccountingAccount = (state: RootState) =>
+  selectPermissions(state).includes('accounting-account:reactivate');
+export const canViewAccountingAccountAudit = (state: RootState) =>
+  selectPermissions(state).includes('config:cuentas-contables:audit');
+
+export const canViewPayrollArticles = (state: RootState) =>
+  selectPermissions(state).includes('payroll-article:view');
+export const canCreatePayrollArticle = (state: RootState) =>
+  selectPermissions(state).includes('payroll-article:create');
+export const canEditPayrollArticle = (state: RootState) =>
+  selectPermissions(state).includes('payroll-article:edit');
+export const canInactivatePayrollArticle = (state: RootState) =>
+  selectPermissions(state).includes('payroll-article:inactivate');
+export const canReactivatePayrollArticle = (state: RootState) =>
+  selectPermissions(state).includes('payroll-article:reactivate');
+export const canViewPayrollArticleAudit = (state: RootState) =>
+  selectPermissions(state).includes('payroll-article:audit');
+
 export const canViewDepartments = (state: RootState) =>
   selectPermissions(state).includes('department:view');
 export const canCreateDepartment = (state: RootState) =>

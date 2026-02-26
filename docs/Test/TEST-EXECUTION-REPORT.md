@@ -210,6 +210,9 @@ Estado de fase: Cerrada
 | Fase 10 | 186/186 | 331/331 | 517/517 | 0 |
 | Fase 11 | 186/186 | 331/331 | 517/517 | 0 |
 | Fase 12 | 187/187 | 331/331 | 518/518 | 0 |
+| Fase 13 | 187/187 | 331/331 | 518/518 | 0 |
+| Fase 14 | 187/187 | 331/331 | 518/518 | 0 |
+| Fase 15 | 187/187 | 331/331 | 518/518 | 0 |
 
 ## Fase 9 - 2026-02-25 10:52
 Alcance: Modulo Clases (create/list/update/inactivate/reactivate) + permisos + validacion real
@@ -308,6 +311,76 @@ Validacion E2E adicional:
   - `org_puestos`: registro id=14, estado=0, descripcion actualizada
   - `sys_domain_events`: eventos audit.positions.* en estado processed
   - `sys_auditoria_acciones`: create/update/inactivate/reactivate presentes
+
+Estado de fase: Cerrada
+
+## Fase 13 - 2026-02-25
+Alcance: Modulo Cuentas Contables (create/list/update/inactivate/reactivate) + permisos + tipos ERP + acciones personal
+
+Comandos ejecutados:
+- `cd api && npm.cmd test`
+- `cd frontend && npm.cmd test`
+
+Resultados:
+- Backend: 187/187
+- Frontend: 331/331
+- Total: 518/518
+- Fallos: 0
+
+Validacion en hr_pro:
+- Migracion aplicada manualmente por SQL equivalente:
+  - `erp_tipo_cuenta`
+  - `nom_tipos_accion_personal`
+  - `erp_cuentas_contables`
+- Permisos creados:
+  - `accounting-account:view`
+  - `config:cuentas-contables`
+  - `accounting-account:create`
+  - `accounting-account:edit`
+  - `accounting-account:inactivate`
+  - `accounting-account:reactivate`
+  - `config:cuentas-contables:audit`
+- Registro de migraciones:
+  - `CreateErpCuentasContablesAndPermissions1708535800000`
+  - `AddAccountingAccountViewPermission1708535900000`
+- Prueba real en BD:
+  - Cuenta creada: `CT-TEST-001` en empresa `Rocca Master Company`.
+
+Estado de fase: Cerrada
+
+## Fase 14 - 2026-02-25
+Alcance: Ajustes UX (preload) en editar/crear Cuentas Contables + validacion frontend
+
+Comandos ejecutados:
+- `cd frontend && npm.cmd test`
+
+Resultados:
+- Backend: 187/187
+- Frontend: 331/331
+- Total: 518/518
+- Fallos: 0
+
+Cambios incorporados:
+- Preload al cargar detalle de edicion y durante el refresh del listado al crear/editar.
+
+Estado de fase: Cerrada
+
+## Fase 15 - 2026-02-25
+Alcance: Filtro multi-empresa en Cuentas Contables + validacion completa
+
+Comandos ejecutados:
+- `cd api && npm.cmd test`
+- `cd frontend && npm.cmd test`
+
+Resultados:
+- Backend: 187/187
+- Frontend: 331/331
+- Total: 518/518
+- Fallos: 0
+
+Cambios incorporados:
+- Selector multi-empresa en listado de Cuentas Contables.
+- Backend soporta `idEmpresas` para filtrar por multiples empresas.
 
 Estado de fase: Cerrada
 

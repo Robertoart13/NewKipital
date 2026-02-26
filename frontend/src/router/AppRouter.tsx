@@ -14,6 +14,7 @@ import {
   CompaniesManagementPage,
   ClassesManagementPage,
   ProjectsManagementPage,
+  AccountingAccountsManagementPage,
   DepartmentsManagementPage,
   PositionsManagementPage,
   AutomationMonitoringPage,
@@ -118,6 +119,16 @@ export function AppRouter() {
             </PrivateLayout>
           )}
           path="/configuration/proyectos"
+        />
+        <Route
+          element={(
+            <PrivateLayout>
+              <PermissionGuard requiredPermission="accounting-account:view">
+                <AccountingAccountsManagementPage />
+              </PermissionGuard>
+            </PrivateLayout>
+          )}
+          path="/configuration/cuentas-contables"
         />
         <Route
           element={(

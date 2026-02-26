@@ -8,6 +8,8 @@ import { AuthModule } from './modules/auth/auth.module';
 import { CompaniesModule } from './modules/companies/companies.module';
 import { ClassesModule } from './modules/classes/classes.module';
 import { ProjectsModule } from './modules/projects/projects.module';
+import { AccountingAccountsModule } from './modules/accounting-accounts/accounting-accounts.module';
+import { PayrollArticlesModule } from './modules/payroll-articles/payroll-articles.module';
 import { DepartmentsModule } from './modules/departments/departments.module';
 import { PositionsModule } from './modules/positions/positions.module';
 import { EmployeesModule } from './modules/employees/employees.module';
@@ -30,6 +32,8 @@ import { PermissionsGuard } from './common/guards/permissions.guard';
     CompaniesModule,
     ClassesModule,
     ProjectsModule,
+    AccountingAccountsModule,
+    PayrollArticlesModule,
     DepartmentsModule,
     PositionsModule,
     EmployeesModule,
