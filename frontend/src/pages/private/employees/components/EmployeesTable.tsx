@@ -35,17 +35,22 @@ export function EmployeesTable({
       dataIndex: 'cedula',
       key: 'cedula',
       width: 120,
+      render: (v: string | null) => v ?? '—',
     },
     {
       title: 'Nombre',
       key: 'nombre',
-      render: (_, r) => `${r.nombre} ${r.apellido1 || ''} ${r.apellido2 ? ` ${r.apellido2}` : ''}`.trim(),
+      render: (_, r) => {
+        if (!r.nombre && !r.apellido1) return '—';
+        return `${r.nombre ?? ''} ${r.apellido1 ?? ''} ${r.apellido2 ? r.apellido2 : ''}`.trim();
+      },
     },
     {
       title: 'Email',
       dataIndex: 'email',
       key: 'email',
       width: 200,
+      render: (v: string | null) => v ?? '—',
     },
     {
       title: 'Departamento',
