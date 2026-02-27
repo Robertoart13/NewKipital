@@ -31,10 +31,7 @@ export class ProjectsService {
     esInactivo: 'Estado',
   };
 
-  async create(
-    dto: CreateProjectDto,
-    actorUserId: number,
-  ): Promise<OrgProject> {
+  async create(dto: CreateProjectDto, actorUserId: number): Promise<OrgProject> {
     await this.assertCompanyActive(dto.idEmpresa);
     await this.assertCodigoUnique(dto.codigo);
     if (dto.idExterno?.trim()) {
@@ -62,11 +59,7 @@ export class ProjectsService {
     return saved;
   }
 
-  async findAll(
-    includeInactive = false,
-    inactiveOnly = false,
-    idEmpresa?: number,
-  ): Promise<OrgProject[]> {
+  async findAll(includeInactive = false, inactiveOnly = false, idEmpresa?: number): Promise<OrgProject[]> {
     const qb = this.repo.createQueryBuilder('p').orderBy('p.nombre', 'ASC');
 
     if (idEmpresa) {
@@ -90,11 +83,7 @@ export class ProjectsService {
     return found;
   }
 
-  async update(
-    id: number,
-    dto: UpdateProjectDto,
-    actorUserId: number,
-  ): Promise<OrgProject> {
+  async update(id: number, dto: UpdateProjectDto, actorUserId: number): Promise<OrgProject> {
     const found = await this.findOne(id);
     const payloadBefore = this.buildAuditPayload(found);
 
@@ -207,10 +196,8 @@ export class ProjectsService {
     );
 
     return (rows ?? []).map((row: Record<string, unknown>) => {
-      const payloadBefore =
-        (row.payloadBefore as Record<string, unknown> | null) ?? null;
-      const payloadAfter =
-        (row.payloadAfter as Record<string, unknown> | null) ?? null;
+      const payloadBefore = (row.payloadBefore as Record<string, unknown> | null) ?? null;
+      const payloadAfter = (row.payloadAfter as Record<string, unknown> | null) ?? null;
       return {
         id: String(row.id ?? ''),
         modulo: String(row.modulo ?? ''),
@@ -221,9 +208,7 @@ export class ProjectsService {
         actorNombre: row.actorNombre ? String(row.actorNombre) : null,
         actorEmail: row.actorEmail ? String(row.actorEmail) : null,
         descripcion: String(row.descripcion ?? ''),
-        fechaCreacion: row.fechaCreacion
-          ? new Date(String(row.fechaCreacion)).toISOString()
-          : null,
+        fechaCreacion: row.fechaCreacion ? new Date(String(row.fechaCreacion)).toISOString() : null,
         metadata: (row.metadata as Record<string, unknown> | null) ?? null,
         cambios: this.buildAuditChanges(payloadBefore, payloadAfter),
       };
@@ -258,8 +243,7 @@ export class ProjectsService {
       ...Object.keys(payloadBefore),
       ...Object.keys(payloadAfter),
     ]);
-    const changes: Array<{ campo: string; antes: string; despues: string }> =
-      [];
+    const changes: Array<{ campo: string; antes: string; despues: string }> = [];
     for (const key of keys) {
       if (!(key in this.auditFieldLabels)) continue;
       const beforeValue = this.normalizeAuditValue(payloadBefore[key]);
@@ -274,20 +258,14 @@ export class ProjectsService {
     return changes;
   }
 
-  private async assertCodigoUnique(
-    codigo: string,
-    exceptId?: number,
-  ): Promise<void> {
+  private async assertCodigoUnique(codigo: string, exceptId?: number): Promise<void> {
     const existing = await this.repo.findOne({ where: { codigo } });
     if (existing && existing.id !== exceptId) {
       throw new ConflictException('Ya existe un proyecto con ese codigo');
     }
   }
 
-  private async assertIdExternoUnique(
-    idExterno: string,
-    exceptId?: number,
-  ): Promise<void> {
+  private async assertIdExternoUnique(idExterno: string, exceptId?: number): Promise<void> {
     const existing = await this.repo.findOne({ where: { idExterno } });
     if (existing && existing.id !== exceptId) {
       throw new ConflictException('Ya existe un proyecto con ese ID externo');
@@ -295,13 +273,9 @@ export class ProjectsService {
   }
 
   private async assertCompanyActive(idEmpresa: number): Promise<void> {
-    const company = await this.companyRepo.findOne({
-      where: { id: idEmpresa, estado: 1 },
-    });
+    const company = await this.companyRepo.findOne({ where: { id: idEmpresa, estado: 1 } });
     if (!company) {
-      throw new BadRequestException(
-        'Debe seleccionar una empresa activa para gestionar proyectos.',
-      );
+      throw new BadRequestException('Debe seleccionar una empresa activa para gestionar proyectos.');
     }
   }
 }

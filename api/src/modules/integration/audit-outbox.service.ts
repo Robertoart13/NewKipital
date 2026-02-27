@@ -27,32 +27,29 @@ export class AuditOutboxService {
     const normalizedModulo = input.modulo.trim().toLowerCase();
     const normalizedAccion = input.accion.trim().toLowerCase();
 
-    void this.domainEvents
-      .record({
-        aggregateType: 'audit',
-        aggregateId,
-        eventName: `audit.${normalizedModulo}.${normalizedAccion}`,
-        payload: {
-          modulo: normalizedModulo,
-          accion: normalizedAccion,
-          entidad: input.entidad.trim().toLowerCase(),
-          entidadId: input.entidadId != null ? String(input.entidadId) : null,
-          actorUserId: input.actorUserId ?? null,
-          companyContextId: input.companyContextId ?? null,
-          descripcion: input.descripcion,
-          payloadBefore: input.payloadBefore ?? null,
-          payloadAfter: input.payloadAfter ?? null,
-          metadata: input.metadata ?? null,
-          ip: input.ip ?? null,
-          userAgent: input.userAgent ?? null,
-        },
-        createdBy: input.actorUserId ?? null,
-        occurredAt: new Date(),
-      })
-      .catch((error: unknown) => {
-        this.logger.warn(
-          `No se pudo publicar evento de auditoria: ${(error as Error).message}`,
-        );
-      });
+    void this.domainEvents.record({
+      aggregateType: 'audit',
+      aggregateId,
+      eventName: `audit.${normalizedModulo}.${normalizedAccion}`,
+      payload: {
+        modulo: normalizedModulo,
+        accion: normalizedAccion,
+        entidad: input.entidad.trim().toLowerCase(),
+        entidadId: input.entidadId != null ? String(input.entidadId) : null,
+        actorUserId: input.actorUserId ?? null,
+        companyContextId: input.companyContextId ?? null,
+        descripcion: input.descripcion,
+        payloadBefore: input.payloadBefore ?? null,
+        payloadAfter: input.payloadAfter ?? null,
+        metadata: input.metadata ?? null,
+        ip: input.ip ?? null,
+        userAgent: input.userAgent ?? null,
+      },
+      createdBy: input.actorUserId ?? null,
+      occurredAt: new Date(),
+    }).catch((error: unknown) => {
+      this.logger.warn(`No se pudo publicar evento de auditoria: ${(error as Error).message}`);
+    });
   }
 }
+

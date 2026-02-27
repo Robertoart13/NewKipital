@@ -18,10 +18,7 @@ import { UpdateUserDto } from './dto/update-user.dto';
 import { UserStatus } from './constants/user-status.enum';
 import { AuditOutboxService } from '../integration/audit-outbox.service';
 
-const TIMEWISE_SUPERVISOR_ROLES = [
-  'SUPERVISOR_TIMEWISE',
-  'SUPERVISOR_GLOBAL_TIMEWISE',
-];
+const TIMEWISE_SUPERVISOR_ROLES = ['SUPERVISOR_TIMEWISE', 'SUPERVISOR_GLOBAL_TIMEWISE'];
 
 @Injectable()
 export class UsersService {
@@ -44,9 +41,7 @@ export class UsersService {
   async create(dto: CreateUserDto, creatorId?: number): Promise<User> {
     const normalizedEmail = this.normalizeEmail(dto.email);
 
-    const existing = await this.repo.findOne({
-      where: { email: normalizedEmail },
-    });
+    const existing = await this.repo.findOne({ where: { email: normalizedEmail } });
     if (existing) {
       throw new ConflictException('Ya existe un usuario con ese email');
     }
@@ -112,12 +107,8 @@ export class UsersService {
 
     if (configView && users.length > 0) {
       const ids = users.map((u) => u.id);
-      const kpitalApp = await this.appRepo.findOne({
-        where: { codigo: 'kpital', estado: 1 },
-      });
-      const timewiseApp = await this.appRepo.findOne({
-        where: { codigo: 'timewise', estado: 1 },
-      });
+      const kpitalApp = await this.appRepo.findOne({ where: { codigo: 'kpital', estado: 1 } });
+      const timewiseApp = await this.appRepo.findOne({ where: { codigo: 'timewise', estado: 1 } });
       if (!kpitalApp || !timewiseApp) {
         return users.map((u) => this.sanitize(u));
       }
@@ -129,27 +120,25 @@ export class UsersService {
         where: { idUsuario: In(ids), idApp: kpitalApp.id, estado: 1 },
       });
       const kpitalUserIds = new Set(hasKpital.map((ua) => ua.idUsuario));
-      const twSupervisorContext =
-        supervisorRoleIds.length > 0
-          ? await this.userRoleRepo.find({
-              where: {
-                idUsuario: In(ids),
-                idRol: In(supervisorRoleIds),
-                estado: 1,
-              },
-            })
-          : [];
-      const twSupervisorGlobal =
-        supervisorRoleIds.length > 0 && timewiseApp
-          ? await this.userRoleGlobalRepo.find({
-              where: {
-                idUsuario: In(ids),
-                idApp: timewiseApp.id,
-                idRol: In(supervisorRoleIds),
-                estado: 1,
-              },
-            })
-          : [];
+      const twSupervisorContext = supervisorRoleIds.length > 0
+        ? await this.userRoleRepo.find({
+            where: {
+              idUsuario: In(ids),
+              idRol: In(supervisorRoleIds),
+              estado: 1,
+            },
+          })
+        : [];
+      const twSupervisorGlobal = supervisorRoleIds.length > 0 && timewiseApp
+        ? await this.userRoleGlobalRepo.find({
+            where: {
+              idUsuario: In(ids),
+              idApp: timewiseApp.id,
+              idRol: In(supervisorRoleIds),
+              estado: 1,
+            },
+          })
+        : [];
       const twSupervisorUserIds = new Set([
         ...twSupervisorContext.map((ur) => ur.idUsuario),
         ...twSupervisorGlobal.map((g) => g.idUsuario),
@@ -158,18 +147,13 @@ export class UsersService {
         where: { idUsuario: In(ids), idApp: timewiseApp.id, estado: 1 },
       });
       const timewiseOnlyUserIds = new Set(
-        hasTimewise
-          .filter((ua) => !kpitalUserIds.has(ua.idUsuario))
-          .map((ua) => ua.idUsuario),
+        hasTimewise.filter((ua) => !kpitalUserIds.has(ua.idUsuario)).map((ua) => ua.idUsuario),
       );
       const configUserIds = new Set<number>();
       for (const uid of ids) {
         if (kpitalUserIds.has(uid)) {
           configUserIds.add(uid);
-        } else if (
-          timewiseOnlyUserIds.has(uid) &&
-          twSupervisorUserIds.has(uid)
-        ) {
+        } else if (timewiseOnlyUserIds.has(uid) && twSupervisorUserIds.has(uid)) {
           configUserIds.add(uid);
         }
       }
@@ -195,10 +179,7 @@ export class UsersService {
     return this.repo.findOne({ where: { username: username.toLowerCase() } });
   }
 
-  async findByMicrosoftIdentity(
-    microsoftOid: string,
-    microsoftTid: string,
-  ): Promise<User | null> {
+  async findByMicrosoftIdentity(microsoftOid: string, microsoftTid: string): Promise<User | null> {
     return this.repo.findOne({
       where: {
         microsoftOid,
@@ -207,26 +188,16 @@ export class UsersService {
     });
   }
 
-  async bindMicrosoftIdentity(
-    userId: number,
-    microsoftOid: string,
-    microsoftTid: string,
-  ): Promise<void> {
+  async bindMicrosoftIdentity(userId: number, microsoftOid: string, microsoftTid: string): Promise<void> {
     await this.repo.update(userId, {
       microsoftOid,
       microsoftTid,
     } as Partial<User>);
   }
 
-  async update(
-    id: number,
-    dto: UpdateUserDto,
-    modifierId?: number,
-  ): Promise<User> {
+  async update(id: number, dto: UpdateUserDto, modifierId?: number): Promise<User> {
     if (await this.isProtectedMasterUser(id)) {
-      throw new ConflictException(
-        'El usuario MASTER esta protegido y no puede ser modificado',
-      );
+      throw new ConflictException('El usuario MASTER esta protegido y no puede ser modificado');
     }
     const user = await this.repo.findOne({ where: { id } });
     if (!user) {
@@ -236,9 +207,7 @@ export class UsersService {
     if (dto.email) {
       dto.email = this.normalizeEmail(dto.email);
       if (dto.email !== user.email) {
-        const existing = await this.repo.findOne({
-          where: { email: dto.email },
-        });
+        const existing = await this.repo.findOne({ where: { email: dto.email } });
         if (existing) {
           throw new ConflictException('Ya existe un usuario con ese email');
         }
@@ -248,9 +217,7 @@ export class UsersService {
     if (dto.username) {
       const normalizedUsername = dto.username.toLowerCase();
       if (normalizedUsername !== user.username) {
-        const existing = await this.repo.findOne({
-          where: { username: normalizedUsername },
-        });
+        const existing = await this.repo.findOne({ where: { username: normalizedUsername } });
         if (existing) {
           throw new ConflictException('Ya existe un usuario con ese username');
         }
@@ -288,11 +255,7 @@ export class UsersService {
     return this.sanitize(saved);
   }
 
-  async inactivate(
-    id: number,
-    modifierId: number,
-    motivo?: string,
-  ): Promise<User> {
+  async inactivate(id: number, modifierId: number, motivo?: string): Promise<User> {
     await this.assertCanRestrictUser(id, modifierId);
     const user = await this.repo.findOne({ where: { id } });
     if (!user) {
@@ -355,8 +318,7 @@ export class UsersService {
       throw new NotFoundException(`Usuario con ID ${id} no encontrado`);
     }
     user.estado = UserStatus.BLOQUEADO;
-    user.motivoInactivacion =
-      motivo ?? 'Bloqueado manualmente por administrador';
+    user.motivoInactivacion = motivo ?? 'Bloqueado manualmente por administrador';
     user.modificadoPor = modifierId;
     const saved = await this.repo.save(user);
     this.auditOutbox.publish({
@@ -390,15 +352,11 @@ export class UsersService {
     }
 
     if (user.estado === UserStatus.INACTIVO) {
-      throw new ForbiddenException(
-        'Usuario inactivo. Contacte al administrador.',
-      );
+      throw new ForbiddenException('Usuario inactivo. Contacte al administrador.');
     }
 
     if (user.estado === UserStatus.BLOQUEADO) {
-      throw new ForbiddenException(
-        'Usuario bloqueado. Contacte al administrador.',
-      );
+      throw new ForbiddenException('Usuario bloqueado. Contacte al administrador.');
     }
 
     if (user.lockedUntil && user.lockedUntil > new Date()) {
@@ -416,11 +374,7 @@ export class UsersService {
     return user;
   }
 
-  async registerFailedAttempt(
-    id: number,
-    maxAttempts = 5,
-    lockMinutes = 15,
-  ): Promise<void> {
+  async registerFailedAttempt(id: number, maxAttempts = 5, lockMinutes = 15): Promise<void> {
     const user = await this.repo.findOne({ where: { id } });
     if (!user) return;
 
@@ -453,20 +407,13 @@ export class UsersService {
     return rest as User;
   }
 
-  private async assertCanRestrictUser(
-    targetUserId: number,
-    actorUserId: number,
-  ): Promise<void> {
+  private async assertCanRestrictUser(targetUserId: number, actorUserId: number): Promise<void> {
     if (targetUserId === actorUserId) {
-      throw new ForbiddenException(
-        'No puede bloquear o inactivar su propio usuario',
-      );
+      throw new ForbiddenException('No puede bloquear o inactivar su propio usuario');
     }
 
     if (await this.isProtectedMasterUser(targetUserId)) {
-      throw new ConflictException(
-        'El usuario MASTER esta protegido y no puede ser bloqueado ni inactivado',
-      );
+      throw new ConflictException('El usuario MASTER esta protegido y no puede ser bloqueado ni inactivado');
     }
 
     const isConfigAdmin = await this.isConfigAdminUser(targetUserId);
@@ -549,9 +496,7 @@ export class UsersService {
     return rows.length > 0;
   }
 
-  private async countOtherActiveConfigAdmins(
-    excludedUserId: number,
-  ): Promise<number> {
+  private async countOtherActiveConfigAdmins(excludedUserId: number): Promise<number> {
     const rows = await this.repo.query(
       `
       SELECT COUNT(DISTINCT u.id_usuario) AS total
@@ -592,3 +537,4 @@ export class UsersService {
     return Number.isFinite(rawTotal) ? rawTotal : 0;
   }
 }
+

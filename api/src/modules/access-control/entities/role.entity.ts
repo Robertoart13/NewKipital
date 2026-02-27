@@ -28,12 +28,7 @@ export class Role {
   @Column({ name: 'nombre_rol', type: 'varchar', length: 100 })
   nombre: string;
 
-  @Column({
-    name: 'descripcion_rol',
-    type: 'varchar',
-    length: 300,
-    nullable: true,
-  })
+  @Column({ name: 'descripcion_rol', type: 'varchar', length: 300, nullable: true })
   descripcion: string | null;
 
   @Index('IDX_rol_estado')

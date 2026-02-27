@@ -23,22 +23,11 @@ export class OrgProject {
   descripcion: string | null;
 
   @Index('UQ_proyecto_codigo', { unique: true })
-  @Column({
-    name: 'codigo_proyecto',
-    type: 'varchar',
-    length: 50,
-    unique: true,
-  })
+  @Column({ name: 'codigo_proyecto', type: 'varchar', length: 50, unique: true })
   codigo: string;
 
   @Index('UQ_proyecto_id_externo', { unique: true })
-  @Column({
-    name: 'id_externo_proyecto',
-    type: 'varchar',
-    length: 45,
-    nullable: true,
-    unique: true,
-  })
+  @Column({ name: 'id_externo_proyecto', type: 'varchar', length: 45, nullable: true, unique: true })
   idExterno: string | null;
 
   @Index('IDX_proyecto_inactivo')

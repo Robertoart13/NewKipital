@@ -18,12 +18,7 @@ export class AccountingAccountType {
   @Column({ name: 'descripcion_tipo_erp', type: 'text', nullable: true })
   descripcion: string | null;
 
-  @Column({
-    name: 'id_externo_erp',
-    type: 'varchar',
-    length: 50,
-    nullable: true,
-  })
+  @Column({ name: 'id_externo_erp', type: 'varchar', length: 50, nullable: true })
   idExterno: string | null;
 
   @Index('IDX_tipo_cuenta_status')

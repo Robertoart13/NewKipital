@@ -1,9 +1,4 @@
-import {
-  Injectable,
-  NotFoundException,
-  ConflictException,
-  BadRequestException,
-} from '@nestjs/common';
+import { Injectable, NotFoundException, ConflictException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { In, Repository } from 'typeorm';
 import { User } from '../auth/entities/user.entity';
@@ -22,6 +17,7 @@ import { AssignUserCompanyDto } from './dto/assign-user-company.dto';
 import { AssignUserRoleDto } from './dto/assign-user-role.dto';
 import { AuditOutboxService } from '../integration/audit-outbox.service';
 import { AuthzVersionService } from '../authz/authz-version.service';
+import { AuthzRealtimeService } from '../authz/authz-realtime.service';
 
 @Injectable()
 export class UserAssignmentService {
@@ -50,6 +46,7 @@ export class UserAssignmentService {
     private readonly permRepo: Repository<Permission>,
     private readonly auditOutbox: AuditOutboxService,
     private readonly authzVersionService: AuthzVersionService,
+    private readonly authzRealtime: AuthzRealtimeService,
   ) {}
 
   private publishAudit(params: {
@@ -81,6 +78,11 @@ export class UserAssignmentService {
 
   private async bumpUserAuthz(userId: number): Promise<void> {
     await this.authzVersionService.bumpUsers([userId]);
+    this.authzRealtime.notifyUsers([userId], {
+      type: 'permissions.changed',
+      reason: 'user.assignment.changed',
+      at: new Date().toISOString(),
+    });
   }
 
   private async getUserLabel(userId: number): Promise<string> {
@@ -114,18 +116,13 @@ export class UserAssignmentService {
   private async getRoleLabels(roleIds: number[]): Promise<string[]> {
     if (roleIds.length === 0) return [];
     const rows = await this.roleRepo.find({ where: { id: In(roleIds) } });
-    const byId = new Map(
-      rows.map((role) => [role.id, `${role.nombre} (${role.codigo})`]),
-    );
+    const byId = new Map(rows.map((role) => [role.id, `${role.nombre} (${role.codigo})`]));
     return roleIds.map((roleId) => byId.get(roleId) ?? `rol #${roleId}`);
   }
 
   // --- Usuario <-> App ---
 
-  async assignApp(
-    dto: AssignUserAppDto,
-    actorUserId?: number,
-  ): Promise<UserApp> {
+  async assignApp(dto: AssignUserAppDto, actorUserId?: number): Promise<UserApp> {
     await this.assertUserCanBeMutated(dto.idUsuario, actorUserId, false);
     const existing = await this.userAppRepo.findOne({
       where: { idUsuario: dto.idUsuario, idApp: dto.idApp },
@@ -145,33 +142,21 @@ export class UserAssignmentService {
       entidadId: `${saved.idUsuario}:${saved.idApp}`,
       actorUserId: actorUserId ?? null,
       descripcion: `Se asignó la aplicación ${appLabel} al usuario ${userLabel}.`,
-      payloadAfter: {
-        idUsuario: saved.idUsuario,
-        idApp: saved.idApp,
-        estado: saved.estado,
-      },
+      payloadAfter: { idUsuario: saved.idUsuario, idApp: saved.idApp, estado: saved.estado },
     });
     await this.bumpUserAuthz(saved.idUsuario);
     return saved;
   }
 
-  async revokeApp(
-    idUsuario: number,
-    idApp: number,
-    actorUserId?: number,
-  ): Promise<void> {
+  async revokeApp(idUsuario: number, idApp: number, actorUserId?: number): Promise<void> {
     await this.assertUserCanBeMutated(idUsuario, actorUserId, true);
     const ua = await this.userAppRepo.findOne({ where: { idUsuario, idApp } });
     if (!ua) {
       throw new NotFoundException('Asignacion usuario-app no encontrada');
     }
-    const activeApps = await this.userAppRepo.count({
-      where: { idUsuario, estado: 1 },
-    });
+    const activeApps = await this.userAppRepo.count({ where: { idUsuario, estado: 1 } });
     if (ua.estado === 1 && activeApps <= 1) {
-      throw new ConflictException(
-        'No se puede revocar la ultima aplicacion activa del usuario',
-      );
+      throw new ConflictException('No se puede revocar la ultima aplicacion activa del usuario');
     }
     ua.estado = 0;
     await this.userAppRepo.save(ua);
@@ -196,10 +181,7 @@ export class UserAssignmentService {
 
   // --- Usuario <-> Empresa ---
 
-  async assignCompany(
-    dto: AssignUserCompanyDto,
-    actorUserId?: number,
-  ): Promise<UserCompany> {
+  async assignCompany(dto: AssignUserCompanyDto, actorUserId?: number): Promise<UserCompany> {
     await this.assertUserCanBeMutated(dto.idUsuario, actorUserId, false);
     const existing = await this.userCompanyRepo.findOne({
       where: { idUsuario: dto.idUsuario, idEmpresa: dto.idEmpresa },
@@ -220,25 +202,15 @@ export class UserAssignmentService {
       actorUserId: actorUserId ?? null,
       companyContextId: saved.idEmpresa,
       descripcion: `Se asignó la empresa ${companyLabel} al usuario ${userLabel}.`,
-      payloadAfter: {
-        idUsuario: saved.idUsuario,
-        idEmpresa: saved.idEmpresa,
-        estado: saved.estado,
-      },
+      payloadAfter: { idUsuario: saved.idUsuario, idEmpresa: saved.idEmpresa, estado: saved.estado },
     });
     await this.bumpUserAuthz(saved.idUsuario);
     return saved;
   }
 
-  async revokeCompany(
-    idUsuario: number,
-    idEmpresa: number,
-    actorUserId?: number,
-  ): Promise<void> {
+  async revokeCompany(idUsuario: number, idEmpresa: number, actorUserId?: number): Promise<void> {
     await this.assertUserCanBeMutated(idUsuario, actorUserId, true);
-    const uc = await this.userCompanyRepo.findOne({
-      where: { idUsuario, idEmpresa },
-    });
+    const uc = await this.userCompanyRepo.findOne({ where: { idUsuario, idEmpresa } });
     if (!uc) {
       throw new NotFoundException('Asignacion usuario-empresa no encontrada');
     }
@@ -270,17 +242,12 @@ export class UserAssignmentService {
     actorUserId?: number,
   ): Promise<{ companyIds: number[] }> {
     await this.assertUserCanBeMutated(idUsuario, actorUserId, true);
-    const normalized = [...new Set(companyIds)].filter(
-      (id) => Number.isInteger(id) && id > 0,
-    );
+    const normalized = [...new Set(companyIds)].filter((id) => Number.isInteger(id) && id > 0);
     const existing = await this.userCompanyRepo.find({ where: { idUsuario } });
     const existingById = new Map(existing.map((e) => [e.idEmpresa, e]));
     const targetSet = new Set(normalized);
 
-    const beforeCompanyIds = existing
-      .filter((e) => e.estado === 1)
-      .map((e) => e.idEmpresa)
-      .sort((a, b) => a - b);
+    const beforeCompanyIds = existing.filter((e) => e.estado === 1).map((e) => e.idEmpresa).sort((a, b) => a - b);
     const beforeLabels = await this.getCompanyLabelList(beforeCompanyIds);
 
     for (const e of existing) {
@@ -313,15 +280,11 @@ export class UserAssignmentService {
     const result = await this.userCompanyRepo.find({
       where: { idUsuario, estado: 1 },
     });
-    const companyIdsResult = result
-      .map((r) => r.idEmpresa)
-      .sort((a, b) => a - b);
+    const companyIdsResult = result.map((r) => r.idEmpresa).sort((a, b) => a - b);
     const userLabel = await this.getUserLabel(idUsuario);
     const afterLabels = await this.getCompanyLabelList(companyIdsResult);
-    const antes =
-      beforeLabels.length > 0 ? this.formatList(beforeLabels) : 'ninguna';
-    const despues =
-      afterLabels.length > 0 ? this.formatList(afterLabels) : 'ninguna';
+    const antes = beforeLabels.length > 0 ? this.formatList(beforeLabels) : 'ninguna';
+    const despues = afterLabels.length > 0 ? this.formatList(afterLabels) : 'ninguna';
     this.publishAudit({
       accion: 'replace_companies',
       entidad: 'user_company',
@@ -337,26 +300,18 @@ export class UserAssignmentService {
 
   private async getCompanyLabelList(companyIds: number[]): Promise<string[]> {
     if (companyIds.length === 0) return [];
-    const labels = await Promise.all(
-      companyIds.map((companyId) => this.getCompanyLabel(companyId)),
-    );
+    const labels = await Promise.all(companyIds.map((companyId) => this.getCompanyLabel(companyId)));
     return labels;
   }
 
   private async ensureUserHasKpitalApp(idUsuario: number): Promise<void> {
-    const apps = await this.userAppRepo.find({
-      where: { idUsuario, estado: 1 },
-    });
+    const apps = await this.userAppRepo.find({ where: { idUsuario, estado: 1 } });
     if (apps.length > 0) return;
 
-    const kpital = await this.appRepo.findOne({
-      where: { codigo: 'kpital', estado: 1 },
-    });
+    const kpital = await this.appRepo.findOne({ where: { codigo: 'kpital', estado: 1 } });
     if (!kpital) return;
 
-    const existing = await this.userAppRepo.findOne({
-      where: { idUsuario, idApp: kpital.id },
-    });
+    const existing = await this.userAppRepo.findOne({ where: { idUsuario, idApp: kpital.id } });
     if (existing) {
       if (existing.estado !== 1) {
         existing.estado = 1;
@@ -372,10 +327,7 @@ export class UserAssignmentService {
 
   // --- Usuario <-> Rol (scoped por Empresa + App) ---
 
-  async assignRole(
-    dto: AssignUserRoleDto,
-    creatorId: number,
-  ): Promise<UserRole> {
+  async assignRole(dto: AssignUserRoleDto, creatorId: number): Promise<UserRole> {
     await this.assertUserCanBeMutated(dto.idUsuario, creatorId, false);
     const existing = await this.userRoleRepo.findOne({
       where: {
@@ -427,8 +379,7 @@ export class UserAssignmentService {
     idEmpresa?: number,
     idApp?: number,
   ): Promise<UserRole[]> {
-    const qb = this.userRoleRepo
-      .createQueryBuilder('ur')
+    const qb = this.userRoleRepo.createQueryBuilder('ur')
       .where('ur.idUsuario = :idUsuario', { idUsuario })
       .andWhere('ur.estado = 1');
 
@@ -460,31 +411,20 @@ export class UserAssignmentService {
       });
       if (existingRoles.length !== normalizedRoleIds.length) {
         const found = new Set(existingRoles.map((role) => role.id));
-        const missing = normalizedRoleIds.filter(
-          (roleId) => !found.has(roleId),
-        );
-        throw new NotFoundException(
-          `Roles no encontrados o inactivos: ${missing.join(', ')}`,
-        );
+        const missing = normalizedRoleIds.filter((roleId) => !found.has(roleId));
+        throw new NotFoundException(`Roles no encontrados o inactivos: ${missing.join(', ')}`);
       }
     }
 
     const existingAssignments = await this.userRoleRepo.find({
       where: { idUsuario, idEmpresa: companyId, idApp: appId },
     });
-    const byRoleId = new Map(
-      existingAssignments.map((assignment) => [assignment.idRol, assignment]),
-    );
-    const beforeRoleIds = existingAssignments
-      .filter((a) => a.estado === 1)
-      .map((a) => a.idRol);
+    const byRoleId = new Map(existingAssignments.map((assignment) => [assignment.idRol, assignment]));
+    const beforeRoleIds = existingAssignments.filter((a) => a.estado === 1).map((a) => a.idRol);
     const beforeRoleLabels = await this.getRoleLabels(beforeRoleIds);
 
     for (const assignment of existingAssignments) {
-      if (
-        !normalizedRoleIds.includes(assignment.idRol) &&
-        assignment.estado === 1
-      ) {
+      if (!normalizedRoleIds.includes(assignment.idRol) && assignment.estado === 1) {
         assignment.estado = 0;
         assignment.modificadoPor = modifierId;
         await this.userRoleRepo.save(assignment);
@@ -522,12 +462,8 @@ export class UserAssignmentService {
       this.getRoleLabels(result.map((r) => r.idRol)),
     ]);
     const appCodeNorm = appCode.trim().toLowerCase();
-    const antes =
-      beforeRoleLabels.length > 0
-        ? this.formatList(beforeRoleLabels)
-        : 'ninguno';
-    const despues =
-      afterRoleLabels.length > 0 ? this.formatList(afterRoleLabels) : 'ninguno';
+    const antes = beforeRoleLabels.length > 0 ? this.formatList(beforeRoleLabels) : 'ninguno';
+    const despues = afterRoleLabels.length > 0 ? this.formatList(afterRoleLabels) : 'ninguno';
     this.publishAudit({
       accion: 'replace_context_roles',
       entidad: 'user_role',
@@ -535,12 +471,7 @@ export class UserAssignmentService {
       actorUserId: modifierId,
       companyContextId: companyId,
       descripcion: `Roles modificados para ${userLabel} en ${companyLabel} (${appCodeNorm}). Antes: ${antes}. Después: ${despues}.`,
-      payloadBefore: {
-        idUsuario,
-        companyId,
-        appCode: appCodeNorm,
-        roleIds: beforeRoleIds,
-      },
+      payloadBefore: { idUsuario, companyId, appCode: appCodeNorm, roleIds: beforeRoleIds },
       payloadAfter: {
         idUsuario,
         companyId,
@@ -569,9 +500,7 @@ export class UserAssignmentService {
       if (existingRoles.length !== normalizedRoleIds.length) {
         const found = new Set(existingRoles.map((r) => r.id));
         const missing = normalizedRoleIds.filter((rid) => !found.has(rid));
-        throw new NotFoundException(
-          `Roles no encontrados o inactivos: ${missing.join(', ')}`,
-        );
+        throw new NotFoundException(`Roles no encontrados o inactivos: ${missing.join(', ')}`);
       }
     }
 
@@ -612,41 +541,27 @@ export class UserAssignmentService {
       );
     }
 
-    const result = {
-      appCode: appCode.trim().toLowerCase(),
-      roleIds: normalizedRoleIds,
-    };
+    const result = { appCode: appCode.trim().toLowerCase(), roleIds: normalizedRoleIds };
     const [userLabel, afterRoleLabels] = await Promise.all([
       this.getUserLabel(idUsuario),
       this.getRoleLabels(normalizedRoleIds),
     ]);
-    const antes =
-      beforeRoleLabels.length > 0
-        ? this.formatList(beforeRoleLabels)
-        : 'ninguno';
-    const despues =
-      afterRoleLabels.length > 0 ? this.formatList(afterRoleLabels) : 'ninguno';
+    const antes = beforeRoleLabels.length > 0 ? this.formatList(beforeRoleLabels) : 'ninguno';
+    const despues = afterRoleLabels.length > 0 ? this.formatList(afterRoleLabels) : 'ninguno';
     this.publishAudit({
       accion: 'replace_global_roles',
       entidad: 'user_role_global',
       entidadId: idUsuario,
       actorUserId: modifierId,
       descripcion: `Roles globales modificados para ${userLabel} (app ${result.appCode}). Antes: ${antes}. Después: ${despues}.`,
-      payloadBefore: {
-        idUsuario,
-        appCode: result.appCode,
-        roleIds: beforeRoleIds,
-      },
+      payloadBefore: { idUsuario, appCode: result.appCode, roleIds: beforeRoleIds },
       payloadAfter: { idUsuario, ...result },
     });
     await this.bumpUserAuthz(idUsuario);
     return result;
   }
 
-  async getUserGlobalRoles(
-    idUsuario: number,
-    appCode: string,
-  ): Promise<{ appCode: string; roleIds: number[] }> {
+  async getUserGlobalRoles(idUsuario: number, appCode: string): Promise<{ appCode: string; roleIds: number[] }> {
     const appId = await this.resolveAppId(appCode);
     const rows = await this.userRoleGlobalRepo.find({
       where: { idUsuario, idApp: appId, estado: 1 },
@@ -676,9 +591,7 @@ export class UserAssignmentService {
       if (existingRoles.length !== normalizedRoleIds.length) {
         const found = new Set(existingRoles.map((r) => r.id));
         const missing = normalizedRoleIds.filter((rid) => !found.has(rid));
-        throw new NotFoundException(
-          `Roles no encontrados o inactivos: ${missing.join(', ')}`,
-        );
+        throw new NotFoundException(`Roles no encontrados o inactivos: ${missing.join(', ')}`);
       }
     }
 
@@ -712,22 +625,14 @@ export class UserAssignmentService {
       );
     }
 
-    const result = {
-      companyId,
-      appCode: appCode.trim().toLowerCase(),
-      roleIds: normalizedRoleIds,
-    };
+    const result = { companyId, appCode: appCode.trim().toLowerCase(), roleIds: normalizedRoleIds };
     const [userLabel, companyLabel, afterRoleLabels] = await Promise.all([
       this.getUserLabel(idUsuario),
       this.getCompanyLabel(companyId),
       this.getRoleLabels(normalizedRoleIds),
     ]);
-    const antes =
-      beforeRoleLabels.length > 0
-        ? this.formatList(beforeRoleLabels)
-        : 'ninguno';
-    const despues =
-      afterRoleLabels.length > 0 ? this.formatList(afterRoleLabels) : 'ninguno';
+    const antes = beforeRoleLabels.length > 0 ? this.formatList(beforeRoleLabels) : 'ninguno';
+    const despues = afterRoleLabels.length > 0 ? this.formatList(afterRoleLabels) : 'ninguno';
     this.publishAudit({
       accion: 'replace_role_exclusions',
       entidad: 'user_role_exclusion',
@@ -735,12 +640,7 @@ export class UserAssignmentService {
       actorUserId: modifierId,
       companyContextId: companyId,
       descripcion: `Exclusiones de rol modificadas para ${userLabel} en ${companyLabel} (${result.appCode}). Antes: ${antes}. Después: ${despues}.`,
-      payloadBefore: {
-        idUsuario,
-        companyId,
-        appCode: result.appCode,
-        roleIds: beforeRoleIds,
-      },
+      payloadBefore: { idUsuario, companyId, appCode: result.appCode, roleIds: beforeRoleIds },
       payloadAfter: { idUsuario, ...result },
     });
     await this.bumpUserAuthz(idUsuario);
@@ -773,16 +673,10 @@ export class UserAssignmentService {
     globalPermissionDeny: string[];
     contextRoles: { companyId: number; roleIds: number[] }[];
     exclusions: { companyId: number; roleIds: number[] }[];
-    permissionOverrides: {
-      companyId: number;
-      allow: string[];
-      deny: string[];
-    }[];
+    permissionOverrides: { companyId: number; allow: string[]; deny: string[] }[];
   }> {
     const appId = await this.resolveAppId(appCode);
-    const companies = await this.userCompanyRepo.find({
-      where: { idUsuario, estado: 1 },
-    });
+    const companies = await this.userCompanyRepo.find({ where: { idUsuario, estado: 1 } });
     const companyIds = companies.map((c) => c.idEmpresa);
 
     // contextRolesRaw siempre existe (sys_usuario_rol)
@@ -791,33 +685,17 @@ export class UserAssignmentService {
     });
 
     // Tablas NetSuite y global-deny pueden no existir en BD
-    let globalRoles: Awaited<ReturnType<typeof this.userRoleGlobalRepo.find>> =
-      [];
-    let exclusionsRaw: Awaited<
-      ReturnType<typeof this.userRoleExclusionRepo.find>
-    > = [];
-    let overridesRaw: Awaited<
-      ReturnType<typeof this.userPermOverrideRepo.find>
-    > = [];
-    let globalDenyRaw: Awaited<
-      ReturnType<typeof this.userPermGlobalDenyRepo.find>
-    > = [];
+    let globalRoles: Awaited<ReturnType<typeof this.userRoleGlobalRepo.find>> = [];
+    let exclusionsRaw: Awaited<ReturnType<typeof this.userRoleExclusionRepo.find>> = [];
+    let overridesRaw: Awaited<ReturnType<typeof this.userPermOverrideRepo.find>> = [];
+    let globalDenyRaw: Awaited<ReturnType<typeof this.userPermGlobalDenyRepo.find>> = [];
     try {
-      [globalRoles, exclusionsRaw, overridesRaw, globalDenyRaw] =
-        await Promise.all([
-          this.userRoleGlobalRepo.find({
-            where: { idUsuario, idApp: appId, estado: 1 },
-          }),
-          this.userRoleExclusionRepo.find({
-            where: { idUsuario, idApp: appId, estado: 1 },
-          }),
-          this.userPermOverrideRepo.find({
-            where: { idUsuario, idApp: appId, estado: 1 },
-          }),
-          this.userPermGlobalDenyRepo.find({
-            where: { idUsuario, idApp: appId, estado: 1 },
-          }),
-        ]);
+      [globalRoles, exclusionsRaw, overridesRaw, globalDenyRaw] = await Promise.all([
+        this.userRoleGlobalRepo.find({ where: { idUsuario, idApp: appId, estado: 1 } }),
+        this.userRoleExclusionRepo.find({ where: { idUsuario, idApp: appId, estado: 1 } }),
+        this.userPermOverrideRepo.find({ where: { idUsuario, idApp: appId, estado: 1 } }),
+        this.userPermGlobalDenyRepo.find({ where: { idUsuario, idApp: appId, estado: 1 } }),
+      ]);
     } catch {
       // sys_usuario_rol_global, sys_usuario_rol_exclusion, sys_usuario_permiso o sys_usuario_permiso_global no existen
     }
@@ -851,10 +729,7 @@ export class UserAssignmentService {
     >();
     for (const o of overridesRaw) {
       if (!companyIds.includes(o.idEmpresa)) continue;
-      const cur = byCompanyOverrides.get(o.idEmpresa) ?? {
-        allow: [],
-        deny: [],
-      };
+      const cur = byCompanyOverrides.get(o.idEmpresa) ?? { allow: [], deny: [] };
       const code = permByCode.get(o.idPermiso);
       if (code) {
         if (o.efecto === 'ALLOW') cur.allow.push(code);
@@ -884,11 +759,7 @@ export class UserAssignmentService {
       })),
       permissionOverrides: companyIds.map((cid) => {
         const p = byCompanyOverrides.get(cid) ?? { allow: [], deny: [] };
-        return {
-          companyId: cid,
-          allow: [...new Set(p.allow)].sort(),
-          deny: [...new Set(p.deny)].sort(),
-        };
+        return { companyId: cid, allow: [...new Set(p.allow)].sort(), deny: [...new Set(p.deny)].sort() };
       }),
     };
   }
@@ -902,8 +773,7 @@ export class UserAssignmentService {
       const rows = await this.userPermGlobalDenyRepo.find({
         where: { idUsuario, idApp: appId, estado: 1 },
       });
-      if (rows.length === 0)
-        return { appCode: appCode.trim().toLowerCase(), deny: [] };
+      if (rows.length === 0) return { appCode: appCode.trim().toLowerCase(), deny: [] };
       const permIds = rows.map((r) => r.idPermiso);
       const perms = await this.permRepo.find({ where: { id: In(permIds) } });
       const codes = perms.map((p) => p.codigo).sort();
@@ -921,22 +791,14 @@ export class UserAssignmentService {
   ): Promise<{ appCode: string; deny: string[] }> {
     await this.assertUserCanBeMutated(idUsuario, modifierId, true);
     const appId = await this.resolveAppId(appCode);
-    const normalized = [
-      ...new Set(deny.map((c) => c.trim().toLowerCase()).filter(Boolean)),
-    ];
+    const normalized = [...new Set(deny.map((c) => c.trim().toLowerCase()).filter(Boolean))];
     const permissions =
-      normalized.length > 0
-        ? await this.permRepo.find({
-            where: { codigo: In(normalized), estado: 1 },
-          })
-        : [];
+      normalized.length > 0 ? await this.permRepo.find({ where: { codigo: In(normalized), estado: 1 } }) : [];
     const byCode = new Map(permissions.map((p) => [p.codigo, p]));
     if (permissions.length !== normalized.length) {
       const found = new Set(permissions.map((perm) => perm.codigo));
       const missing = normalized.filter((code) => !found.has(code));
-      throw new NotFoundException(
-        `Permisos no encontrados o inactivos: ${missing.join(', ')}`,
-      );
+      throw new NotFoundException(`Permisos no encontrados o inactivos: ${missing.join(', ')}`);
     }
 
     const existing = await this.userPermGlobalDenyRepo.find({
@@ -950,18 +812,12 @@ export class UserAssignmentService {
       allPermIdsForBefore.length > 0
         ? await this.permRepo.find({ where: { id: In(allPermIdsForBefore) } })
         : [];
-    const permByIdForBefore = new Map(
-      allPermsForBefore.map((p) => [p.id, p.codigo]),
-    );
+    const permByIdForBefore = new Map(allPermsForBefore.map((p) => [p.id, p.codigo]));
     const beforeDenyCodes = activeExisting
       .map((e) => permByIdForBefore.get(e.idPermiso))
       .filter(Boolean) as string[];
 
-    const targetPermIds = new Set(
-      normalized
-        .map((c) => byCode.get(c)?.id)
-        .filter((id): id is number => id != null),
-    );
+    const targetPermIds = new Set(normalized.map((c) => byCode.get(c)?.id).filter((id): id is number => id != null));
 
     for (const e of activeExisting) {
       if (!targetPermIds.has(e.idPermiso)) {
@@ -993,12 +849,10 @@ export class UserAssignmentService {
       );
     }
 
-    const result = (await this.getGlobalPermissionDenials(idUsuario, appCode))
-      .deny;
+    const result = (await this.getGlobalPermissionDenials(idUsuario, appCode)).deny;
     const response = { appCode: appCode.trim().toLowerCase(), deny: result };
     const userLabel = await this.getUserLabel(idUsuario);
-    const antes =
-      beforeDenyCodes.length > 0 ? this.formatList(beforeDenyCodes) : 'ninguno';
+    const antes = beforeDenyCodes.length > 0 ? this.formatList(beforeDenyCodes) : 'ninguno';
     const despues = result.length > 0 ? this.formatList(result) : 'ninguno';
     this.publishAudit({
       accion: 'replace_global_permission_denials',
@@ -1006,11 +860,7 @@ export class UserAssignmentService {
       entidadId: idUsuario,
       actorUserId: modifierId,
       descripcion: `Permisos denegados globalmente modificados para ${userLabel} (app ${response.appCode}). Antes: ${antes}. Después: ${despues}.`,
-      payloadBefore: {
-        idUsuario,
-        appCode: response.appCode,
-        deny: beforeDenyCodes,
-      },
+      payloadBefore: { idUsuario, appCode: response.appCode, deny: beforeDenyCodes },
       payloadAfter: { idUsuario, ...response },
     });
     await this.bumpUserAuthz(idUsuario);
@@ -1035,43 +885,26 @@ export class UserAssignmentService {
     const appId = await this.resolveAppId(appCode);
     await this.ensureUserCompanyAccess(idUsuario, companyId);
 
-    const normalizedAllow = [
-      ...new Set(
-        allow.map((code) => code.trim().toLowerCase()).filter(Boolean),
-      ),
-    ];
-    const normalizedDeny = [
-      ...new Set(deny.map((code) => code.trim().toLowerCase()).filter(Boolean)),
-    ];
+    const normalizedAllow = [...new Set(allow.map((code) => code.trim().toLowerCase()).filter(Boolean))];
+    const normalizedDeny = [...new Set(deny.map((code) => code.trim().toLowerCase()).filter(Boolean))];
 
-    const intersection = normalizedAllow.filter((code) =>
-      normalizedDeny.includes(code),
-    );
+    const intersection = normalizedAllow.filter((code) => normalizedDeny.includes(code));
     if (intersection.length > 0) {
-      throw new BadRequestException(
-        `Permisos duplicados en allow y deny: ${intersection.join(', ')}`,
-      );
+      throw new BadRequestException(`Permisos duplicados en allow y deny: ${intersection.join(', ')}`);
     }
 
-    const requestedCodes = [
-      ...new Set([...normalizedAllow, ...normalizedDeny]),
-    ];
-    const permissions =
-      requestedCodes.length > 0
-        ? await this.permRepo.find({ where: { codigo: In(requestedCodes) } })
-        : [];
+    const requestedCodes = [...new Set([...normalizedAllow, ...normalizedDeny])];
+    const permissions = requestedCodes.length > 0
+      ? await this.permRepo.find({ where: { codigo: In(requestedCodes) } })
+      : [];
 
     if (permissions.length !== requestedCodes.length) {
       const found = new Set(permissions.map((perm) => perm.codigo));
       const missing = requestedCodes.filter((code) => !found.has(code));
-      throw new NotFoundException(
-        `Permisos no encontrados: ${missing.join(', ')}`,
-      );
+      throw new NotFoundException(`Permisos no encontrados: ${missing.join(', ')}`);
     }
 
-    const permissionByCode = new Map(
-      permissions.map((perm) => [perm.codigo, perm]),
-    );
+    const permissionByCode = new Map(permissions.map((perm) => [perm.codigo, perm]));
     const desiredByPermId = new Map<number, 'ALLOW' | 'DENY'>();
     for (const code of normalizedAllow) {
       desiredByPermId.set(permissionByCode.get(code)!.id, 'ALLOW');
@@ -1083,34 +916,15 @@ export class UserAssignmentService {
     const existingOverrides = await this.userPermOverrideRepo.find({
       where: { idUsuario, idEmpresa: companyId, idApp: appId },
     });
-    const existingByPermId = new Map(
-      existingOverrides.map((override) => [override.idPermiso, override]),
-    );
+    const existingByPermId = new Map(existingOverrides.map((override) => [override.idPermiso, override]));
 
-    const beforeAllowIds = existingOverrides
-      .filter((o) => o.estado === 1 && o.efecto === 'ALLOW')
-      .map((o) => o.idPermiso);
-    const beforeDenyIds = existingOverrides
-      .filter((o) => o.estado === 1 && o.efecto === 'DENY')
-      .map((o) => o.idPermiso);
-    const allPermIds = [
-      ...new Set([
-        ...beforeAllowIds,
-        ...beforeDenyIds,
-        ...permissionByCode.keys(),
-      ]),
-    ];
-    const allPerms =
-      allPermIds.length > 0
-        ? await this.permRepo.find({ where: { id: In(allPermIds) } })
-        : [];
+    const beforeAllowIds = existingOverrides.filter((o) => o.estado === 1 && o.efecto === 'ALLOW').map((o) => o.idPermiso);
+    const beforeDenyIds = existingOverrides.filter((o) => o.estado === 1 && o.efecto === 'DENY').map((o) => o.idPermiso);
+    const allPermIds = [...new Set([...beforeAllowIds, ...beforeDenyIds, ...permissionByCode.keys()])];
+    const allPerms = allPermIds.length > 0 ? await this.permRepo.find({ where: { id: In(allPermIds) } }) : [];
     const permCodeById = new Map(allPerms.map((p) => [p.id, p.codigo]));
-    const beforeAllow = beforeAllowIds
-      .map((id) => permCodeById.get(id))
-      .filter(Boolean) as string[];
-    const beforeDeny = beforeDenyIds
-      .map((id) => permCodeById.get(id))
-      .filter(Boolean) as string[];
+    const beforeAllow = beforeAllowIds.map((id) => permCodeById.get(id)).filter(Boolean) as string[];
+    const beforeDeny = beforeDenyIds.map((id) => permCodeById.get(id)).filter(Boolean) as string[];
 
     for (const override of existingOverrides) {
       const desiredEffect = desiredByPermId.get(override.idPermiso);
@@ -1123,8 +937,7 @@ export class UserAssignmentService {
         continue;
       }
 
-      const needsUpdate =
-        override.estado !== 1 || override.efecto !== desiredEffect;
+      const needsUpdate = override.estado !== 1 || override.efecto !== desiredEffect;
       if (needsUpdate) {
         override.estado = 1;
         override.efecto = desiredEffect;
@@ -1149,23 +962,15 @@ export class UserAssignmentService {
       );
     }
 
-    const current = await this.getUserPermissionOverrides(
-      idUsuario,
-      companyId,
-      appCode,
-    );
+    const current = await this.getUserPermissionOverrides(idUsuario, companyId, appCode);
     const [userLabel, companyLabel] = await Promise.all([
       this.getUserLabel(idUsuario),
       this.getCompanyLabel(companyId),
     ]);
-    const allowAntes =
-      beforeAllow.length > 0 ? this.formatList(beforeAllow) : 'ninguno';
-    const allowDespues =
-      current.allow.length > 0 ? this.formatList(current.allow) : 'ninguno';
-    const denyAntes =
-      beforeDeny.length > 0 ? this.formatList(beforeDeny) : 'ninguno';
-    const denyDespues =
-      current.deny.length > 0 ? this.formatList(current.deny) : 'ninguno';
+    const allowAntes = beforeAllow.length > 0 ? this.formatList(beforeAllow) : 'ninguno';
+    const allowDespues = current.allow.length > 0 ? this.formatList(current.allow) : 'ninguno';
+    const denyAntes = beforeDeny.length > 0 ? this.formatList(beforeDeny) : 'ninguno';
+    const denyDespues = current.deny.length > 0 ? this.formatList(current.deny) : 'ninguno';
     this.publishAudit({
       accion: 'replace_permission_overrides',
       entidad: 'user_permission_override',
@@ -1173,13 +978,7 @@ export class UserAssignmentService {
       actorUserId: modifierId,
       companyContextId: companyId,
       descripcion: `Excepciones de permisos modificadas para ${userLabel} en ${companyLabel} (${current.appCode}). Allow — Antes: ${allowAntes}. Después: ${allowDespues}. Deny — Antes: ${denyAntes}. Después: ${denyDespues}.`,
-      payloadBefore: {
-        idUsuario,
-        companyId,
-        appCode: current.appCode,
-        allow: beforeAllow,
-        deny: beforeDeny,
-      },
+      payloadBefore: { idUsuario, companyId, appCode: current.appCode, allow: beforeAllow, deny: beforeDeny },
       payloadAfter: current as unknown as Record<string, unknown>,
     });
     await this.bumpUserAuthz(idUsuario);
@@ -1202,21 +1001,18 @@ export class UserAssignmentService {
     const rows = await this.userPermOverrideRepo
       .createQueryBuilder('up')
       .innerJoin(Permission, 'p', 'p.id = up.idPermiso')
-      .select(['up.efecto AS efecto', 'p.codigo AS codigo'])
+      .select([
+        'up.efecto AS efecto',
+        'p.codigo AS codigo',
+      ])
       .where('up.idUsuario = :idUsuario', { idUsuario })
       .andWhere('up.idEmpresa = :companyId', { companyId })
       .andWhere('up.idApp = :appId', { appId })
       .andWhere('up.estado = 1')
       .getRawMany<{ efecto: 'ALLOW' | 'DENY'; codigo: string }>();
 
-    const allow = rows
-      .filter((row) => row.efecto === 'ALLOW')
-      .map((row) => row.codigo)
-      .sort();
-    const deny = rows
-      .filter((row) => row.efecto === 'DENY')
-      .map((row) => row.codigo)
-      .sort();
+    const allow = rows.filter((row) => row.efecto === 'ALLOW').map((row) => row.codigo).sort();
+    const deny = rows.filter((row) => row.efecto === 'DENY').map((row) => row.codigo).sort();
 
     return {
       idUsuario,
@@ -1229,21 +1025,14 @@ export class UserAssignmentService {
 
   private async resolveAppId(appCode: string): Promise<number> {
     const normalized = appCode.trim().toLowerCase();
-    const app = await this.appRepo.findOne({
-      where: { codigo: normalized, estado: 1 },
-    });
+    const app = await this.appRepo.findOne({ where: { codigo: normalized, estado: 1 } });
     if (!app) {
-      throw new NotFoundException(
-        `App no encontrada o inactiva: ${normalized}`,
-      );
+      throw new NotFoundException(`App no encontrada o inactiva: ${normalized}`);
     }
     return app.id;
   }
 
-  private async ensureUserCompanyAccess(
-    idUsuario: number,
-    companyId: number,
-  ): Promise<void> {
+  private async ensureUserCompanyAccess(idUsuario: number, companyId: number): Promise<void> {
     const assignment = await this.userCompanyRepo.findOne({
       where: { idUsuario, idEmpresa: companyId, estado: 1 },
     });
@@ -1260,23 +1049,18 @@ export class UserAssignmentService {
     enforceLastAdminProtection: boolean,
   ): Promise<void> {
     if (actorUserId && targetUserId === actorUserId) {
-      throw new ConflictException(
-        'No puede modificar su propio usuario en esta operacion critica',
-      );
+      throw new ConflictException('No puede modificar su propio usuario en esta operacion critica');
     }
 
     if (await this.isProtectedMasterUser(targetUserId)) {
-      throw new ConflictException(
-        'El usuario MASTER esta protegido y no puede ser modificado',
-      );
+      throw new ConflictException('El usuario MASTER esta protegido y no puede ser modificado');
     }
 
     if (!enforceLastAdminProtection) return;
     const isConfigAdmin = await this.isConfigAdminUser(targetUserId);
     if (!isConfigAdmin) return;
 
-    const remainingAdmins =
-      await this.countOtherActiveConfigAdmins(targetUserId);
+    const remainingAdmins = await this.countOtherActiveConfigAdmins(targetUserId);
     if (remainingAdmins === 0) {
       throw new ConflictException(
         'No se puede aplicar este cambio porque el usuario es el ultimo administrador de configuracion',
@@ -1353,9 +1137,7 @@ export class UserAssignmentService {
     return rows.length > 0;
   }
 
-  private async countOtherActiveConfigAdmins(
-    excludedUserId: number,
-  ): Promise<number> {
+  private async countOtherActiveConfigAdmins(excludedUserId: number): Promise<number> {
     const rows = await this.userRepo.query(
       `
       SELECT COUNT(DISTINCT u.id_usuario) AS total

@@ -9,12 +9,7 @@ export class CreateAuthzVersion1708534300000 implements MigrationInterface {
           name: 'sys_authz_version',
           columns: [
             { name: 'id_usuario', type: 'int', isPrimary: true },
-            {
-              name: 'version_authz',
-              type: 'bigint',
-              unsigned: true,
-              default: 1,
-            },
+            { name: 'version_authz', type: 'bigint', unsigned: true, default: 1 },
             {
               name: 'fecha_actualizacion_authz',
               type: 'timestamp',
@@ -40,3 +35,4 @@ export class CreateAuthzVersion1708534300000 implements MigrationInterface {
     }
   }
 }
+

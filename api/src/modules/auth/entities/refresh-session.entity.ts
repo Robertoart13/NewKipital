@@ -13,12 +13,7 @@ export class RefreshSession {
   id: number;
 
   @Index('IDX_refresh_session_jti', { unique: true })
-  @Column({
-    name: 'jti_refresh_session',
-    type: 'varchar',
-    length: 64,
-    unique: true,
-  })
+  @Column({ name: 'jti_refresh_session', type: 'varchar', length: 64, unique: true })
   jti: string;
 
   @Index('IDX_refresh_session_user')
@@ -31,42 +26,19 @@ export class RefreshSession {
   @Column({ name: 'expires_at_refresh_session', type: 'datetime' })
   expiresAt: Date;
 
-  @Column({
-    name: 'rotated_at_refresh_session',
-    type: 'datetime',
-    nullable: true,
-  })
+  @Column({ name: 'rotated_at_refresh_session', type: 'datetime', nullable: true })
   rotatedAt: Date | null;
 
-  @Column({
-    name: 'revoked_at_refresh_session',
-    type: 'datetime',
-    nullable: true,
-  })
+  @Column({ name: 'revoked_at_refresh_session', type: 'datetime', nullable: true })
   revokedAt: Date | null;
 
-  @Column({
-    name: 'replaced_by_jti_refresh_session',
-    type: 'varchar',
-    length: 64,
-    nullable: true,
-  })
+  @Column({ name: 'replaced_by_jti_refresh_session', type: 'varchar', length: 64, nullable: true })
   replacedByJti: string | null;
 
-  @Column({
-    name: 'created_ip_refresh_session',
-    type: 'varchar',
-    length: 45,
-    nullable: true,
-  })
+  @Column({ name: 'created_ip_refresh_session', type: 'varchar', length: 45, nullable: true })
   createdIp: string | null;
 
-  @Column({
-    name: 'created_ua_refresh_session',
-    type: 'varchar',
-    length: 255,
-    nullable: true,
-  })
+  @Column({ name: 'created_ua_refresh_session', type: 'varchar', length: 255, nullable: true })
   createdUa: string | null;
 
   @CreateDateColumn({ name: 'fecha_creacion_refresh_session' })
@@ -75,3 +47,4 @@ export class RefreshSession {
   @UpdateDateColumn({ name: 'fecha_modificacion_refresh_session' })
   updatedAt: Date;
 }
+

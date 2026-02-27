@@ -14,9 +14,7 @@ describe('CompaniesController (e2e)', () => {
     }).compile();
 
     app = moduleFixture.createNestApplication();
-    app.useGlobalPipes(
-      new ValidationPipe({ whitelist: true, transform: true }),
-    );
+    app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
     await app.init();
 
     // Login to get access token
@@ -65,7 +63,9 @@ describe('CompaniesController (e2e)', () => {
     });
 
     it('should reject request without authentication', () => {
-      return request(app.getHttpServer()).get('/companies').expect(401);
+      return request(app.getHttpServer())
+        .get('/companies')
+        .expect(401);
     });
   });
 
@@ -135,9 +135,7 @@ describe('CompaniesController (e2e)', () => {
         })
         .expect(409)
         .then((response) => {
-          expect(response.body.message).toContain(
-            'Ya existe una empresa con esa cedula',
-          );
+          expect(response.body.message).toContain('Ya existe una empresa con esa cedula');
         });
     });
 
@@ -169,9 +167,7 @@ describe('CompaniesController (e2e)', () => {
         })
         .expect(409)
         .then((response) => {
-          expect(response.body.message).toContain(
-            'Ya existe una empresa con ese prefijo',
-          );
+          expect(response.body.message).toContain('Ya existe una empresa con ese prefijo');
         });
     });
 
@@ -250,10 +246,7 @@ describe('CompaniesController (e2e)', () => {
         })
         .expect(200)
         .then((response) => {
-          expect(response.body).toHaveProperty(
-            'nombre',
-            'Updated Company Name',
-          );
+          expect(response.body).toHaveProperty('nombre', 'Updated Company Name');
           expect(response.body).toHaveProperty('telefono', '88889999');
         });
     });

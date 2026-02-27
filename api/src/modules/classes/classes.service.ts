@@ -52,10 +52,7 @@ export class ClassesService {
     return saved;
   }
 
-  async findAll(
-    includeInactive = false,
-    inactiveOnly = false,
-  ): Promise<OrgClass[]> {
+  async findAll(includeInactive = false, inactiveOnly = false): Promise<OrgClass[]> {
     const qb = this.repo.createQueryBuilder('c').orderBy('c.nombre', 'ASC');
 
     if (inactiveOnly) {
@@ -75,11 +72,7 @@ export class ClassesService {
     return found;
   }
 
-  async update(
-    id: number,
-    dto: UpdateClassDto,
-    actorUserId: number,
-  ): Promise<OrgClass> {
+  async update(id: number, dto: UpdateClassDto, actorUserId: number): Promise<OrgClass> {
     const found = await this.findOne(id);
     const payloadBefore = this.buildAuditPayload(found);
 
@@ -187,10 +180,8 @@ export class ClassesService {
     );
 
     return (rows ?? []).map((row: Record<string, unknown>) => {
-      const payloadBefore =
-        (row.payloadBefore as Record<string, unknown> | null) ?? null;
-      const payloadAfter =
-        (row.payloadAfter as Record<string, unknown> | null) ?? null;
+      const payloadBefore = (row.payloadBefore as Record<string, unknown> | null) ?? null;
+      const payloadAfter = (row.payloadAfter as Record<string, unknown> | null) ?? null;
       return {
         id: String(row.id ?? ''),
         modulo: String(row.modulo ?? ''),
@@ -201,9 +192,7 @@ export class ClassesService {
         actorNombre: row.actorNombre ? String(row.actorNombre) : null,
         actorEmail: row.actorEmail ? String(row.actorEmail) : null,
         descripcion: String(row.descripcion ?? ''),
-        fechaCreacion: row.fechaCreacion
-          ? new Date(String(row.fechaCreacion)).toISOString()
-          : null,
+        fechaCreacion: row.fechaCreacion ? new Date(String(row.fechaCreacion)).toISOString() : null,
         metadata: (row.metadata as Record<string, unknown> | null) ?? null,
         cambios: this.buildAuditChanges(payloadBefore, payloadAfter),
       };
@@ -237,8 +226,7 @@ export class ClassesService {
       ...Object.keys(payloadBefore),
       ...Object.keys(payloadAfter),
     ]);
-    const changes: Array<{ campo: string; antes: string; despues: string }> =
-      [];
+    const changes: Array<{ campo: string; antes: string; despues: string }> = [];
     for (const key of keys) {
       if (!(key in this.auditFieldLabels)) continue;
       const beforeValue = this.normalizeAuditValue(payloadBefore[key]);
@@ -253,20 +241,14 @@ export class ClassesService {
     return changes;
   }
 
-  private async assertCodigoUnique(
-    codigo: string,
-    exceptId?: number,
-  ): Promise<void> {
+  private async assertCodigoUnique(codigo: string, exceptId?: number): Promise<void> {
     const existing = await this.repo.findOne({ where: { codigo } });
     if (existing && existing.id !== exceptId) {
       throw new ConflictException('Ya existe una clase con ese codigo');
     }
   }
 
-  private async assertIdExternoUnique(
-    idExterno: string,
-    exceptId?: number,
-  ): Promise<void> {
+  private async assertIdExternoUnique(idExterno: string, exceptId?: number): Promise<void> {
     const existing = await this.repo.findOne({ where: { idExterno } });
     if (existing && existing.id !== exceptId) {
       throw new ConflictException('Ya existe una clase con ese ID externo');

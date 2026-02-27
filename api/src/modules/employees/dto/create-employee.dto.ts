@@ -1,26 +1,11 @@
 import {
-  IsString,
-  IsEmail,
-  IsOptional,
-  IsInt,
-  IsBoolean,
-  IsDateString,
-  IsNumber,
-  IsEnum,
-  MaxLength,
-  MinLength,
-  Min,
-  Matches,
-  IsArray,
-  ValidateNested,
+  IsString, IsEmail, IsOptional, IsInt, IsBoolean,
+  IsDateString, IsNumber, IsEnum, MaxLength, MinLength, Min, Matches, IsArray, ValidateNested,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import {
-  GeneroEmpleado,
-  EstadoCivilEmpleado,
-  TipoContratoEmpleado,
-  JornadaEmpleado,
-  MonedaSalarioEmpleado,
+  GeneroEmpleado, EstadoCivilEmpleado, TipoContratoEmpleado,
+  JornadaEmpleado, MonedaSalarioEmpleado,
 } from '../entities/employee.entity';
 import { CreateEmployeeAguinaldoProvisionDto } from './create-employee-aguinaldo-provision.dto';
 
@@ -138,9 +123,7 @@ export class CreateEmployeeDto {
   cuentaBanco?: string;
 
   @IsOptional()
-  @Matches(/^(0|[1-9]\d*)$/, {
-    message: 'vacacionesAcumuladas debe ser un entero de 0 o mayor',
-  })
+  @Matches(/^(0|[1-9]\d*)$/, { message: 'vacacionesAcumuladas debe ser un entero de 0 o mayor' })
   vacacionesAcumuladas?: string;
 
   @IsOptional()

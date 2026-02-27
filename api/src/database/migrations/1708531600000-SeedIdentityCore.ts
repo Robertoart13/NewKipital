@@ -23,9 +23,7 @@ export class SeedIdentityCore1708531600000 implements MigrationInterface {
       INSERT INTO sys_empresas (nombre_empresa, nombre_legal_empresa, cedula_empresa, prefijo_empresa, estado_empresa, fecha_creacion_empresa, fecha_modificacion_empresa, creado_por_empresa, modificado_por_empresa)
       VALUES ('KPITAL Corp', 'KPITAL Corporation S.A.', '3-101-999999', 'KC', 1, '${now}', '${now}', 1, 1)
     `);
-    const [{ id_empresa: companyId }] = await queryRunner.query(
-      `SELECT id_empresa FROM sys_empresas WHERE cedula_empresa = '3-101-999999'`,
-    );
+    const [{ id_empresa: companyId }] = await queryRunner.query(`SELECT id_empresa FROM sys_empresas WHERE cedula_empresa = '3-101-999999'`);
 
     // 2. Apps
     await queryRunner.query(`
@@ -34,12 +32,8 @@ export class SeedIdentityCore1708531600000 implements MigrationInterface {
         ('kpital', 'KPITAL 360', 'ERP de Planillas y RRHH', 'https://kpital360.com', 1, '${now}', '${now}'),
         ('timewise', 'TimeWise', 'Control de asistencia y tiempo', 'https://timewise.kpital360.com', 1, '${now}', '${now}')
     `);
-    const [{ id_app: kpitalAppId }] = await queryRunner.query(
-      `SELECT id_app FROM sys_apps WHERE codigo_app = 'kpital'`,
-    );
-    const [{ id_app: timewiseAppId }] = await queryRunner.query(
-      `SELECT id_app FROM sys_apps WHERE codigo_app = 'timewise'`,
-    );
+    const [{ id_app: kpitalAppId }] = await queryRunner.query(`SELECT id_app FROM sys_apps WHERE codigo_app = 'kpital'`);
+    const [{ id_app: timewiseAppId }] = await queryRunner.query(`SELECT id_app FROM sys_apps WHERE codigo_app = 'timewise'`);
 
     // 3. Permisos atómicos
     const permissions = [
@@ -54,11 +48,7 @@ export class SeedIdentityCore1708531600000 implements MigrationInterface {
       ['employee:edit', 'Editar empleado', 'employee'],
       ['personal-action:view', 'Ver acciones de personal', 'personal-action'],
       ['personal-action:create', 'Crear acción de personal', 'personal-action'],
-      [
-        'personal-action:approve',
-        'Aprobar acción de personal',
-        'personal-action',
-      ],
+      ['personal-action:approve', 'Aprobar acción de personal', 'personal-action'],
       ['company:manage', 'Gestionar empresas', 'company'],
       ['report:view', 'Ver reportes', 'report'],
       ['config:users', 'Gestionar usuarios', 'config'],
@@ -78,14 +68,10 @@ export class SeedIdentityCore1708531600000 implements MigrationInterface {
       INSERT INTO sys_roles (codigo_rol, nombre_rol, descripcion_rol, estado_rol, fecha_creacion_rol, fecha_modificacion_rol, creado_por_rol, modificado_por_rol)
       VALUES ('ADMIN_SISTEMA', 'Administrador del Sistema', 'Acceso total a todas las funciones del sistema', 1, '${now}', '${now}', 1, 1)
     `);
-    const [{ id_rol: adminRoleId }] = await queryRunner.query(
-      `SELECT id_rol FROM sys_roles WHERE codigo_rol = 'ADMIN_SISTEMA'`,
-    );
+    const [{ id_rol: adminRoleId }] = await queryRunner.query(`SELECT id_rol FROM sys_roles WHERE codigo_rol = 'ADMIN_SISTEMA'`);
 
     // 5. Asignar todos los permisos al rol ADMIN_SISTEMA
-    const allPerms = await queryRunner.query(
-      `SELECT id_permiso FROM sys_permisos WHERE estado_permiso = 1`,
-    );
+    const allPerms = await queryRunner.query(`SELECT id_permiso FROM sys_permisos WHERE estado_permiso = 1`);
     for (const { id_permiso } of allPerms) {
       await queryRunner.query(`
         INSERT INTO sys_rol_permiso (id_rol, id_permiso, fecha_asignacion_rol_permiso)
@@ -107,9 +93,7 @@ export class SeedIdentityCore1708531600000 implements MigrationInterface {
         '${now}', '${now}'
       )
     `);
-    const [{ id_usuario: adminUserId }] = await queryRunner.query(
-      `SELECT id_usuario FROM sys_usuarios WHERE email_usuario = 'roberto@kpital360.com'`,
-    );
+    const [{ id_usuario: adminUserId }] = await queryRunner.query(`SELECT id_usuario FROM sys_usuarios WHERE email_usuario = 'roberto@kpital360.com'`);
 
     // 7. Asignar apps al admin
     await queryRunner.query(`
@@ -156,17 +140,11 @@ export class SeedIdentityCore1708531600000 implements MigrationInterface {
     await queryRunner.query(`DELETE FROM sys_usuario_rol`);
     await queryRunner.query(`DELETE FROM sys_usuario_empresa`);
     await queryRunner.query(`DELETE FROM sys_usuario_app`);
-    await queryRunner.query(
-      `DELETE FROM sys_usuarios WHERE email_usuario = 'roberto@kpital360.com'`,
-    );
+    await queryRunner.query(`DELETE FROM sys_usuarios WHERE email_usuario = 'roberto@kpital360.com'`);
     await queryRunner.query(`DELETE FROM sys_rol_permiso`);
-    await queryRunner.query(
-      `DELETE FROM sys_roles WHERE codigo_rol = 'ADMIN_SISTEMA'`,
-    );
+    await queryRunner.query(`DELETE FROM sys_roles WHERE codigo_rol = 'ADMIN_SISTEMA'`);
     await queryRunner.query(`DELETE FROM sys_permisos`);
     await queryRunner.query(`DELETE FROM sys_apps`);
-    await queryRunner.query(
-      `DELETE FROM sys_empresas WHERE cedula_empresa = '3-101-999999'`,
-    );
+    await queryRunner.query(`DELETE FROM sys_empresas WHERE cedula_empresa = '3-101-999999'`);
   }
 }

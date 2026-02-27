@@ -63,8 +63,7 @@ export class ConfigAccessController {
   @Get('permissions')
   listPermissions(
     @Query('modulo') modulo?: string,
-    @Query('includeInactive', new ParseBoolPipe({ optional: true }))
-    includeInactive?: boolean,
+    @Query('includeInactive', new ParseBoolPipe({ optional: true })) includeInactive?: boolean,
   ) {
     return this.permissionsService.findAll(modulo, includeInactive ?? true);
   }
@@ -109,8 +108,7 @@ export class ConfigAccessController {
   @RequirePermissions('config:roles')
   @Get('roles')
   listRoles(
-    @Query('includeInactive', new ParseBoolPipe({ optional: true }))
-    includeInactive?: boolean,
+    @Query('includeInactive', new ParseBoolPipe({ optional: true })) includeInactive?: boolean,
     @Query('appCode') appCode?: string,
   ) {
     return this.rolesService.findAll(includeInactive ?? false, appCode);
@@ -119,8 +117,7 @@ export class ConfigAccessController {
   @RequirePermissions('config:users')
   @Get('users/roles-catalog')
   listRolesForUserConfig(
-    @Query('includeInactive', new ParseBoolPipe({ optional: true }))
-    includeInactive?: boolean,
+    @Query('includeInactive', new ParseBoolPipe({ optional: true })) includeInactive?: boolean,
     @Query('appCode') appCode?: string,
   ) {
     return this.rolesService.findAll(includeInactive ?? false, appCode);
@@ -137,10 +134,7 @@ export class ConfigAccessController {
 
   @RequirePermissions('config:roles')
   @Post('roles')
-  createRole(
-    @Body() dto: CreateRoleDto,
-    @CurrentUser() user: { userId: number },
-  ) {
+  createRole(@Body() dto: CreateRoleDto, @CurrentUser() user: { userId: number }) {
     return this.rolesService.create(dto, user.userId);
   }
 
@@ -163,32 +157,20 @@ export class ConfigAccessController {
   ) {
     const role = await this.rolesService.findOne(id);
     const previousPermissions = await this.rolesService.getPermissions(id);
-    const perms = await this.rolesService.replacePermissionsByCodes(
-      id,
-      dto.permissions,
-      user.userId,
-    );
+    const perms = await this.rolesService.replacePermissionsByCodes(id, dto.permissions, user.userId);
 
     const { added, removed } = this.diffStringSets(
       previousPermissions.map((permission) => permission.codigo),
       perms.map((permission) => permission.codigo),
     );
-    const permissionNameByCode = await this.getPermissionNameByCodeMap([
-      ...added,
-      ...removed,
-    ]);
+    const permissionNameByCode = await this.getPermissionNameByCodeMap([...added, ...removed]);
 
     const details: string[] = [];
     if (added.length > 0) {
-      details.push(
-        `Se agregaron ${this.formatEntityList(added, permissionNameByCode)}.`,
-      );
+      details.push(`Se agregaron ${this.formatEntityList(added, permissionNameByCode)}.`);
     }
     if (removed.length > 0) {
-      const nombresRetirados = this.formatEntityList(
-        removed,
-        permissionNameByCode,
-      );
+      const nombresRetirados = this.formatEntityList(removed, permissionNameByCode);
       details.push(
         `Se retiraron ${nombresRetirados}. Ya no podrás realizar esas acciones con este rol.`,
       );
@@ -229,38 +211,25 @@ export class ConfigAccessController {
     if (idUsuario === user.userId) {
       throw new ForbiddenException('No puede modificar sus propias empresas');
     }
-    const previousAssignments =
-      await this.userAssignmentService.getUserCompanies(idUsuario);
-    const previousCompanyIds = previousAssignments.map(
-      (assignment) => assignment.idEmpresa,
-    );
+    const previousAssignments = await this.userAssignmentService.getUserCompanies(idUsuario);
+    const previousCompanyIds = previousAssignments.map((assignment) => assignment.idEmpresa);
 
     const result = await this.userAssignmentService.replaceUserCompanies(
       idUsuario,
       dto.companyIds,
       user.userId,
     );
-    const { added, removed } = this.diffNumericSets(
-      previousCompanyIds,
-      result.companyIds,
-    );
+    const { added, removed } = this.diffNumericSets(previousCompanyIds, result.companyIds);
 
     if (added.length > 0 || removed.length > 0) {
-      const companyNameById = await this.getCompanyNameByIdMap([
-        ...added,
-        ...removed,
-      ]);
+      const companyNameById = await this.getCompanyNameByIdMap([...added, ...removed]);
       const details: string[] = [];
 
       if (removed.length > 0) {
-        details.push(
-          `Se te quito acceso a ${this.formatIdListWithNames(removed, companyNameById)}.`,
-        );
+        details.push(`Se te quito acceso a ${this.formatIdListWithNames(removed, companyNameById)}.`);
       }
       if (added.length > 0) {
-        details.push(
-          `Se te asigno acceso a ${this.formatIdListWithNames(added, companyNameById)}.`,
-        );
+        details.push(`Se te asigno acceso a ${this.formatIdListWithNames(added, companyNameById)}.`);
       }
 
       await this.notificationsService.dispatch(
@@ -344,9 +313,7 @@ export class ConfigAccessController {
       actorNombre: row.actorNombre ? String(row.actorNombre) : null,
       actorEmail: row.actorEmail ? String(row.actorEmail) : null,
       descripcion: String(row.descripcion ?? ''),
-      fechaCreacion: row.fechaCreacion
-        ? new Date(String(row.fechaCreacion)).toISOString()
-        : null,
+      fechaCreacion: row.fechaCreacion ? new Date(String(row.fechaCreacion)).toISOString() : null,
       metadata: (row.metadata as Record<string, unknown> | null) ?? null,
     }));
   }
@@ -358,14 +325,8 @@ export class ConfigAccessController {
     @Body() dto: ReplaceUserContextRolesDto,
     @CurrentUser() user: { userId: number },
   ) {
-    const summaryBefore = await this.userAssignmentService.getUserRolesSummary(
-      idUsuario,
-      dto.appCode,
-    );
-    const previousRoleIds =
-      summaryBefore.contextRoles.find(
-        (context) => context.companyId === dto.companyId,
-      )?.roleIds ?? [];
+    const summaryBefore = await this.userAssignmentService.getUserRolesSummary(idUsuario, dto.appCode);
+    const previousRoleIds = summaryBefore.contextRoles.find((context) => context.companyId === dto.companyId)?.roleIds ?? [];
 
     const result = await this.userAssignmentService.replaceUserRolesByContext(
       idUsuario,
@@ -375,26 +336,17 @@ export class ConfigAccessController {
       user.userId,
     );
 
-    const currentRoleIds = [
-      ...new Set(result.map((assignment) => assignment.idRol)),
-    ];
-    const { added, removed } = this.diffNumericSets(
-      previousRoleIds,
-      currentRoleIds,
-    );
+    const currentRoleIds = [...new Set(result.map((assignment) => assignment.idRol))];
+    const { added, removed } = this.diffNumericSets(previousRoleIds, currentRoleIds);
     const roleNameById = await this.getRoleNameByIdMap([...added, ...removed]);
     const companyNameById = await this.getCompanyNameByIdMap([dto.companyId]);
 
     const details: string[] = [];
     if (added.length > 0) {
-      details.push(
-        `Se te asigno ${this.formatIdListWithNames(added, roleNameById)}.`,
-      );
+      details.push(`Se te asigno ${this.formatIdListWithNames(added, roleNameById)}.`);
     }
     if (removed.length > 0) {
-      details.push(
-        `Se te retiro ${this.formatIdListWithNames(removed, roleNameById)}.`,
-      );
+      details.push(`Se te retiro ${this.formatIdListWithNames(removed, roleNameById)}.`);
     }
     if (details.length === 0) {
       details.push('No hubo cambios en tus roles para este contexto.');
@@ -422,14 +374,9 @@ export class ConfigAccessController {
     @CurrentUser() user: { userId: number },
   ) {
     if (idUsuario === user.userId) {
-      throw new ForbiddenException(
-        'No puede modificar sus propios roles globales',
-      );
+      throw new ForbiddenException('No puede modificar sus propios roles globales');
     }
-    const previous = await this.userAssignmentService.getUserGlobalRoles(
-      idUsuario,
-      dto.appCode,
-    );
+    const previous = await this.userAssignmentService.getUserGlobalRoles(idUsuario, dto.appCode);
     const result = await this.userAssignmentService.replaceUserGlobalRoles(
       idUsuario,
       dto.appCode,
@@ -437,23 +384,16 @@ export class ConfigAccessController {
       user.userId,
     );
 
-    const { added, removed } = this.diffNumericSets(
-      previous.roleIds,
-      result.roleIds,
-    );
+    const { added, removed } = this.diffNumericSets(previous.roleIds, result.roleIds);
     const roleNameById = await this.getRoleNameByIdMap([...added, ...removed]);
     const appLabel = dto.appCode.trim().toUpperCase();
 
     const details: string[] = [];
     if (added.length > 0) {
-      details.push(
-        `Se te asigno ${this.formatIdListWithNames(added, roleNameById)}.`,
-      );
+      details.push(`Se te asigno ${this.formatIdListWithNames(added, roleNameById)}.`);
     }
     if (removed.length > 0) {
-      details.push(
-        `Se te retiro ${this.formatIdListWithNames(removed, roleNameById)}.`,
-      );
+      details.push(`Se te retiro ${this.formatIdListWithNames(removed, roleNameById)}.`);
     }
     if (details.length === 0) {
       details.push('No hubo cambios en tus roles globales.');
@@ -481,40 +421,26 @@ export class ConfigAccessController {
     @CurrentUser() user: { userId: number },
   ) {
     if (idUsuario === user.userId) {
-      throw new ForbiddenException(
-        'No puede modificar sus propias denegaciones globales',
-      );
+      throw new ForbiddenException('No puede modificar sus propias denegaciones globales');
     }
-    const previous =
-      await this.userAssignmentService.getGlobalPermissionDenials(
-        idUsuario,
-        dto.appCode,
-      );
-    const result =
-      await this.userAssignmentService.replaceGlobalPermissionDenials(
-        idUsuario,
-        dto.appCode,
-        dto.deny ?? [],
-        user.userId,
-      );
+    const previous = await this.userAssignmentService.getGlobalPermissionDenials(idUsuario, dto.appCode);
+    const result = await this.userAssignmentService.replaceGlobalPermissionDenials(
+      idUsuario,
+      dto.appCode,
+      dto.deny ?? [],
+      user.userId,
+    );
 
     const { added, removed } = this.diffStringSets(previous.deny, result.deny);
-    const permissionNameByCode = await this.getPermissionNameByCodeMap([
-      ...added,
-      ...removed,
-    ]);
+    const permissionNameByCode = await this.getPermissionNameByCodeMap([...added, ...removed]);
     const appLabel = dto.appCode.trim().toUpperCase();
 
     const details: string[] = [];
     if (added.length > 0) {
-      details.push(
-        `Se denego ${this.formatEntityList(added, permissionNameByCode)}.`,
-      );
+      details.push(`Se denego ${this.formatEntityList(added, permissionNameByCode)}.`);
     }
     if (removed.length > 0) {
-      details.push(
-        `Se volvio a habilitar ${this.formatEntityList(removed, permissionNameByCode)}.`,
-      );
+      details.push(`Se volvio a habilitar ${this.formatEntityList(removed, permissionNameByCode)}.`);
     }
     if (details.length === 0) {
       details.push('No hubo cambios en tus denegaciones globales.');
@@ -540,10 +466,7 @@ export class ConfigAccessController {
     @Param('id', ParseIntPipe) idUsuario: number,
     @Query('appCode') appCode: string,
   ) {
-    return this.userAssignmentService.getGlobalPermissionDenials(
-      idUsuario,
-      appCode,
-    );
+    return this.userAssignmentService.getGlobalPermissionDenials(idUsuario, appCode);
   }
 
   @RequirePermissions('config:users')
@@ -576,23 +499,16 @@ export class ConfigAccessController {
       user.userId,
     );
 
-    const { added, removed } = this.diffNumericSets(
-      previous.roleIds,
-      result.roleIds,
-    );
+    const { added, removed } = this.diffNumericSets(previous.roleIds, result.roleIds);
     const roleNameById = await this.getRoleNameByIdMap([...added, ...removed]);
     const companyNameById = await this.getCompanyNameByIdMap([dto.companyId]);
 
     const details: string[] = [];
     if (added.length > 0) {
-      details.push(
-        `Se excluyo ${this.formatIdListWithNames(added, roleNameById)} para esta empresa.`,
-      );
+      details.push(`Se excluyo ${this.formatIdListWithNames(added, roleNameById)} para esta empresa.`);
     }
     if (removed.length > 0) {
-      details.push(
-        `Se elimino la exclusion de ${this.formatIdListWithNames(removed, roleNameById)}.`,
-      );
+      details.push(`Se elimino la exclusion de ${this.formatIdListWithNames(removed, roleNameById)}.`);
     }
     if (details.length === 0) {
       details.push('No hubo cambios en excepciones de rol.');
@@ -619,11 +535,7 @@ export class ConfigAccessController {
     @Query('companyId', ParseIntPipe) companyId: number,
     @Query('appCode') appCode: string,
   ) {
-    return this.userAssignmentService.getUserRoleExclusions(
-      idUsuario,
-      companyId,
-      appCode,
-    );
+    return this.userAssignmentService.getUserRoleExclusions(idUsuario, companyId, appCode);
   }
 
   @RequirePermissions('config:permissions')
@@ -633,22 +545,20 @@ export class ConfigAccessController {
     @Body() dto: ReplaceUserPermissionOverridesDto,
     @CurrentUser() user: { userId: number },
   ) {
-    const previous =
-      await this.userAssignmentService.getUserPermissionOverrides(
-        idUsuario,
-        dto.companyId,
-        dto.appCode,
-      );
+    const previous = await this.userAssignmentService.getUserPermissionOverrides(
+      idUsuario,
+      dto.companyId,
+      dto.appCode,
+    );
 
-    const result =
-      await this.userAssignmentService.replaceUserPermissionOverridesByContext(
-        idUsuario,
-        dto.companyId,
-        dto.appCode,
-        dto.allow ?? [],
-        dto.deny ?? [],
-        user.userId,
-      );
+    const result = await this.userAssignmentService.replaceUserPermissionOverridesByContext(
+      idUsuario,
+      dto.companyId,
+      dto.appCode,
+      dto.allow ?? [],
+      dto.deny ?? [],
+      user.userId,
+    );
 
     const allowDiff = this.diffStringSets(previous.allow, result.allow);
     const denyDiff = this.diffStringSets(previous.deny, result.deny);
@@ -662,24 +572,16 @@ export class ConfigAccessController {
 
     const details: string[] = [];
     if (allowDiff.added.length > 0) {
-      details.push(
-        `Se concedio ${this.formatEntityList(allowDiff.added, permissionNameByCode)}.`,
-      );
+      details.push(`Se concedio ${this.formatEntityList(allowDiff.added, permissionNameByCode)}.`);
     }
     if (allowDiff.removed.length > 0) {
-      details.push(
-        `Se retiro la excepcion ALLOW de ${this.formatEntityList(allowDiff.removed, permissionNameByCode)}.`,
-      );
+      details.push(`Se retiro la excepcion ALLOW de ${this.formatEntityList(allowDiff.removed, permissionNameByCode)}.`);
     }
     if (denyDiff.added.length > 0) {
-      details.push(
-        `Se denego ${this.formatEntityList(denyDiff.added, permissionNameByCode)}.`,
-      );
+      details.push(`Se denego ${this.formatEntityList(denyDiff.added, permissionNameByCode)}.`);
     }
     if (denyDiff.removed.length > 0) {
-      details.push(
-        `Se elimino la denegacion de ${this.formatEntityList(denyDiff.removed, permissionNameByCode)}.`,
-      );
+      details.push(`Se elimino la denegacion de ${this.formatEntityList(denyDiff.removed, permissionNameByCode)}.`);
     }
     if (details.length === 0) {
       details.push('No hubo cambios en permisos personalizados.');
@@ -706,110 +608,59 @@ export class ConfigAccessController {
     @Query('companyId', ParseIntPipe) companyId: number,
     @Query('appCode') appCode: string,
   ) {
-    return this.userAssignmentService.getUserPermissionOverrides(
-      idUsuario,
-      companyId,
-      appCode,
-    );
+    return this.userAssignmentService.getUserPermissionOverrides(idUsuario, companyId, appCode);
   }
 
-  private diffNumericSets(
-    previous: number[],
-    next: number[],
-  ): { added: number[]; removed: number[] } {
+  private diffNumericSets(previous: number[], next: number[]): { added: number[]; removed: number[] } {
     const previousSet = new Set(previous);
     const nextSet = new Set(next);
 
-    const added = [...nextSet]
-      .filter((value) => !previousSet.has(value))
-      .sort((a, b) => a - b);
-    const removed = [...previousSet]
-      .filter((value) => !nextSet.has(value))
-      .sort((a, b) => a - b);
+    const added = [...nextSet].filter((value) => !previousSet.has(value)).sort((a, b) => a - b);
+    const removed = [...previousSet].filter((value) => !nextSet.has(value)).sort((a, b) => a - b);
 
     return { added, removed };
   }
 
-  private diffStringSets(
-    previous: string[],
-    next: string[],
-  ): { added: string[]; removed: string[] } {
-    const previousSet = new Set(
-      previous.map((value) => value.trim().toLowerCase()).filter(Boolean),
-    );
-    const nextSet = new Set(
-      next.map((value) => value.trim().toLowerCase()).filter(Boolean),
-    );
+  private diffStringSets(previous: string[], next: string[]): { added: string[]; removed: string[] } {
+    const previousSet = new Set(previous.map((value) => value.trim().toLowerCase()).filter(Boolean));
+    const nextSet = new Set(next.map((value) => value.trim().toLowerCase()).filter(Boolean));
 
-    const added = [...nextSet]
-      .filter((value) => !previousSet.has(value))
-      .sort();
-    const removed = [...previousSet]
-      .filter((value) => !nextSet.has(value))
-      .sort();
+    const added = [...nextSet].filter((value) => !previousSet.has(value)).sort();
+    const removed = [...previousSet].filter((value) => !nextSet.has(value)).sort();
 
     return { added, removed };
   }
 
-  private async getCompanyNameByIdMap(
-    companyIds: number[],
-  ): Promise<Map<number, string>> {
-    const uniqueIds = [...new Set(companyIds)].filter(
-      (id) => Number.isInteger(id) && id > 0,
-    );
+  private async getCompanyNameByIdMap(companyIds: number[]): Promise<Map<number, string>> {
+    const uniqueIds = [...new Set(companyIds)].filter((id) => Number.isInteger(id) && id > 0);
     if (uniqueIds.length === 0) return new Map();
 
-    const companies = await this.companyRepo.find({
-      where: { id: In(uniqueIds) },
-    });
+    const companies = await this.companyRepo.find({ where: { id: In(uniqueIds) } });
     return new Map(companies.map((company) => [company.id, company.nombre]));
   }
 
-  private async getRoleNameByIdMap(
-    roleIds: number[],
-  ): Promise<Map<number, string>> {
-    const uniqueIds = [...new Set(roleIds)].filter(
-      (id) => Number.isInteger(id) && id > 0,
-    );
+  private async getRoleNameByIdMap(roleIds: number[]): Promise<Map<number, string>> {
+    const uniqueIds = [...new Set(roleIds)].filter((id) => Number.isInteger(id) && id > 0);
     if (uniqueIds.length === 0) return new Map();
 
     const roles = await this.roleRepo.find({ where: { id: In(uniqueIds) } });
     return new Map(roles.map((role) => [role.id, role.nombre]));
   }
 
-  private async getPermissionNameByCodeMap(
-    codes: string[],
-  ): Promise<Map<string, string>> {
-    const normalizedCodes = [
-      ...new Set(
-        codes.map((code) => code.trim().toLowerCase()).filter(Boolean),
-      ),
-    ];
+  private async getPermissionNameByCodeMap(codes: string[]): Promise<Map<string, string>> {
+    const normalizedCodes = [...new Set(codes.map((code) => code.trim().toLowerCase()).filter(Boolean))];
     if (normalizedCodes.length === 0) return new Map();
 
-    const permissions = await this.permissionRepo.find({
-      where: { codigo: In(normalizedCodes) },
-    });
-    return new Map(
-      permissions.map((permission) => [
-        permission.codigo.toLowerCase(),
-        permission.nombre,
-      ]),
-    );
+    const permissions = await this.permissionRepo.find({ where: { codigo: In(normalizedCodes) } });
+    return new Map(permissions.map((permission) => [permission.codigo.toLowerCase(), permission.nombre]));
   }
 
-  private formatIdListWithNames(
-    ids: number[],
-    namesById: Map<number, string>,
-  ): string {
+  private formatIdListWithNames(ids: number[], namesById: Map<number, string>): string {
     const labels = ids.map((id) => namesById.get(id) ?? `ID ${id}`);
     return this.formatQuotedList(labels);
   }
 
-  private formatEntityList(
-    codes: string[],
-    namesByCode: Map<string, string>,
-  ): string {
+  private formatEntityList(codes: string[], namesByCode: Map<string, string>): string {
     const labels = codes.map((code) => {
       const name = namesByCode.get(code.toLowerCase());
       return name ? `${name} (${code})` : code;
@@ -818,9 +669,7 @@ export class ConfigAccessController {
   }
 
   private formatQuotedList(values: string[]): string {
-    const unique = [
-      ...new Set(values.map((value) => value.trim()).filter(Boolean)),
-    ];
+    const unique = [...new Set(values.map((value) => value.trim()).filter(Boolean))];
     if (unique.length === 0) return 'sin elementos';
 
     const quoted = unique.map((value) => `"${value}"`);

@@ -73,9 +73,7 @@ describe('DomainEventsService', () => {
   });
 
   it('record should swallow repository duplicate errors and log warning', async () => {
-    const warnSpy = jest
-      .spyOn((service as any).logger, 'warn')
-      .mockImplementation();
+    const warnSpy = jest.spyOn((service as any).logger, 'warn').mockImplementation();
     repository.save.mockRejectedValue(new Error('duplicate key'));
 
     await expect(

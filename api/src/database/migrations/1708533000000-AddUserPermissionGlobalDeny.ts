@@ -1,10 +1,4 @@
-import {
-  MigrationInterface,
-  QueryRunner,
-  Table,
-  TableForeignKey,
-  TableIndex,
-} from 'typeorm';
+import { MigrationInterface, QueryRunner, Table, TableForeignKey, TableIndex } from 'typeorm';
 
 /**
  * Tabla sys_usuario_permiso_global: denegación de permisos a nivel global.
@@ -30,33 +24,16 @@ export class AddUserPermissionGlobalDeny1708533000000 implements MigrationInterf
           { name: 'id_usuario', type: 'int', isNullable: false },
           { name: 'id_app', type: 'int', isNullable: false },
           { name: 'id_permiso', type: 'int', isNullable: false },
-          {
-            name: 'estado_usuario_permiso_global',
-            type: 'tinyint',
-            width: 1,
-            default: 1,
-          },
-          {
-            name: 'fecha_creacion_usuario_permiso_global',
-            type: 'timestamp',
-            default: 'CURRENT_TIMESTAMP',
-          },
+          { name: 'estado_usuario_permiso_global', type: 'tinyint', width: 1, default: 1 },
+          { name: 'fecha_creacion_usuario_permiso_global', type: 'timestamp', default: 'CURRENT_TIMESTAMP' },
           {
             name: 'fecha_modificacion_usuario_permiso_global',
             type: 'timestamp',
             default: 'CURRENT_TIMESTAMP',
             onUpdate: 'CURRENT_TIMESTAMP',
           },
-          {
-            name: 'creado_por_usuario_permiso_global',
-            type: 'int',
-            isNullable: false,
-          },
-          {
-            name: 'modificado_por_usuario_permiso_global',
-            type: 'int',
-            isNullable: false,
-          },
+          { name: 'creado_por_usuario_permiso_global', type: 'int', isNullable: false },
+          { name: 'modificado_por_usuario_permiso_global', type: 'int', isNullable: false },
         ],
         uniques: [
           {
@@ -69,10 +46,7 @@ export class AddUserPermissionGlobalDeny1708533000000 implements MigrationInterf
 
     await queryRunner.createIndex(
       'sys_usuario_permiso_global',
-      new TableIndex({
-        name: 'IDX_usuario_permiso_global_usuario',
-        columnNames: ['id_usuario'],
-      }),
+      new TableIndex({ name: 'IDX_usuario_permiso_global_usuario', columnNames: ['id_usuario'] }),
     );
 
     await queryRunner.createForeignKey(

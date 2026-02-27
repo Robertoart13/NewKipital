@@ -46,3 +46,4 @@ export class AddClassAuditPermission1708534400000 implements MigrationInterface 
     `);
   }
 }
+

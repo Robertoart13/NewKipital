@@ -14,9 +14,7 @@ describe('AuthController (e2e)', () => {
     }).compile();
 
     app = moduleFixture.createNestApplication();
-    app.useGlobalPipes(
-      new ValidationPipe({ whitelist: true, transform: true }),
-    );
+    app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
     await app.init();
   });
 
@@ -38,10 +36,7 @@ describe('AuthController (e2e)', () => {
           expect(response.body).toHaveProperty('refreshToken');
           expect(response.body).toHaveProperty('session');
           expect(response.body.session).toHaveProperty('user');
-          expect(response.body.session.user).toHaveProperty(
-            'email',
-            'ana.garcia@roccacr.com',
-          );
+          expect(response.body.session.user).toHaveProperty('email', 'ana.garcia@roccacr.com');
 
           accessToken = response.body.accessToken;
           refreshToken = response.body.refreshToken;
@@ -57,10 +52,7 @@ describe('AuthController (e2e)', () => {
         })
         .expect(401)
         .then((response) => {
-          expect(response.body).toHaveProperty(
-            'message',
-            'Credenciales invalidas',
-          );
+          expect(response.body).toHaveProperty('message', 'Credenciales invalidas');
         });
     });
 
@@ -73,10 +65,7 @@ describe('AuthController (e2e)', () => {
         })
         .expect(401)
         .then((response) => {
-          expect(response.body).toHaveProperty(
-            'message',
-            'Credenciales invalidas',
-          );
+          expect(response.body).toHaveProperty('message', 'Credenciales invalidas');
         });
     });
 
@@ -125,7 +114,9 @@ describe('AuthController (e2e)', () => {
     });
 
     it('should reject request without token', () => {
-      return request(app.getHttpServer()).get('/auth/me').expect(401);
+      return request(app.getHttpServer())
+        .get('/auth/me')
+        .expect(401);
     });
 
     it('should reject request with invalid token', () => {
@@ -327,10 +318,12 @@ describe('AuthController (e2e)', () => {
       // Make multiple failed login attempts
       for (let i = 0; i < 6; i++) {
         attempts.push(
-          request(app.getHttpServer()).post('/auth/login').send({
-            email: 'ana.garcia@roccacr.com',
-            password: 'WrongPassword',
-          }),
+          request(app.getHttpServer())
+            .post('/auth/login')
+            .send({
+              email: 'ana.garcia@roccacr.com',
+              password: 'WrongPassword',
+            }),
         );
       }
 
@@ -381,9 +374,8 @@ describe('AuthController (e2e)', () => {
 
       // Should clear or expire cookies
       if (cookies) {
-        const hasExpiredCookie = cookies.some(
-          (cookie: string) =>
-            cookie.includes('Max-Age=0') || cookie.includes('expires='),
+        const hasExpiredCookie = cookies.some((cookie: string) =>
+          cookie.includes('Max-Age=0') || cookie.includes('expires='),
         );
         expect(hasExpiredCookie).toBe(true);
       }

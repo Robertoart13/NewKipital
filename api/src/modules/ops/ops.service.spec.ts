@@ -20,18 +20,9 @@ describe('OpsService', () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         OpsService,
-        {
-          provide: getRepositoryToken(Employee),
-          useValue: { query: jest.fn() },
-        },
-        {
-          provide: getRepositoryToken(EmployeeIdentityQueue),
-          useValue: { query: jest.fn() },
-        },
-        {
-          provide: getRepositoryToken(EmployeeEncryptQueue),
-          useValue: { query: jest.fn() },
-        },
+        { provide: getRepositoryToken(Employee), useValue: { query: jest.fn() } },
+        { provide: getRepositoryToken(EmployeeIdentityQueue), useValue: { query: jest.fn() } },
+        { provide: getRepositoryToken(EmployeeEncryptQueue), useValue: { query: jest.fn() } },
         {
           provide: EmployeeDataAutomationWorkerService,
           useValue: { runRescanNow: jest.fn(), releaseStuckNow: jest.fn() },
@@ -53,24 +44,19 @@ describe('OpsService', () => {
 
   it('getSummary should aggregate queue and throughput metrics', async () => {
     identityQueueRepo.query.mockImplementation(async (sql: string) => {
-      if (sql.includes('GROUP BY estado_queue'))
-        return [{ estado_queue: 'PENDING', cnt: 2 }];
-      if (sql.includes('MIN(ts) AS oldest_pending'))
-        return [{ oldest_pending: '2026-02-24T10:00:00.000Z' }];
+      if (sql.includes('GROUP BY estado_queue')) return [{ estado_queue: 'PENDING', cnt: 2 }];
+      if (sql.includes('MIN(ts) AS oldest_pending')) return [{ oldest_pending: '2026-02-24T10:00:00.000Z' }];
       if (sql.includes('INTERVAL 5 MINUTE')) return [{ cnt: 3 }];
-      if (sql.includes('DONE') && sql.includes('INTERVAL 15 MINUTE'))
-        return [{ cnt: 6 }];
+      if (sql.includes('DONE') && sql.includes('INTERVAL 15 MINUTE')) return [{ cnt: 6 }];
       if (sql.includes("LIKE 'ERROR%'")) return [{ cnt: 1 }];
       if (sql.includes("estado_queue = 'PROCESSING'")) return [{ cnt: 1 }];
       if (sql.includes('TIMESTAMPDIFF')) return [{ age: 22 }];
       return [{ cnt: 0 }];
     });
     encryptQueueRepo.query.mockImplementation(async (sql: string) => {
-      if (sql.includes('GROUP BY estado_queue'))
-        return [{ estado_queue: 'DONE', cnt: 9 }];
+      if (sql.includes('GROUP BY estado_queue')) return [{ estado_queue: 'DONE', cnt: 9 }];
       if (sql.includes('INTERVAL 5 MINUTE')) return [{ cnt: 2 }];
-      if (sql.includes('DONE') && sql.includes('INTERVAL 15 MINUTE'))
-        return [{ cnt: 4 }];
+      if (sql.includes('DONE') && sql.includes('INTERVAL 15 MINUTE')) return [{ cnt: 4 }];
       if (sql.includes("LIKE 'ERROR%'")) return [{ cnt: 2 }];
       if (sql.includes("estado_queue = 'PROCESSING'")) return [{ cnt: 3 }];
       return [{ cnt: 0 }];
@@ -171,11 +157,7 @@ describe('OpsService', () => {
   });
 
   it('runVacationProvisionNow should delegate to vacation service', async () => {
-    vacationService.runDailyProvision.mockResolvedValue({
-      processedEmployees: 1,
-    });
-    await expect(service.runVacationProvisionNow()).resolves.toEqual({
-      processedEmployees: 1,
-    });
+    vacationService.runDailyProvision.mockResolvedValue({ processedEmployees: 1 });
+    await expect(service.runVacationProvisionNow()).resolves.toEqual({ processedEmployees: 1 });
   });
 });

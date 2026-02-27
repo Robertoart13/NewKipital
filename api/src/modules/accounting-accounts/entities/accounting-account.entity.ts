@@ -9,12 +9,8 @@ import {
 
 @Entity('erp_cuentas_contables')
 @Index('UQ_cuenta_empresa_codigo', ['idEmpresa', 'codigo'], { unique: true })
-@Index('UQ_cuenta_empresa_netsuite', ['idEmpresa', 'idExternoNetsuite'], {
-  unique: true,
-})
-@Index('UQ_cuenta_empresa_codigo_externo', ['idEmpresa', 'codigoExterno'], {
-  unique: true,
-})
+@Index('UQ_cuenta_empresa_netsuite', ['idEmpresa', 'idExternoNetsuite'], { unique: true })
+@Index('UQ_cuenta_empresa_codigo_externo', ['idEmpresa', 'codigoExterno'], { unique: true })
 export class AccountingAccount {
   @PrimaryGeneratedColumn({ name: 'id_cuenta_contable' })
   id: number;
@@ -32,20 +28,10 @@ export class AccountingAccount {
   @Column({ name: 'codigo_cuenta_contable', type: 'varchar', length: 50 })
   codigo: string;
 
-  @Column({
-    name: 'id_externo_netsuite',
-    type: 'varchar',
-    length: 50,
-    nullable: true,
-  })
+  @Column({ name: 'id_externo_netsuite', type: 'varchar', length: 50, nullable: true })
   idExternoNetsuite: string | null;
 
-  @Column({
-    name: 'codigo_externo_cuenta',
-    type: 'varchar',
-    length: 50,
-    nullable: true,
-  })
+  @Column({ name: 'codigo_externo_cuenta', type: 'varchar', length: 50, nullable: true })
   codigoExterno: string | null;
 
   @Index('IDX_cuenta_tipo')

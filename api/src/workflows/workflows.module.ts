@@ -8,7 +8,9 @@ import { PayrollAppliedWorkflow } from './payroll/payroll-applied.workflow';
 import { EmployeeSensitiveDataService } from '../common/services/employee-sensitive-data.service';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([User])],
+  imports: [
+    TypeOrmModule.forFeature([User]),
+  ],
   providers: [
     EmployeeCreationWorkflow,
     IdentitySyncWorkflow,
@@ -16,6 +18,9 @@ import { EmployeeSensitiveDataService } from '../common/services/employee-sensit
     PayrollAppliedWorkflow,
     EmployeeSensitiveDataService,
   ],
-  exports: [EmployeeCreationWorkflow, IdentitySyncWorkflow],
+  exports: [
+    EmployeeCreationWorkflow,
+    IdentitySyncWorkflow,
+  ],
 })
 export class WorkflowsModule {}

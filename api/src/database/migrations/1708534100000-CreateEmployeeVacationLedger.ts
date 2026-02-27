@@ -22,55 +22,20 @@ export class CreateEmployeeVacationLedger1708534100000 implements MigrationInter
           { name: 'id_empleado', type: 'int', isNullable: false },
           { name: 'id_empresa', type: 'int', isNullable: false },
           { name: 'dias_iniciales_vacaciones', type: 'int', default: 0 },
-          {
-            name: 'inicial_bloqueado_vacaciones',
-            type: 'tinyint',
-            width: 1,
-            default: 1,
-          },
-          {
-            name: 'dia_ancla_vacaciones',
-            type: 'tinyint',
-            width: 2,
-            isNullable: false,
-          },
-          {
-            name: 'fecha_ingreso_ancla_vacaciones',
-            type: 'date',
-            isNullable: false,
-          },
-          {
-            name: 'ultima_fecha_provision_vacaciones',
-            type: 'date',
-            isNullable: true,
-          },
-          {
-            name: 'estado_vacaciones_cuenta',
-            type: 'tinyint',
-            width: 1,
-            default: 1,
-          },
-          {
-            name: 'fecha_creacion_vacaciones_cuenta',
-            type: 'datetime',
-            default: 'CURRENT_TIMESTAMP',
-          },
+          { name: 'inicial_bloqueado_vacaciones', type: 'tinyint', width: 1, default: 1 },
+          { name: 'dia_ancla_vacaciones', type: 'tinyint', width: 2, isNullable: false },
+          { name: 'fecha_ingreso_ancla_vacaciones', type: 'date', isNullable: false },
+          { name: 'ultima_fecha_provision_vacaciones', type: 'date', isNullable: true },
+          { name: 'estado_vacaciones_cuenta', type: 'tinyint', width: 1, default: 1 },
+          { name: 'fecha_creacion_vacaciones_cuenta', type: 'datetime', default: 'CURRENT_TIMESTAMP' },
           {
             name: 'fecha_modificacion_vacaciones_cuenta',
             type: 'datetime',
             default: 'CURRENT_TIMESTAMP',
             onUpdate: 'CURRENT_TIMESTAMP',
           },
-          {
-            name: 'creado_por_vacaciones_cuenta',
-            type: 'int',
-            isNullable: true,
-          },
-          {
-            name: 'modificado_por_vacaciones_cuenta',
-            type: 'int',
-            isNullable: true,
-          },
+          { name: 'creado_por_vacaciones_cuenta', type: 'int', isNullable: true },
+          { name: 'modificado_por_vacaciones_cuenta', type: 'int', isNullable: true },
         ],
       }),
       true,
@@ -86,10 +51,7 @@ export class CreateEmployeeVacationLedger1708534100000 implements MigrationInter
     );
     await queryRunner.createIndex(
       'sys_empleado_vacaciones_cuenta',
-      new TableIndex({
-        name: 'IDX_vacaciones_cuenta_empresa',
-        columnNames: ['id_empresa'],
-      }),
+      new TableIndex({ name: 'IDX_vacaciones_cuenta_empresa', columnNames: ['id_empresa'] }),
     );
 
     await queryRunner.createForeignKey(
@@ -132,55 +94,18 @@ export class CreateEmployeeVacationLedger1708534100000 implements MigrationInter
           {
             name: 'tipo_movimiento_vacaciones',
             type: 'enum',
-            enum: [
-              'INITIAL',
-              'MONTHLY_ACCRUAL',
-              'VACATION_USAGE',
-              'REVERSAL',
-              'ADJUSTMENT',
-            ],
+            enum: ['INITIAL', 'MONTHLY_ACCRUAL', 'VACATION_USAGE', 'REVERSAL', 'ADJUSTMENT'],
             isNullable: false,
           },
           { name: 'dias_delta_vacaciones', type: 'int', isNullable: false },
-          {
-            name: 'saldo_resultante_vacaciones',
-            type: 'int',
-            isNullable: false,
-          },
-          {
-            name: 'fecha_efectiva_vacaciones',
-            type: 'date',
-            isNullable: false,
-          },
-          {
-            name: 'periodo_referencia_vacaciones',
-            type: 'varchar',
-            length: '7',
-            isNullable: true,
-          },
-          {
-            name: 'source_type_vacaciones',
-            type: 'varchar',
-            length: '40',
-            isNullable: true,
-          },
+          { name: 'saldo_resultante_vacaciones', type: 'int', isNullable: false },
+          { name: 'fecha_efectiva_vacaciones', type: 'date', isNullable: false },
+          { name: 'periodo_referencia_vacaciones', type: 'varchar', length: '7', isNullable: true },
+          { name: 'source_type_vacaciones', type: 'varchar', length: '40', isNullable: true },
           { name: 'source_id_vacaciones', type: 'int', isNullable: true },
-          {
-            name: 'descripcion_vacaciones',
-            type: 'varchar',
-            length: '255',
-            isNullable: true,
-          },
-          {
-            name: 'fecha_creacion_vacaciones_ledger',
-            type: 'datetime',
-            default: 'CURRENT_TIMESTAMP',
-          },
-          {
-            name: 'creado_por_vacaciones_ledger',
-            type: 'int',
-            isNullable: true,
-          },
+          { name: 'descripcion_vacaciones', type: 'varchar', length: '255', isNullable: true },
+          { name: 'fecha_creacion_vacaciones_ledger', type: 'datetime', default: 'CURRENT_TIMESTAMP' },
+          { name: 'creado_por_vacaciones_ledger', type: 'int', isNullable: true },
         ],
       }),
       true,
@@ -188,41 +113,25 @@ export class CreateEmployeeVacationLedger1708534100000 implements MigrationInter
 
     await queryRunner.createIndex(
       'sys_empleado_vacaciones_ledger',
-      new TableIndex({
-        name: 'IDX_vacaciones_ledger_empleado',
-        columnNames: ['id_empleado'],
-      }),
+      new TableIndex({ name: 'IDX_vacaciones_ledger_empleado', columnNames: ['id_empleado'] }),
     );
     await queryRunner.createIndex(
       'sys_empleado_vacaciones_ledger',
-      new TableIndex({
-        name: 'IDX_vacaciones_ledger_empresa',
-        columnNames: ['id_empresa'],
-      }),
+      new TableIndex({ name: 'IDX_vacaciones_ledger_empresa', columnNames: ['id_empresa'] }),
     );
     await queryRunner.createIndex(
       'sys_empleado_vacaciones_ledger',
-      new TableIndex({
-        name: 'IDX_vacaciones_ledger_tipo',
-        columnNames: ['tipo_movimiento_vacaciones'],
-      }),
+      new TableIndex({ name: 'IDX_vacaciones_ledger_tipo', columnNames: ['tipo_movimiento_vacaciones'] }),
     );
     await queryRunner.createIndex(
       'sys_empleado_vacaciones_ledger',
-      new TableIndex({
-        name: 'IDX_vacaciones_ledger_fecha',
-        columnNames: ['fecha_efectiva_vacaciones'],
-      }),
+      new TableIndex({ name: 'IDX_vacaciones_ledger_fecha', columnNames: ['fecha_efectiva_vacaciones'] }),
     );
     await queryRunner.createIndex(
       'sys_empleado_vacaciones_ledger',
       new TableIndex({
         name: 'UQ_vacaciones_ledger_provision_periodo',
-        columnNames: [
-          'id_empleado',
-          'tipo_movimiento_vacaciones',
-          'periodo_referencia_vacaciones',
-        ],
+        columnNames: ['id_empleado', 'tipo_movimiento_vacaciones', 'periodo_referencia_vacaciones'],
         isUnique: true,
       }),
     );
@@ -230,11 +139,7 @@ export class CreateEmployeeVacationLedger1708534100000 implements MigrationInter
       'sys_empleado_vacaciones_ledger',
       new TableIndex({
         name: 'UQ_vacaciones_ledger_source',
-        columnNames: [
-          'source_type_vacaciones',
-          'source_id_vacaciones',
-          'tipo_movimiento_vacaciones',
-        ],
+        columnNames: ['source_type_vacaciones', 'source_id_vacaciones', 'tipo_movimiento_vacaciones'],
         isUnique: true,
       }),
     );
@@ -288,16 +193,8 @@ export class CreateEmployeeVacationLedger1708534100000 implements MigrationInter
           { name: 'id_empresa', type: 'int', isNullable: false },
           { name: 'id_vacaciones_ledger', type: 'int', isNullable: false },
           { name: 'id_periodos_pago', type: 'int', isNullable: true },
-          {
-            name: 'fecha_provision_monto_vacaciones',
-            type: 'date',
-            isNullable: false,
-          },
-          {
-            name: 'dias_provisionados_monto_vacaciones',
-            type: 'int',
-            default: 1,
-          },
+          { name: 'fecha_provision_monto_vacaciones', type: 'date', isNullable: false },
+          { name: 'dias_provisionados_monto_vacaciones', type: 'int', default: 1 },
           {
             name: 'monto_provisionado_vacaciones',
             type: 'decimal',
@@ -305,22 +202,9 @@ export class CreateEmployeeVacationLedger1708534100000 implements MigrationInter
             scale: 2,
             default: 0,
           },
-          {
-            name: 'formula_aplicada_vacaciones',
-            type: 'varchar',
-            length: '120',
-            isNullable: true,
-          },
-          {
-            name: 'fecha_creacion_provision_monto_vacaciones',
-            type: 'datetime',
-            default: 'CURRENT_TIMESTAMP',
-          },
-          {
-            name: 'creado_por_provision_monto_vacaciones',
-            type: 'int',
-            isNullable: true,
-          },
+          { name: 'formula_aplicada_vacaciones', type: 'varchar', length: '120', isNullable: true },
+          { name: 'fecha_creacion_provision_monto_vacaciones', type: 'datetime', default: 'CURRENT_TIMESTAMP' },
+          { name: 'creado_por_provision_monto_vacaciones', type: 'int', isNullable: true },
         ],
       }),
       true,
@@ -328,24 +212,15 @@ export class CreateEmployeeVacationLedger1708534100000 implements MigrationInter
 
     await queryRunner.createIndex(
       'sys_empleado_vacaciones_provision_monto',
-      new TableIndex({
-        name: 'IDX_vacaciones_provision_monto_empleado',
-        columnNames: ['id_empleado'],
-      }),
+      new TableIndex({ name: 'IDX_vacaciones_provision_monto_empleado', columnNames: ['id_empleado'] }),
     );
     await queryRunner.createIndex(
       'sys_empleado_vacaciones_provision_monto',
-      new TableIndex({
-        name: 'IDX_vacaciones_provision_monto_empresa',
-        columnNames: ['id_empresa'],
-      }),
+      new TableIndex({ name: 'IDX_vacaciones_provision_monto_empresa', columnNames: ['id_empresa'] }),
     );
     await queryRunner.createIndex(
       'sys_empleado_vacaciones_provision_monto',
-      new TableIndex({
-        name: 'IDX_vacaciones_provision_monto_fecha',
-        columnNames: ['fecha_provision_monto_vacaciones'],
-      }),
+      new TableIndex({ name: 'IDX_vacaciones_provision_monto_fecha', columnNames: ['fecha_provision_monto_vacaciones'] }),
     );
     await queryRunner.createIndex(
       'sys_empleado_vacaciones_provision_monto',
@@ -439,10 +314,7 @@ export class CreateEmployeeVacationLedger1708534100000 implements MigrationInter
   }
 
   public async down(queryRunner: QueryRunner): Promise<void> {
-    await queryRunner.dropTable(
-      'sys_empleado_vacaciones_provision_monto',
-      true,
-    );
+    await queryRunner.dropTable('sys_empleado_vacaciones_provision_monto', true);
     await queryRunner.dropTable('sys_empleado_vacaciones_ledger', true);
     await queryRunner.dropTable('sys_empleado_vacaciones_cuenta', true);
   }

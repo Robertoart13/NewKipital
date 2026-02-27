@@ -11,3 +11,4 @@ import { AuthzRealtimeService } from './authz-realtime.service';
   exports: [AuthzVersionService, PermissionsCacheService, AuthzRealtimeService],
 })
 export class AuthzModule {}
+

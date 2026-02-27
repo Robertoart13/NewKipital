@@ -1,14 +1,6 @@
 import {
-  Controller,
-  Get,
-  Post,
-  Put,
-  Patch,
-  Param,
-  Body,
-  Query,
-  ParseIntPipe,
-  ParseBoolPipe,
+  Controller, Get, Post, Put, Patch, Param, Body, Query,
+  ParseIntPipe, ParseBoolPipe,
 } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { CreateUserDto } from './dto/create-user.dto';
@@ -36,10 +28,8 @@ export class UsersController {
   @RequirePermissions('config:users')
   @Get()
   findAll(
-    @Query('includeInactive', new ParseBoolPipe({ optional: true }))
-    includeInactive?: boolean,
-    @Query('configView', new ParseBoolPipe({ optional: true }))
-    configView?: boolean,
+    @Query('includeInactive', new ParseBoolPipe({ optional: true })) includeInactive?: boolean,
+    @Query('configView', new ParseBoolPipe({ optional: true })) configView?: boolean,
   ) {
     return this.service.findAll(includeInactive ?? false, configView ?? false);
   }
@@ -52,11 +42,7 @@ export class UsersController {
 
   @RequirePermissions('config:users')
   @Put(':id')
-  update(
-    @Param('id', ParseIntPipe) id: number,
-    @Body() dto: UpdateUserDto,
-    @CurrentUser() user: { userId: number },
-  ) {
+  update(@Param('id', ParseIntPipe) id: number, @Body() dto: UpdateUserDto, @CurrentUser() user: { userId: number }) {
     return this.service.update(id, dto, user.userId);
   }
 
@@ -72,10 +58,7 @@ export class UsersController {
 
   @RequirePermissions('config:users')
   @Patch(':id/reactivate')
-  reactivate(
-    @Param('id', ParseIntPipe) id: number,
-    @CurrentUser() user: { userId: number },
-  ) {
+  reactivate(@Param('id', ParseIntPipe) id: number, @CurrentUser() user: { userId: number }) {
     return this.service.reactivate(id, user.userId);
   }
 

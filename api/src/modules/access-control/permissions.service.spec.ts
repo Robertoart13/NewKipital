@@ -1,11 +1,7 @@
 ﻿import { Test, TestingModule } from '@nestjs/testing';
 import { ConfigService } from '@nestjs/config';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import {
-  ConflictException,
-  ForbiddenException,
-  NotFoundException,
-} from '@nestjs/common';
+import { ConflictException, ForbiddenException, NotFoundException } from '@nestjs/common';
 import { Repository } from 'typeorm';
 import { PermissionsService } from './permissions.service';
 import { Permission } from './entities/permission.entity';
@@ -52,16 +48,9 @@ describe('PermissionsService', () => {
 
   it('creates permission in ui mode', async () => {
     repo.findOne.mockResolvedValue(null);
-    repo.save.mockResolvedValue({
-      id: 1,
-      codigo: 'employee:view',
-      modulo: 'employee',
-    } as any);
+    repo.save.mockResolvedValue({ id: 1, codigo: 'employee:view', modulo: 'employee' } as any);
 
-    const result = await service.create(
-      { codigo: 'employee:view', nombre: 'Ver', modulo: 'employee' },
-      10,
-    );
+    const result = await service.create({ codigo: 'employee:view', nombre: 'Ver', modulo: 'employee' }, 10);
 
     expect(result.id).toBe(1);
     expect(repo.create).toHaveBeenCalled();
@@ -71,10 +60,7 @@ describe('PermissionsService', () => {
     configService.get.mockReturnValue('migration');
 
     await expect(
-      service.create(
-        { codigo: 'employee:view', nombre: 'Ver', modulo: 'employee' },
-        10,
-      ),
+      service.create({ codigo: 'employee:view', nombre: 'Ver', modulo: 'employee' }, 10),
     ).rejects.toThrow(ForbiddenException);
   });
 
@@ -82,10 +68,7 @@ describe('PermissionsService', () => {
     repo.findOne.mockResolvedValue({ id: 2, codigo: 'employee:view' } as any);
 
     await expect(
-      service.create(
-        { codigo: 'employee:view', nombre: 'Ver', modulo: 'employee' },
-        10,
-      ),
+      service.create({ codigo: 'employee:view', nombre: 'Ver', modulo: 'employee' }, 10),
     ).rejects.toThrow(ConflictException);
   });
 

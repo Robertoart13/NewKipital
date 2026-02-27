@@ -4,6 +4,4 @@
  */
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const supertest = require('supertest');
-export const request = (
-  typeof supertest === 'function' ? supertest : supertest.default
-) as typeof import('supertest');
+export const request = (typeof supertest === 'function' ? supertest : supertest.default) as typeof import('supertest');

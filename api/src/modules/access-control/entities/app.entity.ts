@@ -24,12 +24,7 @@ export class App {
   @Column({ name: 'nombre_app', type: 'varchar', length: 100 })
   nombre: string;
 
-  @Column({
-    name: 'descripcion_app',
-    type: 'varchar',
-    length: 300,
-    nullable: true,
-  })
+  @Column({ name: 'descripcion_app', type: 'varchar', length: 300, nullable: true })
   descripcion: string | null;
 
   @Column({ name: 'url_app', type: 'varchar', length: 300, nullable: true })

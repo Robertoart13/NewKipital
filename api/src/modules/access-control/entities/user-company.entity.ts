@@ -23,12 +23,7 @@ export class UserCompany {
   @Column({ name: 'id_empresa', type: 'int' })
   idEmpresa: number;
 
-  @Column({
-    name: 'estado_usuario_empresa',
-    type: 'tinyint',
-    width: 1,
-    default: 1,
-  })
+  @Column({ name: 'estado_usuario_empresa', type: 'tinyint', width: 1, default: 1 })
   estado: number;
 
   @CreateDateColumn({ name: 'fecha_asignacion_usuario_empresa' })

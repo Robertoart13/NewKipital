@@ -1,10 +1,4 @@
-import {
-  ArrayMaxSize,
-  ArrayUnique,
-  IsArray,
-  IsString,
-  Matches,
-} from 'class-validator';
+import { ArrayMaxSize, ArrayUnique, IsArray, IsString, Matches } from 'class-validator';
 
 export class ReplaceRolePermissionsDto {
   @IsArray()

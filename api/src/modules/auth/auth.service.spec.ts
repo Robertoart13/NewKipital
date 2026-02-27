@@ -109,59 +109,20 @@ describe('AuthService', () => {
         { provide: UsersService, useValue: mockUsersService },
         { provide: JwtService, useValue: mockJwtService },
         { provide: ConfigService, useValue: mockConfigService },
-        {
-          provide: getRepositoryToken(UserApp),
-          useValue: createMockRepository(),
-        },
+        { provide: getRepositoryToken(UserApp), useValue: createMockRepository() },
         { provide: getRepositoryToken(App), useValue: createMockRepository() },
-        {
-          provide: getRepositoryToken(UserCompany),
-          useValue: createMockRepository(),
-        },
-        {
-          provide: getRepositoryToken(Company),
-          useValue: createMockRepository(),
-        },
-        {
-          provide: getRepositoryToken(UserRole),
-          useValue: createMockRepository(),
-        },
-        {
-          provide: getRepositoryToken(UserRoleGlobal),
-          useValue: createMockRepository(),
-        },
-        {
-          provide: getRepositoryToken(UserRoleExclusion),
-          useValue: createMockRepository(),
-        },
-        {
-          provide: getRepositoryToken(RolePermission),
-          useValue: createMockRepository(),
-        },
-        {
-          provide: getRepositoryToken(Permission),
-          useValue: createMockRepository(),
-        },
-        {
-          provide: getRepositoryToken(UserPermissionOverride),
-          useValue: createMockRepository(),
-        },
-        {
-          provide: getRepositoryToken(UserPermissionGlobalDeny),
-          useValue: createMockRepository(),
-        },
-        {
-          provide: getRepositoryToken(RefreshSession),
-          useValue: createMockRepository(),
-        },
-        {
-          provide: AuthzVersionService,
-          useValue: { getToken: jest.fn().mockResolvedValue('1-1') },
-        },
-        {
-          provide: PermissionsCacheService,
-          useValue: { get: jest.fn(), set: jest.fn(), pruneExpired: jest.fn() },
-        },
+        { provide: getRepositoryToken(UserCompany), useValue: createMockRepository() },
+        { provide: getRepositoryToken(Company), useValue: createMockRepository() },
+        { provide: getRepositoryToken(UserRole), useValue: createMockRepository() },
+        { provide: getRepositoryToken(UserRoleGlobal), useValue: createMockRepository() },
+        { provide: getRepositoryToken(UserRoleExclusion), useValue: createMockRepository() },
+        { provide: getRepositoryToken(RolePermission), useValue: createMockRepository() },
+        { provide: getRepositoryToken(Permission), useValue: createMockRepository() },
+        { provide: getRepositoryToken(UserPermissionOverride), useValue: createMockRepository() },
+        { provide: getRepositoryToken(UserPermissionGlobalDeny), useValue: createMockRepository() },
+        { provide: getRepositoryToken(RefreshSession), useValue: createMockRepository() },
+        { provide: AuthzVersionService, useValue: { getToken: jest.fn().mockResolvedValue('1-1') } },
+        { provide: PermissionsCacheService, useValue: { get: jest.fn(), set: jest.fn(), pruneExpired: jest.fn() } },
       ],
     }).compile();
 
@@ -194,37 +155,27 @@ describe('AuthService', () => {
       refreshSessionRepo.save.mockResolvedValue({} as any);
 
       // Act
-      const result = await service.login(
-        'test@example.com',
-        'password123',
-        '127.0.0.1',
-        'test-agent',
-      );
+      const result = await service.login('test@example.com', 'password123', '127.0.0.1', 'test-agent');
 
       // Assert
       expect(result).toHaveProperty('accessToken');
       expect(result).toHaveProperty('refreshToken');
       expect(result).toHaveProperty('csrfToken');
       expect(result).toHaveProperty('session');
-      expect(usersService.registerSuccessfulLogin).toHaveBeenCalledWith(
-        mockUser.id,
-        '127.0.0.1',
-      );
+      expect(usersService.registerSuccessfulLogin).toHaveBeenCalledWith(mockUser.id, '127.0.0.1');
     });
 
     it('should throw UnauthorizedException when user not found', async () => {
       // Arrange
-      usersService.validateForLogin.mockRejectedValue(
-        new Error('User not found'),
-      );
+      usersService.validateForLogin.mockRejectedValue(new Error('User not found'));
 
       // Act & Assert
-      await expect(
-        service.login('invalid@example.com', 'password'),
-      ).rejects.toThrow(UnauthorizedException);
-      await expect(
-        service.login('invalid@example.com', 'password'),
-      ).rejects.toThrow('Credenciales invalidas');
+      await expect(service.login('invalid@example.com', 'password')).rejects.toThrow(
+        UnauthorizedException,
+      );
+      await expect(service.login('invalid@example.com', 'password')).rejects.toThrow(
+        'Credenciales invalidas',
+      );
     });
 
     it('should throw UnauthorizedException when password is invalid', async () => {
@@ -233,12 +184,10 @@ describe('AuthService', () => {
       mockedBcrypt.compare.mockResolvedValue(false as never);
 
       // Act & Assert
-      await expect(
-        service.login('test@example.com', 'wrongpassword'),
-      ).rejects.toThrow(UnauthorizedException);
-      expect(usersService.registerFailedAttempt).toHaveBeenCalledWith(
-        mockUser.id,
+      await expect(service.login('test@example.com', 'wrongpassword')).rejects.toThrow(
+        UnauthorizedException,
       );
+      expect(usersService.registerFailedAttempt).toHaveBeenCalledWith(mockUser.id);
     });
 
     it('should throw UnauthorizedException when user has no password hash', async () => {
@@ -247,12 +196,12 @@ describe('AuthService', () => {
       usersService.validateForLogin.mockResolvedValue(userWithoutPassword);
 
       // Act & Assert
-      await expect(
-        service.login('test@example.com', 'password'),
-      ).rejects.toThrow(UnauthorizedException);
-      await expect(
-        service.login('test@example.com', 'password'),
-      ).rejects.toThrow('Credenciales invalidas');
+      await expect(service.login('test@example.com', 'password')).rejects.toThrow(
+        UnauthorizedException,
+      );
+      await expect(service.login('test@example.com', 'password')).rejects.toThrow(
+        'Credenciales invalidas',
+      );
     });
   });
 
@@ -358,9 +307,7 @@ describe('AuthService', () => {
       // Arrange
       const mockApp = { id: 1, codigo: 'kpital', estado: 1 };
       const mockUserCompany = { idUsuario: 1, idEmpresa: 1, estado: 1 };
-      const mockUserRoles = [
-        { idUsuario: 1, idRol: 1, idEmpresa: 1, idApp: 1, estado: 1 },
-      ];
+      const mockUserRoles = [{ idUsuario: 1, idRol: 1, idEmpresa: 1, idApp: 1, estado: 1 }];
       const mockRolePerms = [{ idRol: 1, idPermiso: 1 }];
       const mockPermissions = [{ id: 1, codigo: 'employee:view', estado: 1 }];
 
@@ -370,9 +317,7 @@ describe('AuthService', () => {
       userRoleGlobalRepo.find.mockResolvedValue([]);
       rolePermRepo.find.mockResolvedValue(mockRolePerms as any);
       permRepo.find.mockResolvedValue(mockPermissions as any);
-      permRepo.manager.find.mockResolvedValue([
-        { id: 1, codigo: 'EMPLOYEE_VIEWER' },
-      ] as any);
+      permRepo.manager.find.mockResolvedValue([{ id: 1, codigo: 'EMPLOYEE_VIEWER' }] as any);
 
       const mockQueryBuilder = {
         innerJoin: jest.fn().mockReturnThis(),
@@ -381,9 +326,7 @@ describe('AuthService', () => {
         andWhere: jest.fn().mockReturnThis(),
         getRawMany: jest.fn().mockResolvedValue([]),
       };
-      (userAppRepo.createQueryBuilder as jest.Mock).mockReturnValue(
-        mockQueryBuilder,
-      );
+      (userAppRepo.createQueryBuilder as jest.Mock).mockReturnValue(mockQueryBuilder);
 
       // Act
       const result = await service.resolvePermissions(1, 1, 'kpital');
@@ -422,11 +365,7 @@ describe('AuthService', () => {
       configService.get.mockReturnValue('30d');
 
       // Act
-      const result = await service.refreshSession(
-        'refresh-token',
-        '127.0.0.1',
-        'test-agent',
-      );
+      const result = await service.refreshSession('refresh-token', '127.0.0.1', 'test-agent');
 
       // Assert
       expect(result).toHaveProperty('accessToken');
@@ -490,10 +429,7 @@ describe('AuthService', () => {
       // Assert
       expect(result).toHaveProperty('accessToken');
       expect(result).toHaveProperty('session');
-      expect(usersService.registerSuccessfulLogin).toHaveBeenCalledWith(
-        mockUser.id,
-        '127.0.0.1',
-      );
+      expect(usersService.registerSuccessfulLogin).toHaveBeenCalledWith(mockUser.id, '127.0.0.1');
     });
 
     it('should throw ForbiddenException when Microsoft account not found', async () => {
@@ -545,9 +481,7 @@ describe('AuthService', () => {
       });
 
       // Act & Assert
-      await expect(
-        service.revokeRefreshToken('invalid-token'),
-      ).resolves.not.toThrow();
+      await expect(service.revokeRefreshToken('invalid-token')).resolves.not.toThrow();
     });
   });
 });

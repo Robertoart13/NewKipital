@@ -2,10 +2,7 @@
 import { DataSource } from 'typeorm';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import * as bcrypt from 'bcrypt';
-import {
-  Employee,
-  MonedaSalarioEmpleado,
-} from '../../modules/employees/entities/employee.entity';
+import { Employee, MonedaSalarioEmpleado } from '../../modules/employees/entities/employee.entity';
 import {
   EmployeeAguinaldoProvision,
   EstadoProvisionAguinaldoEmpleado,
@@ -61,13 +58,9 @@ export class EmployeeCreationWorkflow {
       const needsAccess = dto.crearAccesoTimewise || dto.crearAccesoKpital;
 
       if (needsAccess) {
-        const existingUser = await manager.findOne(User, {
-          where: { email: normalizedEmail },
-        });
+        const existingUser = await manager.findOne(User, { where: { email: normalizedEmail } });
         if (existingUser) {
-          throw new ConflictException(
-            `Ya existe un usuario con email '${normalizedEmail}'`,
-          );
+          throw new ConflictException(`Ya existe un usuario con email '${normalizedEmail}'`);
         }
 
         let passwordHash: string | null = null;
@@ -92,9 +85,7 @@ export class EmployeeCreationWorkflow {
         savedUser = await manager.save(User, user);
 
         if (dto.crearAccesoTimewise) {
-          const twApp = await manager.findOne(App, {
-            where: { codigo: 'timewise', estado: 1 },
-          });
+          const twApp = await manager.findOne(App, { where: { codigo: 'timewise', estado: 1 } });
           if (twApp) {
             await manager.save(
               UserApp,
@@ -111,9 +102,7 @@ export class EmployeeCreationWorkflow {
         }
 
         if (dto.crearAccesoKpital) {
-          const kpApp = await manager.findOne(App, {
-            where: { codigo: 'kpital', estado: 1 },
-          });
+          const kpApp = await manager.findOne(App, { where: { codigo: 'kpital', estado: 1 } });
           if (kpApp) {
             await manager.save(
               UserApp,
@@ -140,9 +129,7 @@ export class EmployeeCreationWorkflow {
 
         const creator = creatorId ?? savedUser.id;
         if (dto.crearAccesoTimewise && dto.idRolTimewise) {
-          const twApp = await manager.findOne(App, {
-            where: { codigo: 'timewise', estado: 1 },
-          });
+          const twApp = await manager.findOne(App, { where: { codigo: 'timewise', estado: 1 } });
           if (twApp) {
             await manager.save(
               UserRole,
@@ -159,9 +146,7 @@ export class EmployeeCreationWorkflow {
           }
         }
         if (dto.crearAccesoKpital && dto.idRolKpital) {
-          const kpApp = await manager.findOne(App, {
-            where: { codigo: 'kpital', estado: 1 },
-          });
+          const kpApp = await manager.findOne(App, { where: { codigo: 'kpital', estado: 1 } });
           if (kpApp) {
             await manager.save(
               UserRole,
@@ -206,18 +191,12 @@ export class EmployeeCreationWorkflow {
         jornada: dto.jornada ?? null,
         idPeriodoPago: dto.idPeriodoPago ?? null,
         salarioBase:
-          dto.salarioBase == null
-            ? null
-            : this.sensitiveDataService.encrypt(String(dto.salarioBase)),
+          dto.salarioBase == null ? null : this.sensitiveDataService.encrypt(String(dto.salarioBase)),
         monedaSalario: dto.monedaSalario ?? MonedaSalarioEmpleado.CRC,
         numeroCcss: this.sensitiveDataService.encrypt(dto.numeroCcss ?? null),
         cuentaBanco: this.sensitiveDataService.encrypt(dto.cuentaBanco ?? null),
-        vacacionesAcumuladas: this.sensitiveDataService.encrypt(
-          dto.vacacionesAcumuladas ?? null,
-        ),
-        cesantiaAcumulada: this.sensitiveDataService.encrypt(
-          dto.cesantiaAcumulada ?? null,
-        ),
+        vacacionesAcumuladas: this.sensitiveDataService.encrypt(dto.vacacionesAcumuladas ?? null),
+        cesantiaAcumulada: this.sensitiveDataService.encrypt(dto.cesantiaAcumulada ?? null),
         estado: 1,
         creadoPor: creatorId ?? null,
         modificadoPor: creatorId ?? null,
@@ -233,10 +212,9 @@ export class EmployeeCreationWorkflow {
 
       const vacationInitialDaysRaw = dto.vacacionesAcumuladas ?? '0';
       const vacationInitialDays = Number.parseInt(vacationInitialDaysRaw, 10);
-      const validInitialDays =
-        Number.isInteger(vacationInitialDays) && vacationInitialDays >= 0
-          ? vacationInitialDays
-          : 0;
+      const validInitialDays = Number.isInteger(vacationInitialDays) && vacationInitialDays >= 0
+        ? vacationInitialDays
+        : 0;
 
       const fechaIngreso = this.parseDateOnlyForDb(dto.fechaIngreso);
       const anchorDay = fechaIngreso.getDate();
@@ -254,10 +232,7 @@ export class EmployeeCreationWorkflow {
         modificadoPor: creatorId ?? null,
       });
 
-      const savedVacationAccount = await manager.save(
-        EmployeeVacationAccount,
-        vacationAccount,
-      );
+      const savedVacationAccount = await manager.save(EmployeeVacationAccount, vacationAccount);
 
       const initialLedger = manager.create(EmployeeVacationLedger, {
         idEmpleado: savedEmployee.id,
@@ -280,24 +255,15 @@ export class EmployeeCreationWorkflow {
             idEmpleado: savedEmployee.id,
             idEmpresa: item.idEmpresa,
             montoProvisionado:
-              this.sensitiveDataService.encrypt(
-                String(item.montoProvisionado),
-              ) ?? '0',
-            fechaInicioLaboral: this.parseDateOnlyForDb(
-              item.fechaInicioLaboral,
-            ),
-            fechaFinLaboral: item.fechaFinLaboral
-              ? this.parseDateOnlyForDb(item.fechaFinLaboral)
-              : null,
-            registroEmpresa: this.sensitiveDataService.encrypt(
-              item.registroEmpresa?.trim() || null,
-            ),
+              this.sensitiveDataService.encrypt(String(item.montoProvisionado)) ?? '0',
+            fechaInicioLaboral: this.parseDateOnlyForDb(item.fechaInicioLaboral),
+            fechaFinLaboral: item.fechaFinLaboral ? this.parseDateOnlyForDb(item.fechaFinLaboral) : null,
+            registroEmpresa: this.sensitiveDataService.encrypt(item.registroEmpresa?.trim() || null),
             estado: item.estado ?? EstadoProvisionAguinaldoEmpleado.PENDIENTE,
             creadoPor: creatorId ?? null,
             modificadoPor: creatorId ?? null,
             datosEncriptados: 1,
-            versionEncriptacion:
-              EmployeeSensitiveDataService.getEncryptedVersion(),
+            versionEncriptacion: EmployeeSensitiveDataService.getEncryptedVersion(),
             fechaEncriptacion: new Date(),
           }),
         );
@@ -330,9 +296,7 @@ export class EmployeeCreationWorkflow {
       };
     } catch (error) {
       await queryRunner.rollbackTransaction();
-      this.logger.error(
-        `Rollback creación empleado: ${(error as Error).message}`,
-      );
+      this.logger.error(`Rollback creación empleado: ${(error as Error).message}`);
       return { success: false, error: (error as Error).message };
     } finally {
       await queryRunner.release();
@@ -357,10 +321,10 @@ export class EmployeeCreationWorkflow {
     const normalized = new Date(year, month - 1, day, 12, 0, 0, 0);
 
     if (
-      Number.isNaN(normalized.getTime()) ||
-      normalized.getFullYear() !== year ||
-      normalized.getMonth() !== month - 1 ||
-      normalized.getDate() !== day
+      Number.isNaN(normalized.getTime())
+      || normalized.getFullYear() !== year
+      || normalized.getMonth() !== month - 1
+      || normalized.getDate() !== day
     ) {
       throw new Error(`Fecha invalida para persistencia: ${dateValue}`);
     }

@@ -1,9 +1,4 @@
-import {
-  Injectable,
-  Logger,
-  OnModuleDestroy,
-  OnModuleInit,
-} from '@nestjs/common';
+import { Injectable, Logger, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Employee } from '../entities/employee.entity';
@@ -36,12 +31,8 @@ class QueueTerminalError extends Error {
 }
 
 @Injectable()
-export class EmployeeDataAutomationWorkerService
-  implements OnModuleInit, OnModuleDestroy
-{
-  private readonly logger = new Logger(
-    EmployeeDataAutomationWorkerService.name,
-  );
+export class EmployeeDataAutomationWorkerService implements OnModuleInit, OnModuleDestroy {
+  private readonly logger = new Logger(EmployeeDataAutomationWorkerService.name);
   private timer: NodeJS.Timeout | null = null;
   private running = false;
   private readonly workerId = `employee-worker-${process.pid}`;
@@ -79,9 +70,7 @@ export class EmployeeDataAutomationWorkerService
       return;
     }
     const intervalMs = 5000;
-    this.logger.log(
-      `Worker started id=${this.workerId} intervalMs=${intervalMs}`,
-    );
+    this.logger.log(`Worker started id=${this.workerId} intervalMs=${intervalMs}`);
     this.timer = setInterval(() => {
       void this.tick();
     }, intervalMs);
@@ -132,9 +121,7 @@ export class EmployeeDataAutomationWorkerService
         lockedAt: null,
         lockedBy: null,
       })
-      .where('estado_queue = :processing', {
-        processing: EmployeeQueueStatus.PROCESSING,
-      })
+      .where('estado_queue = :processing', { processing: EmployeeQueueStatus.PROCESSING })
       .andWhere('locked_at_queue IS NOT NULL')
       .andWhere('locked_at_queue < DATE_SUB(NOW(), INTERVAL 10 MINUTE)')
       .execute();
@@ -155,7 +142,7 @@ export class EmployeeDataAutomationWorkerService
         ORDER BY e.id_empleado ASC
         LIMIT 200
       `,
-    );
+    ) as Array<{ id: number }>;
 
     for (const row of rows) {
       const dedupeKey = `identity:${row.id}`;
@@ -192,7 +179,7 @@ export class EmployeeDataAutomationWorkerService
         ORDER BY e.id_empleado ASC
         LIMIT 200
       `,
-    );
+    ) as Array<{ id: number }>;
 
     for (const row of rows) {
       const dedupeKey = `encrypt:${row.id}`;
@@ -256,14 +243,9 @@ export class EmployeeDataAutomationWorkerService
     });
 
     try {
-      const employee = await this.employeeRepo.findOne({
-        where: { id: job.idEmpleado },
-      });
+      const employee = await this.employeeRepo.findOne({ where: { id: job.idEmpleado } });
       if (!employee) {
-        throw new QueueTerminalError(
-          'Empleado no existe',
-          EmployeeQueueStatus.ERROR_FATAL,
-        );
+        throw new QueueTerminalError('Empleado no existe', EmployeeQueueStatus.ERROR_FATAL);
       }
       if (employee.estado !== 1) {
         await this.markDone(this.identityQueueRepo, job.id);
@@ -284,9 +266,7 @@ export class EmployeeDataAutomationWorkerService
         );
       }
 
-      const app = await this.appRepo.findOne({
-        where: { codigo: 'timewise', estado: 1 },
-      });
+      const app = await this.appRepo.findOne({ where: { codigo: 'timewise', estado: 1 } });
       if (!app) {
         throw new QueueTerminalError(
           'No existe app timewise activa',
@@ -304,9 +284,7 @@ export class EmployeeDataAutomationWorkerService
         );
       }
 
-      let user = await this.userRepo.findOne({
-        where: { email: email.toLowerCase().trim() },
-      });
+      let user = await this.userRepo.findOne({ where: { email: email.toLowerCase().trim() } });
       if (!user) {
         user = this.userRepo.create({
           email: email.toLowerCase().trim(),
@@ -403,9 +381,7 @@ export class EmployeeDataAutomationWorkerService
       await this.employeeRepo.save(employee);
 
       await this.markDone(this.identityQueueRepo, job.id);
-      this.logger.log(
-        `Identity job DONE queueId=${job.id} employeeId=${job.idEmpleado}`,
-      );
+      this.logger.log(`Identity job DONE queueId=${job.id} employeeId=${job.idEmpleado}`);
     } catch (error) {
       await this.failIdentityJob(job, error);
     }
@@ -421,14 +397,9 @@ export class EmployeeDataAutomationWorkerService
     });
 
     try {
-      const employee = await this.employeeRepo.findOne({
-        where: { id: job.idEmpleado },
-      });
+      const employee = await this.employeeRepo.findOne({ where: { id: job.idEmpleado } });
       if (!employee) {
-        throw new QueueTerminalError(
-          'Empleado no existe',
-          EmployeeQueueStatus.ERROR_FATAL,
-        );
+        throw new QueueTerminalError('Empleado no existe', EmployeeQueueStatus.ERROR_FATAL);
       }
 
       this.encryptEmployeeRecord(employee);
@@ -445,9 +416,7 @@ export class EmployeeDataAutomationWorkerService
       }
 
       await this.markDone(this.encryptQueueRepo, job.id);
-      this.logger.log(
-        `Encrypt job DONE queueId=${job.id} employeeId=${job.idEmpleado}`,
-      );
+      this.logger.log(`Encrypt job DONE queueId=${job.id} employeeId=${job.idEmpleado}`);
     } catch (error) {
       await this.failEncryptJob(job, error);
     }
@@ -455,8 +424,7 @@ export class EmployeeDataAutomationWorkerService
 
   private encryptEmployeeRecord(employee: Employee): void {
     employee.nombre = this.encryptField(employee.nombre) ?? employee.nombre;
-    employee.apellido1 =
-      this.encryptField(employee.apellido1) ?? employee.apellido1;
+    employee.apellido1 = this.encryptField(employee.apellido1) ?? employee.apellido1;
     employee.apellido2 = this.encryptField(employee.apellido2);
     employee.cedula = this.encryptField(employee.cedula) ?? employee.cedula;
     employee.email = this.encryptField(employee.email) ?? employee.email;
@@ -465,9 +433,7 @@ export class EmployeeDataAutomationWorkerService
     employee.salarioBase = this.encryptField(employee.salarioBase);
     employee.numeroCcss = this.encryptField(employee.numeroCcss);
     employee.cuentaBanco = this.encryptField(employee.cuentaBanco);
-    employee.vacacionesAcumuladas = this.encryptField(
-      employee.vacacionesAcumuladas,
-    );
+    employee.vacacionesAcumuladas = this.encryptField(employee.vacacionesAcumuladas);
     employee.cesantiaAcumulada = this.encryptField(employee.cesantiaAcumulada);
     employee.motivoSalida = this.encryptField(employee.motivoSalida);
 
@@ -476,19 +442,15 @@ export class EmployeeDataAutomationWorkerService
     employee.cedulaHash = this.sensitiveDataService.hashCedula(cedulaPlain);
     employee.emailHash = this.sensitiveDataService.hashEmail(emailPlain);
     employee.datosEncriptados = 1;
-    employee.versionEncriptacion =
-      EmployeeSensitiveDataService.getEncryptedVersion();
+    employee.versionEncriptacion = EmployeeSensitiveDataService.getEncryptedVersion();
     employee.fechaEncriptacion = new Date();
   }
 
   private encryptProvisionRecord(provision: EmployeeAguinaldoProvision): void {
-    provision.montoProvisionado =
-      this.encryptField(provision.montoProvisionado) ??
-      provision.montoProvisionado;
+    provision.montoProvisionado = this.encryptField(provision.montoProvisionado) ?? provision.montoProvisionado;
     provision.registroEmpresa = this.encryptField(provision.registroEmpresa);
     provision.datosEncriptados = 1;
-    provision.versionEncriptacion =
-      EmployeeSensitiveDataService.getEncryptedVersion();
+    provision.versionEncriptacion = EmployeeSensitiveDataService.getEncryptedVersion();
     provision.fechaEncriptacion = new Date();
   }
 
@@ -511,17 +473,11 @@ export class EmployeeDataAutomationWorkerService
     });
   }
 
-  private async failIdentityJob(
-    job: EmployeeIdentityQueue,
-    error: unknown,
-  ): Promise<void> {
+  private async failIdentityJob(job: EmployeeIdentityQueue, error: unknown): Promise<void> {
     await this.failJob(this.identityQueueRepo, job, error);
   }
 
-  private async failEncryptJob(
-    job: EmployeeEncryptQueue,
-    error: unknown,
-  ): Promise<void> {
+  private async failEncryptJob(job: EmployeeEncryptQueue, error: unknown): Promise<void> {
     await this.failJob(this.encryptQueueRepo, job, error);
   }
 
@@ -615,14 +571,14 @@ export class EmployeeDataAutomationWorkerService
           WHERE estado_queue = 'DONE'
             AND fecha_modificacion_queue < DATE_SUB(NOW(), INTERVAL 30 DAY)
         `,
-      ),
+      ) as Promise<{ affectedRows?: number }>,
       this.encryptQueueRepo.query(
         `
           DELETE FROM sys_empleado_encrypt_queue
           WHERE estado_queue = 'DONE'
             AND fecha_modificacion_queue < DATE_SUB(NOW(), INTERVAL 30 DAY)
         `,
-      ),
+      ) as Promise<{ affectedRows?: number }>,
     ]);
 
     const [identityError, encryptError] = await Promise.all([
@@ -632,14 +588,14 @@ export class EmployeeDataAutomationWorkerService
           WHERE estado_queue LIKE 'ERROR%'
             AND fecha_modificacion_queue < DATE_SUB(NOW(), INTERVAL 90 DAY)
         `,
-      ),
+      ) as Promise<{ affectedRows?: number }>,
       this.encryptQueueRepo.query(
         `
           DELETE FROM sys_empleado_encrypt_queue
           WHERE estado_queue LIKE 'ERROR%'
             AND fecha_modificacion_queue < DATE_SUB(NOW(), INTERVAL 90 DAY)
         `,
-      ),
+      ) as Promise<{ affectedRows?: number }>,
     ]);
 
     const [identityProcessing, encryptProcessing] = await Promise.all([
@@ -649,14 +605,14 @@ export class EmployeeDataAutomationWorkerService
           WHERE estado_queue = 'PROCESSING'
             AND fecha_modificacion_queue < DATE_SUB(NOW(), INTERVAL 7 DAY)
         `,
-      ),
+      ) as Promise<{ affectedRows?: number }>,
       this.encryptQueueRepo.query(
         `
           DELETE FROM sys_empleado_encrypt_queue
           WHERE estado_queue = 'PROCESSING'
             AND fecha_modificacion_queue < DATE_SUB(NOW(), INTERVAL 7 DAY)
         `,
-      ),
+      ) as Promise<{ affectedRows?: number }>,
     ]);
 
     this.logger.log(
@@ -670,10 +626,7 @@ export class EmployeeDataAutomationWorkerService
     );
   }
 
-  async runRescanNow(): Promise<{
-    identityEnqueued: number;
-    encryptEnqueued: number;
-  }> {
+  async runRescanNow(): Promise<{ identityEnqueued: number; encryptEnqueued: number }> {
     const [identityEnqueued, encryptEnqueued] = await Promise.all([
       this.enqueueIdentityCandidates(),
       this.enqueueEncryptCandidates(),
@@ -681,10 +634,7 @@ export class EmployeeDataAutomationWorkerService
     return { identityEnqueued, encryptEnqueued };
   }
 
-  async releaseStuckNow(): Promise<{
-    identityReleased: number;
-    encryptReleased: number;
-  }> {
+  async releaseStuckNow(): Promise<{ identityReleased: number; encryptReleased: number }> {
     const [identityReleased, encryptReleased] = await Promise.all([
       this.releaseStuckJobs(this.identityQueueRepo),
       this.releaseStuckJobs(this.encryptQueueRepo),

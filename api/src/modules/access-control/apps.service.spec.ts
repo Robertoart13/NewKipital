@@ -30,25 +30,17 @@ describe('AppsService', () => {
 
   it('creates app when codigo is unique', async () => {
     repo.findOne.mockResolvedValue(null);
-    repo.save.mockResolvedValue({
-      id: 1,
-      codigo: 'kpital',
-      nombre: 'KPITAL',
-      estado: 1,
-    } as any);
+    repo.save.mockResolvedValue({ id: 1, codigo: 'kpital', nombre: 'KPITAL', estado: 1 } as any);
 
-    const result = await service.create({
-      codigo: 'kpital',
-      nombre: 'KPITAL',
-    } as any);
+    const result = await service.create({ codigo: 'kpital', nombre: 'KPITAL' } as any);
     expect(result.id).toBe(1);
   });
 
   it('throws conflict on duplicate codigo', async () => {
     repo.findOne.mockResolvedValue({ id: 2, codigo: 'kpital' } as any);
-    await expect(
-      service.create({ codigo: 'kpital', nombre: 'KPITAL' } as any),
-    ).rejects.toThrow(ConflictException);
+    await expect(service.create({ codigo: 'kpital', nombre: 'KPITAL' } as any)).rejects.toThrow(
+      ConflictException,
+    );
   });
 
   it('throws not found on findOne missing', async () => {

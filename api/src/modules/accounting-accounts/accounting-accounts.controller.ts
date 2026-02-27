@@ -41,36 +41,25 @@ export class AccountingAccountsController {
 
   @RequirePermissions('accounting-account:create')
   @Post()
-  create(
-    @Body() dto: CreateAccountingAccountDto,
-    @CurrentUser() user: { userId: number },
-  ) {
+  create(@Body() dto: CreateAccountingAccountDto, @CurrentUser() user: { userId: number }) {
     return this.service.create(dto, user.userId);
   }
 
   @RequirePermissions('accounting-account:view')
   @Get()
   findAll(
-    @Query('includeInactive', new ParseBoolPipe({ optional: true }))
-    includeInactive?: boolean,
-    @Query('inactiveOnly', new ParseBoolPipe({ optional: true }))
-    inactiveOnly?: boolean,
-    @Query('idEmpresa', new ParseIntPipe({ optional: true }))
-    idEmpresa?: number,
+    @Query('includeInactive', new ParseBoolPipe({ optional: true })) includeInactive?: boolean,
+    @Query('inactiveOnly', new ParseBoolPipe({ optional: true })) inactiveOnly?: boolean,
+    @Query('idEmpresa', new ParseIntPipe({ optional: true })) idEmpresa?: number,
     @Query('idEmpresas') idEmpresas?: string,
   ) {
     const parsedIds = idEmpresas
       ? idEmpresas
-          .split(',')
-          .map((value) => Number(value))
-          .filter((value) => Number.isFinite(value))
+        .split(',')
+        .map((value) => Number(value))
+        .filter((value) => Number.isFinite(value))
       : undefined;
-    return this.service.findAll(
-      includeInactive ?? false,
-      inactiveOnly ?? false,
-      idEmpresa,
-      parsedIds,
-    );
+    return this.service.findAll(includeInactive ?? false, inactiveOnly ?? false, idEmpresa, parsedIds);
   }
 
   @RequirePermissions('accounting-account:view')
@@ -91,19 +80,13 @@ export class AccountingAccountsController {
 
   @RequirePermissions('accounting-account:inactivate')
   @Patch(':id/inactivate')
-  inactivate(
-    @Param('id', ParseIntPipe) id: number,
-    @CurrentUser() user: { userId: number },
-  ) {
+  inactivate(@Param('id', ParseIntPipe) id: number, @CurrentUser() user: { userId: number }) {
     return this.service.inactivate(id, user.userId);
   }
 
   @RequirePermissions('accounting-account:reactivate')
   @Patch(':id/reactivate')
-  reactivate(
-    @Param('id', ParseIntPipe) id: number,
-    @CurrentUser() user: { userId: number },
-  ) {
+  reactivate(@Param('id', ParseIntPipe) id: number, @CurrentUser() user: { userId: number }) {
     return this.service.reactivate(id, user.userId);
   }
 

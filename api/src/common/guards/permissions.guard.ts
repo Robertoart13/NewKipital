@@ -28,10 +28,7 @@ function hasPermissionWithEnterpriseAliases(
   if (userPermissions.includes(requiredPermission)) return true;
 
   // Compatibilidad legacy: company:manage cubre permisos granulares de company:*
-  if (
-    requiredPermission.startsWith('company:') &&
-    userPermissions.includes('company:manage')
-  ) {
+  if (requiredPermission.startsWith('company:') && userPermissions.includes('company:manage')) {
     return true;
   }
 
@@ -56,9 +53,10 @@ export class PermissionsGuard implements CanActivate {
     );
 
     if (!required || required.length === 0) return true;
-    const allowWithoutCompany = this.reflector.getAllAndOverride<
-      boolean | undefined
-    >(ALLOW_WITHOUT_COMPANY_KEY, [context.getHandler(), context.getClass()]);
+    const allowWithoutCompany = this.reflector.getAllAndOverride<boolean | undefined>(
+      ALLOW_WITHOUT_COMPANY_KEY,
+      [context.getHandler(), context.getClass()],
+    );
 
     const request = context.switchToHttp().getRequest<RequestWithUser>();
     const userId = request.user?.userId;
@@ -84,13 +82,9 @@ export class PermissionsGuard implements CanActivate {
         roles: resolved.roles,
       };
 
-      const hasAll = required.every((p) =>
-        hasPermissionWithEnterpriseAliases(userPermissions, p),
-      );
+      const hasAll = required.every((p) => hasPermissionWithEnterpriseAliases(userPermissions, p));
       if (!hasAll) {
-        throw new ForbiddenException(
-          `Permisos insuficientes. Requiere: ${required.join(', ')}`,
-        );
+        throw new ForbiddenException(`Permisos insuficientes. Requiere: ${required.join(', ')}`);
       }
 
       return true;
@@ -111,13 +105,9 @@ export class PermissionsGuard implements CanActivate {
       roles: resolved.roles,
     };
 
-    const hasAll = required.every((p) =>
-      hasPermissionWithEnterpriseAliases(userPermissions, p),
-    );
+    const hasAll = required.every((p) => hasPermissionWithEnterpriseAliases(userPermissions, p));
     if (!hasAll) {
-      throw new ForbiddenException(
-        `Permisos insuficientes. Requiere: ${required.join(', ')}`,
-      );
+      throw new ForbiddenException(`Permisos insuficientes. Requiere: ${required.join(', ')}`);
     }
 
     return true;
@@ -144,18 +134,11 @@ export class PermissionsGuard implements CanActivate {
   }
 
   private shouldBypassCache(request: RequestWithUser): boolean {
-    const queryRefresh =
-      request.query?.refreshPermissions ?? request.query?.refreshAuthz;
-    const bodyRefresh =
-      request.body?.refreshPermissions ?? request.body?.refreshAuthz;
-    const headerRefresh =
-      request.headers?.['x-authz-refresh'] ??
-      request.headers?.['x-permissions-refresh'];
+    const queryRefresh = request.query?.refreshPermissions ?? request.query?.refreshAuthz;
+    const bodyRefresh = request.body?.refreshPermissions ?? request.body?.refreshAuthz;
+    const headerRefresh = request.headers?.['x-authz-refresh'] ?? request.headers?.['x-permissions-refresh'];
 
-    const raw = (queryRefresh ?? bodyRefresh ?? headerRefresh ?? '') as
-      | string
-      | number
-      | boolean;
+    const raw = (queryRefresh ?? bodyRefresh ?? headerRefresh ?? '') as string | number | boolean;
     if (raw === true || raw === 1) return true;
     if (typeof raw === 'string') {
       return ['1', 'true', 'yes', 'y'].includes(raw.trim().toLowerCase());

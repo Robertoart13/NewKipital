@@ -23,34 +23,20 @@ export class DomainEventEntity {
   eventName: string;
 
   @Index('UQ_domain_event_idempotency', { unique: true })
-  @Column({
-    name: 'idempotency_key_domain_event',
-    type: 'varchar',
-    length: 140,
-    unique: true,
-  })
+  @Column({ name: 'idempotency_key_domain_event', type: 'varchar', length: 140, unique: true })
   idempotencyKey: string;
 
   @Column({ name: 'payload_domain_event', type: 'json' })
   payload: Record<string, unknown>;
 
   @Index('IDX_domain_event_status')
-  @Column({
-    name: 'status_domain_event',
-    type: 'varchar',
-    length: 20,
-    default: 'pending',
-  })
+  @Column({ name: 'status_domain_event', type: 'varchar', length: 20, default: 'pending' })
   status: string;
 
   @Column({ name: 'occurred_at_domain_event', type: 'datetime' })
   occurredAt: Date;
 
-  @Column({
-    name: 'published_at_domain_event',
-    type: 'datetime',
-    nullable: true,
-  })
+  @Column({ name: 'published_at_domain_event', type: 'datetime', nullable: true })
   publishedAt: Date | null;
 
   @Column({ name: 'created_by_domain_event', type: 'int', nullable: true })
@@ -62,3 +48,4 @@ export class DomainEventEntity {
   @UpdateDateColumn({ name: 'fecha_modificacion_domain_event' })
   updatedAt: Date;
 }
+

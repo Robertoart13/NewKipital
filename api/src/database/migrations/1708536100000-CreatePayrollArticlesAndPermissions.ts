@@ -1,16 +1,8 @@
-import {
-  MigrationInterface,
-  QueryRunner,
-  Table,
-  TableForeignKey,
-  TableIndex,
-} from 'typeorm';
+import { MigrationInterface, QueryRunner, Table, TableForeignKey, TableIndex } from 'typeorm';
 
 export class CreatePayrollArticlesAndPermissions1708536100000 implements MigrationInterface {
   public async up(queryRunner: QueryRunner): Promise<void> {
-    const hasTipoArticulo = await queryRunner.hasTable(
-      'nom_tipo_articulo_nomina',
-    );
+    const hasTipoArticulo = await queryRunner.hasTable('nom_tipo_articulo_nomina');
     if (!hasTipoArticulo) {
       await queryRunner.createTable(
         new Table({
@@ -23,23 +15,10 @@ export class CreatePayrollArticlesAndPermissions1708536100000 implements Migrati
               isGenerated: true,
               generationStrategy: 'increment',
             },
-            {
-              name: 'nombre_tipo_articulo_nomina',
-              type: 'varchar',
-              length: '150',
-              isNullable: false,
-            },
-            {
-              name: 'descripcion_tipo_articulo_nomina',
-              type: 'text',
-              isNullable: true,
-            },
+            { name: 'nombre_tipo_articulo_nomina', type: 'varchar', length: '150', isNullable: false },
+            { name: 'descripcion_tipo_articulo_nomina', type: 'text', isNullable: true },
             { name: 'es_inactivo', type: 'tinyint', width: 1, default: 0 },
-            {
-              name: 'fecha_creacion',
-              type: 'timestamp',
-              default: 'CURRENT_TIMESTAMP',
-            },
+            { name: 'fecha_creacion', type: 'timestamp', default: 'CURRENT_TIMESTAMP' },
             {
               name: 'fecha_modificacion',
               type: 'timestamp',
@@ -52,10 +31,7 @@ export class CreatePayrollArticlesAndPermissions1708536100000 implements Migrati
 
       await queryRunner.createIndex(
         'nom_tipo_articulo_nomina',
-        new TableIndex({
-          name: 'IDX_tipo_articulo_nomina_inactivo',
-          columnNames: ['es_inactivo'],
-        }),
+        new TableIndex({ name: 'IDX_tipo_articulo_nomina_inactivo', columnNames: ['es_inactivo'] }),
       );
     }
 
@@ -73,27 +49,14 @@ export class CreatePayrollArticlesAndPermissions1708536100000 implements Migrati
               generationStrategy: 'increment',
             },
             { name: 'id_empresa', type: 'int', isNullable: false },
-            {
-              name: 'nombre_articulo_nomina',
-              type: 'varchar',
-              length: '200',
-              isNullable: false,
-            },
-            {
-              name: 'descripcion_articulo_nomina',
-              type: 'text',
-              isNullable: true,
-            },
+            { name: 'nombre_articulo_nomina', type: 'varchar', length: '200', isNullable: false },
+            { name: 'descripcion_articulo_nomina', type: 'text', isNullable: true },
             { name: 'id_tipo_accion_personal', type: 'int', isNullable: false },
             { name: 'id_tipo_articulo_nomina', type: 'int', isNullable: false },
             { name: 'id_cuenta_gasto', type: 'int', isNullable: false },
             { name: 'id_cuenta_pasivo', type: 'int', isNullable: true },
             { name: 'es_inactivo', type: 'tinyint', width: 1, default: 0 },
-            {
-              name: 'fecha_creacion',
-              type: 'timestamp',
-              default: 'CURRENT_TIMESTAMP',
-            },
+            { name: 'fecha_creacion', type: 'timestamp', default: 'CURRENT_TIMESTAMP' },
             {
               name: 'fecha_modificacion',
               type: 'timestamp',
@@ -106,31 +69,19 @@ export class CreatePayrollArticlesAndPermissions1708536100000 implements Migrati
 
       await queryRunner.createIndex(
         'nom_articulos_nomina',
-        new TableIndex({
-          name: 'IDX_articulo_nomina_empresa',
-          columnNames: ['id_empresa'],
-        }),
+        new TableIndex({ name: 'IDX_articulo_nomina_empresa', columnNames: ['id_empresa'] }),
       );
       await queryRunner.createIndex(
         'nom_articulos_nomina',
-        new TableIndex({
-          name: 'IDX_articulo_nomina_tipo',
-          columnNames: ['id_tipo_articulo_nomina'],
-        }),
+        new TableIndex({ name: 'IDX_articulo_nomina_tipo', columnNames: ['id_tipo_articulo_nomina'] }),
       );
       await queryRunner.createIndex(
         'nom_articulos_nomina',
-        new TableIndex({
-          name: 'IDX_articulo_nomina_accion',
-          columnNames: ['id_tipo_accion_personal'],
-        }),
+        new TableIndex({ name: 'IDX_articulo_nomina_accion', columnNames: ['id_tipo_accion_personal'] }),
       );
       await queryRunner.createIndex(
         'nom_articulos_nomina',
-        new TableIndex({
-          name: 'IDX_articulo_nomina_inactivo',
-          columnNames: ['es_inactivo'],
-        }),
+        new TableIndex({ name: 'IDX_articulo_nomina_inactivo', columnNames: ['es_inactivo'] }),
       );
 
       await queryRunner.createForeignKey(
@@ -278,9 +229,7 @@ export class CreatePayrollArticlesAndPermissions1708536100000 implements Migrati
       await queryRunner.dropTable('nom_articulos_nomina', true);
     }
 
-    const hasTipoArticulo = await queryRunner.hasTable(
-      'nom_tipo_articulo_nomina',
-    );
+    const hasTipoArticulo = await queryRunner.hasTable('nom_tipo_articulo_nomina');
     if (hasTipoArticulo) {
       await queryRunner.dropTable('nom_tipo_articulo_nomina', true);
     }

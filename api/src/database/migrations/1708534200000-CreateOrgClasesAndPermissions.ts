@@ -15,31 +15,12 @@ export class CreateOrgClasesAndPermissions1708534200000 implements MigrationInte
               isGenerated: true,
               generationStrategy: 'increment',
             },
-            {
-              name: 'nombre_clase',
-              type: 'varchar',
-              length: '255',
-              isNullable: false,
-            },
+            { name: 'nombre_clase', type: 'varchar', length: '255', isNullable: false },
             { name: 'descripcion_clase', type: 'text', isNullable: true },
-            {
-              name: 'codigo_clase',
-              type: 'varchar',
-              length: '50',
-              isNullable: false,
-            },
-            {
-              name: 'id_externos_clase',
-              type: 'varchar',
-              length: '45',
-              isNullable: true,
-            },
+            { name: 'codigo_clase', type: 'varchar', length: '50', isNullable: false },
+            { name: 'id_externos_clase', type: 'varchar', length: '45', isNullable: true },
             { name: 'es_inactivo', type: 'tinyint', width: 1, default: 0 },
-            {
-              name: 'fecha_creacion',
-              type: 'timestamp',
-              default: 'CURRENT_TIMESTAMP',
-            },
+            { name: 'fecha_creacion', type: 'timestamp', default: 'CURRENT_TIMESTAMP' },
             {
               name: 'fecha_modificacion',
               type: 'timestamp',
@@ -52,11 +33,7 @@ export class CreateOrgClasesAndPermissions1708534200000 implements MigrationInte
 
       await queryRunner.createIndex(
         'org_clases',
-        new TableIndex({
-          name: 'UQ_clase_codigo',
-          columnNames: ['codigo_clase'],
-          isUnique: true,
-        }),
+        new TableIndex({ name: 'UQ_clase_codigo', columnNames: ['codigo_clase'], isUnique: true }),
       );
       await queryRunner.createIndex(
         'org_clases',
@@ -68,10 +45,7 @@ export class CreateOrgClasesAndPermissions1708534200000 implements MigrationInte
       );
       await queryRunner.createIndex(
         'org_clases',
-        new TableIndex({
-          name: 'IDX_clase_inactivo',
-          columnNames: ['es_inactivo'],
-        }),
+        new TableIndex({ name: 'IDX_clase_inactivo', columnNames: ['es_inactivo'] }),
       );
     }
 
@@ -146,3 +120,4 @@ export class CreateOrgClasesAndPermissions1708534200000 implements MigrationInte
     }
   }
 }
+

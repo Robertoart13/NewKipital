@@ -26,9 +26,7 @@ describe('AuthRateLimitService', () => {
     try {
       service.consume('ip:block', 5, 60_000);
     } catch (e) {
-      expect((e as HttpException).getStatus()).toBe(
-        HttpStatus.TOO_MANY_REQUESTS,
-      );
+      expect((e as HttpException).getStatus()).toBe(HttpStatus.TOO_MANY_REQUESTS);
     }
   });
 

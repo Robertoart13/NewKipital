@@ -27,12 +27,7 @@ import { basename, extname, join } from 'node:path';
 import { mkdirSync } from 'node:fs';
 import type { Response } from 'express';
 
-const COMPANY_LOGO_TEMP_DIR = join(
-  process.cwd(),
-  'uploads',
-  'logoEmpresa',
-  'temp',
-);
+const COMPANY_LOGO_TEMP_DIR = join(process.cwd(), 'uploads', 'logoEmpresa', 'temp');
 const MAX_LOGO_SIZE_BYTES = 5 * 1024 * 1024;
 const ALLOWED_IMAGE_MIME_TYPES = new Set([
   'image/png',
@@ -54,66 +49,42 @@ export class CompaniesController {
 
   @RequirePermissions('company:create')
   @Post()
-  create(
-    @Body() dto: CreateCompanyDto,
-    @CurrentUser() user: { userId: number },
-  ) {
+  create(@Body() dto: CreateCompanyDto, @CurrentUser() user: { userId: number }) {
     return this.service.create(dto, user.userId);
   }
 
   @RequirePermissions('company:view')
   @Get()
   findAll(
-    @Query('includeInactive', new ParseBoolPipe({ optional: true }))
-    includeInactive: boolean | undefined,
-    @Query('inactiveOnly', new ParseBoolPipe({ optional: true }))
-    inactiveOnly: boolean | undefined,
-    @Query('all', new ParseBoolPipe({ optional: true }))
-    all: boolean | undefined,
+    @Query('includeInactive', new ParseBoolPipe({ optional: true })) includeInactive: boolean | undefined,
+    @Query('inactiveOnly', new ParseBoolPipe({ optional: true })) inactiveOnly: boolean | undefined,
+    @Query('all', new ParseBoolPipe({ optional: true })) all: boolean | undefined,
     @CurrentUser() user: { userId: number },
   ) {
-    return this.service.findAll(
-      includeInactive ?? false,
-      user.userId,
-      inactiveOnly ?? false,
-      all ?? false,
-    );
+    return this.service.findAll(includeInactive ?? false, user.userId, inactiveOnly ?? false, all ?? false);
   }
 
   @RequirePermissions('company:view')
   @Get(':id')
-  findOne(
-    @Param('id', ParseIntPipe) id: number,
-    @CurrentUser() user: { userId: number },
-  ) {
+  findOne(@Param('id', ParseIntPipe) id: number, @CurrentUser() user: { userId: number }) {
     return this.service.findOne(id, user.userId);
   }
 
   @RequirePermissions('company:edit')
   @Put(':id')
-  update(
-    @Param('id', ParseIntPipe) id: number,
-    @Body() dto: UpdateCompanyDto,
-    @CurrentUser() user: { userId: number },
-  ) {
+  update(@Param('id', ParseIntPipe) id: number, @Body() dto: UpdateCompanyDto, @CurrentUser() user: { userId: number }) {
     return this.service.update(id, dto, user.userId);
   }
 
   @RequirePermissions('company:inactivate')
   @Patch(':id/inactivate')
-  inactivate(
-    @Param('id', ParseIntPipe) id: number,
-    @CurrentUser() user: { userId: number },
-  ) {
+  inactivate(@Param('id', ParseIntPipe) id: number, @CurrentUser() user: { userId: number }) {
     return this.service.inactivate(id, user.userId);
   }
 
   @RequirePermissions('company:reactivate')
   @Patch(':id/reactivate')
-  reactivate(
-    @Param('id', ParseIntPipe) id: number,
-    @CurrentUser() user: { userId: number },
-  ) {
+  reactivate(@Param('id', ParseIntPipe) id: number, @CurrentUser() user: { userId: number }) {
     return this.service.reactivate(id, user.userId);
   }
 
@@ -136,18 +107,14 @@ export class CompaniesController {
       limits: { fileSize: MAX_LOGO_SIZE_BYTES },
       fileFilter: (_req, file, callback) => {
         if (!ALLOWED_IMAGE_MIME_TYPES.has(file.mimetype)) {
-          return callback(
-            new BadRequestException('Solo se permiten archivos de imagen'),
-            false,
-          );
+          return callback(new BadRequestException('Solo se permiten archivos de imagen'), false);
         }
         callback(null, true);
       },
     }),
   )
   uploadTempLogo(
-    @UploadedFile()
-    file: {
+    @UploadedFile() file: {
       filename: string;
       path: string;
       size: number;
@@ -167,11 +134,7 @@ export class CompaniesController {
     @Body() body: { tempFileName: string },
     @CurrentUser() user: { userId: number },
   ) {
-    return this.service.commitTempLogo(
-      id,
-      basename(body?.tempFileName ?? ''),
-      user.userId,
-    );
+    return this.service.commitTempLogo(id, basename(body?.tempFileName ?? ''), user.userId);
   }
 
   @RequirePermissions('company:view')
@@ -184,17 +147,14 @@ export class CompaniesController {
     const logo = await this.service.resolveCompanyLogo(id, user.userId);
     res.setHeader('Content-Type', logo.mimeType);
     res.setHeader('Cache-Control', 'public, max-age=300');
-    return new StreamableFile(
-      this.service.createLogoReadStream(logo.absolutePath),
-    );
+    return new StreamableFile(this.service.createLogoReadStream(logo.absolutePath));
   }
 
   @RequirePermissions('config:companies:audit')
   @Get(':id/audit-trail')
   getAuditTrail(
     @Param('id', ParseIntPipe) id: number,
-    @Query('limit', new ParseIntPipe({ optional: true }))
-    limit: number | undefined,
+    @Query('limit', new ParseIntPipe({ optional: true })) limit: number | undefined,
     @CurrentUser() user: { userId: number },
   ) {
     return this.service.getAuditTrail(id, user.userId, limit ?? 100);

@@ -24,10 +24,7 @@ export class DepartmentsService {
     estado: 'Estado',
   };
 
-  async create(
-    dto: CreateDepartmentDto,
-    actorUserId: number,
-  ): Promise<Department> {
+  async create(dto: CreateDepartmentDto, actorUserId: number): Promise<Department> {
     const entity = this.repo.create({
       nombre: dto.nombre.trim(),
       idExterno: dto.idExterno?.trim() || null,
@@ -48,10 +45,7 @@ export class DepartmentsService {
     return saved;
   }
 
-  async findAll(
-    includeInactive = false,
-    inactiveOnly = false,
-  ): Promise<Department[]> {
+  async findAll(includeInactive = false, inactiveOnly = false): Promise<Department[]> {
     const qb = this.repo.createQueryBuilder('d').orderBy('d.nombre', 'ASC');
 
     if (inactiveOnly) {
@@ -71,11 +65,7 @@ export class DepartmentsService {
     return found;
   }
 
-  async update(
-    id: number,
-    dto: UpdateDepartmentDto,
-    actorUserId: number,
-  ): Promise<Department> {
+  async update(id: number, dto: UpdateDepartmentDto, actorUserId: number): Promise<Department> {
     const found = await this.findOne(id);
     const payloadBefore = this.buildAuditPayload(found);
 
@@ -171,10 +161,8 @@ export class DepartmentsService {
     );
 
     return (rows ?? []).map((row: Record<string, unknown>) => {
-      const payloadBefore =
-        (row.payloadBefore as Record<string, unknown> | null) ?? null;
-      const payloadAfter =
-        (row.payloadAfter as Record<string, unknown> | null) ?? null;
+      const payloadBefore = (row.payloadBefore as Record<string, unknown> | null) ?? null;
+      const payloadAfter = (row.payloadAfter as Record<string, unknown> | null) ?? null;
       return {
         id: String(row.id ?? ''),
         modulo: String(row.modulo ?? ''),
@@ -185,9 +173,7 @@ export class DepartmentsService {
         actorNombre: row.actorNombre ? String(row.actorNombre) : null,
         actorEmail: row.actorEmail ? String(row.actorEmail) : null,
         descripcion: String(row.descripcion ?? ''),
-        fechaCreacion: row.fechaCreacion
-          ? new Date(String(row.fechaCreacion)).toISOString()
-          : null,
+        fechaCreacion: row.fechaCreacion ? new Date(String(row.fechaCreacion)).toISOString() : null,
         metadata: (row.metadata as Record<string, unknown> | null) ?? null,
         cambios: this.buildAuditChanges(payloadBefore, payloadAfter),
       };
@@ -219,8 +205,7 @@ export class DepartmentsService {
       ...Object.keys(payloadBefore),
       ...Object.keys(payloadAfter),
     ]);
-    const changes: Array<{ campo: string; antes: string; despues: string }> =
-      [];
+    const changes: Array<{ campo: string; antes: string; despues: string }> = [];
     for (const key of keys) {
       if (!(key in this.auditFieldLabels)) continue;
       const beforeValue = this.normalizeAuditValue(payloadBefore[key]);

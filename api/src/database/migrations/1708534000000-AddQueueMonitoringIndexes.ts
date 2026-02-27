@@ -44,36 +44,12 @@ export class AddQueueMonitoringIndexes1708534000000 implements MigrationInterfac
   }
 
   public async down(queryRunner: QueryRunner): Promise<void> {
-    await this.dropIndexIfExists(
-      queryRunner,
-      'sys_empleado_identity_queue',
-      'IDX_identity_queue_operational',
-    );
-    await this.dropIndexIfExists(
-      queryRunner,
-      'sys_empleado_identity_queue',
-      'IDX_identity_queue_employee',
-    );
-    await this.dropIndexIfExists(
-      queryRunner,
-      'sys_empleado_identity_queue',
-      'IDX_identity_queue_stuck',
-    );
-    await this.dropIndexIfExists(
-      queryRunner,
-      'sys_empleado_encrypt_queue',
-      'IDX_encrypt_queue_operational',
-    );
-    await this.dropIndexIfExists(
-      queryRunner,
-      'sys_empleado_encrypt_queue',
-      'IDX_encrypt_queue_employee',
-    );
-    await this.dropIndexIfExists(
-      queryRunner,
-      'sys_empleado_encrypt_queue',
-      'IDX_encrypt_queue_stuck',
-    );
+    await this.dropIndexIfExists(queryRunner, 'sys_empleado_identity_queue', 'IDX_identity_queue_operational');
+    await this.dropIndexIfExists(queryRunner, 'sys_empleado_identity_queue', 'IDX_identity_queue_employee');
+    await this.dropIndexIfExists(queryRunner, 'sys_empleado_identity_queue', 'IDX_identity_queue_stuck');
+    await this.dropIndexIfExists(queryRunner, 'sys_empleado_encrypt_queue', 'IDX_encrypt_queue_operational');
+    await this.dropIndexIfExists(queryRunner, 'sys_empleado_encrypt_queue', 'IDX_encrypt_queue_employee');
+    await this.dropIndexIfExists(queryRunner, 'sys_empleado_encrypt_queue', 'IDX_encrypt_queue_stuck');
   }
 
   private async createIndexIfMissing(
@@ -82,7 +58,7 @@ export class AddQueueMonitoringIndexes1708534000000 implements MigrationInterfac
     indexName: string,
     columns: string,
   ): Promise<void> {
-    const [row] = (await queryRunner.query(
+    const [row] = await queryRunner.query(
       `
       SELECT COUNT(*) AS cnt
       FROM information_schema.statistics
@@ -91,12 +67,10 @@ export class AddQueueMonitoringIndexes1708534000000 implements MigrationInterfac
         AND index_name = ?
     `,
       [tableName, indexName],
-    )) as Array<{ cnt: number }>;
+    ) as Array<{ cnt: number }>;
 
     if (Number(row?.cnt ?? 0) > 0) return;
-    await queryRunner.query(
-      `CREATE INDEX ${indexName} ON ${tableName} (${columns})`,
-    );
+    await queryRunner.query(`CREATE INDEX ${indexName} ON ${tableName} (${columns})`);
   }
 
   private async dropIndexIfExists(
@@ -104,7 +78,7 @@ export class AddQueueMonitoringIndexes1708534000000 implements MigrationInterfac
     tableName: string,
     indexName: string,
   ): Promise<void> {
-    const [row] = (await queryRunner.query(
+    const [row] = await queryRunner.query(
       `
       SELECT COUNT(*) AS cnt
       FROM information_schema.statistics
@@ -113,7 +87,7 @@ export class AddQueueMonitoringIndexes1708534000000 implements MigrationInterfac
         AND index_name = ?
     `,
       [tableName, indexName],
-    )) as Array<{ cnt: number }>;
+    ) as Array<{ cnt: number }>;
 
     if (Number(row?.cnt ?? 0) === 0) return;
     await queryRunner.query(`DROP INDEX ${indexName} ON ${tableName}`);

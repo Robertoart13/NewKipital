@@ -51,31 +51,16 @@ export class EmployeeVacationLedger {
   @Column({ name: 'fecha_efectiva_vacaciones', type: 'date' })
   fechaEfectiva: Date;
 
-  @Column({
-    name: 'periodo_referencia_vacaciones',
-    type: 'varchar',
-    length: 7,
-    nullable: true,
-  })
+  @Column({ name: 'periodo_referencia_vacaciones', type: 'varchar', length: 7, nullable: true })
   periodoReferencia: string | null;
 
-  @Column({
-    name: 'source_type_vacaciones',
-    type: 'varchar',
-    length: 40,
-    nullable: true,
-  })
+  @Column({ name: 'source_type_vacaciones', type: 'varchar', length: 40, nullable: true })
   sourceType: string | null;
 
   @Column({ name: 'source_id_vacaciones', type: 'int', nullable: true })
   sourceId: number | null;
 
-  @Column({
-    name: 'descripcion_vacaciones',
-    type: 'varchar',
-    length: 255,
-    nullable: true,
-  })
+  @Column({ name: 'descripcion_vacaciones', type: 'varchar', length: 255, nullable: true })
   descripcion: string | null;
 
   @CreateDateColumn({ name: 'fecha_creacion_vacaciones_ledger' })

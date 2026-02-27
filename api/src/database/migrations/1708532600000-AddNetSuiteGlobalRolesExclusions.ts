@@ -1,10 +1,4 @@
-import {
-  MigrationInterface,
-  QueryRunner,
-  Table,
-  TableForeignKey,
-  TableIndex,
-} from 'typeorm';
+import { MigrationInterface, QueryRunner, Table, TableForeignKey, TableIndex } from 'typeorm';
 
 /**
  * Modelo NetSuite: roles globales + excepciones por empresa.
@@ -28,40 +22,18 @@ export class AddNetSuiteGlobalRolesExclusions1708532600000 implements MigrationI
             { name: 'id_usuario', type: 'int', isNullable: false },
             { name: 'id_app', type: 'int', isNullable: false },
             { name: 'id_rol', type: 'int', isNullable: false },
-            {
-              name: 'estado_usuario_rol_global',
-              type: 'tinyint',
-              width: 1,
-              default: 1,
-            },
-            {
-              name: 'fecha_creacion_usuario_rol_global',
-              type: 'timestamp',
-              default: 'CURRENT_TIMESTAMP',
-            },
+            { name: 'estado_usuario_rol_global', type: 'tinyint', width: 1, default: 1 },
+            { name: 'fecha_creacion_usuario_rol_global', type: 'timestamp', default: 'CURRENT_TIMESTAMP' },
             {
               name: 'fecha_modificacion_usuario_rol_global',
               type: 'timestamp',
               default: 'CURRENT_TIMESTAMP',
               onUpdate: 'CURRENT_TIMESTAMP',
             },
-            {
-              name: 'creado_por_usuario_rol_global',
-              type: 'int',
-              isNullable: false,
-            },
-            {
-              name: 'modificado_por_usuario_rol_global',
-              type: 'int',
-              isNullable: false,
-            },
+            { name: 'creado_por_usuario_rol_global', type: 'int', isNullable: false },
+            { name: 'modificado_por_usuario_rol_global', type: 'int', isNullable: false },
           ],
-          uniques: [
-            {
-              name: 'UQ_usuario_rol_global',
-              columnNames: ['id_usuario', 'id_app', 'id_rol'],
-            },
-          ],
+          uniques: [{ name: 'UQ_usuario_rol_global', columnNames: ['id_usuario', 'id_app', 'id_rol'] }],
         }),
       );
 
@@ -116,40 +88,21 @@ export class AddNetSuiteGlobalRolesExclusions1708532600000 implements MigrationI
             { name: 'id_empresa', type: 'int', isNullable: false },
             { name: 'id_app', type: 'int', isNullable: false },
             { name: 'id_rol', type: 'int', isNullable: false },
-            {
-              name: 'estado_usuario_rol_exclusion',
-              type: 'tinyint',
-              width: 1,
-              default: 1,
-            },
-            {
-              name: 'fecha_creacion_usuario_rol_exclusion',
-              type: 'timestamp',
-              default: 'CURRENT_TIMESTAMP',
-            },
+            { name: 'estado_usuario_rol_exclusion', type: 'tinyint', width: 1, default: 1 },
+            { name: 'fecha_creacion_usuario_rol_exclusion', type: 'timestamp', default: 'CURRENT_TIMESTAMP' },
             {
               name: 'fecha_modificacion_usuario_rol_exclusion',
               type: 'timestamp',
               default: 'CURRENT_TIMESTAMP',
               onUpdate: 'CURRENT_TIMESTAMP',
             },
-            {
-              name: 'creado_por_usuario_rol_exclusion',
-              type: 'int',
-              isNullable: false,
-            },
-            {
-              name: 'modificado_por_usuario_rol_exclusion',
-              type: 'int',
-              isNullable: false,
-            },
+            { name: 'creado_por_usuario_rol_exclusion', type: 'int', isNullable: false },
+            { name: 'modificado_por_usuario_rol_exclusion', type: 'int', isNullable: false },
           ],
-          uniques: [
-            {
-              name: 'UQ_usuario_rol_exclusion',
-              columnNames: ['id_usuario', 'id_empresa', 'id_app', 'id_rol'],
-            },
-          ],
+          uniques: [{
+            name: 'UQ_usuario_rol_exclusion',
+            columnNames: ['id_usuario', 'id_empresa', 'id_app', 'id_rol'],
+          }],
         }),
       );
 
@@ -200,10 +153,7 @@ export class AddNetSuiteGlobalRolesExclusions1708532600000 implements MigrationI
 
       await queryRunner.createIndex(
         'sys_usuario_rol_exclusion',
-        new TableIndex({
-          name: 'IDX_usuario_rol_exclusion_usuario',
-          columnNames: ['id_usuario'],
-        }),
+        new TableIndex({ name: 'IDX_usuario_rol_exclusion_usuario', columnNames: ['id_usuario'] }),
       );
     }
   }

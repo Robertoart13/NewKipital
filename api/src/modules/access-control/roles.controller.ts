@@ -1,15 +1,6 @@
 import {
-  Controller,
-  Get,
-  Post,
-  Patch,
-  Put,
-  Delete,
-  Param,
-  Body,
-  Query,
-  ParseIntPipe,
-  ParseBoolPipe,
+  Controller, Get, Post, Patch, Put, Delete, Param, Body, Query,
+  ParseIntPipe, ParseBoolPipe,
 } from '@nestjs/common';
 import { RolesService } from './roles.service';
 import { CreateRoleDto } from './dto/create-role.dto';
@@ -38,10 +29,7 @@ export class RolesController {
 
   @RequirePermissions('config:roles')
   @Get()
-  findAll(
-    @Query('includeInactive', new ParseBoolPipe({ optional: true }))
-    includeInactive?: boolean,
-  ) {
+  findAll(@Query('includeInactive', new ParseBoolPipe({ optional: true })) includeInactive?: boolean) {
     return this.service.findAll(includeInactive ?? false);
   }
 
@@ -53,19 +41,13 @@ export class RolesController {
 
   @RequirePermissions('config:roles')
   @Patch(':id/inactivate')
-  inactivate(
-    @Param('id', ParseIntPipe) id: number,
-    @CurrentUser() user: { userId: number },
-  ) {
+  inactivate(@Param('id', ParseIntPipe) id: number, @CurrentUser() user: { userId: number }) {
     return this.service.inactivate(id, user.userId);
   }
 
   @RequirePermissions('config:roles')
   @Patch(':id/reactivate')
-  reactivate(
-    @Param('id', ParseIntPipe) id: number,
-    @CurrentUser() user: { userId: number },
-  ) {
+  reactivate(@Param('id', ParseIntPipe) id: number, @CurrentUser() user: { userId: number }) {
     return this.service.reactivate(id, user.userId);
   }
 
@@ -81,10 +63,7 @@ export class RolesController {
 
   @RequirePermissions('config:permissions')
   @Post(':id/permissions')
-  assignPermission(
-    @Param('id', ParseIntPipe) idRol: number,
-    @Body() dto: AssignRolePermissionDto,
-  ) {
+  assignPermission(@Param('id', ParseIntPipe) idRol: number, @Body() dto: AssignRolePermissionDto) {
     return this.service.assignPermission({ ...dto, idRol });
   }
 
@@ -110,10 +89,6 @@ export class RolesController {
     @Body() dto: ReplaceRolePermissionsDto,
     @CurrentUser() user: { userId: number },
   ) {
-    return this.service.replacePermissionsByCodes(
-      id,
-      dto.permissions,
-      user.userId,
-    );
+    return this.service.replacePermissionsByCodes(id, dto.permissions, user.userId);
   }
 }

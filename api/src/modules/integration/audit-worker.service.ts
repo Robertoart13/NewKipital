@@ -1,9 +1,4 @@
-import {
-  Injectable,
-  Logger,
-  OnModuleDestroy,
-  OnModuleInit,
-} from '@nestjs/common';
+import { Injectable, Logger, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
@@ -57,17 +52,13 @@ export class AuditWorkerService implements OnModuleInit, OnModuleDestroy {
   }
 
   private getIntervalMs(): number {
-    const raw = Number(
-      this.configService.get<string>('AUDIT_WORKER_INTERVAL_MS', '3000'),
-    );
+    const raw = Number(this.configService.get<string>('AUDIT_WORKER_INTERVAL_MS', '3000'));
     if (!Number.isFinite(raw) || raw < 1000) return 3000;
     return Math.trunc(raw);
   }
 
   private getBatchSize(): number {
-    const raw = Number(
-      this.configService.get<string>('AUDIT_WORKER_BATCH_SIZE', '100'),
-    );
+    const raw = Number(this.configService.get<string>('AUDIT_WORKER_BATCH_SIZE', '100'));
     if (!Number.isFinite(raw) || raw <= 0) return 100;
     return Math.min(500, Math.trunc(raw));
   }
@@ -88,9 +79,7 @@ export class AuditWorkerService implements OnModuleInit, OnModuleDestroy {
         await this.processSingleEvent(row);
       }
     } catch (error) {
-      this.logger.error(
-        `Error procesando auditoria: ${(error as Error).message}`,
-      );
+      this.logger.error(`Error procesando auditoria: ${(error as Error).message}`);
     } finally {
       this.running = false;
     }
@@ -99,9 +88,7 @@ export class AuditWorkerService implements OnModuleInit, OnModuleDestroy {
   private async ensureSchemaReady(): Promise<boolean> {
     if (this.schemaReady != null) return this.schemaReady;
     try {
-      const rows = await this.domainEventRepo.query(
-        `SHOW TABLES LIKE 'sys_auditoria_acciones'`,
-      );
+      const rows = await this.domainEventRepo.query(`SHOW TABLES LIKE 'sys_auditoria_acciones'`);
       this.schemaReady = Array.isArray(rows) && rows.length > 0;
     } catch {
       this.schemaReady = false;
@@ -112,12 +99,7 @@ export class AuditWorkerService implements OnModuleInit, OnModuleDestroy {
   private async processSingleEvent(row: DomainEventEntity): Promise<void> {
     try {
       const payload = row.payload as unknown as AuditEventPayload;
-      if (
-        !payload?.modulo ||
-        !payload?.accion ||
-        !payload?.entidad ||
-        !payload?.descripcion
-      ) {
+      if (!payload?.modulo || !payload?.accion || !payload?.entidad || !payload?.descripcion) {
         row.status = 'failed';
         row.publishedAt = new Date();
         await this.domainEventRepo.save(row);
@@ -147,9 +129,7 @@ export class AuditWorkerService implements OnModuleInit, OnModuleDestroy {
       row.status = 'failed';
       row.publishedAt = new Date();
       await this.domainEventRepo.save(row);
-      this.logger.warn(
-        `Evento de auditoria fallido id=${row.id}: ${(error as Error).message}`,
-      );
+      this.logger.warn(`Evento de auditoria fallido id=${row.id}: ${(error as Error).message}`);
     }
   }
 }

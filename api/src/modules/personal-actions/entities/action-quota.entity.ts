@@ -1,10 +1,6 @@
 import {
-  Entity,
-  PrimaryGeneratedColumn,
-  Column,
-  Index,
-  CreateDateColumn,
-  UpdateDateColumn,
+  Entity, PrimaryGeneratedColumn, Column, Index,
+  CreateDateColumn, UpdateDateColumn,
 } from 'typeorm';
 
 export enum EstadoCuota {
@@ -50,12 +46,7 @@ export class ActionQuota {
   montoCuota: number;
 
   @Index('IDX_cuota_estado')
-  @Column({
-    name: 'estado_cuota',
-    type: 'tinyint',
-    width: 1,
-    default: EstadoCuota.PENDIENTE_APROBACION,
-  })
+  @Column({ name: 'estado_cuota', type: 'tinyint', width: 1, default: EstadoCuota.PENDIENTE_APROBACION })
   estado: EstadoCuota;
 
   @Column({ name: 'fecha_efecto_cuota', type: 'date', nullable: true })

@@ -21,47 +21,15 @@ export class AddSecurityAndOutboxTables1708532200000 implements MigrationInterfa
               isGenerated: true,
               generationStrategy: 'increment',
             },
-            {
-              name: 'jti_refresh_session',
-              type: 'varchar',
-              length: '64',
-              isUnique: true,
-            },
+            { name: 'jti_refresh_session', type: 'varchar', length: '64', isUnique: true },
             { name: 'id_usuario', type: 'int' },
-            {
-              name: 'token_hash_refresh_session',
-              type: 'varchar',
-              length: '255',
-            },
+            { name: 'token_hash_refresh_session', type: 'varchar', length: '255' },
             { name: 'expires_at_refresh_session', type: 'datetime' },
-            {
-              name: 'rotated_at_refresh_session',
-              type: 'datetime',
-              isNullable: true,
-            },
-            {
-              name: 'revoked_at_refresh_session',
-              type: 'datetime',
-              isNullable: true,
-            },
-            {
-              name: 'replaced_by_jti_refresh_session',
-              type: 'varchar',
-              length: '64',
-              isNullable: true,
-            },
-            {
-              name: 'created_ip_refresh_session',
-              type: 'varchar',
-              length: '45',
-              isNullable: true,
-            },
-            {
-              name: 'created_ua_refresh_session',
-              type: 'varchar',
-              length: '255',
-              isNullable: true,
-            },
+            { name: 'rotated_at_refresh_session', type: 'datetime', isNullable: true },
+            { name: 'revoked_at_refresh_session', type: 'datetime', isNullable: true },
+            { name: 'replaced_by_jti_refresh_session', type: 'varchar', length: '64', isNullable: true },
+            { name: 'created_ip_refresh_session', type: 'varchar', length: '45', isNullable: true },
+            { name: 'created_ua_refresh_session', type: 'varchar', length: '255', isNullable: true },
             {
               name: 'fecha_creacion_refresh_session',
               type: 'timestamp',
@@ -79,10 +47,7 @@ export class AddSecurityAndOutboxTables1708532200000 implements MigrationInterfa
     }
 
     const refreshTable = await queryRunner.getTable('sys_refresh_sessions');
-    if (
-      refreshTable &&
-      !refreshTable.indices.find((i) => i.name === 'IDX_refresh_session_jti')
-    ) {
+    if (refreshTable && !refreshTable.indices.find((i) => i.name === 'IDX_refresh_session_jti')) {
       await queryRunner.createIndex(
         'sys_refresh_sessions',
         new TableIndex({
@@ -92,10 +57,7 @@ export class AddSecurityAndOutboxTables1708532200000 implements MigrationInterfa
         }),
       );
     }
-    if (
-      refreshTable &&
-      !refreshTable.indices.find((i) => i.name === 'IDX_refresh_session_user')
-    ) {
+    if (refreshTable && !refreshTable.indices.find((i) => i.name === 'IDX_refresh_session_user')) {
       await queryRunner.createIndex(
         'sys_refresh_sessions',
         new TableIndex({
@@ -105,8 +67,7 @@ export class AddSecurityAndOutboxTables1708532200000 implements MigrationInterfa
       );
     }
 
-    const hasDomainEventsTable =
-      await queryRunner.hasTable('sys_domain_events');
+    const hasDomainEventsTable = await queryRunner.hasTable('sys_domain_events');
     if (!hasDomainEventsTable) {
       await queryRunner.query(`
         CREATE TABLE sys_domain_events (
@@ -130,10 +91,7 @@ export class AddSecurityAndOutboxTables1708532200000 implements MigrationInterfa
       `);
     }
 
-    const hasVersionLock = await queryRunner.hasColumn(
-      'nom_calendarios_nomina',
-      'version_lock_calendario_nomina',
-    );
+    const hasVersionLock = await queryRunner.hasColumn('nom_calendarios_nomina', 'version_lock_calendario_nomina');
     if (!hasVersionLock) {
       await queryRunner.addColumn(
         'nom_calendarios_nomina',
@@ -148,15 +106,9 @@ export class AddSecurityAndOutboxTables1708532200000 implements MigrationInterfa
   }
 
   public async down(queryRunner: QueryRunner): Promise<void> {
-    const hasVersionLock = await queryRunner.hasColumn(
-      'nom_calendarios_nomina',
-      'version_lock_calendario_nomina',
-    );
+    const hasVersionLock = await queryRunner.hasColumn('nom_calendarios_nomina', 'version_lock_calendario_nomina');
     if (hasVersionLock) {
-      await queryRunner.dropColumn(
-        'nom_calendarios_nomina',
-        'version_lock_calendario_nomina',
-      );
+      await queryRunner.dropColumn('nom_calendarios_nomina', 'version_lock_calendario_nomina');
     }
     await queryRunner.query('DROP TABLE IF EXISTS sys_domain_events');
     const hasRefreshTable = await queryRunner.hasTable('sys_refresh_sessions');

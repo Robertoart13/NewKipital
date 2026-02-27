@@ -64,3 +64,4 @@ export class AddCompanyAuditPermission1708533600000 implements MigrationInterfac
     );
   }
 }
+

@@ -1,12 +1,4 @@
-import {
-  Controller,
-  Get,
-  Post,
-  Patch,
-  Param,
-  Body,
-  ParseIntPipe,
-} from '@nestjs/common';
+import { Controller, Get, Post, Patch, Param, Body, ParseIntPipe } from '@nestjs/common';
 import { AppsService } from './apps.service';
 import { CreateAppDto } from './dto/create-app.dto';
 import { RequirePermissions } from '../../common/decorators/require-permissions.decorator';

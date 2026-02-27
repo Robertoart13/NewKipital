@@ -30,8 +30,7 @@ function extractFromAuthHeader(req: Request): string | null {
 export class JwtStrategy extends PassportStrategy(Strategy) {
   constructor(config: ConfigService) {
     super({
-      jwtFromRequest: (req: Request) =>
-        extractFromCookie(req) ?? extractFromAuthHeader(req),
+      jwtFromRequest: (req: Request) => extractFromCookie(req) ?? extractFromAuthHeader(req),
       ignoreExpiration: false,
       secretOrKey: config.getOrThrow<string>('JWT_SECRET'),
     });

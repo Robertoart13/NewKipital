@@ -1,10 +1,6 @@
 import {
-  Entity,
-  PrimaryGeneratedColumn,
-  Column,
-  Index,
-  CreateDateColumn,
-  UpdateDateColumn,
+  Entity, PrimaryGeneratedColumn, Column, Index,
+  CreateDateColumn, UpdateDateColumn,
 } from 'typeorm';
 
 /**
@@ -20,21 +16,11 @@ export class Department {
   nombre: string;
 
   @Index('IDX_departamento_externo')
-  @Column({
-    name: 'id_externo_departamento',
-    type: 'varchar',
-    length: 45,
-    nullable: true,
-  })
+  @Column({ name: 'id_externo_departamento', type: 'varchar', length: 45, nullable: true })
   idExterno: string | null;
 
   @Index('IDX_departamento_estado')
-  @Column({
-    name: 'estado_departamento',
-    type: 'tinyint',
-    width: 1,
-    default: 1,
-  })
+  @Column({ name: 'estado_departamento', type: 'tinyint', width: 1, default: 1 })
   estado: number;
 
   @CreateDateColumn({ name: 'fecha_creacion_departamento' })

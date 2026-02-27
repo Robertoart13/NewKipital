@@ -1,14 +1,6 @@
 import {
-  Controller,
-  Get,
-  Post,
-  Put,
-  Patch,
-  Param,
-  Body,
-  Query,
-  ParseIntPipe,
-  ParseBoolPipe,
+  Controller, Get, Post, Put, Patch, Param, Body, Query,
+  ParseIntPipe, ParseBoolPipe,
 } from '@nestjs/common';
 import { EmployeesService } from './employees.service';
 import { CreateEmployeeDto } from './dto/create-employee.dto';
@@ -29,10 +21,7 @@ export class EmployeesController {
 
   @RequirePermissions('employee:create')
   @Post()
-  create(
-    @Body() dto: CreateEmployeeDto,
-    @CurrentUser() user: { userId: number },
-  ) {
+  create(@Body() dto: CreateEmployeeDto, @CurrentUser() user: { userId: number }) {
     return this.service.create(dto, user.userId);
   }
 
@@ -47,8 +36,7 @@ export class EmployeesController {
   findAll(
     @CurrentUser() user: { userId: number },
     @Query('idEmpresa') idEmpresaRaw?: string,
-    @Query('includeInactive', new ParseBoolPipe({ optional: true }))
-    includeInactive?: boolean,
+    @Query('includeInactive', new ParseBoolPipe({ optional: true })) includeInactive?: boolean,
     @Query('page') page?: string,
     @Query('pageSize') pageSize?: string,
     @Query('search') search?: string,
@@ -66,24 +54,18 @@ export class EmployeesController {
           .map((value) => parseInt(value.trim(), 10))
           .filter((n) => !Number.isNaN(n) && n > 0)
       : undefined;
-    return this.service.findAll(
-      user.userId,
-      Number.isNaN(idEmpresa!) ? undefined : idEmpresa,
-      {
-        includeInactive: includeInactive ?? false,
-        page: page ? parseInt(page, 10) : undefined,
-        pageSize: pageSize ? parseInt(pageSize, 10) : undefined,
-        search: search || undefined,
-        idDepartamento: idDepartamento
-          ? parseInt(idDepartamento, 10)
-          : undefined,
-        idPuesto: idPuesto ? parseInt(idPuesto, 10) : undefined,
-        estado: estado !== undefined ? parseInt(estado, 10) : undefined,
-        sort: sort || undefined,
-        order: order ?? undefined,
-        companyIds,
-      },
-    );
+    return this.service.findAll(user.userId, Number.isNaN(idEmpresa!) ? undefined : idEmpresa, {
+      includeInactive: includeInactive ?? false,
+      page: page ? parseInt(page, 10) : undefined,
+      pageSize: pageSize ? parseInt(pageSize, 10) : undefined,
+      search: search || undefined,
+      idDepartamento: idDepartamento ? parseInt(idDepartamento, 10) : undefined,
+      idPuesto: idPuesto ? parseInt(idPuesto, 10) : undefined,
+      estado: estado !== undefined ? parseInt(estado, 10) : undefined,
+      sort: sort || undefined,
+      order: order ?? undefined,
+      companyIds,
+    });
   }
 
   @RequirePermissions('employee:view')
@@ -107,19 +89,13 @@ export class EmployeesController {
 
   @RequirePermissions('employee:inactivate')
   @Patch(':id/inactivate')
-  inactivate(
-    @Param('id', ParseIntPipe) id: number,
-    @CurrentUser() user: { userId: number },
-  ) {
+  inactivate(@Param('id', ParseIntPipe) id: number, @CurrentUser() user: { userId: number }) {
     return this.service.inactivate(id, user.userId);
   }
 
   @RequirePermissions('employee:reactivate')
   @Patch(':id/reactivate')
-  reactivate(
-    @Param('id', ParseIntPipe) id: number,
-    @CurrentUser() user: { userId: number },
-  ) {
+  reactivate(@Param('id', ParseIntPipe) id: number, @CurrentUser() user: { userId: number }) {
     return this.service.reactivate(id, user.userId);
   }
 

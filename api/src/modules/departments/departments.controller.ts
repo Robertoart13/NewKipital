@@ -29,25 +29,17 @@ export class DepartmentsController {
 
   @RequirePermissions('department:create')
   @Post()
-  create(
-    @Body() dto: CreateDepartmentDto,
-    @CurrentUser() user: { userId: number },
-  ) {
+  create(@Body() dto: CreateDepartmentDto, @CurrentUser() user: { userId: number }) {
     return this.service.create(dto, user.userId);
   }
 
   @RequirePermissions('department:view')
   @Get()
   findAll(
-    @Query('includeInactive', new ParseBoolPipe({ optional: true }))
-    includeInactive?: boolean,
-    @Query('inactiveOnly', new ParseBoolPipe({ optional: true }))
-    inactiveOnly?: boolean,
+    @Query('includeInactive', new ParseBoolPipe({ optional: true })) includeInactive?: boolean,
+    @Query('inactiveOnly', new ParseBoolPipe({ optional: true })) inactiveOnly?: boolean,
   ) {
-    return this.service.findAll(
-      includeInactive ?? false,
-      inactiveOnly ?? false,
-    );
+    return this.service.findAll(includeInactive ?? false, inactiveOnly ?? false);
   }
 
   @RequirePermissions('department:view')
@@ -68,19 +60,13 @@ export class DepartmentsController {
 
   @RequirePermissions('department:inactivate')
   @Patch(':id/inactivate')
-  inactivate(
-    @Param('id', ParseIntPipe) id: number,
-    @CurrentUser() user: { userId: number },
-  ) {
+  inactivate(@Param('id', ParseIntPipe) id: number, @CurrentUser() user: { userId: number }) {
     return this.service.inactivate(id, user.userId);
   }
 
   @RequirePermissions('department:reactivate')
   @Patch(':id/reactivate')
-  reactivate(
-    @Param('id', ParseIntPipe) id: number,
-    @CurrentUser() user: { userId: number },
-  ) {
+  reactivate(@Param('id', ParseIntPipe) id: number, @CurrentUser() user: { userId: number }) {
     return this.service.reactivate(id, user.userId);
   }
 

@@ -1,9 +1,5 @@
 import {
-  IsString,
-  IsEmail,
-  IsOptional,
-  MaxLength,
-  MinLength,
+  IsString, IsEmail, IsOptional, MaxLength, MinLength,
   Matches,
 } from 'class-validator';
 
@@ -16,10 +12,7 @@ export class CreateUserDto {
   @IsString()
   @MinLength(3)
   @MaxLength(50)
-  @Matches(/^[a-zA-Z0-9._-]+$/, {
-    message:
-      'Username solo permite letras, números, puntos, guiones y guiones bajos',
-  })
+  @Matches(/^[a-zA-Z0-9._-]+$/, { message: 'Username solo permite letras, números, puntos, guiones y guiones bajos' })
   username?: string;
 
   @IsOptional()

@@ -74,15 +74,11 @@ describe('CsrfGuard', () => {
 
   it('should throw on PUT without tokens', () => {
     reflector.getAllAndOverride.mockReturnValue(false);
-    expect(() => guard.canActivate(createContext('PUT'))).toThrow(
-      ForbiddenException,
-    );
+    expect(() => guard.canActivate(createContext('PUT'))).toThrow(ForbiddenException);
   });
 
   it('should throw on PATCH without tokens', () => {
     reflector.getAllAndOverride.mockReturnValue(false);
-    expect(() => guard.canActivate(createContext('PATCH'))).toThrow(
-      ForbiddenException,
-    );
+    expect(() => guard.canActivate(createContext('PATCH'))).toThrow(ForbiddenException);
   });
 });

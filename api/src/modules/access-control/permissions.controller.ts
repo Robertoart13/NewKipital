@@ -28,10 +28,7 @@ export class PermissionsController {
 
   @RequirePermissions('config:permissions')
   @Post()
-  create(
-    @Body() dto: CreatePermissionDto,
-    @CurrentUser() user: { userId: number },
-  ) {
+  create(@Body() dto: CreatePermissionDto, @CurrentUser() user: { userId: number }) {
     return this.service.create(dto, user.userId);
   }
 
@@ -39,8 +36,7 @@ export class PermissionsController {
   @Get()
   findAll(
     @Query('modulo') modulo?: string,
-    @Query('includeInactive', new ParseBoolPipe({ optional: true }))
-    includeInactive?: boolean,
+    @Query('includeInactive', new ParseBoolPipe({ optional: true })) includeInactive?: boolean,
   ) {
     return this.service.findAll(modulo, includeInactive ?? true);
   }
@@ -63,19 +59,13 @@ export class PermissionsController {
 
   @RequirePermissions('config:permissions')
   @Patch(':id/inactivate')
-  inactivate(
-    @Param('id', ParseIntPipe) id: number,
-    @CurrentUser() user: { userId: number },
-  ) {
+  inactivate(@Param('id', ParseIntPipe) id: number, @CurrentUser() user: { userId: number }) {
     return this.service.inactivate(id, user.userId);
   }
 
   @RequirePermissions('config:permissions')
   @Patch(':id/reactivate')
-  reactivate(
-    @Param('id', ParseIntPipe) id: number,
-    @CurrentUser() user: { userId: number },
-  ) {
+  reactivate(@Param('id', ParseIntPipe) id: number, @CurrentUser() user: { userId: number }) {
     return this.service.reactivate(id, user.userId);
   }
 }

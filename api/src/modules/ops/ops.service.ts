@@ -38,18 +38,18 @@ export class OpsService {
     const [identityStatus, encryptStatus] = await Promise.all([
       this.identityQueueRepo.query(
         `SELECT estado_queue, COUNT(*) AS cnt FROM sys_empleado_identity_queue GROUP BY estado_queue`,
-      ),
+      ) as Promise<Array<{ estado_queue: string; cnt: number }>>,
       this.encryptQueueRepo.query(
         `SELECT estado_queue, COUNT(*) AS cnt FROM sys_empleado_encrypt_queue GROUP BY estado_queue`,
-      ),
+      ) as Promise<Array<{ estado_queue: string; cnt: number }>>,
     ]);
 
     const [activosSinUsuario] = await this.employeeRepo.query(
       `SELECT COUNT(*) AS cnt FROM sys_empleados WHERE estado_empleado = 1 AND id_usuario IS NULL`,
-    );
+    ) as Array<{ cnt: number }>;
     const [activosNoCifrados] = await this.employeeRepo.query(
       `SELECT COUNT(*) AS cnt FROM sys_empleados WHERE estado_empleado = 1 AND (datos_encriptados_empleado = 0 OR datos_encriptados_empleado IS NULL)`,
-    );
+    ) as Array<{ cnt: number }>;
     const [plaintextDetected] = await this.employeeRepo.query(
       `
         SELECT COUNT(*) AS cnt
@@ -60,7 +60,7 @@ export class OpsService {
            OR (email_empleado IS NOT NULL AND email_empleado NOT LIKE 'enc:v%')
            OR (salario_base_empleado IS NOT NULL AND salario_base_empleado NOT LIKE 'enc:v%')
       `,
-    );
+    ) as Array<{ cnt: number }>;
 
     const [oldestPending] = await this.identityQueueRepo.query(
       `
@@ -71,32 +71,32 @@ export class OpsService {
           SELECT MIN(fecha_creacion_queue) AS ts FROM sys_empleado_encrypt_queue WHERE estado_queue = 'PENDING'
         ) t
       `,
-    );
+    ) as Array<{ oldest_pending: string | null }>;
 
     const [done5Identity] = await this.identityQueueRepo.query(
       `SELECT COUNT(*) AS cnt FROM sys_empleado_identity_queue WHERE estado_queue = 'DONE' AND fecha_modificacion_queue >= DATE_SUB(NOW(), INTERVAL 5 MINUTE)`,
-    );
+    ) as Array<{ cnt: number }>;
     const [done5Encrypt] = await this.encryptQueueRepo.query(
       `SELECT COUNT(*) AS cnt FROM sys_empleado_encrypt_queue WHERE estado_queue = 'DONE' AND fecha_modificacion_queue >= DATE_SUB(NOW(), INTERVAL 5 MINUTE)`,
-    );
+    ) as Array<{ cnt: number }>;
     const [done15Identity] = await this.identityQueueRepo.query(
       `SELECT COUNT(*) AS cnt FROM sys_empleado_identity_queue WHERE estado_queue = 'DONE' AND fecha_modificacion_queue >= DATE_SUB(NOW(), INTERVAL 15 MINUTE)`,
-    );
+    ) as Array<{ cnt: number }>;
     const [done15Encrypt] = await this.encryptQueueRepo.query(
       `SELECT COUNT(*) AS cnt FROM sys_empleado_encrypt_queue WHERE estado_queue = 'DONE' AND fecha_modificacion_queue >= DATE_SUB(NOW(), INTERVAL 15 MINUTE)`,
-    );
+    ) as Array<{ cnt: number }>;
     const [errors15Identity] = await this.identityQueueRepo.query(
       `SELECT COUNT(*) AS cnt FROM sys_empleado_identity_queue WHERE estado_queue LIKE 'ERROR%' AND fecha_modificacion_queue >= DATE_SUB(NOW(), INTERVAL 15 MINUTE)`,
-    );
+    ) as Array<{ cnt: number }>;
     const [errors15Encrypt] = await this.encryptQueueRepo.query(
       `SELECT COUNT(*) AS cnt FROM sys_empleado_encrypt_queue WHERE estado_queue LIKE 'ERROR%' AND fecha_modificacion_queue >= DATE_SUB(NOW(), INTERVAL 15 MINUTE)`,
-    );
+    ) as Array<{ cnt: number }>;
     const [stuckIdentity] = await this.identityQueueRepo.query(
       `SELECT COUNT(*) AS cnt FROM sys_empleado_identity_queue WHERE estado_queue = 'PROCESSING' AND (locked_at_queue IS NULL OR locked_at_queue < DATE_SUB(NOW(), INTERVAL 10 MINUTE))`,
-    );
+    ) as Array<{ cnt: number }>;
     const [stuckEncrypt] = await this.encryptQueueRepo.query(
       `SELECT COUNT(*) AS cnt FROM sys_empleado_encrypt_queue WHERE estado_queue = 'PROCESSING' AND (locked_at_queue IS NULL OR locked_at_queue < DATE_SUB(NOW(), INTERVAL 10 MINUTE))`,
-    );
+    ) as Array<{ cnt: number }>;
 
     const oldestPendingAgeMinutes = oldestPending?.oldest_pending
       ? await this.getOldestPendingAgeMinutes(oldestPending.oldest_pending)
@@ -109,33 +109,17 @@ export class OpsService {
       activosNoCifrados: Number(activosNoCifrados?.cnt ?? 0),
       plaintextDetected: Number(plaintextDetected?.cnt ?? 0),
       oldestPendingAgeMinutes,
-      throughputJobsPerMin5: Number(
-        (
-          (Number(done5Identity?.cnt ?? 0) + Number(done5Encrypt?.cnt ?? 0)) /
-          5
-        ).toFixed(2),
-      ),
-      throughputJobsPerMin15: Number(
-        (
-          (Number(done15Identity?.cnt ?? 0) + Number(done15Encrypt?.cnt ?? 0)) /
-          15
-        ).toFixed(2),
-      ),
-      errorsLast15m:
-        Number(errors15Identity?.cnt ?? 0) + Number(errors15Encrypt?.cnt ?? 0),
-      stuckProcessing:
-        Number(stuckIdentity?.cnt ?? 0) + Number(stuckEncrypt?.cnt ?? 0),
+      throughputJobsPerMin5: Number(((Number(done5Identity?.cnt ?? 0) + Number(done5Encrypt?.cnt ?? 0)) / 5).toFixed(2)),
+      throughputJobsPerMin15: Number(((Number(done15Identity?.cnt ?? 0) + Number(done15Encrypt?.cnt ?? 0)) / 15).toFixed(2)),
+      errorsLast15m: Number(errors15Identity?.cnt ?? 0) + Number(errors15Encrypt?.cnt ?? 0),
+      stuckProcessing: Number(stuckIdentity?.cnt ?? 0) + Number(stuckEncrypt?.cnt ?? 0),
       lastUpdatedAt: new Date().toISOString(),
     };
   }
 
   async listQueue(queue: QueueType, filters: ListQueueJobsDto) {
-    const table =
-      queue === 'identity'
-        ? 'sys_empleado_identity_queue'
-        : 'sys_empleado_encrypt_queue';
-    const idField =
-      queue === 'identity' ? 'id_identity_queue' : 'id_encrypt_queue';
+    const table = queue === 'identity' ? 'sys_empleado_identity_queue' : 'sys_empleado_encrypt_queue';
+    const idField = queue === 'identity' ? 'id_identity_queue' : 'id_encrypt_queue';
     const includeDone = filters.includeDone === 1;
     const page = Math.max(1, filters.page ?? 1);
     const maxPageSize = includeDone ? 100 : 200;
@@ -174,9 +158,7 @@ export class OpsService {
       where.push('locked_at_queue IS NOT NULL');
     }
     if (filters.stuckOnly === 1) {
-      where.push(
-        `estado_queue = 'PROCESSING' AND locked_at_queue < DATE_SUB(NOW(), INTERVAL 10 MINUTE)`,
-      );
+      where.push(`estado_queue = 'PROCESSING' AND locked_at_queue < DATE_SUB(NOW(), INTERVAL 10 MINUTE)`);
     }
 
     const whereClause = where.length ? `WHERE ${where.join(' AND ')}` : '';
@@ -209,15 +191,11 @@ export class OpsService {
         ${idField} DESC
       LIMIT ? OFFSET ?
     `;
-    const rows = await this.identityQueueRepo.query(query, [
-      ...params,
-      pageSize,
-      offset,
-    ]);
+    const rows = await this.identityQueueRepo.query(query, [...params, pageSize, offset]) as QueueRow[];
     const [countRow] = await this.identityQueueRepo.query(
       `SELECT COUNT(*) AS total FROM ${table} ${whereClause}`,
       params,
-    );
+    ) as Array<{ total: number }>;
 
     return {
       data: rows.map((row) => ({
@@ -242,25 +220,23 @@ export class OpsService {
   async healthCheck() {
     const [identityReady] = await this.identityQueueRepo.query(
       `SELECT COUNT(*) AS cnt FROM sys_empleado_identity_queue WHERE estado_queue = 'PENDING' AND (next_retry_at_queue IS NULL OR next_retry_at_queue <= NOW())`,
-    );
+    ) as Array<{ cnt: number }>;
     const [encryptReady] = await this.encryptQueueRepo.query(
       `SELECT COUNT(*) AS cnt FROM sys_empleado_encrypt_queue WHERE estado_queue = 'PENDING' AND (next_retry_at_queue IS NULL OR next_retry_at_queue <= NOW())`,
-    );
+    ) as Array<{ cnt: number }>;
     const [stuckIdentity] = await this.identityQueueRepo.query(
       `SELECT COUNT(*) AS cnt FROM sys_empleado_identity_queue WHERE estado_queue = 'PROCESSING' AND (locked_at_queue IS NULL OR locked_at_queue < DATE_SUB(NOW(), INTERVAL 10 MINUTE))`,
-    );
+    ) as Array<{ cnt: number }>;
     const [stuckEncrypt] = await this.encryptQueueRepo.query(
       `SELECT COUNT(*) AS cnt FROM sys_empleado_encrypt_queue WHERE estado_queue = 'PROCESSING' AND (locked_at_queue IS NULL OR locked_at_queue < DATE_SUB(NOW(), INTERVAL 10 MINUTE))`,
-    );
+    ) as Array<{ cnt: number }>;
 
     return {
       pendingReadyIdentity: Number(identityReady?.cnt ?? 0),
       pendingReadyEncrypt: Number(encryptReady?.cnt ?? 0),
       stuckIdentity: Number(stuckIdentity?.cnt ?? 0),
       stuckEncrypt: Number(stuckEncrypt?.cnt ?? 0),
-      healthy:
-        Number(stuckIdentity?.cnt ?? 0) === 0 &&
-        Number(stuckEncrypt?.cnt ?? 0) === 0,
+      healthy: Number(stuckIdentity?.cnt ?? 0) === 0 && Number(stuckEncrypt?.cnt ?? 0) === 0,
     };
   }
 
@@ -273,12 +249,8 @@ export class OpsService {
   }
 
   async requeue(queue: QueueType, idQueue: number) {
-    const table =
-      queue === 'identity'
-        ? 'sys_empleado_identity_queue'
-        : 'sys_empleado_encrypt_queue';
-    const idField =
-      queue === 'identity' ? 'id_identity_queue' : 'id_encrypt_queue';
+    const table = queue === 'identity' ? 'sys_empleado_identity_queue' : 'sys_empleado_encrypt_queue';
+    const idField = queue === 'identity' ? 'id_identity_queue' : 'id_encrypt_queue';
     await this.identityQueueRepo.query(
       `
         UPDATE ${table}
@@ -316,21 +288,12 @@ export class OpsService {
   }
 
   private buildDiagnostic(row: QueueRow): string {
-    if (
-      row.estado_queue === 'PROCESSING' &&
-      (!row.locked_at_queue || this.isStuck(row.locked_at_queue))
-    ) {
+    if (row.estado_queue === 'PROCESSING' && (!row.locked_at_queue || this.isStuck(row.locked_at_queue))) {
       return 'Stuck (locked_at vencido o null)';
     }
-    if (row.estado_queue.startsWith('ERROR_CONFIG'))
-      return 'ERROR_CONFIG: falta configuración (app/rol).';
-    if (row.estado_queue.startsWith('ERROR_DUPLICATE'))
-      return 'ERROR_DUPLICATE: conflicto de identidad.';
-    if (
-      row.estado_queue === 'PENDING' &&
-      row.next_retry_at_queue &&
-      new Date(row.next_retry_at_queue) > new Date()
-    ) {
+    if (row.estado_queue.startsWith('ERROR_CONFIG')) return 'ERROR_CONFIG: falta configuración (app/rol).';
+    if (row.estado_queue.startsWith('ERROR_DUPLICATE')) return 'ERROR_DUPLICATE: conflicto de identidad.';
+    if (row.estado_queue === 'PENDING' && row.next_retry_at_queue && new Date(row.next_retry_at_queue) > new Date()) {
       return 'Bloqueado por next_retry_at en futuro.';
     }
     if (row.estado_queue === 'PENDING') return 'Procesable ahora.';
@@ -342,13 +305,11 @@ export class OpsService {
     return Number.isFinite(lockedTime) && lockedTime < Date.now() - 10 * 60_000;
   }
 
-  private async getOldestPendingAgeMinutes(
-    oldestPending: string,
-  ): Promise<number> {
+  private async getOldestPendingAgeMinutes(oldestPending: string): Promise<number> {
     const [row] = await this.identityQueueRepo.query(
       `SELECT TIMESTAMPDIFF(MINUTE, ?, NOW()) AS age`,
       [oldestPending],
-    );
+    ) as Array<{ age: number }>;
     return Number(row?.age ?? 0);
   }
 }
