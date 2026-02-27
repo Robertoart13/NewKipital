@@ -91,12 +91,13 @@ const initialMenuConfig: MenuItem[] = [
     id: 'payroll-params',
     label: 'Parametros de Planilla',
     path: '/payroll-params',
-    requiredPermission: 'payroll:view',
+    requiredPermission: 'payroll-article:view',
     children: [
       {
         id: 'calendario-nomina',
         label: 'Calendario de Nómina',
         path: '/payroll-params/calendario',
+        requiredPermission: 'payroll:view',
         children: [
           { id: 'calendario', label: 'Calendario', path: '/payroll-params/calendario/ver' },
           { id: 'listado-feriados', label: 'Listado de Feriados', path: '/payroll-params/calendario/feriados' },
@@ -104,7 +105,7 @@ const initialMenuConfig: MenuItem[] = [
         ],
       },
       { id: 'articulos-nomina', label: 'Artículos de Nomina', path: '/payroll-params/articulos', requiredPermission: 'payroll-article:view' },
-      { id: 'movimientos-nomina', label: 'Movimientos de Nomina', path: '/payroll-params/movimientos' },
+      { id: 'movimientos-nomina', label: 'Movimientos de Nomina', path: '/payroll-params/movimientos', requiredPermission: 'payroll:view' },
     ],
   },
   {
@@ -197,3 +198,4 @@ const menuSlice = createSlice({
 
 export const { setMenuConfig } = menuSlice.actions;
 export default menuSlice.reducer;
+

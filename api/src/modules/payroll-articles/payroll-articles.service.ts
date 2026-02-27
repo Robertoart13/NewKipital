@@ -26,8 +26,9 @@ type AllowedAccountMapping = {
 };
 
 const PAYROLL_ARTICLE_TYPE_RULES: AllowedAccountMapping[] = [
+  // Reglas por referencia externa (id_externo_erp).
   { id: 1, label: 'Ingreso', allowedAccountTypes: [18, 19, 17], requiresGasto: true, requiresPasivo: false, allowsPasivo: false, primaryLabel: 'Cuenta Gasto' },
-  { id: 2, label: 'Deduccion', allowedAccountTypes: [12, 13, 14], requiresGasto: false, requiresPasivo: true, allowsPasivo: true, primaryLabel: 'Cuenta Pasivo' },
+  { id: 2, label: 'Deduccion', allowedAccountTypes: [12, 13, 14], requiresGasto: false, requiresPasivo: false, allowsPasivo: false, primaryLabel: 'Cuenta Pasivo' },
   { id: 9, label: 'Gasto Empleado', allowedAccountTypes: [18, 19, 12], requiresGasto: true, requiresPasivo: false, allowsPasivo: false, primaryLabel: 'Cuenta Costo' },
   { id: 10, label: 'Aporte Patronal', allowedAccountTypes: [18, 19, 13], requiresGasto: true, requiresPasivo: false, allowsPasivo: true, primaryLabel: 'Cuenta Gasto' },
 ];
@@ -160,7 +161,6 @@ export class PayrollArticlesService {
       found.idTipoArticuloNomina,
       found.idCuentaGasto,
       found.idCuentaPasivo ?? null,
-      id,
     );
 
     const saved = await this.repo.save(found);
@@ -274,8 +274,8 @@ export class PayrollArticlesService {
 
   async listAccountsByCompany(
     idEmpresa: number,
-    idTipoArticuloNomina?: number,
     includeInactive = false,
+    idsReferencia: number[],
   ): Promise<AccountingAccount[]> {
     const qb = this.accountRepo.createQueryBuilder('c')
       .where('c.idEmpresa = :idEmpresa', { idEmpresa })
@@ -285,10 +285,7 @@ export class PayrollArticlesService {
       qb.andWhere('c.esInactivo = 0');
     }
 
-    if (idTipoArticuloNomina) {
-      const rules = this.getRulesForTipo(idTipoArticuloNomina);
-      qb.andWhere('c.idTipoErp IN (:...ids)', { ids: rules.allowedAccountTypes });
-    }
+    qb.andWhere('c.idTipoErp IN (:...ids)', { ids: idsReferencia });
 
     return qb.getMany();
   }
@@ -385,7 +382,9 @@ export class PayrollArticlesService {
       throw new BadRequestException('La cuenta pasivo no aplica para este tipo de articulo.');
     }
 
-    const targetAccounts = [idCuentaGasto, idCuentaPasivo].filter((value) => !!value) as number[];
+    const targetAccounts = Array.from(
+      new Set([idCuentaGasto, idCuentaPasivo].filter((value) => !!value) as number[]),
+    );
     const accounts = await this.accountRepo.find({ where: { id: In(targetAccounts) } });
     if (accounts.length !== targetAccounts.length) {
       throw new ConflictException('Cuenta contable no encontrada.');

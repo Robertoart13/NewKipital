@@ -31,9 +31,12 @@ const filterMenuByPermissions = (items: MenuItem[], permissions: string[]): Menu
       return item;
     })
     .filter((item) => {
-      if (!item.children) return true;
-      if (item.children.length > 0) return true;
-      return Boolean(item.path && item.path !== '#');
+      // Si el item fue declarado con children, solo se muestra cuando al menos
+      // un hijo queda visible tras aplicar permisos.
+      if (item.children) {
+        return item.children.length > 0;
+      }
+      return true;
     });
 };
 

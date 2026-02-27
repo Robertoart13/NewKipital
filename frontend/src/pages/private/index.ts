@@ -12,3 +12,4 @@ export { AccountingAccountsManagementPage } from './configuration/AccountingAcco
 export { DepartmentsManagementPage } from './configuration/DepartmentsManagementPage';
 export { PositionsManagementPage } from './configuration/PositionsManagementPage';
 export { AutomationMonitoringPage } from './monitoring/AutomationMonitoringPage';
+export { PayrollArticlesManagementPage } from './payroll-params/PayrollArticlesManagementPage';

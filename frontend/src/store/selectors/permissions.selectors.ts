@@ -132,7 +132,7 @@ export const canInactivatePayrollArticle = (state: RootState) =>
 export const canReactivatePayrollArticle = (state: RootState) =>
   selectPermissions(state).includes('payroll-article:reactivate');
 export const canViewPayrollArticleAudit = (state: RootState) =>
-  selectPermissions(state).includes('payroll-article:audit');
+  selectPermissions(state).includes('config:payroll-articles:audit');
 
 export const canViewDepartments = (state: RootState) =>
   selectPermissions(state).includes('department:view');

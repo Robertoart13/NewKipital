@@ -1,7 +1,7 @@
 ﻿# Articulos de Nomina — Guia Operativa (Enterprise)
 
 **Documento:** 39
-**Ultima actualizacion:** 2026-02-26
+**Ultima actualizacion:** 2026-02-27
 **Proposito:** Guia completa para implementar y validar el modulo Articulos de Nomina. Incluye reglas, validaciones, UX, BD, permisos, endpoints y pendientes.
 
 ---
@@ -27,7 +27,7 @@ Incluye:
 - `payroll-article:edit`.
 - `payroll-article:inactivate`.
 - `payroll-article:reactivate`.
-- `payroll-article:audit` (bitacora).
+- `config:payroll-articles:audit` (bitacora).
 
 Regla: la vista, menu y acciones deben ocultarse si no existe el permiso (misma logica que Empleados/Empresas).
 
@@ -79,12 +79,20 @@ Usar tabla existente.
 - Editar: si el tipo esta inactivo, se muestra en solo lectura con badge **Inactivo** y se habilita selector para cambiar a activo.
 
 ### 5.4. Cuentas contables (filtro por tipo)
-Filtro por `id_tipo_erp` segun tipo de articulo:
+`Tipo Articulo Nomina` usa un catalogo fijo en frontend (`idsReferencia`) y ese arreglo se envia al API para filtrar cuentas por empresa.
+
+Filtro por `id_tipo_erp` segun `idsReferencia`:
 
 - Ingreso -> [18, 19, 17]
 - Deduccion -> [12, 13, 14]
 - Gasto Empleado -> [18, 19, 12]
 - Aporte Patronal -> [18, 19, 13]
+
+Flujo actual:
+- Frontend selecciona tipo (1, 2, 9, 10).
+- Frontend resuelve `idsReferencia` desde `PAYROLL_ARTICLE_TYPE_META`.
+- Frontend llama `GET /payroll-articles/accounts?idEmpresa=...&idsReferencia=...`.
+- Backend filtra `erp_cuentas_contables.id_tipo_erp IN (idsReferencia)`.
 
 ### 5.5. Etiquetas dinamicas de cuenta
 - Ingreso: **Cuenta Gasto**
@@ -118,7 +126,7 @@ Filtro por `id_tipo_erp` segun tipo de articulo:
 ### 6.2. Crear
 - Solo opciones activas en todos los selects.
 - Cuentas contables no se cargan hasta que se selecciona empresa.
-- Cuentas filtradas por empresa + tipo de articulo.
+- Cuentas filtradas por empresa + `idsReferencia` del tipo de articulo.
 
 ### 6.3. Editar
 - Regla Netsuite/Oracle:
@@ -126,7 +134,7 @@ Filtro por `id_tipo_erp` segun tipo de articulo:
 - Preload obligatorio al abrir modal (igual que Cuentas Contables).
 
 ### 6.4. Bitacora
-- Solo visible si existe permiso `payroll-article:audit`.
+- Solo visible si existe permiso `config:payroll-articles:audit`.
 - Solo se carga al abrir la pestaña Bitacora (lazy load).
 
 ---
@@ -142,13 +150,13 @@ Endpoints requeridos:
 - `GET /payroll-articles/:id/audit-trail`
 - `GET /payroll-articles/types`
 - `GET /payroll-articles/personal-action-types`
-- `GET /payroll-articles/accounts?idEmpresa=&idTipoArticuloNomina=`
+- `GET /payroll-articles/accounts?idEmpresa=&idsReferencia=18,19,17`
 
 Reglas de backend:
 - Validar empresa activa.
 - Validar tipo articulo activo.
 - Validar tipo accion activo.
-- Validar cuenta contable por empresa + id_tipo_erp permitido.
+- Validar cuenta contable por empresa + `id_tipo_erp` permitido para el tipo seleccionado.
 - No permitir cuenta pasivo si el tipo no la permite.
 
 ---
@@ -168,13 +176,13 @@ Reglas de backend:
 
 ---
 
-## 9. Pendientes actuales (estado del repo)
+## 9. Estado actual (implementado)
 
-1. Crear vista `PayrollArticlesManagementPage.tsx` (frontend).
-2. Registrar export en `frontend/src/pages/private/index.ts`.
-3. Agregar ruta `/payroll-params/articulos` en `frontend/src/router/AppRouter.tsx`.
-4. Aplicar migracion y seed en base `hr_pro`.
-5. Ejecutar pruebas y actualizar `docs/Test/TEST-EXECUTION-REPORT.md`.
+1. Vista `PayrollArticlesManagementPage.tsx` implementada.
+2. Modal de crear/editar implementado con preload y reglas de inactivos.
+3. Carga de cuentas implementada por `idsReferencia`.
+4. Endpoint de cuentas actualizado para recibir `idsReferencia`.
+5. Bitacora habilitada por permiso `config:payroll-articles:audit`.
 
 ---
 
@@ -220,11 +228,10 @@ Reglas de backend:
 
 ## 13. Checklist rapido
 
-- [ ] Vista creada y exportada.
-- [ ] Ruta agregada.
-- [ ] Permisos creados y asignados.
-- [ ] Migracion aplicada en hr_pro.
-- [ ] CRUD funcionando con validaciones.
-- [ ] Bitacora funcionando.
+- [x] Vista creada y exportada.
+- [x] Ruta agregada.
+- [x] Permisos creados y asignados.
+- [x] CRUD funcionando con validaciones.
+- [x] Bitacora funcionando.
 - [ ] Tests ejecutados y documentados.
 

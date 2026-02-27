@@ -43,11 +43,18 @@ export class PayrollArticlesController {
   @Get('accounts')
   listAccounts(
     @Query('idEmpresa', new ParseIntPipe({ optional: true })) idEmpresa?: number,
-    @Query('idTipoArticuloNomina', new ParseIntPipe({ optional: true })) idTipoArticuloNomina?: number,
+    @Query('idsReferencia') idsReferenciaRaw?: string,
     @Query('includeInactive', new ParseBoolPipe({ optional: true })) includeInactive?: boolean,
   ) {
     if (!idEmpresa) return [];
-    return this.service.listAccountsByCompany(idEmpresa, idTipoArticuloNomina, includeInactive ?? false);
+    const idsReferencia = idsReferenciaRaw
+      ? idsReferenciaRaw
+        .split(',')
+        .map((value) => Number(value.trim()))
+        .filter((value) => Number.isFinite(value) && value > 0)
+      : undefined;
+    if (!idsReferencia || idsReferencia.length === 0) return [];
+    return this.service.listAccountsByCompany(idEmpresa, includeInactive ?? false, idsReferencia);
   }
 
   @RequirePermissions('payroll-article:create')
@@ -101,7 +108,7 @@ export class PayrollArticlesController {
     return this.service.reactivate(id, user.userId);
   }
 
-  @RequirePermissions('payroll-article:audit')
+  @RequirePermissions('config:payroll-articles:audit')
   @Get(':id/audit-trail')
   getAuditTrail(
     @Param('id', ParseIntPipe) id: number,

@@ -42,7 +42,7 @@ export class AccountingAccountsService {
 
   async create(dto: CreateAccountingAccountDto, actorUserId: number): Promise<AccountingAccount> {
     await this.assertCompanyActive(dto.idEmpresa);
-    await this.assertTipoCuentaActivo(dto.idTipoErp);
+    const tipoCuenta = await this.resolveActiveTipoCuenta(dto.idTipoErp);
     await this.assertTipoAccionActivo(dto.idTipoAccionPersonal);
     await this.assertCodigoUnique(dto.idEmpresa, dto.codigo);
     if (dto.idExternoNetsuite?.trim()) {
@@ -59,7 +59,7 @@ export class AccountingAccountsService {
       codigo: dto.codigo.trim(),
       idExternoNetsuite: dto.idExternoNetsuite?.trim() || null,
       codigoExterno: dto.codigoExterno?.trim() || null,
-      idTipoErp: dto.idTipoErp,
+      idTipoErp: tipoCuenta.id,
       idTipoAccionPersonal: dto.idTipoAccionPersonal,
       esInactivo: 0,
     });
@@ -153,8 +153,8 @@ export class AccountingAccountsService {
       found.codigo = dto.codigo.trim();
     }
     if (dto.idTipoErp !== undefined) {
-      await this.assertTipoCuentaActivo(dto.idTipoErp);
-      found.idTipoErp = dto.idTipoErp;
+      const tipoCuenta = await this.resolveActiveTipoCuenta(dto.idTipoErp);
+      found.idTipoErp = tipoCuenta.id;
     }
     if (dto.idTipoAccionPersonal !== undefined) {
       await this.assertTipoAccionActivo(dto.idTipoAccionPersonal);
@@ -366,11 +366,19 @@ export class AccountingAccountsService {
     }
   }
 
-  private async assertTipoCuentaActivo(idTipoErp: number): Promise<void> {
-    const found = await this.typeRepo.findOne({ where: { id: idTipoErp } });
-    if (!found || found.status !== 1) {
-      throw new BadRequestException('Debe seleccionar un tipo de cuenta activo.');
+  private async resolveActiveTipoCuenta(idTipoErpInput: number): Promise<AccountingAccountType> {
+    const rawValue = String(idTipoErpInput).trim();
+    const byExternal = await this.typeRepo.findOne({ where: { idExterno: rawValue } });
+    if (byExternal && byExternal.status === 1) {
+      return byExternal;
     }
+
+    const byInternal = await this.typeRepo.findOne({ where: { id: idTipoErpInput } });
+    if (byInternal && byInternal.status === 1) {
+      return byInternal;
+    }
+
+    throw new BadRequestException('Debe seleccionar un tipo de cuenta activo.');
   }
 
   private async assertTipoAccionActivo(idTipoAccionPersonal: number): Promise<void> {

@@ -117,6 +117,28 @@ function normalizePayload(values: AccountingAccountFormValues): AccountingAccoun
   };
 }
 
+function formatAccountTypeLabel(type: AccountingAccountType): string {
+  const externalId = type.idExterno?.trim();
+  if (!externalId) return type.nombre;
+  return `${type.nombre} (ext:${externalId})`;
+}
+
+function getAccountTypeSelectValue(type: AccountingAccountType): number {
+  const externalId = Number(type.idExterno);
+  if (Number.isFinite(externalId) && externalId > 0) {
+    return externalId;
+  }
+  return type.id;
+}
+
+function getAccountTypeSortValue(type: AccountingAccountType): number {
+  const externalId = Number(type.idExterno);
+  if (Number.isFinite(externalId) && externalId > 0) {
+    return externalId;
+  }
+  return type.id;
+}
+
 function getPaneValue(
   row: AccountingAccountListItem,
   key: PaneKey,
@@ -214,14 +236,28 @@ export function AccountingAccountsManagementPage() {
     () => accountTypes.filter((t) => t.status === 1),
     [accountTypes],
   );
+  const activeAccountTypesSorted = useMemo(
+    () => [...activeAccountTypes].sort((a, b) => getAccountTypeSortValue(a) - getAccountTypeSortValue(b)),
+    [activeAccountTypes],
+  );
   const activeActionTypes = useMemo(
     () => actionTypes.filter((t) => t.estado === 1),
     [actionTypes],
   );
 
-  const accountTypeMap = useMemo(() => new Map(accountTypes.map((t) => [t.id, t.nombre])), [accountTypes]);
+  const accountTypeMap = useMemo(
+    () => new Map(accountTypes.map((t) => [t.id, formatAccountTypeLabel(t)])),
+    [accountTypes],
+  );
+  const accountTypeInternalToSelectMap = useMemo(
+    () => new Map(accountTypes.map((t) => [t.id, getAccountTypeSelectValue(t)])),
+    [accountTypes],
+  );
+  const accountTypeSelectToInternalMap = useMemo(
+    () => new Map(accountTypes.map((t) => [getAccountTypeSelectValue(t), t.id])),
+    [accountTypes],
+  );
   const actionTypeMap = useMemo(() => new Map(actionTypes.map((t) => [t.id, t.nombre])), [actionTypes]);
-
   const loadRows = useCallback(async (companyIds?: number[]) => {
     setLoading(true);
     try {
@@ -420,13 +456,13 @@ export function AccountingAccountsManagementPage() {
       codigo: row.codigo ?? '',
       idExternoNetsuite: row.idExternoNetsuite ?? '',
       codigoExterno: row.codigoExterno ?? '',
-      idTipoErp: row.idTipoErp,
+      idTipoErp: accountTypeInternalToSelectMap.get(row.idTipoErp) ?? row.idTipoErp,
       idTipoAccionPersonal: row.idTipoAccionPersonal,
       idEmpresaCambio: undefined,
       idTipoErpCambio: undefined,
       idTipoAccionPersonalCambio: undefined,
     });
-  }, [form]);
+  }, [form, accountTypeInternalToSelectMap]);
 
   const openEditModal = (row: AccountingAccountListItem) => {
     if (!canEdit) return;
@@ -516,7 +552,13 @@ export function AccountingAccountsManagementPage() {
 
       const values = await form.validateFields();
       const resolvedEmpresa = values.idEmpresaCambio ?? values.idEmpresa ?? defaultCompanyId;
-      const resolvedTipoCuenta = values.idTipoErpCambio ?? values.idTipoErp;
+      const resolvedTipoCuentaRaw = values.idTipoErpCambio ?? values.idTipoErp;
+      const resolvedTipoCuenta = resolvedTipoCuentaRaw
+        ? (accountTypeInternalToSelectMap.get(resolvedTipoCuentaRaw) ?? resolvedTipoCuentaRaw)
+        : undefined;
+      const resolvedTipoCuentaInternal = resolvedTipoCuenta
+        ? (accountTypeSelectToInternalMap.get(resolvedTipoCuenta) ?? resolvedTipoCuenta)
+        : undefined;
       const resolvedTipoAccion = values.idTipoAccionPersonalCambio ?? values.idTipoAccionPersonal;
       const payload = normalizePayload({
         ...values,
@@ -544,8 +586,11 @@ export function AccountingAccountsManagementPage() {
         if (resolvedEmpresa && resolvedEmpresa !== editing.idEmpresa) {
           updatePayload.idEmpresa = resolvedEmpresa;
         }
-        if (resolvedTipoCuenta && resolvedTipoCuenta !== editing.idTipoErp) {
+        if (resolvedTipoCuentaInternal && resolvedTipoCuentaInternal !== editing.idTipoErp) {
           updatePayload.idTipoErp = resolvedTipoCuenta;
+        }
+        if (resolvedTipoCuentaInternal && resolvedTipoCuentaInternal === editing.idTipoErp) {
+          delete updatePayload.idTipoErp;
         }
         if (resolvedTipoAccion && resolvedTipoAccion !== editing.idTipoAccionPersonal) {
           updatePayload.idTipoAccionPersonal = resolvedTipoAccion;
@@ -1087,7 +1132,7 @@ export function AccountingAccountsManagementPage() {
                             <Form.Item name="idTipoErpCambio" label="Cambiar a tipo activo">
                               <Select
                                 placeholder="Seleccionar"
-                                options={activeAccountTypes.map((t) => ({ value: t.id, label: t.nombre }))}
+                                options={activeAccountTypesSorted.map((t) => ({ value: getAccountTypeSelectValue(t), label: formatAccountTypeLabel(t) }))}
                               />
                             </Form.Item>
                           </>
@@ -1095,7 +1140,7 @@ export function AccountingAccountsManagementPage() {
                           <Form.Item name="idTipoErp" label="Tipo de Cuenta *" rules={[{ required: true }]}>
                             <Select
                               placeholder="Seleccionar"
-                              options={activeAccountTypes.map((t) => ({ value: t.id, label: t.nombre }))}
+                              options={activeAccountTypesSorted.map((t) => ({ value: getAccountTypeSelectValue(t), label: formatAccountTypeLabel(t) }))}
                             />
                           </Form.Item>
                         )}

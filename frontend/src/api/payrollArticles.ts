@@ -140,12 +140,12 @@ export async function fetchPersonalActionTypes(): Promise<PersonalActionType[]> 
 
 export async function fetchPayrollArticleAccounts(
   idEmpresa: number,
-  idTipoArticuloNomina?: number,
+  idsReferencia: number[],
   includeInactive = false,
 ): Promise<AccountingAccountOption[]> {
   const params = new URLSearchParams({ idEmpresa: String(idEmpresa) });
-  if (idTipoArticuloNomina) {
-    params.set('idTipoArticuloNomina', String(idTipoArticuloNomina));
+  if (idsReferencia.length > 0) {
+    params.set('idsReferencia', idsReferencia.join(','));
   }
   if (includeInactive) {
     params.set('includeInactive', 'true');

@@ -276,6 +276,10 @@ Permisos por modulo:
   - `erp_tipo_cuenta` (catalogo de tipos ERP)
   - `nom_tipos_accion_personal` (catalogo acciones personal)
   - `erp_cuentas_contables` (cuentas por empresa)
+- Logica actual de tipo de cuenta:
+  - UI muestra y selecciona el tipo por `id_externo_erp` (ej. `Gasto (ext:18)`).
+  - API recibe ese valor en crear/editar y lo resuelve al `id_tipo_erp` interno activo.
+  - Persistencia final en BD: `erp_cuentas_contables.id_tipo_erp` (FK interna).
 - Reglas de UX:
   - Selector multi-empresa en listado (igual que Empleados).
   - Si empresa/tipo/accion queda inactivo, se muestra en solo lectura con badge y se habilita selector para cambiar a activo.
@@ -290,7 +294,7 @@ Permisos por modulo:
 - `payroll-article:edit`.
 - `payroll-article:inactivate`.
 - `payroll-article:reactivate`.
-- `payroll-article:audit` (bitacora).
+- `config:payroll-articles:audit` (bitacora).
 
 **Campos (no existe codigo):**
 - Empresa (obligatorio).
@@ -316,6 +320,13 @@ Permisos por modulo:
 - Gasto Empleado -> [18, 19, 12]
 - Aporte Patronal -> [18, 19, 13]
 
+**Flujo actual de carga de cuentas (Crear/Editar Articulo):**
+- Frontend resuelve `idsReferencia` desde el tipo seleccionado (catalogo fijo).
+- Frontend llama: `GET /payroll-articles/accounts?idEmpresa=...&idsReferencia=...`.
+- Backend filtra en `erp_cuentas_contables` por:
+  - `id_empresa = ?`
+  - `id_tipo_erp IN (idsReferencia)`
+
 **Etiquetas dinamicas de cuenta:**
 - Ingreso: "Cuenta Gasto".
 - Deduccion: "Cuenta Pasivo".
@@ -329,7 +340,7 @@ Permisos por modulo:
 - Cuentas filtradas por empresa y por regla de tipo de articulo (idsReferencia).
 
 **Bitacora:**
-- Solo se muestra en edicion y con permiso `payroll-article:audit`.
+- Solo se muestra en edicion y con permiso `config:payroll-articles:audit`.
 - Carga lazy: solo al abrir la pestaña Bitacora.
 
 **Listado/filtros:**
