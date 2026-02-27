@@ -117,14 +117,16 @@ export class AuthController {
     @Req() req: Request,
     @Res({ passthrough: true }) res: Response,
   ) {
-    const ip = (req.headers['x-forwarded-for'] as string)?.split(',')[0] || req.ip;
-    this.rateLimit.consume(`microsoft-exchange:${ip}`, 10, 60_000);
+    const ip =
+      (req.headers['x-forwarded-for'] as string)?.split(',')[0] || req.ip;
+    await this.rateLimit.consume(`microsoft-exchange:${ip}`, 10, 60_000);
 
-    const identity = await this.microsoftAuthService.exchangeCodeAndValidateIdentity(
-      dto.code,
-      dto.codeVerifier,
-      dto.redirectUri,
-    );
+    const identity =
+      await this.microsoftAuthService.exchangeCodeAndValidateIdentity(
+        dto.code,
+        dto.codeVerifier,
+        dto.redirectUri,
+      );
 
     let issued: Awaited<ReturnType<AuthService['loginWithMicrosoftIdentity']>>;
     try {
@@ -150,7 +152,12 @@ export class AuthController {
       throw error;
     }
 
-    this.setSessionCookies(res, issued.accessToken, issued.refreshToken, issued.csrfToken);
+    this.setSessionCookies(
+      res,
+      issued.accessToken,
+      issued.refreshToken,
+      issued.csrfToken,
+    );
 
     await this.audit.record({
       event: 'login_success',
@@ -196,12 +203,18 @@ export class AuthController {
     @Req() req: Request,
     @Res({ passthrough: true }) res: Response,
   ) {
-    const ip = (req.headers['x-forwarded-for'] as string)?.split(',')[0] || req.ip;
-    this.rateLimit.consume(`microsoft-validate:${ip}`, 10, 60_000);
+    const ip =
+      (req.headers['x-forwarded-for'] as string)?.split(',')[0] || req.ip;
+    await this.rateLimit.consume(`microsoft-validate:${ip}`, 10, 60_000);
 
-    const allowedTenant = this.config.get<string>('MICROSOFT_TENANT_ID')
-      ?? this.config.get<string>('MSAL_TENANT_ID')
-      ?? this.config.get<string>('MSAL_AUTHORITY')?.split('/').filter(Boolean).at(-1);
+    const allowedTenant =
+      this.config.get<string>('MICROSOFT_TENANT_ID') ??
+      this.config.get<string>('MSAL_TENANT_ID') ??
+      this.config
+        .get<string>('MSAL_AUTHORITY')
+        ?.split('/')
+        .filter(Boolean)
+        .at(-1);
 
     if (allowedTenant && dto.tenantId !== allowedTenant) {
       await this.audit.record({
@@ -216,13 +229,20 @@ export class AuthController {
       );
     }
 
-    const allowedDomainsRaw = this.config.get<string>('MICROSOFT_ALLOWED_DOMAINS')
-      ?? this.config.get<string>('MSAL_ALLOWED_DOMAINS')
-      ?? '';
-    const allowedDomains = allowedDomainsRaw.split(',').map((v) => v.trim().toLowerCase()).filter(Boolean);
+    const allowedDomainsRaw =
+      this.config.get<string>('MICROSOFT_ALLOWED_DOMAINS') ??
+      this.config.get<string>('MSAL_ALLOWED_DOMAINS') ??
+      '';
+    const allowedDomains = allowedDomainsRaw
+      .split(',')
+      .map((v) => v.trim().toLowerCase())
+      .filter(Boolean);
     const emailDomain = dto.email.split('@')[1]?.toLowerCase();
 
-    if (!emailDomain || (allowedDomains.length > 0 && !allowedDomains.includes(emailDomain))) {
+    if (
+      !emailDomain ||
+      (allowedDomains.length > 0 && !allowedDomains.includes(emailDomain))
+    ) {
       await this.audit.record({
         event: 'microsoft_validate_failed',
         outcome: 'failed',
@@ -243,7 +263,12 @@ export class AuthController {
       req.headers['user-agent'],
     );
 
-    this.setSessionCookies(res, issued.accessToken, issued.refreshToken, issued.csrfToken);
+    this.setSessionCookies(
+      res,
+      issued.accessToken,
+      issued.refreshToken,
+      issued.csrfToken,
+    );
 
     await this.audit.record({
       event: 'login_success',
@@ -286,13 +311,24 @@ export class AuthController {
     @Req() req: Request,
     @Res({ passthrough: true }) res: Response,
   ) {
-    const ip = (req.headers['x-forwarded-for'] as string)?.split(',')[0] || req.ip;
-    this.rateLimit.consume(`login:${ip}`, 5, 60_000);
+    const ip =
+      (req.headers['x-forwarded-for'] as string)?.split(',')[0] || req.ip;
+    await this.rateLimit.consume(`login:${ip}`, 5, 60_000);
 
     try {
-      const issued = await this.authService.login(dto.email, dto.password, ip, req.headers['user-agent']);
+      const issued = await this.authService.login(
+        dto.email,
+        dto.password,
+        ip,
+        req.headers['user-agent'],
+      );
 
-      this.setSessionCookies(res, issued.accessToken, issued.refreshToken, issued.csrfToken);
+      this.setSessionCookies(
+        res,
+        issued.accessToken,
+        issued.refreshToken,
+        issued.csrfToken,
+      );
 
       await this.audit.record({
         event: 'login_success',
@@ -328,18 +364,33 @@ export class AuthController {
 
   @Public()
   @Post('refresh')
-  async refresh(@Req() req: Request, @Res({ passthrough: true }) res: Response) {
-    const ip = (req.headers['x-forwarded-for'] as string)?.split(',')[0] || req.ip;
-    this.rateLimit.consume(`refresh:${ip}`, 10, 60_000);
+  async refresh(
+    @Req() req: Request,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    const ip =
+      (req.headers['x-forwarded-for'] as string)?.split(',')[0] || req.ip;
+    await this.rateLimit.consume(`refresh:${ip}`, 10, 60_000);
 
-    const refreshToken = req.cookies?.[REFRESH_COOKIE_NAME] as string | undefined;
+    const refreshToken = req.cookies?.[REFRESH_COOKIE_NAME] as
+      | string
+      | undefined;
     if (!refreshToken) {
       throw new UnauthorizedException('Refresh token ausente');
     }
 
-    const issued = await this.authService.refreshSession(refreshToken, ip, req.headers['user-agent']);
+    const issued = await this.authService.refreshSession(
+      refreshToken,
+      ip,
+      req.headers['user-agent'],
+    );
 
-    this.setSessionCookies(res, issued.accessToken, issued.refreshToken, issued.csrfToken);
+    this.setSessionCookies(
+      res,
+      issued.accessToken,
+      issued.refreshToken,
+      issued.csrfToken,
+    );
 
     await this.audit.record({
       event: 'refresh_used',
@@ -361,10 +412,15 @@ export class AuthController {
    */
   @Post('logout')
   async logout(@Req() req: Request, @Res({ passthrough: true }) res: Response) {
-    await this.authService.revokeRefreshToken(req.cookies?.[REFRESH_COOKIE_NAME]);
+    await this.authService.revokeRefreshToken(
+      req.cookies?.[REFRESH_COOKIE_NAME],
+    );
 
     res.clearCookie(COOKIE_NAME, getClearCookieOptions(this.config));
-    res.clearCookie(REFRESH_COOKIE_NAME, getClearRefreshCookieOptions(this.config));
+    res.clearCookie(
+      REFRESH_COOKIE_NAME,
+      getClearRefreshCookieOptions(this.config),
+    );
     res.clearCookie(CSRF_COOKIE_NAME, getClearCsrfCookieOptions(this.config));
 
     await this.audit.record({
@@ -489,14 +545,25 @@ export class AuthController {
   private toBoolean(value: string | number | boolean | undefined): boolean {
     if (value === true || value === 1) return true;
     if (typeof value === 'string') {
-      return ['1', 'true', 'yes', 'y', 'on'].includes(value.trim().toLowerCase());
+      return ['1', 'true', 'yes', 'y', 'on'].includes(
+        value.trim().toLowerCase(),
+      );
     }
     return false;
   }
 
-  private setSessionCookies(res: Response, accessToken: string, refreshToken: string, csrfToken: string): void {
+  private setSessionCookies(
+    res: Response,
+    accessToken: string,
+    refreshToken: string,
+    csrfToken: string,
+  ): void {
     res.cookie(COOKIE_NAME, accessToken, getCookieOptions(this.config));
-    res.cookie(REFRESH_COOKIE_NAME, refreshToken, getRefreshCookieOptions(this.config));
+    res.cookie(
+      REFRESH_COOKIE_NAME,
+      refreshToken,
+      getRefreshCookieOptions(this.config),
+    );
     res.cookie(CSRF_COOKIE_NAME, csrfToken, getCsrfCookieOptions(this.config));
   }
 }
