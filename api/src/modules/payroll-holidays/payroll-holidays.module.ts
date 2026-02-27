@@ -11,3 +11,4 @@ import { IntegrationModule } from '../integration/integration.module';
   providers: [PayrollHolidaysService],
 })
 export class PayrollHolidaysModule {}
+

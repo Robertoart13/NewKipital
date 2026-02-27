@@ -1,11 +1,4 @@
-import {
-  IsDateString,
-  IsIn,
-  IsNotEmpty,
-  IsOptional,
-  IsString,
-  MaxLength,
-} from 'class-validator';
+import { IsDateString, IsIn, IsNotEmpty, IsOptional, IsString, MaxLength } from 'class-validator';
 
 export const PAYROLL_HOLIDAY_TYPES = [
   'OBLIGATORIO_PAGO_DOBLE',
@@ -35,3 +28,4 @@ export class CreatePayrollHolidayDto {
   @MaxLength(2000)
   descripcion?: string;
 }
+

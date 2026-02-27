@@ -1,10 +1,4 @@
-import {
-  IsDateString,
-  IsIn,
-  IsOptional,
-  IsString,
-  MaxLength,
-} from 'class-validator';
+import { IsDateString, IsIn, IsOptional, IsString, MaxLength } from 'class-validator';
 import { PAYROLL_HOLIDAY_TYPES } from './create-payroll-holiday.dto';
 
 export class UpdatePayrollHolidayDto {
@@ -31,3 +25,4 @@ export class UpdatePayrollHolidayDto {
   @MaxLength(2000)
   descripcion?: string;
 }
+
