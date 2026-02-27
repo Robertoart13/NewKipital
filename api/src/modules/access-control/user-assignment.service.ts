@@ -576,14 +576,14 @@ export class UserAssignmentService {
     }
 
     const existing = await this.userRoleGlobalRepo.find({
-      where: { idUsuario, idApp: appId, estado: 1 },
+      where: { idUsuario, idApp: appId },
     });
     const byRoleId = new Map(existing.map((g) => [g.idRol, g]));
-    const beforeRoleIds = existing.map((g) => g.idRol);
+    const beforeRoleIds = existing.filter((g) => g.estado === 1).map((g) => g.idRol);
     const beforeRoleLabels = await this.getRoleLabels(beforeRoleIds);
 
     for (const g of existing) {
-      if (!normalizedRoleIds.includes(g.idRol)) {
+      if (g.estado === 1 && !normalizedRoleIds.includes(g.idRol)) {
         g.estado = 0;
         g.modificadoPor = modifierId;
         await this.userRoleGlobalRepo.save(g);
@@ -940,10 +940,12 @@ export class UserAssignmentService {
     }
 
     const existing = await this.userPermGlobalDenyRepo.find({
-      where: { idUsuario, idApp: appId, estado: 1 },
+      where: { idUsuario, idApp: appId },
     });
-    const existingPermIds = new Set(existing.map((e) => e.idPermiso));
-    const allPermIdsForBefore = [...existingPermIds];
+    const existingByPermId = new Map(existing.map((e) => [e.idPermiso, e]));
+    const activeExisting = existing.filter((e) => e.estado === 1);
+    const activePermIds = new Set(activeExisting.map((e) => e.idPermiso));
+    const allPermIdsForBefore = [...activePermIds];
     const allPermsForBefore =
       allPermIdsForBefore.length > 0
         ? await this.permRepo.find({ where: { id: In(allPermIdsForBefore) } })
@@ -951,7 +953,7 @@ export class UserAssignmentService {
     const permByIdForBefore = new Map(
       allPermsForBefore.map((p) => [p.id, p.codigo]),
     );
-    const beforeDenyCodes = existing
+    const beforeDenyCodes = activeExisting
       .map((e) => permByIdForBefore.get(e.idPermiso))
       .filter(Boolean) as string[];
 
@@ -961,7 +963,7 @@ export class UserAssignmentService {
         .filter((id): id is number => id != null),
     );
 
-    for (const e of existing) {
+    for (const e of activeExisting) {
       if (!targetPermIds.has(e.idPermiso)) {
         e.estado = 0;
         e.modificadoPor = modifierId;
@@ -970,7 +972,15 @@ export class UserAssignmentService {
     }
 
     for (const permId of targetPermIds) {
-      if (existingPermIds.has(permId)) continue;
+      const ex = existingByPermId.get(permId);
+      if (ex) {
+        if (ex.estado !== 1) {
+          ex.estado = 1;
+          ex.modificadoPor = modifierId;
+          await this.userPermGlobalDenyRepo.save(ex);
+        }
+        continue;
+      }
       await this.userPermGlobalDenyRepo.save(
         this.userPermGlobalDenyRepo.create({
           idUsuario,
