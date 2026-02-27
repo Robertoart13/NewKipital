@@ -52,6 +52,9 @@ import { PayrollArticlesService } from './payroll-articles/payroll-articles.serv
 import { PayrollMovementsModule } from './payroll-movements/payroll-movements.module';
 import { PayrollMovementsController } from './payroll-movements/payroll-movements.controller';
 import { PayrollMovementsService } from './payroll-movements/payroll-movements.service';
+import { PayrollHolidaysModule } from './payroll-holidays/payroll-holidays.module';
+import { PayrollHolidaysController } from './payroll-holidays/payroll-holidays.controller';
+import { PayrollHolidaysService } from './payroll-holidays/payroll-holidays.service';
 
 describe('Modules Smoke', () => {
   it('loads access-control classes', () => {
@@ -131,5 +134,11 @@ describe('Modules Smoke', () => {
     expect(PayrollMovementsModule).toBeDefined();
     expect(PayrollMovementsController).toBeDefined();
     expect(PayrollMovementsService).toBeDefined();
+  });
+
+  it('loads payroll holidays module', () => {
+    expect(PayrollHolidaysModule).toBeDefined();
+    expect(PayrollHolidaysController).toBeDefined();
+    expect(PayrollHolidaysService).toBeDefined();
   });
 });

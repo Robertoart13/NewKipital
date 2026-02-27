@@ -90,6 +90,16 @@ Definir el contrato oficial de endpoints mínimos para Fase 1 y el formato exact
 | GET | `/api/payroll-movements/classes` | Catalogo de clases. | Cookie | payroll-movement:view |
 | GET | `/api/payroll-movements/projects?idEmpresa=N` | Catalogo de proyectos por empresa. | Cookie | payroll-movement:view |
 
+### Payroll Holidays (Listado de Feriados)
+
+| Método | Ruta | Descripción | Auth | Permiso |
+|--------|------|-------------|------|---------|
+| GET | `/api/payroll-holidays` | Listar feriados de planilla. | Cookie | payroll-holiday:view |
+| GET | `/api/payroll-holidays/:id` | Detalle de feriado. | Cookie | payroll-holiday:view |
+| POST | `/api/payroll-holidays` | Crear feriado. | Cookie | payroll-holiday:create |
+| PATCH | `/api/payroll-holidays/:id` | Editar feriado. | Cookie | payroll-holiday:edit |
+| DELETE | `/api/payroll-holidays/:id` | Eliminar feriado. | Cookie | payroll-holiday:delete |
+
 ### Personal Actions (esqueleto MVP)
 
 | Método | Ruta | Descripción | Auth | Permiso |
@@ -126,6 +136,10 @@ Definir el contrato oficial de endpoints mínimos para Fase 1 y el formato exact
 | `payroll-movement:edit` | payroll-movement | edit | Editar movimientos de nomina |
 | `payroll-movement:inactivate` | payroll-movement | inactivate | Inactivar movimientos de nomina |
 | `payroll-movement:reactivate` | payroll-movement | reactivate | Reactivar movimientos de nomina |
+| `payroll-holiday:view` | payroll-holiday | view | Ver/listar feriados de planilla |
+| `payroll-holiday:create` | payroll-holiday | create | Crear feriados de planilla |
+| `payroll-holiday:edit` | payroll-holiday | edit | Editar feriados de planilla |
+| `payroll-holiday:delete` | payroll-holiday | delete | Eliminar feriados de planilla |
 | `employee:view` | employee | view | Ver empleados |
 | `employee:create` | employee | create | Crear empleado |
 | `employee:edit` | employee | edit | Editar empleado |

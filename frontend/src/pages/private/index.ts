@@ -16,3 +16,4 @@ export { PayrollArticlesManagementPage } from './payroll-params/PayrollArticlesM
 export { PayrollMovementsManagementPage } from './payroll-params/PayrollMovementsManagementPage';
 export { PayrollManagementPage } from './payroll-management/PayrollManagementPage';
 export { PayrollCalendarPage } from './payroll-management/PayrollCalendarPage';
+export { PayrollHolidaysPage } from './payroll-management/PayrollHolidaysPage';
