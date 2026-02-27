@@ -2,6 +2,7 @@ import { Spin, Flex } from 'antd';
 import { SafetyCertificateOutlined } from '@ant-design/icons';
 import { AppRouter } from './router/AppRouter';
 import { useSessionRestore } from './hooks/useSessionRestore';
+import { usePermissionsRealtimeSync } from './hooks/usePermissionsRealtimeSync';
 import { useAppSelector } from './store/hooks';
 import { isMicrosoftOAuthCallbackInProgress } from './lib/microsoftAuth';
 
@@ -12,6 +13,7 @@ import { isMicrosoftOAuthCallbackInProgress } from './lib/microsoftAuth';
  */
 function App() {
   useSessionRestore();
+  usePermissionsRealtimeSync();
   const sessionLoading = useAppSelector((s) => s.auth.sessionLoading);
   const isMicrosoftPopupCallback = isMicrosoftOAuthCallbackInProgress();
 

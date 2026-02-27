@@ -21,9 +21,9 @@ describe('payroll and personal actions api', () => {
       json: vi.fn().mockResolvedValue([]),
     } as any);
 
-    await fetchPayrolls('5', true);
+    await fetchPayrolls('5', true, '2026-01-01', '2026-03-01');
 
-    expect(mockHttpFetch).toHaveBeenCalledWith('/payroll?idEmpresa=5&includeInactive=true');
+    expect(mockHttpFetch).toHaveBeenCalledWith('/payroll?idEmpresa=5&includeInactive=true&fechaDesde=2026-01-01&fechaHasta=2026-03-01');
   });
 
   it('fetchPayroll should throw when backend response is not ok', async () => {

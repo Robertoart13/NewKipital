@@ -17,6 +17,7 @@ import {
 } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import {
+  AppstoreOutlined,
   ArrowLeftOutlined,
   CaretDownOutlined,
   CaretRightOutlined,
@@ -64,6 +65,28 @@ type MatrixRow = {
   descripcion?: string | null;
   children?: MatrixRow[];
 };
+
+const MODULE_LABELS_ES: Record<string, string> = {
+  'accounting-account': 'cuentas contables',
+  class: 'clases',
+  company: 'empresas',
+  config: 'configuracion',
+  department: 'departamentos',
+  employee: 'empleados',
+  ops: 'operaciones',
+  payroll: 'nomina',
+  'payroll-article': 'articulos de nomina',
+  'payroll-movement': 'movimientos de nomina',
+  'personal-action': 'acciones de personal',
+  position: 'puestos',
+  project: 'proyectos',
+  report: 'reportes',
+  timewise: 'timewise',
+};
+
+function getModuleLabelEs(moduleName: string): string {
+  return MODULE_LABELS_ES[moduleName] ?? moduleName;
+}
 
 export function RolesManagementPage() {
   const { message } = AntdApp.useApp();
@@ -189,7 +212,7 @@ export function RolesManagementPage() {
         type: 'module',
         moduleName: group.moduleName,
         app: selectedApp,
-        label: group.moduleName,
+        label: getModuleLabelEs(group.moduleName),
         children: filtered.map((p) => ({
           key: `perm:${p.codigo}`,
           type: 'permission' as const,
@@ -391,7 +414,7 @@ export function RolesManagementPage() {
                       : 'KPITAL 360: ERP de planillas y RRHH. Los permisos aplican solo en KPITAL.'
                   }
                   trigger={['hover']}
-                  overlayInnerStyle={{ whiteSpace: 'nowrap' }}
+                  styles={{ container: { whiteSpace: 'nowrap' } }}
                 >
                   <span>
                     <InfoCircleOutlined style={{ fontSize: 12, cursor: 'help' }} />
@@ -453,6 +476,24 @@ export function RolesManagementPage() {
           </div>
         </div>
       </div>
+
+      <Card className={styles.mainCard} style={{ marginBottom: 20 }}>
+        <div className={styles.mainCardBody}>
+          <div className={styles.gestionHeader}>
+            <div className={styles.gestionHeaderLeft}>
+              <div className={styles.gestionIconWrap}>
+                <AppstoreOutlined className={styles.gestionIcon} />
+              </div>
+              <div>
+                <h2 className={styles.gestionTitle}>Gestion de Roles</h2>
+                <p className={styles.gestionDesc}>
+                  Defina qué permisos tiene cada rol en KPITAL 360 y TimeWise para administrar el acceso al sistema.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </Card>
 
       <div className={styles.appSelector}>
         <span className={styles.appSelectorLabel}>Aplicación:</span>

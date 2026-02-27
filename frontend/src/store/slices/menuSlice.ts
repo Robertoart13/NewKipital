@@ -91,7 +91,6 @@ const initialMenuConfig: MenuItem[] = [
     id: 'payroll-params',
     label: 'Parametros de Planilla',
     path: '/payroll-params',
-    requiredPermission: 'payroll-article:view',
     children: [
       {
         id: 'calendario-nomina',
@@ -99,33 +98,22 @@ const initialMenuConfig: MenuItem[] = [
         path: '/payroll-params/calendario',
         requiredPermission: 'payroll:view',
         children: [
-          { id: 'calendario', label: 'Calendario', path: '/payroll-params/calendario/ver' },
-          { id: 'listado-feriados', label: 'Listado de Feriados', path: '/payroll-params/calendario/feriados' },
-          { id: 'dias-pago-planilla', label: 'Listado de Días de Pago de Planilla', path: '/payroll-params/calendario/dias-pago' },
+          {
+            id: 'calendario',
+            label: 'Calendario',
+            path: '/payroll-params/calendario/ver',
+            requiredPermission: 'payroll:calendar:view',
+          },
+          {
+            id: 'dias-pago-planilla',
+            label: 'Listado de Días de Pago de Planilla',
+            path: '/payroll-params/calendario/dias-pago',
+            requiredPermission: 'payroll:view',
+          },
         ],
       },
       { id: 'articulos-nomina', label: 'Artículos de Nomina', path: '/payroll-params/articulos', requiredPermission: 'payroll-article:view' },
-      { id: 'movimientos-nomina', label: 'Movimientos de Nomina', path: '/payroll-params/movimientos', requiredPermission: 'payroll:view' },
-    ],
-  },
-  {
-    id: 'payroll-management',
-    label: 'Gestion Planilla',
-    path: '/payroll-management',
-    requiredPermission: 'payroll:view',
-    children: [
-      {
-        id: 'planillas',
-        label: 'Planillas',
-        path: '/payroll-management/planillas',
-        children: [
-          { id: 'generar-planilla', label: 'Generar Planilla', path: '/payroll-management/planillas/generar' },
-          { id: 'listado-planillas', label: 'Listado de planillas', path: '/payroll-management/planillas/listado' },
-          { id: 'planillas-aplicadas', label: 'Listado de planilla Aplicadas', path: '/payroll-management/planillas/aplicadas' },
-          { id: 'carga-masiva', label: 'Carga Masiva', path: '/payroll-management/planillas/carga-masiva' },
-        ],
-      },
-      { id: 'traslado-interempresas', label: 'Traslado Interempresas', path: '/payroll-management/traslado-interempresas' },
+      { id: 'movimientos-nomina', label: 'Movimientos de Nomina', path: '/payroll-params/movimientos', requiredPermission: 'payroll-movement:view' },
     ],
   },
   {
@@ -198,4 +186,5 @@ const menuSlice = createSlice({
 
 export const { setMenuConfig } = menuSlice.actions;
 export default menuSlice.reducer;
+
 

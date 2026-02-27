@@ -1,7 +1,7 @@
 ﻿# KPITAL 360 â€” Estado Actual del Proyecto
 
 **Documento:** 09  
-**Ãšltima actualizaciÃ³n:** 2026-02-25  
+**Ãšltima actualizaciÃ³n:** 2026-02-27  
 **PropÃ³sito:** Registro vivo del avance. Se actualiza cada vez que se completa una directiva o se hace un cambio significativo.
 
 ---
@@ -245,8 +245,8 @@ Solo existe el **menÃº horizontal superior** (header). No hay sidebar/menÃº 
 
 **Opciones top-level:**
 1. **Acciones de Personal** â€” SubmenÃºs completos definidos (Entradas, Salidas, Deducciones, Compensaciones, Incapacidades, Licencias, Ausencias)
-2. **Parametros de Planilla** â€” Definido: Calendario de NÃ³mina (Calendario, Feriados, DÃ­as de Pago), ArtÃ­culos de Nomina, Movimientos de Nomina
-3. **Gestion Planilla** â€” Definido: Planillas (Generar, Listado, Aplicadas, Carga Masiva), Traslado Interempresas
+2. **Parametros de Planilla** â€” Activo: Calendario de NÃ³mina (Calendario, DÃ­as de Pago), ArtÃ­culos de Nomina, Movimientos de Nomina
+3. **Gestion Planilla** â€” Fuera de alcance actual (oculto en menÃº)
 4. **Configuracion** â€” Definido con 2 grupos: Seguridad (Roles y Permisos, Usuarios) + Gestion Organizacional (Reglas, Empresas, Empleados, Clases, Proyectos, Cuentas Contables, Departamentos, Puestos)
 
 ### 4.x Regla de UX - Bitacora en modales de edicion
@@ -356,6 +356,88 @@ Permisos por modulo:
 
 Detalle completo en [08-EstructuraMenus.md](./08-EstructuraMenus.md).
 
+### 4.y Modulo Movimientos de Nomina (Parametros de Planilla)
+
+Estado: Implementado (backend + frontend + BD en `hr_pro`).
+
+**Permisos:**
+- `payroll-movement:view`
+- `payroll-movement:create`
+- `payroll-movement:edit`
+- `payroll-movement:inactivate`
+- `payroll-movement:reactivate`
+- `config:payroll-movements:audit`
+
+**Ruta frontend:**
+- `/payroll-params/movimientos`
+
+**Tabla BD:**
+- `nom_movimientos_nomina`
+  - empresa, articulo nomina, tipo accion personal, clase/proyecto opcionales,
+  - tipo de calculo por booleano (`es_monto_fijo_movimiento_nomina`),
+  - `monto_fijo_movimiento_nomina` y `porcentaje_movimiento_nomina` guardados como texto para preservar decimales exactos ingresados por usuario.
+
+**Reglas clave:**
+- Articulo de nomina se carga por empresa.
+- Tipo accion personal se autocompleta desde el articulo seleccionado.
+- Si monto fijo: porcentaje debe ser `0`.
+- Si porcentaje: monto fijo debe ser `0`.
+- Monto y porcentaje no negativos.
+- Bitacora visible solo con `config:payroll-movements:audit`.
+- En modal Crear/Editar, el boton guardar funciona sin abrir todas las pestañas; la validacion ocurre al submit y posiciona al usuario en la pestaña con error si aplica.
+
+**API del modulo:**
+- `GET /api/payroll-movements`
+- `GET /api/payroll-movements/:id`
+- `POST /api/payroll-movements`
+- `PUT /api/payroll-movements/:id`
+- `PATCH /api/payroll-movements/:id/inactivate`
+- `PATCH /api/payroll-movements/:id/reactivate`
+- `GET /api/payroll-movements/:id/audit-trail`
+- `GET /api/payroll-movements/articles?idEmpresa=...`
+- `GET /api/payroll-movements/personal-action-types`
+- `GET /api/payroll-movements/classes`
+- `GET /api/payroll-movements/projects?idEmpresa=...`
+
+**Nota de migraciones en entorno actual:**
+- La migracion del modulo fue agregada en codigo.
+- En la BD `HRManagementDB_produccion` se aplico SQL idempotente directo para este modulo por desalineacion historica del historial de migraciones legacy.
+
+### 4.x Sincronizacion de permisos en tiempo real (Enterprise)
+- Objetivo: reflejar cambios de roles/permisos sin refrescar pantalla y sin afectar usuarios no involucrados.
+- Backend:
+  - Cache de permisos con llave versionada por usuario/contexto:
+    - `perm:{userId}:{companyId}:{appCode}:{versionToken}`
+  - `versionToken` proviene de `sys_authz_version` (global + usuario).
+  - Cambios de permisos en roles:
+    - Se detectan usuarios afectados por `id_rol` en `sys_usuario_rol` y `sys_usuario_rol_global`.
+    - Se ejecuta `bumpUsers([...afectados])` (no `bumpGlobal`) para invalidacion dirigida.
+    - Se emite evento SSE `permissions.changed` solo a usuarios afectados.
+  - Cambios de asignaciones/permisos por usuario:
+    - `UserAssignmentService` tambien emite `permissions.changed` al usuario afectado.
+  - Endpoints de soporte:
+    - `GET /api/auth/permissions-stream` (SSE por usuario autenticado).
+    - `GET /api/auth/authz-token` (token liviano de version de autorizacion).
+    - `GET /api/auth/me` y `POST /api/auth/switch-company` aceptan `refreshAuthz=true` para bypass de cache.
+- Frontend:
+  - Hook realtime abre SSE contra backend usando URL absoluta:
+    - `new EventSource(\`${API_URL}/auth/permissions-stream\`, { withCredentials: true })`
+  - `API_URL` viene de `frontend/src/config/api.ts` (`VITE_API_URL` o `http://localhost:3000/api`).
+  - Al recibir `permissions.changed`:
+    - Refresca permisos con bypass de cache (`refreshAuthz=true`) en `/auth/switch-company` o `/auth/me`.
+    - Actualiza Redux `permissions`.
+    - Menu y guards se actualizan en vivo.
+  - Respaldo enterprise anti-latencia:
+    - Polling liviano de `GET /auth/authz-token` cada ~2.5 segundos.
+    - Si cambia el token de version, se fuerza refresh de permisos inmediatamente.
+- Fallback UX:
+  - Refresco al volver foco/visibilidad para pestañas inactivas.
+- Nota de troubleshooting:
+  - Si en consola aparece `GET http://localhost:5173/api/auth/permissions-stream 404`, el SSE esta pegando al host de Vite.
+  - Solucion aplicada: usar `API_URL` absoluta al backend (no ruta relativa `/api/...`).
+- Resultado:
+  - Si un usuario pierde `payroll-article:view` estando en `/payroll-params/articulos`, el `PermissionGuard` cambia a 403 automaticamente sin recargar.
+
 ---
 
 ## Directivas Completadas (CronolÃ³gico)
@@ -439,6 +521,12 @@ Detalle completo en [08-EstructuraMenus.md](./08-EstructuraMenus.md).
 | 2026-02-24 | **MenÃº y paleta:** Opciones de menÃº requieren permiso; se ocultan si no existe en BD o no estÃ¡ asignado al usuario (Doc 08, 26). Color corporativo `#20638d` reemplaza celeste en tema, menÃº, dropdown hover (Doc 05). |
 | 2026-02-24 | **Inventario de testing:** Agregada seccion Testing vigente: 321/321 pruebas (Backend 137, Frontend 184), 15 specs + 4 E2E backend, 6 test files frontend. Actualizado conteo API (~176 TS) y Frontend (~111 TS/TSX). |
 | 2026-02-25 | **ERP Cuentas Contables:** Modulo completo (CRUD + bitacora), permisos nuevos, selector multi-empresa en listado, reglas de inactivos y preload en edicion. Testing actualizado a 518/518. |
+| 2026-02-27 | **Planilla v2 compatible (Directiva 40):** Se oficializa blueprint ejecutable incremental (sin renames destructivos), estados numericos centralizados, unicidad operativa `slot_key + is_active`, seed RBAC `payroll:*` en `hr_pro` como prerequisito, y fases de implementacion con compatibilidad total. |
+| 2026-02-27 | **Planilla Fase 1+2 (sin NetSuite):** Implementadas tablas de snapshot/resultados (`nomina_empleados_snapshot`, `nomina_inputs_snapshot`, `nomina_resultados`), endpoint `PATCH /payroll/:id/process`, resumen `GET /payroll/:id/snapshot-summary`, enforcement de `verify` con precondiciones de snapshot y resultados, y seed operativo de `payroll:*` en `hr_pro`. |
+| 2026-02-27 | **RBAC Planilla enterprise (3 roles):** Se agrega `payroll:process` independiente de `payroll:edit`, nuevos permisos `view_sensitive/export/calendar/type/pay_period/netsuite:view_log` y matriz aplicada para `OPERADOR_NOMINA`, `GERENTE_NOMINA`, `MASTER` en `mysql_hr_pro`. |
+| 2026-02-27 | **Calendario de Planilla (UI):** Se habilita ruta `/payroll-params/calendario/ver` con filtros operativos (empresa, moneda, tipo, estado, periodo), modo `Mensual` y `Timeline`, indicadores de riesgo y panel lateral de detalle con acciones por permisos/estado. |
+| 2026-02-27 | **Reglas UX Planilla:** Confirmacion obligatoria antes de `Procesar/Verificar/Aplicar`; bloqueo de `Verificar` cuando no hay movimientos procesados (snapshot de inputs = 0) con mensaje funcional para usuario final. |
+| 2026-02-27 | **Menu Parametros de Planilla:** `Listado de Feriados` oculto por alcance y `Gestion Planilla` fuera de alcance (opciones no visibles). |
 
 
 

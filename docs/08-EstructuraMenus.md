@@ -46,32 +46,31 @@ Acciones de Personal
 
 ### Parametros de Planilla
 
-Permiso requerido: `payroll:view`
+Permiso requerido: por opcion
 
 ```
 Parametros de Planilla
 └── Parametros Iniciales
     ├── Calendario de Nómina >
     │   ├── Calendario
-    │   ├── Listado de Feriados
     │   └── Listado de Días de Pago de Planilla
     ├── Artículos de Nomina
     └── Movimientos de Nomina
 ```
 
+Permisos por opcion:
+- Articulos de Nomina: `payroll-article:view`
+- Movimientos de Nomina: `payroll-movement:view`
+- Calendario: `payroll:calendar:view`
+- Listado de Dias de Pago de Planilla: `payroll:view`
+- `Listado de Feriados` queda oculto/no disponible hasta nuevo alcance funcional y permisos dedicados.
+
 ### Gestion Planilla
 
-Permiso requerido: `payroll:view`
-
-```
-Gestion Planilla
-├── Planillas >
-│   ├── Generar Planilla
-│   ├── Listado de planillas
-│   ├── Listado de planilla Aplicadas
-│   └── Carga Masiva
-└── Traslado Interempresas
-```
+Actualmente **fuera de alcance** y oculto en menu.  
+La apertura/listado/operacion de planillas se trabaja desde:
+- `Parametros de Planilla > Calendario de Nómina > Listado de Días de Pago de Planilla`
+- `Parametros de Planilla > Calendario de Nómina > Calendario`
 
 ### Configuracion
 
@@ -120,8 +119,8 @@ Las opciones que aún no tienen permiso creado en BD (ej. Reglas de Distribució
 | Tercera | Sub-submenú "Salidas de Personal" → Despidos, Renuncias |
 | Cuarta | Sub-submenú "Deducciones" → Retenciones, Descuentos |
 | Quinta | Sub-submenú "Compensaciones" → Aumentos, Bonificaciones, Horas Extras, Vacaciones |
-| Sexta | "Parametros de Planilla" completo: Calendario de Nómina (Calendario, Feriados, Días de Pago), Artículos de Nomina, Movimientos de Nomina |
-| Séptima | "Gestion Planilla" completo: Planillas (Generar, Listado, Aplicadas, Carga Masiva), Traslado Interempresas |
+| Sexta | "Parametros de Planilla": Calendario de Nómina (Calendario, Días de Pago), Artículos de Nomina, Movimientos de Nomina |
+| Séptima | "Gestion Planilla" se difiere; opciones ocultas por alcance actual |
 | Octava | "Configuracion" completo: Seguridad (Roles y Permisos con sub, Usuarios) + Gestion Organizacional (Reglas, Empresas, Empleados, Clases, Proyectos, Cuentas, Departamentos, Puestos) |
 
 ---

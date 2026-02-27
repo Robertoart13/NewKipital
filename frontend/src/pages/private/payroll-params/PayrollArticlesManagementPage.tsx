@@ -4,6 +4,7 @@ import {
   App as AntdApp,
   Button,
   Card,
+  Flex,
   Form,
   Spin,
   Tag,
@@ -842,12 +843,35 @@ export function PayrollArticlesManagementPage() {
             </p>
           </div>
         </div>
-        {canCreate && (
-          <Button type="primary" icon={<PlusOutlined />} onClick={openCreateModal} className={styles.btnPrimary}>
-            Nuevo Articulo
-          </Button>
-        )}
       </div>
+
+      <Card className={styles.mainCard} style={{ marginBottom: 20 }}>
+        <div className={styles.mainCardBody}>
+          <Flex align="center" justify="space-between" wrap="wrap" gap={16}>
+            <Flex align="center" gap={16}>
+              <div className={styles.gestionIconWrap}>
+                <TagsOutlined className={styles.gestionIcon} />
+              </div>
+              <div>
+                <h2 className={styles.gestionTitle}>Gestion de Articulos de Nomina</h2>
+                <p className={styles.gestionDesc}>
+                  Administre y consulte todos los articulos de nomina configurados para las empresas
+                </p>
+              </div>
+            </Flex>
+            {canCreate ? (
+              <Button
+                type="primary"
+                icon={<PlusOutlined />}
+                className={`${styles.actionButton} ${styles.btnPrimary}`}
+                onClick={openCreateModal}
+              >
+                Nuevo Articulo
+              </Button>
+            ) : null}
+          </Flex>
+        </div>
+      </Card>
 
       <Card className={styles.mainCard}>
         <PayrollArticlesTable

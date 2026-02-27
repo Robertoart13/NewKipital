@@ -19,6 +19,9 @@ import {
   PositionsManagementPage,
   AutomationMonitoringPage,
   PayrollArticlesManagementPage,
+  PayrollMovementsManagementPage,
+  PayrollManagementPage,
+  PayrollCalendarPage,
 } from '../pages/private';
 
 /**
@@ -160,6 +163,37 @@ export function AppRouter() {
             </PrivateLayout>
           )}
           path="/payroll-params/articulos"
+        />
+        <Route
+          element={(
+            <PrivateLayout>
+              <PermissionGuard requiredPermission="payroll-movement:view">
+                <PayrollMovementsManagementPage />
+              </PermissionGuard>
+            </PrivateLayout>
+          )}
+          path="/payroll-params/movimientos"
+        />
+        <Route
+          element={(
+            <PrivateLayout>
+              <PermissionGuard requiredPermission="payroll:calendar:view">
+                <PayrollCalendarPage />
+              </PermissionGuard>
+            </PrivateLayout>
+          )}
+          path="/payroll-params/calendario/ver"
+        />
+        <Route path="/payroll-params/calendario" element={<Navigate to="/payroll-params/calendario/ver" replace />} />
+        <Route
+          element={(
+            <PrivateLayout>
+              <PermissionGuard requiredPermission="payroll:view">
+                <PayrollManagementPage />
+              </PermissionGuard>
+            </PrivateLayout>
+          )}
+          path="/payroll-params/calendario/dias-pago"
         />
         <Route
           element={(

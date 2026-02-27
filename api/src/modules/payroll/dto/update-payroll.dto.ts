@@ -1,22 +1,14 @@
-import {
-  IsInt,
-  IsDateString,
-  IsOptional,
-  IsEnum,
-  IsString,
-  MaxLength,
-} from 'class-validator';
-import {
-  TipoPlanilla,
-  MonedaCalendario,
-} from '../entities/payroll-calendar.entity';
+import { IsInt, IsDateString, IsOptional, IsEnum, IsString, MaxLength } from 'class-validator';
+import { MonedaCalendario } from '../entities/payroll-calendar.entity';
 
-export class CreatePayrollDto {
+export class UpdatePayrollDto {
+  @IsOptional()
   @IsInt()
-  idEmpresa: number;
+  idEmpresa?: number;
 
+  @IsOptional()
   @IsInt()
-  idPeriodoPago: number;
+  idPeriodoPago?: number;
 
   @IsOptional()
   @IsInt()
@@ -32,21 +24,25 @@ export class CreatePayrollDto {
   @MaxLength(30)
   tipoPlanilla?: string;
 
+  @IsOptional()
   @IsDateString()
-  periodoInicio: string;
+  periodoInicio?: string;
 
+  @IsOptional()
   @IsDateString()
-  periodoFin: string;
+  periodoFin?: string;
 
   @IsOptional()
   @IsDateString()
   fechaCorte?: string;
 
+  @IsOptional()
   @IsDateString()
-  fechaInicioPago: string;
+  fechaInicioPago?: string;
 
+  @IsOptional()
   @IsDateString()
-  fechaFinPago: string;
+  fechaFinPago?: string;
 
   @IsOptional()
   @IsDateString()
@@ -65,3 +61,4 @@ export class CreatePayrollDto {
   @MaxLength(20)
   etiquetaColor?: string;
 }
+

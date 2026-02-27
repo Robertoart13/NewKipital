@@ -7,7 +7,6 @@ import {
   Logger,
 } from '@nestjs/common';
 import { QueryFailedError } from 'typeorm';
-import type { Request, Response } from 'express';
 
 @Catch()
 export class GlobalExceptionFilter implements ExceptionFilter {
@@ -15,41 +14,20 @@ export class GlobalExceptionFilter implements ExceptionFilter {
 
   catch(exception: unknown, host: ArgumentsHost): void {
     const ctx = host.switchToHttp();
-    const response = ctx.getResponse<Response>();
-    const request = ctx.getRequest<Request>();
+    const response = ctx.getResponse();
 
     if (exception instanceof HttpException) {
       const status = exception.getStatus();
       const exceptionResponse = exception.getResponse();
-
-      // Si ValidationPipe u otro código ya estructuró el error, pasarlo tal cual
-      if (
-        typeof exceptionResponse === 'object' &&
-        exceptionResponse !== null &&
-        'success' in exceptionResponse
-      ) {
-        response.status(status).json(exceptionResponse);
-        return;
-      }
-
-      const message =
-        typeof exceptionResponse === 'string'
-          ? exceptionResponse
-          : ((exceptionResponse as Record<string, unknown>).message ??
-            exception.message);
-
-      if (status >= 500) {
-        this.logger.error(
-          `[${request.method}] ${request.url} → ${status}: ${String(message)}`,
-        );
-      }
+      const normalized = typeof exceptionResponse === 'string'
+        ? { message: exceptionResponse }
+        : (exceptionResponse as Record<string, unknown>);
 
       response.status(status).json({
         success: false,
-        statusCode: status,
-        message,
-        timestamp: new Date().toISOString(),
-        path: request.url,
+        data: null,
+        message: normalized.message ?? 'No se pudo completar la solicitud.',
+        error: normalized.error ?? exception.name,
       });
       return;
     }
@@ -81,18 +59,12 @@ export class GlobalExceptionFilter implements ExceptionFilter {
       }
     }
 
-    // Error inesperado (no-HTTP): loguear y responder genérico sin exponer detalles
-    this.logger.error(
-      `[${request.method}] ${request.url} → Error inesperado: ${(exception as Error)?.message ?? String(exception)}`,
-      (exception as Error)?.stack,
-    );
-
+    this.logger.error('Error no controlado', exception as Error);
     response.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
       success: false,
-      statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
-      message: 'Error interno del servidor',
-      timestamp: new Date().toISOString(),
-      path: request.url,
+      data: null,
+      message: 'Ocurrio un error inesperado al procesar la solicitud.',
+      error: 'Internal server error',
     });
   }
 
@@ -122,3 +94,4 @@ export class GlobalExceptionFilter implements ExceptionFilter {
     return false;
   }
 }
+

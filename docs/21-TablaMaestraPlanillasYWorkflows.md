@@ -244,3 +244,93 @@ Ya implementado: **IdentitySyncWorkflow** escucha `employee.email_changed`.
 - Abierta, En Proceso, Verificada
 - Aplicada (final), Contabilizada (final)
 - Inactiva (soft)
+
+---
+
+## Actualizacion 2026-02-27 - Compatibilidad v2 ejecutable
+
+Se aprueba evolucion incremental sin reemplazo destructivo del esquema actual.
+
+Lineamientos:
+- Mantener `nom_calendarios_nomina` y su naming actual en Fase 1.
+- Agregar nuevas capacidades por migracion incremental (`ALTER`) sin renames duros.
+- Centralizar mapping de estados numericos como fuente de verdad.
+- Implementar unicidad operativa con `slot_key + is_active` para permitir historicos.
+- Seedear permisos `payroll:*` en `hr_pro` antes de habilitar flujo completo.
+
+Referencia canonica:
+- `docs/40-BlueprintPlanillaV2Compatible.md`
+
+### Implementado (sin NetSuite)
+
+- Tablas de corrida:
+  - `nomina_empleados_snapshot`
+  - `nomina_inputs_snapshot`
+  - `nomina_resultados`
+- Flujo operativo en API:
+  - `process`: `Abierta -> En Proceso` con snapshot + ligue de acciones aprobadas + resultados base.
+  - `verify`: requiere existencia de snapshot, inputs y resultados para permitir `En Proceso -> Verificada`.
+- Se mantiene inmutabilidad de `Aplicada`.
+
+Pendiente fuera de este bloque:
+- Envio/reintento NetSuite.
+
+## Actualizacion operativa 2026-02-27 (bitacora + filtros + UX)
+
+### Bitacora obligatoria de planilla
+
+Regla formal:
+- Toda transicion o cambio de datos de planilla debe auditarse en `sys_auditoria_acciones`.
+- No se acepta bitacora solo tecnica para planilla.
+
+Acciones auditadas:
+- create
+- update
+- process
+- verify
+- apply
+- reopen
+- inactivate
+
+Consulta:
+- `GET /api/payroll/:id/audit-trail`
+
+Salida esperada:
+- actor
+- fecha
+- descripcion
+- cambios por campo (`antes` / `despues`)
+
+### Filtro de listado por rango de fechas
+
+Se adopta filtro por traslape de periodo:
+- `fecha_fin_periodo >= fechaDesde`
+- `fecha_inicio_periodo <= fechaHasta`
+
+Parametros:
+- `fechaDesde`
+- `fechaHasta`
+- `idEmpresa`
+- `includeInactive`
+
+Default UI:
+- `hoy - 1 mes` a `hoy + 1 mes`
+
+### Edicion de planilla (regla UX)
+
+- El modal de edicion debe abrir inmediatamente.
+- Mientras llega detalle remoto debe mostrar preload.
+- La cabecera de nombre generado no debe vaciarse en edicion.
+
+### Calendario operativo de planilla (regla UX)
+
+- Vista mensual y vista timeline para lectura operativa.
+- Filtros obligatorios: empresa, moneda, tipo de planilla, estado, periodo de pago.
+- En vista mensual:
+  - mostrar inicio de periodo y fecha de pago (no repetir la planilla en todos los dias del rango).
+  - si no hay datos, mantener calendario visible y mostrar aviso informativo.
+- Panel lateral de detalle con:
+  - datos funcionales en espanol (sin terminos tecnicos internos).
+  - acciones `Procesar`, `Verificar`, `Aplicar` segun estado y permisos.
+  - confirmacion obligatoria antes de ejecutar cada accion.
+  - `Verificar` bloqueado si no existen movimientos procesados (snapshot inputs = 0).
