@@ -1,4 +1,11 @@
-import { IsInt, IsDateString, IsOptional, IsEnum, IsString, MaxLength } from 'class-validator';
+import {
+  IsInt,
+  IsDateString,
+  IsOptional,
+  IsEnum,
+  IsString,
+  MaxLength,
+} from 'class-validator';
 import { MonedaCalendario } from '../entities/payroll-calendar.entity';
 
 export class UpdatePayrollDto {
@@ -61,4 +68,3 @@ export class UpdatePayrollDto {
   @MaxLength(20)
   etiquetaColor?: string;
 }
-

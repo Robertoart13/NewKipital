@@ -7,8 +7,11 @@ import { AuthzRealtimeService } from './authz-realtime.service';
 
 @Module({
   imports: [TypeOrmModule.forFeature([AuthzVersion])],
-  providers: [AuthzVersionService, PermissionsCacheService, AuthzRealtimeService],
+  providers: [
+    AuthzVersionService,
+    PermissionsCacheService,
+    AuthzRealtimeService,
+  ],
   exports: [AuthzVersionService, PermissionsCacheService, AuthzRealtimeService],
 })
 export class AuthzModule {}
-

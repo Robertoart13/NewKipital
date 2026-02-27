@@ -23,7 +23,9 @@ export class AuthzVersionService {
   }
 
   async bumpUsers(userIds: number[]): Promise<void> {
-    const ids = [...new Set(userIds)].filter((id) => Number.isInteger(id) && id >= 0);
+    const ids = [...new Set(userIds)].filter(
+      (id) => Number.isInteger(id) && id >= 0,
+    );
     if (ids.length === 0) return;
 
     await this.ensureRows(ids);

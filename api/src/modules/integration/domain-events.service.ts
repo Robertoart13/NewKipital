@@ -24,8 +24,9 @@ export class DomainEventsService {
 
   async record(input: RecordDomainEventInput): Promise<void> {
     const occurredAt = input.occurredAt ?? new Date();
-    const idempotencyKey = input.idempotencyKey
-      ?? `${input.eventName}:${input.aggregateId}:${occurredAt.getTime()}`;
+    const idempotencyKey =
+      input.idempotencyKey ??
+      `${input.eventName}:${input.aggregateId}:${occurredAt.getTime()}`;
 
     const event = this.repository.create({
       aggregateType: input.aggregateType,
@@ -41,8 +42,9 @@ export class DomainEventsService {
     try {
       await this.repository.save(event);
     } catch (error) {
-      this.logger.warn(`Domain event duplicated/failed: ${idempotencyKey} - ${(error as Error).message}`);
+      this.logger.warn(
+        `Domain event duplicated/failed: ${idempotencyKey} - ${(error as Error).message}`,
+      );
     }
   }
 }
-

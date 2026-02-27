@@ -1,4 +1,9 @@
-import { Injectable, NotFoundException, ConflictException, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  ConflictException,
+  BadRequestException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { In, Repository } from 'typeorm';
 import { Role } from './entities/role.entity';
@@ -35,7 +40,9 @@ export class RolesService {
   ) {}
 
   async create(dto: CreateRoleDto, userId: number): Promise<Role> {
-    const existing = await this.roleRepo.findOne({ where: { codigo: dto.codigo } });
+    const existing = await this.roleRepo.findOne({
+      where: { codigo: dto.codigo },
+    });
     if (existing) {
       throw new ConflictException('Ya existe un rol con ese codigo');
     }
@@ -44,7 +51,9 @@ export class RolesService {
       where: { codigo: dto.appCode.trim().toLowerCase(), estado: 1 },
     });
     if (!app) {
-      throw new BadRequestException(`Aplicacion '${dto.appCode}' no encontrada`);
+      throw new BadRequestException(
+        `Aplicacion '${dto.appCode}' no encontrada`,
+      );
     }
 
     const role = this.roleRepo.create({
@@ -86,7 +95,9 @@ export class RolesService {
         where: { codigo: appCode.trim().toLowerCase(), estado: 1 },
       });
       if (app) {
-        qb.andWhere('(r.id_app = :appId OR r.id_app IS NULL)', { appId: app.id });
+        qb.andWhere('(r.id_app = :appId OR r.id_app IS NULL)', {
+          appId: app.id,
+        });
       }
     }
     return qb.orderBy('r.nombre', 'ASC').getMany();
@@ -100,17 +111,24 @@ export class RolesService {
     return role;
   }
 
-  async updateMetadata(id: number, dto: UpdateRoleDto, userId: number): Promise<Role> {
+  async updateMetadata(
+    id: number,
+    dto: UpdateRoleDto,
+    userId: number,
+  ): Promise<Role> {
     const role = await this.findOne(id);
     const nextNombre = dto.nombre?.trim();
     const nextDescripcion = dto.descripcion?.trim();
 
     if (!nextNombre && nextDescripcion === undefined) {
-      throw new BadRequestException('Debe enviar al menos un campo para actualizar');
+      throw new BadRequestException(
+        'Debe enviar al menos un campo para actualizar',
+      );
     }
 
     if (nextNombre) role.nombre = nextNombre;
-    if (dto.descripcion !== undefined) role.descripcion = nextDescripcion || null;
+    if (dto.descripcion !== undefined)
+      role.descripcion = nextDescripcion || null;
     role.modificadoPor = userId;
 
     const saved = await this.roleRepo.save(role);
@@ -146,7 +164,11 @@ export class RolesService {
       entidadId: saved.id,
       actorUserId: userId,
       descripcion: `Rol inactivado: ${saved.codigo}`,
-      payloadAfter: { id: saved.id, codigo: saved.codigo, estado: saved.estado },
+      payloadAfter: {
+        id: saved.id,
+        codigo: saved.codigo,
+        estado: saved.estado,
+      },
     });
     return saved;
   }
@@ -164,16 +186,26 @@ export class RolesService {
       entidadId: saved.id,
       actorUserId: userId,
       descripcion: `Rol reactivado: ${saved.codigo}`,
-      payloadAfter: { id: saved.id, codigo: saved.codigo, estado: saved.estado },
+      payloadAfter: {
+        id: saved.id,
+        codigo: saved.codigo,
+        estado: saved.estado,
+      },
     });
     return saved;
   }
 
-  async assignPermission(dto: AssignRolePermissionDto): Promise<RolePermission> {
+  async assignPermission(
+    dto: AssignRolePermissionDto,
+  ): Promise<RolePermission> {
     await this.findOne(dto.idRol);
-    const perm = await this.permissionRepo.findOne({ where: { id: dto.idPermiso } });
+    const perm = await this.permissionRepo.findOne({
+      where: { id: dto.idPermiso },
+    });
     if (!perm) {
-      throw new NotFoundException(`Permiso con ID ${dto.idPermiso} no encontrado`);
+      throw new NotFoundException(
+        `Permiso con ID ${dto.idPermiso} no encontrado`,
+      );
     }
 
     const existing = await this.rpRepo.findOne({
@@ -185,7 +217,10 @@ export class RolesService {
 
     const rp = this.rpRepo.create(dto);
     const saved = await this.rpRepo.save(rp);
-    await this.notifyRolePermissionsChanged(dto.idRol, 'role.permission.assign');
+    await this.notifyRolePermissionsChanged(
+      dto.idRol,
+      'role.permission.assign',
+    );
     return saved;
   }
 
@@ -213,18 +248,28 @@ export class RolesService {
       .getMany();
   }
 
-  async replacePermissionsByCodes(idRol: number, codes: string[], actorUserId?: number): Promise<Permission[]> {
+  async replacePermissionsByCodes(
+    idRol: number,
+    codes: string[],
+    actorUserId?: number,
+  ): Promise<Permission[]> {
     const role = await this.findOne(idRol);
 
-    const normalized = [...new Set(codes.map((c) => c.trim().toLowerCase()).filter(Boolean))];
+    const normalized = [
+      ...new Set(codes.map((c) => c.trim().toLowerCase()).filter(Boolean)),
+    ];
     const permissions = normalized.length
-      ? await this.permissionRepo.find({ where: { codigo: In(normalized), estado: 1 } })
+      ? await this.permissionRepo.find({
+          where: { codigo: In(normalized), estado: 1 },
+        })
       : [];
 
     if (permissions.length !== normalized.length) {
       const found = new Set(permissions.map((p) => p.codigo));
       const missing = normalized.filter((code) => !found.has(code));
-      throw new NotFoundException(`Permisos no encontrados o inactivos: ${missing.join(', ')}`);
+      throw new NotFoundException(
+        `Permisos no encontrados o inactivos: ${missing.join(', ')}`,
+      );
     }
 
     const desiredIds = new Set(permissions.map((p) => p.id));
@@ -260,7 +305,10 @@ export class RolesService {
     return result;
   }
 
-  private async notifyRolePermissionsChanged(roleId: number, reason: string): Promise<void> {
+  private async notifyRolePermissionsChanged(
+    roleId: number,
+    reason: string,
+  ): Promise<void> {
     const affectedUserIds = await this.getAffectedUserIdsByRole(roleId);
     if (affectedUserIds.length === 0) return;
 
@@ -303,4 +351,3 @@ export class RolesService {
     return [...affected];
   }
 }
-

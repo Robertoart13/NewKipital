@@ -7,7 +7,9 @@ import { ActionQuota } from './entities/action-quota.entity';
 import { UserCompany } from '../access-control/entities/user-company.entity';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([PersonalAction, ActionQuota, UserCompany])],
+  imports: [
+    TypeOrmModule.forFeature([PersonalAction, ActionQuota, UserCompany]),
+  ],
   controllers: [PersonalActionsController],
   providers: [PersonalActionsService],
 })

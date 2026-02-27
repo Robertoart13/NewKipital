@@ -1,4 +1,10 @@
-import { MigrationInterface, QueryRunner, Table, TableForeignKey, TableIndex } from 'typeorm';
+import {
+  MigrationInterface,
+  QueryRunner,
+  Table,
+  TableForeignKey,
+  TableIndex,
+} from 'typeorm';
 
 /**
  * Directiva 40 - Blueprint Planilla v2 compatible (fase 1 incremental).
@@ -27,11 +33,35 @@ export class EnhancePayrollV2Compatible1708536400000 implements MigrationInterfa
               isGenerated: true,
               generationStrategy: 'increment',
             },
-            { name: 'codigo_tipo_planilla', type: 'varchar', length: '20', isNullable: false },
-            { name: 'nombre_tipo_planilla', type: 'varchar', length: '50', isNullable: false },
-            { name: 'color_hex_tipo_planilla', type: 'varchar', length: '7', isNullable: false },
-            { name: 'es_inactivo_tipo_planilla', type: 'tinyint', width: 1, default: 0 },
-            { name: 'fecha_creacion_tipo_planilla', type: 'datetime', default: 'CURRENT_TIMESTAMP' },
+            {
+              name: 'codigo_tipo_planilla',
+              type: 'varchar',
+              length: '20',
+              isNullable: false,
+            },
+            {
+              name: 'nombre_tipo_planilla',
+              type: 'varchar',
+              length: '50',
+              isNullable: false,
+            },
+            {
+              name: 'color_hex_tipo_planilla',
+              type: 'varchar',
+              length: '7',
+              isNullable: false,
+            },
+            {
+              name: 'es_inactivo_tipo_planilla',
+              type: 'tinyint',
+              width: 1,
+              default: 0,
+            },
+            {
+              name: 'fecha_creacion_tipo_planilla',
+              type: 'datetime',
+              default: 'CURRENT_TIMESTAMP',
+            },
             {
               name: 'fecha_modificacion_tipo_planilla',
               type: 'datetime',
@@ -40,7 +70,10 @@ export class EnhancePayrollV2Compatible1708536400000 implements MigrationInterfa
             },
           ],
           uniques: [
-            { name: 'UQ_tipo_planilla_codigo', columnNames: ['codigo_tipo_planilla'] },
+            {
+              name: 'UQ_tipo_planilla_codigo',
+              columnNames: ['codigo_tipo_planilla'],
+            },
           ],
         }),
       );
@@ -69,7 +102,9 @@ export class EnhancePayrollV2Compatible1708536400000 implements MigrationInterfa
     const addColumnIfMissing = async (name: string, ddl: string) => {
       const has = await queryRunner.hasColumn('nom_calendarios_nomina', name);
       if (!has) {
-        await queryRunner.query(`ALTER TABLE nom_calendarios_nomina ADD COLUMN ${ddl}`);
+        await queryRunner.query(
+          `ALTER TABLE nom_calendarios_nomina ADD COLUMN ${ddl}`,
+        );
       }
     };
 
@@ -102,8 +137,9 @@ export class EnhancePayrollV2Compatible1708536400000 implements MigrationInterfa
       '`is_active_slot_calendario_nomina` TINYINT(1) NOT NULL DEFAULT 1 AFTER `slot_key_calendario_nomina`',
     );
 
-    const hasFkTipoPlanilla = (await queryRunner.getTable('nom_calendarios_nomina'))
-      ?.foreignKeys.some((fk) => fk.name === 'FK_calendario_tipo_planilla');
+    const hasFkTipoPlanilla = (
+      await queryRunner.getTable('nom_calendarios_nomina')
+    )?.foreignKeys.some((fk) => fk.name === 'FK_calendario_tipo_planilla');
 
     if (!hasFkTipoPlanilla) {
       await queryRunner.createForeignKey(
@@ -174,18 +210,28 @@ export class EnhancePayrollV2Compatible1708536400000 implements MigrationInterfa
     `);
 
     const table = await queryRunner.getTable('nom_calendarios_nomina');
-    const oldIndex = table?.indices.find((idx) => idx.name === 'UQ_calendario_slot_operativo');
+    const oldIndex = table?.indices.find(
+      (idx) => idx.name === 'UQ_calendario_slot_operativo',
+    );
     if (oldIndex) {
-      await queryRunner.dropIndex('nom_calendarios_nomina', 'UQ_calendario_slot_operativo');
+      await queryRunner.dropIndex(
+        'nom_calendarios_nomina',
+        'UQ_calendario_slot_operativo',
+      );
     }
 
-    const hasUniqueSlot = table?.indices.some((idx) => idx.name === 'UQ_calendario_slot_key_active');
+    const hasUniqueSlot = table?.indices.some(
+      (idx) => idx.name === 'UQ_calendario_slot_key_active',
+    );
     if (!hasUniqueSlot) {
       await queryRunner.createIndex(
         'nom_calendarios_nomina',
         new TableIndex({
           name: 'UQ_calendario_slot_key_active',
-          columnNames: ['slot_key_calendario_nomina', 'is_active_slot_calendario_nomina'],
+          columnNames: [
+            'slot_key_calendario_nomina',
+            'is_active_slot_calendario_nomina',
+          ],
           isUnique: true,
         }),
       );
@@ -267,19 +313,31 @@ export class EnhancePayrollV2Compatible1708536400000 implements MigrationInterfa
     `);
 
     const table = await queryRunner.getTable('nom_calendarios_nomina');
-    if (table?.indices.some((idx) => idx.name === 'UQ_calendario_slot_key_active')) {
-      await queryRunner.dropIndex('nom_calendarios_nomina', 'UQ_calendario_slot_key_active');
+    if (
+      table?.indices.some((idx) => idx.name === 'UQ_calendario_slot_key_active')
+    ) {
+      await queryRunner.dropIndex(
+        'nom_calendarios_nomina',
+        'UQ_calendario_slot_key_active',
+      );
     }
 
     const dropColumnIfExists = async (name: string) => {
       if (await queryRunner.hasColumn('nom_calendarios_nomina', name)) {
-        await queryRunner.query(`ALTER TABLE nom_calendarios_nomina DROP COLUMN ${name}`);
+        await queryRunner.query(
+          `ALTER TABLE nom_calendarios_nomina DROP COLUMN ${name}`,
+        );
       }
     };
 
-    const hasFkTipoPlanilla = table?.foreignKeys.some((fk) => fk.name === 'FK_calendario_tipo_planilla');
+    const hasFkTipoPlanilla = table?.foreignKeys.some(
+      (fk) => fk.name === 'FK_calendario_tipo_planilla',
+    );
     if (hasFkTipoPlanilla) {
-      await queryRunner.dropForeignKey('nom_calendarios_nomina', 'FK_calendario_tipo_planilla');
+      await queryRunner.dropForeignKey(
+        'nom_calendarios_nomina',
+        'FK_calendario_tipo_planilla',
+      );
     }
 
     await dropColumnIfExists('is_active_slot_calendario_nomina');
@@ -295,4 +353,3 @@ export class EnhancePayrollV2Compatible1708536400000 implements MigrationInterfa
     }
   }
 }
-

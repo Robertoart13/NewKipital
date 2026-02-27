@@ -1,4 +1,9 @@
-import { ForbiddenException, Injectable, Logger, UnauthorizedException } from '@nestjs/common';
+import {
+  ForbiddenException,
+  Injectable,
+  Logger,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -81,7 +86,12 @@ export class AuthService {
     private readonly permissionsCache: PermissionsCacheService,
   ) {}
 
-  async login(email: string, password: string, ip?: string, userAgent?: string): Promise<IssuedSession> {
+  async login(
+    email: string,
+    password: string,
+    ip?: string,
+    userAgent?: string,
+  ): Promise<IssuedSession> {
     let user: User;
 
     try {
@@ -110,9 +120,14 @@ export class AuthService {
     ip?: string,
     userAgent?: string,
   ): Promise<IssuedSession> {
-    const user = await this.usersService.findByMicrosoftIdentity(microsoftOid, microsoftTid);
+    const user = await this.usersService.findByMicrosoftIdentity(
+      microsoftOid,
+      microsoftTid,
+    );
     if (!user) {
-      throw new ForbiddenException('Su cuenta Microsoft no esta aprovisionada en KPITAL');
+      throw new ForbiddenException(
+        'Su cuenta Microsoft no esta aprovisionada en KPITAL',
+      );
     }
 
     await this.usersService.registerSuccessfulLogin(user.id, ip);
@@ -126,7 +141,10 @@ export class AuthService {
     ip?: string,
     userAgent?: string,
   ): Promise<IssuedSession> {
-    let user = await this.usersService.findByMicrosoftIdentity(microsoftOid, microsoftTid);
+    let user = await this.usersService.findByMicrosoftIdentity(
+      microsoftOid,
+      microsoftTid,
+    );
 
     if (!user) {
       user = await this.usersService.findByEmail(email);
@@ -137,7 +155,11 @@ export class AuthService {
       }
 
       if (!user.microsoftOid || !user.microsoftTid) {
-        await this.usersService.bindMicrosoftIdentity(user.id, microsoftOid, microsoftTid);
+        await this.usersService.bindMicrosoftIdentity(
+          user.id,
+          microsoftOid,
+          microsoftTid,
+        );
         user = await this.usersService.findByEmail(email);
       }
     }
@@ -152,7 +174,11 @@ export class AuthService {
     return this.issueSessionTokens(user, ip, userAgent);
   }
 
-  async refreshSession(refreshToken: string, ip?: string, userAgent?: string): Promise<IssuedSession> {
+  async refreshSession(
+    refreshToken: string,
+    ip?: string,
+    userAgent?: string,
+  ): Promise<IssuedSession> {
     try {
       const payload = this.verifyRefreshToken(refreshToken);
 
@@ -189,7 +215,13 @@ export class AuthService {
       stored.replacedByJti = newJti;
       await this.refreshSessionRepo.save(stored);
 
-      await this.persistRefreshSession(user.id, newJti, newRefreshToken, ip, userAgent);
+      await this.persistRefreshSession(
+        user.id,
+        newJti,
+        newRefreshToken,
+        ip,
+        userAgent,
+      );
 
       const accessToken = this.signAccessToken(user);
       const session = await this.buildSession(user);
@@ -201,7 +233,10 @@ export class AuthService {
         session,
       };
     } catch (error) {
-      if (error instanceof UnauthorizedException || error instanceof ForbiddenException) {
+      if (
+        error instanceof UnauthorizedException ||
+        error instanceof ForbiddenException
+      ) {
         throw error;
       }
       if (this.isTransientDatabaseConnectionError(error)) {
@@ -247,11 +282,20 @@ export class AuthService {
     let roles: string[] = [];
 
     if (companyId && appCode) {
-      const resolved = await this.resolvePermissions(user.id, companyId, appCode, options);
+      const resolved = await this.resolvePermissions(
+        user.id,
+        companyId,
+        appCode,
+        options,
+      );
       permissions = resolved.permissions;
       roles = resolved.roles;
     } else if (appCode) {
-      const resolved = await this.resolvePermissionsAcrossCompanies(user.id, appCode, options);
+      const resolved = await this.resolvePermissionsAcrossCompanies(
+        user.id,
+        appCode,
+        options,
+      );
       permissions = resolved.permissions;
       roles = resolved.roles;
     }
@@ -279,13 +323,23 @@ export class AuthService {
   ): Promise<{ permissions: string[]; roles: string[] }> {
     const normalizedAppCode = appCode.trim().toLowerCase();
     const versionToken = await this.authzVersionService.getToken(userId);
-    const cacheKey = this.buildPermissionCacheKey(userId, companyId, normalizedAppCode, versionToken);
+    const cacheKey = this.buildPermissionCacheKey(
+      userId,
+      companyId,
+      normalizedAppCode,
+      versionToken,
+    );
     if (!options?.bypassCache) {
-      const cached = this.permissionsCache.get<{ permissions: string[]; roles: string[] }>(cacheKey);
+      const cached = this.permissionsCache.get<{
+        permissions: string[];
+        roles: string[];
+      }>(cacheKey);
       if (cached) return cached;
     }
 
-    const app = await this.appRepo.findOne({ where: { codigo: normalizedAppCode, estado: 1 } });
+    const app = await this.appRepo.findOne({
+      where: { codigo: normalizedAppCode, estado: 1 },
+    });
     if (!app) {
       const empty = { permissions: [], roles: [] };
       this.persistPermissionCache(cacheKey, empty, options);
@@ -303,7 +357,12 @@ export class AuthService {
 
     // Roles por empresa (contexto específico)
     const userRoles = await this.userRoleRepo.find({
-      where: { idUsuario: userId, idEmpresa: companyId, idApp: app.id, estado: 1 },
+      where: {
+        idUsuario: userId,
+        idEmpresa: companyId,
+        idApp: app.id,
+        estado: 1,
+      },
     });
     const perCompanyRoleIds = new Set(userRoles.map((ur) => ur.idRol));
 
@@ -314,7 +373,12 @@ export class AuthService {
         where: { idUsuario: userId, idApp: app.id, estado: 1 },
       });
       const exclusions = await this.userRoleExclusionRepo.find({
-        where: { idUsuario: userId, idEmpresa: companyId, idApp: app.id, estado: 1 },
+        where: {
+          idUsuario: userId,
+          idEmpresa: companyId,
+          idApp: app.id,
+          estado: 1,
+        },
       });
       const excludedRoleIds = new Set(exclusions.map((e) => e.idRol));
       globalRoleIds = globalRoles
@@ -324,7 +388,9 @@ export class AuthService {
       // sys_usuario_rol_global o sys_usuario_rol_exclusion no existen → solo roles por contexto
     }
 
-    const roleIds = Array.from(new Set([...perCompanyRoleIds, ...globalRoleIds]));
+    const roleIds = Array.from(
+      new Set([...perCompanyRoleIds, ...globalRoleIds]),
+    );
 
     let basePermissions: string[] = [];
     if (roleIds.length > 0) {
@@ -359,10 +425,14 @@ export class AuthService {
     }
 
     const allowOverrides = new Set(
-      overrideRows.filter((row) => row.efecto === 'ALLOW').map((row) => row.codigo),
+      overrideRows
+        .filter((row) => row.efecto === 'ALLOW')
+        .map((row) => row.codigo),
     );
     const denyOverrides = new Set(
-      overrideRows.filter((row) => row.efecto === 'DENY').map((row) => row.codigo),
+      overrideRows
+        .filter((row) => row.efecto === 'DENY')
+        .map((row) => row.codigo),
     );
 
     const effective = new Set(basePermissions);
@@ -395,7 +465,9 @@ export class AuthService {
 
     // Códigos de roles efectivos (ya tenemos roleIds)
     const roleEntities =
-      roleIds.length > 0 ? await this.permRepo.manager.find(Role, { where: { id: In(roleIds) } }) : [];
+      roleIds.length > 0
+        ? await this.permRepo.manager.find(Role, { where: { id: In(roleIds) } })
+        : [];
     const uniqueRoleCodes = roleEntities.map((r) => r.codigo);
 
     const result = {
@@ -413,9 +485,17 @@ export class AuthService {
   ): Promise<{ permissions: string[]; roles: string[] }> {
     const normalizedAppCode = appCode.trim().toLowerCase();
     const versionToken = await this.authzVersionService.getToken(userId);
-    const cacheKey = this.buildPermissionCacheKey(userId, 0, normalizedAppCode, versionToken);
+    const cacheKey = this.buildPermissionCacheKey(
+      userId,
+      0,
+      normalizedAppCode,
+      versionToken,
+    );
     if (!options?.bypassCache) {
-      const cached = this.permissionsCache.get<{ permissions: string[]; roles: string[] }>(cacheKey);
+      const cached = this.permissionsCache.get<{
+        permissions: string[];
+        roles: string[];
+      }>(cacheKey);
       if (cached) return cached;
     }
 
@@ -432,7 +512,12 @@ export class AuthService {
     const roleSet = new Set<string>();
 
     for (const uc of userCompanies) {
-      const resolved = await this.resolvePermissions(userId, uc.idEmpresa, normalizedAppCode, options);
+      const resolved = await this.resolvePermissions(
+        userId,
+        uc.idEmpresa,
+        normalizedAppCode,
+        options,
+      );
       for (const permission of resolved.permissions) {
         permissionSet.add(permission);
       }
@@ -462,7 +547,9 @@ export class AuthService {
     return apps.map((a) => a.codigo);
   }
 
-  private async getUserCompanies(userId: number): Promise<{ id: number; nombre: string; codigo: string | null }[]> {
+  private async getUserCompanies(
+    userId: number,
+  ): Promise<{ id: number; nombre: string; codigo: string | null }[]> {
     const userCompanies = await this.userCompanyRepo.find({
       where: { idUsuario: userId, estado: 1 },
     });
@@ -479,7 +566,11 @@ export class AuthService {
     }));
   }
 
-  private async issueSessionTokens(user: User, ip?: string, userAgent?: string): Promise<IssuedSession> {
+  private async issueSessionTokens(
+    user: User,
+    ip?: string,
+    userAgent?: string,
+  ): Promise<IssuedSession> {
     const jti = randomUUID();
     const accessToken = this.signAccessToken(user);
     const refreshToken = this.signRefreshToken(user, jti);
@@ -514,11 +605,10 @@ export class AuthService {
       jti,
     };
 
-    const expiresIn = this.config.get<string>('JWT_REFRESH_EXPIRATION', '30d') as `${number}${
-      | 's'
-      | 'm'
-      | 'h'
-      | 'd'}`;
+    const expiresIn = this.config.get<string>(
+      'JWT_REFRESH_EXPIRATION',
+      '30d',
+    ) as `${number}${'s' | 'm' | 'h' | 'd'}`;
 
     return this.jwtService.sign(payload, { expiresIn });
   }
@@ -543,7 +633,12 @@ export class AuthService {
     userAgent?: string,
   ): Promise<void> {
     const tokenHash = await bcrypt.hash(refreshToken, 10);
-    const expiresAt = new Date(Date.now() + this.parseDurationToMs(this.config.get<string>('JWT_REFRESH_EXPIRATION', '30d')));
+    const expiresAt = new Date(
+      Date.now() +
+        this.parseDurationToMs(
+          this.config.get<string>('JWT_REFRESH_EXPIRATION', '30d'),
+        ),
+    );
 
     const session = this.refreshSessionRepo.create({
       jti,
@@ -614,7 +709,11 @@ export class AuthService {
     ]);
 
     if (error instanceof QueryFailedError) {
-      const driverError = (error as QueryFailedError & { driverError?: { code?: string; fatal?: boolean } }).driverError;
+      const driverError = (
+        error as QueryFailedError & {
+          driverError?: { code?: string; fatal?: boolean };
+        }
+      ).driverError;
       if (driverError?.code && transientCodes.has(driverError.code)) {
         return true;
       }
@@ -624,7 +723,9 @@ export class AuthService {
     }
 
     if (error instanceof Error) {
-      return /ECONNRESET|PROTOCOL_CONNECTION_LOST|ETIMEDOUT|ECONNREFUSED|EPIPE/.test(error.message);
+      return /ECONNRESET|PROTOCOL_CONNECTION_LOST|ETIMEDOUT|ECONNREFUSED|EPIPE/.test(
+        error.message,
+      );
     }
 
     return false;

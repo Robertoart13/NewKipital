@@ -69,8 +69,13 @@ describe('IdentitySyncWorkflow', () => {
         },
       };
 
-      userRepo.findOne.mockResolvedValueOnce(createMockUser()).mockResolvedValueOnce(null);
-      userRepo.save.mockResolvedValue({ ...createMockUser(), email: 'new.email@example.com' });
+      userRepo.findOne
+        .mockResolvedValueOnce(createMockUser())
+        .mockResolvedValueOnce(null);
+      userRepo.save.mockResolvedValue({
+        ...createMockUser(),
+        email: 'new.email@example.com',
+      });
 
       // Act
       await workflow.handleEmailChange(event);
@@ -150,7 +155,10 @@ describe('IdentitySyncWorkflow', () => {
         },
       };
 
-      const userWithSameEmail = { ...createMockUser(), email: 'same@example.com' };
+      const userWithSameEmail = {
+        ...createMockUser(),
+        email: 'same@example.com',
+      };
       userRepo.findOne.mockResolvedValue(userWithSameEmail);
 
       // Act
@@ -173,7 +181,11 @@ describe('IdentitySyncWorkflow', () => {
         },
       };
 
-      const conflictingUser = { ...createMockUser(), id: 999, email: 'existing@example.com' };
+      const conflictingUser = {
+        ...createMockUser(),
+        id: 999,
+        email: 'existing@example.com',
+      };
       userRepo.findOne
         .mockResolvedValueOnce(createMockUser())
         .mockResolvedValueOnce(conflictingUser);
@@ -198,8 +210,13 @@ describe('IdentitySyncWorkflow', () => {
         },
       };
 
-      userRepo.findOne.mockResolvedValueOnce(createMockUser()).mockResolvedValueOnce(null);
-      userRepo.save.mockResolvedValue({ ...createMockUser(), email: 'new@example.com' });
+      userRepo.findOne
+        .mockResolvedValueOnce(createMockUser())
+        .mockResolvedValueOnce(null);
+      userRepo.save.mockResolvedValue({
+        ...createMockUser(),
+        email: 'new@example.com',
+      });
 
       // Act
       await workflow.handleEmailChange(event);
@@ -224,8 +241,13 @@ describe('IdentitySyncWorkflow', () => {
         },
       };
 
-      userRepo.findOne.mockResolvedValueOnce(createMockUser()).mockResolvedValueOnce(null);
-      userRepo.save.mockResolvedValue({ ...createMockUser(), email: 'new@example.com' });
+      userRepo.findOne
+        .mockResolvedValueOnce(createMockUser())
+        .mockResolvedValueOnce(null);
+      userRepo.save.mockResolvedValue({
+        ...createMockUser(),
+        email: 'new@example.com',
+      });
 
       // Act
       await workflow.handleEmailChange(event);
@@ -250,8 +272,13 @@ describe('IdentitySyncWorkflow', () => {
         },
       };
 
-      userRepo.findOne.mockResolvedValueOnce(createMockUser()).mockResolvedValueOnce(null);
-      userRepo.save.mockResolvedValue({ ...createMockUser(), email: 'new@example.com' });
+      userRepo.findOne
+        .mockResolvedValueOnce(createMockUser())
+        .mockResolvedValueOnce(null);
+      userRepo.save.mockResolvedValue({
+        ...createMockUser(),
+        email: 'new@example.com',
+      });
 
       // Act
       await workflow.handleEmailChange(event);
@@ -298,12 +325,21 @@ describe('IdentitySyncWorkflow', () => {
       userRepo.findOne
         .mockResolvedValueOnce(createMockUser())
         .mockResolvedValueOnce(null)
-        .mockResolvedValueOnce({ ...createMockUser(), email: 'temp@example.com' })
+        .mockResolvedValueOnce({
+          ...createMockUser(),
+          email: 'temp@example.com',
+        })
         .mockResolvedValueOnce(null);
 
       userRepo.save
-        .mockResolvedValueOnce({ ...createMockUser(), email: 'temp@example.com' })
-        .mockResolvedValueOnce({ ...createMockUser(), email: 'final@example.com' });
+        .mockResolvedValueOnce({
+          ...createMockUser(),
+          email: 'temp@example.com',
+        })
+        .mockResolvedValueOnce({
+          ...createMockUser(),
+          email: 'final@example.com',
+        });
 
       // Act
       await workflow.handleEmailChange(event1);
@@ -329,7 +365,9 @@ describe('IdentitySyncWorkflow', () => {
       userRepo.findOne.mockRejectedValue(new Error('Database error'));
 
       // Act & Assert
-      await expect(workflow.handleEmailChange(event)).rejects.toThrow('Database error');
+      await expect(workflow.handleEmailChange(event)).rejects.toThrow(
+        'Database error',
+      );
     });
 
     it('should update modificadoPor to changedBy user', async () => {
@@ -344,8 +382,13 @@ describe('IdentitySyncWorkflow', () => {
         },
       };
 
-      userRepo.findOne.mockResolvedValueOnce(createMockUser()).mockResolvedValueOnce(null);
-      userRepo.save.mockResolvedValue({ ...createMockUser(), email: 'new@example.com' });
+      userRepo.findOne
+        .mockResolvedValueOnce(createMockUser())
+        .mockResolvedValueOnce(null);
+      userRepo.save.mockResolvedValue({
+        ...createMockUser(),
+        email: 'new@example.com',
+      });
 
       // Act
       await workflow.handleEmailChange(event);
@@ -378,8 +421,13 @@ describe('IdentitySyncWorkflow', () => {
         failedAttempts: 3,
       };
 
-      userRepo.findOne.mockResolvedValueOnce(userWithData).mockResolvedValueOnce(null);
-      userRepo.save.mockResolvedValue({ ...userWithData, email: 'new@example.com' });
+      userRepo.findOne
+        .mockResolvedValueOnce(userWithData)
+        .mockResolvedValueOnce(null);
+      userRepo.save.mockResolvedValue({
+        ...userWithData,
+        email: 'new@example.com',
+      });
 
       // Act
       await workflow.handleEmailChange(event);

@@ -20,4 +20,3 @@ export class CreateClassDto {
   @MaxLength(45)
   idExterno?: string;
 }
-

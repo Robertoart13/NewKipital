@@ -13,7 +13,9 @@ import {
  * Estilo NetSuite Oracle.
  */
 @Entity('sys_usuario_rol_global')
-@Index('UQ_usuario_rol_global', ['idUsuario', 'idApp', 'idRol'], { unique: true })
+@Index('UQ_usuario_rol_global', ['idUsuario', 'idApp', 'idRol'], {
+  unique: true,
+})
 export class UserRoleGlobal {
   @PrimaryGeneratedColumn({ name: 'id_usuario_rol_global' })
   id: number;
@@ -27,7 +29,12 @@ export class UserRoleGlobal {
   @Column({ name: 'id_rol', type: 'int' })
   idRol: number;
 
-  @Column({ name: 'estado_usuario_rol_global', type: 'tinyint', width: 1, default: 1 })
+  @Column({
+    name: 'estado_usuario_rol_global',
+    type: 'tinyint',
+    width: 1,
+    default: 1,
+  })
   estado: number;
 
   @CreateDateColumn({ name: 'fecha_creacion_usuario_rol_global' })

@@ -15,7 +15,11 @@ export type UserPermissionOverrideEffect = 'ALLOW' | 'DENY';
  * Regla de resolucion: DENY gana sobre ALLOW.
  */
 @Entity('sys_usuario_permiso')
-@Index('UQ_usuario_permiso_contexto', ['idUsuario', 'idEmpresa', 'idApp', 'idPermiso'], { unique: true })
+@Index(
+  'UQ_usuario_permiso_contexto',
+  ['idUsuario', 'idEmpresa', 'idApp', 'idPermiso'],
+  { unique: true },
+)
 export class UserPermissionOverride {
   @PrimaryGeneratedColumn({ name: 'id_usuario_permiso' })
   id: number;
@@ -38,7 +42,12 @@ export class UserPermissionOverride {
   efecto: UserPermissionOverrideEffect;
 
   @Index('IDX_usuario_permiso_estado')
-  @Column({ name: 'estado_usuario_permiso', type: 'tinyint', width: 1, default: 1 })
+  @Column({
+    name: 'estado_usuario_permiso',
+    type: 'tinyint',
+    width: 1,
+    default: 1,
+  })
   estado: number;
 
   @CreateDateColumn({ name: 'fecha_creacion_usuario_permiso' })

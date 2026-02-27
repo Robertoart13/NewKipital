@@ -36,10 +36,15 @@ export class ClassesController {
   @RequirePermissions('class:view')
   @Get()
   findAll(
-    @Query('includeInactive', new ParseBoolPipe({ optional: true })) includeInactive?: boolean,
-    @Query('inactiveOnly', new ParseBoolPipe({ optional: true })) inactiveOnly?: boolean,
+    @Query('includeInactive', new ParseBoolPipe({ optional: true }))
+    includeInactive?: boolean,
+    @Query('inactiveOnly', new ParseBoolPipe({ optional: true }))
+    inactiveOnly?: boolean,
   ) {
-    return this.service.findAll(includeInactive ?? false, inactiveOnly ?? false);
+    return this.service.findAll(
+      includeInactive ?? false,
+      inactiveOnly ?? false,
+    );
   }
 
   @RequirePermissions('class:view')
@@ -60,13 +65,19 @@ export class ClassesController {
 
   @RequirePermissions('class:inactivate')
   @Patch(':id/inactivate')
-  inactivate(@Param('id', ParseIntPipe) id: number, @CurrentUser() user: { userId: number }) {
+  inactivate(
+    @Param('id', ParseIntPipe) id: number,
+    @CurrentUser() user: { userId: number },
+  ) {
     return this.service.inactivate(id, user.userId);
   }
 
   @RequirePermissions('class:reactivate')
   @Patch(':id/reactivate')
-  reactivate(@Param('id', ParseIntPipe) id: number, @CurrentUser() user: { userId: number }) {
+  reactivate(
+    @Param('id', ParseIntPipe) id: number,
+    @CurrentUser() user: { userId: number },
+  ) {
     return this.service.reactivate(id, user.userId);
   }
 

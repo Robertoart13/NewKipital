@@ -49,15 +49,29 @@ export class PayrollMovementsService {
     esInactivo: 'Estado',
   };
 
-  async create(dto: CreatePayrollMovementDto, actorUserId: number): Promise<PayrollMovement> {
+  async create(
+    dto: CreatePayrollMovementDto,
+    actorUserId: number,
+  ): Promise<PayrollMovement> {
     await this.assertCompanyActive(dto.idEmpresa);
-    const article = await this.assertArticleByCompany(dto.idArticuloNomina, dto.idEmpresa, true);
+    const article = await this.assertArticleByCompany(
+      dto.idArticuloNomina,
+      dto.idEmpresa,
+      true,
+    );
     await this.assertActionTypeActive(dto.idTipoAccionPersonal);
-    this.assertArticleActionMatch(article.idTipoAccionPersonal, dto.idTipoAccionPersonal);
+    this.assertArticleActionMatch(
+      article.idTipoAccionPersonal,
+      dto.idTipoAccionPersonal,
+    );
     await this.assertOptionalClass(dto.idClase ?? null);
     await this.assertOptionalProject(dto.idProyecto ?? null, dto.idEmpresa);
 
-    const normalized = this.normalizeCalculation(dto.esMontoFijo, dto.montoFijo, dto.porcentaje);
+    const normalized = this.normalizeCalculation(
+      dto.esMontoFijo,
+      dto.montoFijo,
+      dto.porcentaje,
+    );
 
     const entity = this.repo.create({
       idEmpresa: dto.idEmpresa,
@@ -112,40 +126,71 @@ export class PayrollMovementsService {
   async findOne(id: number): Promise<PayrollMovement> {
     const found = await this.repo.findOne({ where: { id } });
     if (!found) {
-      throw new NotFoundException(`Movimiento de nomina con ID ${id} no encontrado`);
+      throw new NotFoundException(
+        `Movimiento de nomina con ID ${id} no encontrado`,
+      );
     }
     return found;
   }
 
-  async update(id: number, dto: UpdatePayrollMovementDto, actorUserId: number): Promise<PayrollMovement> {
+  async update(
+    id: number,
+    dto: UpdatePayrollMovementDto,
+    actorUserId: number,
+  ): Promise<PayrollMovement> {
     const found = await this.findOne(id);
     const payloadBefore = this.buildAuditPayload(found);
 
     const nextEmpresa = dto.idEmpresa ?? found.idEmpresa;
     const nextArticulo = dto.idArticuloNomina ?? found.idArticuloNomina;
-    const nextTipoAccion = dto.idTipoAccionPersonal ?? found.idTipoAccionPersonal;
+    const nextTipoAccion =
+      dto.idTipoAccionPersonal ?? found.idTipoAccionPersonal;
     const nextClase = dto.idClase === undefined ? found.idClase : dto.idClase;
-    const nextProyecto = dto.idProyecto === undefined ? found.idProyecto : dto.idProyecto;
+    const nextProyecto =
+      dto.idProyecto === undefined ? found.idProyecto : dto.idProyecto;
     const nextEsMontoFijo = dto.esMontoFijo ?? found.esMontoFijo;
     const nextMonto = dto.montoFijo ?? found.montoFijo;
     const nextPorcentaje = dto.porcentaje ?? found.porcentaje;
 
     await this.assertCompanyActive(nextEmpresa);
-    const article = await this.assertArticleByCompany(nextArticulo, nextEmpresa, true, found.idArticuloNomina);
-    await this.assertActionTypeActive(nextTipoAccion, found.idTipoAccionPersonal);
+    const article = await this.assertArticleByCompany(
+      nextArticulo,
+      nextEmpresa,
+      true,
+      found.idArticuloNomina,
+    );
+    await this.assertActionTypeActive(
+      nextTipoAccion,
+      found.idTipoAccionPersonal,
+    );
     this.assertArticleActionMatch(article.idTipoAccionPersonal, nextTipoAccion);
     await this.assertOptionalClass(nextClase ?? null, found.idClase ?? null);
-    await this.assertOptionalProject(nextProyecto ?? null, nextEmpresa, found.idProyecto ?? null);
-    const normalized = this.normalizeCalculation(nextEsMontoFijo, nextMonto, nextPorcentaje);
+    await this.assertOptionalProject(
+      nextProyecto ?? null,
+      nextEmpresa,
+      found.idProyecto ?? null,
+    );
+    const normalized = this.normalizeCalculation(
+      nextEsMontoFijo,
+      nextMonto,
+      nextPorcentaje,
+    );
 
     if (dto.idEmpresa !== undefined) found.idEmpresa = nextEmpresa;
     if (dto.nombre !== undefined) found.nombre = dto.nombre.trim();
-    if (dto.idArticuloNomina !== undefined) found.idArticuloNomina = nextArticulo;
-    if (dto.idTipoAccionPersonal !== undefined) found.idTipoAccionPersonal = nextTipoAccion;
+    if (dto.idArticuloNomina !== undefined)
+      found.idArticuloNomina = nextArticulo;
+    if (dto.idTipoAccionPersonal !== undefined)
+      found.idTipoAccionPersonal = nextTipoAccion;
     if (dto.idClase !== undefined) found.idClase = nextClase ?? null;
     if (dto.idProyecto !== undefined) found.idProyecto = nextProyecto ?? null;
-    if (dto.descripcion !== undefined) found.descripcion = dto.descripcion.trim() || '--';
-    if (dto.esMontoFijo !== undefined || dto.montoFijo !== undefined || dto.porcentaje !== undefined) {
+    if (dto.descripcion !== undefined)
+      found.descripcion = dto.descripcion.trim() || '--';
+    if (
+      dto.esMontoFijo !== undefined ||
+      dto.montoFijo !== undefined ||
+      dto.porcentaje !== undefined
+    ) {
       found.esMontoFijo = normalized.esMontoFijo;
       found.montoFijo = normalized.montoFijo;
       found.porcentaje = normalized.porcentaje;
@@ -235,8 +280,10 @@ export class PayrollMovementsService {
     );
 
     return (rows ?? []).map((row: Record<string, unknown>) => {
-      const payloadBefore = (row.payloadBefore as Record<string, unknown> | null) ?? null;
-      const payloadAfter = (row.payloadAfter as Record<string, unknown> | null) ?? null;
+      const payloadBefore =
+        (row.payloadBefore as Record<string, unknown> | null) ?? null;
+      const payloadAfter =
+        (row.payloadAfter as Record<string, unknown> | null) ?? null;
       return {
         id: String(row.id ?? ''),
         modulo: String(row.modulo ?? ''),
@@ -247,15 +294,21 @@ export class PayrollMovementsService {
         actorNombre: row.actorNombre ? String(row.actorNombre) : null,
         actorEmail: row.actorEmail ? String(row.actorEmail) : null,
         descripcion: String(row.descripcion ?? ''),
-        fechaCreacion: row.fechaCreacion ? new Date(String(row.fechaCreacion)).toISOString() : null,
+        fechaCreacion: row.fechaCreacion
+          ? new Date(String(row.fechaCreacion)).toISOString()
+          : null,
         metadata: (row.metadata as Record<string, unknown> | null) ?? null,
         cambios: this.buildAuditChanges(payloadBefore, payloadAfter),
       };
     });
   }
 
-  async listArticlesByCompany(idEmpresa: number, includeInactive = false): Promise<PayrollArticle[]> {
-    const qb = this.articleRepo.createQueryBuilder('a')
+  async listArticlesByCompany(
+    idEmpresa: number,
+    includeInactive = false,
+  ): Promise<PayrollArticle[]> {
+    const qb = this.articleRepo
+      .createQueryBuilder('a')
       .where('a.idEmpresa = :idEmpresa', { idEmpresa })
       .orderBy('a.nombre', 'ASC');
     if (!includeInactive) {
@@ -264,8 +317,12 @@ export class PayrollMovementsService {
     return qb.getMany();
   }
 
-  async listPersonalActionTypes(includeInactive = false): Promise<PersonalActionType[]> {
-    const qb = this.actionTypeRepo.createQueryBuilder('t').orderBy('t.nombre', 'ASC');
+  async listPersonalActionTypes(
+    includeInactive = false,
+  ): Promise<PersonalActionType[]> {
+    const qb = this.actionTypeRepo
+      .createQueryBuilder('t')
+      .orderBy('t.nombre', 'ASC');
     if (!includeInactive) {
       qb.andWhere('t.estado = 1');
     }
@@ -273,15 +330,21 @@ export class PayrollMovementsService {
   }
 
   async listClasses(includeInactive = false): Promise<OrgClass[]> {
-    const qb = this.classRepo.createQueryBuilder('c').orderBy('c.nombre', 'ASC');
+    const qb = this.classRepo
+      .createQueryBuilder('c')
+      .orderBy('c.nombre', 'ASC');
     if (!includeInactive) {
       qb.andWhere('c.esInactivo = 0');
     }
     return qb.getMany();
   }
 
-  async listProjects(idEmpresa: number, includeInactive = false): Promise<OrgProject[]> {
-    const qb = this.projectRepo.createQueryBuilder('p')
+  async listProjects(
+    idEmpresa: number,
+    includeInactive = false,
+  ): Promise<OrgProject[]> {
+    const qb = this.projectRepo
+      .createQueryBuilder('p')
       .where('p.idEmpresa = :idEmpresa', { idEmpresa })
       .orderBy('p.nombre', 'ASC');
     if (!includeInactive) {
@@ -324,7 +387,8 @@ export class PayrollMovementsService {
       ...Object.keys(payloadBefore),
       ...Object.keys(payloadAfter),
     ]);
-    const changes: Array<{ campo: string; antes: string; despues: string }> = [];
+    const changes: Array<{ campo: string; antes: string; despues: string }> =
+      [];
     for (const key of keys) {
       if (!(key in this.auditFieldLabels)) continue;
       const beforeValue = this.normalizeAuditValue(payloadBefore[key]);
@@ -339,7 +403,11 @@ export class PayrollMovementsService {
     return changes;
   }
 
-  private normalizeCalculation(esMontoFijoRaw: number, montoRaw: string, porcentajeRaw: string): {
+  private normalizeCalculation(
+    esMontoFijoRaw: number,
+    montoRaw: string,
+    porcentajeRaw: string,
+  ): {
     esMontoFijo: number;
     montoFijo: string;
     porcentaje: string;
@@ -349,17 +417,24 @@ export class PayrollMovementsService {
     const porcentaje = (porcentajeRaw ?? '').trim();
 
     const montoValue = this.parseNonNegativeValue(montoFijo, 'Monto fijo');
-    const porcentajeValue = this.parseNonNegativeValue(porcentaje, 'Porcentaje');
+    const porcentajeValue = this.parseNonNegativeValue(
+      porcentaje,
+      'Porcentaje',
+    );
 
     if (esMontoFijo === 1) {
       if (porcentajeValue !== 0) {
-        throw new BadRequestException('Si el tipo de calculo es monto fijo, el porcentaje debe ser 0.');
+        throw new BadRequestException(
+          'Si el tipo de calculo es monto fijo, el porcentaje debe ser 0.',
+        );
       }
       return { esMontoFijo: 1, montoFijo, porcentaje: '0' };
     }
 
     if (montoValue !== 0) {
-      throw new BadRequestException('Si el tipo de calculo es porcentaje, el monto fijo debe ser 0.');
+      throw new BadRequestException(
+        'Si el tipo de calculo es porcentaje, el monto fijo debe ser 0.',
+      );
     }
     return { esMontoFijo: 0, montoFijo: '0', porcentaje };
   }
@@ -375,14 +450,21 @@ export class PayrollMovementsService {
     return value;
   }
 
-  private assertArticleActionMatch(articleActionTypeId: number, selectedActionTypeId: number): void {
+  private assertArticleActionMatch(
+    articleActionTypeId: number,
+    selectedActionTypeId: number,
+  ): void {
     if (articleActionTypeId !== selectedActionTypeId) {
-      throw new BadRequestException('El tipo de accion personal debe coincidir con el articulo de nomina seleccionado.');
+      throw new BadRequestException(
+        'El tipo de accion personal debe coincidir con el articulo de nomina seleccionado.',
+      );
     }
   }
 
   private async assertCompanyActive(idEmpresa: number): Promise<void> {
-    const company = await this.companyRepo.findOne({ where: { id: idEmpresa } });
+    const company = await this.companyRepo.findOne({
+      where: { id: idEmpresa },
+    });
     if (!company || company.estado !== 1) {
       throw new BadRequestException('Debe seleccionar una empresa activa.');
     }
@@ -394,45 +476,61 @@ export class PayrollMovementsService {
     requireActive = true,
     allowedInactiveSameId?: number,
   ): Promise<PayrollArticle> {
-    const article = await this.articleRepo.findOne({ where: { id: idArticuloNomina } });
+    const article = await this.articleRepo.findOne({
+      where: { id: idArticuloNomina },
+    });
     if (!article) {
       throw new ConflictException('Articulo de nomina no encontrado.');
     }
     if (article.idEmpresa !== idEmpresa) {
-      throw new BadRequestException('El articulo de nomina no pertenece a la empresa seleccionada.');
+      throw new BadRequestException(
+        'El articulo de nomina no pertenece a la empresa seleccionada.',
+      );
     }
     if (
-      requireActive
-      && article.esInactivo === 1
-      && (allowedInactiveSameId == null || allowedInactiveSameId !== article.id)
+      requireActive &&
+      article.esInactivo === 1 &&
+      (allowedInactiveSameId == null || allowedInactiveSameId !== article.id)
     ) {
-      throw new BadRequestException('El articulo de nomina seleccionado esta inactivo.');
+      throw new BadRequestException(
+        'El articulo de nomina seleccionado esta inactivo.',
+      );
     }
     return article;
   }
 
-  private async assertActionTypeActive(idTipoAccionPersonal: number, allowInactiveSameId?: number): Promise<void> {
-    const actionType = await this.actionTypeRepo.findOne({ where: { id: idTipoAccionPersonal } });
+  private async assertActionTypeActive(
+    idTipoAccionPersonal: number,
+    allowInactiveSameId?: number,
+  ): Promise<void> {
+    const actionType = await this.actionTypeRepo.findOne({
+      where: { id: idTipoAccionPersonal },
+    });
     if (!actionType) {
       throw new ConflictException('Tipo de accion personal no encontrado.');
     }
     if (
-      actionType.estado !== 1
-      && (allowInactiveSameId == null || allowInactiveSameId !== actionType.id)
+      actionType.estado !== 1 &&
+      (allowInactiveSameId == null || allowInactiveSameId !== actionType.id)
     ) {
-      throw new BadRequestException('El tipo de accion personal seleccionado esta inactivo.');
+      throw new BadRequestException(
+        'El tipo de accion personal seleccionado esta inactivo.',
+      );
     }
   }
 
-  private async assertOptionalClass(idClase: number | null, allowInactiveSameId?: number | null): Promise<void> {
+  private async assertOptionalClass(
+    idClase: number | null,
+    allowInactiveSameId?: number | null,
+  ): Promise<void> {
     if (!idClase) return;
     const found = await this.classRepo.findOne({ where: { id: idClase } });
     if (!found) {
       throw new ConflictException('Clase no encontrada.');
     }
     if (
-      found.esInactivo === 1
-      && (allowInactiveSameId == null || allowInactiveSameId !== found.id)
+      found.esInactivo === 1 &&
+      (allowInactiveSameId == null || allowInactiveSameId !== found.id)
     ) {
       throw new BadRequestException('La clase seleccionada esta inactiva.');
     }
@@ -449,11 +547,13 @@ export class PayrollMovementsService {
       throw new ConflictException('Proyecto no encontrado.');
     }
     if (found.idEmpresa !== idEmpresa) {
-      throw new BadRequestException('El proyecto seleccionado no pertenece a la empresa.');
+      throw new BadRequestException(
+        'El proyecto seleccionado no pertenece a la empresa.',
+      );
     }
     if (
-      found.esInactivo === 1
-      && (allowInactiveSameId == null || allowInactiveSameId !== found.id)
+      found.esInactivo === 1 &&
+      (allowInactiveSameId == null || allowInactiveSameId !== found.id)
     ) {
       throw new BadRequestException('El proyecto seleccionado esta inactivo.');
     }

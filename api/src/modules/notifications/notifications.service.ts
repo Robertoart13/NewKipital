@@ -2,7 +2,10 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Notification } from './entities/notification.entity';
-import { NotificationUser, type NotificationUserEstado } from './entities/notification-user.entity';
+import {
+  NotificationUser,
+  type NotificationUserEstado,
+} from './entities/notification-user.entity';
 import { DispatchNotificationDto } from './dto/dispatch-notification.dto';
 import { NotificationsGateway } from './notifications.gateway';
 import { UserRole } from '../access-control/entities/user-role.entity';
@@ -38,7 +41,8 @@ export class NotificationsService {
     idApp?: number,
     idEmpresa?: number,
   ): Promise<NotificationListItem[]> {
-    const where: { idUsuarioDestino: number; estado?: NotificationUserEstado } = { idUsuarioDestino: idUsuario };
+    const where: { idUsuarioDestino: number; estado?: NotificationUserEstado } =
+      { idUsuarioDestino: idUsuario };
     if (status === 'unread') where.estado = 'UNREAD';
 
     const rows = await this.notifUserRepo.find({
@@ -54,7 +58,12 @@ export class NotificationsService {
         const n = nu.notificacion;
         if (!n) return false;
         if (idApp != null && n.idApp != null && n.idApp !== idApp) return false;
-        if (idEmpresa != null && n.idEmpresa != null && n.idEmpresa !== idEmpresa) return false;
+        if (
+          idEmpresa != null &&
+          n.idEmpresa != null &&
+          n.idEmpresa !== idEmpresa
+        )
+          return false;
         return true;
       });
     }
@@ -82,13 +91,17 @@ export class NotificationsService {
       .createQueryBuilder('nu')
       .innerJoin('nu.notificacion', 'n')
       .where('nu.id_usuario_destino = :idUsuario', { idUsuario })
-      .andWhere('nu.estado_notificacion_usuario = :unread', { unread: 'UNREAD' });
+      .andWhere('nu.estado_notificacion_usuario = :unread', {
+        unread: 'UNREAD',
+      });
 
     if (idApp != null) {
       qb.andWhere('(n.id_app IS NULL OR n.id_app = :idApp)', { idApp });
     }
     if (idEmpresa != null) {
-      qb.andWhere('(n.id_empresa IS NULL OR n.id_empresa = :idEmpresa)', { idEmpresa });
+      qb.andWhere('(n.id_empresa IS NULL OR n.id_empresa = :idEmpresa)', {
+        idEmpresa,
+      });
     }
 
     return qb.getCount();
@@ -105,7 +118,10 @@ export class NotificationsService {
     this.gateway.emitCountUpdate(idUsuario);
   }
 
-  async markAsDeleted(idNotifUsuario: number, idUsuario: number): Promise<void> {
+  async markAsDeleted(
+    idNotifUsuario: number,
+    idUsuario: number,
+  ): Promise<void> {
     const nu = await this.notifUserRepo.findOne({
       where: { id: idNotifUsuario, idUsuarioDestino: idUsuario },
     });
@@ -117,16 +133,26 @@ export class NotificationsService {
     this.gateway.emitNotificationUpdate(idUsuario);
   }
 
-  async markAllAsRead(idUsuario: number, _idApp?: number, _idEmpresa?: number): Promise<void> {
+  async markAllAsRead(
+    idUsuario: number,
+    _idApp?: number,
+    _idEmpresa?: number,
+  ): Promise<void> {
     await this.notifUserRepo.update(
-      { idUsuarioDestino: idUsuario, estado: 'UNREAD' as NotificationUserEstado },
+      {
+        idUsuarioDestino: idUsuario,
+        estado: 'UNREAD' as NotificationUserEstado,
+      },
       { estado: 'READ' as NotificationUserEstado, fechaLeida: new Date() },
     );
     this.gateway.emitCountUpdate(idUsuario);
     this.gateway.emitNotificationUpdate(idUsuario);
   }
 
-  async dispatch(dto: DispatchNotificationDto, creadoPor: number): Promise<{ idNotificacion: number; recipientsCount: number }> {
+  async dispatch(
+    dto: DispatchNotificationDto,
+    creadoPor: number,
+  ): Promise<{ idNotificacion: number; recipientsCount: number }> {
     let userIds: number[] = [];
     const idApp = dto.idApp ?? null;
     const idEmpresa = dto.idEmpresa ?? null;

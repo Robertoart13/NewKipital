@@ -1,16 +1,24 @@
 import { NestFactory } from '@nestjs/core';
-import { BadRequestException, ValidationError, ValidationPipe } from '@nestjs/common';
+import {
+  BadRequestException,
+  ValidationError,
+  ValidationPipe,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import cookieParser from 'cookie-parser';
+import helmet from 'helmet';
 import { AppModule } from './app.module';
-import { GlobalExceptionFilter } from './common/filters/global-exception.filter';
+import { GlobalExceptionFilter } from './common/filters/http-exception.filter';
+import { LoggingInterceptor } from './common/interceptors/logging.interceptor';
 
 function flattenValidationErrors(errors: ValidationError[]): string[] {
   const result: string[] = [];
 
   for (const error of errors) {
     if (error.constraints) {
-      result.push(...Object.values(error.constraints).map(translateValidationMessage));
+      result.push(
+        ...Object.values(error.constraints).map(translateValidationMessage),
+      );
     }
     if (error.children?.length) {
       result.push(...flattenValidationErrors(error.children));
@@ -25,9 +33,15 @@ function translateValidationMessage(message: string): string {
     .replace('must be a string', 'debe ser un texto')
     .replace('must be a boolean value', 'debe ser un valor booleano')
     .replace('must be an integer number', 'debe ser un numero entero')
-    .replace('must be a number conforming to the specified constraints', 'debe ser un numero valido')
+    .replace(
+      'must be a number conforming to the specified constraints',
+      'debe ser un numero valido',
+    )
     .replace('must be an email', 'debe ser un correo electronico valido')
-    .replace('must be a valid ISO 8601 date string', 'debe ser una fecha valida')
+    .replace(
+      'must be a valid ISO 8601 date string',
+      'debe ser una fecha valida',
+    )
     .replace('should not be empty', 'no debe estar vacio')
     .replace('must be shorter than or equal to', 'debe tener como maximo')
     .replace('must be longer than or equal to', 'debe tener como minimo')
@@ -38,6 +52,10 @@ async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
   app.use(cookieParser());
+  app.use(helmet());
+
+  app.useGlobalFilters(new GlobalExceptionFilter());
+  app.useGlobalInterceptors(new LoggingInterceptor());
 
   const configService = app.get(ConfigService);
   const isDev = configService.get<string>('NODE_ENV') === 'development';
@@ -59,15 +77,15 @@ async function bootstrap() {
       whitelist: true,
       forbidNonWhitelisted: true,
       transform: true,
-      exceptionFactory: (errors: ValidationError[]) => new BadRequestException({
-        success: false,
-        data: null,
-        message: flattenValidationErrors(errors),
-        error: 'Solicitud invalida',
-      }),
+      exceptionFactory: (errors: ValidationError[]) =>
+        new BadRequestException({
+          success: false,
+          data: null,
+          message: flattenValidationErrors(errors),
+          error: 'Solicitud invalida',
+        }),
     }),
   );
-  app.useGlobalFilters(new GlobalExceptionFilter());
 
   const port = configService.get<number>('PORT', 3000);
 

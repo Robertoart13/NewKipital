@@ -63,6 +63,10 @@ import { IntegrationModule } from '../integration/integration.module';
     EmployeeDataAutomationWorkerService,
     EmployeeVacationService,
   ],
-  exports: [EmployeesService, EmployeeDataAutomationWorkerService, EmployeeVacationService],
+  exports: [
+    EmployeesService,
+    EmployeeDataAutomationWorkerService,
+    EmployeeVacationService,
+  ],
 })
 export class EmployeesModule {}

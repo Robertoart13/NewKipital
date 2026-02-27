@@ -1,6 +1,12 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { createCipheriv, createDecipheriv, createHash, createHmac, randomBytes } from 'crypto';
+import {
+  createCipheriv,
+  createDecipheriv,
+  createHash,
+  createHmac,
+  randomBytes,
+} from 'crypto';
 
 const ENCRYPTION_PREFIX = 'enc:v1';
 const DEFAULT_KID = 'default';
@@ -13,7 +19,9 @@ export class EmployeeSensitiveDataService {
   private readonly hashKey: string;
 
   constructor(private readonly configService: ConfigService) {
-    const rawKey = this.configService.get<string>('EMPLOYEE_ENCRYPTION_KEY', '').trim();
+    const rawKey = this.configService
+      .get<string>('EMPLOYEE_ENCRYPTION_KEY', '')
+      .trim();
     if (!rawKey) {
       const fallback = createHash('sha256')
         .update('kpital-dev-employee-encryption-key')
@@ -23,7 +31,8 @@ export class EmployeeSensitiveDataService {
       this.key = this.normalizeKey(rawKey);
     }
     this.hashKey =
-      this.configService.get<string>('EMPLOYEE_HASH_KEY', '').trim() || this.key.toString('base64url');
+      this.configService.get<string>('EMPLOYEE_HASH_KEY', '').trim() ||
+      this.key.toString('base64url');
   }
 
   encrypt(value: string | null | undefined): string | null {
@@ -34,7 +43,10 @@ export class EmployeeSensitiveDataService {
 
     const iv = randomBytes(GCM_IV_LENGTH);
     const cipher = createCipheriv('aes-256-gcm', this.key, iv);
-    const encrypted = Buffer.concat([cipher.update(normalized, 'utf8'), cipher.final()]);
+    const encrypted = Buffer.concat([
+      cipher.update(normalized, 'utf8'),
+      cipher.final(),
+    ]);
     const tag = cipher.getAuthTag();
 
     return [

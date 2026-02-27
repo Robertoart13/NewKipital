@@ -28,7 +28,12 @@ export class Notification {
   @Column({ name: 'payload_notificacion', type: 'json', nullable: true })
   payload: Record<string, unknown> | null;
 
-  @Column({ name: 'scope_notificacion', type: 'varchar', length: 20, default: 'ROLE' })
+  @Column({
+    name: 'scope_notificacion',
+    type: 'varchar',
+    length: 20,
+    default: 'ROLE',
+  })
   scope: string;
 
   @Column({ name: 'id_app', type: 'int', nullable: true })
@@ -43,10 +48,19 @@ export class Notification {
   @CreateDateColumn({ name: 'fecha_creacion_notificacion' })
   fechaCreacion: Date;
 
-  @Column({ name: 'fecha_expira_notificacion', type: 'datetime', nullable: true })
+  @Column({
+    name: 'fecha_expira_notificacion',
+    type: 'datetime',
+    nullable: true,
+  })
   fechaExpira: Date | null;
 
-  @Column({ name: 'estado_notificacion', type: 'tinyint', width: 1, default: 1 })
+  @Column({
+    name: 'estado_notificacion',
+    type: 'tinyint',
+    width: 1,
+    default: 1,
+  })
   estado: number;
 
   @OneToMany(() => NotificationUser, (nu) => nu.notificacion)

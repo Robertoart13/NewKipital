@@ -17,19 +17,38 @@ export class PayrollInputSnapshot {
   @Column({ name: 'id_empleado', type: 'int' })
   idEmpleado: number;
 
-  @Column({ name: 'source_type_input', type: 'enum', enum: PayrollInputSourceType, default: PayrollInputSourceType.HR_ACTION })
+  @Column({
+    name: 'source_type_input',
+    type: 'enum',
+    enum: PayrollInputSourceType,
+    default: PayrollInputSourceType.HR_ACTION,
+  })
   sourceType: PayrollInputSourceType;
 
   @Column({ name: 'source_id_input', type: 'int', nullable: true })
   sourceId: number | null;
 
-  @Column({ name: 'concepto_codigo_input', type: 'varchar', length: 50, nullable: true })
+  @Column({
+    name: 'concepto_codigo_input',
+    type: 'varchar',
+    length: 50,
+    nullable: true,
+  })
   conceptoCodigo: string | null;
 
-  @Column({ name: 'monto_input', type: 'decimal', precision: 18, scale: 4, default: '0' })
+  @Column({
+    name: 'monto_input',
+    type: 'decimal',
+    precision: 18,
+    scale: 4,
+    default: '0',
+  })
   monto: string;
 
-  @Column({ name: 'fecha_creacion_input', type: 'datetime', default: () => 'CURRENT_TIMESTAMP' })
+  @Column({
+    name: 'fecha_creacion_input',
+    type: 'datetime',
+    default: () => 'CURRENT_TIMESTAMP',
+  })
   fechaCreacion: Date;
 }
-

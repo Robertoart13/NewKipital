@@ -27,12 +27,25 @@ import { IntegrationModule } from '../integration/integration.module';
 import { AuthAuditService } from './auth-audit.service';
 import { AuthRateLimitService } from './auth-rate-limit.service';
 import { AuthzModule } from '../authz/authz.module';
+import { redisClientProvider } from '../../config/redis.config';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([
-      User, App, UserApp, UserCompany, Company,
-      UserRole, UserRoleGlobal, UserRoleExclusion, Role, RolePermission, Permission, UserPermissionOverride, UserPermissionGlobalDeny, RefreshSession,
+      User,
+      App,
+      UserApp,
+      UserCompany,
+      Company,
+      UserRole,
+      UserRoleGlobal,
+      UserRoleExclusion,
+      Role,
+      RolePermission,
+      Permission,
+      UserPermissionOverride,
+      UserPermissionGlobalDeny,
+      RefreshSession,
     ]),
     JwtModule.registerAsync(jwtConfig),
     PassportModule,
@@ -41,6 +54,7 @@ import { AuthzModule } from '../authz/authz.module';
   ],
   controllers: [AuthController, UsersController],
   providers: [
+    redisClientProvider,
     AuthService,
     UsersService,
     JwtStrategy,

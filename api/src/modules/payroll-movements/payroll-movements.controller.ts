@@ -30,17 +30,23 @@ export class PayrollMovementsController {
   @RequirePermissions('payroll-movement:view')
   @Get('articles')
   listArticles(
-    @Query('idEmpresa', new ParseIntPipe({ optional: true })) idEmpresa?: number,
-    @Query('includeInactive', new ParseBoolPipe({ optional: true })) includeInactive?: boolean,
+    @Query('idEmpresa', new ParseIntPipe({ optional: true }))
+    idEmpresa?: number,
+    @Query('includeInactive', new ParseBoolPipe({ optional: true }))
+    includeInactive?: boolean,
   ) {
     if (!idEmpresa) return [];
-    return this.service.listArticlesByCompany(idEmpresa, includeInactive ?? false);
+    return this.service.listArticlesByCompany(
+      idEmpresa,
+      includeInactive ?? false,
+    );
   }
 
   @RequirePermissions('payroll-movement:view')
   @Get('personal-action-types')
   listPersonalActionTypes(
-    @Query('includeInactive', new ParseBoolPipe({ optional: true })) includeInactive?: boolean,
+    @Query('includeInactive', new ParseBoolPipe({ optional: true }))
+    includeInactive?: boolean,
   ) {
     return this.service.listPersonalActionTypes(includeInactive ?? false);
   }
@@ -48,7 +54,8 @@ export class PayrollMovementsController {
   @RequirePermissions('payroll-movement:view')
   @Get('classes')
   listClasses(
-    @Query('includeInactive', new ParseBoolPipe({ optional: true })) includeInactive?: boolean,
+    @Query('includeInactive', new ParseBoolPipe({ optional: true }))
+    includeInactive?: boolean,
   ) {
     return this.service.listClasses(includeInactive ?? false);
   }
@@ -56,8 +63,10 @@ export class PayrollMovementsController {
   @RequirePermissions('payroll-movement:view')
   @Get('projects')
   listProjects(
-    @Query('idEmpresa', new ParseIntPipe({ optional: true })) idEmpresa?: number,
-    @Query('includeInactive', new ParseBoolPipe({ optional: true })) includeInactive?: boolean,
+    @Query('idEmpresa', new ParseIntPipe({ optional: true }))
+    idEmpresa?: number,
+    @Query('includeInactive', new ParseBoolPipe({ optional: true }))
+    includeInactive?: boolean,
   ) {
     if (!idEmpresa) return [];
     return this.service.listProjects(idEmpresa, includeInactive ?? false);
@@ -65,25 +74,36 @@ export class PayrollMovementsController {
 
   @RequirePermissions('payroll-movement:create')
   @Post()
-  create(@Body() dto: CreatePayrollMovementDto, @CurrentUser() user: { userId: number }) {
+  create(
+    @Body() dto: CreatePayrollMovementDto,
+    @CurrentUser() user: { userId: number },
+  ) {
     return this.service.create(dto, user.userId);
   }
 
   @RequirePermissions('payroll-movement:view')
   @Get()
   findAll(
-    @Query('includeInactive', new ParseBoolPipe({ optional: true })) includeInactive?: boolean,
-    @Query('inactiveOnly', new ParseBoolPipe({ optional: true })) inactiveOnly?: boolean,
-    @Query('idEmpresa', new ParseIntPipe({ optional: true })) idEmpresa?: number,
+    @Query('includeInactive', new ParseBoolPipe({ optional: true }))
+    includeInactive?: boolean,
+    @Query('inactiveOnly', new ParseBoolPipe({ optional: true }))
+    inactiveOnly?: boolean,
+    @Query('idEmpresa', new ParseIntPipe({ optional: true }))
+    idEmpresa?: number,
     @Query('idEmpresas') idEmpresas?: string,
   ) {
     const parsedIds = idEmpresas
       ? idEmpresas
-        .split(',')
-        .map((value) => Number(value))
-        .filter((value) => Number.isFinite(value))
+          .split(',')
+          .map((value) => Number(value))
+          .filter((value) => Number.isFinite(value))
       : undefined;
-    return this.service.findAll(includeInactive ?? false, inactiveOnly ?? false, idEmpresa, parsedIds);
+    return this.service.findAll(
+      includeInactive ?? false,
+      inactiveOnly ?? false,
+      idEmpresa,
+      parsedIds,
+    );
   }
 
   @RequirePermissions('payroll-movement:view')
@@ -104,13 +124,19 @@ export class PayrollMovementsController {
 
   @RequirePermissions('payroll-movement:inactivate')
   @Patch(':id/inactivate')
-  inactivate(@Param('id', ParseIntPipe) id: number, @CurrentUser() user: { userId: number }) {
+  inactivate(
+    @Param('id', ParseIntPipe) id: number,
+    @CurrentUser() user: { userId: number },
+  ) {
     return this.service.inactivate(id, user.userId);
   }
 
   @RequirePermissions('payroll-movement:reactivate')
   @Patch(':id/reactivate')
-  reactivate(@Param('id', ParseIntPipe) id: number, @CurrentUser() user: { userId: number }) {
+  reactivate(
+    @Param('id', ParseIntPipe) id: number,
+    @CurrentUser() user: { userId: number },
+  ) {
     return this.service.reactivate(id, user.userId);
   }
 
@@ -123,4 +149,3 @@ export class PayrollMovementsController {
     return this.service.getAuditTrail(id, limit);
   }
 }
-

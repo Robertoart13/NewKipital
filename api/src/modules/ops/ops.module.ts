@@ -9,7 +9,11 @@ import { OpsService } from './ops.service';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Employee, EmployeeIdentityQueue, EmployeeEncryptQueue]),
+    TypeOrmModule.forFeature([
+      Employee,
+      EmployeeIdentityQueue,
+      EmployeeEncryptQueue,
+    ]),
     EmployeesModule,
   ],
   controllers: [OpsController],

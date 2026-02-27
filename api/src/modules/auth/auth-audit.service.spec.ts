@@ -7,7 +7,9 @@ describe('AuthAuditService', () => {
 
   beforeEach(() => {
     domainEvents = { record: jest.fn().mockResolvedValue(undefined) };
-    service = new AuthAuditService(domainEvents as unknown as DomainEventsService);
+    service = new AuthAuditService(
+      domainEvents as unknown as DomainEventsService,
+    );
   });
 
   it('should record a successful auth event', async () => {
@@ -24,7 +26,10 @@ describe('AuthAuditService', () => {
         aggregateType: 'auth',
         aggregateId: '1',
         eventName: 'login',
-        payload: expect.objectContaining({ outcome: 'success', email: 'test@example.com' }),
+        payload: expect.objectContaining({
+          outcome: 'success',
+          email: 'test@example.com',
+        }),
       }),
     );
   });
@@ -40,7 +45,10 @@ describe('AuthAuditService', () => {
     expect(domainEvents.record).toHaveBeenCalledWith(
       expect.objectContaining({
         eventName: 'login_failed',
-        payload: expect.objectContaining({ outcome: 'failed', reason: 'invalid password' }),
+        payload: expect.objectContaining({
+          outcome: 'failed',
+          reason: 'invalid password',
+        }),
       }),
     );
   });

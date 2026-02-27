@@ -11,16 +11,37 @@ export class PayrollResult {
   @Column({ name: 'id_empleado', type: 'int' })
   idEmpleado: number;
 
-  @Column({ name: 'total_bruto_resultado', type: 'decimal', precision: 18, scale: 2, default: '0' })
+  @Column({
+    name: 'total_bruto_resultado',
+    type: 'decimal',
+    precision: 18,
+    scale: 2,
+    default: '0',
+  })
   totalBruto: string;
 
-  @Column({ name: 'total_deducciones_resultado', type: 'decimal', precision: 18, scale: 2, default: '0' })
+  @Column({
+    name: 'total_deducciones_resultado',
+    type: 'decimal',
+    precision: 18,
+    scale: 2,
+    default: '0',
+  })
   totalDeducciones: string;
 
-  @Column({ name: 'total_neto_resultado', type: 'decimal', precision: 18, scale: 2, default: '0' })
+  @Column({
+    name: 'total_neto_resultado',
+    type: 'decimal',
+    precision: 18,
+    scale: 2,
+    default: '0',
+  })
   totalNeto: string;
 
-  @Column({ name: 'fecha_creacion_resultado', type: 'datetime', default: () => 'CURRENT_TIMESTAMP' })
+  @Column({
+    name: 'fecha_creacion_resultado',
+    type: 'datetime',
+    default: () => 'CURRENT_TIMESTAMP',
+  })
   fechaCreacion: Date;
 }
-

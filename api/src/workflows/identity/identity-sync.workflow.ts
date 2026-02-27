@@ -35,11 +35,15 @@ export class IdentitySyncWorkflow {
   ) {}
 
   @OnEvent(DOMAIN_EVENTS.EMPLOYEE.EMAIL_CHANGED)
-  async handleEmailChange(event: { payload: EmployeeEmailChangedPayload }): Promise<void> {
+  async handleEmailChange(event: {
+    payload: EmployeeEmailChangedPayload;
+  }): Promise<void> {
     const { userId, oldEmail, newEmail, changedBy, employeeId } = event.payload;
 
     if (!userId) {
-      this.logger.debug(`Empleado #${employeeId} sin usuario vinculado — no se sincroniza`);
+      this.logger.debug(
+        `Empleado #${employeeId} sin usuario vinculado — no se sincroniza`,
+      );
       return;
     }
 
@@ -47,7 +51,9 @@ export class IdentitySyncWorkflow {
 
     const user = await this.userRepo.findOne({ where: { id: Number(userId) } });
     if (!user) {
-      this.logger.error(`Usuario #${userId} no encontrado para sincronizar email`);
+      this.logger.error(
+        `Usuario #${userId} no encontrado para sincronizar email`,
+      );
       return;
     }
 
@@ -56,7 +62,9 @@ export class IdentitySyncWorkflow {
       return;
     }
 
-    const conflict = await this.userRepo.findOne({ where: { email: normalizedNew } });
+    const conflict = await this.userRepo.findOne({
+      where: { email: normalizedNew },
+    });
     if (conflict) {
       this.logger.error(
         `No se puede sincronizar: email '${normalizedNew}' ya existe en sys_usuarios (usuario #${conflict.id})`,

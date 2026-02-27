@@ -40,7 +40,10 @@ const PLANILLA_ESTADOS_BLOQUEANTES = [
 ];
 
 /** Estados de acciÃ³n de personal que bloquean inactivar empleado si no estÃ¡n asociadas a planilla (DOC-34 UC-02). */
-const ACCION_ESTADOS_BLOQUEANTES = [PersonalActionEstado.PENDIENTE, PersonalActionEstado.APROBADA];
+const ACCION_ESTADOS_BLOQUEANTES = [
+  PersonalActionEstado.PENDIENTE,
+  PersonalActionEstado.APROBADA,
+];
 
 @Injectable()
 export class EmployeesService {
@@ -131,7 +134,9 @@ export class EmployeesService {
     if (cedulaHash) {
       const existingCedula = await this.repo.findOne({ where: { cedulaHash } });
       if (existingCedula) {
-        throw new ConflictException(`Ya existe un empleado con cédula '${dto.cedula}'`);
+        throw new ConflictException(
+          `Ya existe un empleado con cédula '${dto.cedula}'`,
+        );
       }
     }
 
@@ -140,12 +145,18 @@ export class EmployeesService {
     if (emailHash) {
       const existingEmail = await this.repo.findOne({ where: { emailHash } });
       if (existingEmail) {
-        throw new ConflictException(`Ya existe un empleado con email '${dto.email}'`);
+        throw new ConflictException(
+          `Ya existe un empleado con email '${dto.email}'`,
+        );
       }
     }
 
     if (dto.crearAccesoKpital && dto.idRolKpital && creatorId != null) {
-      const resolved = await this.authService.resolvePermissions(creatorId, dto.idEmpresa, 'kpital');
+      const resolved = await this.authService.resolvePermissions(
+        creatorId,
+        dto.idEmpresa,
+        'kpital',
+      );
       if (!resolved.permissions.includes('employee:assign-kpital-role')) {
         throw new ForbiddenException(
           'No tiene permiso para asignar roles de KPITAL. Requiere employee:assign-kpital-role.',
@@ -155,11 +166,18 @@ export class EmployeesService {
 
     if (dto.crearAccesoTimewise && dto.idRolTimewise && creatorId != null) {
       const [resolvedTimewise, resolvedKpital] = await Promise.all([
-        this.authService.resolvePermissions(creatorId, dto.idEmpresa, 'timewise'),
+        this.authService.resolvePermissions(
+          creatorId,
+          dto.idEmpresa,
+          'timewise',
+        ),
         this.authService.resolvePermissions(creatorId, dto.idEmpresa, 'kpital'),
       ]);
-      const hasAssign = resolvedTimewise.permissions.includes('employee:assign-timewise-role')
-        || resolvedKpital.permissions.includes('employee:assign-timewise-role');
+      const hasAssign =
+        resolvedTimewise.permissions.includes(
+          'employee:assign-timewise-role',
+        ) ||
+        resolvedKpital.permissions.includes('employee:assign-timewise-role');
       if (!hasAssign) {
         throw new ForbiddenException(
           'No tiene permiso para asignar roles de TimeWise. Requiere employee:assign-timewise-role.',
@@ -171,7 +189,10 @@ export class EmployeesService {
   }
 
   private assertAcumulados(dto: CreateEmployeeDto): void {
-    const acumulados: Array<{ key: 'vacacionesAcumuladas' | 'cesantiaAcumulada'; label: string }> = [
+    const acumulados: Array<{
+      key: 'vacacionesAcumuladas' | 'cesantiaAcumulada';
+      label: string;
+    }> = [
       { key: 'vacacionesAcumuladas', label: 'Vacaciones acumuladas' },
       { key: 'cesantiaAcumulada', label: 'Cesantia acumulada' },
     ];
@@ -180,7 +201,9 @@ export class EmployeesService {
       if (raw == null || raw === '') continue;
       const value = Number(raw);
       if (Number.isNaN(value) || value < 0 || !Number.isInteger(value)) {
-        throw new BadRequestException(`${item.label} debe ser un entero de 0 o mayor.`);
+        throw new BadRequestException(
+          `${item.label} debe ser un entero de 0 o mayor.`,
+        );
       }
     }
   }
@@ -192,7 +215,9 @@ export class EmployeesService {
     }
     const day = fechaIngreso.getDate();
     if (day < 1 || day > 28) {
-      throw new BadRequestException('Fecha de ingreso debe estar entre el día 1 y 28 del mes.');
+      throw new BadRequestException(
+        'Fecha de ingreso debe estar entre el día 1 y 28 del mes.',
+      );
     }
   }
 
@@ -203,32 +228,46 @@ export class EmployeesService {
 
     for (const [index, provision] of dto.provisionesAguinaldo.entries()) {
       if (!provision.idEmpresa || provision.idEmpresa <= 0) {
-        throw new BadRequestException(`La empresa es requerida en la fila ${index + 1} de provisiones de aguinaldo.`);
+        throw new BadRequestException(
+          `La empresa es requerida en la fila ${index + 1} de provisiones de aguinaldo.`,
+        );
       }
       if (Number(provision.montoProvisionado) < 0) {
-        throw new BadRequestException(`El monto provisionado no puede ser negativo en la fila ${index + 1}.`);
+        throw new BadRequestException(
+          `El monto provisionado no puede ser negativo en la fila ${index + 1}.`,
+        );
       }
 
       const fechaInicio = new Date(provision.fechaInicioLaboral);
       if (Number.isNaN(fechaInicio.getTime())) {
-        throw new BadRequestException(`Fecha inicio laboral invÃ¡lida en la fila ${index + 1}.`);
+        throw new BadRequestException(
+          `Fecha inicio laboral invÃ¡lida en la fila ${index + 1}.`,
+        );
       }
       fechaInicio.setHours(0, 0, 0, 0);
       if (fechaInicio > today) {
-        throw new BadRequestException(`La fecha inicio laboral no puede ser futura en la fila ${index + 1}.`);
+        throw new BadRequestException(
+          `La fecha inicio laboral no puede ser futura en la fila ${index + 1}.`,
+        );
       }
 
       if (provision.fechaFinLaboral) {
         const fechaFin = new Date(provision.fechaFinLaboral);
         if (Number.isNaN(fechaFin.getTime())) {
-          throw new BadRequestException(`Fecha fin laboral invÃ¡lida en la fila ${index + 1}.`);
+          throw new BadRequestException(
+            `Fecha fin laboral invÃ¡lida en la fila ${index + 1}.`,
+          );
         }
         fechaFin.setHours(0, 0, 0, 0);
         if (fechaFin > today) {
-          throw new BadRequestException(`La fecha fin laboral no puede ser futura en la fila ${index + 1}.`);
+          throw new BadRequestException(
+            `La fecha fin laboral no puede ser futura en la fila ${index + 1}.`,
+          );
         }
         if (fechaFin < fechaInicio) {
-          throw new BadRequestException(`La fecha fin laboral no puede ser menor a la fecha inicio en la fila ${index + 1}.`);
+          throw new BadRequestException(
+            `La fecha fin laboral no puede ser menor a la fecha inicio en la fila ${index + 1}.`,
+          );
         }
       }
     }
@@ -249,7 +288,12 @@ export class EmployeesService {
       order?: 'ASC' | 'DESC';
       companyIds?: number[];
     } = {},
-  ): Promise<{ data: Employee[]; total: number; page: number; pageSize: number }> {
+  ): Promise<{
+    data: Employee[];
+    total: number;
+    page: number;
+    pageSize: number;
+  }> {
     const page = Math.max(1, opts.page ?? 1);
     const pageSize = Math.min(100, Math.max(1, opts.pageSize ?? 20));
     const sort = opts.sort ?? 'apellido1';
@@ -262,7 +306,11 @@ export class EmployeesService {
       .where('1=1');
 
     const requestedCompanyIds = opts.companyIds?.length
-      ? Array.from(new Set(opts.companyIds.filter((id) => Number.isInteger(id) && id > 0)))
+      ? Array.from(
+          new Set(
+            opts.companyIds.filter((id) => Number.isInteger(id) && id > 0),
+          ),
+        )
       : [];
     let scopeCompanyIds: number[] = [];
     if (requestedCompanyIds.length > 0) {
@@ -279,7 +327,9 @@ export class EmployeesService {
     if (scopeCompanyIds.length === 0) {
       return { data: [], total: 0, page, pageSize };
     }
-    qb.andWhere('e.idEmpresa IN (:...companyIds)', { companyIds: scopeCompanyIds });
+    qb.andWhere('e.idEmpresa IN (:...companyIds)', {
+      companyIds: scopeCompanyIds,
+    });
 
     if (!opts.includeInactive && opts.estado === undefined) {
       qb.andWhere('e.estado = 1');
@@ -289,14 +339,19 @@ export class EmployeesService {
 
     if (opts.search?.trim()) {
       const term = `%${opts.search.trim()}%`;
-      qb.andWhere('(e.codigo LIKE :term OR e.emailHash = :emailHash OR e.cedulaHash = :cedulaHash)', {
-        term,
-        emailHash: this.sensitiveDataService.hashEmail(opts.search.trim()),
-        cedulaHash: this.sensitiveDataService.hashCedula(opts.search.trim()),
-      });
+      qb.andWhere(
+        '(e.codigo LIKE :term OR e.emailHash = :emailHash OR e.cedulaHash = :cedulaHash)',
+        {
+          term,
+          emailHash: this.sensitiveDataService.hashEmail(opts.search.trim()),
+          cedulaHash: this.sensitiveDataService.hashCedula(opts.search.trim()),
+        },
+      );
     }
     if (opts.idDepartamento) {
-      qb.andWhere('e.idDepartamento = :idDepartamento', { idDepartamento: opts.idDepartamento });
+      qb.andWhere('e.idDepartamento = :idDepartamento', {
+        idDepartamento: opts.idDepartamento,
+      });
     }
     if (opts.idPuesto) {
       qb.andWhere('e.idPuesto = :idPuesto', { idPuesto: opts.idPuesto });
@@ -306,11 +361,20 @@ export class EmployeesService {
     const sortCol = validSorts.includes(sort) ? `e.${sort}` : 'e.id';
     qb.orderBy(sortCol, order).addOrderBy('e.id', 'ASC');
 
-    const [data, total] = await qb.skip((page - 1) * pageSize).take(pageSize).getManyAndCount();
+    const [data, total] = await qb
+      .skip((page - 1) * pageSize)
+      .take(pageSize)
+      .getManyAndCount();
 
-    const permissionByCompany = await this.resolveSensitivePermissionMap(userId, scopeCompanyIds);
+    const permissionByCompany = await this.resolveSensitivePermissionMap(
+      userId,
+      scopeCompanyIds,
+    );
     const normalized = data.map((employee) =>
-      this.toReadableEmployee(employee, permissionByCompany.get(employee.idEmpresa) === true),
+      this.toReadableEmployee(
+        employee,
+        permissionByCompany.get(employee.idEmpresa) === true,
+      ),
     );
 
     return { data: normalized, total, page, pageSize };
@@ -326,33 +390,50 @@ export class EmployeesService {
     }
     if (userId != null) {
       await this.assertUserCompanyAccess(userId, emp.idEmpresa);
-      const canSeeSensitive = await this.hasSensitivePermission(userId, emp.idEmpresa);
+      const canSeeSensitive = await this.hasSensitivePermission(
+        userId,
+        emp.idEmpresa,
+      );
       return this.toReadableEmployee(emp, canSeeSensitive);
     }
     return emp;
   }
 
-  async update(id: number, dto: UpdateEmployeeDto, modifierId?: number): Promise<Employee> {
+  async update(
+    id: number,
+    dto: UpdateEmployeeDto,
+    modifierId?: number,
+  ): Promise<Employee> {
     const emp = await this.findOne(id, modifierId);
     if (!modifierId) {
-      throw new ForbiddenException('Usuario no autenticado para editar empleado.');
+      throw new ForbiddenException(
+        'Usuario no autenticado para editar empleado.',
+      );
     }
 
     const normalizedEmail = dto.email ? dto.email.toLowerCase().trim() : null;
-    const emailHash = normalizedEmail ? this.sensitiveDataService.hashEmail(normalizedEmail) : null;
+    const emailHash = normalizedEmail
+      ? this.sensitiveDataService.hashEmail(normalizedEmail)
+      : null;
 
     if (emailHash) {
       const conflict = await this.repo.findOne({ where: { emailHash } });
       if (conflict && conflict.id !== id) {
-        throw new ConflictException(`Ya existe un empleado con email '${dto.email}'`);
+        throw new ConflictException(
+          `Ya existe un empleado con email '${dto.email}'`,
+        );
       }
     }
 
-    const cedulaHash = dto.cedula ? this.sensitiveDataService.hashCedula(dto.cedula) : null;
+    const cedulaHash = dto.cedula
+      ? this.sensitiveDataService.hashCedula(dto.cedula)
+      : null;
     if (cedulaHash) {
       const conflict = await this.repo.findOne({ where: { cedulaHash } });
       if (conflict && conflict.id !== id) {
-        throw new ConflictException(`Ya existe un empleado con cédula '${dto.cedula}'`);
+        throw new ConflictException(
+          `Ya existe un empleado con cédula '${dto.cedula}'`,
+        );
       }
     }
 
@@ -365,7 +446,9 @@ export class EmployeesService {
 
       const oldEmail = this.sensitiveDataService.decrypt(current.email) ?? '';
       if (current.idUsuario) {
-        const user = await manager.findOne(User, { where: { id: current.idUsuario } });
+        const user = await manager.findOne(User, {
+          where: { id: current.idUsuario },
+        });
         if (user) {
           if (normalizedEmail) user.email = normalizedEmail;
           if (dto.nombre) user.nombre = dto.nombre;
@@ -375,32 +458,60 @@ export class EmployeesService {
         }
       }
 
-      if (dto.nombre) current.nombre = this.sensitiveDataService.encrypt(dto.nombre) ?? current.nombre;
-      if (dto.apellido1) current.apellido1 = this.sensitiveDataService.encrypt(dto.apellido1) ?? current.apellido1;
-      if (dto.apellido2 !== undefined) current.apellido2 = this.sensitiveDataService.encrypt(dto.apellido2 ?? null);
+      if (dto.nombre)
+        current.nombre =
+          this.sensitiveDataService.encrypt(dto.nombre) ?? current.nombre;
+      if (dto.apellido1)
+        current.apellido1 =
+          this.sensitiveDataService.encrypt(dto.apellido1) ?? current.apellido1;
+      if (dto.apellido2 !== undefined)
+        current.apellido2 = this.sensitiveDataService.encrypt(
+          dto.apellido2 ?? null,
+        );
       if (dto.cedula) {
-        current.cedula = this.sensitiveDataService.encrypt(dto.cedula) ?? current.cedula;
+        current.cedula =
+          this.sensitiveDataService.encrypt(dto.cedula) ?? current.cedula;
         current.cedulaHash = cedulaHash;
       }
-      if (dto.telefono !== undefined) current.telefono = this.sensitiveDataService.encrypt(dto.telefono ?? null);
-      if (dto.direccion !== undefined) current.direccion = this.sensitiveDataService.encrypt(dto.direccion ?? null);
+      if (dto.telefono !== undefined)
+        current.telefono = this.sensitiveDataService.encrypt(
+          dto.telefono ?? null,
+        );
+      if (dto.direccion !== undefined)
+        current.direccion = this.sensitiveDataService.encrypt(
+          dto.direccion ?? null,
+        );
       if (normalizedEmail) {
-        current.email = this.sensitiveDataService.encrypt(normalizedEmail) ?? current.email;
+        current.email =
+          this.sensitiveDataService.encrypt(normalizedEmail) ?? current.email;
         current.emailHash = emailHash;
       }
       if (dto.salarioBase !== undefined) {
-        current.salarioBase = dto.salarioBase == null
-          ? null
-          : this.sensitiveDataService.encrypt(String(dto.salarioBase));
+        current.salarioBase =
+          dto.salarioBase == null
+            ? null
+            : this.sensitiveDataService.encrypt(String(dto.salarioBase));
       }
-      if (dto.numeroCcss !== undefined) current.numeroCcss = this.sensitiveDataService.encrypt(dto.numeroCcss ?? null);
-      if (dto.cuentaBanco !== undefined) current.cuentaBanco = this.sensitiveDataService.encrypt(dto.cuentaBanco ?? null);
-      if (dto.fechaSalida) current.fechaSalida = this.parseDateOnlyForDb(dto.fechaSalida);
-      if (dto.motivoSalida !== undefined) current.motivoSalida = this.sensitiveDataService.encrypt(dto.motivoSalida ?? null);
+      if (dto.numeroCcss !== undefined)
+        current.numeroCcss = this.sensitiveDataService.encrypt(
+          dto.numeroCcss ?? null,
+        );
+      if (dto.cuentaBanco !== undefined)
+        current.cuentaBanco = this.sensitiveDataService.encrypt(
+          dto.cuentaBanco ?? null,
+        );
+      if (dto.fechaSalida)
+        current.fechaSalida = this.parseDateOnlyForDb(dto.fechaSalida);
+      if (dto.motivoSalida !== undefined)
+        current.motivoSalida = this.sensitiveDataService.encrypt(
+          dto.motivoSalida ?? null,
+        );
       if (dto.fechaIngreso !== undefined) {
         const isMaster = await this.isMasterUser(modifierId, current.idEmpresa);
         if (!isMaster) {
-          throw new ForbiddenException('Solo el usuario Master puede modificar la fecha de ingreso del empleado.');
+          throw new ForbiddenException(
+            'Solo el usuario Master puede modificar la fecha de ingreso del empleado.',
+          );
         }
         this.assertJoinDate(dto.fechaIngreso);
         current.fechaIngreso = this.parseDateOnlyForDb(dto.fechaIngreso);
@@ -408,28 +519,36 @@ export class EmployeesService {
 
       if (dto.genero !== undefined) current.genero = dto.genero;
       if (dto.estadoCivil !== undefined) current.estadoCivil = dto.estadoCivil;
-      if (dto.cantidadHijos !== undefined) current.cantidadHijos = dto.cantidadHijos;
-      if (dto.idDepartamento !== undefined) current.idDepartamento = dto.idDepartamento;
+      if (dto.cantidadHijos !== undefined)
+        current.cantidadHijos = dto.cantidadHijos;
+      if (dto.idDepartamento !== undefined)
+        current.idDepartamento = dto.idDepartamento;
       if (dto.idPuesto !== undefined) current.idPuesto = dto.idPuesto;
-      if (dto.idSupervisor !== undefined) current.idSupervisor = dto.idSupervisor;
-      if (dto.tipoContrato !== undefined) current.tipoContrato = dto.tipoContrato;
+      if (dto.idSupervisor !== undefined)
+        current.idSupervisor = dto.idSupervisor;
+      if (dto.tipoContrato !== undefined)
+        current.tipoContrato = dto.tipoContrato;
       if (dto.jornada !== undefined) current.jornada = dto.jornada;
-      if (dto.idPeriodoPago !== undefined) current.idPeriodoPago = dto.idPeriodoPago;
-      if (dto.monedaSalario !== undefined) current.monedaSalario = dto.monedaSalario;
+      if (dto.idPeriodoPago !== undefined)
+        current.idPeriodoPago = dto.idPeriodoPago;
+      if (dto.monedaSalario !== undefined)
+        current.monedaSalario = dto.monedaSalario;
       if (dto.vacacionesAcumuladas !== undefined) {
         throw new BadRequestException(
           'Vacaciones acumuladas iniciales no es editable. Use ajustes con permiso especial.',
         );
       }
       if (dto.cesantiaAcumulada !== undefined) {
-        current.cesantiaAcumulada = dto.cesantiaAcumulada == null || dto.cesantiaAcumulada === ''
-          ? null
-          : this.sensitiveDataService.encrypt(dto.cesantiaAcumulada);
+        current.cesantiaAcumulada =
+          dto.cesantiaAcumulada == null || dto.cesantiaAcumulada === ''
+            ? null
+            : this.sensitiveDataService.encrypt(dto.cesantiaAcumulada);
       }
 
       current.modificadoPor = modifierId;
       current.datosEncriptados = 1;
-      current.versionEncriptacion = EmployeeSensitiveDataService.getEncryptedVersion();
+      current.versionEncriptacion =
+        EmployeeSensitiveDataService.getEncryptedVersion();
       current.fechaEncriptacion = new Date();
 
       const saved = await manager.save(Employee, current);
@@ -475,7 +594,7 @@ export class EmployeesService {
   async inactivate(id: number, modifierId: number): Promise<Employee> {
     const emp = await this.findOne(id, modifierId);
     await this.assertCanInactivateEmployee(emp);
-    const payloadBefore = this.buildAuditPayloadFromEncrypted(emp as Employee);
+    const payloadBefore = this.buildAuditPayloadFromEncrypted(emp);
     emp.estado = 0;
     emp.modificadoPor = modifierId;
     const saved = await this.repo.save(emp);
@@ -487,7 +606,7 @@ export class EmployeesService {
       actorUserId: modifierId,
       descripcion: `Empleado inactivado: ${saved.id}`,
       payloadBefore,
-      payloadAfter: this.buildAuditPayloadFromEncrypted(saved as Employee),
+      payloadAfter: this.buildAuditPayloadFromEncrypted(saved),
     });
     return saved;
   }
@@ -503,11 +622,18 @@ export class EmployeesService {
         estado: In(PLANILLA_ESTADOS_BLOQUEANTES),
         esInactivo: 0,
       },
-      select: { id: true, fechaInicioPeriodo: true, fechaFinPeriodo: true, estado: true, tipoPlanilla: true },
+      select: {
+        id: true,
+        fechaInicioPeriodo: true,
+        fechaFinPeriodo: true,
+        estado: true,
+        tipoPlanilla: true,
+      },
     });
     if (planillasActivas.length > 0) {
       throw new ConflictException({
-        message: 'El empleado tiene planillas activas en su empresa. Debe cerrarlas o aplicarlas primero.',
+        message:
+          'El empleado tiene planillas activas en su empresa. Debe cerrarlas o aplicarlas primero.',
         code: 'PLANILLAS_ACTIVAS',
         planillas: planillasActivas.map((p) => ({
           id: p.id,
@@ -528,7 +654,8 @@ export class EmployeesService {
     });
     if (accionesBloqueantes.length > 0) {
       throw new ConflictException({
-        message: 'El empleado tiene acciones de personal pendientes o aprobadas sin asociar a planilla. Debe completarlas o cancelarlas primero.',
+        message:
+          'El empleado tiene acciones de personal pendientes o aprobadas sin asociar a planilla. Debe completarlas o cancelarlas primero.',
         code: 'ACCIONES_PENDIENTES',
         acciones: accionesBloqueantes.map((a) => ({
           id: a.id,
@@ -542,7 +669,7 @@ export class EmployeesService {
 
   async reactivate(id: number, modifierId: number): Promise<Employee> {
     const emp = await this.findOne(id, modifierId);
-    const payloadBefore = this.buildAuditPayloadFromEncrypted(emp as Employee);
+    const payloadBefore = this.buildAuditPayloadFromEncrypted(emp);
     emp.estado = 1;
     emp.modificadoPor = modifierId;
     const saved = await this.repo.save(emp);
@@ -554,20 +681,28 @@ export class EmployeesService {
       actorUserId: modifierId,
       descripcion: `Empleado reactivado: ${saved.id}`,
       payloadBefore,
-      payloadAfter: this.buildAuditPayloadFromEncrypted(saved as Employee),
+      payloadAfter: this.buildAuditPayloadFromEncrypted(saved),
     });
     return saved;
   }
 
-  async liquidar(id: number, modifierId: number, fechaSalida?: string, motivo?: string): Promise<Employee> {
+  async liquidar(
+    id: number,
+    modifierId: number,
+    fechaSalida?: string,
+    motivo?: string,
+  ): Promise<Employee> {
     const emp = await this.findOne(id, modifierId);
-    const payloadBefore = this.buildAuditPayloadFromEncrypted(emp as Employee);
+    const payloadBefore = this.buildAuditPayloadFromEncrypted(emp);
     emp.estado = 0;
-    emp.fechaSalida = fechaSalida ? this.parseDateOnlyForDb(fechaSalida) : new Date();
+    emp.fechaSalida = fechaSalida
+      ? this.parseDateOnlyForDb(fechaSalida)
+      : new Date();
     emp.motivoSalida = this.sensitiveDataService.encrypt(motivo ?? null);
     emp.modificadoPor = modifierId;
     emp.datosEncriptados = 1;
-    emp.versionEncriptacion = EmployeeSensitiveDataService.getEncryptedVersion();
+    emp.versionEncriptacion =
+      EmployeeSensitiveDataService.getEncryptedVersion();
     emp.fechaEncriptacion = new Date();
     const saved = await this.repo.save(emp);
     this.auditOutbox.publish({
@@ -578,7 +713,7 @@ export class EmployeesService {
       actorUserId: modifierId,
       descripcion: `Empleado liquidado: ${saved.id}`,
       payloadBefore,
-      payloadAfter: this.buildAuditPayloadFromEncrypted(saved as Employee),
+      payloadAfter: this.buildAuditPayloadFromEncrypted(saved),
     });
     return saved;
   }
@@ -615,8 +750,10 @@ export class EmployeesService {
     );
 
     return (rows ?? []).map((row: Record<string, unknown>) => {
-      const payloadBefore = (row.payloadBefore as Record<string, unknown> | null) ?? null;
-      const payloadAfter = (row.payloadAfter as Record<string, unknown> | null) ?? null;
+      const payloadBefore =
+        (row.payloadBefore as Record<string, unknown> | null) ?? null;
+      const payloadAfter =
+        (row.payloadAfter as Record<string, unknown> | null) ?? null;
       return {
         id: String(row.id ?? ''),
         modulo: String(row.modulo ?? ''),
@@ -627,7 +764,9 @@ export class EmployeesService {
         actorNombre: row.actorNombre ? String(row.actorNombre) : null,
         actorEmail: row.actorEmail ? String(row.actorEmail) : null,
         descripcion: String(row.descripcion ?? ''),
-        fechaCreacion: row.fechaCreacion ? new Date(String(row.fechaCreacion)).toISOString() : null,
+        fechaCreacion: row.fechaCreacion
+          ? new Date(String(row.fechaCreacion)).toISOString()
+          : null,
         metadata: (row.metadata as Record<string, unknown> | null) ?? null,
         cambios: this.buildAuditChanges(payloadBefore, payloadAfter),
       };
@@ -652,15 +791,32 @@ export class EmployeesService {
     const companyIds = await this.getUserCompanyIds(userId);
     if (!companyIds.length) return [];
 
-    const supervisorRoleCodes = ['SUPERVISOR_TIMEWISE', 'SUPERVISOR_GLOBAL_TIMEWISE', 'MASTER'];
+    const supervisorRoleCodes = [
+      'SUPERVISOR_TIMEWISE',
+      'SUPERVISOR_GLOBAL_TIMEWISE',
+      'MASTER',
+    ];
 
     const employees = await this.repo
       .createQueryBuilder('e')
-      .innerJoin('sys_usuario_rol', 'ur', 'ur.id_usuario = e.id_usuario AND ur.estado_usuario_rol = 1')
-      .innerJoin('sys_roles', 'r', 'r.id_rol = ur.id_rol AND r.codigo_rol IN (:...codes)', {
-        codes: supervisorRoleCodes,
-      })
-      .innerJoin('sys_apps', 'a', "a.id_app = ur.id_app AND a.codigo_app = 'timewise'")
+      .innerJoin(
+        'sys_usuario_rol',
+        'ur',
+        'ur.id_usuario = e.id_usuario AND ur.estado_usuario_rol = 1',
+      )
+      .innerJoin(
+        'sys_roles',
+        'r',
+        'r.id_rol = ur.id_rol AND r.codigo_rol IN (:...codes)',
+        {
+          codes: supervisorRoleCodes,
+        },
+      )
+      .innerJoin(
+        'sys_apps',
+        'a',
+        "a.id_app = ur.id_app AND a.codigo_app = 'timewise'",
+      )
       .where('e.id_usuario IS NOT NULL')
       .andWhere('e.id_empresa IN (:...companyIds)', { companyIds })
       .andWhere('e.estado = 1')
@@ -671,11 +827,24 @@ export class EmployeesService {
 
     const globalSupervisors = await this.repo
       .createQueryBuilder('e')
-      .innerJoin('sys_usuario_rol_global', 'g', 'g.id_usuario = e.id_usuario AND g.estado_usuario_rol_global = 1')
-      .innerJoin('sys_roles', 'r', 'r.id_rol = g.id_rol AND r.codigo_rol IN (:...codes)', {
-        codes: supervisorRoleCodes,
-      })
-      .leftJoin('sys_apps', 'a', "a.id_app = g.id_app AND a.codigo_app = 'timewise'")
+      .innerJoin(
+        'sys_usuario_rol_global',
+        'g',
+        'g.id_usuario = e.id_usuario AND g.estado_usuario_rol_global = 1',
+      )
+      .innerJoin(
+        'sys_roles',
+        'r',
+        'r.id_rol = g.id_rol AND r.codigo_rol IN (:...codes)',
+        {
+          codes: supervisorRoleCodes,
+        },
+      )
+      .leftJoin(
+        'sys_apps',
+        'a',
+        "a.id_app = g.id_app AND a.codigo_app = 'timewise'",
+      )
       .where('e.id_usuario IS NOT NULL')
       .andWhere('e.id_empresa IN (:...companyIds)', { companyIds })
       .andWhere('e.estado = 1')
@@ -692,7 +861,10 @@ export class EmployeesService {
       }
     }
 
-    const sensitiveMap = await this.resolveSensitivePermissionMap(userId, companyIds);
+    const sensitiveMap = await this.resolveSensitivePermissionMap(
+      userId,
+      companyIds,
+    );
     return employees.map((e) => {
       const canSeeSensitive = sensitiveMap.get(e.idEmpresa) ?? false;
       const readable = this.toReadableEmployee(e, canSeeSensitive);
@@ -704,16 +876,24 @@ export class EmployeesService {
     });
   }
 
-  private async assertUserCompanyAccess(userId: number, idEmpresa: number): Promise<void> {
+  private async assertUserCompanyAccess(
+    userId: number,
+    idEmpresa: number,
+  ): Promise<void> {
     const hasAccess = await this.userCompanyRepo.findOne({
       where: { idUsuario: userId, idEmpresa, estado: 1 },
     });
     if (!hasAccess) {
-      throw new ForbiddenException(`No tiene acceso a la empresa ${idEmpresa} para esta operaciÃ³n.`);
+      throw new ForbiddenException(
+        `No tiene acceso a la empresa ${idEmpresa} para esta operaciÃ³n.`,
+      );
     }
   }
 
-  private toReadableEmployee(employee: Employee, canSeeSensitive: boolean): Employee {
+  private toReadableEmployee(
+    employee: Employee,
+    canSeeSensitive: boolean,
+  ): Employee {
     if (!canSeeSensitive) {
       employee.nombre = null as unknown as string;
       employee.apellido1 = null as unknown as string;
@@ -732,23 +912,38 @@ export class EmployeesService {
     }
 
     employee.nombre = this.sensitiveDataService.decrypt(employee.nombre) ?? '';
-    employee.apellido1 = this.sensitiveDataService.decrypt(employee.apellido1) ?? '';
+    employee.apellido1 =
+      this.sensitiveDataService.decrypt(employee.apellido1) ?? '';
     employee.apellido2 = this.sensitiveDataService.decrypt(employee.apellido2);
     employee.cedula = this.sensitiveDataService.decrypt(employee.cedula) ?? '';
     employee.email = this.sensitiveDataService.decrypt(employee.email) ?? '';
     employee.telefono = this.sensitiveDataService.decrypt(employee.telefono);
     employee.direccion = this.sensitiveDataService.decrypt(employee.direccion);
-    employee.salarioBase = this.sensitiveDataService.decrypt(employee.salarioBase);
-    employee.numeroCcss = this.sensitiveDataService.decrypt(employee.numeroCcss);
-    employee.cuentaBanco = this.sensitiveDataService.decrypt(employee.cuentaBanco);
-    employee.vacacionesAcumuladas = this.sensitiveDataService.decrypt(employee.vacacionesAcumuladas);
-    employee.cesantiaAcumulada = this.sensitiveDataService.decrypt(employee.cesantiaAcumulada);
-    employee.motivoSalida = this.sensitiveDataService.decrypt(employee.motivoSalida);
+    employee.salarioBase = this.sensitiveDataService.decrypt(
+      employee.salarioBase,
+    );
+    employee.numeroCcss = this.sensitiveDataService.decrypt(
+      employee.numeroCcss,
+    );
+    employee.cuentaBanco = this.sensitiveDataService.decrypt(
+      employee.cuentaBanco,
+    );
+    employee.vacacionesAcumuladas = this.sensitiveDataService.decrypt(
+      employee.vacacionesAcumuladas,
+    );
+    employee.cesantiaAcumulada = this.sensitiveDataService.decrypt(
+      employee.cesantiaAcumulada,
+    );
+    employee.motivoSalida = this.sensitiveDataService.decrypt(
+      employee.motivoSalida,
+    );
 
     return employee;
   }
 
-  private buildAuditPayloadFromEncrypted(employee: Employee): Record<string, unknown> {
+  private buildAuditPayloadFromEncrypted(
+    employee: Employee,
+  ): Record<string, unknown> {
     const readable = this.toReadableEmployee({ ...employee }, true);
     return {
       nombre: readable.nombre ?? null,
@@ -761,8 +956,16 @@ export class EmployeesService {
       idDepartamento: readable.idDepartamento ?? null,
       idPuesto: readable.idPuesto ?? null,
       idSupervisor: readable.idSupervisor ?? null,
-      fechaIngreso: readable.fechaIngreso ? new Date(readable.fechaIngreso as unknown as string).toISOString().slice(0, 10) : null,
-      fechaSalida: readable.fechaSalida ? new Date(readable.fechaSalida as unknown as string).toISOString().slice(0, 10) : null,
+      fechaIngreso: readable.fechaIngreso
+        ? new Date(readable.fechaIngreso as unknown as string)
+            .toISOString()
+            .slice(0, 10)
+        : null,
+      fechaSalida: readable.fechaSalida
+        ? new Date(readable.fechaSalida as unknown as string)
+            .toISOString()
+            .slice(0, 10)
+        : null,
       motivoSalida: readable.motivoSalida ?? null,
       tipoContrato: readable.tipoContrato ?? null,
       jornada: readable.jornada ?? null,
@@ -794,7 +997,8 @@ export class EmployeesService {
       ...Object.keys(payloadBefore),
       ...Object.keys(payloadAfter),
     ]);
-    const changes: Array<{ campo: string; antes: string; despues: string }> = [];
+    const changes: Array<{ campo: string; antes: string; despues: string }> =
+      [];
     for (const key of keys) {
       if (!(key in this.auditFieldLabels)) continue;
       const beforeValue = this.normalizeAuditValue(payloadBefore[key]);
@@ -809,8 +1013,15 @@ export class EmployeesService {
     return changes;
   }
 
-  private async hasSensitivePermission(userId: number, companyId: number): Promise<boolean> {
-    const resolved = await this.authService.resolvePermissions(userId, companyId, 'kpital');
+  private async hasSensitivePermission(
+    userId: number,
+    companyId: number,
+  ): Promise<boolean> {
+    const resolved = await this.authService.resolvePermissions(
+      userId,
+      companyId,
+      'kpital',
+    );
     return resolved.permissions.includes('employee:view-sensitive');
   }
 
@@ -825,7 +1036,10 @@ export class EmployeesService {
     return map;
   }
 
-  private async isMasterUser(userId: number, companyId: number): Promise<boolean> {
+  private async isMasterUser(
+    userId: number,
+    companyId: number,
+  ): Promise<boolean> {
     const [timewise, kpital] = await Promise.all([
       this.authService.resolvePermissions(userId, companyId, 'timewise'),
       this.authService.resolvePermissions(userId, companyId, 'kpital'),
@@ -849,10 +1063,10 @@ export class EmployeesService {
     const normalized = new Date(year, month - 1, day, 12, 0, 0, 0);
 
     if (
-      Number.isNaN(normalized.getTime())
-      || normalized.getFullYear() !== year
-      || normalized.getMonth() !== month - 1
-      || normalized.getDate() !== day
+      Number.isNaN(normalized.getTime()) ||
+      normalized.getFullYear() !== year ||
+      normalized.getMonth() !== month - 1 ||
+      normalized.getDate() !== day
     ) {
       throw new BadRequestException('Fecha invalida.');
     }
@@ -860,5 +1074,3 @@ export class EmployeesService {
     return normalized;
   }
 }
-
-

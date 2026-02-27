@@ -26,11 +26,17 @@ export class PermissionsService {
   ) {}
 
   getCatalogMode(): PermissionCatalogMode {
-    const raw = this.configService.get<string>('PERMISSIONS_CATALOG_MODE', 'migration');
+    const raw = this.configService.get<string>(
+      'PERMISSIONS_CATALOG_MODE',
+      'migration',
+    );
     return raw?.trim().toLowerCase() === 'ui' ? 'ui' : 'migration';
   }
 
-  async create(dto: CreatePermissionDto, actorUserId?: number): Promise<Permission> {
+  async create(
+    dto: CreatePermissionDto,
+    actorUserId?: number,
+  ): Promise<Permission> {
     this.ensureCatalogEditable();
 
     const codigo = dto.codigo.toLowerCase();
@@ -38,7 +44,9 @@ export class PermissionsService {
     const modulo = dto.modulo.toLowerCase();
 
     if (moduloFromCode !== modulo) {
-      throw new ConflictException('modulo debe coincidir con el prefijo del codigo');
+      throw new ConflictException(
+        'modulo debe coincidir con el prefijo del codigo',
+      );
     }
 
     const existing = await this.repo.findOne({ where: { codigo } });
@@ -75,7 +83,10 @@ export class PermissionsService {
     return saved;
   }
 
-  async findAll(modulo?: string, includeInactive = true): Promise<Permission[]> {
+  async findAll(
+    modulo?: string,
+    includeInactive = true,
+  ): Promise<Permission[]> {
     const qb = this.repo.createQueryBuilder('p');
 
     if (!includeInactive) {
@@ -105,7 +116,11 @@ export class PermissionsService {
     return perm;
   }
 
-  async update(id: number, dto: UpdatePermissionDto, actorUserId?: number): Promise<Permission> {
+  async update(
+    id: number,
+    dto: UpdatePermissionDto,
+    actorUserId?: number,
+  ): Promise<Permission> {
     this.ensureCatalogEditable();
 
     const perm = await this.findOne(id);
@@ -113,11 +128,15 @@ export class PermissionsService {
     const nextModulo = dto.modulo?.toLowerCase() ?? perm.modulo;
 
     if (this.extractModule(nextCodigo) !== nextModulo) {
-      throw new ConflictException('modulo debe coincidir con el prefijo del codigo');
+      throw new ConflictException(
+        'modulo debe coincidir con el prefijo del codigo',
+      );
     }
 
     if (nextCodigo !== perm.codigo) {
-      const existing = await this.repo.findOne({ where: { codigo: nextCodigo } });
+      const existing = await this.repo.findOne({
+        where: { codigo: nextCodigo },
+      });
       if (existing && existing.id !== id) {
         throw new ConflictException('Ya existe un permiso con ese codigo');
       }
@@ -170,7 +189,11 @@ export class PermissionsService {
       entidadId: saved.id,
       actorUserId: actorUserId ?? null,
       descripcion: `Permiso inactivado: ${saved.codigo}`,
-      payloadAfter: { id: saved.id, codigo: saved.codigo, estado: saved.estado },
+      payloadAfter: {
+        id: saved.id,
+        codigo: saved.codigo,
+        estado: saved.estado,
+      },
     });
     return saved;
   }
@@ -190,7 +213,11 @@ export class PermissionsService {
       entidadId: saved.id,
       actorUserId: actorUserId ?? null,
       descripcion: `Permiso reactivado: ${saved.codigo}`,
-      payloadAfter: { id: saved.id, codigo: saved.codigo, estado: saved.estado },
+      payloadAfter: {
+        id: saved.id,
+        codigo: saved.codigo,
+        estado: saved.estado,
+      },
     });
     return saved;
   }

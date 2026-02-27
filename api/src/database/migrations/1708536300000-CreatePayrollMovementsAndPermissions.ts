@@ -1,4 +1,10 @@
-import { MigrationInterface, QueryRunner, Table, TableForeignKey, TableIndex } from 'typeorm';
+import {
+  MigrationInterface,
+  QueryRunner,
+  Table,
+  TableForeignKey,
+  TableIndex,
+} from 'typeorm';
 
 export class CreatePayrollMovementsAndPermissions1708536300000 implements MigrationInterface {
   public async up(queryRunner: QueryRunner): Promise<void> {
@@ -15,19 +21,76 @@ export class CreatePayrollMovementsAndPermissions1708536300000 implements Migrat
               isGenerated: true,
               generationStrategy: 'increment',
             },
-            { name: 'id_empresa_movimiento_nomina', type: 'int', isNullable: false },
-            { name: 'nombre_movimiento_nomina', type: 'varchar', length: '200', isNullable: false },
-            { name: 'id_articulo_nomina_movimiento_nomina', type: 'int', isNullable: false },
-            { name: 'id_tipo_accion_personal_movimiento_nomina', type: 'int', isNullable: false },
-            { name: 'id_clase_movimiento_nomina', type: 'int', isNullable: true },
-            { name: 'id_proyecto_movimiento_nomina', type: 'int', isNullable: true },
-            { name: 'descripcion_movimiento_nomina', type: 'text', isNullable: true },
-            { name: 'es_monto_fijo_movimiento_nomina', type: 'tinyint', width: 1, default: 1 },
-            { name: 'monto_fijo_movimiento_nomina', type: 'varchar', length: '50', default: "'0'" },
-            { name: 'porcentaje_movimiento_nomina', type: 'varchar', length: '50', default: "'0'" },
-            { name: 'formula_ayuda_movimiento_nomina', type: 'text', isNullable: true },
-            { name: 'es_inactivo_movimiento_nomina', type: 'tinyint', width: 1, default: 0 },
-            { name: 'fecha_creacion_movimiento_nomina', type: 'timestamp', default: 'CURRENT_TIMESTAMP' },
+            {
+              name: 'id_empresa_movimiento_nomina',
+              type: 'int',
+              isNullable: false,
+            },
+            {
+              name: 'nombre_movimiento_nomina',
+              type: 'varchar',
+              length: '200',
+              isNullable: false,
+            },
+            {
+              name: 'id_articulo_nomina_movimiento_nomina',
+              type: 'int',
+              isNullable: false,
+            },
+            {
+              name: 'id_tipo_accion_personal_movimiento_nomina',
+              type: 'int',
+              isNullable: false,
+            },
+            {
+              name: 'id_clase_movimiento_nomina',
+              type: 'int',
+              isNullable: true,
+            },
+            {
+              name: 'id_proyecto_movimiento_nomina',
+              type: 'int',
+              isNullable: true,
+            },
+            {
+              name: 'descripcion_movimiento_nomina',
+              type: 'text',
+              isNullable: true,
+            },
+            {
+              name: 'es_monto_fijo_movimiento_nomina',
+              type: 'tinyint',
+              width: 1,
+              default: 1,
+            },
+            {
+              name: 'monto_fijo_movimiento_nomina',
+              type: 'varchar',
+              length: '50',
+              default: "'0'",
+            },
+            {
+              name: 'porcentaje_movimiento_nomina',
+              type: 'varchar',
+              length: '50',
+              default: "'0'",
+            },
+            {
+              name: 'formula_ayuda_movimiento_nomina',
+              type: 'text',
+              isNullable: true,
+            },
+            {
+              name: 'es_inactivo_movimiento_nomina',
+              type: 'tinyint',
+              width: 1,
+              default: 0,
+            },
+            {
+              name: 'fecha_creacion_movimiento_nomina',
+              type: 'timestamp',
+              default: 'CURRENT_TIMESTAMP',
+            },
             {
               name: 'fecha_modificacion_movimiento_nomina',
               type: 'timestamp',
@@ -40,27 +103,45 @@ export class CreatePayrollMovementsAndPermissions1708536300000 implements Migrat
 
       await queryRunner.createIndex(
         'nom_movimientos_nomina',
-        new TableIndex({ name: 'IDX_mov_nomina_empresa', columnNames: ['id_empresa_movimiento_nomina'] }),
+        new TableIndex({
+          name: 'IDX_mov_nomina_empresa',
+          columnNames: ['id_empresa_movimiento_nomina'],
+        }),
       );
       await queryRunner.createIndex(
         'nom_movimientos_nomina',
-        new TableIndex({ name: 'IDX_mov_nomina_articulo', columnNames: ['id_articulo_nomina_movimiento_nomina'] }),
+        new TableIndex({
+          name: 'IDX_mov_nomina_articulo',
+          columnNames: ['id_articulo_nomina_movimiento_nomina'],
+        }),
       );
       await queryRunner.createIndex(
         'nom_movimientos_nomina',
-        new TableIndex({ name: 'IDX_mov_nomina_accion', columnNames: ['id_tipo_accion_personal_movimiento_nomina'] }),
+        new TableIndex({
+          name: 'IDX_mov_nomina_accion',
+          columnNames: ['id_tipo_accion_personal_movimiento_nomina'],
+        }),
       );
       await queryRunner.createIndex(
         'nom_movimientos_nomina',
-        new TableIndex({ name: 'IDX_mov_nomina_clase', columnNames: ['id_clase_movimiento_nomina'] }),
+        new TableIndex({
+          name: 'IDX_mov_nomina_clase',
+          columnNames: ['id_clase_movimiento_nomina'],
+        }),
       );
       await queryRunner.createIndex(
         'nom_movimientos_nomina',
-        new TableIndex({ name: 'IDX_mov_nomina_proyecto', columnNames: ['id_proyecto_movimiento_nomina'] }),
+        new TableIndex({
+          name: 'IDX_mov_nomina_proyecto',
+          columnNames: ['id_proyecto_movimiento_nomina'],
+        }),
       );
       await queryRunner.createIndex(
         'nom_movimientos_nomina',
-        new TableIndex({ name: 'IDX_mov_nomina_inactivo', columnNames: ['es_inactivo_movimiento_nomina'] }),
+        new TableIndex({
+          name: 'IDX_mov_nomina_inactivo',
+          columnNames: ['es_inactivo_movimiento_nomina'],
+        }),
       );
 
       await queryRunner.createForeignKey(
@@ -194,4 +275,3 @@ export class CreatePayrollMovementsAndPermissions1708536300000 implements Migrat
     }
   }
 }
-

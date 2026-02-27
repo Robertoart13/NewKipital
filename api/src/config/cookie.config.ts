@@ -65,7 +65,9 @@ export function getClearCookieOptions(config: ConfigService): CookieOptions {
   };
 }
 
-export function getClearRefreshCookieOptions(config: ConfigService): CookieOptions {
+export function getClearRefreshCookieOptions(
+  config: ConfigService,
+): CookieOptions {
   const isDev = config.get<string>('NODE_ENV') === 'development';
 
   return {
@@ -77,7 +79,9 @@ export function getClearRefreshCookieOptions(config: ConfigService): CookieOptio
   };
 }
 
-export function getClearCsrfCookieOptions(config: ConfigService): CookieOptions {
+export function getClearCsrfCookieOptions(
+  config: ConfigService,
+): CookieOptions {
   const isDev = config.get<string>('NODE_ENV') === 'development';
 
   return {

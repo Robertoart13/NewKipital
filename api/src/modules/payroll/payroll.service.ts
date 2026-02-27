@@ -22,9 +22,15 @@ import { AuditOutboxService } from '../integration/audit-outbox.service';
 import { UserCompany } from '../access-control/entities/user-company.entity';
 import { EmployeeVacationService } from '../employees/services/employee-vacation.service';
 import { PayrollEmployeeSnapshot } from './entities/payroll-employee-snapshot.entity';
-import { PayrollInputSnapshot, PayrollInputSourceType } from './entities/payroll-input-snapshot.entity';
+import {
+  PayrollInputSnapshot,
+  PayrollInputSourceType,
+} from './entities/payroll-input-snapshot.entity';
 import { PayrollResult } from './entities/payroll-result.entity';
-import { PersonalAction, PersonalActionEstado } from '../personal-actions/entities/personal-action.entity';
+import {
+  PersonalAction,
+  PersonalActionEstado,
+} from '../personal-actions/entities/personal-action.entity';
 
 @Injectable()
 export class PayrollService {
@@ -74,11 +80,17 @@ export class PayrollService {
     fechaHastaRaw?: string,
   ): Promise<PayrollCalendar[]> {
     const qb = this.repo.createQueryBuilder('p').where('1=1');
-    const fechaDesde = fechaDesdeRaw ? this.parseQueryDate(fechaDesdeRaw, 'fechaDesde') : undefined;
-    const fechaHasta = fechaHastaRaw ? this.parseQueryDate(fechaHastaRaw, 'fechaHasta') : undefined;
+    const fechaDesde = fechaDesdeRaw
+      ? this.parseQueryDate(fechaDesdeRaw, 'fechaDesde')
+      : undefined;
+    const fechaHasta = fechaHastaRaw
+      ? this.parseQueryDate(fechaHastaRaw, 'fechaHasta')
+      : undefined;
 
     if (fechaDesde && fechaHasta && fechaDesde > fechaHasta) {
-      throw new BadRequestException('fechaDesde no puede ser mayor que fechaHasta.');
+      throw new BadRequestException(
+        'fechaDesde no puede ser mayor que fechaHasta.',
+      );
     }
 
     if (idEmpresa != null) {
@@ -91,21 +103,32 @@ export class PayrollService {
     }
 
     if (inactiveOnly) {
-      qb.andWhere('(p.esInactivo = 1 OR p.estado = :inactiva)', { inactiva: EstadoCalendarioNomina.INACTIVA });
+      qb.andWhere('(p.esInactivo = 1 OR p.estado = :inactiva)', {
+        inactiva: EstadoCalendarioNomina.INACTIVA,
+      });
     } else if (!includeInactive) {
       qb.andWhere('p.esInactivo = 0');
-      qb.andWhere('p.estado != :inactiva', { inactiva: EstadoCalendarioNomina.INACTIVA });
+      qb.andWhere('p.estado != :inactiva', {
+        inactiva: EstadoCalendarioNomina.INACTIVA,
+      });
     }
 
     if (fechaDesde && fechaHasta) {
-      qb.andWhere('p.fechaFinPeriodo >= :fechaDesde AND p.fechaInicioPeriodo <= :fechaHasta', {
+      qb.andWhere(
+        'p.fechaFinPeriodo >= :fechaDesde AND p.fechaInicioPeriodo <= :fechaHasta',
+        {
+          fechaDesde: this.toYmd(fechaDesde),
+          fechaHasta: this.toYmd(fechaHasta),
+        },
+      );
+    } else if (fechaDesde) {
+      qb.andWhere('p.fechaFinPeriodo >= :fechaDesde', {
         fechaDesde: this.toYmd(fechaDesde),
+      });
+    } else if (fechaHasta) {
+      qb.andWhere('p.fechaInicioPeriodo <= :fechaHasta', {
         fechaHasta: this.toYmd(fechaHasta),
       });
-    } else if (fechaDesde) {
-      qb.andWhere('p.fechaFinPeriodo >= :fechaDesde', { fechaDesde: this.toYmd(fechaDesde) });
-    } else if (fechaHasta) {
-      qb.andWhere('p.fechaInicioPeriodo <= :fechaHasta', { fechaHasta: this.toYmd(fechaHasta) });
     }
 
     return qb.orderBy('p.fechaInicioPeriodo', 'DESC').getMany();
@@ -120,13 +143,17 @@ export class PayrollService {
     return p;
   }
 
-  async create(dto: CreatePayrollDto, userId?: number): Promise<PayrollCalendar> {
+  async create(
+    dto: CreatePayrollDto,
+    userId?: number,
+  ): Promise<PayrollCalendar> {
     if (userId != null) {
       await this.assertUserCompanyAccess(userId, dto.idEmpresa);
     }
     const tipo = (dto.tipoPlanilla as TipoPlanilla) ?? TipoPlanilla.REGULAR;
     const moneda = dto.moneda ?? MonedaCalendario.CRC;
-    const resolvedTipoPlanillaId = dto.idTipoPlanilla ?? this.resolveTipoPlanillaId(tipo);
+    const resolvedTipoPlanillaId =
+      dto.idTipoPlanilla ?? this.resolveTipoPlanillaId(tipo);
     const inicio = new Date(dto.periodoInicio);
     const fin = new Date(dto.periodoFin);
     this.validateDateRules(
@@ -135,9 +162,17 @@ export class PayrollService {
       dto.fechaCorte ? new Date(dto.fechaCorte) : fin,
       new Date(dto.fechaInicioPago),
       new Date(dto.fechaFinPago),
-      dto.fechaPagoProgramada ? new Date(dto.fechaPagoProgramada) : new Date(dto.fechaFinPago),
+      dto.fechaPagoProgramada
+        ? new Date(dto.fechaPagoProgramada)
+        : new Date(dto.fechaFinPago),
     );
-    const slotKey = this.buildSlotKey(dto.idEmpresa, inicio, fin, resolvedTipoPlanillaId, moneda);
+    const slotKey = this.buildSlotKey(
+      dto.idEmpresa,
+      inicio,
+      fin,
+      resolvedTipoPlanillaId,
+      moneda,
+    );
 
     const existeOperativa = await this.repo
       .createQueryBuilder('p')
@@ -146,21 +181,26 @@ export class PayrollService {
       .getOne();
 
     if (existeOperativa) {
-      throw new ConflictException('Ya existe una planilla operativa para este periodo, empresa, moneda y tipo');
+      throw new ConflictException(
+        'Ya existe una planilla operativa para este periodo, empresa, moneda y tipo',
+      );
     }
 
     const planilla = this.repo.create({
       idEmpresa: dto.idEmpresa,
       idPeriodoPago: dto.idPeriodoPago,
       idTipoPlanilla: resolvedTipoPlanillaId,
-      nombrePlanilla: dto.nombrePlanilla?.trim() || `Planilla ${tipo} ${dto.periodoInicio}`,
+      nombrePlanilla:
+        dto.nombrePlanilla?.trim() || `Planilla ${tipo} ${dto.periodoInicio}`,
       tipoPlanilla: tipo,
       fechaInicioPeriodo: inicio,
       fechaFinPeriodo: fin,
       fechaCorte: dto.fechaCorte ? new Date(dto.fechaCorte) : fin,
       fechaInicioPago: new Date(dto.fechaInicioPago),
       fechaFinPago: new Date(dto.fechaFinPago),
-      fechaPagoProgramada: dto.fechaPagoProgramada ? new Date(dto.fechaPagoProgramada) : new Date(dto.fechaFinPago),
+      fechaPagoProgramada: dto.fechaPagoProgramada
+        ? new Date(dto.fechaPagoProgramada)
+        : new Date(dto.fechaFinPago),
       moneda,
       estado: EstadoCalendarioNomina.ABIERTA,
       descripcionEvento: dto.descripcionEvento ?? null,
@@ -186,7 +226,10 @@ export class PayrollService {
     this.eventEmitter.emit(DOMAIN_EVENTS.PAYROLL.OPENED, {
       eventName: DOMAIN_EVENTS.PAYROLL.OPENED,
       occurredAt: new Date(),
-      payload: { payrollId: String(saved.id), companyId: String(saved.idEmpresa) },
+      payload: {
+        payrollId: String(saved.id),
+        companyId: String(saved.idEmpresa),
+      },
     });
 
     await this.domainEvents.record({
@@ -205,26 +248,42 @@ export class PayrollService {
     const p = await this.findOne(id, userId);
     const payloadBefore = this.buildAuditPayload(p);
     if (p.estado !== EstadoCalendarioNomina.EN_PROCESO) {
-      throw new BadRequestException('Solo se puede verificar una planilla en estado En Proceso');
+      throw new BadRequestException(
+        'Solo se puede verificar una planilla en estado En Proceso',
+      );
     }
 
-    const snapshotCount = await this.snapshotRepo.count({ where: { idNomina: p.id } });
+    const snapshotCount = await this.snapshotRepo.count({
+      where: { idNomina: p.id },
+    });
     if (snapshotCount === 0) {
-      throw new BadRequestException('No se puede verificar la planilla sin snapshot de empleados');
+      throw new BadRequestException(
+        'No se puede verificar la planilla sin snapshot de empleados',
+      );
     }
 
-    const inputCount = await this.inputSnapshotRepo.count({ where: { idNomina: p.id } });
+    const inputCount = await this.inputSnapshotRepo.count({
+      where: { idNomina: p.id },
+    });
     if (inputCount === 0) {
-      throw new BadRequestException('No se puede verificar la planilla sin snapshot de inputs');
+      throw new BadRequestException(
+        'No se puede verificar la planilla sin snapshot de inputs',
+      );
     }
 
-    const resultCount = await this.payrollResultRepo.count({ where: { idNomina: p.id } });
+    const resultCount = await this.payrollResultRepo.count({
+      where: { idNomina: p.id },
+    });
     if (resultCount === 0) {
-      throw new BadRequestException('No se puede verificar la planilla sin resultados calculados');
+      throw new BadRequestException(
+        'No se puede verificar la planilla sin resultados calculados',
+      );
     }
 
     if (p.esInactivo) {
-      throw new BadRequestException('No se puede verificar una planilla inactiva');
+      throw new BadRequestException(
+        'No se puede verificar una planilla inactiva',
+      );
     }
     p.estado = EstadoCalendarioNomina.VERIFICADA;
     p.modificadoPor = userId ?? null;
@@ -259,21 +318,39 @@ export class PayrollService {
     return saved;
   }
 
-  async update(id: number, dto: UpdatePayrollDto, userId?: number): Promise<PayrollCalendar> {
+  async update(
+    id: number,
+    dto: UpdatePayrollDto,
+    userId?: number,
+  ): Promise<PayrollCalendar> {
     const payroll = await this.findOne(id, userId);
     const payloadBefore = this.buildAuditPayload(payroll);
 
-    if (payroll.estado === EstadoCalendarioNomina.INACTIVA || payroll.esInactivo === 1) {
-      throw new BadRequestException('No se puede editar una planilla inactiva.');
+    if (
+      payroll.estado === EstadoCalendarioNomina.INACTIVA ||
+      payroll.esInactivo === 1
+    ) {
+      throw new BadRequestException(
+        'No se puede editar una planilla inactiva.',
+      );
     }
-    if (payroll.estado === EstadoCalendarioNomina.APLICADA || payroll.estado === EstadoCalendarioNomina.CONTABILIZADA) {
-      throw new BadRequestException('No se puede editar una planilla aplicada o contabilizada.');
+    if (
+      payroll.estado === EstadoCalendarioNomina.APLICADA ||
+      payroll.estado === EstadoCalendarioNomina.CONTABILIZADA
+    ) {
+      throw new BadRequestException(
+        'No se puede editar una planilla aplicada o contabilizada.',
+      );
     }
     if (payroll.estado === EstadoCalendarioNomina.EN_PROCESO) {
-      throw new BadRequestException('No se puede editar una planilla en proceso. Espere a que termine el proceso.');
+      throw new BadRequestException(
+        'No se puede editar una planilla en proceso. Espere a que termine el proceso.',
+      );
     }
     if (payroll.estado === EstadoCalendarioNomina.VERIFICADA) {
-      throw new BadRequestException('No se puede editar una planilla verificada. Primero debe reabrirla.');
+      throw new BadRequestException(
+        'No se puede editar una planilla verificada. Primero debe reabrirla.',
+      );
     }
 
     const nextCompanyId = dto.idEmpresa ?? payroll.idEmpresa;
@@ -281,25 +358,48 @@ export class PayrollService {
       await this.assertUserCompanyAccess(userId, nextCompanyId);
     }
 
-    const nextStart = dto.periodoInicio ? new Date(dto.periodoInicio) : payroll.fechaInicioPeriodo;
-    const nextEnd = dto.periodoFin ? new Date(dto.periodoFin) : payroll.fechaFinPeriodo;
+    const nextStart = dto.periodoInicio
+      ? new Date(dto.periodoInicio)
+      : payroll.fechaInicioPeriodo;
+    const nextEnd = dto.periodoFin
+      ? new Date(dto.periodoFin)
+      : payroll.fechaFinPeriodo;
     const nextCutoff = dto.fechaCorte
       ? new Date(dto.fechaCorte)
       : (payroll.fechaCorte ?? nextEnd);
-    const nextPayStart = dto.fechaInicioPago ? new Date(dto.fechaInicioPago) : payroll.fechaInicioPago;
-    const nextPayEnd = dto.fechaFinPago ? new Date(dto.fechaFinPago) : payroll.fechaFinPago;
+    const nextPayStart = dto.fechaInicioPago
+      ? new Date(dto.fechaInicioPago)
+      : payroll.fechaInicioPago;
+    const nextPayEnd = dto.fechaFinPago
+      ? new Date(dto.fechaFinPago)
+      : payroll.fechaFinPago;
     const nextProgrammed = dto.fechaPagoProgramada
       ? new Date(dto.fechaPagoProgramada)
       : (payroll.fechaPagoProgramada ?? nextPayEnd);
 
-    this.validateDateRules(nextStart, nextEnd, nextCutoff, nextPayStart, nextPayEnd, nextProgrammed);
+    this.validateDateRules(
+      nextStart,
+      nextEnd,
+      nextCutoff,
+      nextPayStart,
+      nextPayEnd,
+      nextProgrammed,
+    );
 
-    const nextTipoPlanilla = (dto.tipoPlanilla as TipoPlanilla) ?? payroll.tipoPlanilla;
-    const nextTipoPlanillaId = dto.idTipoPlanilla
-      ?? payroll.idTipoPlanilla
-      ?? this.resolveTipoPlanillaId(nextTipoPlanilla);
+    const nextTipoPlanilla =
+      (dto.tipoPlanilla as TipoPlanilla) ?? payroll.tipoPlanilla;
+    const nextTipoPlanillaId =
+      dto.idTipoPlanilla ??
+      payroll.idTipoPlanilla ??
+      this.resolveTipoPlanillaId(nextTipoPlanilla);
     const nextMoneda = dto.moneda ?? payroll.moneda;
-    const nextSlotKey = this.buildSlotKey(nextCompanyId, nextStart, nextEnd, nextTipoPlanillaId, nextMoneda);
+    const nextSlotKey = this.buildSlotKey(
+      nextCompanyId,
+      nextStart,
+      nextEnd,
+      nextTipoPlanillaId,
+      nextMoneda,
+    );
 
     const duplicate = await this.repo
       .createQueryBuilder('p')
@@ -309,13 +409,16 @@ export class PayrollService {
       .getOne();
 
     if (duplicate) {
-      throw new ConflictException('Ya existe una planilla operativa con este periodo, tipo y moneda para la empresa.');
+      throw new ConflictException(
+        'Ya existe una planilla operativa con este periodo, tipo y moneda para la empresa.',
+      );
     }
 
     payroll.idEmpresa = nextCompanyId;
     payroll.idPeriodoPago = dto.idPeriodoPago ?? payroll.idPeriodoPago;
     payroll.idTipoPlanilla = nextTipoPlanillaId;
-    payroll.nombrePlanilla = dto.nombrePlanilla?.trim() || payroll.nombrePlanilla;
+    payroll.nombrePlanilla =
+      dto.nombrePlanilla?.trim() || payroll.nombrePlanilla;
     payroll.tipoPlanilla = nextTipoPlanilla;
     payroll.fechaInicioPeriodo = nextStart;
     payroll.fechaFinPeriodo = nextEnd;
@@ -324,7 +427,8 @@ export class PayrollService {
     payroll.fechaFinPago = nextPayEnd;
     payroll.fechaPagoProgramada = nextProgrammed;
     payroll.moneda = nextMoneda;
-    payroll.descripcionEvento = dto.descripcionEvento ?? payroll.descripcionEvento;
+    payroll.descripcionEvento =
+      dto.descripcionEvento ?? payroll.descripcionEvento;
     payroll.etiquetaColor = dto.etiquetaColor ?? payroll.etiquetaColor;
     payroll.slotKey = nextSlotKey;
     payroll.modificadoPor = userId ?? null;
@@ -358,10 +462,14 @@ export class PayrollService {
     const payroll = await this.findOne(id, userId);
     const payloadBefore = this.buildAuditPayload(payroll);
     if (payroll.estado !== EstadoCalendarioNomina.ABIERTA) {
-      throw new BadRequestException('Solo se puede procesar una planilla en estado Abierta');
+      throw new BadRequestException(
+        'Solo se puede procesar una planilla en estado Abierta',
+      );
     }
     if (payroll.esInactivo) {
-      throw new BadRequestException('No se puede procesar una planilla inactiva');
+      throw new BadRequestException(
+        'No se puede procesar una planilla inactiva',
+      );
     }
 
     const queryRunner = this.dataSource.createQueryRunner();
@@ -373,8 +481,12 @@ export class PayrollService {
       const end = this.toYmd(payroll.fechaFinPeriodo);
       const cutoff = this.toYmd(payroll.fechaCorte ?? payroll.fechaFinPeriodo);
 
-      await queryRunner.manager.delete(PayrollEmployeeSnapshot, { idNomina: payroll.id });
-      await queryRunner.manager.delete(PayrollInputSnapshot, { idNomina: payroll.id });
+      await queryRunner.manager.delete(PayrollEmployeeSnapshot, {
+        idNomina: payroll.id,
+      });
+      await queryRunner.manager.delete(PayrollInputSnapshot, {
+        idNomina: payroll.id,
+      });
       await queryRunner.manager.delete(PayrollResult, { idNomina: payroll.id });
 
       payroll.estado = EstadoCalendarioNomina.EN_PROCESO;
@@ -411,7 +523,9 @@ export class PayrollService {
           idEmpleado: employee.id_empleado,
           salarioBase: this.toMoney(employee.salario_base_empleado),
           jornada: employee.jornada_empleado,
-          moneda: (employee.moneda_salario_empleado ?? payroll.moneda) as 'CRC' | 'USD',
+          moneda: (employee.moneda_salario_empleado ?? payroll.moneda) as
+            | 'CRC'
+            | 'USD',
           centroCosto: null,
           cuentaBanco: employee.cuenta_banco_empleado,
         });
@@ -421,14 +535,22 @@ export class PayrollService {
       const approvedActions = await queryRunner.manager
         .createQueryBuilder(PersonalAction, 'a')
         .where('a.idEmpresa = :companyId', { companyId: payroll.idEmpresa })
-        .andWhere('a.estado = :approved', { approved: PersonalActionEstado.APROBADA })
+        .andWhere('a.estado = :approved', {
+          approved: PersonalActionEstado.APROBADA,
+        })
         .andWhere('a.idCalendarioNomina IS NULL')
         .andWhere('a.fechaEfecto IS NOT NULL')
         .andWhere('a.fechaEfecto BETWEEN :start AND :end', { start, end })
-        .andWhere('(a.fechaAprobacion IS NULL OR a.fechaAprobacion <= :cutoff)', { cutoff })
+        .andWhere(
+          '(a.fechaAprobacion IS NULL OR a.fechaAprobacion <= :cutoff)',
+          { cutoff },
+        )
         .getMany();
 
-      const resultAccumulator = new Map<number, { gross: number; ded: number }>();
+      const resultAccumulator = new Map<
+        number,
+        { gross: number; ded: number }
+      >();
 
       for (const action of approvedActions) {
         const amount = Number(action.monto ?? 0);
@@ -457,7 +579,10 @@ export class PayrollService {
       }
 
       for (const employee of employees) {
-        const totals = resultAccumulator.get(employee.id_empleado) ?? { gross: 0, ded: 0 };
+        const totals = resultAccumulator.get(employee.id_empleado) ?? {
+          gross: 0,
+          ded: 0,
+        };
         const result = queryRunner.manager.create(PayrollResult, {
           idNomina: payroll.id,
           idEmpleado: employee.id_empleado,
@@ -502,7 +627,10 @@ export class PayrollService {
     }
   }
 
-  async getSnapshotSummary(id: number, userId?: number): Promise<{
+  async getSnapshotSummary(
+    id: number,
+    userId?: number,
+  ): Promise<{
     idNomina: number;
     empleados: number;
     inputs: number;
@@ -524,7 +652,11 @@ export class PayrollService {
       .addSelect('COALESCE(SUM(r.totalDeducciones), 0)', 'totalDeducciones')
       .addSelect('COALESCE(SUM(r.totalNeto), 0)', 'totalNeto')
       .where('r.idNomina = :id', { id })
-      .getRawOne<{ totalBruto: string; totalDeducciones: string; totalNeto: string }>();
+      .getRawOne<{
+        totalBruto: string;
+        totalDeducciones: string;
+        totalNeto: string;
+      }>();
 
     return {
       idNomina: payroll.id,
@@ -537,20 +669,26 @@ export class PayrollService {
     };
   }
 
-  async getAuditTrail(id: number, userId: number, limit = 100): Promise<Array<{
-    id: string;
-    modulo: string;
-    accion: string;
-    entidad: string;
-    entidadId: string | null;
-    actorUserId: number | null;
-    actorNombre: string | null;
-    actorEmail: string | null;
-    descripcion: string;
-    fechaCreacion: string | null;
-    metadata: Record<string, unknown> | null;
-    cambios: Array<{ campo: string; antes: string; despues: string }>;
-  }>> {
+  async getAuditTrail(
+    id: number,
+    userId: number,
+    limit = 100,
+  ): Promise<
+    Array<{
+      id: string;
+      modulo: string;
+      accion: string;
+      entidad: string;
+      entidadId: string | null;
+      actorUserId: number | null;
+      actorNombre: string | null;
+      actorEmail: string | null;
+      descripcion: string;
+      fechaCreacion: string | null;
+      metadata: Record<string, unknown> | null;
+      cambios: Array<{ campo: string; antes: string; despues: string }>;
+    }>
+  > {
     const payroll = await this.findOne(id, userId);
     const safeLimit = Math.min(Math.max(Number(limit || 100), 1), 500);
 
@@ -582,8 +720,10 @@ export class PayrollService {
     );
 
     return (rows ?? []).map((row: Record<string, unknown>) => {
-      const payloadBefore = (row.payloadBefore as Record<string, unknown> | null) ?? null;
-      const payloadAfter = (row.payloadAfter as Record<string, unknown> | null) ?? null;
+      const payloadBefore =
+        (row.payloadBefore as Record<string, unknown> | null) ?? null;
+      const payloadAfter =
+        (row.payloadAfter as Record<string, unknown> | null) ?? null;
       return {
         id: String(row.id ?? ''),
         modulo: String(row.modulo ?? 'payroll'),
@@ -594,27 +734,38 @@ export class PayrollService {
         actorNombre: row.actorNombre ? String(row.actorNombre) : null,
         actorEmail: row.actorEmail ? String(row.actorEmail) : null,
         descripcion: String(row.descripcion ?? ''),
-        fechaCreacion: row.fechaCreacion ? new Date(String(row.fechaCreacion)).toISOString() : null,
+        fechaCreacion: row.fechaCreacion
+          ? new Date(String(row.fechaCreacion)).toISOString()
+          : null,
         metadata: (row.metadata as Record<string, unknown> | null) ?? null,
         cambios: this.buildAuditChanges(payloadBefore, payloadAfter),
       };
     });
   }
 
-  async apply(id: number, userId?: number, expectedVersion?: number): Promise<PayrollCalendar> {
+  async apply(
+    id: number,
+    userId?: number,
+    expectedVersion?: number,
+  ): Promise<PayrollCalendar> {
     const p = await this.findOne(id, userId);
     const payloadBefore = this.buildAuditPayload(p);
     if (p.estado !== EstadoCalendarioNomina.VERIFICADA) {
-      throw new BadRequestException('Solo se puede aplicar una planilla en estado Verificada');
+      throw new BadRequestException(
+        'Solo se puede aplicar una planilla en estado Verificada',
+      );
     }
 
     if (expectedVersion !== undefined && p.versionLock !== expectedVersion) {
-      throw new ConflictException('La planilla fue modificada por otro proceso. Recargue e intente de nuevo.');
+      throw new ConflictException(
+        'La planilla fue modificada por otro proceso. Recargue e intente de nuevo.',
+      );
     }
 
     const nextVersion = p.versionLock + 1;
 
-    const updateResult = await this.repo.createQueryBuilder()
+    const updateResult = await this.repo
+      .createQueryBuilder()
       .update(PayrollCalendar)
       .set({
         estado: EstadoCalendarioNomina.APLICADA,
@@ -624,12 +775,18 @@ export class PayrollService {
         versionLock: () => 'version_lock_calendario_nomina + 1',
       })
       .where('id_calendario_nomina = :id', { id })
-      .andWhere('estado_calendario_nomina = :estado', { estado: EstadoCalendarioNomina.VERIFICADA })
-      .andWhere('version_lock_calendario_nomina = :version', { version: p.versionLock })
+      .andWhere('estado_calendario_nomina = :estado', {
+        estado: EstadoCalendarioNomina.VERIFICADA,
+      })
+      .andWhere('version_lock_calendario_nomina = :version', {
+        version: p.versionLock,
+      })
       .execute();
 
     if (!updateResult.affected) {
-      throw new ConflictException('Conflicto de concurrencia al aplicar planilla.');
+      throw new ConflictException(
+        'Conflicto de concurrencia al aplicar planilla.',
+      );
     }
 
     const saved = await this.findOne(id, userId);
@@ -653,7 +810,10 @@ export class PayrollService {
     this.eventEmitter.emit(DOMAIN_EVENTS.PAYROLL.APPLIED, {
       eventName: DOMAIN_EVENTS.PAYROLL.APPLIED,
       occurredAt: new Date(),
-      payload: { payrollId: String(saved.id), companyId: String(saved.idEmpresa) },
+      payload: {
+        payrollId: String(saved.id),
+        companyId: String(saved.idEmpresa),
+      },
     });
 
     await this.domainEvents.record({
@@ -668,11 +828,17 @@ export class PayrollService {
     return saved;
   }
 
-  async reopen(id: number, motivo: string, userId?: number): Promise<PayrollCalendar> {
+  async reopen(
+    id: number,
+    motivo: string,
+    userId?: number,
+  ): Promise<PayrollCalendar> {
     const p = await this.findOne(id, userId);
     const payloadBefore = this.buildAuditPayload(p);
     if (p.estado !== EstadoCalendarioNomina.VERIFICADA) {
-      throw new BadRequestException('Solo se puede reabrir una planilla en estado Verificada. Aplicada/Contabilizada son inmutables.');
+      throw new BadRequestException(
+        'Solo se puede reabrir una planilla en estado Verificada. Aplicada/Contabilizada son inmutables.',
+      );
     }
     p.estado = EstadoCalendarioNomina.ABIERTA;
     p.descripcionEvento = p.descripcionEvento
@@ -714,8 +880,13 @@ export class PayrollService {
   async inactivate(id: number, userId?: number): Promise<PayrollCalendar> {
     const p = await this.findOne(id, userId);
     const payloadBefore = this.buildAuditPayload(p);
-    if (p.estado === EstadoCalendarioNomina.APLICADA || p.estado === EstadoCalendarioNomina.CONTABILIZADA) {
-      throw new BadRequestException('No se puede inactivar una planilla ya aplicada o contabilizada');
+    if (
+      p.estado === EstadoCalendarioNomina.APLICADA ||
+      p.estado === EstadoCalendarioNomina.CONTABILIZADA
+    ) {
+      throw new BadRequestException(
+        'No se puede inactivar una planilla ya aplicada o contabilizada',
+      );
     }
     p.esInactivo = 1;
     p.estado = EstadoCalendarioNomina.INACTIVA;
@@ -759,12 +930,17 @@ export class PayrollService {
     return rows.map((row) => row.idEmpresa);
   }
 
-  private async assertUserCompanyAccess(userId: number, companyId: number): Promise<void> {
+  private async assertUserCompanyAccess(
+    userId: number,
+    companyId: number,
+  ): Promise<void> {
     const exists = await this.userCompanyRepo.findOne({
       where: { idUsuario: userId, idEmpresa: companyId, estado: 1 },
     });
     if (!exists) {
-      throw new ForbiddenException(`No tiene acceso a la empresa ${companyId}.`);
+      throw new ForbiddenException(
+        `No tiene acceso a la empresa ${companyId}.`,
+      );
     }
   }
 
@@ -785,8 +961,11 @@ export class PayrollService {
       const direct = value.slice(0, 10);
       if (/^\d{4}-\d{2}-\d{2}$/.test(direct)) return direct;
       const parsed = new Date(value);
-      if (!Number.isNaN(parsed.getTime())) return parsed.toISOString().slice(0, 10);
-      throw new BadRequestException('Fecha invalida para conversion YYYY-MM-DD.');
+      if (!Number.isNaN(parsed.getTime()))
+        return parsed.toISOString().slice(0, 10);
+      throw new BadRequestException(
+        'Fecha invalida para conversion YYYY-MM-DD.',
+      );
     }
     if (value instanceof Date && !Number.isNaN(value.getTime())) {
       return value.toISOString().slice(0, 10);
@@ -796,7 +975,9 @@ export class PayrollService {
 
   private parseQueryDate(value: string, fieldName: string): Date {
     if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) {
-      throw new BadRequestException(`${fieldName} debe tener formato YYYY-MM-DD.`);
+      throw new BadRequestException(
+        `${fieldName} debe tener formato YYYY-MM-DD.`,
+      );
     }
     const parsed = new Date(`${value}T00:00:00`);
     if (Number.isNaN(parsed.getTime())) {
@@ -823,12 +1004,22 @@ export class PayrollService {
       idTipoPlanilla: entity.idTipoPlanilla ?? null,
       nombrePlanilla: entity.nombrePlanilla ?? null,
       tipoPlanilla: entity.tipoPlanilla ?? null,
-      fechaInicioPeriodo: entity.fechaInicioPeriodo ? this.toYmd(entity.fechaInicioPeriodo) : null,
-      fechaFinPeriodo: entity.fechaFinPeriodo ? this.toYmd(entity.fechaFinPeriodo) : null,
+      fechaInicioPeriodo: entity.fechaInicioPeriodo
+        ? this.toYmd(entity.fechaInicioPeriodo)
+        : null,
+      fechaFinPeriodo: entity.fechaFinPeriodo
+        ? this.toYmd(entity.fechaFinPeriodo)
+        : null,
       fechaCorte: entity.fechaCorte ? this.toYmd(entity.fechaCorte) : null,
-      fechaInicioPago: entity.fechaInicioPago ? this.toYmd(entity.fechaInicioPago) : null,
-      fechaFinPago: entity.fechaFinPago ? this.toYmd(entity.fechaFinPago) : null,
-      fechaPagoProgramada: entity.fechaPagoProgramada ? this.toYmd(entity.fechaPagoProgramada) : null,
+      fechaInicioPago: entity.fechaInicioPago
+        ? this.toYmd(entity.fechaInicioPago)
+        : null,
+      fechaFinPago: entity.fechaFinPago
+        ? this.toYmd(entity.fechaFinPago)
+        : null,
+      fechaPagoProgramada: entity.fechaPagoProgramada
+        ? this.toYmd(entity.fechaPagoProgramada)
+        : null,
       moneda: entity.moneda ?? null,
       estado: this.normalizeEstadoValue(entity.estado),
       esInactivo: entity.esInactivo === 1 ? 'Inactivo' : 'Activo',
@@ -865,7 +1056,8 @@ export class PayrollService {
       ...Object.keys(payloadBefore),
       ...Object.keys(payloadAfter),
     ]);
-    const changes: Array<{ campo: string; antes: string; despues: string }> = [];
+    const changes: Array<{ campo: string; antes: string; despues: string }> =
+      [];
     for (const key of keys) {
       if (!(key in this.auditFieldLabels)) continue;
       const beforeValue = this.normalizeAuditValue(payloadBefore[key]);
@@ -900,19 +1092,32 @@ export class PayrollService {
     fechaPagoProgramada: Date,
   ): void {
     if (periodoInicio > periodoFin) {
-      throw new BadRequestException('Inicio Periodo no puede ser mayor que Fin Periodo.');
+      throw new BadRequestException(
+        'Inicio Periodo no puede ser mayor que Fin Periodo.',
+      );
     }
     if (fechaCorte < periodoInicio || fechaCorte > periodoFin) {
-      throw new BadRequestException('Fecha Corte debe estar dentro del Periodo de Nomina.');
+      throw new BadRequestException(
+        'Fecha Corte debe estar dentro del Periodo de Nomina.',
+      );
     }
     if (fechaInicioPago > fechaFinPago) {
-      throw new BadRequestException('Inicio Pago no puede ser mayor que Fin Pago.');
+      throw new BadRequestException(
+        'Inicio Pago no puede ser mayor que Fin Pago.',
+      );
     }
-    if (fechaPagoProgramada < fechaInicioPago || fechaPagoProgramada > fechaFinPago) {
-      throw new BadRequestException('Fecha Pago Programada debe estar dentro de la Ventana de Pago.');
+    if (
+      fechaPagoProgramada < fechaInicioPago ||
+      fechaPagoProgramada > fechaFinPago
+    ) {
+      throw new BadRequestException(
+        'Fecha Pago Programada debe estar dentro de la Ventana de Pago.',
+      );
     }
     if (fechaPagoProgramada < fechaCorte) {
-      throw new BadRequestException('Fecha Pago Programada no puede ser menor que Fecha Corte.');
+      throw new BadRequestException(
+        'Fecha Pago Programada no puede ser menor que Fecha Corte.',
+      );
     }
   }
 }

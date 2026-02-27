@@ -25,7 +25,12 @@ export class EmployeeAguinaldoProvision {
   @Column({ name: 'id_empresa', type: 'int' })
   idEmpresa: number;
 
-  @Column({ name: 'monto_provisionado', type: 'varchar', length: 255, nullable: false })
+  @Column({
+    name: 'monto_provisionado',
+    type: 'varchar',
+    length: 255,
+    nullable: false,
+  })
   montoProvisionado: string;
 
   @Column({ name: 'fecha_inicio_laboral', type: 'date' })
@@ -52,18 +57,40 @@ export class EmployeeAguinaldoProvision {
   @UpdateDateColumn({ name: 'fecha_modificacion_provision_aguinaldo' })
   fechaModificacion: Date;
 
-  @Column({ name: 'creado_por_provision_aguinaldo', type: 'int', nullable: true })
+  @Column({
+    name: 'creado_por_provision_aguinaldo',
+    type: 'int',
+    nullable: true,
+  })
   creadoPor: number | null;
 
-  @Column({ name: 'modificado_por_provision_aguinaldo', type: 'int', nullable: true })
+  @Column({
+    name: 'modificado_por_provision_aguinaldo',
+    type: 'int',
+    nullable: true,
+  })
   modificadoPor: number | null;
 
-  @Column({ name: 'datos_encriptados_provision', type: 'tinyint', width: 1, default: 0 })
+  @Column({
+    name: 'datos_encriptados_provision',
+    type: 'tinyint',
+    width: 1,
+    default: 0,
+  })
   datosEncriptados: number;
 
-  @Column({ name: 'version_encriptacion_provision', type: 'varchar', length: 10, nullable: true })
+  @Column({
+    name: 'version_encriptacion_provision',
+    type: 'varchar',
+    length: 10,
+    nullable: true,
+  })
   versionEncriptacion: string | null;
 
-  @Column({ name: 'fecha_encriptacion_provision', type: 'datetime', nullable: true })
+  @Column({
+    name: 'fecha_encriptacion_provision',
+    type: 'datetime',
+    nullable: true,
+  })
   fechaEncriptacion: Date | null;
 }

@@ -1,4 +1,11 @@
-import { Controller, Get, Post, Param, Query, ParseIntPipe } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Param,
+  Query,
+  ParseIntPipe,
+} from '@nestjs/common';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { NotificationsService } from './notifications.service';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -20,7 +27,13 @@ export class NotificationsController {
     @Query('appCode') appCode?: string,
     @Query('companyId') companyId?: string,
   ) {
-    const idApp = appCode ? (await this.appRepo.findOne({ where: { codigo: appCode.trim().toLowerCase(), estado: 1 } }))?.id : undefined;
+    const idApp = appCode
+      ? (
+          await this.appRepo.findOne({
+            where: { codigo: appCode.trim().toLowerCase(), estado: 1 },
+          })
+        )?.id
+      : undefined;
     const idEmpresa = companyId ? parseInt(companyId, 10) : undefined;
     return this.notificationsService.listForUser(
       user.userId,
@@ -36,7 +49,13 @@ export class NotificationsController {
     @Query('appCode') appCode?: string,
     @Query('companyId') companyId?: string,
   ) {
-    const idApp = appCode ? (await this.appRepo.findOne({ where: { codigo: appCode.trim().toLowerCase(), estado: 1 } }))?.id : undefined;
+    const idApp = appCode
+      ? (
+          await this.appRepo.findOne({
+            where: { codigo: appCode.trim().toLowerCase(), estado: 1 },
+          })
+        )?.id
+      : undefined;
     const idEmpresa = companyId ? parseInt(companyId, 10) : undefined;
     const count = await this.notificationsService.getUnreadCount(
       user.userId,

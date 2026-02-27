@@ -1,4 +1,9 @@
-import { Injectable, CanActivate, ExecutionContext, ForbiddenException } from '@nestjs/common';
+import {
+  Injectable,
+  CanActivate,
+  ExecutionContext,
+  ForbiddenException,
+} from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { REQUIRE_APP_KEY } from '../decorators/require-app.decorator';
 import type { PlatformApp } from '../constants/apps';
@@ -16,10 +21,9 @@ export class AppAccessGuard implements CanActivate {
   constructor(private reflector: Reflector) {}
 
   canActivate(context: ExecutionContext): boolean {
-    const requiredApp = this.reflector.getAllAndOverride<PlatformApp | undefined>(
-      REQUIRE_APP_KEY,
-      [context.getHandler(), context.getClass()],
-    );
+    const requiredApp = this.reflector.getAllAndOverride<
+      PlatformApp | undefined
+    >(REQUIRE_APP_KEY, [context.getHandler(), context.getClass()]);
 
     if (!requiredApp) return true;
 
