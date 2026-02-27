@@ -105,6 +105,12 @@ const initialMenuConfig: MenuItem[] = [
             requiredPermission: 'payroll:calendar:view',
           },
           {
+            id: 'listado-feriados',
+            label: 'Listado de Feriados',
+            path: '/payroll-params/calendario/feriados',
+            requiredPermission: 'payroll-holiday:view',
+          },
+          {
             id: 'dias-pago-planilla',
             label: 'Listado de Días de Pago de Planilla',
             path: '/payroll-params/calendario/dias-pago',
@@ -186,5 +192,6 @@ const menuSlice = createSlice({
 
 export const { setMenuConfig } = menuSlice.actions;
 export default menuSlice.reducer;
+
 
 

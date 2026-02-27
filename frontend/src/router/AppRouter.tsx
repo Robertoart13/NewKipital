@@ -22,6 +22,7 @@ import {
   PayrollMovementsManagementPage,
   PayrollManagementPage,
   PayrollCalendarPage,
+  PayrollHolidaysPage,
 } from '../pages/private';
 
 /**
@@ -185,6 +186,16 @@ export function AppRouter() {
           path="/payroll-params/calendario/ver"
         />
         <Route path="/payroll-params/calendario" element={<Navigate to="/payroll-params/calendario/ver" replace />} />
+        <Route
+          element={(
+            <PrivateLayout>
+              <PermissionGuard requiredPermission="payroll-holiday:view">
+                <PayrollHolidaysPage />
+              </PermissionGuard>
+            </PrivateLayout>
+          )}
+          path="/payroll-params/calendario/feriados"
+        />
         <Route
           element={(
             <PrivateLayout>

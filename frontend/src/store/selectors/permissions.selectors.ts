@@ -150,6 +150,15 @@ export const canReactivatePayrollMovement = (state: RootState) =>
 export const canViewPayrollMovementAudit = (state: RootState) =>
   selectPermissions(state).includes('config:payroll-movements:audit');
 
+export const canViewPayrollHolidays = (state: RootState) =>
+  selectPermissions(state).includes('payroll-holiday:view');
+export const canCreatePayrollHolidays = (state: RootState) =>
+  selectPermissions(state).includes('payroll-holiday:create');
+export const canEditPayrollHolidays = (state: RootState) =>
+  selectPermissions(state).includes('payroll-holiday:edit');
+export const canDeletePayrollHolidays = (state: RootState) =>
+  selectPermissions(state).includes('payroll-holiday:delete');
+
 export const canViewDepartments = (state: RootState) =>
   selectPermissions(state).includes('department:view');
 export const canCreateDepartment = (state: RootState) =>

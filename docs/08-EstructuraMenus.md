@@ -53,6 +53,7 @@ Parametros de Planilla
 └── Parametros Iniciales
     ├── Calendario de Nómina >
     │   ├── Calendario
+    │   ├── Listado de Feriados
     │   └── Listado de Días de Pago de Planilla
     ├── Artículos de Nomina
     └── Movimientos de Nomina
@@ -62,8 +63,8 @@ Permisos por opcion:
 - Articulos de Nomina: `payroll-article:view`
 - Movimientos de Nomina: `payroll-movement:view`
 - Calendario: `payroll:calendar:view`
+- Listado de Feriados: `payroll-holiday:view`
 - Listado de Dias de Pago de Planilla: `payroll:view`
-- `Listado de Feriados` queda oculto/no disponible hasta nuevo alcance funcional y permisos dedicados.
 
 ### Gestion Planilla
 

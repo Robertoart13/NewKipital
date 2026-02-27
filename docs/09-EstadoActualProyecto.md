@@ -245,7 +245,7 @@ Solo existe el **menÃº horizontal superior** (header). No hay sidebar/menÃº 
 
 **Opciones top-level:**
 1. **Acciones de Personal** â€” SubmenÃºs completos definidos (Entradas, Salidas, Deducciones, Compensaciones, Incapacidades, Licencias, Ausencias)
-2. **Parametros de Planilla** â€” Activo: Calendario de NÃ³mina (Calendario, DÃ­as de Pago), ArtÃ­culos de Nomina, Movimientos de Nomina
+2. **Parametros de Planilla** â€” Activo: Calendario de NÃ³mina (Calendario, Listado de Feriados, DÃ­as de Pago), ArtÃ­culos de Nomina, Movimientos de Nomina
 3. **Gestion Planilla** â€” Fuera de alcance actual (oculto en menÃº)
 4. **Configuracion** â€” Definido con 2 grupos: Seguridad (Roles y Permisos, Usuarios) + Gestion Organizacional (Reglas, Empresas, Empleados, Clases, Proyectos, Cuentas Contables, Departamentos, Puestos)
 
@@ -526,7 +526,7 @@ Estado: Implementado (backend + frontend + BD en `hr_pro`).
 | 2026-02-27 | **RBAC Planilla enterprise (3 roles):** Se agrega `payroll:process` independiente de `payroll:edit`, nuevos permisos `view_sensitive/export/calendar/type/pay_period/netsuite:view_log` y matriz aplicada para `OPERADOR_NOMINA`, `GERENTE_NOMINA`, `MASTER` en `mysql_hr_pro`. |
 | 2026-02-27 | **Calendario de Planilla (UI):** Se habilita ruta `/payroll-params/calendario/ver` con filtros operativos (empresa, moneda, tipo, estado, periodo), modo `Mensual` y `Timeline`, indicadores de riesgo y panel lateral de detalle con acciones por permisos/estado. |
 | 2026-02-27 | **Reglas UX Planilla:** Confirmacion obligatoria antes de `Procesar/Verificar/Aplicar`; bloqueo de `Verificar` cuando no hay movimientos procesados (snapshot de inputs = 0) con mensaje funcional para usuario final. |
-| 2026-02-27 | **Menu Parametros de Planilla:** `Listado de Feriados` oculto por alcance y `Gestion Planilla` fuera de alcance (opciones no visibles). |
+| 2026-02-27 | **Modulo Feriados de Planilla:** Se habilita `Listado de Feriados` en menu de Calendario de Nomina con permisos `payroll-holiday:view/create/edit/delete`, tabla `nom_feriados_planilla` y API CRUD (`/api/payroll-holidays`). |
 
 
 

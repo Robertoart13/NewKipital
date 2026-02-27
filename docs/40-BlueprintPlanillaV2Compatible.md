@@ -291,7 +291,8 @@ Regla de persistencia:
 
 - Ruta activa: `/payroll-params/calendario/ver` con permiso `payroll:calendar:view`.
 - Ruta activa de listado/operacion: `/payroll-params/calendario/dias-pago` con permiso `payroll:view`.
-- `Listado de Feriados` y opciones de `Gestion Planilla` quedan fuera de alcance actual (ocultas).
+- Ruta activa de feriados: `/payroll-params/calendario/feriados` con permiso `payroll-holiday:view`.
+- `Gestion Planilla` se mantiene fuera de alcance actual (oculto).
 - Calendario incluye:
   - vista `Mensual` y `Timeline`,
   - filtros por empresa/moneda/tipo/estado/periodo,
