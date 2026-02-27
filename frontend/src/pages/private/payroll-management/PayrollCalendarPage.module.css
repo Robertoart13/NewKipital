@@ -51,6 +51,11 @@
   border: 1px solid #22c55e;
 }
 
+.legendDotHoliday {
+  background: #fde68a;
+  border: 1px solid #d97706;
+}
+
 /* ----- Layout: Filtros izquierda | Calendario + Indicadores derecha ----- */
 .mainLayout {
   display: flex;
@@ -405,6 +410,13 @@
 .eventChipPayment.eventChipOpen {
   border-style: dashed;
   background: #ecfdf5;
+}
+
+.eventChipHoliday {
+  border: 1px solid #d97706;
+  background: #fffbeb;
+  color: #92400e;
+  cursor: default;
 }
 
 .eventChipIcon {

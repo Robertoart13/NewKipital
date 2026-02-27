@@ -8,6 +8,7 @@ import {
   Card,
   Collapse,
   Descriptions,
+  Divider,
   Drawer,
   Empty,
   Flex,
@@ -49,6 +50,7 @@ import {
   verifyPayroll,
   type PayrollListItem,
 } from '../../../api/payroll';
+import { fetchPayrollHolidays, payrollHolidayTypeLabel, type PayrollHolidayItem } from '../../../api/payrollHolidays';
 import sharedStyles from '../configuration/UsersManagementPage.module.css';
 import styles from './PayrollCalendarPage.module.css';
 
@@ -71,10 +73,12 @@ function getYearOptions() {
 type CalendarMode = 'Mensual' | 'Timeline';
 
 interface CalendarEvent {
-  payrollId: number;
+  id: string;
+  payrollId?: number;
   label: string;
-  kind: 'period' | 'payment';
-  status: number;
+  kind: 'period' | 'payment' | 'holiday';
+  status?: number;
+  holidayType?: PayrollHolidayItem['tipo'];
 }
 
 interface PayrollDetails extends PayrollListItem {
@@ -134,9 +138,12 @@ export function PayrollCalendarPage() {
 
   const [rows, setRows] = useState<PayrollListItem[]>([]);
   const [allRows, setAllRows] = useState<PayrollListItem[]>([]);
+  const [holidays, setHolidays] = useState<PayrollHolidayItem[]>([]);
   const [loading, setLoading] = useState(false);
+  const [loadingHolidays, setLoadingHolidays] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showInactive, setShowInactive] = useState(false);
+  const [hideHolidays, setHideHolidays] = useState(false);
   const [panelMonth, setPanelMonth] = useState<Dayjs>(() => dayjs().startOf('month'));
   const [mode, setMode] = useState<CalendarMode>('Mensual');
 
@@ -198,6 +205,22 @@ export function PayrollCalendarPage() {
   useEffect(() => {
     void loadPayrolls();
   }, [loadPayrolls]);
+
+  useEffect(() => {
+    const loadHolidays = async () => {
+      setLoadingHolidays(true);
+      try {
+        const data = await fetchPayrollHolidays();
+        setHolidays(data);
+      } catch (err) {
+        message.warning(err instanceof Error ? err.message : 'No se pudieron cargar los feriados para el calendario.');
+        setHolidays([]);
+      } finally {
+        setLoadingHolidays(false);
+      }
+    };
+    void loadHolidays();
+  }, [message]);
 
   useEffect(() => {
     let filtered = showInactive ? allRows : allRows.filter((item) => item.estado !== 0 && item.estado !== 7);
@@ -350,6 +373,7 @@ export function PayrollCalendarPage() {
       // la misma planilla en todos los dias del rango.
       if (start) {
         push(start.format('YYYY-MM-DD'), {
+          id: `payroll-${row.id}-period`,
           payrollId: row.id,
           label: name,
           kind: 'period',
@@ -359,6 +383,7 @@ export function PayrollCalendarPage() {
 
       if (paymentDate) {
         push(paymentDate.format('YYYY-MM-DD'), {
+          id: `payroll-${row.id}-payment`,
           payrollId: row.id,
           label: `Pago: ${name}`,
           kind: 'payment',
@@ -367,8 +392,27 @@ export function PayrollCalendarPage() {
       }
     });
 
+    if (!hideHolidays) {
+      holidays.forEach((holiday) => {
+        const start = toDate(holiday.fechaInicio);
+        const end = toDate(holiday.fechaFin);
+        if (!start || !end) return;
+
+        let cursor = start;
+        while (cursor.isBefore(end, 'day') || cursor.isSame(end, 'day')) {
+          push(cursor.format('YYYY-MM-DD'), {
+            id: `holiday-${holiday.id}-${cursor.format('YYYYMMDD')}`,
+            label: `${holiday.nombre} (${payrollHolidayTypeLabel(holiday.tipo)})`,
+            kind: 'holiday',
+            holidayType: holiday.tipo,
+          });
+          cursor = cursor.add(1, 'day');
+        }
+      });
+    }
+
     return map;
-  }, [rows]);
+  }, [hideHolidays, holidays, rows]);
 
   const cellRender = (value: Dayjs) => {
     const key = value.format('YYYY-MM-DD');
@@ -378,16 +422,23 @@ export function PayrollCalendarPage() {
     return (
       <ul className={styles.eventsList}>
         {events.slice(0, 2).map((event, index) => (
-          <li key={`${event.payrollId}-${event.kind}-${index}`}>
+          <li key={`${event.id}-${index}`}>
             <Tooltip title={event.label}>
-              <button
-                type="button"
-                className={`${styles.eventChip} ${event.kind === 'payment' ? styles.eventChipPayment : styles.eventChipPeriod} ${event.status === 1 ? styles.eventChipOpen : ''}`}
-                onClick={() => void openDetails(event.payrollId)}
-              >
-                <span className={styles.eventChipIcon}>{STATUS_VISUAL[event.status]?.icon}</span>
-                <Text ellipsis style={{ fontSize: 12, flex: 1, minWidth: 0 }}>{event.label}</Text>
-              </button>
+              {event.kind === 'holiday' ? (
+                <div className={`${styles.eventChip} ${styles.eventChipHoliday}`}>
+                  <span className={styles.eventChipIcon}><CalendarOutlined /></span>
+                  <Text ellipsis style={{ fontSize: 12, flex: 1, minWidth: 0 }}>{event.label}</Text>
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  className={`${styles.eventChip} ${event.kind === 'payment' ? styles.eventChipPayment : styles.eventChipPeriod} ${event.status === 1 ? styles.eventChipOpen : ''}`}
+                  onClick={() => event.payrollId && void openDetails(event.payrollId)}
+                >
+                  <span className={styles.eventChipIcon}>{STATUS_VISUAL[event.status ?? 1]?.icon}</span>
+                  <Text ellipsis style={{ fontSize: 12, flex: 1, minWidth: 0 }}>{event.label}</Text>
+                </button>
+              )}
             </Tooltip>
           </li>
         ))}
@@ -401,6 +452,20 @@ export function PayrollCalendarPage() {
       </ul>
     );
   };
+
+  const hasEventsInCurrentMonth = useMemo(() => {
+    const monthStart = panelMonth.startOf('month');
+    const monthEnd = panelMonth.endOf('month');
+    for (const key of eventsByDate.keys()) {
+      const date = dayjs(key);
+      if (!date.isValid()) continue;
+      if ((date.isAfter(monthStart, 'day') || date.isSame(monthStart, 'day'))
+        && (date.isBefore(monthEnd, 'day') || date.isSame(monthEnd, 'day'))) {
+        return true;
+      }
+    }
+    return false;
+  }, [eventsByDate, panelMonth]);
 
   return (
     <div className={sharedStyles.pageWrapper}>
@@ -537,6 +602,13 @@ export function PayrollCalendarPage() {
                     <span style={{ fontSize: 13, color: '#6b7a85' }}>Mostrar inactivas</span>
                   </Flex>
                 </div>
+                <div className={styles.filterGroup}>
+                  <span className={sharedStyles.filterLabel}>Feriados</span>
+                  <Flex align="center" gap={8} style={{ paddingTop: 2 }}>
+                    <Switch checked={hideHolidays} onChange={setHideHolidays} />
+                    <span style={{ fontSize: 13, color: '#6b7a85' }}>Ocultar feriados</span>
+                  </Flex>
+                </div>
                 <div className={styles.legend}>
                   <span className={styles.legendItem}>
                     <span className={`${styles.legendDot} ${styles.legendDotPeriod}`} />
@@ -545,6 +617,10 @@ export function PayrollCalendarPage() {
                   <span className={styles.legendItem}>
                     <span className={`${styles.legendDot} ${styles.legendDotPayment}`} />
                     Fecha de pago
+                  </span>
+                  <span className={styles.legendItem}>
+                    <span className={`${styles.legendDot} ${styles.legendDotHoliday}`} />
+                    Feriado
                   </span>
                 </div>
               </div>
@@ -613,7 +689,7 @@ export function PayrollCalendarPage() {
                 </div>
               </Flex>
 
-              <Spin spinning={loading} tip="Cargando...">
+              <Spin spinning={loading || loadingHolidays} tip="Cargando...">
                 {!selectedCompanyId ? (
                   <div className={styles.calendarWrap}>
                     <Empty
@@ -674,17 +750,64 @@ export function PayrollCalendarPage() {
                         ]}
                       />
                     </div>
+                    {!hideHolidays ? (
+                      <>
+                        <Divider style={{ margin: '12px 0' }} />
+                        <div className={sharedStyles.configTable}>
+                          <Table
+                            rowKey={(row) => `timeline-holiday-${row.id}`}
+                            pagination={{ pageSize: 8, showSizeChanger: false }}
+                            dataSource={holidays.filter((holiday) => {
+                              const start = toDate(holiday.fechaInicio);
+                              const end = toDate(holiday.fechaFin);
+                              if (!start || !end) return false;
+                              const monthStart = panelMonth.startOf('month');
+                              const monthEnd = panelMonth.endOf('month');
+                              return !end.isBefore(monthStart, 'day') && !start.isAfter(monthEnd, 'day');
+                            })}
+                            locale={{ emptyText: 'No hay feriados en el mes seleccionado.' }}
+                            columns={[
+                              {
+                                title: 'Feriado',
+                                render: (_, row) => (
+                                  <Space orientation="vertical" size={2}>
+                                    <Text strong>{row.nombre}</Text>
+                                    <Tag color="gold">{payrollHolidayTypeLabel(row.tipo)}</Tag>
+                                  </Space>
+                                ),
+                              },
+                              {
+                                title: 'Rango de fechas',
+                                render: (_, row) => (
+                                  <Space>
+                                    <Tag>{row.fechaInicio}</Tag>
+                                    <span>→</span>
+                                    <Tag>{row.fechaFin}</Tag>
+                                  </Space>
+                                ),
+                              },
+                              {
+                                title: 'Descripcion',
+                                render: (_, row) => row.descripcion?.trim() || '--',
+                              },
+                            ]}
+                          />
+                        </div>
+                      </>
+                    ) : null}
                   </div>
                 ) : (
                   <div className={styles.calendarWrap}>
-                    {rows.length === 0 ? (
+                    {!hasEventsInCurrentMonth ? (
                       <Empty
                         image={Empty.PRESENTED_IMAGE_SIMPLE}
                         description={
                           <span>
-                            <strong>No hay planillas para el periodo seleccionado</strong>
+                            <strong>No hay eventos para el periodo seleccionado</strong>
                             <br />
-                            <Text type="secondary" style={{ fontSize: 13 }}>Cambie de mes en el calendario o ajuste los filtros para ver resultados.</Text>
+                            <Text type="secondary" style={{ fontSize: 13 }}>
+                              Cambie de mes en el calendario o ajuste los filtros para ver resultados.
+                            </Text>
                           </span>
                         }
                         className={styles.calendarEmptyState}
