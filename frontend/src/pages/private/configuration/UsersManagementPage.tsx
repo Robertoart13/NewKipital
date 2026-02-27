@@ -22,6 +22,7 @@ import {
 } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import {
+  AppstoreOutlined,
   ArrowLeftOutlined,
   InfoCircleOutlined,
   MailOutlined,
@@ -629,6 +630,24 @@ export function UsersManagementPage() {
           </div>
         </div>
       </div>
+
+      <Card className={styles.mainCard} style={{ marginBottom: 20 }}>
+        <div className={styles.mainCardBody}>
+          <Flex align="center" justify="space-between" wrap="wrap" gap={16}>
+            <Flex align="center" gap={16}>
+              <div className={styles.gestionIconWrap}>
+                <AppstoreOutlined className={styles.gestionIcon} />
+              </div>
+              <div>
+                <h2 className={styles.gestionTitle}>Gestion de Usuarios</h2>
+                <p className={styles.gestionDesc}>
+                  Administre la configuracion de usuarios, empresas, roles y permisos de acceso al sistema
+                </p>
+              </div>
+            </Flex>
+          </Flex>
+        </div>
+      </Card>
 
       <Card className={styles.mainCard} styles={{ body: { padding: 0 } }}>
         <div className={styles.mainCardBody}>

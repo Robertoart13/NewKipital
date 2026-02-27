@@ -24,6 +24,7 @@ import {
 } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import {
+  AppstoreOutlined,
   ArrowLeftOutlined,
   CloseOutlined,
   DownOutlined,
@@ -34,6 +35,8 @@ import {
   SearchOutlined,
   SortAscendingOutlined,
   SortDescendingOutlined,
+  HistoryOutlined,
+  DollarOutlined,
   UpOutlined,
 } from '@ant-design/icons';
 import {
@@ -46,7 +49,7 @@ import {
 } from '../../../store/selectors/permissions.selectors';
 import { useAppSelector } from '../../../store/hooks';
 import { formatDateTime12h } from '../../../lib/formatDate';
-import { optionalNoSqlInjection, textRules } from '../../../lib/formValidation';
+import { noSqlInjection, textRules } from '../../../lib/formValidation';
 import {
   createPayrollMovement,
   fetchPayrollMovement,
@@ -129,6 +132,13 @@ function parseCompanyId(value: number | string | null | undefined): number | und
   const id = Number(value);
   if (!Number.isFinite(id) || id <= 0) return undefined;
   return id;
+}
+
+function optionalNoSqlAllowDashDash(_: unknown, value: unknown) {
+  if (value == null) return Promise.resolve();
+  const s = String(value).trim();
+  if (!s || s === '--') return Promise.resolve();
+  return noSqlInjection(_, value);
 }
 
 function getPaneValue(
@@ -397,7 +407,7 @@ export function PayrollMovementsManagementPage() {
     }
   };
 
-  const onSubmit = async () => {
+  const submitMovement = async () => {
     try {
       const values = await form.validateFields();
       const payload = normalizePayload(values);
@@ -420,6 +430,37 @@ export function PayrollMovementsManagementPage() {
     }
   };
 
+  const handleSubmit = async () => {
+    if (!editing && !canCreate) {
+      message.error('No tiene permiso para crear movimientos de nomina.');
+      return;
+    }
+    if (editing && !canEdit) {
+      message.error('No tiene permiso para editar movimientos de nomina.');
+      return;
+    }
+
+    const confirmed = await new Promise<boolean>((resolve) => {
+      modal.confirm({
+        title: editing ? 'Confirmar edicion de movimiento de nomina' : 'Confirmar creacion de movimiento de nomina',
+        content: editing ? 'Se guardaran los cambios.' : 'Se creara el nuevo movimiento de nomina.',
+        icon: <QuestionCircleOutlined style={{ color: '#5a6c7d', fontSize: 40 }} />,
+        okText: editing ? 'Guardar cambios' : 'Crear',
+        cancelText: 'Cancelar',
+        centered: true,
+        width: 420,
+        rootClassName: styles.companyConfirmModal,
+        okButtonProps: { className: styles.companyConfirmOk },
+        cancelButtonProps: { className: styles.companyConfirmCancel },
+        onOk: () => resolve(true),
+        onCancel: () => resolve(false),
+      });
+    });
+    if (!confirmed) return;
+
+    await submitMovement();
+  };
+
   const onInactivate = async (row: PayrollMovementListItem) => {
     await inactivatePayrollMovement(row.id);
     message.success('Movimiento inactivado correctamente');
@@ -436,27 +477,6 @@ export function PayrollMovementsManagementPage() {
       setEditing((current) => (current ? { ...current, esInactivo: 0 } : current));
     }
     await loadRows();
-  };
-
-  const confirmInactivate = (row: PayrollMovementListItem) => {
-    modal.confirm({
-      title: 'Inactivar movimiento',
-      content: `¿Desea inactivar "${row.nombre}"?`,
-      okText: 'Inactivar',
-      okButtonProps: { danger: true },
-      cancelText: 'Cancelar',
-      onOk: () => onInactivate(row),
-    });
-  };
-
-  const confirmReactivate = (row: PayrollMovementListItem) => {
-    modal.confirm({
-      title: 'Reactivar movimiento',
-      content: `¿Desea reactivar "${row.nombre}"?`,
-      okText: 'Reactivar',
-      cancelText: 'Cancelar',
-      onOk: () => onReactivate(row),
-    });
   };
 
   const matchesGlobalSearch = useCallback((row: PayrollMovementListItem) => {
@@ -597,31 +617,73 @@ export function PayrollMovementsManagementPage() {
   const auditColumns = useMemo<ColumnsType<PayrollMovementAuditTrailItem>>(
     () => [
       {
-        title: 'Fecha',
+        title: 'Fecha y hora',
         dataIndex: 'fechaCreacion',
-        width: 180,
-        render: (value?: string | null) => formatDateTime12h(value ?? undefined),
+        key: 'fechaCreacion',
+        width: 160,
+        render: (value: string | null) => formatDateTime12h(value ?? undefined),
+      },
+      {
+        title: 'Quien lo hizo',
+        key: 'actor',
+        width: 210,
+        render: (_, row) => {
+          const actorLabel = row.actorNombre?.trim() || row.actorEmail?.trim() || (row.actorUserId ? `Usuario ID ${row.actorUserId}` : 'Sistema');
+          return (
+            <div>
+              <div style={{ fontWeight: 600, color: '#3d4f5c' }}>{actorLabel}</div>
+              {row.actorEmail && <div style={{ color: '#8c8c8c', fontSize: 12 }}>{row.actorEmail}</div>}
+            </div>
+          );
+        },
       },
       {
         title: 'Accion',
-        dataIndex: 'accion',
-        width: 140,
+        key: 'accion',
+        width: 170,
+        render: (_, row) => (
+          <span style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+            <Tag className={styles.tagInactivo}>{row.modulo}</Tag>
+            <Tag className={styles.tagActivo}>{row.accion}</Tag>
+          </span>
+        ),
       },
       {
         title: 'Detalle',
         dataIndex: 'descripcion',
-      },
-      {
-        title: 'Actor',
-        dataIndex: 'actorNombre',
-        width: 220,
-        render: (_: string | null, row) => row.actorNombre || row.actorEmail || '-',
+        key: 'descripcion',
+        render: (value: string, row) => {
+          const changes = row.cambios ?? [];
+          const tooltipContent = (
+            <div style={{ maxWidth: 520 }}>
+              <div style={{ fontWeight: 600, marginBottom: 8 }}>{value}</div>
+              {changes.length > 0 ? (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                  {changes.map((change, index) => (
+                    <div key={`${row.id}-${change.campo}-${index}`} style={{ fontSize: 12, lineHeight: 1.4 }}>
+                      <div><strong>{change.campo}</strong></div>
+                      <div>Antes: {change.antes}</div>
+                      <div>Despues: {change.despues}</div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div style={{ fontSize: 12 }}>Sin detalle de campos para esta accion.</div>
+              )}
+            </div>
+          );
+
+          return (
+            <Tooltip title={tooltipContent}>
+              <div className={styles.auditDetailCell}>{value}</div>
+            </Tooltip>
+          );
+        },
       },
     ],
     [],
   );
 
-  const movementCanMutate = editing?.esInactivo === 1 ? canReactivate : canInactivate;
   const singleCompany = companies.length === 1 ? companies[0] : null;
   const selectedArticleObj = selectedArticulo ? articleMap.get(selectedArticulo) : null;
 
@@ -634,15 +696,40 @@ export function PayrollMovementsManagementPage() {
           </Link>
           <div className={styles.pageTitleBlock}>
             <h1 className={styles.pageTitle}>Movimientos de Nomina</h1>
-            <p className={styles.pageSubtitle}>Visualice y gestione los movimientos de nomina configurados por empresa</p>
+            <p className={styles.pageSubtitle}>
+              Visualice y gestione los movimientos de nomina configurados por empresa
+            </p>
           </div>
         </div>
-        {canCreate && (
-          <Button className={styles.btnPrimary} icon={<PlusOutlined />} type="primary" onClick={openCreateModal}>
-            Nuevo Movimiento
-          </Button>
-        )}
       </div>
+
+      <Card className={styles.mainCard} style={{ marginBottom: 20 }}>
+        <div className={styles.mainCardBody}>
+          <Flex align="center" justify="space-between" wrap="wrap" gap={16}>
+            <Flex align="center" gap={16}>
+              <div className={styles.gestionIconWrap}>
+                <AppstoreOutlined className={styles.gestionIcon} />
+              </div>
+              <div>
+                <h2 className={styles.gestionTitle}>Gestion de Movimientos de Nomina</h2>
+                <p className={styles.gestionDesc}>
+                  Administre y consulte todos los movimientos de nomina configurados para las empresas
+                </p>
+              </div>
+            </Flex>
+            {canCreate ? (
+              <Button
+                type="primary"
+                icon={<PlusOutlined />}
+                className={`${styles.actionButton} ${styles.btnPrimary}`}
+                onClick={openCreateModal}
+              >
+                Nuevo Movimiento
+              </Button>
+            ) : null}
+          </Flex>
+        </div>
+      </Card>
 
       <Card className={styles.mainCard} styles={{ body: { padding: 0 } }}>
         <div className={styles.mainCardBody}>
@@ -681,94 +768,87 @@ export function PayrollMovementsManagementPage() {
             activeKey={filtersExpanded ? ['filtros'] : []}
             onChange={(keys) => setFiltersExpanded((Array.isArray(keys) ? keys : [keys]).includes('filtros'))}
             className={styles.filtersCollapse}
-            items={[
-              {
-                key: 'filtros',
-                label: 'Filtros',
-                children: (
-                  <>
-                    <Flex justify="space-between" align="center" wrap="wrap" gap={12} style={{ marginBottom: 16 }}>
-                      <Input
-                        placeholder="Search"
-                        prefix={<SearchOutlined />}
-                        value={search}
-                        onChange={(event) => setSearch(event.target.value)}
-                        allowClear
-                        className={styles.searchInput}
-                        style={{ maxWidth: 240 }}
-                      />
-                      <Flex gap={8}>
-                        <Button size="small" onClick={collapseAllPanes}>Collapse All</Button>
-                        <Button size="small" onClick={openAllPanes}>Show All</Button>
-                        <Button size="small" onClick={clearAllFilters}>Limpiar Todo</Button>
-                      </Flex>
-                    </Flex>
-                    <Row gutter={[12, 12]}>
-                      {paneConfig.map((pane) => (
-                        <Col xs={24} md={12} xl={8} key={pane.key}>
-                          <div className={styles.paneCard}>
-                            <Flex gap={6} align="center" wrap="wrap">
-                              <Input
-                                value={paneSearch[pane.key]}
-                                onChange={(event) => setPaneSearch((prev) => ({ ...prev, [pane.key]: event.target.value }))}
-                                placeholder={pane.title}
-                                prefix={<SearchOutlined style={{ fontSize: 12, color: '#8c8c8c' }} />}
-                                suffix={(
-                                  <Flex gap={2}>
-                                    <SortAscendingOutlined style={{ fontSize: 10, color: '#8c8c8c' }} />
-                                    <SortDescendingOutlined style={{ fontSize: 10, color: '#8c8c8c' }} />
-                                  </Flex>
-                                )}
-                                size="middle"
-                                className={styles.filterInput}
-                                style={{ flex: 1, minWidth: 120 }}
-                              />
-                              <Button
-                                size="middle"
-                                icon={<SearchOutlined />}
-                                onClick={() => setPaneOpen((prev) => ({ ...prev, [pane.key]: true }))}
-                                title="Abrir opciones"
-                              />
-                              <Button size="middle" onClick={() => clearPaneSelection(pane.key)} title="Limpiar">
-                                x
-                              </Button>
-                              <Button
-                                size="middle"
-                                icon={paneOpen[pane.key] ? <UpOutlined /> : <DownOutlined />}
-                                onClick={() => setPaneOpen((prev) => ({ ...prev, [pane.key]: !prev[pane.key] }))}
-                                title={paneOpen[pane.key] ? 'Colapsar' : 'Expandir'}
-                              />
+          >
+            <Collapse.Panel header="Filtros" key="filtros">
+              <Flex justify="space-between" align="center" wrap="wrap" gap={12} style={{ marginBottom: 16 }}>
+                <Input
+                  placeholder="Search"
+                  prefix={<SearchOutlined />}
+                  value={search}
+                  onChange={(event) => setSearch(event.target.value)}
+                  allowClear
+                  className={styles.searchInput}
+                  style={{ maxWidth: 240 }}
+                />
+                <Flex gap={8}>
+                  <Button size="small" onClick={collapseAllPanes}>Collapse All</Button>
+                  <Button size="small" onClick={openAllPanes}>Show All</Button>
+                  <Button size="small" onClick={clearAllFilters}>Limpiar Todo</Button>
+                </Flex>
+              </Flex>
+              <Row gutter={[12, 12]}>
+                {paneConfig.map((pane) => (
+                  <Col xs={24} md={12} xl={8} key={pane.key}>
+                    <div className={styles.paneCard}>
+                      <Flex gap={6} align="center" wrap="wrap">
+                        <Input
+                          value={paneSearch[pane.key]}
+                          onChange={(event) => setPaneSearch((prev) => ({ ...prev, [pane.key]: event.target.value }))}
+                          placeholder={pane.title}
+                          prefix={<SearchOutlined style={{ fontSize: 12, color: '#8c8c8c' }} />}
+                          suffix={(
+                            <Flex gap={2}>
+                              <SortAscendingOutlined style={{ fontSize: 10, color: '#8c8c8c' }} />
+                              <SortDescendingOutlined style={{ fontSize: 10, color: '#8c8c8c' }} />
                             </Flex>
-                            {paneOpen[pane.key] && (
-                              <div className={styles.paneOptionsBox}>
-                                <Checkbox.Group
-                                  value={paneSelections[pane.key]}
-                                  onChange={(values) => setPaneSelections((prev) => ({ ...prev, [pane.key]: values as string[] }))}
-                                  style={{ display: 'flex', flexDirection: 'column', gap: 8 }}
-                                >
-                                  {paneOptions[pane.key].map((option) => (
-                                    <Checkbox key={`${pane.key}:${option.value}`} value={option.value}>
-                                      <Space>
-                                        <span>{option.value}</span>
-                                        <Badge count={option.count} style={{ backgroundColor: '#5a6c7d' }} />
-                                      </Space>
-                                    </Checkbox>
-                                  ))}
-                                </Checkbox.Group>
-                                {paneOptions[pane.key].length === 0 && (
-                                  <span className={styles.emptyHint}>Sin valores para este filtro</span>
-                                )}
-                              </div>
-                            )}
-                          </div>
-                        </Col>
-                      ))}
-                    </Row>
-                  </>
-                ),
-              },
-            ]}
-          />
+                          )}
+                          size="middle"
+                          className={styles.filterInput}
+                          style={{ flex: 1, minWidth: 120 }}
+                        />
+                        <Button
+                          size="middle"
+                          icon={<SearchOutlined />}
+                          onClick={() => setPaneOpen((prev) => ({ ...prev, [pane.key]: true }))}
+                          title="Abrir opciones"
+                        />
+                        <Button size="middle" onClick={() => clearPaneSelection(pane.key)} title="Limpiar">
+                          x
+                        </Button>
+                        <Button
+                          size="middle"
+                          icon={paneOpen[pane.key] ? <UpOutlined /> : <DownOutlined />}
+                          onClick={() => setPaneOpen((prev) => ({ ...prev, [pane.key]: !prev[pane.key] }))}
+                          title={paneOpen[pane.key] ? 'Colapsar' : 'Expandir'}
+                        />
+                      </Flex>
+                      {paneOpen[pane.key] && (
+                        <div className={styles.paneOptionsBox}>
+                          <Checkbox.Group
+                            value={paneSelections[pane.key]}
+                            onChange={(values) => setPaneSelections((prev) => ({ ...prev, [pane.key]: values as string[] }))}
+                            style={{ display: 'flex', flexDirection: 'column', gap: 8 }}
+                          >
+                            {paneOptions[pane.key].map((option) => (
+                              <Checkbox key={`${pane.key}:${option.value}`} value={option.value}>
+                                <Space>
+                                  <span>{option.value}</span>
+                                  <Badge count={option.count} style={{ backgroundColor: '#5a6c7d' }} />
+                                </Space>
+                              </Checkbox>
+                            ))}
+                          </Checkbox.Group>
+                          {paneOptions[pane.key].length === 0 && (
+                            <span className={styles.emptyHint}>Sin valores para este filtro</span>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  </Col>
+                ))}
+              </Row>
+            </Collapse.Panel>
+          </Collapse>
 
           <Table
             rowKey="id"
@@ -790,29 +870,111 @@ export function PayrollMovementsManagementPage() {
       </Card>
 
       <Modal
+        className={styles.companyModal}
         open={openModal}
         onCancel={closeModal}
+        closable={false}
         footer={null}
-        width={980}
-        closeIcon={<CloseOutlined />}
+        width={860}
+        destroyOnHidden
+        styles={{
+          header: { marginBottom: 0, padding: 0 },
+          body: { padding: 24, maxHeight: '70vh', overflowY: 'auto' },
+        }}
         title={(
-          <div className={styles.modalTitleRow}>
-            {editing ? <EditOutlined /> : <PlusOutlined />}
-            <span>{editing ? 'Editar Movimiento de Nomina' : 'Crear Movimiento de Nomina'}</span>
-          </div>
+          <Flex justify="space-between" align="center" wrap="nowrap" style={{ width: '100%', gap: 16 }}>
+            <div className={styles.companyModalHeader}>
+              <div className={styles.companyModalHeaderIcon}>
+                <AppstoreOutlined />
+              </div>
+              <span>{editing ? 'Editar Movimiento de Nomina' : 'Crear Movimiento de Nomina'}</span>
+            </div>
+            <Flex align="center" gap={12} className={styles.companyModalHeaderRight}>
+              {editing ? (
+                <div className={styles.companyModalEstadoPaper}>
+                  <span
+                    style={{
+                      fontWeight: 500,
+                      fontSize: 14,
+                      color: editing.esInactivo === 1 ? '#64748b' : '#20638d',
+                    }}
+                  >
+                    {editing.esInactivo === 1 ? 'Inactivo' : 'Activo'}
+                  </span>
+                  <Switch
+                    checked={editing.esInactivo === 0}
+                    disabled={editing.esInactivo === 0 ? !canInactivate : !canReactivate}
+                    onChange={(checked) => {
+                      if (!editing) return;
+                      modal.confirm({
+                        title: checked ? 'Reactivar movimiento' : 'Inactivar movimiento',
+                        content: checked
+                          ? 'El movimiento volvera a estar disponible.'
+                          : 'El movimiento quedara inactivo.',
+                        okText: checked ? 'Reactivar' : 'Inactivar',
+                        cancelText: 'Cancelar',
+                        centered: true,
+                        width: 420,
+                        rootClassName: styles.companyConfirmModal,
+                        okButtonProps: { className: styles.companyConfirmOk },
+                        cancelButtonProps: { className: styles.companyConfirmCancel },
+                        icon: <QuestionCircleOutlined style={{ color: '#5a6c7d', fontSize: 40 }} />,
+                        onOk: async () => {
+                          if (checked) {
+                            await onReactivate(editing);
+                          } else {
+                            await onInactivate(editing);
+                          }
+                          closeModal();
+                        },
+                      });
+                    }}
+                  />
+                </div>
+              ) : null}
+              <Button
+                type="text"
+                icon={<CloseOutlined />}
+                onClick={closeModal}
+                aria-label="Cerrar"
+                className={styles.companyModalCloseBtn}
+              />
+            </Flex>
+          </Flex>
         )}
       >
         <Spin spinning={loadingDetail || loadingCatalogs || loadingCompanyCatalogs}>
-          <Form form={form} layout="vertical" onFinish={onSubmit} onValuesChange={onFormValuesChange}>
+          <Form
+            form={form}
+            layout="vertical"
+            onFinish={handleSubmit}
+            onFinishFailed={(info) => {
+              const firstField = info.errorFields?.[0]?.name?.[0];
+              if (firstField && ['esMontoFijo', 'montoFijo', 'porcentaje', 'formulaAyuda'].includes(String(firstField))) {
+                setActiveTab('calculo');
+              } else {
+                setActiveTab('principal');
+              }
+              message.error('Complete los campos requeridos para continuar.');
+            }}
+            onValuesChange={onFormValuesChange}
+            className={styles.companyFormContent}
+          >
             <Tabs
               activeKey={activeTab}
               onChange={setActiveTab}
+              className={`${styles.tabsWrapper} ${styles.companyModalTabs} ${styles.employeeModalTabsScroll}`}
               items={[
                 {
                   key: 'principal',
-                  label: 'Informacion Principal',
+                  label: (
+                    <span>
+                      <AppstoreOutlined style={{ marginRight: 8, fontSize: 16 }} />
+                      Informacion Principal
+                    </span>
+                  ),
                   children: (
-                    <Row gutter={[12, 12]}>
+                    <Row gutter={[12, 12]} className={styles.companyFormGrid}>
                       {singleCompany ? (
                         <Col span={12}>
                           <Form.Item name="idEmpresa" hidden>
@@ -898,31 +1060,53 @@ export function PayrollMovementsManagementPage() {
                         </Form.Item>
                       </Col>
                       <Col span={24}>
-                        <Form.Item name="descripcion" label="Descripcion" rules={[{ validator: optionalNoSqlInjection }]}>
+                        <Form.Item name="descripcion" label="Descripcion" rules={[{ validator: optionalNoSqlAllowDashDash }]}>
                           <Input.TextArea rows={3} placeholder="Descripcion" maxLength={2000} />
                         </Form.Item>
                       </Col>
+                      {selectedArticleObj?.esInactivo === 1 && (
+                        <Col span={24}>
+                          <Tag className={styles.tagInactivo}>El articulo seleccionado esta inactivo.</Tag>
+                        </Col>
+                      )}
+                    </Row>
+                  ),
+                },
+                {
+                  key: 'calculo',
+                  label: (
+                    <span>
+                      <DollarOutlined style={{ marginRight: 8, fontSize: 16 }} />
+                      Tipo de Calculo
+                    </span>
+                  ),
+                  children: (
+                    <Row gutter={[12, 12]} className={styles.companyFormGrid}>
                       <Col span={24}>
                         <div className={styles.sectionCard}>
-                          <Flex justify="space-between" align="center">
-                            <div>
-                              <p className={styles.sectionTitle}>Tipo de Calculo</p>
-                              <p className={styles.sectionDescription}>
-                                {esMontoFijo === 1
-                                  ? 'El movimiento se calculara con un monto fijo.'
-                                  : 'El movimiento se calculara por porcentaje.'}
-                              </p>
-                            </div>
-                            <Flex align="center" gap={8}>
-                              <span style={{ color: '#6b7a85' }}>{esMontoFijo === 1 ? 'Monto Fijo' : 'Porcentaje'}</span>
-                              <Switch
-                                checked={esMontoFijo === 1}
-                                onChange={(checked) => {
-                                  form.setFieldValue('esMontoFijo', checked ? 1 : 0);
-                                }}
-                              />
+                          <div className={styles.sectionCardBody}>
+                            <Flex justify="space-between" align="center" wrap="wrap" gap={8}>
+                              <div>
+                                <p className={styles.sectionTitle}>Tipo de Calculo</p>
+                                <p className={styles.sectionDescription}>
+                                  {esMontoFijo === 1
+                                    ? 'El movimiento se calculara con un monto fijo.'
+                                    : 'El movimiento se calculara por porcentaje.'}
+                                </p>
+                              </div>
+                              <Flex align="center" gap={8}>
+                                <span style={{ color: '#6b7a85' }}>
+                                  {esMontoFijo === 1 ? 'Monto Fijo' : 'Porcentaje'}
+                                </span>
+                                <Switch
+                                  checked={esMontoFijo === 1}
+                                  onChange={(checked) => {
+                                    form.setFieldValue('esMontoFijo', checked ? 1 : 0);
+                                  }}
+                                />
+                              </Flex>
                             </Flex>
-                          </Flex>
+                          </div>
                         </div>
                       </Col>
                       <Form.Item name="esMontoFijo" hidden>
@@ -965,15 +1149,14 @@ export function PayrollMovementsManagementPage() {
                         </Form.Item>
                       </Col>
                       <Col span={24}>
-                        <Form.Item name="formulaAyuda" label="Formula de Ayuda" rules={[{ validator: optionalNoSqlInjection }]}>
+                        <Form.Item
+                          name="formulaAyuda"
+                          label="Formula de Ayuda"
+                          rules={[{ max: 2000, message: 'Maximo 2000 caracteres' }]}
+                        >
                           <Input placeholder="Formula de ayuda" maxLength={2000} />
                         </Form.Item>
                       </Col>
-                      {selectedArticleObj?.esInactivo === 1 && (
-                        <Col span={24}>
-                          <Tag className={styles.tagInactivo}>El articulo seleccionado esta inactivo.</Tag>
-                        </Col>
-                      )}
                     </Row>
                   ),
                 },
@@ -981,16 +1164,34 @@ export function PayrollMovementsManagementPage() {
                   ? [
                     {
                       key: 'bitacora',
-                      label: 'Bitacora',
+                      label: (
+                        <span>
+                          <HistoryOutlined style={{ marginRight: 8, fontSize: 16 }} />
+                          Bitacora
+                        </span>
+                      ),
                       children: (
                         <Spin spinning={loadingAuditTrail}>
-                          <Table
-                            columns={auditColumns}
-                            dataSource={auditTrail}
-                            rowKey="id"
-                            pagination={{ pageSize: 5 }}
-                            className={styles.auditTable}
-                          />
+                          <div style={{ paddingTop: 8 }}>
+                            <p className={styles.sectionTitle}>Historial de cambios del movimiento de nomina</p>
+                            <p className={styles.sectionDescription}>
+                              Muestra quien hizo el cambio, cuando lo hizo y el detalle registrado en bitacora.
+                            </p>
+                            <Table
+                              columns={auditColumns}
+                              dataSource={auditTrail}
+                              rowKey="id"
+                              size="small"
+                              loading={loadingAuditTrail}
+                              className={`${styles.configTable} ${styles.auditTableCompact}`}
+                              pagination={{
+                                pageSize: 8,
+                                showSizeChanger: true,
+                                showTotal: (total) => `${total} registro(s)`,
+                              }}
+                              locale={{ emptyText: 'No hay registros de bitacora para este movimiento de nomina.' }}
+                            />
+                          </div>
                         </Spin>
                       ),
                     },
@@ -1001,24 +1202,22 @@ export function PayrollMovementsManagementPage() {
           </Form>
         </Spin>
 
-        <div className={styles.modalFooter}>
-          <Button onClick={closeModal}>Cancelar</Button>
-          {editing && movementCanMutate && (
-            editing.esInactivo === 1
-              ? <Button onClick={() => confirmReactivate(editing)}>Reactivar</Button>
-              : <Button danger onClick={() => confirmInactivate(editing)}>Inactivar</Button>
-          )}
-          <Tooltip title={!editing ? (canCreate ? '' : 'Sin permiso para crear') : (canEdit ? '' : 'Sin permiso para editar')}>
-            <Button
-              type="primary"
-              icon={<PlusOutlined />}
-              loading={saving}
-              disabled={editing ? !canEdit : !canCreate}
-              onClick={() => form.submit()}
-            >
-              {editing ? 'Guardar cambios' : 'Crear Movimiento'}
-            </Button>
-          </Tooltip>
+        <div className={styles.companyModalFooter}>
+          <Button onClick={closeModal} className={styles.companyModalBtnCancel}>
+            Cancelar
+          </Button>
+          <Button
+            type="primary"
+            className={styles.companyModalBtnSubmit}
+            loading={saving}
+            icon={editing ? <EditOutlined /> : <PlusOutlined />}
+            disabled={!(editing ? canEdit : canCreate)}
+            onClick={() => {
+              void form.submit();
+            }}
+          >
+            {editing ? 'Guardar cambios' : 'Crear Movimiento'}
+          </Button>
         </div>
       </Modal>
 

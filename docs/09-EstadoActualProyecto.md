@@ -384,6 +384,7 @@ Estado: Implementado (backend + frontend + BD en `hr_pro`).
 - Si porcentaje: monto fijo debe ser `0`.
 - Monto y porcentaje no negativos.
 - Bitacora visible solo con `config:payroll-movements:audit`.
+- En modal Crear/Editar, el boton guardar funciona sin abrir todas las pestañas; la validacion ocurre al submit y posiciona al usuario en la pestaña con error si aplica.
 
 **API del modulo:**
 - `GET /api/payroll-movements`

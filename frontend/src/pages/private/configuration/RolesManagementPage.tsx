@@ -17,6 +17,7 @@ import {
 } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import {
+  AppstoreOutlined,
   ArrowLeftOutlined,
   CaretDownOutlined,
   CaretRightOutlined,
@@ -453,6 +454,24 @@ export function RolesManagementPage() {
           </div>
         </div>
       </div>
+
+      <Card className={styles.mainCard} style={{ marginBottom: 20 }}>
+        <div className={styles.mainCardBody}>
+          <div className={styles.gestionHeader}>
+            <div className={styles.gestionHeaderLeft}>
+              <div className={styles.gestionIconWrap}>
+                <AppstoreOutlined className={styles.gestionIcon} />
+              </div>
+              <div>
+                <h2 className={styles.gestionTitle}>Gestion de Roles</h2>
+                <p className={styles.gestionDesc}>
+                  Defina qué permisos tiene cada rol en KPITAL 360 y TimeWise para administrar el acceso al sistema.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </Card>
 
       <div className={styles.appSelector}>
         <span className={styles.appSelectorLabel}>Aplicación:</span>

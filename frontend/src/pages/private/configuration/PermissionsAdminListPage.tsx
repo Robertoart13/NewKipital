@@ -4,6 +4,7 @@ import {
   App as AntdApp,
   Button,
   Card,
+  Flex,
   Form,
   Input,
   Modal,
@@ -14,7 +15,7 @@ import {
   Tag,
   Typography,
 } from 'antd';
-import { ArrowLeftOutlined } from '@ant-design/icons';
+import { AppstoreOutlined, ArrowLeftOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import {
   createConfigPermission,
@@ -259,6 +260,24 @@ export function PermissionsAdminListPage() {
           </div>
         </div>
       </div>
+
+      <Card className={styles.mainCard} style={{ marginBottom: 20 }}>
+        <div className={styles.mainCardBody}>
+          <Flex align="center" justify="space-between" wrap="wrap" gap={16}>
+            <Flex align="center" gap={16}>
+              <div className={styles.gestionIconWrap}>
+                <AppstoreOutlined className={styles.gestionIcon} />
+              </div>
+              <div>
+                <h2 className={styles.gestionTitle}>Gestion de Permisos</h2>
+                <p className={styles.gestionDesc}>
+                  Administre el catalogo de permisos modulo:accion utilizado por los roles y configuraciones de seguridad.
+                </p>
+              </div>
+            </Flex>
+          </Flex>
+        </div>
+      </Card>
 
       <div className={styles.infoBanner}>
         {isEditable ? 'Modo administración por interfaz.' : 'Modo controlado por migración. Catálogo solo lectura.'}

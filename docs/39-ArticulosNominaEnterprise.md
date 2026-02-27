@@ -327,6 +327,10 @@ Columnas:
 - Backend implementado (modulo, servicio, controlador, DTOs, entidad).
 - Frontend implementado (API client, ruta, pagina, filtros, modal, bitacora).
 - Permisos creados y asignados a rol `MASTER`.
+- UX de guardado ajustada:
+  - En Editar/Crear Movimiento, el boton de guardar no depende de navegar por todas las pestañas.
+  - El boton se habilita por permiso (`create`/`edit`) y la validacion se ejecuta al enviar.
+  - Si falta un campo requerido, el formulario muestra error y cambia automaticamente a la pestaña correspondiente.
 - Nota operativa de migraciones:
   - El archivo de migracion existe en codigo.
   - En `hr_pro` se aplico SQL idempotente directo por desalineacion historica de migraciones legacy.
