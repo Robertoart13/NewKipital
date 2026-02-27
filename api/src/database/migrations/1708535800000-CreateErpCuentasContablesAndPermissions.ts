@@ -1,4 +1,10 @@
-import { MigrationInterface, QueryRunner, Table, TableForeignKey, TableIndex } from 'typeorm';
+import {
+  MigrationInterface,
+  QueryRunner,
+  Table,
+  TableForeignKey,
+  TableIndex,
+} from 'typeorm';
 
 export class CreateErpCuentasContablesAndPermissions1708535800000 implements MigrationInterface {
   public async up(queryRunner: QueryRunner): Promise<void> {
@@ -15,11 +21,25 @@ export class CreateErpCuentasContablesAndPermissions1708535800000 implements Mig
               isGenerated: true,
               generationStrategy: 'increment',
             },
-            { name: 'nombre_tipo_erp', type: 'varchar', length: '100', isNullable: false },
+            {
+              name: 'nombre_tipo_erp',
+              type: 'varchar',
+              length: '100',
+              isNullable: false,
+            },
             { name: 'descripcion_tipo_erp', type: 'text', isNullable: true },
-            { name: 'id_externo_erp', type: 'varchar', length: '50', isNullable: true },
+            {
+              name: 'id_externo_erp',
+              type: 'varchar',
+              length: '50',
+              isNullable: true,
+            },
             { name: 'status', type: 'tinyint', width: 1, default: 1 },
-            { name: 'fecha_creacion', type: 'timestamp', default: 'CURRENT_TIMESTAMP' },
+            {
+              name: 'fecha_creacion',
+              type: 'timestamp',
+              default: 'CURRENT_TIMESTAMP',
+            },
             {
               name: 'fecha_modificacion',
               type: 'timestamp',
@@ -32,11 +52,16 @@ export class CreateErpCuentasContablesAndPermissions1708535800000 implements Mig
 
       await queryRunner.createIndex(
         'erp_tipo_cuenta',
-        new TableIndex({ name: 'IDX_tipo_cuenta_status', columnNames: ['status'] }),
+        new TableIndex({
+          name: 'IDX_tipo_cuenta_status',
+          columnNames: ['status'],
+        }),
       );
     }
 
-    const hasTiposAccion = await queryRunner.hasTable('nom_tipos_accion_personal');
+    const hasTiposAccion = await queryRunner.hasTable(
+      'nom_tipos_accion_personal',
+    );
     if (!hasTiposAccion) {
       await queryRunner.createTable(
         new Table({
@@ -49,8 +74,18 @@ export class CreateErpCuentasContablesAndPermissions1708535800000 implements Mig
               isGenerated: true,
               generationStrategy: 'increment',
             },
-            { name: 'codigo_accion', type: 'varchar', length: '20', isNullable: false },
-            { name: 'nombre_accion', type: 'varchar', length: '150', isNullable: false },
+            {
+              name: 'codigo_accion',
+              type: 'varchar',
+              length: '20',
+              isNullable: false,
+            },
+            {
+              name: 'nombre_accion',
+              type: 'varchar',
+              length: '150',
+              isNullable: false,
+            },
             { name: 'estado', type: 'tinyint', width: 1, default: 1 },
           ],
         }),
@@ -58,7 +93,10 @@ export class CreateErpCuentasContablesAndPermissions1708535800000 implements Mig
 
       await queryRunner.createIndex(
         'nom_tipos_accion_personal',
-        new TableIndex({ name: 'IDX_tipo_accion_estado', columnNames: ['estado'] }),
+        new TableIndex({
+          name: 'IDX_tipo_accion_estado',
+          columnNames: ['estado'],
+        }),
       );
     }
 
@@ -76,15 +114,43 @@ export class CreateErpCuentasContablesAndPermissions1708535800000 implements Mig
               generationStrategy: 'increment',
             },
             { name: 'id_empresa', type: 'int', isNullable: false },
-            { name: 'nombre_cuenta_contable', type: 'varchar', length: '255', isNullable: false },
-            { name: 'descripcion_cuenta_contable', type: 'text', isNullable: true },
-            { name: 'codigo_cuenta_contable', type: 'varchar', length: '50', isNullable: false },
-            { name: 'id_externo_netsuite', type: 'varchar', length: '50', isNullable: true },
-            { name: 'codigo_externo_cuenta', type: 'varchar', length: '50', isNullable: true },
+            {
+              name: 'nombre_cuenta_contable',
+              type: 'varchar',
+              length: '255',
+              isNullable: false,
+            },
+            {
+              name: 'descripcion_cuenta_contable',
+              type: 'text',
+              isNullable: true,
+            },
+            {
+              name: 'codigo_cuenta_contable',
+              type: 'varchar',
+              length: '50',
+              isNullable: false,
+            },
+            {
+              name: 'id_externo_netsuite',
+              type: 'varchar',
+              length: '50',
+              isNullable: true,
+            },
+            {
+              name: 'codigo_externo_cuenta',
+              type: 'varchar',
+              length: '50',
+              isNullable: true,
+            },
             { name: 'id_tipo_erp', type: 'int', isNullable: false },
             { name: 'id_tipo_accion_personal', type: 'int', isNullable: false },
             { name: 'es_inactivo', type: 'tinyint', width: 1, default: 0 },
-            { name: 'fecha_creacion', type: 'timestamp', default: 'CURRENT_TIMESTAMP' },
+            {
+              name: 'fecha_creacion',
+              type: 'timestamp',
+              default: 'CURRENT_TIMESTAMP',
+            },
             {
               name: 'fecha_modificacion',
               type: 'timestamp',
@@ -97,31 +163,55 @@ export class CreateErpCuentasContablesAndPermissions1708535800000 implements Mig
 
       await queryRunner.createIndex(
         'erp_cuentas_contables',
-        new TableIndex({ name: 'IDX_cuenta_empresa', columnNames: ['id_empresa'] }),
+        new TableIndex({
+          name: 'IDX_cuenta_empresa',
+          columnNames: ['id_empresa'],
+        }),
       );
       await queryRunner.createIndex(
         'erp_cuentas_contables',
-        new TableIndex({ name: 'IDX_cuenta_tipo', columnNames: ['id_tipo_erp'] }),
+        new TableIndex({
+          name: 'IDX_cuenta_tipo',
+          columnNames: ['id_tipo_erp'],
+        }),
       );
       await queryRunner.createIndex(
         'erp_cuentas_contables',
-        new TableIndex({ name: 'IDX_cuenta_tipo_accion', columnNames: ['id_tipo_accion_personal'] }),
+        new TableIndex({
+          name: 'IDX_cuenta_tipo_accion',
+          columnNames: ['id_tipo_accion_personal'],
+        }),
       );
       await queryRunner.createIndex(
         'erp_cuentas_contables',
-        new TableIndex({ name: 'IDX_cuenta_inactivo', columnNames: ['es_inactivo'] }),
+        new TableIndex({
+          name: 'IDX_cuenta_inactivo',
+          columnNames: ['es_inactivo'],
+        }),
       );
       await queryRunner.createIndex(
         'erp_cuentas_contables',
-        new TableIndex({ name: 'UQ_cuenta_empresa_codigo', columnNames: ['id_empresa', 'codigo_cuenta_contable'], isUnique: true }),
+        new TableIndex({
+          name: 'UQ_cuenta_empresa_codigo',
+          columnNames: ['id_empresa', 'codigo_cuenta_contable'],
+          isUnique: true,
+        }),
       );
       await queryRunner.createIndex(
         'erp_cuentas_contables',
-        new TableIndex({ name: 'UQ_cuenta_empresa_netsuite', columnNames: ['id_empresa', 'id_externo_netsuite'], isUnique: true }),
+        new TableIndex({
+          name: 'UQ_cuenta_empresa_netsuite',
+          columnNames: ['id_empresa', 'id_externo_netsuite'],
+          isUnique: true,
+        }),
       );
       await queryRunner.createIndex(
         'erp_cuentas_contables',
-        new TableIndex({ name: 'UQ_cuenta_empresa_codigo_externo', columnNames: ['id_empresa', 'codigo_externo_cuenta'], isUnique: true }),
+        new TableIndex({
+          name: 'UQ_cuenta_empresa_codigo_externo',
+          columnNames: ['id_empresa', 'codigo_externo_cuenta'],
+          isUnique: true,
+        }),
       );
 
       await queryRunner.createForeignKey(
@@ -297,7 +387,9 @@ export class CreateErpCuentasContablesAndPermissions1708535800000 implements Mig
       await queryRunner.dropTable('erp_cuentas_contables', true);
     }
 
-    const hasTiposAccion = await queryRunner.hasTable('nom_tipos_accion_personal');
+    const hasTiposAccion = await queryRunner.hasTable(
+      'nom_tipos_accion_personal',
+    );
     if (hasTiposAccion) {
       await queryRunner.dropTable('nom_tipos_accion_personal', true);
     }

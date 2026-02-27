@@ -7,7 +7,9 @@ describe('AuditOutboxService', () => {
 
   beforeEach(() => {
     domainEvents = { record: jest.fn().mockResolvedValue(undefined) };
-    service = new AuditOutboxService(domainEvents as unknown as DomainEventsService);
+    service = new AuditOutboxService(
+      domainEvents as unknown as DomainEventsService,
+    );
   });
 
   it('should publish audit event with normalized modulo and accion', () => {

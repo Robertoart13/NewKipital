@@ -23,7 +23,9 @@ export class EmployeeMovedWorkflow {
     toCompanyId: string;
     movedBy: number;
   }): Promise<void> {
-    this.logger.log(`[P3] Empleado #${payload.employeeId} movido de empresa ${payload.fromCompanyId} a ${payload.toCompanyId}`);
+    this.logger.log(
+      `[P3] Empleado #${payload.employeeId} movido de empresa ${payload.fromCompanyId} a ${payload.toCompanyId}`,
+    );
     // Policy P3: Validar que no existan cuotas/acciones activas sin destino compatible.
     // Si existen, lanzar BadRequestException con lista de cuotas que impiden el movimiento.
     // Por ahora: solo log. Implementación completa en Fase 2.

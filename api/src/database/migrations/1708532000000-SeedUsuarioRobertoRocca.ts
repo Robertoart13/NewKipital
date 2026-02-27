@@ -14,9 +14,15 @@ export class SeedUsuarioRobertoRocca1708532000000 implements MigrationInterface 
     const now = new Date().toISOString().slice(0, 19).replace('T', ' ');
 
     // Verificar que existan empresa, apps, rol
-    const companies = await queryRunner.query(`SELECT id_empresa FROM sys_empresas WHERE estado_empresa = 1 LIMIT 1`);
-    const apps = await queryRunner.query(`SELECT id_app, codigo_app FROM sys_apps WHERE estado_app = 1`);
-    const roles = await queryRunner.query(`SELECT id_rol FROM sys_roles WHERE codigo_rol = 'ADMIN_SISTEMA' LIMIT 1`);
+    const companies = await queryRunner.query(
+      `SELECT id_empresa FROM sys_empresas WHERE estado_empresa = 1 LIMIT 1`,
+    );
+    const apps = await queryRunner.query(
+      `SELECT id_app, codigo_app FROM sys_apps WHERE estado_app = 1`,
+    );
+    const roles = await queryRunner.query(
+      `SELECT id_rol FROM sys_roles WHERE codigo_rol = 'ADMIN_SISTEMA' LIMIT 1`,
+    );
 
     if (!companies?.length || !apps?.length || !roles?.length) {
       return;
@@ -24,8 +30,12 @@ export class SeedUsuarioRobertoRocca1708532000000 implements MigrationInterface 
 
     const companyId = companies[0].id_empresa;
     const adminRoleId = roles[0].id_rol;
-    const kpitalApp = apps.find((a: { codigo_app: string }) => a.codigo_app === 'kpital');
-    const timewiseApp = apps.find((a: { codigo_app: string }) => a.codigo_app === 'timewise');
+    const kpitalApp = apps.find(
+      (a: { codigo_app: string }) => a.codigo_app === 'kpital',
+    );
+    const timewiseApp = apps.find(
+      (a: { codigo_app: string }) => a.codigo_app === 'timewise',
+    );
 
     const existing = await queryRunner.query(
       `SELECT id_usuario FROM sys_usuarios WHERE email_usuario = 'roberto@roccacr.com' LIMIT 1`,
@@ -50,7 +60,9 @@ export class SeedUsuarioRobertoRocca1708532000000 implements MigrationInterface 
         '${now}', '${now}'
       )
     `);
-    const [user] = await queryRunner.query(`SELECT id_usuario FROM sys_usuarios WHERE email_usuario = 'roberto@roccacr.com'`);
+    const [user] = await queryRunner.query(
+      `SELECT id_usuario FROM sys_usuarios WHERE email_usuario = 'roberto@roccacr.com'`,
+    );
     const userId = user.id_usuario;
 
     if (kpitalApp) {
@@ -86,12 +98,22 @@ export class SeedUsuarioRobertoRocca1708532000000 implements MigrationInterface 
   }
 
   public async down(queryRunner: QueryRunner): Promise<void> {
-    const [u] = await queryRunner.query(`SELECT id_usuario FROM sys_usuarios WHERE email_usuario = 'roberto@roccacr.com' LIMIT 1`);
+    const [u] = await queryRunner.query(
+      `SELECT id_usuario FROM sys_usuarios WHERE email_usuario = 'roberto@roccacr.com' LIMIT 1`,
+    );
     if (!u) return;
     const uid = u.id_usuario;
-    await queryRunner.query(`DELETE FROM sys_usuario_rol WHERE id_usuario = ${uid}`);
-    await queryRunner.query(`DELETE FROM sys_usuario_empresa WHERE id_usuario = ${uid}`);
-    await queryRunner.query(`DELETE FROM sys_usuario_app WHERE id_usuario = ${uid}`);
-    await queryRunner.query(`DELETE FROM sys_usuarios WHERE id_usuario = ${uid}`);
+    await queryRunner.query(
+      `DELETE FROM sys_usuario_rol WHERE id_usuario = ${uid}`,
+    );
+    await queryRunner.query(
+      `DELETE FROM sys_usuario_empresa WHERE id_usuario = ${uid}`,
+    );
+    await queryRunner.query(
+      `DELETE FROM sys_usuario_app WHERE id_usuario = ${uid}`,
+    );
+    await queryRunner.query(
+      `DELETE FROM sys_usuarios WHERE id_usuario = ${uid}`,
+    );
   }
 }

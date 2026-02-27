@@ -15,8 +15,13 @@ export class PayrollAppliedWorkflow {
   private readonly logger = new Logger(PayrollAppliedWorkflow.name);
 
   // @OnEvent(DOMAIN_EVENTS.PAYROLL.APPLIED)
-  async handlePayrollApplied(payload: { payrollId: string; companyId: string }): Promise<void> {
-    this.logger.log(`Planilla #${payload.payrollId} aplicada. Cuotas asociadas → Pagada.`);
+  async handlePayrollApplied(payload: {
+    payrollId: string;
+    companyId: string;
+  }): Promise<void> {
+    this.logger.log(
+      `Planilla #${payload.payrollId} aplicada. Cuotas asociadas → Pagada.`,
+    );
     // TODO: actualizar estado de cuotas asociadas a PAGADA
   }
 }

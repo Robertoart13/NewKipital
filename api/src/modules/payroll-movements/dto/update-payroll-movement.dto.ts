@@ -1,4 +1,11 @@
-import { IsInt, IsOptional, IsString, Matches, MaxLength, Min } from 'class-validator';
+import {
+  IsInt,
+  IsOptional,
+  IsString,
+  Matches,
+  MaxLength,
+  Min,
+} from 'class-validator';
 
 const NON_NEGATIVE_DECIMAL_PATTERN = /^\d+(\.\d+)?$/;
 
@@ -45,13 +52,17 @@ export class UpdatePayrollMovementDto {
 
   @IsOptional()
   @IsString()
-  @Matches(NON_NEGATIVE_DECIMAL_PATTERN, { message: 'montoFijo debe ser un numero no negativo' })
+  @Matches(NON_NEGATIVE_DECIMAL_PATTERN, {
+    message: 'montoFijo debe ser un numero no negativo',
+  })
   @MaxLength(50)
   montoFijo?: string;
 
   @IsOptional()
   @IsString()
-  @Matches(NON_NEGATIVE_DECIMAL_PATTERN, { message: 'porcentaje debe ser un numero no negativo' })
+  @Matches(NON_NEGATIVE_DECIMAL_PATTERN, {
+    message: 'porcentaje debe ser un numero no negativo',
+  })
   @MaxLength(50)
   porcentaje?: string;
 
@@ -60,4 +71,3 @@ export class UpdatePayrollMovementDto {
   @MaxLength(2000)
   formulaAyuda?: string;
 }
-

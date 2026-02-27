@@ -1,4 +1,11 @@
-import { IsInt, IsString, IsOptional, IsNumber, IsDateString, MaxLength } from 'class-validator';
+import {
+  IsInt,
+  IsString,
+  IsOptional,
+  IsNumber,
+  IsDateString,
+  MaxLength,
+} from 'class-validator';
 
 export class CreatePersonalActionDto {
   @IsInt()

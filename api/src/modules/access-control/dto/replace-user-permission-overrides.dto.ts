@@ -1,4 +1,12 @@
-import { ArrayUnique, IsArray, IsInt, IsOptional, IsString, Matches, Min } from 'class-validator';
+import {
+  ArrayUnique,
+  IsArray,
+  IsInt,
+  IsOptional,
+  IsString,
+  Matches,
+  Min,
+} from 'class-validator';
 
 export class ReplaceUserPermissionOverridesDto {
   @IsString()

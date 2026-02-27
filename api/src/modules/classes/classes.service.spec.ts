@@ -52,12 +52,15 @@ describe('ClassesService', () => {
     repo.create.mockReturnValue(mockClass);
     repo.save.mockResolvedValue(mockClass);
 
-    const result = await service.create({
-      nombre: 'Clase QA',
-      descripcion: 'Descripcion QA',
-      codigo: 'CL-QA',
-      idExterno: 'EXT-QA',
-    }, 1);
+    const result = await service.create(
+      {
+        nombre: 'Clase QA',
+        descripcion: 'Descripcion QA',
+        codigo: 'CL-QA',
+        idExterno: 'EXT-QA',
+      },
+      1,
+    );
 
     expect(result.id).toBe(1);
     expect(repo.save).toHaveBeenCalled();
@@ -67,10 +70,13 @@ describe('ClassesService', () => {
     repo.findOne.mockResolvedValue(mockClass);
 
     await expect(
-      service.create({
-        nombre: 'Clase QA',
-        codigo: 'CL-QA',
-      }, 1),
+      service.create(
+        {
+          nombre: 'Clase QA',
+          codigo: 'CL-QA',
+        },
+        1,
+      ),
     ).rejects.toThrow(ConflictException);
   });
 
@@ -81,11 +87,15 @@ describe('ClassesService', () => {
       .mockResolvedValueOnce(null);
     repo.save.mockResolvedValue({ ...mockClass, nombre: 'Clase Editada' });
 
-    const result = await service.update(1, {
-      nombre: 'Clase Editada',
-      codigo: 'CL-QA-NEW',
-      idExterno: 'EXT-NEW',
-    }, 1);
+    const result = await service.update(
+      1,
+      {
+        nombre: 'Clase Editada',
+        codigo: 'CL-QA-NEW',
+        idExterno: 'EXT-NEW',
+      },
+      1,
+    );
 
     expect(result.nombre).toBe('Clase Editada');
   });

@@ -28,7 +28,12 @@ export class EmployeeVacationAccount {
   @Column({ name: 'dias_iniciales_vacaciones', type: 'int', default: 0 })
   diasIniciales: number;
 
-  @Column({ name: 'inicial_bloqueado_vacaciones', type: 'tinyint', width: 1, default: 1 })
+  @Column({
+    name: 'inicial_bloqueado_vacaciones',
+    type: 'tinyint',
+    width: 1,
+    default: 1,
+  })
   inicialBloqueado: number;
 
   @Column({ name: 'dia_ancla_vacaciones', type: 'tinyint', width: 2 })
@@ -37,10 +42,19 @@ export class EmployeeVacationAccount {
   @Column({ name: 'fecha_ingreso_ancla_vacaciones', type: 'date' })
   fechaIngresoAncla: Date;
 
-  @Column({ name: 'ultima_fecha_provision_vacaciones', type: 'date', nullable: true })
+  @Column({
+    name: 'ultima_fecha_provision_vacaciones',
+    type: 'date',
+    nullable: true,
+  })
   ultimaFechaProvision: Date | null;
 
-  @Column({ name: 'estado_vacaciones_cuenta', type: 'tinyint', width: 1, default: 1 })
+  @Column({
+    name: 'estado_vacaciones_cuenta',
+    type: 'tinyint',
+    width: 1,
+    default: 1,
+  })
   estado: number;
 
   @CreateDateColumn({ name: 'fecha_creacion_vacaciones_cuenta' })
@@ -52,6 +66,10 @@ export class EmployeeVacationAccount {
   @Column({ name: 'creado_por_vacaciones_cuenta', type: 'int', nullable: true })
   creadoPor: number | null;
 
-  @Column({ name: 'modificado_por_vacaciones_cuenta', type: 'int', nullable: true })
+  @Column({
+    name: 'modificado_por_vacaciones_cuenta',
+    type: 'int',
+    nullable: true,
+  })
   modificadoPor: number | null;
 }

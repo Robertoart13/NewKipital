@@ -24,10 +24,18 @@ describe('AuthzRealtimeService', () => {
       at: new Date().toISOString(),
     });
 
-    const user1Writes = (resUser1.write as jest.Mock).mock.calls.map((args) => String(args[0]));
-    const user2Writes = (resUser2.write as jest.Mock).mock.calls.map((args) => String(args[0]));
-    expect(user1Writes.some((line) => line.includes('permissions.changed'))).toBe(true);
-    expect(user2Writes.some((line) => line.includes('permissions.changed'))).toBe(false);
+    const user1Writes = (resUser1.write as jest.Mock).mock.calls.map((args) =>
+      String(args[0]),
+    );
+    const user2Writes = (resUser2.write as jest.Mock).mock.calls.map((args) =>
+      String(args[0]),
+    );
+    expect(
+      user1Writes.some((line) => line.includes('permissions.changed')),
+    ).toBe(true);
+    expect(
+      user2Writes.some((line) => line.includes('permissions.changed')),
+    ).toBe(false);
 
     close1();
     service.onModuleDestroy();

@@ -5,7 +5,9 @@ describe('EmployeeSensitiveDataService', () => {
   let service: EmployeeSensitiveDataService;
 
   beforeEach(() => {
-    const configService = { get: jest.fn().mockReturnValue('') } as unknown as ConfigService;
+    const configService = {
+      get: jest.fn().mockReturnValue(''),
+    } as unknown as ConfigService;
     service = new EmployeeSensitiveDataService(configService);
   });
 

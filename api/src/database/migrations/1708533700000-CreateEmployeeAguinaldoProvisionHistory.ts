@@ -1,4 +1,10 @@
-import { MigrationInterface, QueryRunner, Table, TableForeignKey, TableIndex } from 'typeorm';
+import {
+  MigrationInterface,
+  QueryRunner,
+  Table,
+  TableForeignKey,
+  TableIndex,
+} from 'typeorm';
 
 export class CreateEmployeeAguinaldoProvisionHistory1708533700000 implements MigrationInterface {
   public async up(queryRunner: QueryRunner): Promise<void> {
@@ -15,20 +21,43 @@ export class CreateEmployeeAguinaldoProvisionHistory1708533700000 implements Mig
           },
           { name: 'id_empleado', type: 'int', isNullable: false },
           { name: 'id_empresa', type: 'int', isNullable: false },
-          { name: 'monto_provisionado', type: 'decimal', precision: 12, scale: 2, default: 0 },
+          {
+            name: 'monto_provisionado',
+            type: 'decimal',
+            precision: 12,
+            scale: 2,
+            default: 0,
+          },
           { name: 'fecha_inicio_laboral', type: 'date', isNullable: false },
           { name: 'fecha_fin_laboral', type: 'date', isNullable: true },
           { name: 'registro_empresa', type: 'text', isNullable: true },
-          { name: 'estado_provision_aguinaldo', type: 'tinyint', width: 1, default: 1 },
-          { name: 'fecha_creacion_provision_aguinaldo', type: 'datetime', default: 'CURRENT_TIMESTAMP' },
+          {
+            name: 'estado_provision_aguinaldo',
+            type: 'tinyint',
+            width: 1,
+            default: 1,
+          },
+          {
+            name: 'fecha_creacion_provision_aguinaldo',
+            type: 'datetime',
+            default: 'CURRENT_TIMESTAMP',
+          },
           {
             name: 'fecha_modificacion_provision_aguinaldo',
             type: 'datetime',
             default: 'CURRENT_TIMESTAMP',
             onUpdate: 'CURRENT_TIMESTAMP',
           },
-          { name: 'creado_por_provision_aguinaldo', type: 'int', isNullable: true },
-          { name: 'modificado_por_provision_aguinaldo', type: 'int', isNullable: true },
+          {
+            name: 'creado_por_provision_aguinaldo',
+            type: 'int',
+            isNullable: true,
+          },
+          {
+            name: 'modificado_por_provision_aguinaldo',
+            type: 'int',
+            isNullable: true,
+          },
         ],
       }),
       true,
@@ -36,15 +65,24 @@ export class CreateEmployeeAguinaldoProvisionHistory1708533700000 implements Mig
 
     await queryRunner.createIndex(
       'sys_empleado_provision_aguinaldo',
-      new TableIndex({ name: 'IDX_provision_aguinaldo_empleado', columnNames: ['id_empleado'] }),
+      new TableIndex({
+        name: 'IDX_provision_aguinaldo_empleado',
+        columnNames: ['id_empleado'],
+      }),
     );
     await queryRunner.createIndex(
       'sys_empleado_provision_aguinaldo',
-      new TableIndex({ name: 'IDX_provision_aguinaldo_empresa', columnNames: ['id_empresa'] }),
+      new TableIndex({
+        name: 'IDX_provision_aguinaldo_empresa',
+        columnNames: ['id_empresa'],
+      }),
     );
     await queryRunner.createIndex(
       'sys_empleado_provision_aguinaldo',
-      new TableIndex({ name: 'IDX_provision_aguinaldo_estado', columnNames: ['estado_provision_aguinaldo'] }),
+      new TableIndex({
+        name: 'IDX_provision_aguinaldo_estado',
+        columnNames: ['estado_provision_aguinaldo'],
+      }),
     );
 
     await queryRunner.createForeignKey(

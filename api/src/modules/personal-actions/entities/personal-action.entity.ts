@@ -1,6 +1,10 @@
 import {
-  Entity, PrimaryGeneratedColumn, Column, Index,
-  CreateDateColumn, UpdateDateColumn,
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  Index,
+  CreateDateColumn,
+  UpdateDateColumn,
 } from 'typeorm';
 
 export enum PersonalActionEstado {
@@ -49,13 +53,24 @@ export class PersonalAction {
   descripcion: string | null;
 
   @Index('IDX_accion_estado')
-  @Column({ name: 'estado_accion', type: 'tinyint', width: 1, default: PersonalActionEstado.PENDIENTE })
+  @Column({
+    name: 'estado_accion',
+    type: 'tinyint',
+    width: 1,
+    default: PersonalActionEstado.PENDIENTE,
+  })
   estado: PersonalActionEstado;
 
   @Column({ name: 'fecha_efecto_accion', type: 'date', nullable: true })
   fechaEfecto: Date | null;
 
-  @Column({ name: 'monto_accion', type: 'decimal', precision: 12, scale: 2, nullable: true })
+  @Column({
+    name: 'monto_accion',
+    type: 'decimal',
+    precision: 12,
+    scale: 2,
+    nullable: true,
+  })
   monto: number | null;
 
   @Column({ name: 'aprobado_por_accion', type: 'int', nullable: true })

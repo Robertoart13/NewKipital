@@ -1,10 +1,22 @@
 ﻿import {
-  IsString, IsEmail, IsOptional, IsInt, IsNumber,
-  IsDateString, IsEnum, MaxLength, Min, MinLength, Matches,
+  IsString,
+  IsEmail,
+  IsOptional,
+  IsInt,
+  IsNumber,
+  IsDateString,
+  IsEnum,
+  MaxLength,
+  Min,
+  MinLength,
+  Matches,
 } from 'class-validator';
 import {
-  GeneroEmpleado, EstadoCivilEmpleado, TipoContratoEmpleado,
-  JornadaEmpleado, MonedaSalarioEmpleado,
+  GeneroEmpleado,
+  EstadoCivilEmpleado,
+  TipoContratoEmpleado,
+  JornadaEmpleado,
+  MonedaSalarioEmpleado,
 } from '../entities/employee.entity';
 
 /**
@@ -117,11 +129,15 @@ export class UpdateEmployeeDto {
 
   @IsOptional()
   @IsString()
-  @Matches(/^(0|[1-9]\d*)$/, { message: 'vacacionesAcumuladas debe ser un entero de 0 o mayor' })
+  @Matches(/^(0|[1-9]\d*)$/, {
+    message: 'vacacionesAcumuladas debe ser un entero de 0 o mayor',
+  })
   vacacionesAcumuladas?: string;
 
   @IsOptional()
   @IsString()
-  @Matches(/^(0|[1-9]\d*)(\.\d+)?$/, { message: 'cesantiaAcumulada debe ser un nÃºmero no negativo' })
+  @Matches(/^(0|[1-9]\d*)(\.\d+)?$/, {
+    message: 'cesantiaAcumulada debe ser un nÃºmero no negativo',
+  })
   cesantiaAcumulada?: string;
 }

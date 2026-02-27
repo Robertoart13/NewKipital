@@ -7,7 +7,10 @@ import {
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { EventEmitter2 } from '@nestjs/event-emitter';
-import { PersonalAction, PersonalActionEstado } from './entities/personal-action.entity';
+import {
+  PersonalAction,
+  PersonalActionEstado,
+} from './entities/personal-action.entity';
 import { CreatePersonalActionDto } from './dto/create-personal-action.dto';
 import { DOMAIN_EVENTS } from '../../common/events/event-names';
 import { UserCompany } from '../access-control/entities/user-company.entity';
@@ -22,7 +25,11 @@ export class PersonalActionsService {
     private readonly eventEmitter: EventEmitter2,
   ) {}
 
-  async findAll(userId: number, idEmpresa?: number, estado?: PersonalActionEstado): Promise<PersonalAction[]> {
+  async findAll(
+    userId: number,
+    idEmpresa?: number,
+    estado?: PersonalActionEstado,
+  ): Promise<PersonalAction[]> {
     const qb = this.repo.createQueryBuilder('a').where('1=1');
 
     if (idEmpresa != null) {
@@ -52,7 +59,10 @@ export class PersonalActionsService {
     return action;
   }
 
-  async create(dto: CreatePersonalActionDto, userId?: number): Promise<PersonalAction> {
+  async create(
+    dto: CreatePersonalActionDto,
+    userId?: number,
+  ): Promise<PersonalAction> {
     if (userId != null) {
       await this.assertUserCompanyAccess(userId, dto.idEmpresa);
     }
@@ -74,7 +84,10 @@ export class PersonalActionsService {
     this.eventEmitter.emit(DOMAIN_EVENTS.PERSONAL_ACTION.CREATED, {
       eventName: DOMAIN_EVENTS.PERSONAL_ACTION.CREATED,
       occurredAt: new Date(),
-      payload: { actionId: String(saved.id), employeeId: String(saved.idEmpleado) },
+      payload: {
+        actionId: String(saved.id),
+        employeeId: String(saved.idEmpleado),
+      },
     });
 
     return saved;
@@ -83,7 +96,9 @@ export class PersonalActionsService {
   async approve(id: number, userId?: number): Promise<PersonalAction> {
     const action = await this.findOne(id, userId);
     if (action.estado !== PersonalActionEstado.PENDIENTE) {
-      throw new BadRequestException('Solo se puede aprobar una accion pendiente');
+      throw new BadRequestException(
+        'Solo se puede aprobar una accion pendiente',
+      );
     }
 
     action.estado = PersonalActionEstado.APROBADA;
@@ -105,10 +120,16 @@ export class PersonalActionsService {
     return saved;
   }
 
-  async associateToCalendar(id: number, idCalendarioNomina: number, userId?: number): Promise<PersonalAction> {
+  async associateToCalendar(
+    id: number,
+    idCalendarioNomina: number,
+    userId?: number,
+  ): Promise<PersonalAction> {
     const action = await this.findOne(id, userId);
     if (action.estado !== PersonalActionEstado.APROBADA) {
-      throw new BadRequestException('Solo se puede asociar una accion aprobada a una planilla');
+      throw new BadRequestException(
+        'Solo se puede asociar una accion aprobada a una planilla',
+      );
     }
 
     action.idCalendarioNomina = idCalendarioNomina;
@@ -116,14 +137,24 @@ export class PersonalActionsService {
     return this.repo.save(action);
   }
 
-  async associateToPayroll(id: number, idCalendarioNomina: number, userId?: number): Promise<PersonalAction> {
+  async associateToPayroll(
+    id: number,
+    idCalendarioNomina: number,
+    userId?: number,
+  ): Promise<PersonalAction> {
     return this.associateToCalendar(id, idCalendarioNomina, userId);
   }
 
-  async reject(id: number, motivo: string, userId?: number): Promise<PersonalAction> {
+  async reject(
+    id: number,
+    motivo: string,
+    userId?: number,
+  ): Promise<PersonalAction> {
     const action = await this.findOne(id, userId);
     if (action.estado !== PersonalActionEstado.PENDIENTE) {
-      throw new BadRequestException('Solo se puede rechazar una accion pendiente');
+      throw new BadRequestException(
+        'Solo se puede rechazar una accion pendiente',
+      );
     }
 
     action.estado = PersonalActionEstado.RECHAZADA;
@@ -149,13 +180,18 @@ export class PersonalActionsService {
     return rows.map((row) => row.idEmpresa);
   }
 
-  private async assertUserCompanyAccess(userId: number, companyId: number): Promise<void> {
+  private async assertUserCompanyAccess(
+    userId: number,
+    companyId: number,
+  ): Promise<void> {
     const exists = await this.userCompanyRepo.findOne({
       where: { idUsuario: userId, idEmpresa: companyId, estado: 1 },
     });
 
     if (!exists) {
-      throw new ForbiddenException(`No tiene acceso a la empresa ${companyId}.`);
+      throw new ForbiddenException(
+        `No tiene acceso a la empresa ${companyId}.`,
+      );
     }
   }
 }

@@ -70,7 +70,10 @@ describe('CompaniesService', () => {
       providers: [
         CompaniesService,
         { provide: getRepositoryToken(Company), useValue: mockRepository },
-        { provide: getRepositoryToken(PayrollCalendar), useValue: { find: jest.fn().mockResolvedValue([]) } },
+        {
+          provide: getRepositoryToken(PayrollCalendar),
+          useValue: { find: jest.fn().mockResolvedValue([]) },
+        },
         { provide: AuditOutboxService, useValue: mockAuditOutbox },
       ],
     }).compile();
@@ -105,8 +108,8 @@ describe('CompaniesService', () => {
         query: jest.fn().mockResolvedValue([]),
       };
 
-      (companyRepo.manager.transaction as jest.Mock).mockImplementation(async (callback) =>
-        callback(mockManager),
+      (companyRepo.manager.transaction as jest.Mock).mockImplementation(
+        async (callback) => callback(mockManager),
       );
 
       // Mock file system operations (logo directory creation)
@@ -139,12 +142,14 @@ describe('CompaniesService', () => {
         }),
       };
 
-      (companyRepo.manager.transaction as jest.Mock).mockImplementation(async (callback) =>
-        callback(mockManager),
+      (companyRepo.manager.transaction as jest.Mock).mockImplementation(
+        async (callback) => callback(mockManager),
       );
 
       // Act & Assert
-      await expect(service.create(mockCreateDto, 1)).rejects.toThrow(ConflictException);
+      await expect(service.create(mockCreateDto, 1)).rejects.toThrow(
+        ConflictException,
+      );
       await expect(service.create(mockCreateDto, 1)).rejects.toThrow(
         'Ya existe una empresa con esa cedula',
       );
@@ -152,19 +157,24 @@ describe('CompaniesService', () => {
 
     it('should throw ConflictException when prefijo already exists', async () => {
       // Arrange
-      const existingCompany = { ...mockCompany, prefijo: mockCreateDto.prefijo };
+      const existingCompany = {
+        ...mockCompany,
+        prefijo: mockCreateDto.prefijo,
+      };
       const mockManager = {
         getRepository: jest.fn().mockReturnValue({
           findOne: jest.fn().mockResolvedValue(existingCompany),
         }),
       };
 
-      (companyRepo.manager.transaction as jest.Mock).mockImplementation(async (callback) =>
-        callback(mockManager),
+      (companyRepo.manager.transaction as jest.Mock).mockImplementation(
+        async (callback) => callback(mockManager),
       );
 
       // Act & Assert
-      await expect(service.create(mockCreateDto, 1)).rejects.toThrow(ConflictException);
+      await expect(service.create(mockCreateDto, 1)).rejects.toThrow(
+        ConflictException,
+      );
       await expect(service.create(mockCreateDto, 1)).rejects.toThrow(
         'Ya existe una empresa con ese prefijo',
       );
@@ -185,8 +195,8 @@ describe('CompaniesService', () => {
           .mockResolvedValue([]),
       };
 
-      (companyRepo.manager.transaction as jest.Mock).mockImplementation(async (callback) =>
-        callback(mockManager),
+      (companyRepo.manager.transaction as jest.Mock).mockImplementation(
+        async (callback) => callback(mockManager),
       );
 
       jest.spyOn(service as any, 'mapCompanyWithLogo').mockResolvedValue({
@@ -216,7 +226,9 @@ describe('CompaniesService', () => {
         getMany: jest.fn().mockResolvedValue([mockCompany]),
       };
 
-      (companyRepo.createQueryBuilder as jest.Mock).mockReturnValue(mockQueryBuilder);
+      (companyRepo.createQueryBuilder as jest.Mock).mockReturnValue(
+        mockQueryBuilder,
+      );
       jest.spyOn(service as any, 'mapCompanyWithLogo').mockResolvedValue({
         ...mockCompany,
         logoUrl: '/api/companies/1/logo',
@@ -241,7 +253,9 @@ describe('CompaniesService', () => {
         getMany: jest.fn().mockResolvedValue([inactiveCompany]),
       };
 
-      (companyRepo.createQueryBuilder as jest.Mock).mockReturnValue(mockQueryBuilder);
+      (companyRepo.createQueryBuilder as jest.Mock).mockReturnValue(
+        mockQueryBuilder,
+      );
       jest.spyOn(service as any, 'mapCompanyWithLogo').mockResolvedValue({
         ...inactiveCompany,
         logoUrl: '/api/companies/1/logo',
@@ -265,7 +279,9 @@ describe('CompaniesService', () => {
         getMany: jest.fn().mockResolvedValue([mockCompany]),
       };
 
-      (companyRepo.createQueryBuilder as jest.Mock).mockReturnValue(mockQueryBuilder);
+      (companyRepo.createQueryBuilder as jest.Mock).mockReturnValue(
+        mockQueryBuilder,
+      );
       jest.spyOn(service as any, 'mapCompanyWithLogo').mockResolvedValue({
         ...mockCompany,
         logoUrl: '/api/companies/1/logo',
@@ -315,7 +331,9 @@ describe('CompaniesService', () => {
 
       // Act & Assert
       await expect(service.findOne(1, 1)).rejects.toThrow(ForbiddenException);
-      await expect(service.findOne(1, 1)).rejects.toThrow('No tiene acceso a esta empresa');
+      await expect(service.findOne(1, 1)).rejects.toThrow(
+        'No tiene acceso a esta empresa',
+      );
     });
   });
 
@@ -360,7 +378,9 @@ describe('CompaniesService', () => {
       // Act & Assert
       const execution = service.update(1, { prefijo: 'NEW' }, 1);
       await expect(execution).rejects.toThrow(ConflictException);
-      await expect(execution).rejects.toThrow('Ya existe una empresa con ese prefijo');
+      await expect(execution).rejects.toThrow(
+        'Ya existe una empresa con ese prefijo',
+      );
     });
 
     it('should throw ConflictException when updating to existing cedula', async () => {
@@ -373,7 +393,9 @@ describe('CompaniesService', () => {
       // Act & Assert
       const execution = service.update(1, { cedula: '3109999999' }, 1);
       await expect(execution).rejects.toThrow(ConflictException);
-      await expect(execution).rejects.toThrow('Ya existe una empresa con esa cedula');
+      await expect(execution).rejects.toThrow(
+        'Ya existe una empresa con esa cedula',
+      );
     });
   });
 
@@ -382,7 +404,11 @@ describe('CompaniesService', () => {
       // Arrange
       companyRepo.query.mockResolvedValue([{ id: 1 }]);
       companyRepo.findOne.mockResolvedValue(mockCompany);
-      companyRepo.save.mockResolvedValue({ ...mockCompany, estado: 0, fechaInactivacion: new Date() });
+      companyRepo.save.mockResolvedValue({
+        ...mockCompany,
+        estado: 0,
+        fechaInactivacion: new Date(),
+      });
       jest.spyOn(service as any, 'mapCompanyWithLogo').mockResolvedValue({
         ...mockCompany,
         estado: 0,
@@ -410,17 +436,27 @@ describe('CompaniesService', () => {
       companyRepo.findOne.mockResolvedValue(null);
 
       // Act & Assert
-      await expect(service.inactivate(999, 1)).rejects.toThrow(NotFoundException);
+      await expect(service.inactivate(999, 1)).rejects.toThrow(
+        NotFoundException,
+      );
     });
   });
 
   describe('reactivate', () => {
     it('should reactivate company successfully', async () => {
       // Arrange
-      const inactiveCompany = { ...mockCompany, estado: 0, fechaInactivacion: new Date() };
+      const inactiveCompany = {
+        ...mockCompany,
+        estado: 0,
+        fechaInactivacion: new Date(),
+      };
       companyRepo.query.mockResolvedValue([{ id: 1 }]);
       companyRepo.findOne.mockResolvedValue(inactiveCompany);
-      companyRepo.save.mockResolvedValue({ ...inactiveCompany, estado: 1, fechaInactivacion: null });
+      companyRepo.save.mockResolvedValue({
+        ...inactiveCompany,
+        estado: 1,
+        fechaInactivacion: null,
+      });
       jest.spyOn(service as any, 'mapCompanyWithLogo').mockResolvedValue({
         ...mockCompany,
         estado: 1,
@@ -452,7 +488,9 @@ describe('CompaniesService', () => {
         mimetype: 'image/png',
       };
 
-      jest.spyOn(service as any, 'ensureLogoDirectories').mockResolvedValue(undefined);
+      jest
+        .spyOn(service as any, 'ensureLogoDirectories')
+        .mockResolvedValue(undefined);
 
       // Act
       const result = await service.registerTempLogo(mockFile);
@@ -473,14 +511,18 @@ describe('CompaniesService', () => {
         mimetype: 'application/x-msdownload',
       };
 
-      jest.spyOn(service as any, 'ensureLogoDirectories').mockResolvedValue(undefined);
+      jest
+        .spyOn(service as any, 'ensureLogoDirectories')
+        .mockResolvedValue(undefined);
       const mockUnlink = jest.fn().mockResolvedValue(undefined);
       jest.mock('node:fs/promises', () => ({
         unlink: mockUnlink,
       }));
 
       // Act & Assert
-      await expect(service.registerTempLogo(mockFile)).rejects.toThrow(BadRequestException);
+      await expect(service.registerTempLogo(mockFile)).rejects.toThrow(
+        BadRequestException,
+      );
       await expect(service.registerTempLogo(mockFile)).rejects.toThrow(
         'Formato de imagen no permitido',
       );
@@ -528,7 +570,9 @@ describe('CompaniesService', () => {
       companyRepo.findOne.mockResolvedValue(null);
 
       // Act & Assert
-      await expect(service.getAuditTrail(999, 1)).rejects.toThrow(NotFoundException);
+      await expect(service.getAuditTrail(999, 1)).rejects.toThrow(
+        NotFoundException,
+      );
     });
 
     it('should limit audit trail results', async () => {

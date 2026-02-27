@@ -29,18 +29,28 @@ export class ProjectsController {
 
   @RequirePermissions('project:create')
   @Post()
-  create(@Body() dto: CreateProjectDto, @CurrentUser() user: { userId: number }) {
+  create(
+    @Body() dto: CreateProjectDto,
+    @CurrentUser() user: { userId: number },
+  ) {
     return this.service.create(dto, user.userId);
   }
 
   @RequirePermissions('project:view')
   @Get()
   findAll(
-    @Query('includeInactive', new ParseBoolPipe({ optional: true })) includeInactive?: boolean,
-    @Query('inactiveOnly', new ParseBoolPipe({ optional: true })) inactiveOnly?: boolean,
-    @Query('idEmpresa', new ParseIntPipe({ optional: true })) idEmpresa?: number,
+    @Query('includeInactive', new ParseBoolPipe({ optional: true }))
+    includeInactive?: boolean,
+    @Query('inactiveOnly', new ParseBoolPipe({ optional: true }))
+    inactiveOnly?: boolean,
+    @Query('idEmpresa', new ParseIntPipe({ optional: true }))
+    idEmpresa?: number,
   ) {
-    return this.service.findAll(includeInactive ?? false, inactiveOnly ?? false, idEmpresa);
+    return this.service.findAll(
+      includeInactive ?? false,
+      inactiveOnly ?? false,
+      idEmpresa,
+    );
   }
 
   @RequirePermissions('project:view')
@@ -61,13 +71,19 @@ export class ProjectsController {
 
   @RequirePermissions('project:inactivate')
   @Patch(':id/inactivate')
-  inactivate(@Param('id', ParseIntPipe) id: number, @CurrentUser() user: { userId: number }) {
+  inactivate(
+    @Param('id', ParseIntPipe) id: number,
+    @CurrentUser() user: { userId: number },
+  ) {
     return this.service.inactivate(id, user.userId);
   }
 
   @RequirePermissions('project:reactivate')
   @Patch(':id/reactivate')
-  reactivate(@Param('id', ParseIntPipe) id: number, @CurrentUser() user: { userId: number }) {
+  reactivate(
+    @Param('id', ParseIntPipe) id: number,
+    @CurrentUser() user: { userId: number },
+  ) {
     return this.service.reactivate(id, user.userId);
   }
 

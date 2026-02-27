@@ -113,8 +113,14 @@ describe('NotificationsService', () => {
     const qb = notifUserRepo.createQueryBuilder();
     await service.getUnreadCount(7, 4, 9);
 
-    expect(qb.andWhere).toHaveBeenCalledWith('(n.id_app IS NULL OR n.id_app = :idApp)', { idApp: 4 });
-    expect(qb.andWhere).toHaveBeenCalledWith('(n.id_empresa IS NULL OR n.id_empresa = :idEmpresa)', { idEmpresa: 9 });
+    expect(qb.andWhere).toHaveBeenCalledWith(
+      '(n.id_app IS NULL OR n.id_app = :idApp)',
+      { idApp: 4 },
+    );
+    expect(qb.andWhere).toHaveBeenCalledWith(
+      '(n.id_empresa IS NULL OR n.id_empresa = :idEmpresa)',
+      { idEmpresa: 9 },
+    );
     expect(qb.getCount).toHaveBeenCalled();
   });
 

@@ -15,7 +15,15 @@ import {
 import { CreateCompanyDto } from './dto/create-company.dto';
 import { UpdateCompanyDto } from './dto/update-company.dto';
 import { createReadStream } from 'node:fs';
-import { access, copyFile, mkdir, readdir, rename, rm, unlink } from 'node:fs/promises';
+import {
+  access,
+  copyFile,
+  mkdir,
+  readdir,
+  rename,
+  rm,
+  unlink,
+} from 'node:fs/promises';
 import { basename, extname, join, resolve } from 'node:path';
 import { AuditOutboxService } from '../integration/audit-outbox.service';
 
@@ -24,7 +32,16 @@ const COMPANY_LOGO_TEMP_DIR = join(COMPANY_LOGO_DIR, 'temp');
 const ALLOWED_LOGO_EXTENSIONS = ['.png', '.jpg', '.jpeg', '.webp', '.svg'];
 const DEFAULT_LOGO_CANDIDATES = [
   process.env.COMPANY_DEFAULT_LOGO_PATH?.trim(),
-  join(process.cwd(), '..', 'frontend', 'public', 'assets', 'images', 'global', 'LogoSmall.png'),
+  join(
+    process.cwd(),
+    '..',
+    'frontend',
+    'public',
+    'assets',
+    'images',
+    'global',
+    'LogoSmall.png',
+  ),
   join(process.cwd(), 'public', 'assets', 'images', 'global', 'LogoSmall.png'),
 ].filter((v): v is string => Boolean(v));
 
@@ -153,7 +170,8 @@ export class CompaniesService {
       ...Object.keys(payloadAfter),
     ]);
 
-    const changes: Array<{ campo: string; antes: string; despues: string }> = [];
+    const changes: Array<{ campo: string; antes: string; despues: string }> =
+      [];
     for (const key of keys) {
       if (!(key in this.auditFieldLabels)) continue;
       const beforeValue = this.normalizeAuditValue(payloadBefore[key]);
@@ -169,7 +187,9 @@ export class CompaniesService {
     return changes;
   }
 
-  private async findCompanyLogoAbsolutePath(companyId: number): Promise<string | null> {
+  private async findCompanyLogoAbsolutePath(
+    companyId: number,
+  ): Promise<string | null> {
     await this.ensureLogoDirectories();
     for (const extension of ALLOWED_LOGO_EXTENSIONS) {
       const candidate = join(COMPANY_LOGO_DIR, `${companyId}${extension}`);
@@ -208,9 +228,13 @@ export class CompaniesService {
     }
   }
 
-  private async mapCompanyWithLogo(company: Company): Promise<Company & { logoUrl: string; logoPath: string | null }> {
+  private async mapCompanyWithLogo(
+    company: Company,
+  ): Promise<Company & { logoUrl: string; logoPath: string | null }> {
     const absoluteLogoPath = await this.findCompanyLogoAbsolutePath(company.id);
-    const logoPath = absoluteLogoPath ? `uploads/logoEmpresa/${basename(absoluteLogoPath)}` : null;
+    const logoPath = absoluteLogoPath
+      ? `uploads/logoEmpresa/${basename(absoluteLogoPath)}`
+      : null;
     return {
       ...company,
       logoUrl: this.getCompanyLogoUrl(company.id),
@@ -236,12 +260,17 @@ export class CompaniesService {
     );
     const row = rows?.[0];
     if (!row) return `usuario #${userId}`;
-    const fullName = `${String(row.nombre ?? '').trim()} ${String(row.apellido ?? '').trim()}`.trim();
-    const primary = fullName || String(row.email ?? '').trim() || `usuario #${userId}`;
+    const fullName =
+      `${String(row.nombre ?? '').trim()} ${String(row.apellido ?? '').trim()}`.trim();
+    const primary =
+      fullName || String(row.email ?? '').trim() || `usuario #${userId}`;
     return `${primary} (ID ${userId})`;
   }
 
-  async create(dto: CreateCompanyDto, userId: number): Promise<Company & { logoUrl: string; logoPath: string | null }> {
+  async create(
+    dto: CreateCompanyDto,
+    userId: number,
+  ): Promise<Company & { logoUrl: string; logoPath: string | null }> {
     const saved = await this.repo.manager.transaction(async (manager) => {
       const txRepo = manager.getRepository(Company);
       const existing = await txRepo.findOne({
@@ -289,7 +318,8 @@ export class CompaniesService {
     inactiveOnly = false,
     includeAll = false,
   ): Promise<Array<Company & { logoUrl: string; logoPath: string | null }>> {
-    const qb = this.repo.createQueryBuilder('company')
+    const qb = this.repo
+      .createQueryBuilder('company')
       .orderBy('company.nombre', 'ASC');
 
     if (!includeAll) {
@@ -308,10 +338,15 @@ export class CompaniesService {
     }
 
     const companies = await qb.getMany();
-    return Promise.all(companies.map((company) => this.mapCompanyWithLogo(company)));
+    return Promise.all(
+      companies.map((company) => this.mapCompanyWithLogo(company)),
+    );
   }
 
-  async findOne(id: number, userId: number): Promise<Company & { logoUrl: string; logoPath: string | null }> {
+  async findOne(
+    id: number,
+    userId: number,
+  ): Promise<Company & { logoUrl: string; logoPath: string | null }> {
     await this.assertUserCompanyAccess(userId, id);
     const company = await this.repo.findOne({ where: { id } });
     if (!company) {
@@ -320,7 +355,11 @@ export class CompaniesService {
     return this.mapCompanyWithLogo(company);
   }
 
-  async update(id: number, dto: UpdateCompanyDto, userId: number): Promise<Company & { logoUrl: string; logoPath: string | null }> {
+  async update(
+    id: number,
+    dto: UpdateCompanyDto,
+    userId: number,
+  ): Promise<Company & { logoUrl: string; logoPath: string | null }> {
     await this.assertUserCompanyAccess(userId, id);
     const company = await this.repo.findOne({ where: { id } });
     if (!company) {
@@ -329,14 +368,18 @@ export class CompaniesService {
     const before = this.toAuditSnapshot(company);
 
     if (dto.prefijo && dto.prefijo !== company.prefijo) {
-      const existing = await this.repo.findOne({ where: { prefijo: dto.prefijo } });
+      const existing = await this.repo.findOne({
+        where: { prefijo: dto.prefijo },
+      });
       if (existing) {
         throw new ConflictException('Ya existe una empresa con ese prefijo');
       }
     }
 
     if (dto.cedula && dto.cedula !== company.cedula) {
-      const existing = await this.repo.findOne({ where: { cedula: dto.cedula } });
+      const existing = await this.repo.findOne({
+        where: { cedula: dto.cedula },
+      });
       if (existing) {
         throw new ConflictException('Ya existe una empresa con esa cedula');
       }
@@ -360,7 +403,10 @@ export class CompaniesService {
     return this.mapCompanyWithLogo(saved);
   }
 
-  async inactivate(id: number, userId: number): Promise<Company & { logoUrl: string; logoPath: string | null }> {
+  async inactivate(
+    id: number,
+    userId: number,
+  ): Promise<Company & { logoUrl: string; logoPath: string | null }> {
     await this.assertUserCompanyAccess(userId, id);
     const company = await this.repo.findOne({ where: { id } });
     if (!company) {
@@ -372,11 +418,18 @@ export class CompaniesService {
         estado: In(CompaniesService.PLANILLA_ESTADOS_BLOQUEANTES),
         esInactivo: 0,
       },
-      select: { id: true, fechaInicioPeriodo: true, fechaFinPeriodo: true, estado: true, tipoPlanilla: true },
+      select: {
+        id: true,
+        fechaInicioPeriodo: true,
+        fechaFinPeriodo: true,
+        estado: true,
+        tipoPlanilla: true,
+      },
     });
     if (planillasActivas.length > 0) {
       throw new ConflictException({
-        message: 'La empresa tiene planillas activas. Debe cerrarlas o aplicarlas primero.',
+        message:
+          'La empresa tiene planillas activas. Debe cerrarlas o aplicarlas primero.',
         code: 'PLANILLAS_ACTIVAS',
         planillas: planillasActivas.map((p) => ({
           id: p.id,
@@ -409,7 +462,10 @@ export class CompaniesService {
     return this.mapCompanyWithLogo(saved);
   }
 
-  async reactivate(id: number, userId: number): Promise<Company & { logoUrl: string; logoPath: string | null }> {
+  async reactivate(
+    id: number,
+    userId: number,
+  ): Promise<Company & { logoUrl: string; logoPath: string | null }> {
     await this.assertUserCompanyAccess(userId, id);
     const company = await this.repo.findOne({ where: { id } });
     if (!company) {
@@ -458,7 +514,11 @@ export class CompaniesService {
     };
   }
 
-  async commitTempLogo(companyId: number, tempFileName: string, actorUserId: number): Promise<CompanyLogoCommitResult> {
+  async commitTempLogo(
+    companyId: number,
+    tempFileName: string,
+    actorUserId: number,
+  ): Promise<CompanyLogoCommitResult> {
     await this.assertUserCompanyAccess(actorUserId, companyId);
     const safeTempFileName = basename(tempFileName || '').trim();
     if (!safeTempFileName) {
@@ -521,7 +581,10 @@ export class CompaniesService {
     return result;
   }
 
-  async resolveCompanyLogo(companyId: number, actorUserId: number): Promise<CompanyLogoResolved> {
+  async resolveCompanyLogo(
+    companyId: number,
+    actorUserId: number,
+  ): Promise<CompanyLogoResolved> {
     await this.assertUserCompanyAccess(actorUserId, companyId);
     const company = await this.repo.findOne({ where: { id: companyId } });
     if (!company) {
@@ -529,7 +592,7 @@ export class CompaniesService {
     }
 
     const logoPath = await this.findCompanyLogoAbsolutePath(companyId);
-    const absolutePath = logoPath ?? await this.getDefaultLogoAbsolutePath();
+    const absolutePath = logoPath ?? (await this.getDefaultLogoAbsolutePath());
     return {
       absolutePath,
       mimeType: this.getLogoMimeTypeByExtension(extname(absolutePath)),
@@ -578,8 +641,10 @@ export class CompaniesService {
     );
 
     return (rows ?? []).map((row: Record<string, unknown>) => {
-      const payloadBefore = (row.payloadBefore as Record<string, unknown> | null) ?? null;
-      const payloadAfter = (row.payloadAfter as Record<string, unknown> | null) ?? null;
+      const payloadBefore =
+        (row.payloadBefore as Record<string, unknown> | null) ?? null;
+      const payloadAfter =
+        (row.payloadAfter as Record<string, unknown> | null) ?? null;
       return {
         id: String(row.id ?? ''),
         modulo: String(row.modulo ?? ''),
@@ -590,7 +655,9 @@ export class CompaniesService {
         actorNombre: row.actorNombre ? String(row.actorNombre) : null,
         actorEmail: row.actorEmail ? String(row.actorEmail) : null,
         descripcion: String(row.descripcion ?? ''),
-        fechaCreacion: row.fechaCreacion ? new Date(String(row.fechaCreacion)).toISOString() : null,
+        fechaCreacion: row.fechaCreacion
+          ? new Date(String(row.fechaCreacion)).toISOString()
+          : null,
         metadata: (row.metadata as Record<string, unknown> | null) ?? null,
         cambios: this.buildAuditChanges(payloadBefore, payloadAfter),
       };
@@ -601,7 +668,10 @@ export class CompaniesService {
     return createReadStream(absolutePath);
   }
 
-  private async assertUserCompanyAccess(userId: number, companyId: number): Promise<void> {
+  private async assertUserCompanyAccess(
+    userId: number,
+    companyId: number,
+  ): Promise<void> {
     const rows = await this.repo.query(
       `
       SELECT 1
@@ -618,7 +688,11 @@ export class CompaniesService {
     }
   }
 
-  private async assignCompanyToMasterUsers(companyId: number, manager: EntityManager, actorUserId: number): Promise<void> {
+  private async assignCompanyToMasterUsers(
+    companyId: number,
+    manager: EntityManager,
+    actorUserId: number,
+  ): Promise<void> {
     const rows = await manager.query(
       `
       SELECT DISTINCT u.id_usuario AS id

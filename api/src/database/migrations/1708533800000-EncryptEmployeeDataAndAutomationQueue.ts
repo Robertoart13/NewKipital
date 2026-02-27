@@ -29,7 +29,9 @@ export class EncryptEmployeeDataAndAutomationQueue1708533800000 implements Migra
     `);
   }
 
-  private async addEmployeeEncryptionColumns(queryRunner: QueryRunner): Promise<void> {
+  private async addEmployeeEncryptionColumns(
+    queryRunner: QueryRunner,
+  ): Promise<void> {
     const table = 'sys_empleados';
 
     if (!(await queryRunner.hasColumn(table, 'cedula_hash_empleado'))) {
@@ -47,7 +49,9 @@ export class EncryptEmployeeDataAndAutomationQueue1708533800000 implements Migra
         `ALTER TABLE ${table} ADD COLUMN datos_encriptados_empleado tinyint(1) NOT NULL DEFAULT 0 AFTER modificado_por_empleado`,
       );
     }
-    if (!(await queryRunner.hasColumn(table, 'version_encriptacion_empleado'))) {
+    if (
+      !(await queryRunner.hasColumn(table, 'version_encriptacion_empleado'))
+    ) {
       await queryRunner.query(
         `ALTER TABLE ${table} ADD COLUMN version_encriptacion_empleado varchar(10) NULL AFTER datos_encriptados_empleado`,
       );
@@ -62,7 +66,11 @@ export class EncryptEmployeeDataAndAutomationQueue1708533800000 implements Migra
       `ALTER TABLE ${table} MODIFY COLUMN salario_base_empleado varchar(255) NULL`,
     );
 
-    await this.dropIndexIfExists(queryRunner, table, 'UQ_b8312d7395b91ea2d3929404109');
+    await this.dropIndexIfExists(
+      queryRunner,
+      table,
+      'UQ_b8312d7395b91ea2d3929404109',
+    );
     await this.dropIndexIfExists(queryRunner, table, 'IDX_empleado_cedula');
     await this.dropIndexIfExists(queryRunner, table, 'IDX_empleado_email');
 
@@ -102,28 +110,73 @@ export class EncryptEmployeeDataAndAutomationQueue1708533800000 implements Migra
             },
             { name: 'id_empleado', type: 'int', isNullable: false },
             { name: 'id_empresa', type: 'int', isNullable: false },
-            { name: 'monto_provisionado', type: 'varchar', length: '255', isNullable: false },
+            {
+              name: 'monto_provisionado',
+              type: 'varchar',
+              length: '255',
+              isNullable: false,
+            },
             { name: 'fecha_inicio_laboral', type: 'date', isNullable: false },
             { name: 'fecha_fin_laboral', type: 'date', isNullable: true },
             { name: 'registro_empresa', type: 'text', isNullable: true },
-            { name: 'estado_provision_aguinaldo', type: 'tinyint', width: 1, default: 1 },
-            { name: 'fecha_creacion_provision_aguinaldo', type: 'datetime', default: 'CURRENT_TIMESTAMP' },
+            {
+              name: 'estado_provision_aguinaldo',
+              type: 'tinyint',
+              width: 1,
+              default: 1,
+            },
+            {
+              name: 'fecha_creacion_provision_aguinaldo',
+              type: 'datetime',
+              default: 'CURRENT_TIMESTAMP',
+            },
             {
               name: 'fecha_modificacion_provision_aguinaldo',
               type: 'datetime',
               default: 'CURRENT_TIMESTAMP',
               onUpdate: 'CURRENT_TIMESTAMP',
             },
-            { name: 'creado_por_provision_aguinaldo', type: 'int', isNullable: true },
-            { name: 'modificado_por_provision_aguinaldo', type: 'int', isNullable: true },
-            { name: 'datos_encriptados_provision', type: 'tinyint', width: 1, default: 0 },
-            { name: 'version_encriptacion_provision', type: 'varchar', length: '10', isNullable: true },
-            { name: 'fecha_encriptacion_provision', type: 'datetime', isNullable: true },
+            {
+              name: 'creado_por_provision_aguinaldo',
+              type: 'int',
+              isNullable: true,
+            },
+            {
+              name: 'modificado_por_provision_aguinaldo',
+              type: 'int',
+              isNullable: true,
+            },
+            {
+              name: 'datos_encriptados_provision',
+              type: 'tinyint',
+              width: 1,
+              default: 0,
+            },
+            {
+              name: 'version_encriptacion_provision',
+              type: 'varchar',
+              length: '10',
+              isNullable: true,
+            },
+            {
+              name: 'fecha_encriptacion_provision',
+              type: 'datetime',
+              isNullable: true,
+            },
           ],
           indices: [
-            new TableIndex({ name: 'IDX_provision_aguinaldo_empleado', columnNames: ['id_empleado'] }),
-            new TableIndex({ name: 'IDX_provision_aguinaldo_empresa', columnNames: ['id_empresa'] }),
-            new TableIndex({ name: 'IDX_provision_aguinaldo_estado', columnNames: ['estado_provision_aguinaldo'] }),
+            new TableIndex({
+              name: 'IDX_provision_aguinaldo_empleado',
+              columnNames: ['id_empleado'],
+            }),
+            new TableIndex({
+              name: 'IDX_provision_aguinaldo_empresa',
+              columnNames: ['id_empresa'],
+            }),
+            new TableIndex({
+              name: 'IDX_provision_aguinaldo_estado',
+              columnNames: ['estado_provision_aguinaldo'],
+            }),
           ],
         }),
       );
@@ -146,17 +199,26 @@ export class EncryptEmployeeDataAndAutomationQueue1708533800000 implements Migra
       `ALTER TABLE ${tableName} MODIFY COLUMN monto_provisionado varchar(255) NOT NULL`,
     );
 
-    if (!(await queryRunner.hasColumn(tableName, 'datos_encriptados_provision'))) {
+    if (
+      !(await queryRunner.hasColumn(tableName, 'datos_encriptados_provision'))
+    ) {
       await queryRunner.query(
         `ALTER TABLE ${tableName} ADD COLUMN datos_encriptados_provision tinyint(1) NOT NULL DEFAULT 0`,
       );
     }
-    if (!(await queryRunner.hasColumn(tableName, 'version_encriptacion_provision'))) {
+    if (
+      !(await queryRunner.hasColumn(
+        tableName,
+        'version_encriptacion_provision',
+      ))
+    ) {
       await queryRunner.query(
         `ALTER TABLE ${tableName} ADD COLUMN version_encriptacion_provision varchar(10) NULL`,
       );
     }
-    if (!(await queryRunner.hasColumn(tableName, 'fecha_encriptacion_provision'))) {
+    if (
+      !(await queryRunner.hasColumn(tableName, 'fecha_encriptacion_provision'))
+    ) {
       await queryRunner.query(
         `ALTER TABLE ${tableName} ADD COLUMN fecha_encriptacion_provision datetime NULL`,
       );
@@ -169,16 +231,41 @@ export class EncryptEmployeeDataAndAutomationQueue1708533800000 implements Migra
         new Table({
           name: 'sys_empleado_identity_queue',
           columns: [
-            { name: 'id_identity_queue', type: 'int', isPrimary: true, isGenerated: true, generationStrategy: 'increment' },
+            {
+              name: 'id_identity_queue',
+              type: 'int',
+              isPrimary: true,
+              isGenerated: true,
+              generationStrategy: 'increment',
+            },
             { name: 'id_empleado', type: 'int' },
             { name: 'dedupe_key', type: 'varchar', length: '120' },
-            { name: 'estado_queue', type: 'varchar', length: '20', default: `'PENDING'` },
+            {
+              name: 'estado_queue',
+              type: 'varchar',
+              length: '20',
+              default: `'PENDING'`,
+            },
             { name: 'attempts_queue', type: 'int', default: 0 },
             { name: 'next_retry_at_queue', type: 'datetime', isNullable: true },
-            { name: 'locked_by_queue', type: 'varchar', length: '80', isNullable: true },
+            {
+              name: 'locked_by_queue',
+              type: 'varchar',
+              length: '80',
+              isNullable: true,
+            },
             { name: 'locked_at_queue', type: 'datetime', isNullable: true },
-            { name: 'last_error_queue', type: 'varchar', length: '500', isNullable: true },
-            { name: 'fecha_creacion_queue', type: 'datetime', default: 'CURRENT_TIMESTAMP' },
+            {
+              name: 'last_error_queue',
+              type: 'varchar',
+              length: '500',
+              isNullable: true,
+            },
+            {
+              name: 'fecha_creacion_queue',
+              type: 'datetime',
+              default: 'CURRENT_TIMESTAMP',
+            },
             {
               name: 'fecha_modificacion_queue',
               type: 'datetime',
@@ -192,7 +279,10 @@ export class EncryptEmployeeDataAndAutomationQueue1708533800000 implements Migra
               columnNames: ['dedupe_key'],
               isUnique: true,
             }),
-            new TableIndex({ name: 'IDX_identity_queue_status', columnNames: ['estado_queue'] }),
+            new TableIndex({
+              name: 'IDX_identity_queue_status',
+              columnNames: ['estado_queue'],
+            }),
           ],
         }),
       );
@@ -203,16 +293,41 @@ export class EncryptEmployeeDataAndAutomationQueue1708533800000 implements Migra
         new Table({
           name: 'sys_empleado_encrypt_queue',
           columns: [
-            { name: 'id_encrypt_queue', type: 'int', isPrimary: true, isGenerated: true, generationStrategy: 'increment' },
+            {
+              name: 'id_encrypt_queue',
+              type: 'int',
+              isPrimary: true,
+              isGenerated: true,
+              generationStrategy: 'increment',
+            },
             { name: 'id_empleado', type: 'int' },
             { name: 'dedupe_key', type: 'varchar', length: '120' },
-            { name: 'estado_queue', type: 'varchar', length: '20', default: `'PENDING'` },
+            {
+              name: 'estado_queue',
+              type: 'varchar',
+              length: '20',
+              default: `'PENDING'`,
+            },
             { name: 'attempts_queue', type: 'int', default: 0 },
             { name: 'next_retry_at_queue', type: 'datetime', isNullable: true },
-            { name: 'locked_by_queue', type: 'varchar', length: '80', isNullable: true },
+            {
+              name: 'locked_by_queue',
+              type: 'varchar',
+              length: '80',
+              isNullable: true,
+            },
             { name: 'locked_at_queue', type: 'datetime', isNullable: true },
-            { name: 'last_error_queue', type: 'varchar', length: '500', isNullable: true },
-            { name: 'fecha_creacion_queue', type: 'datetime', default: 'CURRENT_TIMESTAMP' },
+            {
+              name: 'last_error_queue',
+              type: 'varchar',
+              length: '500',
+              isNullable: true,
+            },
+            {
+              name: 'fecha_creacion_queue',
+              type: 'datetime',
+              default: 'CURRENT_TIMESTAMP',
+            },
             {
               name: 'fecha_modificacion_queue',
               type: 'datetime',
@@ -226,14 +341,19 @@ export class EncryptEmployeeDataAndAutomationQueue1708533800000 implements Migra
               columnNames: ['dedupe_key'],
               isUnique: true,
             }),
-            new TableIndex({ name: 'IDX_encrypt_queue_status', columnNames: ['estado_queue'] }),
+            new TableIndex({
+              name: 'IDX_encrypt_queue_status',
+              columnNames: ['estado_queue'],
+            }),
           ],
         }),
       );
     }
   }
 
-  private async seedSensitivePermission(queryRunner: QueryRunner): Promise<void> {
+  private async seedSensitivePermission(
+    queryRunner: QueryRunner,
+  ): Promise<void> {
     const now = new Date().toISOString().slice(0, 19).replace('T', ' ');
     await queryRunner.query(`
       INSERT INTO sys_permisos (
@@ -268,7 +388,11 @@ export class EncryptEmployeeDataAndAutomationQueue1708533800000 implements Migra
     `);
   }
 
-  private async dropIndexIfExists(queryRunner: QueryRunner, tableName: string, indexName: string): Promise<void> {
+  private async dropIndexIfExists(
+    queryRunner: QueryRunner,
+    tableName: string,
+    indexName: string,
+  ): Promise<void> {
     const table = await queryRunner.getTable(tableName);
     if (!table) return;
     const hasIndex = table.indices.some((index) => index.name === indexName);

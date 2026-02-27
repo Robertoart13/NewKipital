@@ -55,20 +55,26 @@ export class GlobalExceptionFilter implements ExceptionFilter {
     }
 
     if (this.isTransientDatabaseConnectionError(exception)) {
-      this.logger.error('Fallo temporal de conexion con base de datos', exception as Error);
+      this.logger.error(
+        'Fallo temporal de conexion con base de datos',
+        exception as Error,
+      );
       response.status(HttpStatus.SERVICE_UNAVAILABLE).json({
         success: false,
         data: null,
-        message: 'No se pudo completar la accion por una desconexion temporal. Intente nuevamente en unos segundos.',
+        message:
+          'No se pudo completar la accion por una desconexion temporal. Intente nuevamente en unos segundos.',
         error: 'Servicio temporalmente no disponible',
       });
       return;
     }
 
     if (exception instanceof QueryFailedError) {
-      const driverError = (exception as QueryFailedError & {
-        driverError?: { code?: string; sqlMessage?: string };
-      }).driverError;
+      const driverError = (
+        exception as QueryFailedError & {
+          driverError?: { code?: string; sqlMessage?: string };
+        }
+      ).driverError;
 
       if (driverError?.code === 'ER_DUP_ENTRY') {
         response.status(HttpStatus.CONFLICT).json({
@@ -106,7 +112,11 @@ export class GlobalExceptionFilter implements ExceptionFilter {
     ]);
 
     if (error instanceof QueryFailedError) {
-      const driverError = (error as QueryFailedError & { driverError?: { code?: string; fatal?: boolean } }).driverError;
+      const driverError = (
+        error as QueryFailedError & {
+          driverError?: { code?: string; fatal?: boolean };
+        }
+      ).driverError;
       if (driverError?.code && transientCodes.has(driverError.code)) {
         return true;
       }
@@ -116,7 +126,9 @@ export class GlobalExceptionFilter implements ExceptionFilter {
     }
 
     if (error instanceof Error) {
-      return /ECONNRESET|PROTOCOL_CONNECTION_LOST|ETIMEDOUT|ECONNREFUSED|EPIPE/.test(error.message);
+      return /ECONNRESET|PROTOCOL_CONNECTION_LOST|ETIMEDOUT|ECONNREFUSED|EPIPE/.test(
+        error.message,
+      );
     }
 
     return false;

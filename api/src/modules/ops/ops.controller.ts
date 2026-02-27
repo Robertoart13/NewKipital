@@ -1,6 +1,18 @@
-import { Body, Controller, Get, Param, ParseIntPipe, Post, Query } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Param,
+  ParseIntPipe,
+  Post,
+  Query,
+} from '@nestjs/common';
 import { RequirePermissions } from '../../common/decorators/require-permissions.decorator';
-import { ListQueueJobsDto, QueueTypeDto, RequeueJobDto } from './dto/list-queue-jobs.dto';
+import {
+  ListQueueJobsDto,
+  QueueTypeDto,
+  RequeueJobDto,
+} from './dto/list-queue-jobs.dto';
 import { OpsService } from './ops.service';
 
 @Controller('ops/queues')
@@ -32,7 +44,12 @@ export class OpsController {
   @Get('health-check')
   async healthCheck() {
     const data = await this.opsService.healthCheck();
-    return { success: true, data, message: 'Estado de procesamiento', error: null };
+    return {
+      success: true,
+      data,
+      message: 'Estado de procesamiento',
+      error: null,
+    };
   }
 
   @RequirePermissions('automation:admin')
@@ -46,14 +63,24 @@ export class OpsController {
   @Post('release-stuck')
   async releaseStuck() {
     const data = await this.opsService.releaseStuckNow();
-    return { success: true, data, message: 'Locks vencidos liberados', error: null };
+    return {
+      success: true,
+      data,
+      message: 'Locks vencidos liberados',
+      error: null,
+    };
   }
 
   @RequirePermissions('automation:admin')
   @Post('vacations/provision-now')
   async provisionVacationsNow() {
     const data = await this.opsService.runVacationProvisionNow();
-    return { success: true, data, message: 'Provision de vacaciones ejecutada', error: null };
+    return {
+      success: true,
+      data,
+      message: 'Provision de vacaciones ejecutada',
+      error: null,
+    };
   }
 
   @RequirePermissions('automation:admin')

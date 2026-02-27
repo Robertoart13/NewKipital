@@ -11,22 +11,51 @@ export class PayrollEmployeeSnapshot {
   @Column({ name: 'id_empleado', type: 'int' })
   idEmpleado: number;
 
-  @Column({ name: 'salario_base_snapshot', type: 'decimal', precision: 18, scale: 2, default: '0' })
+  @Column({
+    name: 'salario_base_snapshot',
+    type: 'decimal',
+    precision: 18,
+    scale: 2,
+    default: '0',
+  })
   salarioBase: string;
 
-  @Column({ name: 'jornada_snapshot', type: 'varchar', length: 50, nullable: true })
+  @Column({
+    name: 'jornada_snapshot',
+    type: 'varchar',
+    length: 50,
+    nullable: true,
+  })
   jornada: string | null;
 
-  @Column({ name: 'moneda_snapshot', type: 'enum', enum: ['CRC', 'USD'], default: 'CRC' })
+  @Column({
+    name: 'moneda_snapshot',
+    type: 'enum',
+    enum: ['CRC', 'USD'],
+    default: 'CRC',
+  })
   moneda: 'CRC' | 'USD';
 
-  @Column({ name: 'centro_costo_snapshot', type: 'varchar', length: 50, nullable: true })
+  @Column({
+    name: 'centro_costo_snapshot',
+    type: 'varchar',
+    length: 50,
+    nullable: true,
+  })
   centroCosto: string | null;
 
-  @Column({ name: 'cuenta_banco_snapshot', type: 'varchar', length: 100, nullable: true })
+  @Column({
+    name: 'cuenta_banco_snapshot',
+    type: 'varchar',
+    length: 100,
+    nullable: true,
+  })
   cuentaBanco: string | null;
 
-  @Column({ name: 'fecha_creacion_snapshot', type: 'datetime', default: () => 'CURRENT_TIMESTAMP' })
+  @Column({
+    name: 'fecha_creacion_snapshot',
+    type: 'datetime',
+    default: () => 'CURRENT_TIMESTAMP',
+  })
   fechaCreacion: Date;
 }
-

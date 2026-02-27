@@ -1,5 +1,12 @@
 import {
-  Controller, Get, Post, Put, Patch, Param, Body, Query,
+  Controller,
+  Get,
+  Post,
+  Put,
+  Patch,
+  Param,
+  Body,
+  Query,
   ParseIntPipe,
 } from '@nestjs/common';
 import { UserAssignmentService } from './user-assignment.service';
@@ -19,7 +26,10 @@ export class UserAssignmentController {
 
   @RequirePermissions('config:users:assign-apps')
   @Post('apps')
-  assignApp(@Body() dto: AssignUserAppDto, @CurrentUser() user: { userId: number }) {
+  assignApp(
+    @Body() dto: AssignUserAppDto,
+    @CurrentUser() user: { userId: number },
+  ) {
     return this.service.assignApp(dto, user.userId);
   }
 
@@ -43,7 +53,10 @@ export class UserAssignmentController {
 
   @RequirePermissions('config:users:assign-companies')
   @Post('companies')
-  assignCompany(@Body() dto: AssignUserCompanyDto, @CurrentUser() user: { userId: number }) {
+  assignCompany(
+    @Body() dto: AssignUserCompanyDto,
+    @CurrentUser() user: { userId: number },
+  ) {
     return this.service.assignCompany(dto, user.userId);
   }
 
@@ -67,7 +80,10 @@ export class UserAssignmentController {
 
   @RequirePermissions('config:users:assign-roles')
   @Post('roles')
-  assignRole(@Body() dto: AssignUserRoleDto, @CurrentUser() user: { userId: number }) {
+  assignRole(
+    @Body() dto: AssignUserRoleDto,
+    @CurrentUser() user: { userId: number },
+  ) {
     return this.service.assignRole(dto, user.userId);
   }
 
@@ -80,14 +96,21 @@ export class UserAssignmentController {
     @Param('idApp', ParseIntPipe) idApp: number,
     @CurrentUser() user: { userId: number },
   ) {
-    return this.service.revokeRole(idUsuario, idRol, idEmpresa, idApp, user.userId);
+    return this.service.revokeRole(
+      idUsuario,
+      idRol,
+      idEmpresa,
+      idApp,
+      user.userId,
+    );
   }
 
   @RequirePermissions('config:users')
   @Get('roles/:idUsuario')
   getUserRoles(
     @Param('idUsuario', ParseIntPipe) idUsuario: number,
-    @Query('idEmpresa', new ParseIntPipe({ optional: true })) idEmpresa?: number,
+    @Query('idEmpresa', new ParseIntPipe({ optional: true }))
+    idEmpresa?: number,
     @Query('idApp', new ParseIntPipe({ optional: true })) idApp?: number,
   ) {
     return this.service.getUserRoles(idUsuario, idEmpresa, idApp);
@@ -133,6 +156,10 @@ export class UserAssignmentController {
     @Query('companyId', ParseIntPipe) companyId: number,
     @Query('appCode') appCode: string,
   ) {
-    return this.service.getUserPermissionOverrides(idUsuario, companyId, appCode);
+    return this.service.getUserPermissionOverrides(
+      idUsuario,
+      companyId,
+      appCode,
+    );
   }
 }

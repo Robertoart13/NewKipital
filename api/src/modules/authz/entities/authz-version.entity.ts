@@ -22,4 +22,3 @@ export class AuthzVersion {
   })
   updatedAt: Date;
 }
-
