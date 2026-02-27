@@ -1,139 +1,111 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
-import { configureStore } from '@reduxjs/toolkit';
-import { Provider } from 'react-redux';
-import { MemoryRouter } from 'react-router-dom';
-import { PermissionGuard } from './PermissionGuard';
-import authReducer, { type User } from '../store/slices/authSlice';
-import permissionsReducer from '../store/slices/permissionsSlice';
-import activeCompanyReducer from '../store/slices/activeCompanySlice';
-import activeAppReducer from '../store/slices/activeAppSlice';
-import menuReducer from '../store/slices/menuSlice';
 
-// Store de prueba sin middleware con efectos secundarios
-function makeTestStore(preloadedState?: object) {
-  return configureStore({
-    reducer: {
-      auth: authReducer,
-      permissions: permissionsReducer,
-      activeCompany: activeCompanyReducer,
-      activeApp: activeAppReducer,
-      menu: menuReducer,
-    },
-    preloadedState,
+// ─── Mocks livianos (evitan imports pesados de antd + Redux + router en jsdom) ─
+
+vi.mock('../store/hooks', () => ({
+  useAppSelector: vi.fn(),
+  useAppDispatch: vi.fn(() => vi.fn()),
+}));
+
+// PermissionGuard only uses `Result` from antd — full lightweight mock,
+// no importActual so the entire ~100 MB antd bundle is never loaded.
+vi.mock('antd', () => ({
+  Result: ({ title, subTitle }: { title?: string; subTitle?: string }) => (
+    <div data-testid="result-403">
+      <span>{title}</span>
+      <span>{subTitle}</span>
+    </div>
+  ),
+}));
+
+// react-router-dom v7 pulls in server-side modules that are heavy in jsdom.
+// PermissionGuard only uses `Navigate` and `useLocation` — mock both.
+vi.mock('react-router-dom', () => ({
+  Navigate: ({ to }: { to: string }) => (
+    <div data-testid={`navigate-${to.replace(/\//g, '-').replace(/^-/, '')}`} />
+  ),
+  useLocation: () => ({ pathname: '/test' }),
+}));
+
+// ─── Imports reales DESPUÉS de los mocks ─────────────────────────────────────
+import { useAppSelector } from '../store/hooks';
+import { PermissionGuard } from './PermissionGuard';
+
+// ─── Helper ──────────────────────────────────────────────────────────────────
+const mockSelector = useAppSelector as ReturnType<typeof vi.fn>;
+
+function setup(isAuthenticated: boolean, loaded: boolean, permissions: string[]) {
+  mockSelector.mockImplementation((selector: (s: object) => unknown) => {
+    const fakeState = {
+      auth: { isAuthenticated },
+      permissions: { loaded, permissions },
+    };
+    return selector(fakeState as never);
   });
 }
 
-function renderWithStore(ui: React.ReactElement, preloadedState?: object) {
-  const store = makeTestStore(preloadedState);
+function renderGuard(permission: string, children = <div>Contenido protegido</div>) {
   return render(
-    <Provider store={store}>
-      <MemoryRouter>{ui}</MemoryRouter>
-    </Provider>,
+    <PermissionGuard requiredPermission={permission}>{children}</PermissionGuard>,
   );
 }
 
-const mockUser: User = {
-  id: '1',
-  email: 'test@kpital360.com',
-  name: 'Test Admin',
-  roles: ['admin'],
-  enabledApps: ['kpital'],
-  companyIds: ['1'],
-};
-
-const unauthState = {
-  auth: { user: null, companies: [], isAuthenticated: false, sessionLoading: false },
-  permissions: { appId: null, companyId: null, permissions: [], roles: [], loaded: false },
-};
-
-const authLoadingState = {
-  auth: { user: mockUser, companies: [], isAuthenticated: true, sessionLoading: false },
-  permissions: { appId: null, companyId: null, permissions: [], roles: [], loaded: false },
-};
-
-const authNoPermState = {
-  auth: { user: mockUser, companies: [], isAuthenticated: true, sessionLoading: false },
-  permissions: { appId: 'kpital', companyId: '1', permissions: ['payroll:view'], roles: ['viewer'], loaded: true },
-};
-
-const authWithPermState = (permissions: string[]) => ({
-  auth: { user: mockUser, companies: [], isAuthenticated: true, sessionLoading: false },
-  permissions: { appId: 'kpital', companyId: '1', permissions, roles: ['hr'], loaded: true },
-});
-
+// ─── Tests ───────────────────────────────────────────────────────────────────
 describe('PermissionGuard', () => {
-  it('redirects when user is not authenticated', () => {
-    renderWithStore(
-      <PermissionGuard requiredPermission="employee:view">
-        <div>Contenido protegido</div>
-      </PermissionGuard>,
-      unauthState,
-    );
-    expect(screen.queryByText('Contenido protegido')).not.toBeInTheDocument();
+  beforeEach(() => {
+    vi.clearAllMocks();
   });
 
-  it('renders nothing while permissions are loading', () => {
-    const { container } = renderWithStore(
-      <PermissionGuard requiredPermission="employee:view">
-        <div>Contenido protegido</div>
-      </PermissionGuard>,
-      authLoadingState,
-    );
+  it('redirects to /auth/login when not authenticated', () => {
+    setup(false, false, []);
+    renderGuard('employee:view');
+    expect(screen.queryByText('Contenido protegido')).not.toBeInTheDocument();
+    expect(screen.getByTestId('navigate-auth-login')).toBeInTheDocument();
+  });
+
+  it('renders null while permissions are loading (authenticated, not loaded)', () => {
+    setup(true, false, []);
+    const { container } = renderGuard('employee:view');
     expect(screen.queryByText('Contenido protegido')).not.toBeInTheDocument();
     expect(container.firstChild).toBeNull();
   });
 
-  it('shows 403 when user lacks required permission', () => {
-    renderWithStore(
-      <PermissionGuard requiredPermission="employee:view">
-        <div>Contenido protegido</div>
-      </PermissionGuard>,
-      authNoPermState,
-    );
+  it('shows 403 when authenticated, loaded, but missing permission', () => {
+    setup(true, true, ['payroll:view']);
+    renderGuard('employee:view');
     expect(screen.queryByText('Contenido protegido')).not.toBeInTheDocument();
+    expect(screen.getByTestId('result-403')).toBeInTheDocument();
     expect(screen.getByText('Acceso denegado')).toBeInTheDocument();
   });
 
-  it('renders children when user has required permission', () => {
-    renderWithStore(
-      <PermissionGuard requiredPermission="employee:view">
-        <div>Contenido protegido</div>
-      </PermissionGuard>,
-      authWithPermState(['employee:view', 'employee:create']),
-    );
+  it('renders children when user has the required permission', () => {
+    setup(true, true, ['employee:view', 'employee:create']);
+    renderGuard('employee:view');
     expect(screen.getByText('Contenido protegido')).toBeInTheDocument();
   });
 
-  it('shows the missing permission name in the 403 message', () => {
-    renderWithStore(
-      <PermissionGuard requiredPermission="payroll:create">
-        <div>Crear planilla</div>
-      </PermissionGuard>,
-      authNoPermState,
-    );
+  it('includes the missing permission name in the 403 subtitle', () => {
+    setup(true, true, []);
+    renderGuard('payroll:create');
     expect(screen.getByText(/payroll:create/)).toBeInTheDocument();
   });
 
-  it('grants access via company:manage alias for company scoped permissions', () => {
-    renderWithStore(
-      <PermissionGuard requiredPermission="company:edit">
-        <div>Editar empresa</div>
-      </PermissionGuard>,
-      authWithPermState(['company:manage']),
-    );
-    expect(screen.getByText('Editar empresa')).toBeInTheDocument();
+  it('grants access via company:manage alias for company-scoped permissions', () => {
+    setup(true, true, ['company:manage']);
+    renderGuard('company:edit');
+    expect(screen.getByText('Contenido protegido')).toBeInTheDocument();
   });
 
-  it('renders multiple children correctly', () => {
-    renderWithStore(
+  it('renders multiple children when permission is granted', () => {
+    setup(true, true, ['employee:view']);
+    render(
       <PermissionGuard requiredPermission="employee:view">
-        <span>Item 1</span>
-        <span>Item 2</span>
+        <span>Item A</span>
+        <span>Item B</span>
       </PermissionGuard>,
-      authWithPermState(['employee:view']),
     );
-    expect(screen.getByText('Item 1')).toBeInTheDocument();
-    expect(screen.getByText('Item 2')).toBeInTheDocument();
+    expect(screen.getByText('Item A')).toBeInTheDocument();
+    expect(screen.getByText('Item B')).toBeInTheDocument();
   });
 });

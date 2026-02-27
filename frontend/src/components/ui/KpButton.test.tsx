@@ -1,5 +1,36 @@
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
+
+// ─── Lightweight antd mock ─────────────────────────────────────────────────
+// Avoids loading the full antd bundle (~100 MB) in this worker.
+// The smoke test already validates that real antd components import cleanly.
+vi.mock('antd', () => ({
+  Button: ({
+    children,
+    className,
+    type,
+    disabled,
+    danger,
+    onClick,
+  }: {
+    children?: React.ReactNode;
+    className?: string;
+    type?: string;
+    disabled?: boolean;
+    danger?: boolean;
+    onClick?: () => void;
+  }) => {
+    const cls = ['ant-btn', className, type && `ant-btn-${type}`, danger && 'ant-btn-dangerous']
+      .filter(Boolean)
+      .join(' ');
+    return (
+      <button className={cls} disabled={disabled} onClick={onClick}>
+        {children}
+      </button>
+    );
+  },
+}));
+
 import { KpButton } from './KpButton';
 
 describe('KpButton', () => {

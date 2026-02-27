@@ -2,6 +2,11 @@ import { expect, afterEach } from 'vitest';
 import { cleanup } from '@testing-library/react';
 import * as matchers from '@testing-library/jest-dom/matchers';
 
+// Force garbage collection before each test file if --expose-gc is available.
+// This prevents memory accumulation when many module-heavy files share a worker.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+(globalThis as any).gc?.();
+
 // Extend Vitest's expect with jest-dom matchers
 expect.extend(matchers);
 
