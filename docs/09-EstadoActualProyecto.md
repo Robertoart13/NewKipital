@@ -356,6 +356,52 @@ Permisos por modulo:
 
 Detalle completo en [08-EstructuraMenus.md](./08-EstructuraMenus.md).
 
+### 4.y Modulo Movimientos de Nomina (Parametros de Planilla)
+
+Estado: Implementado (backend + frontend + BD en `hr_pro`).
+
+**Permisos:**
+- `payroll-movement:view`
+- `payroll-movement:create`
+- `payroll-movement:edit`
+- `payroll-movement:inactivate`
+- `payroll-movement:reactivate`
+- `config:payroll-movements:audit`
+
+**Ruta frontend:**
+- `/payroll-params/movimientos`
+
+**Tabla BD:**
+- `nom_movimientos_nomina`
+  - empresa, articulo nomina, tipo accion personal, clase/proyecto opcionales,
+  - tipo de calculo por booleano (`es_monto_fijo_movimiento_nomina`),
+  - `monto_fijo_movimiento_nomina` y `porcentaje_movimiento_nomina` guardados como texto para preservar decimales exactos ingresados por usuario.
+
+**Reglas clave:**
+- Articulo de nomina se carga por empresa.
+- Tipo accion personal se autocompleta desde el articulo seleccionado.
+- Si monto fijo: porcentaje debe ser `0`.
+- Si porcentaje: monto fijo debe ser `0`.
+- Monto y porcentaje no negativos.
+- Bitacora visible solo con `config:payroll-movements:audit`.
+
+**API del modulo:**
+- `GET /api/payroll-movements`
+- `GET /api/payroll-movements/:id`
+- `POST /api/payroll-movements`
+- `PUT /api/payroll-movements/:id`
+- `PATCH /api/payroll-movements/:id/inactivate`
+- `PATCH /api/payroll-movements/:id/reactivate`
+- `GET /api/payroll-movements/:id/audit-trail`
+- `GET /api/payroll-movements/articles?idEmpresa=...`
+- `GET /api/payroll-movements/personal-action-types`
+- `GET /api/payroll-movements/classes`
+- `GET /api/payroll-movements/projects?idEmpresa=...`
+
+**Nota de migraciones en entorno actual:**
+- La migracion del modulo fue agregada en codigo.
+- En la BD `HRManagementDB_produccion` se aplico SQL idempotente directo para este modulo por desalineacion historica del historial de migraciones legacy.
+
 ### 4.x Sincronizacion de permisos en tiempo real (Enterprise)
 - Objetivo: reflejar cambios de roles/permisos sin refrescar pantalla y sin afectar usuarios no involucrados.
 - Backend:

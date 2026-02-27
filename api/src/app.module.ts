@@ -10,6 +10,7 @@ import { ClassesModule } from './modules/classes/classes.module';
 import { ProjectsModule } from './modules/projects/projects.module';
 import { AccountingAccountsModule } from './modules/accounting-accounts/accounting-accounts.module';
 import { PayrollArticlesModule } from './modules/payroll-articles/payroll-articles.module';
+import { PayrollMovementsModule } from './modules/payroll-movements/payroll-movements.module';
 import { DepartmentsModule } from './modules/departments/departments.module';
 import { PositionsModule } from './modules/positions/positions.module';
 import { EmployeesModule } from './modules/employees/employees.module';
@@ -34,6 +35,7 @@ import { PermissionsGuard } from './common/guards/permissions.guard';
     ProjectsModule,
     AccountingAccountsModule,
     PayrollArticlesModule,
+    PayrollMovementsModule,
     DepartmentsModule,
     PositionsModule,
     EmployeesModule,

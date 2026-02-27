@@ -19,6 +19,7 @@ import {
   PositionsManagementPage,
   AutomationMonitoringPage,
   PayrollArticlesManagementPage,
+  PayrollMovementsManagementPage,
 } from '../pages/private';
 
 /**
@@ -160,6 +161,16 @@ export function AppRouter() {
             </PrivateLayout>
           )}
           path="/payroll-params/articulos"
+        />
+        <Route
+          element={(
+            <PrivateLayout>
+              <PermissionGuard requiredPermission="payroll-movement:view">
+                <PayrollMovementsManagementPage />
+              </PermissionGuard>
+            </PrivateLayout>
+          )}
+          path="/payroll-params/movimientos"
         />
         <Route
           element={(

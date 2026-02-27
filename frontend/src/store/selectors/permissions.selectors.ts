@@ -134,6 +134,19 @@ export const canReactivatePayrollArticle = (state: RootState) =>
 export const canViewPayrollArticleAudit = (state: RootState) =>
   selectPermissions(state).includes('config:payroll-articles:audit');
 
+export const canViewPayrollMovements = (state: RootState) =>
+  selectPermissions(state).includes('payroll-movement:view');
+export const canCreatePayrollMovement = (state: RootState) =>
+  selectPermissions(state).includes('payroll-movement:create');
+export const canEditPayrollMovement = (state: RootState) =>
+  selectPermissions(state).includes('payroll-movement:edit');
+export const canInactivatePayrollMovement = (state: RootState) =>
+  selectPermissions(state).includes('payroll-movement:inactivate');
+export const canReactivatePayrollMovement = (state: RootState) =>
+  selectPermissions(state).includes('payroll-movement:reactivate');
+export const canViewPayrollMovementAudit = (state: RootState) =>
+  selectPermissions(state).includes('config:payroll-movements:audit');
+
 export const canViewDepartments = (state: RootState) =>
   selectPermissions(state).includes('department:view');
 export const canCreateDepartment = (state: RootState) =>

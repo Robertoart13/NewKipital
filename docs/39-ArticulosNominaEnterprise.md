@@ -250,3 +250,84 @@ Reglas de backend:
 - [x] Bitacora funcionando.
 - [ ] Tests ejecutados y documentados.
 
+---
+
+## 14. Movimientos de Nomina (nuevo modulo)
+
+### 14.1. Alcance
+- Ruta: `/payroll-params/movimientos`.
+- CRUD completo: listar, crear, editar, inactivar, reactivar.
+- Bitacora por registro (lazy load en tab de bitacora).
+- Filtro por empresa (multiempresa en listado).
+- UX alineada al patron de Articulos/Empleados: header, seccion filtros colapsable, tabla y modal con tabs.
+
+### 14.2. Permisos
+- `payroll-movement:view`
+- `payroll-movement:create`
+- `payroll-movement:edit`
+- `payroll-movement:inactivate`
+- `payroll-movement:reactivate`
+- `config:payroll-movements:audit`
+
+Regla: sin permiso no se muestra menu/acciones/vista, igual que en modulos existentes.
+
+### 14.3. Tabla y campos (BD)
+Tabla: `nom_movimientos_nomina`
+
+Columnas:
+- `id_movimiento_nomina` (PK)
+- `id_empresa_movimiento_nomina` (FK -> `sys_empresas.id_empresa`)
+- `nombre_movimiento_nomina`
+- `id_articulo_nomina_movimiento_nomina` (FK -> `nom_articulos_nomina.id_articulo_nomina`)
+- `id_tipo_accion_personal_movimiento_nomina` (FK -> `nom_tipos_accion_personal.id_tipo_accion_personal`)
+- `id_clase_movimiento_nomina` (FK nullable -> `org_clases.id_clase`)
+- `id_proyecto_movimiento_nomina` (FK nullable -> `org_proyectos.id_proyecto`)
+- `descripcion_movimiento_nomina`
+- `es_monto_fijo_movimiento_nomina` (tinyint 1/0)
+- `monto_fijo_movimiento_nomina` (varchar, guarda exactamente lo que escribe el usuario)
+- `porcentaje_movimiento_nomina` (varchar, guarda exactamente lo que escribe el usuario)
+- `formula_ayuda_movimiento_nomina`
+- `es_inactivo_movimiento_nomina`
+- `fecha_creacion_movimiento_nomina`
+- `fecha_modificacion_movimiento_nomina`
+
+### 14.4. Reglas de negocio
+- Flujo de formulario:
+  - Primero empresa.
+  - Luego articulo de nomina (se carga por empresa; bloqueado sin empresa).
+  - Al elegir articulo, se autocompleta tipo accion personal desde el articulo.
+  - Clase y proyecto son opcionales.
+- Validaciones:
+  - Monto y porcentaje no pueden ser negativos.
+  - Si `es_monto_fijo_movimiento_nomina=1`:
+    - `porcentaje_movimiento_nomina` debe ser `0`.
+  - Si `es_monto_fijo_movimiento_nomina=0`:
+    - `monto_fijo_movimiento_nomina` debe ser `0`.
+  - El valor decimal se guarda textual (varchar), sin redondeos forzados.
+- Integridad:
+  - Articulo debe pertenecer a la empresa seleccionada.
+  - Tipo accion debe coincidir con el tipo accion del articulo.
+  - Proyecto debe pertenecer a la empresa seleccionada.
+  - No permitir seleccionar registros inactivos en crear (y en editar aplicar patron de reemplazo cuando corresponda).
+
+### 14.5. Endpoints
+- `GET /payroll-movements`
+- `GET /payroll-movements/:id`
+- `POST /payroll-movements`
+- `PUT /payroll-movements/:id`
+- `PATCH /payroll-movements/:id/inactivate`
+- `PATCH /payroll-movements/:id/reactivate`
+- `GET /payroll-movements/:id/audit-trail`
+- `GET /payroll-movements/articles?idEmpresa=...`
+- `GET /payroll-movements/personal-action-types`
+- `GET /payroll-movements/classes`
+- `GET /payroll-movements/projects?idEmpresa=...`
+
+### 14.6. Estado actual
+- Backend implementado (modulo, servicio, controlador, DTOs, entidad).
+- Frontend implementado (API client, ruta, pagina, filtros, modal, bitacora).
+- Permisos creados y asignados a rol `MASTER`.
+- Nota operativa de migraciones:
+  - El archivo de migracion existe en codigo.
+  - En `hr_pro` se aplico SQL idempotente directo por desalineacion historica de migraciones legacy.
+

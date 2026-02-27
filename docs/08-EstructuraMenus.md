@@ -46,7 +46,7 @@ Acciones de Personal
 
 ### Parametros de Planilla
 
-Permiso requerido: `payroll:view`
+Permiso requerido: por opcion
 
 ```
 Parametros de Planilla
@@ -58,6 +58,10 @@ Parametros de Planilla
     ├── Artículos de Nomina
     └── Movimientos de Nomina
 ```
+
+Permisos por opcion:
+- Articulos de Nomina: `payroll-article:view`
+- Movimientos de Nomina: `payroll-movement:view`
 
 ### Gestion Planilla
 

@@ -13,3 +13,4 @@ export { DepartmentsManagementPage } from './configuration/DepartmentsManagement
 export { PositionsManagementPage } from './configuration/PositionsManagementPage';
 export { AutomationMonitoringPage } from './monitoring/AutomationMonitoringPage';
 export { PayrollArticlesManagementPage } from './payroll-params/PayrollArticlesManagementPage';
+export { PayrollMovementsManagementPage } from './payroll-params/PayrollMovementsManagementPage';

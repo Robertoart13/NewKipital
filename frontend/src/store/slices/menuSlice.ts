@@ -91,7 +91,6 @@ const initialMenuConfig: MenuItem[] = [
     id: 'payroll-params',
     label: 'Parametros de Planilla',
     path: '/payroll-params',
-    requiredPermission: 'payroll-article:view',
     children: [
       {
         id: 'calendario-nomina',
@@ -105,7 +104,7 @@ const initialMenuConfig: MenuItem[] = [
         ],
       },
       { id: 'articulos-nomina', label: 'Artículos de Nomina', path: '/payroll-params/articulos', requiredPermission: 'payroll-article:view' },
-      { id: 'movimientos-nomina', label: 'Movimientos de Nomina', path: '/payroll-params/movimientos', requiredPermission: 'payroll:view' },
+      { id: 'movimientos-nomina', label: 'Movimientos de Nomina', path: '/payroll-params/movimientos', requiredPermission: 'payroll-movement:view' },
     ],
   },
   {

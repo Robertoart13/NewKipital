@@ -49,6 +49,9 @@ import { AccountingAccountsService } from './accounting-accounts/accounting-acco
 import { PayrollArticlesModule } from './payroll-articles/payroll-articles.module';
 import { PayrollArticlesController } from './payroll-articles/payroll-articles.controller';
 import { PayrollArticlesService } from './payroll-articles/payroll-articles.service';
+import { PayrollMovementsModule } from './payroll-movements/payroll-movements.module';
+import { PayrollMovementsController } from './payroll-movements/payroll-movements.controller';
+import { PayrollMovementsService } from './payroll-movements/payroll-movements.service';
 
 describe('Modules Smoke', () => {
   it('loads access-control classes', () => {
@@ -122,5 +125,11 @@ describe('Modules Smoke', () => {
     expect(PayrollArticlesModule).toBeDefined();
     expect(PayrollArticlesController).toBeDefined();
     expect(PayrollArticlesService).toBeDefined();
+  });
+
+  it('loads payroll movements module', () => {
+    expect(PayrollMovementsModule).toBeDefined();
+    expect(PayrollMovementsController).toBeDefined();
+    expect(PayrollMovementsService).toBeDefined();
   });
 });

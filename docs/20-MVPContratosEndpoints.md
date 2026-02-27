@@ -16,6 +16,8 @@ Definir el contrato oficial de endpoints mínimos para Fase 1 y el formato exact
 | GET | `/api/auth/me` | Sesión actual. user, enabledApps, companies, permissions (si companyId+appCode). | Cookie |
 | POST | `/api/auth/switch-company` | Cambiar contexto. Body: `{ companyId, appCode }`. Devuelve permissions + roles. | Cookie |
 | POST | `/api/auth/logout` | Limpiar cookie. | Cookie |
+| GET | `/api/auth/permissions-stream` | SSE por usuario autenticado. Emite `permissions.changed` cuando cambia authz. | Cookie |
+| GET | `/api/auth/authz-token` | Token liviano de version de autorizacion para polling de respaldo. | Cookie |
 
 ### Companies
 
@@ -72,6 +74,22 @@ Definir el contrato oficial de endpoints mínimos para Fase 1 y el formato exact
 | PATCH | `/api/payroll/:id/apply` | Aplicar planilla (Verificada → Aplicada, inmutabilidad). | Cookie | payroll:apply |
 | PATCH | `/api/payroll/:id/inactivate` | Inactivar planilla. | Cookie | payroll:cancel |
 
+### Payroll Movements (Parametros de Planilla)
+
+| Método | Ruta | Descripción | Auth | Permiso |
+|--------|------|-------------|------|---------|
+| GET | `/api/payroll-movements?idEmpresa=N&idEmpresas=1,2` | Listar movimientos de nomina (filtro empresa / multiempresa). | Cookie | payroll-movement:view |
+| GET | `/api/payroll-movements/:id` | Detalle de movimiento de nomina. | Cookie | payroll-movement:view |
+| POST | `/api/payroll-movements` | Crear movimiento de nomina. | Cookie | payroll-movement:create |
+| PUT | `/api/payroll-movements/:id` | Editar movimiento de nomina. | Cookie | payroll-movement:edit |
+| PATCH | `/api/payroll-movements/:id/inactivate` | Inactivar movimiento de nomina. | Cookie | payroll-movement:inactivate |
+| PATCH | `/api/payroll-movements/:id/reactivate` | Reactivar movimiento de nomina. | Cookie | payroll-movement:reactivate |
+| GET | `/api/payroll-movements/:id/audit-trail` | Bitacora del movimiento. | Cookie | config:payroll-movements:audit |
+| GET | `/api/payroll-movements/articles?idEmpresa=N` | Articulos de nomina por empresa para formulario. | Cookie | payroll-movement:view |
+| GET | `/api/payroll-movements/personal-action-types` | Catalogo tipos de accion personal. | Cookie | payroll-movement:view |
+| GET | `/api/payroll-movements/classes` | Catalogo de clases. | Cookie | payroll-movement:view |
+| GET | `/api/payroll-movements/projects?idEmpresa=N` | Catalogo de proyectos por empresa. | Cookie | payroll-movement:view |
+
 ### Personal Actions (esqueleto MVP)
 
 | Método | Ruta | Descripción | Auth | Permiso |
@@ -103,6 +121,11 @@ Definir el contrato oficial de endpoints mínimos para Fase 1 y el formato exact
 | `payroll:verify` | payroll | verify | Verificar planilla |
 | `payroll:apply` | payroll | apply | Aplicar planilla (inmutabilidad) |
 | `payroll:cancel` | payroll | cancel | Cancelar/inactivar planilla |
+| `payroll-movement:view` | payroll-movement | view | Ver movimientos de nomina |
+| `payroll-movement:create` | payroll-movement | create | Crear movimientos de nomina |
+| `payroll-movement:edit` | payroll-movement | edit | Editar movimientos de nomina |
+| `payroll-movement:inactivate` | payroll-movement | inactivate | Inactivar movimientos de nomina |
+| `payroll-movement:reactivate` | payroll-movement | reactivate | Reactivar movimientos de nomina |
 | `employee:view` | employee | view | Ver empleados |
 | `employee:create` | employee | create | Crear empleado |
 | `employee:edit` | employee | edit | Editar empleado |
@@ -114,6 +137,7 @@ Definir el contrato oficial de endpoints mínimos para Fase 1 y el formato exact
 | `config:users` | config | users | Gestionar usuarios |
 | `config:roles` | config | roles | Gestionar roles |
 | `config:permissions` | config | permissions | Gestionar permisos |
+| `config:payroll-movements:audit` | config | audit | Ver bitacora de movimientos de nomina |
 
 ### Agrupación por Empresa
 
