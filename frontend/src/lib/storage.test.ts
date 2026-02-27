@@ -1,4 +1,4 @@
-﻿import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it } from 'vitest';
 import {
   getStoredCompanyId,
   getStoredActiveApp,
@@ -34,8 +34,8 @@ describe('storage utils', () => {
   beforeEach(() => {
     localStore = createFunctionalStorage();
     sessionStore = createFunctionalStorage();
-    Object.defineProperty(global, 'localStorage', { value: localStore, writable: true });
-    Object.defineProperty(global, 'sessionStorage', { value: sessionStore, writable: true });
+    Object.defineProperty(globalThis, 'localStorage', { value: localStore, writable: true });
+    Object.defineProperty(globalThis, 'sessionStorage', { value: sessionStore, writable: true });
   });
 
   it('getStoredCompanyId returns stored value', () => {
@@ -107,3 +107,4 @@ describe('storage utils', () => {
     expect(getMicrosoftAvatar()).toBeNull();
   });
 });
+

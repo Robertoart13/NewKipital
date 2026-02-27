@@ -28,7 +28,6 @@ export function EmployeeDetailPage() {
   const { id } = useParams<{ id: string }>();
   const [form] = Form.useForm();
   const [editing, setEditing] = useState(false);
-  const companyId = useAppSelector((s) => s.activeCompany.company?.id ?? null);
   const canEdit = useAppSelector(canEditEmployee);
   const canInactivate = useAppSelector(canInactivateEmployee);
   const canReactivate = useAppSelector(canReactivateEmployee);

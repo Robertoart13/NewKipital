@@ -267,7 +267,7 @@ export function PositionsManagementPage() {
 
   useEffect(() => {
     if (!openModal || !editingId) return;
-    applyPositionToForm(editing);
+    if (editing) applyPositionToForm(editing);
     void loadPositionDetail(editingId);
   }, [openModal, editingId, loadPositionDetail, applyPositionToForm]);
 

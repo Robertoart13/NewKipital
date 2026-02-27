@@ -64,9 +64,8 @@ export function parseCurrencyInput(value?: string): number {
       ? withoutSymbols.replace(/,/g, '')
       : withoutSymbols.replace(',', '.');
   } else if (hasDot) {
-    const dotCount = (withoutSymbols.match(/\./g) ?? []).length;
     const thousandsPattern = /^[+-]?\d{1,3}(\.\d{3})+$/;
-    if (dotCount > 1 && thousandsPattern.test(withoutSymbols)) {
+    if (thousandsPattern.test(withoutSymbols)) {
       normalized = withoutSymbols.replace(/\./g, '');
     }
   }

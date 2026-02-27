@@ -17,7 +17,8 @@ export class CsrfGuard implements CanActivate {
 
   canActivate(context: ExecutionContext): boolean {
     const request = context.switchToHttp().getRequest<Request>();
-    if (process.env.E2E_DISABLE_CSRF === 'true') {
+    const isTestEnv = process.env.NODE_ENV === 'test';
+    if (isTestEnv && process.env.E2E_DISABLE_CSRF === 'true') {
       return true;
     }
     if (!MUTATING_METHODS.has(request.method.toUpperCase())) {

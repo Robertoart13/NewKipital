@@ -1,6 +1,6 @@
 # 28 - Pendientes de Accion (Backlog Tecnico-Funcional)
 
-**Ultima actualizacion:** 2026-02-24  
+**Ultima actualizacion:** 2026-02-27  
 **Objetivo:** Registrar tareas pendientes que deben implementarse en futuras iteraciones.
 
 ---
@@ -9,7 +9,7 @@
 
 ### Estado
 
-- Pendiente
+- Completado (2026-02-27)
 
 ### Prioridad
 
@@ -55,10 +55,10 @@ Base de datos:
 
 ### Criterios de aceptacion
 
-1. Dado una empresa con planillas bloqueantes, cuando se intenta inactivar, entonces el API responde `409` y no cambia estado de empresa.
-2. Dado una empresa sin planillas bloqueantes, cuando se intenta inactivar, entonces el API responde exito y la empresa queda inactiva.
-3. El frontend muestra el motivo funcional del bloqueo.
-4. Queda registro de auditoria del intento rechazado.
+1. Dado una empresa con planillas bloqueantes, cuando se intenta inactivar, entonces el API responde `409` y no cambia estado de empresa. **Cumplido**
+2. Dado una empresa sin planillas bloqueantes, cuando se intenta inactivar, entonces el API responde exito y la empresa queda inactiva. **Cumplido**
+3. El frontend muestra el motivo funcional del bloqueo. **Cumplido**
+4. Queda registro de auditoria del intento rechazado. **Cumplido**
 
 ### QA minimo requerido
 
@@ -80,6 +80,12 @@ UI:
 1. Inactivacion de empresas con procesos de nomina inconclusos.
 2. Riesgo de datos inconsistentes y cierre operativo incorrecto.
 3. Mayor carga de soporte por correcciones manuales.
+
+### Cierre tecnico
+
+- Implementado en backend con respuesta `409 Conflict` para inactivacion bloqueada.
+- Cubierto con test unitario en `CompaniesService`.
+- Integrado en frontend para mostrar mensaje funcional (sin error generico tecnico).
 
 ---
 

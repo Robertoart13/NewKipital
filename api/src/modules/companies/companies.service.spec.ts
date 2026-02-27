@@ -440,6 +440,38 @@ describe('CompaniesService', () => {
         NotFoundException,
       );
     });
+
+    it('should throw ConflictException when company has active payroll runs', async () => {
+      // Arrange
+      companyRepo.query.mockResolvedValue([{ id: 1 }]);
+      companyRepo.findOne.mockResolvedValue(mockCompany);
+      payrollCalendarRepo.find.mockResolvedValue([
+        {
+          id: 10,
+          idEmpresa: 1,
+          estado: 1,
+          esInactivo: 0,
+          fechaInicioPeriodo: new Date('2026-02-01'),
+          fechaFinPeriodo: new Date('2026-02-15'),
+          tipoPlanilla: 'Regular',
+        } as unknown as PayrollCalendar,
+      ]);
+
+      // Act
+      const execution = service.inactivate(1, 1);
+
+      // Assert
+      await expect(execution).rejects.toThrow(ConflictException);
+      await expect(execution).rejects.toMatchObject({
+        response: expect.objectContaining({
+          code: 'PLANILLAS_ACTIVAS',
+        }),
+      });
+      expect(companyRepo.save).not.toHaveBeenCalled();
+      expect(auditOutbox.publish).not.toHaveBeenCalledWith(
+        expect.objectContaining({ accion: 'inactivate' }),
+      );
+    });
   });
 
   describe('reactivate', () => {

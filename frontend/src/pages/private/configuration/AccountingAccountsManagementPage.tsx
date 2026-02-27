@@ -93,6 +93,12 @@ interface PaneOption {
   count: number;
 }
 
+function toNumericId(value: unknown): number | undefined {
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed) || parsed <= 0) return undefined;
+  return parsed;
+}
+
 const paneConfig: PaneConfig[] = [
   { key: 'empresa', title: 'Empresa' },
   { key: 'nombre', title: 'Nombre Cuenta' },
@@ -146,12 +152,12 @@ function selectFilterByLabel(input: string, option?: { label?: string | number |
 function getPaneValue(
   row: AccountingAccountListItem,
   key: PaneKey,
-  companies: Array<{ id: number; nombre: string }>,
+  companies: Array<{ id: number | string; nombre: string }>,
   tipoCuentaMap: Map<number, string>,
   tipoAccionMap: Map<number, string>,
 ): string {
   if (key === 'empresa') {
-    const company = companies.find((c) => c.id === row.idEmpresa);
+    const company = companies.find((c) => Number(c.id) === row.idEmpresa);
     return company?.nombre ?? `Empresa #${row.idEmpresa}`;
   }
   if (key === 'nombre') return row.nombre ?? '';
@@ -175,8 +181,11 @@ export function AccountingAccountsManagementPage() {
   const canViewAudit = useAppSelector(canViewAccountingAccountAudit);
   const activeCompany = useAppSelector((s) => s.activeCompany.company);
   const companies = useAppSelector((s) => s.auth.companies);
-  const activeCompanyIds = useMemo(() => new Set(companies.map((c) => c.id)), [companies]);
-  const defaultCompanyId = activeCompany?.id ?? companies[0]?.id;
+  const activeCompanyIds = useMemo(
+    () => new Set(companies.map((c) => toNumericId(c.id)).filter((id): id is number => id != null)),
+    [companies],
+  );
+  const defaultCompanyId = toNumericId(activeCompany?.id) ?? toNumericId(companies[0]?.id);
 
   const [rows, setRows] = useState<AccountingAccountListItem[]>([]);
   const [loading, setLoading] = useState(false);
@@ -602,11 +611,13 @@ export function AccountingAccountsManagementPage() {
         await updateAccountingAccount(editing.id, updatePayload);
         message.success('Cuenta contable actualizada correctamente');
       } else {
+        if (!selectedEmpresa) {
+          message.error('Debe seleccionar una empresa activa para gestionar cuentas contables.');
+          return;
+        }
         await createAccountingAccount({ ...payload, idEmpresa: selectedEmpresa });
         message.success('Cuenta contable creada correctamente');
-        if (selectedEmpresa) {
-          setSelectedCompanyIds([selectedEmpresa]);
-        }
+        setSelectedCompanyIds([selectedEmpresa]);
       }
 
       closeModal();
@@ -864,11 +875,13 @@ export function AccountingAccountsManagementPage() {
                 placeholder="Filtrar por empresa(s)"
                 value={selectedCompanyIds}
                 onChange={(values) => {
-                  const next = values as number[];
+                  const next = (values as Array<string | number>)
+                    .map((value) => Number(value))
+                    .filter((value) => Number.isFinite(value));
                   setSelectedCompanyIds(next);
                 }}
                 options={companies.map((company) => ({
-                  value: company.id,
+                  value: Number(company.id),
                   label: company.nombre,
                 }))}
                 style={{ minWidth: 220 }}
@@ -1082,7 +1095,7 @@ export function AccountingAccountsManagementPage() {
                                 optionFilterProp="label"
                                 filterOption={selectFilterByLabel}
                                 placeholder="Seleccionar"
-                                options={companies.map((c) => ({ value: c.id, label: c.nombre }))}
+                                options={companies.map((c) => ({ value: Number(c.id), label: c.nombre }))}
                               />
                             </Form.Item>
                           </Col>
@@ -1102,7 +1115,7 @@ export function AccountingAccountsManagementPage() {
                               filterOption={selectFilterByLabel}
                               disabled={!!editing}
                               placeholder="Seleccionar"
-                              options={companies.map((c) => ({ value: c.id, label: c.nombre }))}
+                              options={companies.map((c) => ({ value: Number(c.id), label: c.nombre }))}
                             />
                           </Form.Item>
                         </Col>

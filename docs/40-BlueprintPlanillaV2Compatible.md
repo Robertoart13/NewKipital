@@ -11,6 +11,12 @@
 - Arquitectura core de planilla: alineada a nivel enterprise.
 - Ejecucion: condicionada a compatibilidad con esquema actual.
 - Riesgo principal: habilitacion operativa (RBAC seeds + wiring UI + migraciones incrementales).
+- Estado de auditoria Rev. 3 (2026-02-27): **apto para produccion con condicion operacional**.
+
+Condicion operacional obligatoria antes de go-live:
+- rotar secretos de infraestructura (RDS, Azure/SSO, JWT, Redis si aplica),
+- validar despliegue con esos nuevos secretos,
+- confirmar que no existan secretos reales en archivos versionados.
 
 ---
 
@@ -229,6 +235,17 @@ Condicion previa:
   - Bitacora funcional de planilla en `sys_auditoria_acciones` para cambios de negocio.
 - No implementado en este bloque:
   - Fase NetSuite (`send/retry`) por decision de alcance actual.
+
+### Estado de calidad y pruebas (corte vigente)
+
+- Backend: `27/27` suites, `217/217` tests pasando.
+- Frontend: `22/22` suites, `250/250` tests pasando.
+- Bloqueantes de codigo cerrados en este ciclo:
+  - hardening CSRF para test-only,
+  - CORS WebSocket con lista permitida,
+  - saneamiento de `.env.example`,
+  - cierre de `PEND-001`,
+  - correcciones en validaciones frontend.
 
 ---
 

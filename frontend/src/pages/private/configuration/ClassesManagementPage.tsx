@@ -285,7 +285,7 @@ export function ClassesManagementPage() {
 
   useEffect(() => {
     if (!openModal || !editingId) return;
-    applyClassToForm(editing);
+    if (editing) applyClassToForm(editing);
     void loadClassDetail(editingId);
   }, [openModal, editingId, loadClassDetail, applyClassToForm]);
 

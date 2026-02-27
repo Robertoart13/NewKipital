@@ -2,7 +2,7 @@
 
 **Proyecto:** KPITAL 360 — ERP Multiempresa  
 **Autor:** Roberto — Arquitecto Funcional / Senior Engineer  
-**Última actualización:** 2026-02-27 (Planilla v2: calendario operativo, reglas UX de acciones, menú alineado al alcance)
+**Última actualización:** 2026-02-27 (Auditoria consolidada Rev.1->Rev.3 documentada para revisión externa)
 
 ---
 
@@ -56,6 +56,7 @@ Si ya estás en el proyecto y necesitás referencia puntual, usá esta tabla par
 | 37 | [37-ReporteEjecutivoDOC34-ComiteTecnico.md](./37-ReporteEjecutivoDOC34-ComiteTecnico.md) | **Reporte Ejecutivo Comité Técnico DOC-34 v2.0** (post-auditoría): estado global, semáforo por área, decisiones negocio, roadmap por sprint, riesgos. Documento oficial de seguimiento. | 34, 35 |
 | 38 | [38-VacacionesAcumuladasEnterprise.md](./38-VacacionesAcumuladasEnterprise.md) | Reglas oficiales enterprise de vacaciones acumuladas: saldo inicial inmutable, provisión mensual por día ancla (1..28), ledger de movimientos, descuento por planilla aplicada, saldo negativo permitido, historial de monto provisionado y control de permisos. | 23, 30, 34 |
 | 40 | [40-BlueprintPlanillaV2Compatible.md](./40-BlueprintPlanillaV2Compatible.md) | Blueprint definitivo y ejecutable para Planilla v2: compatibilidad incremental, estados numericos, slot_key/is_active, RBAC payroll y fases de implementacion. Incluye reglas implementadas de bitácora funcional, filtros de rango y persistencia de id_tipo_planilla. | 20, 21, 34 |
+| 41 | [41-AuditoriaEnterprise-Consolidado.md](./41-AuditoriaEnterprise-Consolidado.md) | Consolidado de auditoria Rev.1 a Rev.3: hallazgos reportados vs verificados en codigo, veredicto final y condicion operacional previa a go-live. | 09, 28, 40 |
 ---
 
 ## Estado del Proyecto
@@ -63,10 +64,10 @@ Si ya estás en el proyecto y necesitás referencia puntual, usá esta tabla par
 | Área | Estado |
 |------|--------|
 | Frontend (React + Vite + TS) | Estructura completa. State management, UI, menú dinámico, login, guards, router. |
-| API (NestJS) | Enterprise: 7 módulos + workflows + auth real (JWT + guards + permisos dinámicos). |
-| Base de datos | 14 tablas en RDS + seed completo. 7 migraciones ejecutadas. FK + índices enterprise. |
+| API (NestJS) | Enterprise: 7 modulos + workflows + auth real (JWT + guards + permisos dinamicos) + hardening Rev.3 (helmet, health, CORS WS restringido). |
+| Base de datos | Esquema enterprise en evolucion con migraciones versionadas, FK e indices operativos. PEND-001 ya implementado en regla de inactivacion de empresas. |
 | Autenticación | Login REAL: bcrypt + JWT + cookie httpOnly + JwtAuthGuard + PermissionsGuard. |
-| Permisos | Modelo enterprise operativo: resolucion por contexto, pantallas de administracion, modo catalogo (migration/ui) y enforcement backend 403. |
+| Permisos | Modelo enterprise operativo con resolucion por contexto, catalogo de permisos `payroll:*` y enforcement backend 403 en rutas protegidas. |
 | Notificaciones | Sistema enterprise: campanita con badge, notificaciones masivas por rol, estado individual (leído/eliminado), WebSocket tiempo real. |
 | Empleados | sys_empleados redefinida enterprise: 33 columnas, ENUMs, FKs a org/nom catálogos, workflow ACID. |
 | Workflows | Infraestructura enterprise. EmployeeCreationWorkflow (ACID) + IdentitySyncWorkflow (event-driven). |
@@ -93,10 +94,11 @@ La aplicación usa **un único menú horizontal en el header** (sin sidebar/men�
 
 ---
 
-## Bloque - Testing
+## Bloque - Testing (corte vigente)
 
 Documentacion de pruebas en `docs/Test/`:
-- `GUIA-TESTING.md` — Estado vigente (321/321), historial por fases
+- Estado actual consolidado: Backend `217/217` y Frontend `250/250` (100% en verde).
+- `GUIA-TESTING.md` — Guia general e historial por fases
 - `TEST-EXECUTION-REPORT.md` — Reporte por fases de ejecucion
 - `MANUAL-PRUEBAS.md` — Procedimiento operativo
 - `ANALISIS-ESTADO-PROYECTO-FASE4.md` — Calificacion por dimension (10/10)

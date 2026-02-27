@@ -10,6 +10,22 @@
 
 KPITAL 360 es un ERP multiempresa enfocado en gestiÃ³n de RRHH, planillas y acciones de personal. El proyecto empezÃ³ desde cero (sin cÃ³digo, sin BD, sin sistema previo). Se han completado las directivas de arquitectura frontend (state management, UI framework, navegaciÃ³n, login) y la configuraciÃ³n enterprise del backend (7 mÃ³dulos por bounded context, TypeORM, bus de eventos, CORS).
 
+### Actualizacion de auditoria (Rev. 3 - 2026-02-27)
+
+- Veredicto tecnico vigente: **Apto para produccion con condicion operacional**.
+- Bloqueantes de codigo cerrados:
+  - `E2E_DISABLE_CSRF` limitado a `NODE_ENV=test`.
+  - CI corregido a `actions/checkout@v4`.
+  - CORS de WebSocket restringido por `SOCKET_ALLOWED_ORIGINS` (fallback seguro por ambiente).
+  - `PEND-001` implementado (bloqueo 409 al inactivar empresa con planillas activas/no finales).
+  - validaciones frontend corregidas (SQL danger patterns y parseo monetario).
+  - `.env.example` saneado con placeholders (sin secretos reales).
+- Resultado de pruebas vigente:
+  - Backend: **27/27 suites - 217/217 tests pasando**.
+  - Frontend: **22/22 suites - 250/250 tests pasando**.
+- Condicion operacional pendiente para go-live:
+  - **rotacion de secretos en infraestructura** (RDS, Azure/SSO, JWT, Redis si aplica).
+
 ---
 
 ## Principio ArquitectÃ³nico Fundamental
@@ -131,13 +147,13 @@ KPITAL 360 es un ERP multiempresa enfocado en gestiÃ³n de RRHH, planillas y ac
 
 ---
 
-## Inventario de Testing (vigente 2026-02-25)
+## Inventario de Testing (vigente 2026-02-27)
 
 | Capa | Specs/Tests | Pruebas | Estado |
 |------|-------------|---------|--------|
-| Backend (Jest) | 22 archivos .spec.ts + 4 E2E | 187/187 | Pasando |
-| Frontend (Vitest) | 19 archivos .test.ts | 331/331 | Pasando |
-| **Total** | 45 archivos | **518/518** | 100% |
+| Backend (Jest) | 27 suites | 217/217 | Pasando |
+| Frontend (Vitest) | 22 suites | 250/250 | Pasando |
+| **Total** | 49 suites | **467/467** | 100% |
 
 Cobertura: auth, employees, companies, workflows, access-control (apps, roles, permissions), payroll, personal-actions, notifications, ops, integration (domain-events), smoke tests. Ver `docs/Test/GUIA-TESTING.md` y `docs/Test/TEST-EXECUTION-REPORT.md`.
 

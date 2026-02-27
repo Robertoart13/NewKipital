@@ -11,6 +11,20 @@ import { COOKIE_NAME } from '../../config/cookie.config';
 
 const USER_ROOM_PREFIX = 'user:';
 
+function getAllowedSocketOrigins(): string[] {
+  const raw = process.env.SOCKET_ALLOWED_ORIGINS?.trim();
+  if (raw) {
+    return raw
+      .split(',')
+      .map((item) => item.trim())
+      .filter(Boolean);
+  }
+  const isDev = process.env.NODE_ENV === 'development';
+  return isDev
+    ? ['http://localhost:5173', 'http://localhost:5174']
+    : ['https://kpital360.com', 'https://timewise.kpital360.com'];
+}
+
 function parseCookie(
   header: string | string[] | undefined,
 ): Record<string, string> {
@@ -28,8 +42,11 @@ function parseCookie(
 
 @WebSocketGateway({
   path: '/socket.io',
-  cors: { origin: true, credentials: true },
   transports: ['websocket', 'polling'],
+  cors: {
+    origin: getAllowedSocketOrigins(),
+    credentials: true,
+  },
 })
 export class NotificationsGateway
   implements OnGatewayConnection, OnGatewayDisconnect

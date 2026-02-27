@@ -267,7 +267,7 @@ export function DepartmentsManagementPage() {
 
   useEffect(() => {
     if (!openModal || !editingId) return;
-    applyDepartmentToForm(editing);
+    if (editing) applyDepartmentToForm(editing);
     void loadDepartmentDetail(editingId);
   }, [openModal, editingId, loadDepartmentDetail, applyDepartmentToForm]);
 

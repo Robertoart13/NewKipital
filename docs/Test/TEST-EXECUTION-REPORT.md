@@ -4,10 +4,33 @@ Documento de control por fases de ejecucion de pruebas.
 
 ## Resumen vigente
 - Estado actual: Completo
-- Total: 518/518 pasando
-- Backend: 187/187
-- Frontend: 331/331
+- Total: 467/467 pasando
+- Backend: 217/217
+- Frontend: 250/250
 - Fallos abiertos: 0
+- Corte de auditoria final (Rev.3): 2026-02-27
+- Nota: los conteos de fases anteriores son historicos de su fecha y no sustituyen el corte vigente.
+
+## Fase 16 - 2026-02-27 12:00 (corte de auditoria Rev.3)
+Alcance: cierre de bloqueantes de seguridad/calidad y revalidacion completa
+
+Comandos ejecutados:
+- `cd api && npm.cmd run build`
+- `cd api && npm.cmd test -- --runInBand --watch=false`
+- `cd frontend && npm.cmd test`
+
+Resultados:
+- Backend: 217/217
+- Frontend: 250/250
+- Total: 467/467
+- Fallos: 0
+
+Cambios validados en esta fase:
+- hardening CSRF solo para test.
+- CORS WebSocket restringido por origen permitido.
+- `.env.example` saneado con placeholders.
+- cierre `PEND-001` en inactivacion de empresa.
+- ajustes de validadores frontend y parseo monetario.
 
 ## Fase 1 - 2026-02-24 09:42
 Alcance: Suite completa inicial

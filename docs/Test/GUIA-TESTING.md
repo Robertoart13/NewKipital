@@ -1,20 +1,27 @@
 ﻿# Guia de Testing - KPITAL 360
 
-Fecha: 2026-02-25  
-Version: 9.0  
+Fecha: 2026-02-27  
+Version: 10.0  
 Estado: Vigente
 
 ## 1. Estado vigente
-- Total de pruebas ejecutadas: 518
-- Pasando: 518
+- Total de pruebas ejecutadas: 467
+- Pasando: 467
 - Fallando: 0
 - Exito global: 100%
 
 Desglose vigente:
-- Backend (Jest): 187/187
-- Frontend (Vitest): 331/331
+- Backend (Jest): 217/217
+- Frontend (Vitest): 250/250
+
+Nota de auditoria Rev.3:
+- Todos los bloqueantes de codigo quedaron cerrados.
+- Queda condicion operacional externa al repositorio: rotacion de secretos en infraestructura antes de go-live.
 
 ## 2. Historial por fases
+Nota: las fases listadas abajo son historicas y mantienen el conteo de su momento.
+El corte oficial vigente es el de la seccion 1.
+
 ### Fase 1 - Baseline inicial
 - Resultado: 197/230
 - Fallos: 33

@@ -82,6 +82,12 @@ interface PaneOption {
   count: number;
 }
 
+function toNumericId(value: unknown): number | undefined {
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed) || parsed <= 0) return undefined;
+  return parsed;
+}
+
 const paneConfig: PaneConfig[] = [
   { key: 'empresa', title: 'Empresa' },
   { key: 'nombre', title: 'Nombre Proyecto' },
@@ -122,8 +128,11 @@ export function ProjectsManagementPage() {
   const canViewAudit = useAppSelector(canViewProjectAudit);
   const activeCompany = useAppSelector((s) => s.activeCompany.company);
   const companies = useAppSelector((s) => s.auth.companies);
-  const activeCompanyIds = useMemo(() => new Set(companies.map((c) => c.id)), [companies]);
-  const defaultCompanyId = activeCompany?.id ?? companies[0]?.id;
+  const activeCompanyIds = useMemo(
+    () => new Set(companies.map((c) => toNumericId(c.id)).filter((id): id is number => id != null)),
+    [companies],
+  );
+  const defaultCompanyId = toNumericId(activeCompany?.id) ?? toNumericId(companies[0]?.id);
 
   const [rows, setRows] = useState<ProjectListItem[]>([]);
   const [loading, setLoading] = useState(false);
@@ -315,7 +324,7 @@ export function ProjectsManagementPage() {
 
   useEffect(() => {
     if (!openModal || !editingId) return;
-    applyProjectToForm(editing);
+    if (editing) applyProjectToForm(editing);
     void loadProjectDetail(editingId);
   }, [openModal, editingId, loadProjectDetail, applyProjectToForm]);
 
@@ -390,6 +399,10 @@ export function ProjectsManagementPage() {
         await updateProject(editing.id, updatePayload);
         message.success('Proyecto actualizado correctamente');
       } else {
+        if (!selectedEmpresa) {
+          message.error('Debe seleccionar una empresa activa para gestionar proyectos.');
+          return;
+        }
         await createProject({ ...payload, idEmpresa: selectedEmpresa });
         message.success('Proyecto creado correctamente');
         setListCompanyId(selectedEmpresa);
@@ -834,7 +847,7 @@ export function ProjectsManagementPage() {
                               <Form.Item name="idEmpresa" label="Cambiar a empresa activa">
                                 <Select
                                   placeholder="Seleccionar empresa activa"
-                                  options={companies.map((c) => ({ value: c.id, label: c.nombre }))}
+                                  options={companies.map((c) => ({ value: Number(c.id), label: c.nombre }))}
                                   showSearch
                                   optionFilterProp="label"
                                   filterOption={(input, option) =>
@@ -856,7 +869,7 @@ export function ProjectsManagementPage() {
                           <Form.Item name="idEmpresa" label="Empresa *" rules={[{ required: true }]}>
                             <Select
                               placeholder="Seleccionar empresa"
-                              options={companies.map((c) => ({ value: c.id, label: c.nombre }))}
+                              options={companies.map((c) => ({ value: Number(c.id), label: c.nombre }))}
                               showSearch
                               optionFilterProp="label"
                               filterOption={(input, option) =>

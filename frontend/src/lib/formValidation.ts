@@ -1,7 +1,7 @@
 ﻿import validator from 'validator';
 
 const SQL_DANGER_PATTERN =
-  /('|"|;|\-\-|\/\*|\*\/|\x00|\\x00|\\b|union|select|insert|update|delete|drop|exec|execute|<script)/i;
+  /('|"|`|;|\-\-|\/\*|\*\/|\x00|\\x00|\\b|union|select|insert|update|delete|drop|exec|execute|truncate|alter|create|<script)/i;
 
 export function hasSqlInjectionAttempt(value: unknown): boolean {
   if (value == null || typeof value !== 'string') return false;
