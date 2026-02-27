@@ -36,6 +36,8 @@ import {
 import { AuthAuditService } from './auth-audit.service';
 import { AuthRateLimitService } from './auth-rate-limit.service';
 import { DomainEventsService } from '../integration/domain-events.service';
+import { AuthzRealtimeService } from '../authz/authz-realtime.service';
+import { AuthzVersionService } from '../authz/authz-version.service';
 
 class LoginDto {
   @IsEmail()
@@ -92,6 +94,8 @@ export class AuthController {
     private readonly audit: AuthAuditService,
     private readonly rateLimit: AuthRateLimitService,
     private readonly domainEvents: DomainEventsService,
+    private readonly authzRealtime: AuthzRealtimeService,
+    private readonly authzVersionService: AuthzVersionService,
   ) {}
 
   @Public()
@@ -383,6 +387,7 @@ export class AuthController {
     @CurrentUser() reqUser: { userId: number; email: string },
     @Query('companyId') companyIdRaw?: string,
     @Query('appCode') appCode?: string,
+    @Query('refreshAuthz') refreshAuthzRaw?: string,
   ) {
     const user = await this.usersService.findByEmail(reqUser.email);
     if (!user) {
@@ -390,11 +395,13 @@ export class AuthController {
     }
 
     const companyId = companyIdRaw ? parseInt(companyIdRaw, 10) : undefined;
+    const bypassCache = this.toBoolean(refreshAuthzRaw);
 
     const session = await this.authService.buildSession(
       user,
       companyId,
       appCode,
+      { bypassCache },
     );
 
     return {
@@ -424,11 +431,14 @@ export class AuthController {
     @CurrentUser() reqUser: { userId: number; email: string },
     @Body('companyId', ParseIntPipe) companyId: number,
     @Body('appCode') appCode: string,
+    @Body('refreshAuthz') refreshAuthzRaw?: string | number | boolean,
   ) {
+    const bypassCache = this.toBoolean(refreshAuthzRaw);
     const resolved = await this.authService.resolvePermissions(
       reqUser.userId,
       companyId,
       appCode || 'kpital',
+      { bypassCache },
     );
 
     await this.audit.record({
@@ -436,7 +446,7 @@ export class AuthController {
       outcome: 'success',
       userId: reqUser.userId,
       email: reqUser.email,
-      metadata: { companyId, appCode: appCode || 'kpital' },
+      metadata: { companyId, appCode: appCode || 'kpital', bypassCache },
     });
 
     return {
@@ -445,6 +455,43 @@ export class AuthController {
       permissions: resolved.permissions,
       roles: resolved.roles,
     };
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Get('permissions-stream')
+  permissionsStream(
+    @CurrentUser() reqUser: { userId: number },
+    @Req() req: Request,
+    @Res() res: Response,
+  ): void {
+    res.setHeader('Content-Type', 'text/event-stream; charset=utf-8');
+    res.setHeader('Cache-Control', 'no-cache, no-transform');
+    res.setHeader('Connection', 'keep-alive');
+    res.setHeader('X-Accel-Buffering', 'no');
+    res.flushHeaders?.();
+
+    const close = this.authzRealtime.register(reqUser.userId, res);
+    req.on('close', () => {
+      close();
+    });
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Get('authz-token')
+  async getAuthzToken(@CurrentUser() reqUser: { userId: number }) {
+    const token = await this.authzVersionService.getToken(reqUser.userId);
+    return {
+      token,
+      serverTime: new Date().toISOString(),
+    };
+  }
+
+  private toBoolean(value: string | number | boolean | undefined): boolean {
+    if (value === true || value === 1) return true;
+    if (typeof value === 'string') {
+      return ['1', 'true', 'yes', 'y', 'on'].includes(value.trim().toLowerCase());
+    }
+    return false;
   }
 
   private setSessionCookies(res: Response, accessToken: string, refreshToken: string, csrfToken: string): void {

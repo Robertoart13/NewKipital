@@ -234,7 +234,12 @@ export class AuthService {
     }
   }
 
-  async buildSession(user: User, companyId?: number, appCode?: string): Promise<SessionData> {
+  async buildSession(
+    user: User,
+    companyId?: number,
+    appCode?: string,
+    options?: { bypassCache?: boolean },
+  ): Promise<SessionData> {
     const enabledApps = await this.getEnabledApps(user.id);
     const companies = await this.getUserCompanies(user.id);
 
@@ -242,11 +247,11 @@ export class AuthService {
     let roles: string[] = [];
 
     if (companyId && appCode) {
-      const resolved = await this.resolvePermissions(user.id, companyId, appCode);
+      const resolved = await this.resolvePermissions(user.id, companyId, appCode, options);
       permissions = resolved.permissions;
       roles = resolved.roles;
     } else if (appCode) {
-      const resolved = await this.resolvePermissionsAcrossCompanies(user.id, appCode);
+      const resolved = await this.resolvePermissionsAcrossCompanies(user.id, appCode, options);
       permissions = resolved.permissions;
       roles = resolved.roles;
     }

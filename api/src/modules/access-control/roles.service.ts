@@ -5,11 +5,14 @@ import { Role } from './entities/role.entity';
 import { App } from './entities/app.entity';
 import { Permission } from './entities/permission.entity';
 import { RolePermission } from './entities/role-permission.entity';
+import { UserRole } from './entities/user-role.entity';
+import { UserRoleGlobal } from './entities/user-role-global.entity';
 import { CreateRoleDto } from './dto/create-role.dto';
 import { AssignRolePermissionDto } from './dto/assign-role-permission.dto';
 import { UpdateRoleDto } from './dto/update-role.dto';
 import { AuditOutboxService } from '../integration/audit-outbox.service';
 import { AuthzVersionService } from '../authz/authz-version.service';
+import { AuthzRealtimeService } from '../authz/authz-realtime.service';
 
 @Injectable()
 export class RolesService {
@@ -22,21 +25,26 @@ export class RolesService {
     private readonly permissionRepo: Repository<Permission>,
     @InjectRepository(RolePermission)
     private readonly rpRepo: Repository<RolePermission>,
+    @InjectRepository(UserRole)
+    private readonly userRoleRepo: Repository<UserRole>,
+    @InjectRepository(UserRoleGlobal)
+    private readonly userRoleGlobalRepo: Repository<UserRoleGlobal>,
     private readonly auditOutbox: AuditOutboxService,
     private readonly authzVersionService: AuthzVersionService,
+    private readonly authzRealtime: AuthzRealtimeService,
   ) {}
 
   async create(dto: CreateRoleDto, userId: number): Promise<Role> {
     const existing = await this.roleRepo.findOne({ where: { codigo: dto.codigo } });
     if (existing) {
-      throw new ConflictException('Ya existe un rol con ese código');
+      throw new ConflictException('Ya existe un rol con ese codigo');
     }
 
     const app = await this.appRepo.findOne({
       where: { codigo: dto.appCode.trim().toLowerCase(), estado: 1 },
     });
     if (!app) {
-      throw new BadRequestException(`Aplicación '${dto.appCode}' no encontrada`);
+      throw new BadRequestException(`Aplicacion '${dto.appCode}' no encontrada`);
     }
 
     const role = this.roleRepo.create({
@@ -49,7 +57,6 @@ export class RolesService {
       modificadoPor: userId,
     });
     const saved = await this.roleRepo.save(role);
-    await this.authzVersionService.bumpGlobal();
     this.auditOutbox.publish({
       modulo: 'roles',
       accion: 'create',
@@ -107,7 +114,6 @@ export class RolesService {
     role.modificadoPor = userId;
 
     const saved = await this.roleRepo.save(role);
-    await this.authzVersionService.bumpGlobal();
     this.auditOutbox.publish({
       modulo: 'roles',
       accion: 'update',
@@ -132,7 +138,7 @@ export class RolesService {
     role.estado = 0;
     role.modificadoPor = userId;
     const saved = await this.roleRepo.save(role);
-    await this.authzVersionService.bumpGlobal();
+    await this.notifyRolePermissionsChanged(saved.id, 'role.inactivate');
     this.auditOutbox.publish({
       modulo: 'roles',
       accion: 'inactivate',
@@ -150,7 +156,7 @@ export class RolesService {
     role.estado = 1;
     role.modificadoPor = userId;
     const saved = await this.roleRepo.save(role);
-    await this.authzVersionService.bumpGlobal();
+    await this.notifyRolePermissionsChanged(saved.id, 'role.reactivate');
     this.auditOutbox.publish({
       modulo: 'roles',
       accion: 'reactivate',
@@ -179,17 +185,17 @@ export class RolesService {
 
     const rp = this.rpRepo.create(dto);
     const saved = await this.rpRepo.save(rp);
-    await this.authzVersionService.bumpGlobal();
+    await this.notifyRolePermissionsChanged(dto.idRol, 'role.permission.assign');
     return saved;
   }
 
   async removePermission(idRol: number, idPermiso: number): Promise<void> {
     const rp = await this.rpRepo.findOne({ where: { idRol, idPermiso } });
     if (!rp) {
-      throw new NotFoundException('Asignación rol-permiso no encontrada');
+      throw new NotFoundException('Asignacion rol-permiso no encontrada');
     }
     await this.rpRepo.remove(rp);
-    await this.authzVersionService.bumpGlobal();
+    await this.notifyRolePermissionsChanged(idRol, 'role.permission.remove');
   }
 
   async getPermissions(idRol: number): Promise<Permission[]> {
@@ -238,7 +244,6 @@ export class RolesService {
     }
 
     const result = await this.getPermissions(idRol);
-    await this.authzVersionService.bumpGlobal();
     this.auditOutbox.publish({
       modulo: 'roles',
       accion: 'replace_permissions',
@@ -251,6 +256,51 @@ export class RolesService {
         codigos: result.map((p) => p.codigo),
       },
     });
+    await this.notifyRolePermissionsChanged(idRol, 'role.permission.replace');
     return result;
   }
+
+  private async notifyRolePermissionsChanged(roleId: number, reason: string): Promise<void> {
+    const affectedUserIds = await this.getAffectedUserIdsByRole(roleId);
+    if (affectedUserIds.length === 0) return;
+
+    await this.authzVersionService.bumpUsers(affectedUserIds);
+    this.authzRealtime.notifyUsers(affectedUserIds, {
+      type: 'permissions.changed',
+      reason,
+      roleId,
+      at: new Date().toISOString(),
+    });
+  }
+
+  private async getAffectedUserIdsByRole(roleId: number): Promise<number[]> {
+    const affected = new Set<number>();
+
+    const directAssignments = await this.userRoleRepo.find({
+      where: { idRol: roleId, estado: 1 },
+      select: ['idUsuario'],
+    });
+    directAssignments.forEach((row) => {
+      if (Number.isInteger(row.idUsuario) && row.idUsuario > 0) {
+        affected.add(row.idUsuario);
+      }
+    });
+
+    try {
+      const globalAssignments = await this.userRoleGlobalRepo.find({
+        where: { idRol: roleId, estado: 1 },
+        select: ['idUsuario'],
+      });
+      globalAssignments.forEach((row) => {
+        if (Number.isInteger(row.idUsuario) && row.idUsuario > 0) {
+          affected.add(row.idUsuario);
+        }
+      });
+    } catch {
+      // Compatibilidad con instalaciones sin tablas globales.
+    }
+
+    return [...affected];
+  }
 }
+

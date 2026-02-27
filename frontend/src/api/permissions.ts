@@ -18,10 +18,15 @@ export interface SystemPermission {
 export async function fetchPermissionsForCompany(
   companyId: string,
   appCode = 'kpital',
+  refreshAuthz = false,
 ): Promise<{ permissions: Permission[]; roles: string[] }> {
   const res = await httpFetch('/auth/switch-company', {
     method: 'POST',
-    body: JSON.stringify({ companyId: parseInt(companyId, 10), appCode }),
+    body: JSON.stringify({
+      companyId: parseInt(companyId, 10),
+      appCode,
+      refreshAuthz: refreshAuthz ? true : undefined,
+    }),
   });
 
   if (!res.ok) {
@@ -38,8 +43,12 @@ export async function fetchPermissionsForCompany(
  */
 export async function fetchPermissionsForApp(
   appCode = 'kpital',
+  refreshAuthz = false,
 ): Promise<{ permissions: Permission[]; roles: string[] }> {
   const qs = new URLSearchParams({ appCode });
+  if (refreshAuthz) {
+    qs.set('refreshAuthz', 'true');
+  }
   const res = await httpFetch(`/auth/me?${qs.toString()}`);
   if (!res.ok) {
     throw new Error('Error al cargar permisos de la aplicacion');

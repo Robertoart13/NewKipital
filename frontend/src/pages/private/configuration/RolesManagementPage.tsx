@@ -391,7 +391,7 @@ export function RolesManagementPage() {
                       : 'KPITAL 360: ERP de planillas y RRHH. Los permisos aplican solo en KPITAL.'
                   }
                   trigger={['hover']}
-                  overlayInnerStyle={{ whiteSpace: 'nowrap' }}
+                  styles={{ container: { whiteSpace: 'nowrap' } }}
                 >
                   <span>
                     <InfoCircleOutlined style={{ fontSize: 12, cursor: 'help' }} />

@@ -356,6 +356,41 @@ Permisos por modulo:
 
 Detalle completo en [08-EstructuraMenus.md](./08-EstructuraMenus.md).
 
+### 4.x Sincronizacion de permisos en tiempo real (Enterprise)
+- Objetivo: reflejar cambios de roles/permisos sin refrescar pantalla y sin afectar usuarios no involucrados.
+- Backend:
+  - Cache de permisos con llave versionada por usuario/contexto:
+    - `perm:{userId}:{companyId}:{appCode}:{versionToken}`
+  - `versionToken` proviene de `sys_authz_version` (global + usuario).
+  - Cambios de permisos en roles:
+    - Se detectan usuarios afectados por `id_rol` en `sys_usuario_rol` y `sys_usuario_rol_global`.
+    - Se ejecuta `bumpUsers([...afectados])` (no `bumpGlobal`) para invalidacion dirigida.
+    - Se emite evento SSE `permissions.changed` solo a usuarios afectados.
+  - Cambios de asignaciones/permisos por usuario:
+    - `UserAssignmentService` tambien emite `permissions.changed` al usuario afectado.
+  - Endpoints de soporte:
+    - `GET /api/auth/permissions-stream` (SSE por usuario autenticado).
+    - `GET /api/auth/authz-token` (token liviano de version de autorizacion).
+    - `GET /api/auth/me` y `POST /api/auth/switch-company` aceptan `refreshAuthz=true` para bypass de cache.
+- Frontend:
+  - Hook realtime abre SSE contra backend usando URL absoluta:
+    - `new EventSource(\`${API_URL}/auth/permissions-stream\`, { withCredentials: true })`
+  - `API_URL` viene de `frontend/src/config/api.ts` (`VITE_API_URL` o `http://localhost:3000/api`).
+  - Al recibir `permissions.changed`:
+    - Refresca permisos con bypass de cache (`refreshAuthz=true`) en `/auth/switch-company` o `/auth/me`.
+    - Actualiza Redux `permissions`.
+    - Menu y guards se actualizan en vivo.
+  - Respaldo enterprise anti-latencia:
+    - Polling liviano de `GET /auth/authz-token` cada ~2.5 segundos.
+    - Si cambia el token de version, se fuerza refresh de permisos inmediatamente.
+- Fallback UX:
+  - Refresco al volver foco/visibilidad para pestañas inactivas.
+- Nota de troubleshooting:
+  - Si en consola aparece `GET http://localhost:5173/api/auth/permissions-stream 404`, el SSE esta pegando al host de Vite.
+  - Solucion aplicada: usar `API_URL` absoluta al backend (no ruta relativa `/api/...`).
+- Resultado:
+  - Si un usuario pierde `payroll-article:view` estando en `/payroll-params/articulos`, el `PermissionGuard` cambia a 403 automaticamente sin recargar.
+
 ---
 
 ## Directivas Completadas (CronolÃ³gico)

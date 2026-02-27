@@ -159,6 +159,21 @@ Reglas de backend:
 - Validar cuenta contable por empresa + `id_tipo_erp` permitido para el tipo seleccionado.
 - No permitir cuenta pasivo si el tipo no la permite.
 
+### 7.1. Actualizacion de permisos sin refresh (tiempo real)
+- Seguridad y UX enterprise para rutas protegidas de Articulos de Nomina:
+  - Backend emite SSE `permissions.changed` a usuarios afectados cuando cambian roles/permisos.
+  - Frontend se conecta a `GET /api/auth/permissions-stream` usando `API_URL` absoluta del backend.
+  - Frontend refresca permisos con `refreshAuthz=true` y actualiza Redux sin recargar pagina.
+  - Frontend incluye respaldo con polling de `GET /auth/authz-token` (aprox. 2.5s) para detectar cambios aun si SSE se corta.
+  - `PermissionGuard` reevalua en vivo.
+- Caso esperado:
+  - Si un usuario pierde `payroll-article:view` mientras esta en `/payroll-params/articulos`, la vista cambia automaticamente a:
+    - `Acceso denegado`
+    - `No tiene el permiso requerido para: payroll-article:view`
+- Troubleshooting conocido:
+  - Error `GET http://localhost:5173/api/auth/permissions-stream 404` indica que SSE se esta llamando con ruta relativa.
+  - Debe usarse `new EventSource(\`${API_URL}/auth/permissions-stream\`, { withCredentials: true })`.
+
 ---
 
 ## 8. Base de Datos

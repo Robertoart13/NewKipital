@@ -7,8 +7,11 @@ import { Role } from './entities/role.entity';
 import { App } from './entities/app.entity';
 import { Permission } from './entities/permission.entity';
 import { RolePermission } from './entities/role-permission.entity';
+import { UserRole } from './entities/user-role.entity';
+import { UserRoleGlobal } from './entities/user-role-global.entity';
 import { AuditOutboxService } from '../integration/audit-outbox.service';
 import { AuthzVersionService } from '../authz/authz-version.service';
+import { AuthzRealtimeService } from '../authz/authz-realtime.service';
 
 describe('RolesService', () => {
   let service: RolesService;
@@ -16,6 +19,10 @@ describe('RolesService', () => {
   let appRepo: jest.Mocked<Repository<App>>;
   let permissionRepo: jest.Mocked<Repository<Permission>>;
   let rpRepo: jest.Mocked<Repository<RolePermission>>;
+  let userRoleRepo: jest.Mocked<Repository<UserRole>>;
+  let userRoleGlobalRepo: jest.Mocked<Repository<UserRoleGlobal>>;
+  let authzVersionService: { bumpUsers: jest.Mock };
+  let authzRealtimeService: { notifyUsers: jest.Mock };
 
   beforeEach(async () => {
     const qb = {
@@ -49,6 +56,10 @@ describe('RolesService', () => {
       remove: jest.fn(),
       find: jest.fn(),
     };
+    const userRoleRepoMock = { find: jest.fn().mockResolvedValue([]) };
+    const userRoleGlobalRepoMock = { find: jest.fn().mockResolvedValue([]) };
+    authzVersionService = { bumpUsers: jest.fn() };
+    authzRealtimeService = { notifyUsers: jest.fn() };
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -57,8 +68,11 @@ describe('RolesService', () => {
         { provide: getRepositoryToken(App), useValue: appRepoMock },
         { provide: getRepositoryToken(Permission), useValue: permissionRepoMock },
         { provide: getRepositoryToken(RolePermission), useValue: rpRepoMock },
+        { provide: getRepositoryToken(UserRole), useValue: userRoleRepoMock },
+        { provide: getRepositoryToken(UserRoleGlobal), useValue: userRoleGlobalRepoMock },
         { provide: AuditOutboxService, useValue: { publish: jest.fn() } },
-        { provide: AuthzVersionService, useValue: { bumpGlobal: jest.fn() } },
+        { provide: AuthzVersionService, useValue: authzVersionService },
+        { provide: AuthzRealtimeService, useValue: authzRealtimeService },
       ],
     }).compile();
 
@@ -67,6 +81,8 @@ describe('RolesService', () => {
     appRepo = module.get(getRepositoryToken(App));
     permissionRepo = module.get(getRepositoryToken(Permission));
     rpRepo = module.get(getRepositoryToken(RolePermission));
+    userRoleRepo = module.get(getRepositoryToken(UserRole));
+    userRoleGlobalRepo = module.get(getRepositoryToken(UserRoleGlobal));
   });
 
   it('creates role when app exists and codigo unique', async () => {
@@ -106,5 +122,22 @@ describe('RolesService', () => {
   it('removePermission rejects missing relation', async () => {
     rpRepo.findOne.mockResolvedValue(null);
     await expect(service.removePermission(1, 10)).rejects.toThrow(NotFoundException);
+  });
+
+  it('replacePermissionsByCodes invalidates and notifies only affected users', async () => {
+    roleRepo.findOne.mockResolvedValue({ id: 7, nombre: 'Role', codigo: 'ROLE' } as any);
+    permissionRepo.find.mockResolvedValue([{ id: 2, codigo: 'employee:view', estado: 1 } as any]);
+    rpRepo.find.mockResolvedValue([] as any);
+    rpRepo.save.mockResolvedValue([] as any);
+    userRoleRepo.find.mockResolvedValue([{ idUsuario: 10 } as any, { idUsuario: 11 } as any]);
+    userRoleGlobalRepo.find.mockResolvedValue([{ idUsuario: 11 } as any, { idUsuario: 12 } as any]);
+
+    await service.replacePermissionsByCodes(7, ['employee:view'], 99);
+
+    expect(authzVersionService.bumpUsers).toHaveBeenCalledWith([10, 11, 12]);
+    expect(authzRealtimeService.notifyUsers).toHaveBeenCalledWith(
+      [10, 11, 12],
+      expect.objectContaining({ type: 'permissions.changed', roleId: 7 }),
+    );
   });
 });
