@@ -231,3 +231,8 @@ Reglas adicionales documentadas:
 - Filtro de fechas de listado por traslape de periodo (no solo por inicio o fin exacto).
 - Bitacora de planilla con diffs de negocio (`payload_before/payload_after`) en `sys_auditoria_acciones`.
 - `id_tipo_planilla` debe persistirse; frontend envia `idTipoPlanilla` y backend resuelve fallback por `tipoPlanilla`.
+- `verify` responde `400` si la planilla no tiene snapshot de inputs/resultados (regla de negocio, no error tecnico).
+
+Frontend (rutas operativas de planilla):
+- `/payroll-params/calendario/dias-pago` (listado y operacion de planillas)
+- `/payroll-params/calendario/ver` (calendario operativo mensual/timeline)

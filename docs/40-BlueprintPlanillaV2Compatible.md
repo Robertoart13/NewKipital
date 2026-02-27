@@ -286,3 +286,17 @@ Regla de persistencia:
 - `id_tipo_planilla` no debe quedar `NULL` cuando existe tipo de planilla seleccionado.
 - Frontend envia `idTipoPlanilla`.
 - Backend resuelve fallback por `tipoPlanilla` cuando el id no llegue.
+
+### 11.5 Calendario de planilla (estado implementado)
+
+- Ruta activa: `/payroll-params/calendario/ver` con permiso `payroll:calendar:view`.
+- Ruta activa de listado/operacion: `/payroll-params/calendario/dias-pago` con permiso `payroll:view`.
+- `Listado de Feriados` y opciones de `Gestion Planilla` quedan fuera de alcance actual (ocultas).
+- Calendario incluye:
+  - vista `Mensual` y `Timeline`,
+  - filtros por empresa/moneda/tipo/estado/periodo,
+  - indicadores de riesgo operativos,
+  - panel de detalle con acciones por RBAC.
+- Regla de seguridad UX:
+  - confirmacion antes de `Procesar`, `Verificar` y `Aplicar`.
+  - `Verificar` se bloquea si no hay snapshot de inputs.

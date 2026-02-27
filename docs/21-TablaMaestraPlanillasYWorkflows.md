@@ -321,3 +321,16 @@ Default UI:
 - El modal de edicion debe abrir inmediatamente.
 - Mientras llega detalle remoto debe mostrar preload.
 - La cabecera de nombre generado no debe vaciarse en edicion.
+
+### Calendario operativo de planilla (regla UX)
+
+- Vista mensual y vista timeline para lectura operativa.
+- Filtros obligatorios: empresa, moneda, tipo de planilla, estado, periodo de pago.
+- En vista mensual:
+  - mostrar inicio de periodo y fecha de pago (no repetir la planilla en todos los dias del rango).
+  - si no hay datos, mantener calendario visible y mostrar aviso informativo.
+- Panel lateral de detalle con:
+  - datos funcionales en espanol (sin terminos tecnicos internos).
+  - acciones `Procesar`, `Verificar`, `Aplicar` segun estado y permisos.
+  - confirmacion obligatoria antes de ejecutar cada accion.
+  - `Verificar` bloqueado si no existen movimientos procesados (snapshot inputs = 0).

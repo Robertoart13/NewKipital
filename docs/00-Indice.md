@@ -2,7 +2,7 @@
 
 **Proyecto:** KPITAL 360 — ERP Multiempresa  
 **Autor:** Roberto — Arquitecto Funcional / Senior Engineer  
-**Última actualización:** 2026-02-27 (Blueprint Planilla v2 + bitácora funcional de planilla + filtros de rango)
+**Última actualización:** 2026-02-27 (Planilla v2: calendario operativo, reglas UX de acciones, menú alineado al alcance)
 
 ---
 

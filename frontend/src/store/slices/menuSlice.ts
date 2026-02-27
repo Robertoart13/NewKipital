@@ -105,12 +105,6 @@ const initialMenuConfig: MenuItem[] = [
             requiredPermission: 'payroll:calendar:view',
           },
           {
-            id: 'listado-feriados',
-            label: 'Listado de Feriados',
-            path: '/payroll-params/calendario/feriados',
-            requiredPermission: 'payroll:calendar:view',
-          },
-          {
             id: 'dias-pago-planilla',
             label: 'Listado de Días de Pago de Planilla',
             path: '/payroll-params/calendario/dias-pago',
