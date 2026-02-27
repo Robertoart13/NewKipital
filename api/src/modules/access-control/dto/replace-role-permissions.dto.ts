@@ -5,6 +5,6 @@ export class ReplaceRolePermissionsDto {
   @ArrayUnique()
   @ArrayMaxSize(500)
   @IsString({ each: true })
-  @Matches(/^[a-z0-9-]+(:[a-z0-9-]+)+$/, { each: true })
+  @Matches(/^[a-z0-9-_]+(:[a-z0-9-_]+)+$/, { each: true })
   permissions: string[];
 }

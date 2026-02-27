@@ -3,6 +3,7 @@ import { BadRequestException, ValidationError, ValidationPipe } from '@nestjs/co
 import { ConfigService } from '@nestjs/config';
 import cookieParser from 'cookie-parser';
 import { AppModule } from './app.module';
+import { GlobalExceptionFilter } from './common/filters/global-exception.filter';
 
 function flattenValidationErrors(errors: ValidationError[]): string[] {
   const result: string[] = [];
@@ -66,6 +67,7 @@ async function bootstrap() {
       }),
     }),
   );
+  app.useGlobalFilters(new GlobalExceptionFilter());
 
   const port = configService.get<number>('PORT', 3000);
 

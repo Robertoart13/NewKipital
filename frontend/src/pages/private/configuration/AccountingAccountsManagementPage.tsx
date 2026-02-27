@@ -139,6 +139,10 @@ function getAccountTypeSortValue(type: AccountingAccountType): number {
   return type.id;
 }
 
+function selectFilterByLabel(input: string, option?: { label?: string | number | null }) {
+  return String(option?.label ?? '').toLowerCase().includes(input.toLowerCase());
+}
+
 function getPaneValue(
   row: AccountingAccountListItem,
   key: PaneKey,
@@ -1074,6 +1078,9 @@ export function AccountingAccountsManagementPage() {
                           <Col span={12}>
                             <Form.Item name="idEmpresaCambio" label="Cambiar a empresa activa">
                               <Select
+                                showSearch
+                                optionFilterProp="label"
+                                filterOption={selectFilterByLabel}
                                 placeholder="Seleccionar"
                                 options={companies.map((c) => ({ value: c.id, label: c.nombre }))}
                               />
@@ -1090,6 +1097,9 @@ export function AccountingAccountsManagementPage() {
                         <Col span={12}>
                           <Form.Item name="idEmpresa" label="Empresa *" rules={[{ required: true }]}>
                             <Select
+                              showSearch
+                              optionFilterProp="label"
+                              filterOption={selectFilterByLabel}
                               disabled={!!editing}
                               placeholder="Seleccionar"
                               options={companies.map((c) => ({ value: c.id, label: c.nombre }))}
@@ -1131,6 +1141,9 @@ export function AccountingAccountsManagementPage() {
                             </Form.Item>
                             <Form.Item name="idTipoErpCambio" label="Cambiar a tipo activo">
                               <Select
+                                showSearch
+                                optionFilterProp="label"
+                                filterOption={selectFilterByLabel}
                                 placeholder="Seleccionar"
                                 options={activeAccountTypesSorted.map((t) => ({ value: getAccountTypeSelectValue(t), label: formatAccountTypeLabel(t) }))}
                               />
@@ -1139,6 +1152,9 @@ export function AccountingAccountsManagementPage() {
                         ) : (
                           <Form.Item name="idTipoErp" label="Tipo de Cuenta *" rules={[{ required: true }]}>
                             <Select
+                              showSearch
+                              optionFilterProp="label"
+                              filterOption={selectFilterByLabel}
                               placeholder="Seleccionar"
                               options={activeAccountTypesSorted.map((t) => ({ value: getAccountTypeSelectValue(t), label: formatAccountTypeLabel(t) }))}
                             />
@@ -1159,6 +1175,9 @@ export function AccountingAccountsManagementPage() {
                             </Form.Item>
                             <Form.Item name="idTipoAccionPersonalCambio" label="Cambiar a tipo activo">
                               <Select
+                                showSearch
+                                optionFilterProp="label"
+                                filterOption={selectFilterByLabel}
                                 placeholder="Seleccionar"
                                 options={activeActionTypes.map((t) => ({ value: t.id, label: t.nombre }))}
                               />
@@ -1167,6 +1186,9 @@ export function AccountingAccountsManagementPage() {
                         ) : (
                           <Form.Item name="idTipoAccionPersonal" label="Tipo Accion Personal *" rules={[{ required: true }]}>
                             <Select
+                              showSearch
+                              optionFilterProp="label"
+                              filterOption={selectFilterByLabel}
                               placeholder="Seleccionar"
                               options={activeActionTypes.map((t) => ({ value: t.id, label: t.nombre }))}
                             />

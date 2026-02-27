@@ -13,13 +13,13 @@ export class ReplaceUserPermissionOverridesDto {
   @IsArray()
   @ArrayUnique()
   @IsString({ each: true })
-  @Matches(/^[a-z0-9-]+(:[a-z0-9-]+)+$/, { each: true })
+  @Matches(/^[a-z0-9-_]+(:[a-z0-9-_]+)+$/, { each: true })
   allow?: string[];
 
   @IsOptional()
   @IsArray()
   @ArrayUnique()
   @IsString({ each: true })
-  @Matches(/^[a-z0-9-]+(:[a-z0-9-]+)+$/, { each: true })
+  @Matches(/^[a-z0-9-_]+(:[a-z0-9-_]+)+$/, { each: true })
   deny?: string[];
 }

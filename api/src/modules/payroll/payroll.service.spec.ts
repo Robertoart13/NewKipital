@@ -1,18 +1,25 @@
 ﻿import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { BadRequestException, ConflictException, ForbiddenException } from '@nestjs/common';
-import { Repository } from 'typeorm';
+import { DataSource, Repository } from 'typeorm';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { PayrollService } from './payroll.service';
 import { PayrollCalendar, EstadoCalendarioNomina } from './entities/payroll-calendar.entity';
 import { UserCompany } from '../access-control/entities/user-company.entity';
 import { DomainEventsService } from '../integration/domain-events.service';
 import { EmployeeVacationService } from '../employees/services/employee-vacation.service';
+import { PayrollEmployeeSnapshot } from './entities/payroll-employee-snapshot.entity';
+import { PayrollInputSnapshot } from './entities/payroll-input-snapshot.entity';
+import { PayrollResult } from './entities/payroll-result.entity';
+import { PersonalAction } from '../personal-actions/entities/personal-action.entity';
 
 describe('PayrollService', () => {
   let service: PayrollService;
   let repo: jest.Mocked<Repository<PayrollCalendar>>;
   let userCompanyRepo: jest.Mocked<Repository<UserCompany>>;
+  let snapshotRepo: jest.Mocked<Repository<PayrollEmployeeSnapshot>>;
+  let inputSnapshotRepo: jest.Mocked<Repository<PayrollInputSnapshot>>;
+  let resultRepo: jest.Mocked<Repository<PayrollResult>>;
   let vacationService: { applyVacationUsageFromPayroll: jest.Mock };
 
   beforeEach(async () => {
@@ -37,6 +44,11 @@ describe('PayrollService', () => {
         PayrollService,
         { provide: getRepositoryToken(PayrollCalendar), useValue: repoMock },
         { provide: getRepositoryToken(UserCompany), useValue: { findOne: jest.fn(), find: jest.fn() } },
+        { provide: getRepositoryToken(PayrollEmployeeSnapshot), useValue: { count: jest.fn(), createQueryBuilder: jest.fn(), find: jest.fn() } },
+        { provide: getRepositoryToken(PayrollInputSnapshot), useValue: { count: jest.fn(), createQueryBuilder: jest.fn(), find: jest.fn() } },
+        { provide: getRepositoryToken(PayrollResult), useValue: { count: jest.fn(), createQueryBuilder: jest.fn(), find: jest.fn() } },
+        { provide: getRepositoryToken(PersonalAction), useValue: { count: jest.fn(), createQueryBuilder: jest.fn(), find: jest.fn() } },
+        { provide: DataSource, useValue: { createQueryRunner: jest.fn() } },
         { provide: EventEmitter2, useValue: { emit: jest.fn() } },
         { provide: DomainEventsService, useValue: { record: jest.fn() } },
         { provide: EmployeeVacationService, useValue: { applyVacationUsageFromPayroll: jest.fn() } },
@@ -46,7 +58,14 @@ describe('PayrollService', () => {
     service = module.get(PayrollService);
     repo = module.get(getRepositoryToken(PayrollCalendar));
     userCompanyRepo = module.get(getRepositoryToken(UserCompany));
+    snapshotRepo = module.get(getRepositoryToken(PayrollEmployeeSnapshot));
+    inputSnapshotRepo = module.get(getRepositoryToken(PayrollInputSnapshot));
+    resultRepo = module.get(getRepositoryToken(PayrollResult));
     vacationService = module.get(EmployeeVacationService);
+
+    snapshotRepo.count.mockResolvedValue(1);
+    inputSnapshotRepo.count.mockResolvedValue(1);
+    resultRepo.count.mockResolvedValue(1);
   });
 
   it('create rejects when user has no company access', async () => {
@@ -135,5 +154,19 @@ describe('PayrollService', () => {
       applied.fechaAplicacion,
       1,
     );
+  });
+
+  it('process rejects when payroll is not abierta', async () => {
+    repo.findOne.mockResolvedValue({ id: 10, idEmpresa: 1, estado: EstadoCalendarioNomina.VERIFICADA } as any);
+    userCompanyRepo.findOne.mockResolvedValue({ idUsuario: 1, idEmpresa: 1, estado: 1 } as any);
+
+    await expect(service.process(10, 1)).rejects.toThrow(BadRequestException);
+  });
+
+  it('update rejects when payroll is verified', async () => {
+    repo.findOne.mockResolvedValue({ id: 22, idEmpresa: 1, estado: EstadoCalendarioNomina.VERIFICADA } as any);
+    userCompanyRepo.findOne.mockResolvedValue({ idUsuario: 1, idEmpresa: 1, estado: 1 } as any);
+
+    await expect(service.update(22, { nombrePlanilla: 'Nuevo nombre' } as any, 1)).rejects.toThrow(BadRequestException);
   });
 });

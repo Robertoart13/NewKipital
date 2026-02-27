@@ -62,6 +62,7 @@ Parametros de Planilla
 Permisos por opcion:
 - Articulos de Nomina: `payroll-article:view`
 - Movimientos de Nomina: `payroll-movement:view`
+- Calendario de Nomina / Dias de Pago: `payroll:view` (prerequisito: permiso sembrado en `sys_permisos` y asignado por rol en `hr_pro`)
 
 ### Gestion Planilla
 

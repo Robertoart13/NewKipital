@@ -6,7 +6,7 @@ export class CreatePermissionDto {
   @IsString()
   @MinLength(3)
   @MaxLength(100)
-  @Matches(/^[a-z][a-z0-9-]*(?::[a-z][a-z0-9-]*)+$/, {
+  @Matches(/^[a-z][a-z0-9-_]*(?::[a-z][a-z0-9-_]*)+$/, {
     message: 'codigo debe cumplir formato module:action[:subaction] en minusculas',
   })
   codigo: string;

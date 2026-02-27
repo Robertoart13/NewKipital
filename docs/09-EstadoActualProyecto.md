@@ -521,6 +521,9 @@ Estado: Implementado (backend + frontend + BD en `hr_pro`).
 | 2026-02-24 | **MenÃº y paleta:** Opciones de menÃº requieren permiso; se ocultan si no existe en BD o no estÃ¡ asignado al usuario (Doc 08, 26). Color corporativo `#20638d` reemplaza celeste en tema, menÃº, dropdown hover (Doc 05). |
 | 2026-02-24 | **Inventario de testing:** Agregada seccion Testing vigente: 321/321 pruebas (Backend 137, Frontend 184), 15 specs + 4 E2E backend, 6 test files frontend. Actualizado conteo API (~176 TS) y Frontend (~111 TS/TSX). |
 | 2026-02-25 | **ERP Cuentas Contables:** Modulo completo (CRUD + bitacora), permisos nuevos, selector multi-empresa en listado, reglas de inactivos y preload en edicion. Testing actualizado a 518/518. |
+| 2026-02-27 | **Planilla v2 compatible (Directiva 40):** Se oficializa blueprint ejecutable incremental (sin renames destructivos), estados numericos centralizados, unicidad operativa `slot_key + is_active`, seed RBAC `payroll:*` en `hr_pro` como prerequisito, y fases de implementacion con compatibilidad total. |
+| 2026-02-27 | **Planilla Fase 1+2 (sin NetSuite):** Implementadas tablas de snapshot/resultados (`nomina_empleados_snapshot`, `nomina_inputs_snapshot`, `nomina_resultados`), endpoint `PATCH /payroll/:id/process`, resumen `GET /payroll/:id/snapshot-summary`, enforcement de `verify` con precondiciones de snapshot y resultados, y seed operativo de `payroll:*` en `hr_pro`. |
+| 2026-02-27 | **RBAC Planilla enterprise (3 roles):** Se agrega `payroll:process` independiente de `payroll:edit`, nuevos permisos `view_sensitive/export/calendar/type/pay_period/netsuite:view_log` y matriz aplicada para `OPERADOR_NOMINA`, `GERENTE_NOMINA`, `MASTER` en `mysql_hr_pro`. |
 
 
 

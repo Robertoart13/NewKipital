@@ -2,7 +2,7 @@
 
 **Proyecto:** KPITAL 360 — ERP Multiempresa  
 **Autor:** Roberto — Arquitecto Funcional / Senior Engineer  
-**Última actualización:** 2026-02-25 (Reglas enterprise vacaciones acumuladas)
+**Última actualización:** 2026-02-27 (Blueprint Planilla v2 + bitácora funcional de planilla + filtros de rango)
 
 ---
 
@@ -36,8 +36,8 @@ Si ya estás en el proyecto y necesitás referencia puntual, usá esta tabla par
 | 17 | [17-EstandarWorkflows.md](./17-EstandarWorkflows.md) | Estándar enterprise de workflows. Carpetas, convenciones, EmployeeCreationWorkflow, IdentitySyncWorkflow. | 16 |
 | 18 | [18-IdentityCoreEnterprise.md](./18-IdentityCoreEnterprise.md) | Identity Core completo: seed, JWT real, guards, permisos dinámicos, conexión frontend↔backend, SSO base. | 14, 15, 17 |
 | 19 | [19-RedefinicionEmpleadoEnterprise.md](./19-RedefinicionEmpleadoEnterprise.md) | Redefinición enterprise de sys_empleados + tablas org/nom (departamentos, puestos, periodos pago). Modelo completo con ENUMs, FKs, catálogos. | 16, 17 |
-| 20 | [20-MVPContratosEndpoints.md](./20-MVPContratosEndpoints.md) | Contratos MVP: lista oficial de endpoints, permission contract (module:action), Payroll Engine y Personal Actions (esqueleto). | 18, 19 |
-| 21 | [21-TablaMaestraPlanillasYWorkflows.md](./21-TablaMaestraPlanillasYWorkflows.md) | Tabla Maestra nom_calendarios_nomina, políticas workflows (P3 traslado, reopen, multi-periodo), acc_cuotas_accion. | 20 |
+| 20 | [20-MVPContratosEndpoints.md](./20-MVPContratosEndpoints.md) | Contratos MVP: lista oficial de endpoints, permission contract (module:action), Payroll Engine y Personal Actions (esqueleto). Incluye actualización operativa de endpoints de planilla (edit/process/snapshot-summary/audit-trail) y filtros por rango. | 18, 19 |
+| 21 | [21-TablaMaestraPlanillasYWorkflows.md](./21-TablaMaestraPlanillasYWorkflows.md) | Tabla Maestra nom_calendarios_nomina, políticas workflows (P3 traslado, reopen, multi-periodo), acc_cuotas_accion. Incluye reglas operativas: bitácora obligatoria por transición/cambio, filtro por traslape de periodo y UX de edición. | 20 |
 | 22 | [22-AuthReport.md](./22-AuthReport.md) | Auditoría enterprise Auth: decisiones, matriz de flujos, checklist, evidencia, pendientes. | 18, 10, 12 |
 | 23 | [23-ModuloEmpleadosReferencia.md](./23-ModuloEmpleadosReferencia.md) | Módulo Empleados referencia end-to-end: 4 vistas, backend verificación, encriptación PII, frontend estructura, sprints. | 18, 19, 20 |
 | 24 | [24-PermisosEnterpriseOperacion.md](./24-PermisosEnterpriseOperacion.md) | Permisos enterprise: KPITAL vs TimeWise, vista Empresas/Roles/Excepciones, flujos operativos, problemas comunes. | 18, 20, 22 |
@@ -55,6 +55,7 @@ Si ya estás en el proyecto y necesitás referencia puntual, usá esta tabla par
 | 36 | [36-ComparativoSistemaVsReporteComiteDOC34.md](./36-ComparativoSistemaVsReporteComiteDOC34.md) | Comparativo sistema actual vs Reporte Ejecutivo Comité DOC-34 v1.0: semáforos, implementado vs pendiente. | 34, 35 |
 | 37 | [37-ReporteEjecutivoDOC34-ComiteTecnico.md](./37-ReporteEjecutivoDOC34-ComiteTecnico.md) | **Reporte Ejecutivo Comité Técnico DOC-34 v2.0** (post-auditoría): estado global, semáforo por área, decisiones negocio, roadmap por sprint, riesgos. Documento oficial de seguimiento. | 34, 35 |
 | 38 | [38-VacacionesAcumuladasEnterprise.md](./38-VacacionesAcumuladasEnterprise.md) | Reglas oficiales enterprise de vacaciones acumuladas: saldo inicial inmutable, provisión mensual por día ancla (1..28), ledger de movimientos, descuento por planilla aplicada, saldo negativo permitido, historial de monto provisionado y control de permisos. | 23, 30, 34 |
+| 40 | [40-BlueprintPlanillaV2Compatible.md](./40-BlueprintPlanillaV2Compatible.md) | Blueprint definitivo y ejecutable para Planilla v2: compatibilidad incremental, estados numericos, slot_key/is_active, RBAC payroll y fases de implementacion. Incluye reglas implementadas de bitácora funcional, filtros de rango y persistencia de id_tipo_planilla. | 20, 21, 34 |
 ---
 
 ## Estado del Proyecto

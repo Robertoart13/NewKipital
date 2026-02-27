@@ -75,6 +75,10 @@ interface PayrollArticleModalProps {
   saving: boolean;
 }
 
+function selectFilterByLabel(input: string, option?: { label?: string | number | null }) {
+  return String(option?.label ?? '').toLowerCase().includes(input.toLowerCase());
+}
+
 /**
  * @param props - Propiedades del modal de articulos.
  * @returns Modal con formulario y bitacora.
@@ -154,6 +158,9 @@ export function PayrollArticleModal(props: PayrollArticleModalProps) {
                 <Col span={12}>
                   <Form.Item name="idEmpresaCambio" label="Cambiar a empresa activa">
                     <Select
+                      showSearch
+                      optionFilterProp="label"
+                      filterOption={selectFilterByLabel}
                       placeholder="Seleccionar"
                       options={companies.map((c) => ({ value: c.id, label: c.nombre }))}
                     />
@@ -173,6 +180,9 @@ export function PayrollArticleModal(props: PayrollArticleModalProps) {
               <Col span={12}>
                 <Form.Item name="idEmpresa" label="Empresa *" rules={[{ required: true }]}>
                   <Select
+                    showSearch
+                    optionFilterProp="label"
+                    filterOption={selectFilterByLabel}
                     disabled={!!editing}
                     placeholder="Seleccionar"
                     options={companies.map((c) => ({ value: c.id, label: c.nombre }))}
@@ -199,6 +209,9 @@ export function PayrollArticleModal(props: PayrollArticleModalProps) {
                   </Form.Item>
                   <Form.Item name="idTipoArticuloNominaCambio" label="Cambiar a tipo activo">
                     <Select
+                      showSearch
+                      optionFilterProp="label"
+                      filterOption={selectFilterByLabel}
                       placeholder="Seleccionar"
                       options={activeArticleTypes.map((t) => ({ value: t.id, label: t.nombre }))}
                     />
@@ -207,6 +220,9 @@ export function PayrollArticleModal(props: PayrollArticleModalProps) {
               ) : (
                 <Form.Item name="idTipoArticuloNomina" label="Tipo Articulo Nomina *" rules={[{ required: true }]}>
                   <Select
+                    showSearch
+                    optionFilterProp="label"
+                    filterOption={selectFilterByLabel}
                     placeholder="Seleccionar"
                     options={activeArticleTypes.map((t) => ({ value: t.id, label: t.nombre }))}
                   />
@@ -227,6 +243,9 @@ export function PayrollArticleModal(props: PayrollArticleModalProps) {
                   </Form.Item>
                   <Form.Item name="idTipoAccionPersonalCambio" label="Cambiar a tipo activo">
                     <Select
+                      showSearch
+                      optionFilterProp="label"
+                      filterOption={selectFilterByLabel}
                       placeholder="Seleccionar"
                       options={activeActionTypes.map((t) => ({ value: t.id, label: t.nombre }))}
                     />
@@ -235,6 +254,9 @@ export function PayrollArticleModal(props: PayrollArticleModalProps) {
               ) : (
                 <Form.Item name="idTipoAccionPersonal" label="Tipo Accion Personal *" rules={[{ required: true }]}>
                   <Select
+                    showSearch
+                    optionFilterProp="label"
+                    filterOption={selectFilterByLabel}
                     placeholder="Seleccionar"
                     options={activeActionTypes.map((t) => ({ value: t.id, label: t.nombre }))}
                   />
@@ -262,6 +284,9 @@ export function PayrollArticleModal(props: PayrollArticleModalProps) {
                   </Form.Item>
                   <Form.Item name="idCuentaGastoCambio" label={`Cambiar a ${primaryLabel} activa`} rules={[{ required: true }]}>
                     <Select
+                      showSearch
+                      optionFilterProp="label"
+                      filterOption={selectFilterByLabel}
                       placeholder="Seleccionar"
                       options={activeFormAccounts.map((account) => ({
                         value: account.id,
@@ -273,6 +298,9 @@ export function PayrollArticleModal(props: PayrollArticleModalProps) {
               ) : (
                 <Form.Item name="idCuentaGasto" label={`${primaryLabel} *`} rules={[{ required: true }]}>
                   <Select
+                    showSearch
+                    optionFilterProp="label"
+                    filterOption={selectFilterByLabel}
                     placeholder={canLoadAccountOptions ? 'Seleccionar' : 'Seleccione Empresa y Tipo Articulo primero'}
                     disabled={!canLoadAccountOptions}
                     options={activeFormAccounts.map((account) => ({
@@ -305,6 +333,9 @@ export function PayrollArticleModal(props: PayrollArticleModalProps) {
                     </Form.Item>
                     <Form.Item name="idCuentaPasivoCambio" label="Cambiar a cuenta pasivo activa">
                       <Select
+                        showSearch
+                        optionFilterProp="label"
+                        filterOption={selectFilterByLabel}
                         placeholder="Seleccionar"
                         options={activeFormAccounts.map((account) => ({
                           value: account.id,
@@ -316,6 +347,9 @@ export function PayrollArticleModal(props: PayrollArticleModalProps) {
                 ) : (
                   <Form.Item name="idCuentaPasivo" label={secondaryLabel}>
                     <Select
+                      showSearch
+                      optionFilterProp="label"
+                      filterOption={selectFilterByLabel}
                       placeholder={canLoadAccountOptions ? 'Seleccionar' : 'Seleccione Empresa y Tipo Articulo primero'}
                       disabled={!canLoadAccountOptions}
                       options={activeFormAccounts.map((account) => ({

@@ -46,6 +46,12 @@ export class PayrollCalendar {
   @Column({ name: 'id_periodos_pago', type: 'int' })
   idPeriodoPago: number;
 
+  @Column({ name: 'id_tipo_planilla', type: 'int', nullable: true })
+  idTipoPlanilla: number | null;
+
+  @Column({ name: 'nombre_planilla_calendario_nomina', type: 'varchar', length: 150, nullable: true })
+  nombrePlanilla: string | null;
+
   @Column({ name: 'tipo_planilla', type: 'varchar', length: 30, default: TipoPlanilla.REGULAR })
   tipoPlanilla: string;
 
@@ -55,11 +61,17 @@ export class PayrollCalendar {
   @Column({ name: 'fecha_fin_periodo', type: 'date' })
   fechaFinPeriodo: Date;
 
+  @Column({ name: 'fecha_corte_calendario_nomina', type: 'date', nullable: true })
+  fechaCorte: Date | null;
+
   @Column({ name: 'fecha_inicio_pago', type: 'date' })
   fechaInicioPago: Date;
 
   @Column({ name: 'fecha_fin_pago', type: 'date' })
   fechaFinPago: Date;
+
+  @Column({ name: 'fecha_pago_programada_calendario_nomina', type: 'date', nullable: true })
+  fechaPagoProgramada: Date | null;
 
   @Column({ name: 'moneda_calendario_nomina', type: 'enum', enum: MonedaCalendario, default: MonedaCalendario.CRC })
   moneda: MonedaCalendario;
@@ -97,4 +109,13 @@ export class PayrollCalendar {
 
   @Column({ name: 'version_lock_calendario_nomina', type: 'int', default: 0 })
   versionLock: number;
+
+  @Column({ name: 'referencia_netsuite_calendario_nomina', type: 'varchar', length: 100, nullable: true })
+  referenciaNetSuite: string | null;
+
+  @Column({ name: 'slot_key_calendario_nomina', type: 'varchar', length: 255, nullable: true })
+  slotKey: string | null;
+
+  @Column({ name: 'is_active_slot_calendario_nomina', type: 'tinyint', width: 1, default: 1 })
+  isActiveSlot: number;
 }

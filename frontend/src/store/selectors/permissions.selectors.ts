@@ -19,6 +19,9 @@ export const canCreatePayroll = (state: RootState) =>
 export const canEditPayroll = (state: RootState) =>
   selectPermissions(state).includes('payroll:edit');
 
+export const canProcessPayroll = (state: RootState) =>
+  selectPermissions(state).includes('payroll:process');
+
 export const canVerifyPayroll = (state: RootState) =>
   selectPermissions(state).includes('payroll:verify');
 

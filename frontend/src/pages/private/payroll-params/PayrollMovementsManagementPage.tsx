@@ -98,6 +98,10 @@ interface PaneOption {
   count: number;
 }
 
+function selectFilterByLabel(input: string, option?: { label?: string | number | null }) {
+  return String(option?.label ?? '').toLowerCase().includes(input.toLowerCase());
+}
+
 const paneConfig: PaneConfig[] = [
   { key: 'empresa', title: 'Empresa' },
   { key: 'nombre', title: 'Nombre Movimiento' },
@@ -988,6 +992,9 @@ export function PayrollMovementsManagementPage() {
                         <Col span={12}>
                           <Form.Item name="idEmpresa" label="Empresa *" rules={[{ required: true }]}>
                             <Select
+                              showSearch
+                              optionFilterProp="label"
+                              filterOption={selectFilterByLabel}
                               placeholder="Seleccionar"
                               options={companies.map((company) => ({
                                 value: company.id,
@@ -1005,6 +1012,9 @@ export function PayrollMovementsManagementPage() {
                       <Col span={12}>
                         <Form.Item name="idArticuloNomina" label="Articulo de Nomina *" rules={[{ required: true }]}>
                           <Select
+                            showSearch
+                            optionFilterProp="label"
+                            filterOption={selectFilterByLabel}
                             placeholder={selectedEmpresa ? 'Seleccionar' : 'Seleccione empresa primero'}
                             disabled={!selectedEmpresa}
                             options={articleOptions.map((article) => ({
@@ -1025,6 +1035,9 @@ export function PayrollMovementsManagementPage() {
                           }}
                         >
                           <Select
+                            showSearch
+                            optionFilterProp="label"
+                            filterOption={selectFilterByLabel}
                             placeholder="Autocompletado por articulo"
                             disabled
                             options={actionTypeOptions.map((actionType) => ({
@@ -1037,6 +1050,9 @@ export function PayrollMovementsManagementPage() {
                       <Col span={12}>
                         <Form.Item name="idClase" label="Clase">
                           <Select
+                            showSearch
+                            optionFilterProp="label"
+                            filterOption={selectFilterByLabel}
                             allowClear
                             placeholder="Seleccionar"
                             options={classOptions.map((item) => ({
@@ -1049,6 +1065,9 @@ export function PayrollMovementsManagementPage() {
                       <Col span={12}>
                         <Form.Item name="idProyecto" label="Proyecto">
                           <Select
+                            showSearch
+                            optionFilterProp="label"
+                            filterOption={selectFilterByLabel}
                             allowClear
                             placeholder={selectedEmpresa ? 'Seleccionar' : 'Seleccione empresa primero'}
                             disabled={!selectedEmpresa}

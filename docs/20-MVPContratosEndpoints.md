@@ -176,3 +176,58 @@ Regla de persistencia:
 - **Producción:** Variable `VITE_API_URL` (ej: `https://api.kpital360.com/api`)
 
 Todas las rutas son relativas al prefijo `/api`.
+
+---
+
+## Actualizacion 2026-02-27 - Planilla v2 Compatible
+
+- Este documento mantiene el contrato MVP vigente.
+- La definicion oficial para evolucion enterprise compatible de planilla queda en:
+  - `docs/40-BlueprintPlanillaV2Compatible.md`
+- Para implementacion inmediata de permisos y operacion en `hr_pro`, se debe aplicar seed RBAC de:
+  - `payroll:view`
+  - `payroll:create`
+  - `payroll:verify`
+  - `payroll:apply`
+  - `payroll:cancel`
+- Permisos planificados para integracion NetSuite en Fase 4:
+  - `payroll:send_netsuite`
+  - `payroll:retry_netsuite`
+
+### Avance implementado sin NetSuite (2026-02-27)
+
+Endpoints agregados en modulo `payroll`:
+- `PATCH /api/payroll/:id/process`
+  - Transicion `Abierta -> En Proceso`.
+  - Genera snapshots (`nomina_empleados_snapshot`, `nomina_inputs_snapshot`).
+  - Liga acciones aprobadas al run.
+  - Calcula resultados base por empleado (`nomina_resultados`).
+- `GET /api/payroll/:id/snapshot-summary`
+  - Retorna conteos y sumatorias de corrida.
+
+Permisos usados:
+- `payroll:process` para `process`.
+- `payroll:view` para `snapshot-summary`.
+
+Nota:
+- Integracion NetSuite queda explicitamente fuera de este avance.
+
+### Actualizacion operativa adicional (2026-02-27)
+
+Endpoints de planilla activos en API:
+- `GET /api/payroll?idEmpresa=N&includeInactive=bool&fechaDesde=YYYY-MM-DD&fechaHasta=YYYY-MM-DD`
+- `GET /api/payroll/:id`
+- `POST /api/payroll`
+- `PATCH /api/payroll/:id` (editar)
+- `PATCH /api/payroll/:id/process`
+- `PATCH /api/payroll/:id/verify`
+- `PATCH /api/payroll/:id/apply`
+- `PATCH /api/payroll/:id/reopen`
+- `PATCH /api/payroll/:id/inactivate`
+- `GET /api/payroll/:id/snapshot-summary`
+- `GET /api/payroll/:id/audit-trail`
+
+Reglas adicionales documentadas:
+- Filtro de fechas de listado por traslape de periodo (no solo por inicio o fin exacto).
+- Bitacora de planilla con diffs de negocio (`payload_before/payload_after`) en `sys_auditoria_acciones`.
+- `id_tipo_planilla` debe persistirse; frontend envia `idTipoPlanilla` y backend resuelve fallback por `tipoPlanilla`.

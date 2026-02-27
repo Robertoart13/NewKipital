@@ -4,6 +4,7 @@ import {
 } from '@nestjs/common';
 import { PayrollService } from './payroll.service';
 import { CreatePayrollDto } from './dto/create-payroll.dto';
+import { UpdatePayrollDto } from './dto/update-payroll.dto';
 import { Public } from '../../common/decorators/public.decorator';
 import { RequirePermissions } from '../../common/decorators/require-permissions.decorator';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
@@ -24,9 +25,19 @@ export class PayrollController {
     @CurrentUser() user: { userId: number },
     @Query('idEmpresa') idEmpresaRaw?: string,
     @Query('includeInactive', new ParseBoolPipe({ optional: true })) includeInactive?: boolean,
+    @Query('inactiveOnly', new ParseBoolPipe({ optional: true })) inactiveOnly?: boolean,
+    @Query('fechaDesde') fechaDesde?: string,
+    @Query('fechaHasta') fechaHasta?: string,
   ) {
     const idEmpresa = idEmpresaRaw ? parseInt(idEmpresaRaw, 10) : undefined;
-    return this.service.findAll(user.userId, Number.isNaN(idEmpresa!) ? undefined : idEmpresa, includeInactive ?? false);
+    return this.service.findAll(
+      user.userId,
+      Number.isNaN(idEmpresa!) ? undefined : idEmpresa,
+      includeInactive ?? false,
+      inactiveOnly ?? false,
+      fechaDesde,
+      fechaHasta,
+    );
   }
 
   @RequirePermissions('payroll:view')
@@ -44,10 +55,26 @@ export class PayrollController {
     return this.service.create(dto, user.userId);
   }
 
+  @RequirePermissions('payroll:edit')
+  @Patch(':id')
+  update(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: UpdatePayrollDto,
+    @CurrentUser() user: { userId: number },
+  ) {
+    return this.service.update(id, dto, user.userId);
+  }
+
   @RequirePermissions('payroll:verify')
   @Patch(':id/verify')
   verify(@Param('id', ParseIntPipe) id: number, @CurrentUser() user: { userId: number }) {
     return this.service.verify(id, user.userId);
+  }
+
+  @RequirePermissions('payroll:process')
+  @Patch(':id/process')
+  process(@Param('id', ParseIntPipe) id: number, @CurrentUser() user: { userId: number }) {
+    return this.service.process(id, user.userId);
   }
 
   @RequirePermissions('payroll:apply')
@@ -74,5 +101,21 @@ export class PayrollController {
   @Patch(':id/inactivate')
   inactivate(@Param('id', ParseIntPipe) id: number, @CurrentUser() user: { userId: number }) {
     return this.service.inactivate(id, user.userId);
+  }
+
+  @RequirePermissions('payroll:view')
+  @Get(':id/snapshot-summary')
+  snapshotSummary(@Param('id', ParseIntPipe) id: number, @CurrentUser() user: { userId: number }) {
+    return this.service.getSnapshotSummary(id, user.userId);
+  }
+
+  @RequirePermissions('payroll:view')
+  @Get(':id/audit-trail')
+  getAuditTrail(
+    @Param('id', ParseIntPipe) id: number,
+    @Query('limit', new ParseIntPipe({ optional: true })) limit: number | undefined,
+    @CurrentUser() user: { userId: number },
+  ) {
+    return this.service.getAuditTrail(id, user.userId, limit);
   }
 }

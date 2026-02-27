@@ -66,6 +66,28 @@ type MatrixRow = {
   children?: MatrixRow[];
 };
 
+const MODULE_LABELS_ES: Record<string, string> = {
+  'accounting-account': 'cuentas contables',
+  class: 'clases',
+  company: 'empresas',
+  config: 'configuracion',
+  department: 'departamentos',
+  employee: 'empleados',
+  ops: 'operaciones',
+  payroll: 'nomina',
+  'payroll-article': 'articulos de nomina',
+  'payroll-movement': 'movimientos de nomina',
+  'personal-action': 'acciones de personal',
+  position: 'puestos',
+  project: 'proyectos',
+  report: 'reportes',
+  timewise: 'timewise',
+};
+
+function getModuleLabelEs(moduleName: string): string {
+  return MODULE_LABELS_ES[moduleName] ?? moduleName;
+}
+
 export function RolesManagementPage() {
   const { message } = AntdApp.useApp();
   const location = useLocation();
@@ -190,7 +212,7 @@ export function RolesManagementPage() {
         type: 'module',
         moduleName: group.moduleName,
         app: selectedApp,
-        label: group.moduleName,
+        label: getModuleLabelEs(group.moduleName),
         children: filtered.map((p) => ({
           key: `perm:${p.codigo}`,
           type: 'permission' as const,
