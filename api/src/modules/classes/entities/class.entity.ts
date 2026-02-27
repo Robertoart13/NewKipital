@@ -23,7 +23,13 @@ export class OrgClass {
   codigo: string;
 
   @Index('UQ_clase_id_externo', { unique: true })
-  @Column({ name: 'id_externos_clase', type: 'varchar', length: 45, nullable: true, unique: true })
+  @Column({
+    name: 'id_externos_clase',
+    type: 'varchar',
+    length: 45,
+    nullable: true,
+    unique: true,
+  })
   idExterno: string | null;
 
   @Index('IDX_clase_inactivo')
@@ -36,4 +42,3 @@ export class OrgClass {
   @UpdateDateColumn({ name: 'fecha_modificacion' })
   fechaModificacion: Date;
 }
-

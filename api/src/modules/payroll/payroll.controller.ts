@@ -1,6 +1,13 @@
 import {
-  Controller, Get, Post, Patch, Param, Body, Query,
-  ParseIntPipe, ParseBoolPipe,
+  Controller,
+  Get,
+  Post,
+  Patch,
+  Param,
+  Body,
+  Query,
+  ParseIntPipe,
+  ParseBoolPipe,
 } from '@nestjs/common';
 import { PayrollService } from './payroll.service';
 import { CreatePayrollDto } from './dto/create-payroll.dto';
@@ -23,10 +30,15 @@ export class PayrollController {
   findAll(
     @CurrentUser() user: { userId: number },
     @Query('idEmpresa') idEmpresaRaw?: string,
-    @Query('includeInactive', new ParseBoolPipe({ optional: true })) includeInactive?: boolean,
+    @Query('includeInactive', new ParseBoolPipe({ optional: true }))
+    includeInactive?: boolean,
   ) {
     const idEmpresa = idEmpresaRaw ? parseInt(idEmpresaRaw, 10) : undefined;
-    return this.service.findAll(user.userId, Number.isNaN(idEmpresa!) ? undefined : idEmpresa, includeInactive ?? false);
+    return this.service.findAll(
+      user.userId,
+      Number.isNaN(idEmpresa!) ? undefined : idEmpresa,
+      includeInactive ?? false,
+    );
   }
 
   @RequirePermissions('payroll:view')
@@ -40,13 +52,19 @@ export class PayrollController {
 
   @RequirePermissions('payroll:create')
   @Post()
-  create(@Body() dto: CreatePayrollDto, @CurrentUser() user: { userId: number }) {
+  create(
+    @Body() dto: CreatePayrollDto,
+    @CurrentUser() user: { userId: number },
+  ) {
     return this.service.create(dto, user.userId);
   }
 
   @RequirePermissions('payroll:verify')
   @Patch(':id/verify')
-  verify(@Param('id', ParseIntPipe) id: number, @CurrentUser() user: { userId: number }) {
+  verify(
+    @Param('id', ParseIntPipe) id: number,
+    @CurrentUser() user: { userId: number },
+  ) {
     return this.service.verify(id, user.userId);
   }
 
@@ -54,7 +72,8 @@ export class PayrollController {
   @Patch(':id/apply')
   apply(
     @Param('id', ParseIntPipe) id: number,
-    @Body('version', new ParseIntPipe({ optional: true })) expectedVersion: number | undefined,
+    @Body('version', new ParseIntPipe({ optional: true }))
+    expectedVersion: number | undefined,
     @CurrentUser() user: { userId: number },
   ) {
     return this.service.apply(id, user.userId, expectedVersion);
@@ -67,12 +86,19 @@ export class PayrollController {
     @Body('motivo') motivo: string,
     @CurrentUser() user: { userId: number },
   ) {
-    return this.service.reopen(id, motivo ?? 'Reapertura sin motivo', user.userId);
+    return this.service.reopen(
+      id,
+      motivo ?? 'Reapertura sin motivo',
+      user.userId,
+    );
   }
 
   @RequirePermissions('payroll:cancel')
   @Patch(':id/inactivate')
-  inactivate(@Param('id', ParseIntPipe) id: number, @CurrentUser() user: { userId: number }) {
+  inactivate(
+    @Param('id', ParseIntPipe) id: number,
+    @CurrentUser() user: { userId: number },
+  ) {
     return this.service.inactivate(id, user.userId);
   }
 }

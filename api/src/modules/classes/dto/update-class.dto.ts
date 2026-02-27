@@ -22,4 +22,3 @@ export class UpdateClassDto {
   @MaxLength(45)
   idExterno?: string;
 }
-

@@ -1,6 +1,10 @@
 import {
-  Entity, PrimaryGeneratedColumn, Column, Index,
-  CreateDateColumn, UpdateDateColumn,
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  Index,
+  CreateDateColumn,
+  UpdateDateColumn,
 } from 'typeorm';
 
 export enum EstadoCalendarioNomina {
@@ -46,7 +50,12 @@ export class PayrollCalendar {
   @Column({ name: 'id_periodos_pago', type: 'int' })
   idPeriodoPago: number;
 
-  @Column({ name: 'tipo_planilla', type: 'varchar', length: 30, default: TipoPlanilla.REGULAR })
+  @Column({
+    name: 'tipo_planilla',
+    type: 'varchar',
+    length: 30,
+    default: TipoPlanilla.REGULAR,
+  })
   tipoPlanilla: string;
 
   @Column({ name: 'fecha_inicio_periodo', type: 'date' })
@@ -61,26 +70,49 @@ export class PayrollCalendar {
   @Column({ name: 'fecha_fin_pago', type: 'date' })
   fechaFinPago: Date;
 
-  @Column({ name: 'moneda_calendario_nomina', type: 'enum', enum: MonedaCalendario, default: MonedaCalendario.CRC })
+  @Column({
+    name: 'moneda_calendario_nomina',
+    type: 'enum',
+    enum: MonedaCalendario,
+    default: MonedaCalendario.CRC,
+  })
   moneda: MonedaCalendario;
 
   @Index('IDX_calendario_estado')
-  @Column({ name: 'estado_calendario_nomina', type: 'tinyint', width: 1, default: EstadoCalendarioNomina.ABIERTA })
+  @Column({
+    name: 'estado_calendario_nomina',
+    type: 'tinyint',
+    width: 1,
+    default: EstadoCalendarioNomina.ABIERTA,
+  })
   estado: EstadoCalendarioNomina;
 
   @Column({ name: 'es_inactivo', type: 'tinyint', width: 1, default: 0 })
   esInactivo: number;
 
-  @Column({ name: 'descripcion_evento_calendario_nomina', type: 'text', nullable: true })
+  @Column({
+    name: 'descripcion_evento_calendario_nomina',
+    type: 'text',
+    nullable: true,
+  })
   descripcionEvento: string | null;
 
-  @Column({ name: 'etiqueta_color_calendario_nomina', type: 'varchar', length: 20, nullable: true })
+  @Column({
+    name: 'etiqueta_color_calendario_nomina',
+    type: 'varchar',
+    length: 20,
+    nullable: true,
+  })
   etiquetaColor: string | null;
 
   @Column({ name: 'prioridad_calendario_nomina', type: 'int', nullable: true })
   prioridad: number | null;
 
-  @Column({ name: 'fecha_aplicacion_calendario_nomina', type: 'datetime', nullable: true })
+  @Column({
+    name: 'fecha_aplicacion_calendario_nomina',
+    type: 'datetime',
+    nullable: true,
+  })
   fechaAplicacion: Date | null;
 
   @CreateDateColumn({ name: 'fecha_creacion_calendario_nomina' })
@@ -92,7 +124,11 @@ export class PayrollCalendar {
   @Column({ name: 'creado_por_calendario_nomina', type: 'int', nullable: true })
   creadoPor: number | null;
 
-  @Column({ name: 'modificado_por_calendario_nomina', type: 'int', nullable: true })
+  @Column({
+    name: 'modificado_por_calendario_nomina',
+    type: 'int',
+    nullable: true,
+  })
   modificadoPor: number | null;
 
   @Column({ name: 'version_lock_calendario_nomina', type: 'int', default: 0 })

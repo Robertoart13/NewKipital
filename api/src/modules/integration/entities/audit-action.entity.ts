@@ -1,4 +1,10 @@
-import { Column, CreateDateColumn, Entity, Index, PrimaryGeneratedColumn } from 'typeorm';
+import {
+  Column,
+  CreateDateColumn,
+  Entity,
+  Index,
+  PrimaryGeneratedColumn,
+} from 'typeorm';
 
 @Entity('sys_auditoria_acciones')
 export class AuditActionEntity {
@@ -17,14 +23,23 @@ export class AuditActionEntity {
   entidad: string;
 
   @Index('IDX_auditoria_entidad_id')
-  @Column({ name: 'id_entidad_auditoria', type: 'varchar', length: 64, nullable: true })
+  @Column({
+    name: 'id_entidad_auditoria',
+    type: 'varchar',
+    length: 64,
+    nullable: true,
+  })
   entidadId: string | null;
 
   @Index('IDX_auditoria_actor')
   @Column({ name: 'id_usuario_actor_auditoria', type: 'int', nullable: true })
   actorUserId: number | null;
 
-  @Column({ name: 'id_empresa_contexto_auditoria', type: 'int', nullable: true })
+  @Column({
+    name: 'id_empresa_contexto_auditoria',
+    type: 'int',
+    nullable: true,
+  })
   companyContextId: number | null;
 
   @Column({ name: 'descripcion_auditoria', type: 'varchar', length: 500 })
@@ -42,11 +57,15 @@ export class AuditActionEntity {
   @Column({ name: 'ip_auditoria', type: 'varchar', length: 64, nullable: true })
   ip: string | null;
 
-  @Column({ name: 'user_agent_auditoria', type: 'varchar', length: 255, nullable: true })
+  @Column({
+    name: 'user_agent_auditoria',
+    type: 'varchar',
+    length: 255,
+    nullable: true,
+  })
   userAgent: string | null;
 
   @Index('IDX_auditoria_fecha')
   @CreateDateColumn({ name: 'fecha_creacion_auditoria' })
   createdAt: Date;
 }
-

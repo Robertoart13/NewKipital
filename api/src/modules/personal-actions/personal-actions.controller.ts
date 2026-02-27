@@ -1,5 +1,11 @@
 import {
-  Controller, Get, Post, Patch, Param, Body, Query,
+  Controller,
+  Get,
+  Post,
+  Patch,
+  Param,
+  Body,
+  Query,
   ParseIntPipe,
 } from '@nestjs/common';
 import { PersonalActionsService } from './personal-actions.service';
@@ -27,8 +33,14 @@ export class PersonalActionsController {
     @Query('estado') estado?: string,
   ) {
     const idEmpresa = idEmpresaRaw ? parseInt(idEmpresaRaw, 10) : undefined;
-    const est = estado ? parseInt(estado, 10) as PersonalActionEstado : undefined;
-    return this.service.findAll(user.userId, Number.isNaN(idEmpresa!) ? undefined : idEmpresa, est);
+    const est = estado
+      ? (parseInt(estado, 10) as PersonalActionEstado)
+      : undefined;
+    return this.service.findAll(
+      user.userId,
+      Number.isNaN(idEmpresa!) ? undefined : idEmpresa,
+      est,
+    );
   }
 
   @RequirePermissions('personal-action:view')
@@ -42,13 +54,19 @@ export class PersonalActionsController {
 
   @RequirePermissions('personal-action:create')
   @Post()
-  create(@Body() dto: CreatePersonalActionDto, @CurrentUser() user: { userId: number }) {
+  create(
+    @Body() dto: CreatePersonalActionDto,
+    @CurrentUser() user: { userId: number },
+  ) {
     return this.service.create(dto, user.userId);
   }
 
   @RequirePermissions('personal-action:approve')
   @Patch(':id/approve')
-  approve(@Param('id', ParseIntPipe) id: number, @CurrentUser() user: { userId: number }) {
+  approve(
+    @Param('id', ParseIntPipe) id: number,
+    @CurrentUser() user: { userId: number },
+  ) {
     return this.service.approve(id, user.userId);
   }
 

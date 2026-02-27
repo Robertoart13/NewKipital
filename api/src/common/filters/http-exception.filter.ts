@@ -34,7 +34,8 @@ export class GlobalExceptionFilter implements ExceptionFilter {
       const message =
         typeof exceptionResponse === 'string'
           ? exceptionResponse
-          : ((exceptionResponse as Record<string, unknown>).message ?? exception.message);
+          : ((exceptionResponse as Record<string, unknown>).message ??
+            exception.message);
 
       if (status >= 500) {
         this.logger.error(

@@ -1,4 +1,11 @@
-import { ArgumentsHost, ForbiddenException, HttpException, HttpStatus, NotFoundException, UnauthorizedException } from '@nestjs/common';
+import {
+  ArgumentsHost,
+  ForbiddenException,
+  HttpException,
+  HttpStatus,
+  NotFoundException,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { GlobalExceptionFilter } from './http-exception.filter';
 
 function createMockHost(method = 'GET', url = '/api/test') {
@@ -21,13 +28,16 @@ describe('GlobalExceptionFilter', () => {
 
   it('normalizes HttpException with string message', () => {
     const host = createMockHost();
-    const exception = new HttpException('Recurso no encontrado', HttpStatus.NOT_FOUND);
+    const exception = new HttpException(
+      'Recurso no encontrado',
+      HttpStatus.NOT_FOUND,
+    );
 
     filter.catch(exception, host);
 
     const res = host.switchToHttp().getResponse<{ status: jest.Mock }>();
     expect(res.status).toHaveBeenCalledWith(404);
-    const jsonCall = (res.status as jest.Mock).mock.results[0].value.json as jest.Mock;
+    const jsonCall = res.status.mock.results[0].value.json as jest.Mock;
     expect(jsonCall).toHaveBeenCalledWith(
       expect.objectContaining({
         success: false,
@@ -39,14 +49,19 @@ describe('GlobalExceptionFilter', () => {
 
   it('passes through structured response from ValidationPipe', () => {
     const host = createMockHost('POST', '/api/employees');
-    const structured = { success: false, data: null, message: ['campo requerido'], error: 'Solicitud invalida' };
+    const structured = {
+      success: false,
+      data: null,
+      message: ['campo requerido'],
+      error: 'Solicitud invalida',
+    };
     const exception = new HttpException(structured, HttpStatus.BAD_REQUEST);
 
     filter.catch(exception, host);
 
     const res = host.switchToHttp().getResponse<{ status: jest.Mock }>();
     expect(res.status).toHaveBeenCalledWith(400);
-    const jsonCall = (res.status as jest.Mock).mock.results[0].value.json as jest.Mock;
+    const jsonCall = res.status.mock.results[0].value.json as jest.Mock;
     expect(jsonCall).toHaveBeenCalledWith(structured);
   });
 
@@ -88,7 +103,7 @@ describe('GlobalExceptionFilter', () => {
 
     const res = host.switchToHttp().getResponse<{ status: jest.Mock }>();
     expect(res.status).toHaveBeenCalledWith(500);
-    const jsonCall = (res.status as jest.Mock).mock.results[0].value.json as jest.Mock;
+    const jsonCall = res.status.mock.results[0].value.json as jest.Mock;
     const body = jsonCall.mock.calls[0][0] as Record<string, unknown>;
     expect(body.success).toBe(false);
     expect(body.statusCode).toBe(500);
@@ -104,7 +119,7 @@ describe('GlobalExceptionFilter', () => {
     filter.catch(exception, host);
 
     const res = host.switchToHttp().getResponse<{ status: jest.Mock }>();
-    const jsonCall = (res.status as jest.Mock).mock.results[0].value.json as jest.Mock;
+    const jsonCall = res.status.mock.results[0].value.json as jest.Mock;
     const body = jsonCall.mock.calls[0][0] as Record<string, unknown>;
     expect(body).toHaveProperty('timestamp');
     expect(body.path).toBe('/api/employees/99');

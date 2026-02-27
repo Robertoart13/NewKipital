@@ -1,4 +1,10 @@
-import { MigrationInterface, QueryRunner, Table, TableForeignKey, TableIndex } from 'typeorm';
+import {
+  MigrationInterface,
+  QueryRunner,
+  Table,
+  TableForeignKey,
+  TableIndex,
+} from 'typeorm';
 
 export class CreateOrgProyectosAndPermissions1708534600000 implements MigrationInterface {
   public async up(queryRunner: QueryRunner): Promise<void> {
@@ -16,12 +22,31 @@ export class CreateOrgProyectosAndPermissions1708534600000 implements MigrationI
               generationStrategy: 'increment',
             },
             { name: 'id_empresa', type: 'int', isNullable: false },
-            { name: 'nombre_proyecto', type: 'varchar', length: '255', isNullable: false },
+            {
+              name: 'nombre_proyecto',
+              type: 'varchar',
+              length: '255',
+              isNullable: false,
+            },
             { name: 'descripcion_proyecto', type: 'text', isNullable: true },
-            { name: 'codigo_proyecto', type: 'varchar', length: '50', isNullable: false },
-            { name: 'id_externo_proyecto', type: 'varchar', length: '45', isNullable: true },
+            {
+              name: 'codigo_proyecto',
+              type: 'varchar',
+              length: '50',
+              isNullable: false,
+            },
+            {
+              name: 'id_externo_proyecto',
+              type: 'varchar',
+              length: '45',
+              isNullable: true,
+            },
             { name: 'es_inactivo', type: 'tinyint', width: 1, default: 0 },
-            { name: 'fecha_creacion', type: 'timestamp', default: 'CURRENT_TIMESTAMP' },
+            {
+              name: 'fecha_creacion',
+              type: 'timestamp',
+              default: 'CURRENT_TIMESTAMP',
+            },
             {
               name: 'fecha_modificacion',
               type: 'timestamp',
@@ -34,19 +59,33 @@ export class CreateOrgProyectosAndPermissions1708534600000 implements MigrationI
 
       await queryRunner.createIndex(
         'org_proyectos',
-        new TableIndex({ name: 'IDX_proyecto_empresa', columnNames: ['id_empresa'] }),
+        new TableIndex({
+          name: 'IDX_proyecto_empresa',
+          columnNames: ['id_empresa'],
+        }),
       );
       await queryRunner.createIndex(
         'org_proyectos',
-        new TableIndex({ name: 'UQ_proyecto_codigo', columnNames: ['codigo_proyecto'], isUnique: true }),
+        new TableIndex({
+          name: 'UQ_proyecto_codigo',
+          columnNames: ['codigo_proyecto'],
+          isUnique: true,
+        }),
       );
       await queryRunner.createIndex(
         'org_proyectos',
-        new TableIndex({ name: 'UQ_proyecto_id_externo', columnNames: ['id_externo_proyecto'], isUnique: true }),
+        new TableIndex({
+          name: 'UQ_proyecto_id_externo',
+          columnNames: ['id_externo_proyecto'],
+          isUnique: true,
+        }),
       );
       await queryRunner.createIndex(
         'org_proyectos',
-        new TableIndex({ name: 'IDX_proyecto_inactivo', columnNames: ['es_inactivo'] }),
+        new TableIndex({
+          name: 'IDX_proyecto_inactivo',
+          columnNames: ['es_inactivo'],
+        }),
       );
 
       await queryRunner.createForeignKey(

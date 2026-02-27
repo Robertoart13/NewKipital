@@ -1,10 +1,17 @@
 ﻿import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { BadRequestException, ConflictException, ForbiddenException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ConflictException,
+  ForbiddenException,
+} from '@nestjs/common';
 import { Repository } from 'typeorm';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { PayrollService } from './payroll.service';
-import { PayrollCalendar, EstadoCalendarioNomina } from './entities/payroll-calendar.entity';
+import {
+  PayrollCalendar,
+  EstadoCalendarioNomina,
+} from './entities/payroll-calendar.entity';
 import { UserCompany } from '../access-control/entities/user-company.entity';
 import { DomainEventsService } from '../integration/domain-events.service';
 import { EmployeeVacationService } from '../employees/services/employee-vacation.service';
@@ -36,10 +43,16 @@ describe('PayrollService', () => {
       providers: [
         PayrollService,
         { provide: getRepositoryToken(PayrollCalendar), useValue: repoMock },
-        { provide: getRepositoryToken(UserCompany), useValue: { findOne: jest.fn(), find: jest.fn() } },
+        {
+          provide: getRepositoryToken(UserCompany),
+          useValue: { findOne: jest.fn(), find: jest.fn() },
+        },
         { provide: EventEmitter2, useValue: { emit: jest.fn() } },
         { provide: DomainEventsService, useValue: { record: jest.fn() } },
-        { provide: EmployeeVacationService, useValue: { applyVacationUsageFromPayroll: jest.fn() } },
+        {
+          provide: EmployeeVacationService,
+          useValue: { applyVacationUsageFromPayroll: jest.fn() },
+        },
       ],
     }).compile();
 
@@ -68,7 +81,11 @@ describe('PayrollService', () => {
   });
 
   it('create rejects when operational payroll already exists', async () => {
-    userCompanyRepo.findOne.mockResolvedValue({ idUsuario: 1, idEmpresa: 1, estado: 1 } as any);
+    userCompanyRepo.findOne.mockResolvedValue({
+      idUsuario: 1,
+      idEmpresa: 1,
+      estado: 1,
+    } as any);
     (repo.createQueryBuilder as jest.Mock).mockReturnValue({
       where: jest.fn().mockReturnThis(),
       andWhere: jest.fn().mockReturnThis(),
@@ -91,15 +108,31 @@ describe('PayrollService', () => {
   });
 
   it('verify rejects non-operational state', async () => {
-    repo.findOne.mockResolvedValue({ id: 1, idEmpresa: 1, estado: EstadoCalendarioNomina.APLICADA } as any);
-    userCompanyRepo.findOne.mockResolvedValue({ idUsuario: 1, idEmpresa: 1, estado: 1 } as any);
+    repo.findOne.mockResolvedValue({
+      id: 1,
+      idEmpresa: 1,
+      estado: EstadoCalendarioNomina.APLICADA,
+    } as any);
+    userCompanyRepo.findOne.mockResolvedValue({
+      idUsuario: 1,
+      idEmpresa: 1,
+      estado: 1,
+    } as any);
 
     await expect(service.verify(1, 1)).rejects.toThrow(BadRequestException);
   });
 
   it('apply rejects when not verified', async () => {
-    repo.findOne.mockResolvedValue({ id: 1, idEmpresa: 1, estado: EstadoCalendarioNomina.ABIERTA } as any);
-    userCompanyRepo.findOne.mockResolvedValue({ idUsuario: 1, idEmpresa: 1, estado: 1 } as any);
+    repo.findOne.mockResolvedValue({
+      id: 1,
+      idEmpresa: 1,
+      estado: EstadoCalendarioNomina.ABIERTA,
+    } as any);
+    userCompanyRepo.findOne.mockResolvedValue({
+      idUsuario: 1,
+      idEmpresa: 1,
+      estado: 1,
+    } as any);
 
     await expect(service.apply(1, 1)).rejects.toThrow(BadRequestException);
   });
@@ -116,12 +149,14 @@ describe('PayrollService', () => {
       ...verified,
       estado: EstadoCalendarioNomina.APLICADA,
       fechaAplicacion: new Date('2026-02-25T22:00:00.000Z'),
-    } as any;
+    };
 
-    repo.findOne
-      .mockResolvedValueOnce(verified)
-      .mockResolvedValueOnce(applied);
-    userCompanyRepo.findOne.mockResolvedValue({ idUsuario: 1, idEmpresa: 1, estado: 1 } as any);
+    repo.findOne.mockResolvedValueOnce(verified).mockResolvedValueOnce(applied);
+    userCompanyRepo.findOne.mockResolvedValue({
+      idUsuario: 1,
+      idEmpresa: 1,
+      estado: 1,
+    } as any);
     vacationService.applyVacationUsageFromPayroll.mockResolvedValue({
       processedActions: 1,
       deductedDays: 4,

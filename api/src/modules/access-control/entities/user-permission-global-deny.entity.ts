@@ -13,7 +13,9 @@ import {
  * Si existe un registro, el usuario NO tendrá ese permiso en ninguna empresa.
  */
 @Entity('sys_usuario_permiso_global')
-@Index('UQ_usuario_permiso_global', ['idUsuario', 'idApp', 'idPermiso'], { unique: true })
+@Index('UQ_usuario_permiso_global', ['idUsuario', 'idApp', 'idPermiso'], {
+  unique: true,
+})
 export class UserPermissionGlobalDeny {
   @PrimaryGeneratedColumn({ name: 'id_usuario_permiso_global' })
   id: number;
@@ -28,7 +30,12 @@ export class UserPermissionGlobalDeny {
   @Column({ name: 'id_permiso', type: 'int' })
   idPermiso: number;
 
-  @Column({ name: 'estado_usuario_permiso_global', type: 'tinyint', width: 1, default: 1 })
+  @Column({
+    name: 'estado_usuario_permiso_global',
+    type: 'tinyint',
+    width: 1,
+    default: 1,
+  })
   estado: number;
 
   @CreateDateColumn({ name: 'fecha_creacion_usuario_permiso_global' })

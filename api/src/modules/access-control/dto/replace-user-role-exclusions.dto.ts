@@ -1,4 +1,11 @@
-import { ArrayUnique, IsArray, IsInt, IsString, Matches, Min } from 'class-validator';
+import {
+  ArrayUnique,
+  IsArray,
+  IsInt,
+  IsString,
+  Matches,
+  Min,
+} from 'class-validator';
 
 export class ReplaceUserRoleExclusionsDto {
   @IsInt()

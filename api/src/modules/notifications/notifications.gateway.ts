@@ -11,11 +11,16 @@ import { COOKIE_NAME } from '../../config/cookie.config';
 
 const USER_ROOM_PREFIX = 'user:';
 
-function parseCookie(header: string | string[] | undefined): Record<string, string> {
-  const str = Array.isArray(header) ? header[0] : header ?? '';
+function parseCookie(
+  header: string | string[] | undefined,
+): Record<string, string> {
+  const str = Array.isArray(header) ? header[0] : (header ?? '');
   return Object.fromEntries(
     str.split(';').map((s) => {
-      const [k, v] = s.trim().split('=').map((x) => x.trim());
+      const [k, v] = s
+        .trim()
+        .split('=')
+        .map((x) => x.trim());
       return [k, v ?? ''];
     }),
   );
@@ -26,7 +31,9 @@ function parseCookie(header: string | string[] | undefined): Record<string, stri
   cors: { origin: true, credentials: true },
   transports: ['websocket', 'polling'],
 })
-export class NotificationsGateway implements OnGatewayConnection, OnGatewayDisconnect {
+export class NotificationsGateway
+  implements OnGatewayConnection, OnGatewayDisconnect
+{
   @WebSocketServer()
   server!: Server;
 
@@ -38,7 +45,9 @@ export class NotificationsGateway implements OnGatewayConnection, OnGatewayDisco
   ) {}
 
   async handleConnection(client: Socket) {
-    const cookieHeader = (client.handshake?.headers as Record<string, string> | undefined)?.cookie;
+    const cookieHeader = (
+      client.handshake?.headers as Record<string, string> | undefined
+    )?.cookie;
     const cookies = parseCookie(cookieHeader);
     const token = cookies[COOKIE_NAME];
     if (!token) {
@@ -46,7 +55,9 @@ export class NotificationsGateway implements OnGatewayConnection, OnGatewayDisco
       return;
     }
     try {
-      const payload = this.jwt.verify(token, { secret: this.config.getOrThrow<string>('JWT_SECRET') });
+      const payload = this.jwt.verify(token, {
+        secret: this.config.getOrThrow<string>('JWT_SECRET'),
+      });
       const userId = payload?.sub ? Number(payload.sub) : NaN;
       if (!userId || Number.isNaN(userId)) {
         client.emit('error', { message: 'Token inválido' });
@@ -71,7 +82,9 @@ export class NotificationsGateway implements OnGatewayConnection, OnGatewayDisco
   }
 
   emitNewNotification(userId: number, idNotificacion: number): void {
-    this.server.to(USER_ROOM_PREFIX + userId).emit('notification:new', { idNotificacion });
+    this.server
+      .to(USER_ROOM_PREFIX + userId)
+      .emit('notification:new', { idNotificacion });
   }
 
   emitCountUpdate(userId: number): void {

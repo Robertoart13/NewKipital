@@ -99,4 +99,3 @@ export class SyncPermissionCatalogAndCompanyGranular1708533400000 implements Mig
     `);
   }
 }
-

@@ -7,7 +7,7 @@ describe('EmployeesController (e2e)', () => {
   let app: INestApplication;
   let accessToken: string;
   let testEmployeeId: number;
-  let testCompanyId = 1;
+  const testCompanyId = 1;
 
   beforeAll(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
@@ -15,7 +15,9 @@ describe('EmployeesController (e2e)', () => {
     }).compile();
 
     app = moduleFixture.createNestApplication();
-    app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
+    app.useGlobalPipes(
+      new ValidationPipe({ whitelist: true, transform: true }),
+    );
     await app.init();
 
     // Login to get access token
@@ -99,7 +101,9 @@ describe('EmployeesController (e2e)', () => {
 
     it('should support sorting', () => {
       return request(app.getHttpServer())
-        .get(`/employees?idEmpresa=${testCompanyId}&sort=fechaIngreso&order=DESC`)
+        .get(
+          `/employees?idEmpresa=${testCompanyId}&sort=fechaIngreso&order=DESC`,
+        )
         .set('Authorization', `Bearer ${accessToken}`)
         .expect(200);
     });

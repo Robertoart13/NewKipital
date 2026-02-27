@@ -32,18 +32,37 @@ export class EmployeeVacationMonetaryProvision {
   @Column({ name: 'fecha_provision_monto_vacaciones', type: 'date' })
   fechaProvision: Date;
 
-  @Column({ name: 'dias_provisionados_monto_vacaciones', type: 'int', default: 1 })
+  @Column({
+    name: 'dias_provisionados_monto_vacaciones',
+    type: 'int',
+    default: 1,
+  })
   diasProvisionados: number;
 
-  @Column({ name: 'monto_provisionado_vacaciones', type: 'decimal', precision: 14, scale: 2, default: 0 })
+  @Column({
+    name: 'monto_provisionado_vacaciones',
+    type: 'decimal',
+    precision: 14,
+    scale: 2,
+    default: 0,
+  })
   montoProvisionado: string;
 
-  @Column({ name: 'formula_aplicada_vacaciones', type: 'varchar', length: 120, nullable: true })
+  @Column({
+    name: 'formula_aplicada_vacaciones',
+    type: 'varchar',
+    length: 120,
+    nullable: true,
+  })
   formulaAplicada: string | null;
 
   @CreateDateColumn({ name: 'fecha_creacion_provision_monto_vacaciones' })
   fechaCreacion: Date;
 
-  @Column({ name: 'creado_por_provision_monto_vacaciones', type: 'int', nullable: true })
+  @Column({
+    name: 'creado_por_provision_monto_vacaciones',
+    type: 'int',
+    nullable: true,
+  })
   creadoPor: number | null;
 }

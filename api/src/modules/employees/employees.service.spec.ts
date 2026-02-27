@@ -116,7 +116,9 @@ describe('EmployeesService', () => {
       encrypt: jest.fn(),
       decrypt: jest.fn(),
     };
-    mockSensitiveDataService.decrypt.mockImplementation((value) => value as string);
+    mockSensitiveDataService.decrypt.mockImplementation(
+      (value) => value as string,
+    );
 
     const mockEventEmitter = {
       emit: jest.fn(),
@@ -131,17 +133,35 @@ describe('EmployeesService', () => {
       providers: [
         EmployeesService,
         { provide: getRepositoryToken(Employee), useValue: mockRepository() },
-        { provide: getRepositoryToken(EmployeeAguinaldoProvision), useValue: mockRepository() },
-        { provide: getRepositoryToken(UserCompany), useValue: mockRepository() },
+        {
+          provide: getRepositoryToken(EmployeeAguinaldoProvision),
+          useValue: mockRepository(),
+        },
+        {
+          provide: getRepositoryToken(UserCompany),
+          useValue: mockRepository(),
+        },
         { provide: getRepositoryToken(User), useValue: mockRepository() },
-        { provide: getRepositoryToken(PayrollCalendar), useValue: mockRepository() },
-        { provide: getRepositoryToken(PersonalAction), useValue: mockRepository() },
+        {
+          provide: getRepositoryToken(PayrollCalendar),
+          useValue: mockRepository(),
+        },
+        {
+          provide: getRepositoryToken(PersonalAction),
+          useValue: mockRepository(),
+        },
         { provide: EmployeeCreationWorkflow, useValue: mockCreationWorkflow },
         { provide: EventEmitter2, useValue: mockEventEmitter },
         { provide: AuthService, useValue: mockAuthService },
         { provide: DataSource, useValue: mockDataSource },
-        { provide: EmployeeSensitiveDataService, useValue: mockSensitiveDataService },
-        { provide: EmployeeVacationService, useValue: { syncAccountAnchorOnJoinDateChange: jest.fn() } },
+        {
+          provide: EmployeeSensitiveDataService,
+          useValue: mockSensitiveDataService,
+        },
+        {
+          provide: EmployeeVacationService,
+          useValue: { syncAccountAnchorOnJoinDateChange: jest.fn() },
+        },
         { provide: AuditOutboxService, useValue: { publish: jest.fn() } },
       ],
     }).compile();
@@ -174,7 +194,11 @@ describe('EmployeesService', () => {
 
     it('should create employee without digital access', async () => {
       // Arrange
-      userCompanyRepo.findOne.mockResolvedValue({ idUsuario: 1, idEmpresa: 1, estado: 1 } as any);
+      userCompanyRepo.findOne.mockResolvedValue({
+        idUsuario: 1,
+        idEmpresa: 1,
+        estado: 1,
+      } as any);
       (employeeRepo.createQueryBuilder as jest.Mock).mockReturnValue({
         where: jest.fn().mockReturnThis(),
         andWhere: jest.fn().mockReturnThis(),
@@ -204,7 +228,9 @@ describe('EmployeesService', () => {
       userCompanyRepo.findOne.mockResolvedValue(null);
 
       // Act & Assert
-      await expect(service.create(mockCreateDto, 1)).rejects.toThrow(ForbiddenException);
+      await expect(service.create(mockCreateDto, 1)).rejects.toThrow(
+        ForbiddenException,
+      );
       await expect(service.create(mockCreateDto, 1)).rejects.toThrow(
         'No tiene acceso a la empresa seleccionada',
       );
@@ -212,7 +238,11 @@ describe('EmployeesService', () => {
 
     it('should throw ConflictException when codigo already exists', async () => {
       // Arrange
-      userCompanyRepo.findOne.mockResolvedValue({ idUsuario: 1, idEmpresa: 1, estado: 1 } as any);
+      userCompanyRepo.findOne.mockResolvedValue({
+        idUsuario: 1,
+        idEmpresa: 1,
+        estado: 1,
+      } as any);
       (employeeRepo.createQueryBuilder as jest.Mock).mockReturnValue({
         where: jest.fn().mockReturnThis(),
         andWhere: jest.fn().mockReturnThis(),
@@ -220,7 +250,9 @@ describe('EmployeesService', () => {
       });
 
       // Act & Assert
-      await expect(service.create(mockCreateDto, 1)).rejects.toThrow(ConflictException);
+      await expect(service.create(mockCreateDto, 1)).rejects.toThrow(
+        ConflictException,
+      );
       await expect(service.create(mockCreateDto, 1)).rejects.toThrow(
         "Ya existe un empleado con código 'EMP001'",
       );
@@ -228,24 +260,37 @@ describe('EmployeesService', () => {
 
     it('should throw ConflictException when cedula already exists', async () => {
       // Arrange
-      userCompanyRepo.findOne.mockResolvedValue({ idUsuario: 1, idEmpresa: 1, estado: 1 } as any);
+      userCompanyRepo.findOne.mockResolvedValue({
+        idUsuario: 1,
+        idEmpresa: 1,
+        estado: 1,
+      } as any);
       (employeeRepo.createQueryBuilder as jest.Mock).mockReturnValue({
         where: jest.fn().mockReturnThis(),
         andWhere: jest.fn().mockReturnThis(),
         getOne: jest.fn().mockResolvedValue(null),
       });
       sensitiveDataService.hashCedula.mockReturnValue('hash-cedula');
-      employeeRepo.findOne.mockResolvedValueOnce({ ...mockEmployee, cedulaHash: 'hash-cedula' });
+      employeeRepo.findOne.mockResolvedValueOnce({
+        ...mockEmployee,
+        cedulaHash: 'hash-cedula',
+      });
 
       // Act & Assert
       const execution = service.create(mockCreateDto, 1);
       await expect(execution).rejects.toThrow(ConflictException);
-      await expect(execution).rejects.toThrow("Ya existe un empleado con cédula '123456789'");
+      await expect(execution).rejects.toThrow(
+        "Ya existe un empleado con cédula '123456789'",
+      );
     });
 
     it('should throw ConflictException when email already exists', async () => {
       // Arrange
-      userCompanyRepo.findOne.mockResolvedValue({ idUsuario: 1, idEmpresa: 1, estado: 1 } as any);
+      userCompanyRepo.findOne.mockResolvedValue({
+        idUsuario: 1,
+        idEmpresa: 1,
+        estado: 1,
+      } as any);
       (employeeRepo.createQueryBuilder as jest.Mock).mockReturnValue({
         where: jest.fn().mockReturnThis(),
         andWhere: jest.fn().mockReturnThis(),
@@ -260,7 +305,9 @@ describe('EmployeesService', () => {
       // Act & Assert
       const execution = service.create(mockCreateDto, 1);
       await expect(execution).rejects.toThrow(ConflictException);
-      await expect(execution).rejects.toThrow("Ya existe un empleado con email 'john.doe@example.com'");
+      await expect(execution).rejects.toThrow(
+        "Ya existe un empleado con email 'john.doe@example.com'",
+      );
     });
 
     it('should create employee with TimeWise access when authorized', async () => {
@@ -271,7 +318,11 @@ describe('EmployeesService', () => {
         idRolTimewise: 5,
       };
 
-      userCompanyRepo.findOne.mockResolvedValue({ idUsuario: 1, idEmpresa: 1, estado: 1 } as any);
+      userCompanyRepo.findOne.mockResolvedValue({
+        idUsuario: 1,
+        idEmpresa: 1,
+        estado: 1,
+      } as any);
       (employeeRepo.createQueryBuilder as jest.Mock).mockReturnValue({
         where: jest.fn().mockReturnThis(),
         andWhere: jest.fn().mockReturnThis(),
@@ -297,7 +348,11 @@ describe('EmployeesService', () => {
 
       // Assert
       expect(result).toHaveProperty('success', true);
-      expect(authService.resolvePermissions).toHaveBeenCalledWith(1, 1, 'timewise');
+      expect(authService.resolvePermissions).toHaveBeenCalledWith(
+        1,
+        1,
+        'timewise',
+      );
     });
 
     it('should throw ForbiddenException when creating TimeWise access without permission', async () => {
@@ -308,7 +363,11 @@ describe('EmployeesService', () => {
         idRolTimewise: 5,
       };
 
-      userCompanyRepo.findOne.mockResolvedValue({ idUsuario: 1, idEmpresa: 1, estado: 1 } as any);
+      userCompanyRepo.findOne.mockResolvedValue({
+        idUsuario: 1,
+        idEmpresa: 1,
+        estado: 1,
+      } as any);
       (employeeRepo.createQueryBuilder as jest.Mock).mockReturnValue({
         where: jest.fn().mockReturnThis(),
         andWhere: jest.fn().mockReturnThis(),
@@ -323,7 +382,9 @@ describe('EmployeesService', () => {
       });
 
       // Act & Assert
-      await expect(service.create(dtoWithTW, 1)).rejects.toThrow(ForbiddenException);
+      await expect(service.create(dtoWithTW, 1)).rejects.toThrow(
+        ForbiddenException,
+      );
       await expect(service.create(dtoWithTW, 1)).rejects.toThrow(
         'No tiene permiso para asignar roles de TimeWise',
       );
@@ -337,7 +398,11 @@ describe('EmployeesService', () => {
         idRolKpital: 3,
       };
 
-      userCompanyRepo.findOne.mockResolvedValue({ idUsuario: 1, idEmpresa: 1, estado: 1 } as any);
+      userCompanyRepo.findOne.mockResolvedValue({
+        idUsuario: 1,
+        idEmpresa: 1,
+        estado: 1,
+      } as any);
       (employeeRepo.createQueryBuilder as jest.Mock).mockReturnValue({
         where: jest.fn().mockReturnThis(),
         andWhere: jest.fn().mockReturnThis(),
@@ -363,7 +428,11 @@ describe('EmployeesService', () => {
 
       // Assert
       expect(result).toHaveProperty('success', true);
-      expect(authService.resolvePermissions).toHaveBeenCalledWith(1, 1, 'kpital');
+      expect(authService.resolvePermissions).toHaveBeenCalledWith(
+        1,
+        1,
+        'kpital',
+      );
     });
 
     it('should throw BadRequestException when vacaciones acumuladas is negative', async () => {
@@ -373,7 +442,11 @@ describe('EmployeesService', () => {
         vacacionesAcumuladas: -5 as any,
       };
 
-      userCompanyRepo.findOne.mockResolvedValue({ idUsuario: 1, idEmpresa: 1, estado: 1 } as any);
+      userCompanyRepo.findOne.mockResolvedValue({
+        idUsuario: 1,
+        idEmpresa: 1,
+        estado: 1,
+      } as any);
 
       // Act & Assert
       await expect(service.create(dtoWithInvalidVacaciones, 1)).rejects.toThrow(
@@ -389,7 +462,9 @@ describe('EmployeesService', () => {
         ...mockCreateDto,
         fechaIngreso: '2026-01-31',
       };
-      await expect(service.create(dtoWithInvalidFecha, 1)).rejects.toThrow(BadRequestException);
+      await expect(service.create(dtoWithInvalidFecha, 1)).rejects.toThrow(
+        BadRequestException,
+      );
       await expect(service.create(dtoWithInvalidFecha, 1)).rejects.toThrow(
         'Fecha de ingreso debe estar entre el día 1 y 28 del mes.',
       );
@@ -411,7 +486,11 @@ describe('EmployeesService', () => {
         ],
       };
 
-      userCompanyRepo.findOne.mockResolvedValue({ idUsuario: 1, idEmpresa: 1, estado: 1 } as any);
+      userCompanyRepo.findOne.mockResolvedValue({
+        idUsuario: 1,
+        idEmpresa: 1,
+        estado: 1,
+      } as any);
 
       // Act & Assert
       await expect(service.create(dtoWithInvalidProvision, 1)).rejects.toThrow(
@@ -437,8 +516,14 @@ describe('EmployeesService', () => {
         getManyAndCount: jest.fn().mockResolvedValue([[mockEmployee], 1]),
       };
 
-      (employeeRepo.createQueryBuilder as jest.Mock).mockReturnValue(mockQueryBuilder);
-      userCompanyRepo.findOne.mockResolvedValue({ idUsuario: 1, idEmpresa: 1, estado: 1 } as any);
+      (employeeRepo.createQueryBuilder as jest.Mock).mockReturnValue(
+        mockQueryBuilder,
+      );
+      userCompanyRepo.findOne.mockResolvedValue({
+        idUsuario: 1,
+        idEmpresa: 1,
+        estado: 1,
+      } as any);
       authService.resolvePermissions.mockResolvedValue({
         permissions: ['employee:view-sensitive'],
         roles: [],
@@ -495,8 +580,14 @@ describe('EmployeesService', () => {
         getManyAndCount: jest.fn().mockResolvedValue([[], 0]),
       };
 
-      (employeeRepo.createQueryBuilder as jest.Mock).mockReturnValue(mockQueryBuilder);
-      userCompanyRepo.findOne.mockResolvedValue({ idUsuario: 1, idEmpresa: 1, estado: 1 } as any);
+      (employeeRepo.createQueryBuilder as jest.Mock).mockReturnValue(
+        mockQueryBuilder,
+      );
+      userCompanyRepo.findOne.mockResolvedValue({
+        idUsuario: 1,
+        idEmpresa: 1,
+        estado: 1,
+      } as any);
       sensitiveDataService.hashEmail.mockReturnValue('hash-search');
       sensitiveDataService.hashCedula.mockReturnValue('hash-search');
 
@@ -515,7 +606,11 @@ describe('EmployeesService', () => {
     it('should return employee by id', async () => {
       // Arrange
       employeeRepo.findOne.mockResolvedValue(mockEmployee);
-      userCompanyRepo.findOne.mockResolvedValue({ idUsuario: 1, idEmpresa: 1, estado: 1 } as any);
+      userCompanyRepo.findOne.mockResolvedValue({
+        idUsuario: 1,
+        idEmpresa: 1,
+        estado: 1,
+      } as any);
       authService.resolvePermissions.mockResolvedValue({
         permissions: ['employee:view-sensitive'],
         roles: [],
@@ -542,18 +637,29 @@ describe('EmployeesService', () => {
     it('should update employee successfully', async () => {
       // Arrange
       employeeRepo.findOne.mockResolvedValue(mockEmployee);
-      employeeRepo.save.mockResolvedValue({ ...mockEmployee, nombre: 'encrypted-Jane' });
-      userCompanyRepo.findOne.mockResolvedValue({ idUsuario: 1, idEmpresa: 1, estado: 1 } as any);
+      employeeRepo.save.mockResolvedValue({
+        ...mockEmployee,
+        nombre: 'encrypted-Jane',
+      });
+      userCompanyRepo.findOne.mockResolvedValue({
+        idUsuario: 1,
+        idEmpresa: 1,
+        estado: 1,
+      } as any);
       authService.resolvePermissions.mockResolvedValue({
         permissions: ['employee:view-sensitive'],
         roles: [],
       });
       sensitiveDataService.decrypt.mockImplementation((val) => val);
-      sensitiveDataService.encrypt.mockImplementation((val) => `encrypted-${val}`);
+      sensitiveDataService.encrypt.mockImplementation(
+        (val) => `encrypted-${val}`,
+      );
       sensitiveDataService.hashEmail.mockReturnValue('hash-new-email');
 
       const mockDataSource = {
-        transaction: jest.fn((callback) => callback({ findOne: employeeRepo.findOne, save: employeeRepo.save })),
+        transaction: jest.fn((callback) =>
+          callback({ findOne: employeeRepo.findOne, save: employeeRepo.save }),
+        ),
       };
       (service as any).dataSource = mockDataSource;
 
@@ -567,7 +673,11 @@ describe('EmployeesService', () => {
     it('should throw ForbiddenException when modifier not authenticated', async () => {
       // Arrange
       employeeRepo.findOne.mockResolvedValue(mockEmployee);
-      userCompanyRepo.findOne.mockResolvedValue({ idUsuario: 1, idEmpresa: 1, estado: 1 } as any);
+      userCompanyRepo.findOne.mockResolvedValue({
+        idUsuario: 1,
+        idEmpresa: 1,
+        estado: 1,
+      } as any);
       authService.resolvePermissions.mockResolvedValue({
         permissions: ['employee:view-sensitive'],
         roles: [],
@@ -575,14 +685,18 @@ describe('EmployeesService', () => {
       sensitiveDataService.decrypt.mockImplementation((val) => val);
 
       // Act & Assert
-      await expect(service.update(1, { nombre: 'Jane' }, undefined as any)).rejects.toThrow(
-        ForbiddenException,
-      );
+      await expect(
+        service.update(1, { nombre: 'Jane' }, undefined as any),
+      ).rejects.toThrow(ForbiddenException);
     });
 
     it('should reject editing vacacionesAcumuladas in update payload', async () => {
       employeeRepo.findOne.mockResolvedValue(mockEmployee);
-      userCompanyRepo.findOne.mockResolvedValue({ idUsuario: 1, idEmpresa: 1, estado: 1 } as any);
+      userCompanyRepo.findOne.mockResolvedValue({
+        idUsuario: 1,
+        idEmpresa: 1,
+        estado: 1,
+      } as any);
       authService.resolvePermissions.mockResolvedValue({
         permissions: ['employee:view-sensitive'],
         roles: [],
@@ -590,10 +704,12 @@ describe('EmployeesService', () => {
       sensitiveDataService.decrypt.mockImplementation((val) => val);
 
       const mockDataSource = {
-        transaction: jest.fn(async (callback) => callback({
-          findOne: jest.fn().mockResolvedValue(mockEmployee),
-          save: jest.fn().mockResolvedValue(mockEmployee),
-        })),
+        transaction: jest.fn(async (callback) =>
+          callback({
+            findOne: jest.fn().mockResolvedValue(mockEmployee),
+            save: jest.fn().mockResolvedValue(mockEmployee),
+          }),
+        ),
       };
       (service as any).dataSource = mockDataSource;
 
@@ -607,7 +723,11 @@ describe('EmployeesService', () => {
     it('should inactivate employee', async () => {
       // Arrange
       employeeRepo.findOne.mockResolvedValue(mockEmployee);
-      userCompanyRepo.findOne.mockResolvedValue({ idUsuario: 1, idEmpresa: 1, estado: 1 } as any);
+      userCompanyRepo.findOne.mockResolvedValue({
+        idUsuario: 1,
+        idEmpresa: 1,
+        estado: 1,
+      } as any);
       authService.resolvePermissions.mockResolvedValue({
         permissions: ['employee:view-sensitive'],
         roles: [],
@@ -629,7 +749,11 @@ describe('EmployeesService', () => {
       // Arrange
       const inactiveEmployee = { ...mockEmployee, estado: 0 };
       employeeRepo.findOne.mockResolvedValue(inactiveEmployee);
-      userCompanyRepo.findOne.mockResolvedValue({ idUsuario: 1, idEmpresa: 1, estado: 1 } as any);
+      userCompanyRepo.findOne.mockResolvedValue({
+        idUsuario: 1,
+        idEmpresa: 1,
+        estado: 1,
+      } as any);
       authService.resolvePermissions.mockResolvedValue({
         permissions: ['employee:view-sensitive'],
         roles: [],

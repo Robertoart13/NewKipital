@@ -31,8 +31,20 @@ import { AuthzModule } from '../authz/authz.module';
 @Module({
   imports: [
     TypeOrmModule.forFeature([
-      User, App, UserApp, UserCompany, Company,
-      UserRole, UserRoleGlobal, UserRoleExclusion, Role, RolePermission, Permission, UserPermissionOverride, UserPermissionGlobalDeny, RefreshSession,
+      User,
+      App,
+      UserApp,
+      UserCompany,
+      Company,
+      UserRole,
+      UserRoleGlobal,
+      UserRoleExclusion,
+      Role,
+      RolePermission,
+      Permission,
+      UserPermissionOverride,
+      UserPermissionGlobalDeny,
+      RefreshSession,
     ]),
     JwtModule.registerAsync(jwtConfig),
     PassportModule,

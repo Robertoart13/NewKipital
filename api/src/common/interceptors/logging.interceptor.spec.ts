@@ -2,7 +2,11 @@ import { ExecutionContext, CallHandler } from '@nestjs/common';
 import { of, throwError } from 'rxjs';
 import { LoggingInterceptor } from './logging.interceptor';
 
-function createMockContext(method = 'GET', url = '/api/test', statusCode = 200) {
+function createMockContext(
+  method = 'GET',
+  url = '/api/test',
+  statusCode = 200,
+) {
   const getRequest = jest.fn().mockReturnValue({ method, url });
   const getResponse = jest.fn().mockReturnValue({ statusCode });
   const switchToHttp = jest.fn().mockReturnValue({ getRequest, getResponse });
@@ -24,8 +28,12 @@ describe('LoggingInterceptor', () => {
 
   beforeEach(() => {
     interceptor = new LoggingInterceptor();
-    logSpy = jest.spyOn(interceptor['logger'], 'log').mockImplementation(() => undefined);
-    warnSpy = jest.spyOn(interceptor['logger'], 'warn').mockImplementation(() => undefined);
+    logSpy = jest
+      .spyOn(interceptor['logger'], 'log')
+      .mockImplementation(() => undefined);
+    warnSpy = jest
+      .spyOn(interceptor['logger'], 'warn')
+      .mockImplementation(() => undefined);
   });
 
   afterEach(() => jest.clearAllMocks());

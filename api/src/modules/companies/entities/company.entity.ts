@@ -33,27 +33,58 @@ export class Company {
   @Column({ name: 'cedula_empresa', type: 'varchar', length: 50, unique: true })
   cedula: string;
 
-  @Column({ name: 'actividad_economica_empresa', type: 'varchar', length: 300, nullable: true })
+  @Column({
+    name: 'actividad_economica_empresa',
+    type: 'varchar',
+    length: 300,
+    nullable: true,
+  })
   actividadEconomica: string | null;
 
   @Index('IDX_empresa_prefijo', { unique: true })
-  @Column({ name: 'prefijo_empresa', type: 'varchar', length: 10, unique: true })
+  @Column({
+    name: 'prefijo_empresa',
+    type: 'varchar',
+    length: 10,
+    unique: true,
+  })
   prefijo: string;
 
   @Index('IDX_empresa_id_externo')
-  @Column({ name: 'id_externo_empresa', type: 'varchar', length: 100, unique: true, nullable: true })
+  @Column({
+    name: 'id_externo_empresa',
+    type: 'varchar',
+    length: 100,
+    unique: true,
+    nullable: true,
+  })
   idExterno: string | null;
 
   @Column({ name: 'direccion_exacta_empresa', type: 'text', nullable: true })
   direccionExacta: string | null;
 
-  @Column({ name: 'telefono_empresa', type: 'varchar', length: 30, nullable: true })
+  @Column({
+    name: 'telefono_empresa',
+    type: 'varchar',
+    length: 30,
+    nullable: true,
+  })
   telefono: string | null;
 
-  @Column({ name: 'email_empresa', type: 'varchar', length: 150, nullable: true })
+  @Column({
+    name: 'email_empresa',
+    type: 'varchar',
+    length: 150,
+    nullable: true,
+  })
   email: string | null;
 
-  @Column({ name: 'codigo_postal_empresa', type: 'varchar', length: 20, nullable: true })
+  @Column({
+    name: 'codigo_postal_empresa',
+    type: 'varchar',
+    length: 20,
+    nullable: true,
+  })
   codigoPostal: string | null;
 
   // --- Estado Enterprise ---
@@ -70,7 +101,11 @@ export class Company {
   @UpdateDateColumn({ name: 'fecha_modificacion_empresa' })
   fechaModificacion: Date;
 
-  @Column({ name: 'fecha_inactivacion_empresa', type: 'datetime', nullable: true })
+  @Column({
+    name: 'fecha_inactivacion_empresa',
+    type: 'datetime',
+    nullable: true,
+  })
   fechaInactivacion: Date | null;
 
   @Column({ name: 'creado_por_empresa', type: 'int' })

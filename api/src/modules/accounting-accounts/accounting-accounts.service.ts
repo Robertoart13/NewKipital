@@ -40,16 +40,25 @@ export class AccountingAccountsService {
     esInactivo: 'Estado',
   };
 
-  async create(dto: CreateAccountingAccountDto, actorUserId: number): Promise<AccountingAccount> {
+  async create(
+    dto: CreateAccountingAccountDto,
+    actorUserId: number,
+  ): Promise<AccountingAccount> {
     await this.assertCompanyActive(dto.idEmpresa);
     const tipoCuenta = await this.resolveActiveTipoCuenta(dto.idTipoErp);
     await this.assertTipoAccionActivo(dto.idTipoAccionPersonal);
     await this.assertCodigoUnique(dto.idEmpresa, dto.codigo);
     if (dto.idExternoNetsuite?.trim()) {
-      await this.assertIdExternoNetsuiteUnique(dto.idEmpresa, dto.idExternoNetsuite.trim());
+      await this.assertIdExternoNetsuiteUnique(
+        dto.idEmpresa,
+        dto.idExternoNetsuite.trim(),
+      );
     }
     if (dto.codigoExterno?.trim()) {
-      await this.assertCodigoExternoUnique(dto.idEmpresa, dto.codigoExterno.trim());
+      await this.assertCodigoExternoUnique(
+        dto.idEmpresa,
+        dto.codigoExterno.trim(),
+      );
     }
 
     const entity = this.repo.create({
@@ -107,18 +116,34 @@ export class AccountingAccountsService {
     return found;
   }
 
-  async update(id: number, dto: UpdateAccountingAccountDto, actorUserId: number): Promise<AccountingAccount> {
+  async update(
+    id: number,
+    dto: UpdateAccountingAccountDto,
+    actorUserId: number,
+  ): Promise<AccountingAccount> {
     const found = await this.findOne(id);
     const payloadBefore = this.buildAuditPayload(found);
 
     if (dto.idEmpresa !== undefined && dto.idEmpresa !== found.idEmpresa) {
       await this.assertCompanyActive(dto.idEmpresa);
-      await this.assertCodigoUnique(dto.idEmpresa, dto.codigo ?? found.codigo, id);
+      await this.assertCodigoUnique(
+        dto.idEmpresa,
+        dto.codigo ?? found.codigo,
+        id,
+      );
       if (dto.idExternoNetsuite?.trim() || found.idExternoNetsuite) {
-        await this.assertIdExternoNetsuiteUnique(dto.idEmpresa, dto.idExternoNetsuite?.trim() || found.idExternoNetsuite!, id);
+        await this.assertIdExternoNetsuiteUnique(
+          dto.idEmpresa,
+          dto.idExternoNetsuite?.trim() || found.idExternoNetsuite!,
+          id,
+        );
       }
       if (dto.codigoExterno?.trim() || found.codigoExterno) {
-        await this.assertCodigoExternoUnique(dto.idEmpresa, dto.codigoExterno?.trim() || found.codigoExterno!, id);
+        await this.assertCodigoExternoUnique(
+          dto.idEmpresa,
+          dto.codigoExterno?.trim() || found.codigoExterno!,
+          id,
+        );
       }
       found.idEmpresa = dto.idEmpresa;
     }
@@ -130,7 +155,11 @@ export class AccountingAccountsService {
     if (dto.idExternoNetsuite !== undefined) {
       const nextIdExterno = dto.idExternoNetsuite.trim();
       if (nextIdExterno) {
-        await this.assertIdExternoNetsuiteUnique(found.idEmpresa, nextIdExterno, id);
+        await this.assertIdExternoNetsuiteUnique(
+          found.idEmpresa,
+          nextIdExterno,
+          id,
+        );
       }
       found.idExternoNetsuite = nextIdExterno || null;
     }
@@ -138,7 +167,11 @@ export class AccountingAccountsService {
     if (dto.codigoExterno !== undefined) {
       const nextCodigoExterno = dto.codigoExterno.trim();
       if (nextCodigoExterno) {
-        await this.assertCodigoExternoUnique(found.idEmpresa, nextCodigoExterno, id);
+        await this.assertCodigoExternoUnique(
+          found.idEmpresa,
+          nextCodigoExterno,
+          id,
+        );
       }
       found.codigoExterno = nextCodigoExterno || null;
     }
@@ -175,7 +208,10 @@ export class AccountingAccountsService {
     return saved;
   }
 
-  async inactivate(id: number, actorUserId: number): Promise<AccountingAccount> {
+  async inactivate(
+    id: number,
+    actorUserId: number,
+  ): Promise<AccountingAccount> {
     const found = await this.findOne(id);
     const payloadBefore = this.buildAuditPayload(found);
     found.esInactivo = 1;
@@ -193,7 +229,10 @@ export class AccountingAccountsService {
     return saved;
   }
 
-  async reactivate(id: number, actorUserId: number): Promise<AccountingAccount> {
+  async reactivate(
+    id: number,
+    actorUserId: number,
+  ): Promise<AccountingAccount> {
     const found = await this.findOne(id);
     const payloadBefore = this.buildAuditPayload(found);
     found.esInactivo = 0;
@@ -243,8 +282,10 @@ export class AccountingAccountsService {
     );
 
     return (rows ?? []).map((row: Record<string, unknown>) => {
-      const payloadBefore = (row.payloadBefore as Record<string, unknown> | null) ?? null;
-      const payloadAfter = (row.payloadAfter as Record<string, unknown> | null) ?? null;
+      const payloadBefore =
+        (row.payloadBefore as Record<string, unknown> | null) ?? null;
+      const payloadAfter =
+        (row.payloadAfter as Record<string, unknown> | null) ?? null;
       return {
         id: String(row.id ?? ''),
         modulo: String(row.modulo ?? ''),
@@ -255,7 +296,9 @@ export class AccountingAccountsService {
         actorNombre: row.actorNombre ? String(row.actorNombre) : null,
         actorEmail: row.actorEmail ? String(row.actorEmail) : null,
         descripcion: String(row.descripcion ?? ''),
-        fechaCreacion: row.fechaCreacion ? new Date(String(row.fechaCreacion)).toISOString() : null,
+        fechaCreacion: row.fechaCreacion
+          ? new Date(String(row.fechaCreacion)).toISOString()
+          : null,
         metadata: (row.metadata as Record<string, unknown> | null) ?? null,
         cambios: this.buildAuditChanges(payloadBefore, payloadAfter),
       };
@@ -274,7 +317,9 @@ export class AccountingAccountsService {
     });
   }
 
-  private buildAuditPayload(entity: AccountingAccount): Record<string, unknown> {
+  private buildAuditPayload(
+    entity: AccountingAccount,
+  ): Record<string, unknown> {
     return {
       idEmpresa: entity.idEmpresa ?? null,
       nombre: entity.nombre ?? null,
@@ -305,7 +350,8 @@ export class AccountingAccountsService {
       ...Object.keys(payloadBefore),
       ...Object.keys(payloadAfter),
     ]);
-    const changes: Array<{ campo: string; antes: string; despues: string }> = [];
+    const changes: Array<{ campo: string; antes: string; despues: string }> =
+      [];
     for (const key of keys) {
       if (!(key in this.auditFieldLabels)) continue;
       const beforeValue = this.normalizeAuditValue(payloadBefore[key]);
@@ -321,14 +367,23 @@ export class AccountingAccountsService {
   }
 
   private async assertCompanyActive(idEmpresa: number): Promise<void> {
-    const company = await this.companyRepo.findOne({ where: { id: idEmpresa } });
+    const company = await this.companyRepo.findOne({
+      where: { id: idEmpresa },
+    });
     if (!company || company.estado !== 1) {
-      throw new BadRequestException('Debe seleccionar una empresa activa para gestionar cuentas contables.');
+      throw new BadRequestException(
+        'Debe seleccionar una empresa activa para gestionar cuentas contables.',
+      );
     }
   }
 
-  private async assertCodigoUnique(idEmpresa: number, codigo: string, excludeId?: number): Promise<void> {
-    const qb = this.repo.createQueryBuilder('c')
+  private async assertCodigoUnique(
+    idEmpresa: number,
+    codigo: string,
+    excludeId?: number,
+  ): Promise<void> {
+    const qb = this.repo
+      .createQueryBuilder('c')
       .where('c.idEmpresa = :idEmpresa', { idEmpresa })
       .andWhere('c.codigo = :codigo', { codigo });
     if (excludeId) {
@@ -336,25 +391,41 @@ export class AccountingAccountsService {
     }
     const existing = await qb.getOne();
     if (existing) {
-      throw new ConflictException('Ya existe una cuenta contable con el mismo codigo en esta empresa.');
+      throw new ConflictException(
+        'Ya existe una cuenta contable con el mismo codigo en esta empresa.',
+      );
     }
   }
 
-  private async assertIdExternoNetsuiteUnique(idEmpresa: number, idExternoNetsuite: string, excludeId?: number): Promise<void> {
-    const qb = this.repo.createQueryBuilder('c')
+  private async assertIdExternoNetsuiteUnique(
+    idEmpresa: number,
+    idExternoNetsuite: string,
+    excludeId?: number,
+  ): Promise<void> {
+    const qb = this.repo
+      .createQueryBuilder('c')
       .where('c.idEmpresa = :idEmpresa', { idEmpresa })
-      .andWhere('c.idExternoNetsuite = :idExternoNetsuite', { idExternoNetsuite });
+      .andWhere('c.idExternoNetsuite = :idExternoNetsuite', {
+        idExternoNetsuite,
+      });
     if (excludeId) {
       qb.andWhere('c.id != :excludeId', { excludeId });
     }
     const existing = await qb.getOne();
     if (existing) {
-      throw new ConflictException('Ya existe una cuenta contable con el mismo ID externo Netsuite en esta empresa.');
+      throw new ConflictException(
+        'Ya existe una cuenta contable con el mismo ID externo Netsuite en esta empresa.',
+      );
     }
   }
 
-  private async assertCodigoExternoUnique(idEmpresa: number, codigoExterno: string, excludeId?: number): Promise<void> {
-    const qb = this.repo.createQueryBuilder('c')
+  private async assertCodigoExternoUnique(
+    idEmpresa: number,
+    codigoExterno: string,
+    excludeId?: number,
+  ): Promise<void> {
+    const qb = this.repo
+      .createQueryBuilder('c')
       .where('c.idEmpresa = :idEmpresa', { idEmpresa })
       .andWhere('c.codigoExterno = :codigoExterno', { codigoExterno });
     if (excludeId) {
@@ -362,18 +433,26 @@ export class AccountingAccountsService {
     }
     const existing = await qb.getOne();
     if (existing) {
-      throw new ConflictException('Ya existe una cuenta contable con el mismo codigo externo en esta empresa.');
+      throw new ConflictException(
+        'Ya existe una cuenta contable con el mismo codigo externo en esta empresa.',
+      );
     }
   }
 
-  private async resolveActiveTipoCuenta(idTipoErpInput: number): Promise<AccountingAccountType> {
+  private async resolveActiveTipoCuenta(
+    idTipoErpInput: number,
+  ): Promise<AccountingAccountType> {
     const rawValue = String(idTipoErpInput).trim();
-    const byExternal = await this.typeRepo.findOne({ where: { idExterno: rawValue } });
+    const byExternal = await this.typeRepo.findOne({
+      where: { idExterno: rawValue },
+    });
     if (byExternal && byExternal.status === 1) {
       return byExternal;
     }
 
-    const byInternal = await this.typeRepo.findOne({ where: { id: idTipoErpInput } });
+    const byInternal = await this.typeRepo.findOne({
+      where: { id: idTipoErpInput },
+    });
     if (byInternal && byInternal.status === 1) {
       return byInternal;
     }
@@ -381,10 +460,16 @@ export class AccountingAccountsService {
     throw new BadRequestException('Debe seleccionar un tipo de cuenta activo.');
   }
 
-  private async assertTipoAccionActivo(idTipoAccionPersonal: number): Promise<void> {
-    const found = await this.actionTypeRepo.findOne({ where: { id: idTipoAccionPersonal } });
+  private async assertTipoAccionActivo(
+    idTipoAccionPersonal: number,
+  ): Promise<void> {
+    const found = await this.actionTypeRepo.findOne({
+      where: { id: idTipoAccionPersonal },
+    });
     if (!found || found.estado !== 1) {
-      throw new BadRequestException('Debe seleccionar un tipo de accion personal activo.');
+      throw new BadRequestException(
+        'Debe seleccionar un tipo de accion personal activo.',
+      );
     }
   }
 }

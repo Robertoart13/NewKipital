@@ -18,13 +18,23 @@ export class Permission {
   id: number;
 
   @Index('IDX_permiso_codigo', { unique: true })
-  @Column({ name: 'codigo_permiso', type: 'varchar', length: 100, unique: true })
+  @Column({
+    name: 'codigo_permiso',
+    type: 'varchar',
+    length: 100,
+    unique: true,
+  })
   codigo: string;
 
   @Column({ name: 'nombre_permiso', type: 'varchar', length: 150 })
   nombre: string;
 
-  @Column({ name: 'descripcion_permiso', type: 'varchar', length: 300, nullable: true })
+  @Column({
+    name: 'descripcion_permiso',
+    type: 'varchar',
+    length: 300,
+    nullable: true,
+  })
   descripcion: string | null;
 
   @Index('IDX_permiso_modulo')

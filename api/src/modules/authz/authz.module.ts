@@ -10,4 +10,3 @@ import { PermissionsCacheService } from './permissions-cache.service';
   exports: [AuthzVersionService, PermissionsCacheService],
 })
 export class AuthzModule {}
-

@@ -1,4 +1,10 @@
-import { MigrationInterface, QueryRunner, Table, TableForeignKey, TableIndex } from 'typeorm';
+import {
+  MigrationInterface,
+  QueryRunner,
+  Table,
+  TableForeignKey,
+  TableIndex,
+} from 'typeorm';
 
 export class AddUserPermissionOverrides1708532400000 implements MigrationInterface {
   public async up(queryRunner: QueryRunner): Promise<void> {
@@ -19,17 +25,39 @@ export class AddUserPermissionOverrides1708532400000 implements MigrationInterfa
             { name: 'id_empresa', type: 'int', isNullable: false },
             { name: 'id_app', type: 'int', isNullable: false },
             { name: 'id_permiso', type: 'int', isNullable: false },
-            { name: 'efecto_usuario_permiso', type: 'varchar', length: '10', isNullable: false },
-            { name: 'estado_usuario_permiso', type: 'tinyint', width: 1, default: 1 },
-            { name: 'fecha_creacion_usuario_permiso', type: 'timestamp', default: 'CURRENT_TIMESTAMP' },
+            {
+              name: 'efecto_usuario_permiso',
+              type: 'varchar',
+              length: '10',
+              isNullable: false,
+            },
+            {
+              name: 'estado_usuario_permiso',
+              type: 'tinyint',
+              width: 1,
+              default: 1,
+            },
+            {
+              name: 'fecha_creacion_usuario_permiso',
+              type: 'timestamp',
+              default: 'CURRENT_TIMESTAMP',
+            },
             {
               name: 'fecha_modificacion_usuario_permiso',
               type: 'timestamp',
               default: 'CURRENT_TIMESTAMP',
               onUpdate: 'CURRENT_TIMESTAMP',
             },
-            { name: 'creado_por_usuario_permiso', type: 'int', isNullable: false },
-            { name: 'modificado_por_usuario_permiso', type: 'int', isNullable: false },
+            {
+              name: 'creado_por_usuario_permiso',
+              type: 'int',
+              isNullable: false,
+            },
+            {
+              name: 'modificado_por_usuario_permiso',
+              type: 'int',
+              isNullable: false,
+            },
           ],
           uniques: [
             {
@@ -74,7 +102,9 @@ export class AddUserPermissionOverrides1708532400000 implements MigrationInterfa
       );
     }
 
-    if (!table.foreignKeys.find((fk) => fk.name === 'FK_usuario_permiso_usuario')) {
+    if (
+      !table.foreignKeys.find((fk) => fk.name === 'FK_usuario_permiso_usuario')
+    ) {
       await queryRunner.createForeignKey(
         'sys_usuario_permiso',
         new TableForeignKey({
@@ -88,7 +118,9 @@ export class AddUserPermissionOverrides1708532400000 implements MigrationInterfa
       );
     }
 
-    if (!table.foreignKeys.find((fk) => fk.name === 'FK_usuario_permiso_empresa')) {
+    if (
+      !table.foreignKeys.find((fk) => fk.name === 'FK_usuario_permiso_empresa')
+    ) {
       await queryRunner.createForeignKey(
         'sys_usuario_permiso',
         new TableForeignKey({
@@ -116,7 +148,9 @@ export class AddUserPermissionOverrides1708532400000 implements MigrationInterfa
       );
     }
 
-    if (!table.foreignKeys.find((fk) => fk.name === 'FK_usuario_permiso_permiso')) {
+    if (
+      !table.foreignKeys.find((fk) => fk.name === 'FK_usuario_permiso_permiso')
+    ) {
       await queryRunner.createForeignKey(
         'sys_usuario_permiso',
         new TableForeignKey({
