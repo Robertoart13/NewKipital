@@ -23,8 +23,9 @@ import { AuthService } from '../auth/auth.service';
 import { EmployeeSensitiveDataService } from '../../common/services/employee-sensitive-data.service';
 import { EmployeeVacationService } from './services/employee-vacation.service';
 import {
+  PERSONAL_ACTION_APPROVED_STATES,
+  PERSONAL_ACTION_PENDING_STATES,
   PersonalAction,
-  PersonalActionEstado,
 } from '../personal-actions/entities/personal-action.entity';
 import {
   EstadoCalendarioNomina,
@@ -41,8 +42,8 @@ const PLANILLA_ESTADOS_BLOQUEANTES = [
 
 /** Estados de acciÃ³n de personal que bloquean inactivar empleado si no estÃ¡n asociadas a planilla (DOC-34 UC-02). */
 const ACCION_ESTADOS_BLOQUEANTES = [
-  PersonalActionEstado.PENDIENTE,
-  PersonalActionEstado.APROBADA,
+  ...PERSONAL_ACTION_PENDING_STATES,
+  ...PERSONAL_ACTION_APPROVED_STATES,
 ];
 
 @Injectable()

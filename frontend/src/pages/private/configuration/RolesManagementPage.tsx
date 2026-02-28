@@ -41,7 +41,27 @@ import styles from './UsersManagementPage.module.css';
 const { Text } = Typography;
 
 /** Módulos de KPITAL 360 (ERP planillas, RRHH). Son permisos distintos a TimeWise. */
-const KPITAL_MODULES = ['payroll', 'employee', 'personal-action', 'company', 'report', 'config'];
+const KPITAL_MODULES = [
+  'payroll',
+  'employee',
+  'personal-action',
+  'hr_action',
+  'hr-action-entradas',
+  'hr-action-despidos',
+  'hr-action-renuncias',
+  'hr-action-retenciones',
+  'hr-action-descuentos',
+  'hr-action-aumentos',
+  'hr-action-bonificaciones',
+  'hr-action-horas-extras',
+  'hr-action-vacaciones',
+  'hr-action-incapacidades',
+  'hr-action-licencias',
+  'hr-action-ausencias',
+  'company',
+  'report',
+  'config',
+];
 
 /** Módulos de TimeWise (asistencia, tiempo). Son permisos distintos a KPITAL. */
 const TIMEWISE_MODULES = ['timewise'];
@@ -78,6 +98,19 @@ const MODULE_LABELS_ES: Record<string, string> = {
   'payroll-article': 'articulos de nomina',
   'payroll-movement': 'movimientos de nomina',
   'personal-action': 'acciones de personal',
+  hr_action: 'acciones de personal',
+  'hr-action-entradas': 'acciones - entradas',
+  'hr-action-despidos': 'acciones - despidos',
+  'hr-action-renuncias': 'acciones - renuncias',
+  'hr-action-retenciones': 'acciones - retenciones',
+  'hr-action-descuentos': 'acciones - descuentos',
+  'hr-action-aumentos': 'acciones - aumentos',
+  'hr-action-bonificaciones': 'acciones - bonificaciones',
+  'hr-action-horas-extras': 'acciones - horas extras',
+  'hr-action-vacaciones': 'acciones - vacaciones',
+  'hr-action-incapacidades': 'acciones - incapacidades',
+  'hr-action-licencias': 'acciones - licencias',
+  'hr-action-ausencias': 'acciones - ausencias',
   position: 'puestos',
   project: 'proyectos',
   report: 'reportes',

@@ -160,6 +160,21 @@ export class PayrollCalendar {
   versionLock: number;
 
   @Column({
+    name: 'requires_recalculation_calendario_nomina',
+    type: 'tinyint',
+    width: 1,
+    default: 0,
+  })
+  requiresRecalculation: number;
+
+  @Column({
+    name: 'last_snapshot_at_calendario_nomina',
+    type: 'datetime',
+    nullable: true,
+  })
+  lastSnapshotAt: Date | null;
+
+  @Column({
     name: 'referencia_netsuite_calendario_nomina',
     type: 'varchar',
     length: 100,

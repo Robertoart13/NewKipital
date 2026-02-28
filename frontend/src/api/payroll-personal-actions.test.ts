@@ -6,7 +6,13 @@ vi.mock('../interceptors/httpInterceptor', () => ({
 
 import { httpFetch } from '../interceptors/httpInterceptor';
 import { fetchPayroll, fetchPayrolls } from './payroll';
-import { fetchPersonalAction, fetchPersonalActions } from './personalActions';
+import {
+  approvePersonalAction,
+  createPersonalAction,
+  fetchPersonalAction,
+  fetchPersonalActions,
+  rejectPersonalAction,
+} from './personalActions';
 
 const mockHttpFetch = vi.mocked(httpFetch);
 
@@ -59,5 +65,50 @@ describe('payroll and personal actions api', () => {
     } as any);
 
     await expect(fetchPersonalAction(20)).resolves.toEqual(payload);
+  });
+
+  it('createPersonalAction should post payload to API', async () => {
+    const payload = {
+      idEmpresa: 2,
+      idEmpleado: 7,
+      tipoAccion: 'AUSENCIA',
+      descripcion: 'Ausencia aprobada',
+      fechaEfecto: '2026-03-01',
+      monto: 0,
+    };
+    mockHttpFetch.mockResolvedValue({
+      ok: true,
+      json: vi.fn().mockResolvedValue({ id: 1, ...payload, estado: 1 }),
+    } as any);
+
+    await createPersonalAction(payload);
+
+    expect(mockHttpFetch).toHaveBeenCalledWith(
+      '/personal-actions',
+      expect.objectContaining({
+        method: 'POST',
+      }),
+    );
+  });
+
+  it('approvePersonalAction and rejectPersonalAction should call action endpoints', async () => {
+    mockHttpFetch.mockResolvedValue({
+      ok: true,
+      json: vi.fn().mockResolvedValue({ success: true }),
+    } as any);
+
+    await approvePersonalAction(12);
+    await rejectPersonalAction(12, 'No procede');
+
+    expect(mockHttpFetch).toHaveBeenNthCalledWith(
+      1,
+      '/personal-actions/12/approve',
+      expect.objectContaining({ method: 'PATCH' }),
+    );
+    expect(mockHttpFetch).toHaveBeenNthCalledWith(
+      2,
+      '/personal-actions/12/reject',
+      expect.objectContaining({ method: 'PATCH' }),
+    );
   });
 });

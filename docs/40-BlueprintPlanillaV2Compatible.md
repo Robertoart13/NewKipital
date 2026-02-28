@@ -18,6 +18,9 @@ Condicion operacional obligatoria antes de go-live:
 - validar despliegue con esos nuevos secretos,
 - confirmar que no existan secretos reales en archivos versionados.
 
+Referencia de ejecucion para Acciones de Personal + Planilla:
+- Ver [42-AccionesPersonal-Planilla-Fase0Cerrada.md](./42-AccionesPersonal-Planilla-Fase0Cerrada.md) (acta consolidada con reglas, compatibilidad y fases).
+
 ---
 
 ## 2. Principios no negociables

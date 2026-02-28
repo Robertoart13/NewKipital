@@ -9,11 +9,18 @@ import { Repository } from 'typeorm';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import {
   PersonalAction,
+  PERSONAL_ACTION_APPROVED_STATES,
+  PERSONAL_ACTION_PENDING_STATES,
   PersonalActionEstado,
 } from './entities/personal-action.entity';
 import { CreatePersonalActionDto } from './dto/create-personal-action.dto';
 import { DOMAIN_EVENTS } from '../../common/events/event-names';
 import { UserCompany } from '../access-control/entities/user-company.entity';
+import {
+  EstadoCalendarioNomina,
+  PayrollCalendar,
+} from '../payroll/entities/payroll-calendar.entity';
+import { EmployeesService } from '../employees/employees.service';
 
 @Injectable()
 export class PersonalActionsService {
@@ -22,6 +29,9 @@ export class PersonalActionsService {
     private readonly repo: Repository<PersonalAction>,
     @InjectRepository(UserCompany)
     private readonly userCompanyRepo: Repository<UserCompany>,
+    @InjectRepository(PayrollCalendar)
+    private readonly payrollRepo: Repository<PayrollCalendar>,
+    private readonly employeesService: EmployeesService,
     private readonly eventEmitter: EventEmitter2,
   ) {}
 
@@ -72,10 +82,15 @@ export class PersonalActionsService {
       idEmpleado: dto.idEmpleado,
       idCalendarioNomina: null,
       tipoAccion: dto.tipoAccion,
+      groupId: null,
+      origen: 'RRHH',
       descripcion: dto.descripcion ?? null,
-      estado: PersonalActionEstado.PENDIENTE,
+      estado: PersonalActionEstado.DRAFT,
       fechaEfecto: dto.fechaEfecto ? new Date(dto.fechaEfecto) : null,
+      fechaInicioEfecto: dto.fechaEfecto ? new Date(dto.fechaEfecto) : null,
+      fechaFinEfecto: dto.fechaEfecto ? new Date(dto.fechaEfecto) : null,
       monto: dto.monto ?? null,
+      moneda: 'CRC',
       creadoPor: userId ?? null,
       modificadoPor: userId ?? null,
     });
@@ -95,18 +110,20 @@ export class PersonalActionsService {
 
   async approve(id: number, userId?: number): Promise<PersonalAction> {
     const action = await this.findOne(id, userId);
-    if (action.estado !== PersonalActionEstado.PENDIENTE) {
+    if (!PERSONAL_ACTION_PENDING_STATES.includes(action.estado)) {
       throw new BadRequestException(
-        'Solo se puede aprobar una accion pendiente',
+        'Solo se puede aprobar una accion en estado pendiente',
       );
     }
 
-    action.estado = PersonalActionEstado.APROBADA;
+    action.estado = PersonalActionEstado.APPROVED;
     action.aprobadoPor = userId ?? null;
     action.fechaAprobacion = new Date();
     action.modificadoPor = userId ?? null;
+    action.versionLock += 1;
 
     const saved = await this.repo.save(action);
+    await this.flagRecalculationForOpenPayrolls(saved);
     this.eventEmitter.emit(DOMAIN_EVENTS.PERSONAL_ACTION.APPROVED, {
       eventName: DOMAIN_EVENTS.PERSONAL_ACTION.APPROVED,
       occurredAt: new Date(),
@@ -126,7 +143,7 @@ export class PersonalActionsService {
     userId?: number,
   ): Promise<PersonalAction> {
     const action = await this.findOne(id, userId);
-    if (action.estado !== PersonalActionEstado.APROBADA) {
+    if (!PERSONAL_ACTION_APPROVED_STATES.includes(action.estado)) {
       throw new BadRequestException(
         'Solo se puede asociar una accion aprobada a una planilla',
       );
@@ -134,6 +151,7 @@ export class PersonalActionsService {
 
     action.idCalendarioNomina = idCalendarioNomina;
     action.modificadoPor = userId ?? null;
+    action.versionLock += 1;
     return this.repo.save(action);
   }
 
@@ -151,17 +169,18 @@ export class PersonalActionsService {
     userId?: number,
   ): Promise<PersonalAction> {
     const action = await this.findOne(id, userId);
-    if (action.estado !== PersonalActionEstado.PENDIENTE) {
+    if (!PERSONAL_ACTION_PENDING_STATES.includes(action.estado)) {
       throw new BadRequestException(
         'Solo se puede rechazar una accion pendiente',
       );
     }
 
-    action.estado = PersonalActionEstado.RECHAZADA;
+    action.estado = PersonalActionEstado.REJECTED;
     action.motivoRechazo = motivo ?? null;
     action.aprobadoPor = userId ?? null;
     action.fechaAprobacion = new Date();
     action.modificadoPor = userId ?? null;
+    action.versionLock += 1;
 
     const saved = await this.repo.save(action);
     this.eventEmitter.emit(DOMAIN_EVENTS.PERSONAL_ACTION.REJECTED, {
@@ -171,6 +190,76 @@ export class PersonalActionsService {
     });
 
     return saved;
+  }
+
+  async findAbsenceMovementsCatalog(
+    userId: number,
+    idEmpresa: number,
+    idTipoAccionPersonal: number,
+  ) {
+    await this.assertUserCompanyAccess(userId, idEmpresa);
+
+    const rows = await this.repo.query(
+      `
+      SELECT
+        m.id_movimiento_nomina AS id,
+        m.id_empresa_movimiento_nomina AS idEmpresa,
+        m.nombre_movimiento_nomina AS nombre,
+        m.id_tipo_accion_personal_movimiento_nomina AS idTipoAccionPersonal,
+        m.descripcion_movimiento_nomina AS descripcion,
+        m.formula_ayuda_movimiento_nomina AS formulaAyuda,
+        m.es_inactivo_movimiento_nomina AS esInactivo
+      FROM nom_movimientos_nomina m
+      WHERE m.id_empresa_movimiento_nomina = ?
+        AND m.id_tipo_accion_personal_movimiento_nomina = ?
+      ORDER BY m.es_inactivo_movimiento_nomina ASC, m.nombre_movimiento_nomina ASC
+      `,
+      [idEmpresa, idTipoAccionPersonal],
+    );
+
+    return (rows ?? []).map((row: Record<string, unknown>) => ({
+      id: Number(row.id),
+      idEmpresa: Number(row.idEmpresa),
+      nombre: String(row.nombre ?? ''),
+      idTipoAccionPersonal: Number(row.idTipoAccionPersonal),
+      descripcion: row.descripcion ? String(row.descripcion) : null,
+      formulaAyuda: row.formulaAyuda ? String(row.formulaAyuda) : null,
+      esInactivo: Number(row.esInactivo ?? 0),
+    }));
+  }
+
+  async findAbsenceEmployeesCatalog(userId: number, idEmpresa: number) {
+    await this.assertUserCompanyAccess(userId, idEmpresa);
+    const pageSize = 100;
+    let page = 1;
+    let total = 0;
+    const allEmployees: Awaited<
+      ReturnType<EmployeesService['findAll']>
+    >['data'] = [];
+
+    do {
+      const result = await this.employeesService.findAll(userId, idEmpresa, {
+        includeInactive: false,
+        page,
+        pageSize,
+        sort: 'apellido1',
+        order: 'ASC',
+      });
+      total = result.total;
+      allEmployees.push(...result.data);
+      page += 1;
+    } while (allEmployees.length < total);
+
+    return allEmployees.map((employee) => ({
+      id: employee.id,
+      idEmpresa: employee.idEmpresa,
+      codigo: employee.codigo,
+      nombre: employee.nombre,
+      apellido1: employee.apellido1,
+      apellido2: employee.apellido2 ?? null,
+      idPeriodoPago: employee.idPeriodoPago ?? null,
+      monedaSalario: employee.monedaSalario ?? 'CRC',
+    }));
   }
 
   private async getUserCompanyIds(userId: number): Promise<number[]> {
@@ -193,5 +282,54 @@ export class PersonalActionsService {
         `No tiene acceso a la empresa ${companyId}.`,
       );
     }
+  }
+
+  private async flagRecalculationForOpenPayrolls(
+    action: PersonalAction,
+  ): Promise<void> {
+    const start = this.toYmd(action.fechaInicioEfecto ?? action.fechaEfecto);
+    if (!start) return;
+    const end = this.toYmd(
+      action.fechaFinEfecto ?? action.fechaInicioEfecto ?? action.fechaEfecto,
+    );
+    if (!end) return;
+    const approvedAt = action.fechaAprobacion
+      ? this.toYmdDateTime(action.fechaAprobacion)
+      : null;
+    const moneda = (action.moneda || 'CRC').toUpperCase();
+
+    await this.payrollRepo.query(
+      `
+      UPDATE nom_calendarios_nomina
+      SET requires_recalculation_calendario_nomina = 1
+      WHERE id_empresa = ?
+        AND estado_calendario_nomina = ?
+        AND es_inactivo = 0
+        AND last_snapshot_at_calendario_nomina IS NOT NULL
+        AND moneda_calendario_nomina = ?
+        AND fecha_fin_periodo >= ?
+        AND fecha_inicio_periodo <= ?
+        AND (? IS NULL OR ? <= COALESCE(fecha_corte_calendario_nomina, fecha_fin_periodo))
+      `,
+      [
+        action.idEmpresa,
+        EstadoCalendarioNomina.EN_PROCESO,
+        moneda,
+        start,
+        end,
+        approvedAt,
+        approvedAt,
+      ],
+    );
+  }
+
+  private toYmd(value: Date | null): string | null {
+    if (!value || Number.isNaN(value.getTime())) return null;
+    return value.toISOString().slice(0, 10);
+  }
+
+  private toYmdDateTime(value: Date): string {
+    if (Number.isNaN(value.getTime())) return '';
+    return value.toISOString().slice(0, 19).replace('T', ' ');
   }
 }

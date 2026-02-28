@@ -29,7 +29,7 @@ import {
 import { PayrollResult } from './entities/payroll-result.entity';
 import {
   PersonalAction,
-  PersonalActionEstado,
+  PERSONAL_ACTION_APPROVED_STATES,
 } from '../personal-actions/entities/personal-action.entity';
 
 @Injectable()
@@ -69,6 +69,8 @@ export class PayrollService {
     moneda: 'Moneda',
     estado: 'Estado',
     esInactivo: 'Estado registro',
+    requiresRecalculation: 'Requiere recalculo',
+    lastSnapshotAt: 'Ultimo snapshot',
   };
 
   async findAll(
@@ -492,6 +494,8 @@ export class PayrollService {
       payroll.estado = EstadoCalendarioNomina.EN_PROCESO;
       payroll.modificadoPor = userId ?? null;
       payroll.versionLock += 1;
+      payroll.requiresRecalculation = 0;
+      payroll.lastSnapshotAt = null;
       await queryRunner.manager.save(PayrollCalendar, payroll);
 
       const employees: Array<{
@@ -535,12 +539,16 @@ export class PayrollService {
       const approvedActions = await queryRunner.manager
         .createQueryBuilder(PersonalAction, 'a')
         .where('a.idEmpresa = :companyId', { companyId: payroll.idEmpresa })
-        .andWhere('a.estado = :approved', {
-          approved: PersonalActionEstado.APROBADA,
+        .andWhere('a.estado IN (:...approvedStates)', {
+          approvedStates: PERSONAL_ACTION_APPROVED_STATES,
         })
         .andWhere('a.idCalendarioNomina IS NULL')
-        .andWhere('a.fechaEfecto IS NOT NULL')
-        .andWhere('a.fechaEfecto BETWEEN :start AND :end', { start, end })
+        .andWhere('COALESCE(a.fechaInicioEfecto, a.fechaEfecto) IS NOT NULL')
+        .andWhere(
+          `COALESCE(a.fechaInicioEfecto, a.fechaEfecto) <= :end
+           AND COALESCE(a.fechaFinEfecto, a.fechaInicioEfecto, a.fechaEfecto) >= :start`,
+          { start, end },
+        )
         .andWhere(
           '(a.fechaAprobacion IS NULL OR a.fechaAprobacion <= :cutoff)',
           { cutoff },
@@ -554,13 +562,27 @@ export class PayrollService {
 
       for (const action of approvedActions) {
         const amount = Number(action.monto ?? 0);
+        const prorated = this.calculateProratedAmountForPayroll(
+          action,
+          payroll.fechaInicioPeriodo,
+          payroll.fechaFinPeriodo,
+          amount,
+        );
+        const retroMeta = this.resolveRetroMetadata(action, payroll);
         const input = queryRunner.manager.create(PayrollInputSnapshot, {
           idNomina: payroll.id,
           idEmpleado: action.idEmpleado,
           sourceType: PayrollInputSourceType.HR_ACTION,
           sourceId: action.id,
+          movementId: null,
           conceptoCodigo: action.tipoAccion,
-          monto: amount.toFixed(4),
+          tipoAccion: action.tipoAccion,
+          unidades: prorated.unidades.toFixed(4),
+          montoBase: prorated.montoBase.toFixed(6),
+          montoFinal: prorated.montoFinal.toFixed(2),
+          isRetro: retroMeta.isRetro ? 1 : 0,
+          originalPeriod: retroMeta.originalPeriod,
+          monto: prorated.montoFinal.toFixed(4),
         });
         await queryRunner.manager.save(PayrollInputSnapshot, input);
 
@@ -571,9 +593,9 @@ export class PayrollService {
         const key = action.idEmpleado;
         const prev = resultAccumulator.get(key) ?? { gross: 0, ded: 0 };
         if (this.isDeductionAction(action.tipoAccion)) {
-          prev.ded += amount;
+          prev.ded += prorated.montoFinal;
         } else {
-          prev.gross += amount;
+          prev.gross += prorated.montoFinal;
         }
         resultAccumulator.set(key, prev);
       }
@@ -605,6 +627,12 @@ export class PayrollService {
         createdBy: userId ?? null,
         idempotencyKey: `payroll.processed:${payroll.id}:${payroll.versionLock}`,
       });
+
+      payroll.lastSnapshotAt = new Date();
+      payroll.requiresRecalculation = 0;
+      payroll.modificadoPor = userId ?? null;
+      payroll.versionLock += 1;
+      await queryRunner.manager.save(PayrollCalendar, payroll);
 
       await queryRunner.commitTransaction();
       const saved = await this.findOne(id, userId);
@@ -1023,6 +1051,11 @@ export class PayrollService {
       moneda: entity.moneda ?? null,
       estado: this.normalizeEstadoValue(entity.estado),
       esInactivo: entity.esInactivo === 1 ? 'Inactivo' : 'Activo',
+      requiresRecalculation:
+        entity.requiresRecalculation === 1 ? 'Si' : 'No',
+      lastSnapshotAt: entity.lastSnapshotAt
+        ? this.toYmd(entity.lastSnapshotAt)
+        : null,
     };
   }
 
@@ -1081,6 +1114,76 @@ export class PayrollService {
 
   private isDeductionAction(actionType: string): boolean {
     return actionType.toLowerCase().includes('deduc');
+  }
+
+  private resolveRetroMetadata(
+    action: PersonalAction,
+    payroll: PayrollCalendar,
+  ): { isRetro: boolean; originalPeriod: string | null } {
+    const effectStart = action.fechaInicioEfecto ?? action.fechaEfecto;
+    if (!effectStart || Number.isNaN(effectStart.getTime())) {
+      return { isRetro: false, originalPeriod: null };
+    }
+
+    const isRetro = this.toYmd(effectStart) < this.toYmd(payroll.fechaInicioPeriodo);
+    if (!isRetro) {
+      return { isRetro: false, originalPeriod: null };
+    }
+
+    return {
+      isRetro: true,
+      originalPeriod: `${effectStart.getUTCFullYear()}-${String(effectStart.getUTCMonth() + 1).padStart(2, '0')}`,
+    };
+  }
+
+  private calculateProratedAmountForPayroll(
+    action: PersonalAction,
+    periodoInicio: Date,
+    periodoFin: Date,
+    montoOriginal: number,
+  ): { unidades: number; montoBase: number; montoFinal: number } {
+    const actionStart = action.fechaInicioEfecto ?? action.fechaEfecto;
+    const actionEnd =
+      action.fechaFinEfecto ?? action.fechaInicioEfecto ?? action.fechaEfecto;
+
+    if (!actionStart || !actionEnd) {
+      return { unidades: 1, montoBase: montoOriginal, montoFinal: montoOriginal };
+    }
+
+    const start = this.toMidnightUtc(actionStart);
+    const end = this.toMidnightUtc(actionEnd);
+    const payStart = this.toMidnightUtc(periodoInicio);
+    const payEnd = this.toMidnightUtc(periodoFin);
+
+    const overlapStart = Math.max(start.getTime(), payStart.getTime());
+    const overlapEnd = Math.min(end.getTime(), payEnd.getTime());
+
+    if (overlapEnd < overlapStart) {
+      return { unidades: 0, montoBase: montoOriginal, montoFinal: 0 };
+    }
+
+    const millisecondsPerDay = 1000 * 60 * 60 * 24;
+    const overlapDays =
+      Math.floor((overlapEnd - overlapStart) / millisecondsPerDay) + 1;
+    const actionDays =
+      Math.floor((end.getTime() - start.getTime()) / millisecondsPerDay) + 1;
+
+    if (actionDays <= 0) {
+      return { unidades: overlapDays, montoBase: montoOriginal, montoFinal: montoOriginal };
+    }
+
+    const montoBase = montoOriginal;
+    const montoProrated = (montoOriginal / actionDays) * overlapDays;
+
+    return {
+      unidades: overlapDays,
+      montoBase,
+      montoFinal: Number(montoProrated.toFixed(2)),
+    };
+  }
+
+  private toMidnightUtc(value: Date): Date {
+    return new Date(Date.UTC(value.getUTCFullYear(), value.getUTCMonth(), value.getUTCDate()));
   }
 
   private validateDateRules(

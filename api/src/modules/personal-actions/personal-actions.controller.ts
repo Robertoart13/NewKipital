@@ -25,7 +25,7 @@ export class PersonalActionsController {
     return { status: 'ok', module: 'personal-actions' };
   }
 
-  @RequirePermissions('personal-action:view')
+  @RequirePermissions('hr_action:view')
   @Get()
   findAll(
     @CurrentUser() user: { userId: number },
@@ -43,7 +43,44 @@ export class PersonalActionsController {
     );
   }
 
-  @RequirePermissions('personal-action:view')
+  @RequirePermissions('hr-action-ausencias:view')
+  @Get('absence-movements')
+  listAbsenceMovements(
+    @CurrentUser() user: { userId: number },
+    @Query('idEmpresa') idEmpresaRaw?: string,
+    @Query('idTipoAccionPersonal') idTipoAccionPersonalRaw?: string,
+  ) {
+    const idEmpresa = idEmpresaRaw ? parseInt(idEmpresaRaw, 10) : undefined;
+    const idTipoAccionPersonal = idTipoAccionPersonalRaw
+      ? parseInt(idTipoAccionPersonalRaw, 10)
+      : undefined;
+    if (
+      !idEmpresa ||
+      Number.isNaN(idEmpresa) ||
+      !idTipoAccionPersonal ||
+      Number.isNaN(idTipoAccionPersonal)
+    ) {
+      return [];
+    }
+    return this.service.findAbsenceMovementsCatalog(
+      user.userId,
+      idEmpresa,
+      idTipoAccionPersonal,
+    );
+  }
+
+  @RequirePermissions('hr-action-ausencias:view')
+  @Get('absence-employees')
+  listAbsenceEmployees(
+    @CurrentUser() user: { userId: number },
+    @Query('idEmpresa') idEmpresaRaw?: string,
+  ) {
+    const idEmpresa = idEmpresaRaw ? parseInt(idEmpresaRaw, 10) : undefined;
+    if (!idEmpresa || Number.isNaN(idEmpresa)) return [];
+    return this.service.findAbsenceEmployeesCatalog(user.userId, idEmpresa);
+  }
+
+  @RequirePermissions('hr_action:view')
   @Get(':id')
   findOne(
     @Param('id', ParseIntPipe) id: number,
@@ -52,7 +89,7 @@ export class PersonalActionsController {
     return this.service.findOne(id, user.userId);
   }
 
-  @RequirePermissions('personal-action:create')
+  @RequirePermissions('hr_action:create')
   @Post()
   create(
     @Body() dto: CreatePersonalActionDto,
@@ -61,7 +98,7 @@ export class PersonalActionsController {
     return this.service.create(dto, user.userId);
   }
 
-  @RequirePermissions('personal-action:approve')
+  @RequirePermissions('hr_action:approve')
   @Patch(':id/approve')
   approve(
     @Param('id', ParseIntPipe) id: number,
@@ -70,7 +107,7 @@ export class PersonalActionsController {
     return this.service.approve(id, user.userId);
   }
 
-  @RequirePermissions('personal-action:approve')
+  @RequirePermissions('hr_action:approve')
   @Patch(':id/associate-to-payroll')
   associateToPayroll(
     @Param('id', ParseIntPipe) id: number,
@@ -82,7 +119,7 @@ export class PersonalActionsController {
     return this.service.associateToPayroll(id, calId, user.userId);
   }
 
-  @RequirePermissions('personal-action:approve')
+  @RequirePermissions('hr_action:approve')
   @Patch(':id/reject')
   reject(
     @Param('id', ParseIntPipe) id: number,

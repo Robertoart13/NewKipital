@@ -57,6 +57,7 @@ Si ya estás en el proyecto y necesitás referencia puntual, usá esta tabla par
 | 38 | [38-VacacionesAcumuladasEnterprise.md](./38-VacacionesAcumuladasEnterprise.md) | Reglas oficiales enterprise de vacaciones acumuladas: saldo inicial inmutable, provisión mensual por día ancla (1..28), ledger de movimientos, descuento por planilla aplicada, saldo negativo permitido, historial de monto provisionado y control de permisos. | 23, 30, 34 |
 | 40 | [40-BlueprintPlanillaV2Compatible.md](./40-BlueprintPlanillaV2Compatible.md) | Blueprint definitivo y ejecutable para Planilla v2: compatibilidad incremental, estados numericos, slot_key/is_active, RBAC payroll y fases de implementacion. Incluye reglas implementadas de bitácora funcional, filtros de rango y persistencia de id_tipo_planilla. | 20, 21, 34 |
 | 41 | [41-AuditoriaEnterprise-Consolidado.md](./41-AuditoriaEnterprise-Consolidado.md) | Consolidado de auditoria Rev.1 a Rev.3: hallazgos reportados vs verificados en codigo, veredicto final y condicion operacional previa a go-live. | 09, 28, 40 |
+| 42 | [42-AccionesPersonal-Planilla-Fase0Cerrada.md](./42-AccionesPersonal-Planilla-Fase0Cerrada.md) | Acta tecnica consolidada para integrar Acciones de Personal con Planilla sin ruptura: reglas, estados, solape, retroactivos, permisos, trigger anti-delete y fases ejecutables. | 40, 41 |
 ---
 
 ## Estado del Proyecto

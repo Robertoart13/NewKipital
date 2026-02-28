@@ -11,7 +11,7 @@ describe('menuSlice', () => {
   it('initial config should include personal-actions', () => {
     const pa = initial.config.find((i: any) => i.id === 'personal-actions');
     expect(pa).toBeDefined();
-    expect(pa?.children?.length).toBeGreaterThan(0);
+    expect(pa?.requiredPermission).toBe('hr_action:view');
   });
 
   it('initial config should include configuration', () => {

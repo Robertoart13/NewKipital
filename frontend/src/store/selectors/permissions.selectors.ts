@@ -59,13 +59,13 @@ export const canAssignTimewiseRoleOnEmployeeCreate = (state: RootState) =>
   selectPermissions(state).includes('employee:assign-timewise-role');
 
 export const canCreatePersonalAction = (state: RootState) =>
-  selectPermissions(state).includes('personal-action:create');
+  selectPermissions(state).includes('hr_action:create');
 
 export const canApprovePersonalAction = (state: RootState) =>
-  selectPermissions(state).includes('personal-action:approve');
+  selectPermissions(state).includes('hr_action:approve');
 
 export const canViewPersonalAction = (state: RootState) =>
-  selectPermissions(state).includes('personal-action:view');
+  selectPermissions(state).includes('hr_action:view');
 
 export const canViewReports = (state: RootState) =>
   selectPermissions(state).includes('report:view');

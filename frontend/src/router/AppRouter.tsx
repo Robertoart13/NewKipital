@@ -23,6 +23,8 @@ import {
   PayrollManagementPage,
   PayrollCalendarPage,
   PayrollHolidaysPage,
+  PersonalActionsPage,
+  AbsencesPage,
 } from '../pages/private';
 
 /**
@@ -175,6 +177,169 @@ export function AppRouter() {
           )}
           path="/payroll-params/movimientos"
         />
+        <Route
+          element={(
+            <PrivateLayout>
+              <PermissionGuard requiredPermission="hr_action:view">
+                <PersonalActionsPage />
+              </PermissionGuard>
+            </PrivateLayout>
+          )}
+          path="/personal-actions"
+        />
+        <Route path="/personal-actions/entradas" element={(
+          <PrivateLayout>
+            <PermissionGuard requiredPermission="hr-action-entradas:view">
+              <PersonalActionsPage
+                pageTitle="Entradas de Personal"
+                pageSubtitle="Acciones de entrada de personal por empresa"
+                fixedTipoAccion="ENTRADA"
+                createPermission="hr-action-entradas:create"
+                approvePermission="hr-action-entradas:approve"
+              />
+            </PermissionGuard>
+          </PrivateLayout>
+        )} />
+        <Route path="/personal-actions/salidas" element={<Navigate to="/personal-actions/salidas/despidos" replace />} />
+        <Route path="/personal-actions/salidas/despidos" element={(
+          <PrivateLayout>
+            <PermissionGuard requiredPermission="hr-action-despidos:view">
+              <PersonalActionsPage
+                pageTitle="Despidos"
+                pageSubtitle="Acciones de salida por despido"
+                fixedTipoAccion="DESPIDO"
+                createPermission="hr-action-despidos:create"
+                approvePermission="hr-action-despidos:approve"
+              />
+            </PermissionGuard>
+          </PrivateLayout>
+        )} />
+        <Route path="/personal-actions/salidas/renuncias" element={(
+          <PrivateLayout>
+            <PermissionGuard requiredPermission="hr-action-renuncias:view">
+              <PersonalActionsPage
+                pageTitle="Renuncias"
+                pageSubtitle="Acciones de salida por renuncia"
+                fixedTipoAccion="RENUNCIA"
+                createPermission="hr-action-renuncias:create"
+                approvePermission="hr-action-renuncias:approve"
+              />
+            </PermissionGuard>
+          </PrivateLayout>
+        )} />
+        <Route path="/personal-actions/deducciones" element={<Navigate to="/personal-actions/deducciones/retenciones" replace />} />
+        <Route path="/personal-actions/deducciones/retenciones" element={(
+          <PrivateLayout>
+            <PermissionGuard requiredPermission="hr-action-retenciones:view">
+              <PersonalActionsPage
+                pageTitle="Retenciones"
+                pageSubtitle="Acciones de deduccion por retencion"
+                fixedTipoAccion="RETENCION"
+                createPermission="hr-action-retenciones:create"
+                approvePermission="hr-action-retenciones:approve"
+              />
+            </PermissionGuard>
+          </PrivateLayout>
+        )} />
+        <Route path="/personal-actions/deducciones/descuentos" element={(
+          <PrivateLayout>
+            <PermissionGuard requiredPermission="hr-action-descuentos:view">
+              <PersonalActionsPage
+                pageTitle="Descuentos"
+                pageSubtitle="Acciones de deduccion por descuento"
+                fixedTipoAccion="DESCUENTO"
+                createPermission="hr-action-descuentos:create"
+                approvePermission="hr-action-descuentos:approve"
+              />
+            </PermissionGuard>
+          </PrivateLayout>
+        )} />
+        <Route path="/personal-actions/compensaciones" element={<Navigate to="/personal-actions/compensaciones/aumentos" replace />} />
+        <Route path="/personal-actions/compensaciones/aumentos" element={(
+          <PrivateLayout>
+            <PermissionGuard requiredPermission="hr-action-aumentos:view">
+              <PersonalActionsPage
+                pageTitle="Aumentos"
+                pageSubtitle="Acciones de compensacion por aumento"
+                fixedTipoAccion="AUMENTO"
+                createPermission="hr-action-aumentos:create"
+                approvePermission="hr-action-aumentos:approve"
+              />
+            </PermissionGuard>
+          </PrivateLayout>
+        )} />
+        <Route path="/personal-actions/compensaciones/bonificaciones" element={(
+          <PrivateLayout>
+            <PermissionGuard requiredPermission="hr-action-bonificaciones:view">
+              <PersonalActionsPage
+                pageTitle="Bonificaciones"
+                pageSubtitle="Acciones de compensacion por bonificacion"
+                fixedTipoAccion="BONIFICACION"
+                createPermission="hr-action-bonificaciones:create"
+                approvePermission="hr-action-bonificaciones:approve"
+              />
+            </PermissionGuard>
+          </PrivateLayout>
+        )} />
+        <Route path="/personal-actions/compensaciones/horas-extras" element={(
+          <PrivateLayout>
+            <PermissionGuard requiredPermission="hr-action-horas-extras:view">
+              <PersonalActionsPage
+                pageTitle="Horas Extras"
+                pageSubtitle="Acciones de compensacion por horas extras"
+                fixedTipoAccion="HORA_EXTRA"
+                createPermission="hr-action-horas-extras:create"
+                approvePermission="hr-action-horas-extras:approve"
+              />
+            </PermissionGuard>
+          </PrivateLayout>
+        )} />
+        <Route path="/personal-actions/compensaciones/vacaciones" element={(
+          <PrivateLayout>
+            <PermissionGuard requiredPermission="hr-action-vacaciones:view">
+              <PersonalActionsPage
+                pageTitle="Vacaciones"
+                pageSubtitle="Acciones de compensacion por vacaciones"
+                fixedTipoAccion="VACACIONES"
+                createPermission="hr-action-vacaciones:create"
+                approvePermission="hr-action-vacaciones:approve"
+              />
+            </PermissionGuard>
+          </PrivateLayout>
+        )} />
+        <Route path="/personal-actions/incapacidades" element={(
+          <PrivateLayout>
+            <PermissionGuard requiredPermission="hr-action-incapacidades:view">
+              <PersonalActionsPage
+                pageTitle="Incapacidades"
+                pageSubtitle="Gestione incapacidades por empresa"
+                fixedTipoAccion="INCAPACIDAD"
+                createPermission="hr-action-incapacidades:create"
+                approvePermission="hr-action-incapacidades:approve"
+              />
+            </PermissionGuard>
+          </PrivateLayout>
+        )} />
+        <Route path="/personal-actions/licencias" element={(
+          <PrivateLayout>
+            <PermissionGuard requiredPermission="hr-action-licencias:view">
+              <PersonalActionsPage
+                pageTitle="Licencias y Permisos"
+                pageSubtitle="Gestione licencias y permisos por empresa"
+                fixedTipoAccion="LICENCIA"
+                createPermission="hr-action-licencias:create"
+                approvePermission="hr-action-licencias:approve"
+              />
+            </PermissionGuard>
+          </PrivateLayout>
+        )} />
+        <Route path="/personal-actions/ausencias" element={(
+          <PrivateLayout>
+            <PermissionGuard requiredPermission="hr-action-ausencias:view">
+              <AbsencesPage />
+            </PermissionGuard>
+          </PrivateLayout>
+        )} />
         <Route
           element={(
             <PrivateLayout>

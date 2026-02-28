@@ -155,3 +155,68 @@ Al intentar inactivar un empleado:
 
 1. Este documento es de backlog vivo; cada pendiente nuevo debe agregarse con ID incremental `PEND-XXX`.
 2. Cuando una tarea pase a implementacion, referenciar PR, commit y fecha de cierre.
+
+---
+
+## PEND-003 - Implementacion Fase 1 Acciones de Personal + Planilla (compatibilidad incremental)
+
+### Estado
+
+- En progreso (Dia 1 ejecutado en `mysql_hr_pro`)
+
+### Prioridad
+
+- Alta
+
+### Referencia funcional/tecnica
+
+- Documento rector: `docs/42-AccionesPersonal-Planilla-Fase0Cerrada.md`.
+- Blueprint base: `docs/40-BlueprintPlanillaV2Compatible.md`.
+
+### Alcance (Fase 1)
+
+1. Alter incremental de tabla de acciones existente (sin reemplazo).
+2. Agregar `consumed_run_id`, `version_lock`, metadatos de invalidacion/expiracion/cancelacion.
+3. Crear indice `idx_accion_consumed`.
+4. Crear/ajustar tabla hija de ausencias (si no existe equivalente).
+5. Seed permisos `hr_action:*` de fase 1.
+6. Implementar blindaje anti-delete (servicio + trigger).
+
+### Condiciones de entrada (obligatorias)
+
+1. Confirmar PK real de `nom_calendarios_nomina` para FK `consumed_run_id`.
+2. Confirmar mapping exacto de estados actuales de acciones.
+3. Confirmar politica de prorrateo para solapes multi-periodo.
+
+### Criterios de aceptacion
+
+1. Migracion ejecuta sin `DROP` ni `RENAME`.
+2. Endpoints legacy siguen operativos despues del `ALTER`.
+3. FK de consumo y nuevos indices quedan creados.
+4. No se puede eliminar fisicamente una accion en estado no permitido.
+5. Permisos de fase 1 quedan sembrados y asignables por rol.
+
+### Avance registrado (2026-02-27)
+
+- Estructura incremental aplicada en `acc_acciones_personal`.
+- Indices v2 aplicados.
+- Trigger anti-delete activo.
+- Permisos `hr_action:*` fase 1 sembrados y asignados por rol.
+- Pendiente del PEND-003:
+  - consolidacion final de estados en todos los flujos (incluyendo supervisor/rrhh cuando se habilite),
+  - integracion snapshot/retro/recalculo (Fase 2/3).
+
+Actualizacion Dia 2 (backend):
+
+- Solape por interseccion implementado en consumo de planilla.
+- Dominio de acciones ampliado a catalogo objetivo con compatibilidad legacy.
+- Controlador de acciones migrado a permisos `hr_action:*`.
+- Pruebas API en verde (`27/27`, `217/217`).
+
+Actualizacion Dia 3 (snapshot/retro/recalculo):
+
+- Snapshot enriquecido de inputs de planilla (campos de movimiento, unidades, montos base/final, retro).
+- Flags de recalculo agregados en planilla (`requires_recalculation`, `last_snapshot_at`).
+- Marca automatica de recalculo al aprobar acciones elegibles durante corrida en proceso.
+- Migracion incremental aplicada en `mysql_hr_pro` y validada.
+- Pruebas API se mantienen en verde (`27/27`, `217/217`).

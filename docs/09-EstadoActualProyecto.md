@@ -543,6 +543,9 @@ Estado: Implementado (backend + frontend + BD en `hr_pro`).
 | 2026-02-27 | **Calendario de Planilla (UI):** Se habilita ruta `/payroll-params/calendario/ver` con filtros operativos (empresa, moneda, tipo, estado, periodo), modo `Mensual` y `Timeline`, indicadores de riesgo y panel lateral de detalle con acciones por permisos/estado. |
 | 2026-02-27 | **Reglas UX Planilla:** Confirmacion obligatoria antes de `Procesar/Verificar/Aplicar`; bloqueo de `Verificar` cuando no hay movimientos procesados (snapshot de inputs = 0) con mensaje funcional para usuario final. |
 | 2026-02-27 | **Modulo Feriados de Planilla:** Se habilita `Listado de Feriados` en menu de Calendario de Nomina con permisos `payroll-holiday:view/create/edit/delete`, tabla `nom_feriados_planilla` y API CRUD (`/api/payroll-holidays`). |
+| 2026-02-27 | **Auditoria consolidada (Doc 41):** Se consolida analisis Rev.1->Rev.3 con verificacion en codigo, cierre de bloqueantes de codigo y condicion operacional de rotacion de secretos previa a go-live. |
+| 2026-02-27 | **Acta Fase 0 Acciones+Planilla (Doc 42):** Se congela alcance ejecutable con compatibilidad incremental, estados oficiales, regla de solape, politica de retroactivos, blindaje anti-delete y plan por fases para implementacion sin ruptura. |
+| 2026-02-27 | **Validacion real Fase 0 (Doc 42.17.1):** Confirmada PK `id_calendario_nomina`, uso actual de `id_calendario_nomina` como consumo en acciones, estados actuales 1..3, ausencia de `hr_action:*` en permisos y decision de no crear `consumed_run_id` en Fase 1. |
 
 
 

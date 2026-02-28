@@ -1,6 +1,6 @@
 ﻿import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { EntityManager, Repository } from 'typeorm';
+import { EntityManager, In, Repository } from 'typeorm';
 import { Employee } from '../entities/employee.entity';
 import { EmployeeVacationAccount } from '../entities/employee-vacation-account.entity';
 import {
@@ -9,8 +9,8 @@ import {
 } from '../entities/employee-vacation-ledger.entity';
 import { EmployeeVacationMonetaryProvision } from '../entities/employee-vacation-monetary-provision.entity';
 import {
+  PERSONAL_ACTION_APPROVED_STATES,
   PersonalAction,
-  PersonalActionEstado,
 } from '../../personal-actions/entities/personal-action.entity';
 import { EmployeeSensitiveDataService } from '../../../common/services/employee-sensitive-data.service';
 
@@ -306,7 +306,7 @@ export class EmployeeVacationService {
     const actions = await this.personalActionRepo.find({
       where: {
         idCalendarioNomina: payrollId,
-        estado: PersonalActionEstado.APROBADA,
+        estado: In(PERSONAL_ACTION_APPROVED_STATES),
       },
     });
 

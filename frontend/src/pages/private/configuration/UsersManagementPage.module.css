@@ -150,7 +150,10 @@
 }
 
 .companyFormContent :global(.ant-input),
-.companyFormContent :global(.ant-input-affix-wrapper) {
+.companyFormContent :global(.ant-input-affix-wrapper),
+.companyFormContent :global(.ant-select-selector),
+.companyFormContent :global(.ant-picker),
+.companyFormContent :global(.ant-input-number) {
   border-radius: 8px !important;
   border-color: #e8ecf0 !important;
 }
@@ -158,7 +161,13 @@
 .companyFormContent :global(.ant-input:hover),
 .companyFormContent :global(.ant-input:focus),
 .companyFormContent :global(.ant-input-affix-wrapper:hover),
-.companyFormContent :global(.ant-input-affix-wrapper:focus-within) {
+.companyFormContent :global(.ant-input-affix-wrapper:focus-within),
+.companyFormContent :global(.ant-select:not(.ant-select-disabled):hover .ant-select-selector),
+.companyFormContent :global(.ant-select-focused:not(.ant-select-disabled) .ant-select-selector),
+.companyFormContent :global(.ant-picker:hover),
+.companyFormContent :global(.ant-picker-focused),
+.companyFormContent :global(.ant-input-number:hover),
+.companyFormContent :global(.ant-input-number-focused) {
   border-color: #5a6c7d !important;
   box-shadow: 0 0 0 2px rgba(90, 108, 125, 0.08);
 }

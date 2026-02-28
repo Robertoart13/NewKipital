@@ -13,6 +13,7 @@ import {
   PersonalActionEstado,
 } from './entities/personal-action.entity';
 import { UserCompany } from '../access-control/entities/user-company.entity';
+import { PayrollCalendar } from '../payroll/entities/payroll-calendar.entity';
 
 describe('PersonalActionsService', () => {
   let service: PersonalActionsService;
@@ -39,6 +40,10 @@ describe('PersonalActionsService', () => {
         {
           provide: getRepositoryToken(UserCompany),
           useValue: { findOne: jest.fn(), find: jest.fn() },
+        },
+        {
+          provide: getRepositoryToken(PayrollCalendar),
+          useValue: { query: jest.fn() },
         },
         { provide: EventEmitter2, useValue: { emit: jest.fn() } },
       ],
