@@ -2,9 +2,11 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   Alert,
   App as AntdApp,
+  Avatar,
   Button,
   Card,
   Col,
+  Collapse,
   DatePicker,
   Flex,
   Form,
@@ -14,28 +16,58 @@ import {
   Row,
   Select,
   Space,
+  Spin,
   Switch,
+  Table,
   Tag,
+  Tabs,
   Tooltip,
-  Typography,
 } from 'antd';
-import { CalendarOutlined, CloseOutlined, DeleteOutlined, PlusOutlined } from '@ant-design/icons';
+import { CalendarOutlined, CloseOutlined, DeleteOutlined, PlusOutlined, QuestionCircleOutlined, SearchOutlined } from '@ant-design/icons';
+import {
+  BankOutlined,
+  ClockCircleOutlined,
+  DollarCircleOutlined,
+  IdcardOutlined,
+  MailOutlined,
+  UserOutlined,
+} from '@ant-design/icons';
 import dayjs, { type Dayjs } from 'dayjs';
+import type { ColumnsType } from 'antd/es/table';
 import type { PayrollListItem } from '../../../../api/payroll';
 import type { PayrollMovementListItem } from '../../../../api/payrollMovements';
+import type { CatalogPayPeriod } from '../../../../api/catalogs';
+import type { PersonalActionAuditTrailItem } from '../../../../api/personalActions';
+import { fetchAbsencePayrollsCatalog } from '../../../../api/personalActions';
 import sharedStyles from '../../configuration/UsersManagementPage.module.css';
+import { formatDateTime12h } from '../../../../lib/formatDate';
 
 export type AbsenceType = 'JUSTIFICADA' | 'NO_JUSTIFICADA';
-const { Text } = Typography;
+
+function getPayrollEstadoLabel(estado?: number): string {
+  if (estado === 1) return 'Abierta';
+  if (estado === 2) return 'En proceso';
+  if (estado === 3) return 'Verificada';
+  if (estado === 4) return 'Aplicada';
+  if (estado === 5) return 'Contabilizada';
+  if (estado === 6) return 'Notificada';
+  if (estado === 0) return 'Inactiva';
+  return `Estado ${estado ?? '-'}`;
+}
 
 export interface AbsenceTransactionLine {
   key: string;
   payrollId?: number;
+  payrollLabel?: string;
+  payrollEstado?: number;
   fechaEfecto?: Dayjs;
   movimientoId?: number;
+  movimientoLabel?: string;
+  movimientoInactivo?: boolean;
   tipoAusencia: AbsenceType;
   cantidad?: number;
   monto?: number;
+  montoInput?: string;
   remuneracion: boolean;
   formula: string;
 }
@@ -59,16 +91,31 @@ interface AbsenceTransactionModalProps {
     nombre: string;
     apellido1: string;
     apellido2?: string | null;
+    cedula?: string | null;
+    email?: string | null;
+    telefono?: string | null;
+    jornada?: string | null;
     idPeriodoPago?: number | null;
+    salarioBase?: number | null;
     monedaSalario?: string | null;
   }>;
-  payrolls: PayrollListItem[];
+  payPeriods: CatalogPayPeriod[];
   movements: PayrollMovementListItem[];
   actionTypeIdForAbsence?: number;
+  canViewEmployeeSensitive?: boolean;
+  employeesLoading?: boolean;
+  movementsLoading?: boolean;
+  loading?: boolean;
+  readOnly?: boolean;
+  readOnlyMessage?: string;
+  showAudit?: boolean;
+  auditTrail?: PersonalActionAuditTrailItem[];
+  loadingAuditTrail?: boolean;
+  onLoadAuditTrail?: () => Promise<void> | void;
   initialCompanyId?: number;
   initialDraft?: AbsenceFormDraft;
   onCancel: () => void;
-  onSubmit: (payload: AbsenceFormDraft) => void;
+  onSubmit: (payload: AbsenceFormDraft) => Promise<void> | void;
 }
 
 interface HeaderValues {
@@ -83,7 +130,103 @@ function buildEmptyLine(): AbsenceTransactionLine {
     tipoAusencia: 'JUSTIFICADA',
     remuneracion: true,
     formula: '',
+    montoInput: '',
   };
+}
+
+function formatMoney(amount: number | null | undefined, currency = 'CRC') {
+  if (amount == null || Number.isNaN(Number(amount))) return '--';
+  return `${currency} ${new Intl.NumberFormat('es-CR', {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 2,
+  }).format(Number(amount))}`;
+}
+
+function toNumber(value: number | string | null | undefined): number {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : 0;
+}
+
+function calculateSalaryByPeriod(salaryBase: number, payPeriodId?: number | null, jornada?: string | null): number {
+  const id = Number(payPeriodId);
+  const isByHours = (jornada ?? '').trim().toLowerCase() === 'por horas';
+  if (isByHours && (id === 8 || id === 11)) return 0;
+
+  switch (id) {
+    case 8:
+      return salaryBase / 4;
+    case 9:
+      return salaryBase / 2;
+    case 10:
+      return salaryBase;
+    case 11:
+      return salaryBase / 2;
+    case 12:
+      return salaryBase / 30;
+    case 13:
+      return salaryBase * 3;
+    case 14:
+      return salaryBase * 6;
+    case 15:
+      return salaryBase * 12;
+    default:
+      return salaryBase;
+  }
+}
+
+function calculateHourValue(salaryBase: number, payPeriodId?: number | null, jornada?: string | null): number {
+  const id = Number(payPeriodId);
+  const isByHours = (jornada ?? '').trim().toLowerCase() === 'por horas';
+  if (isByHours && (id === 8 || id === 11)) return salaryBase;
+  return salaryBase / 30 / 8;
+}
+
+function calculatePeriodHours(payPeriodId?: number | null, jornada?: string | null): number {
+  const id = Number(payPeriodId);
+  const isByHours = (jornada ?? '').trim().toLowerCase() === 'por horas';
+  if (isByHours && (id === 8 || id === 11)) return 0;
+
+  switch (id) {
+    case 8:
+      return 48;
+    case 9:
+      return 96;
+    case 10:
+      return 192;
+    case 11:
+      return 96;
+    case 12:
+      return 10;
+    case 13:
+      return 576;
+    case 14:
+      return 1152;
+    case 15:
+      return 2304;
+    default:
+      return 192;
+  }
+}
+
+function parseNonNegative(value: string | number | null | undefined): number {
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed) || parsed < 0) return 0;
+  return parsed;
+}
+
+function round2(value: number): number {
+  return Number(value.toFixed(2));
+}
+
+const MAX_ABSENCE_MONTO_DIGITS = 10;
+
+function normalizeIntegerAmount(value: unknown): number {
+  const asText = String(value ?? '');
+  const onlyDigits = asText.replace(/\D+/g, '').slice(0, MAX_ABSENCE_MONTO_DIGITS);
+  if (!onlyDigits) return 0;
+  const parsed = Number.parseInt(onlyDigits, 10);
+  if (!Number.isFinite(parsed) || parsed < 0) return 0;
+  return parsed;
 }
 
 export function AbsenceTransactionModal({
@@ -92,26 +235,45 @@ export function AbsenceTransactionModal({
   title,
   companies,
   employees,
-  payrolls,
+  payPeriods,
   movements,
   actionTypeIdForAbsence,
+  canViewEmployeeSensitive = false,
+  employeesLoading = false,
+  movementsLoading = false,
+  loading = false,
+  readOnly = false,
+  readOnlyMessage,
+  showAudit = false,
+  auditTrail = [],
+  loadingAuditTrail = false,
+  onLoadAuditTrail,
   initialCompanyId,
   initialDraft,
   onCancel,
   onSubmit,
 }: AbsenceTransactionModalProps) {
-  const { message } = AntdApp.useApp();
+  const { message, modal } = AntdApp.useApp();
   const [form] = Form.useForm<HeaderValues>();
   const [lines, setLines] = useState<AbsenceTransactionLine[]>([buildEmptyLine()]);
   const [employeePayrollConfig, setEmployeePayrollConfig] = useState<{
     idPeriodoPago?: number;
     moneda?: string;
   } | null>(null);
+  const [eligiblePayrolls, setEligiblePayrolls] = useState<PayrollListItem[]>([]);
+  const [loadingPayrolls, setLoadingPayrolls] = useState(false);
+  const [activeTab, setActiveTab] = useState('info');
+  const [auditLoaded, setAuditLoaded] = useState(false);
   const lastLineRef = useRef<HTMLDivElement>(null);
   const prevEmployeeIdRef = useRef<number | undefined>(undefined);
+  const [activeLineKeys, setActiveLineKeys] = useState<string[]>([]);
 
   useEffect(() => {
     if (!open) return;
+    setActiveTab('info');
+    setAuditLoaded(false);
+
+    form.resetFields();
 
     if (initialDraft) {
       form.setFieldsValue({
@@ -119,13 +281,33 @@ export function AbsenceTransactionModal({
         idEmpleado: initialDraft.idEmpleado,
         observacion: initialDraft.observacion,
       });
-      setLines(initialDraft.lines.length > 0 ? initialDraft.lines : [buildEmptyLine()]);
+      const draftLines = (initialDraft.lines.length > 0 ? initialDraft.lines : [buildEmptyLine()])
+        .map((line) => ({
+          ...line,
+          montoInput:
+            line.monto == null
+              ? ''
+              : String(normalizeIntegerAmount(line.monto)),
+        }));
+      setLines(draftLines);
+      setActiveLineKeys(draftLines.map((l) => l.key));
       return;
     }
 
     form.setFieldsValue({ idEmpresa: initialCompanyId });
-    setLines([buildEmptyLine()]);
+    const initialLine = buildEmptyLine();
+    setLines([initialLine]);
+    setActiveLineKeys([initialLine.key]);
   }, [open, initialDraft, initialCompanyId, form]);
+
+  useEffect(() => {
+    if (!open || !showAudit || activeTab !== 'bitacora' || auditLoaded) return;
+    const load = async () => {
+      await onLoadAuditTrail?.();
+      setAuditLoaded(true);
+    };
+    void load();
+  }, [activeTab, auditLoaded, onLoadAuditTrail, open, showAudit]);
 
   const selectedCompanyId = Form.useWatch('idEmpresa', form);
   const selectedEmployeeId = Form.useWatch('idEmpleado', form);
@@ -138,8 +320,17 @@ export function AbsenceTransactionModal({
     }
     const prev = prevEmployeeIdRef.current;
     const current = selectedEmployeeId;
+
+    // Evita reset por cambios transitorios de tabs (cuando el campo se desmonta temporalmente).
+    // Solo resetea cuando realmente cambia de un empleado válido a otro empleado válido.
+    if (current == null) {
+      return;
+    }
+
     if (prev !== undefined && prev !== current) {
-      setLines([buildEmptyLine()]);
+      const oneLine = buildEmptyLine();
+      setLines([oneLine]);
+      setActiveLineKeys([oneLine.key]);
     }
     prevEmployeeIdRef.current = current;
   }, [open, selectedEmployeeId]);
@@ -147,6 +338,7 @@ export function AbsenceTransactionModal({
   useEffect(() => {
     if (!selectedEmployeeId || !selectedCompanyId) {
       setEmployeePayrollConfig(null);
+      setEligiblePayrolls([]);
       return;
     }
     const employee = employees.find(
@@ -162,14 +354,69 @@ export function AbsenceTransactionModal({
     });
   }, [selectedCompanyId, selectedEmployeeId, employees]);
 
+  useEffect(() => {
+    if (!selectedCompanyId || !selectedEmployeeId) {
+      setEligiblePayrolls([]);
+      setLoadingPayrolls(false);
+      return;
+    }
+    let active = true;
+    setLoadingPayrolls(true);
+    void fetchAbsencePayrollsCatalog(Number(selectedCompanyId), Number(selectedEmployeeId))
+      .then((list) => {
+        if (!active) return;
+        setEligiblePayrolls(list);
+      })
+      .catch(() => {
+        if (!active) return;
+        setEligiblePayrolls([]);
+      })
+      .finally(() => {
+        if (!active) return;
+        setLoadingPayrolls(false);
+      });
+    return () => {
+      active = false;
+    };
+  }, [selectedCompanyId, selectedEmployeeId]);
+
   const employeesByCompany = useMemo(() => {
     if (!selectedCompanyId) return [];
     return employees.filter((employee) => employee.idEmpresa === selectedCompanyId);
   }, [employees, selectedCompanyId]);
 
+  const selectedEmployee = useMemo(() => {
+    if (!selectedCompanyId || !selectedEmployeeId) return null;
+    return employees.find(
+      (employee) => employee.idEmpresa === selectedCompanyId && employee.id === selectedEmployeeId,
+    ) ?? null;
+  }, [employees, selectedCompanyId, selectedEmployeeId]);
+
+  const selectedPayPeriod = useMemo(() => {
+    if (!selectedEmployee?.idPeriodoPago) return null;
+    return payPeriods.find((period) => period.id === Number(selectedEmployee.idPeriodoPago)) ?? null;
+  }, [payPeriods, selectedEmployee?.idPeriodoPago]);
+
+  const salaryBase = canViewEmployeeSensitive ? toNumber(selectedEmployee?.salarioBase) : 0;
+  const employeeCurrency = (selectedEmployee?.monedaSalario ?? 'CRC').toUpperCase();
+  const salaryByPeriod = calculateSalaryByPeriod(
+    salaryBase,
+    selectedEmployee?.idPeriodoPago,
+    selectedEmployee?.jornada,
+  );
+  const hourValue = calculateHourValue(
+    salaryBase,
+    selectedEmployee?.idPeriodoPago,
+    selectedEmployee?.jornada,
+  );
+  const periodHours = calculatePeriodHours(
+    selectedEmployee?.idPeriodoPago,
+    selectedEmployee?.jornada,
+  );
+
   const payrollsByCompany = useMemo(() => {
     if (!selectedCompanyId) return [];
-    let list = payrolls.filter((payroll) => payroll.idEmpresa === selectedCompanyId);
+    let list = eligiblePayrolls.filter((payroll) => payroll.idEmpresa === selectedCompanyId);
     if (employeePayrollConfig?.idPeriodoPago) {
       list = list.filter(
         (payroll) => Number(payroll.idPeriodoPago) === Number(employeePayrollConfig.idPeriodoPago),
@@ -181,7 +428,7 @@ export function AbsenceTransactionModal({
       );
     }
     return list;
-  }, [payrolls, selectedCompanyId, employeePayrollConfig]);
+  }, [eligiblePayrolls, selectedCompanyId, employeePayrollConfig]);
 
   const filteredMovements = useMemo(() => {
     if (!selectedCompanyId) return [];
@@ -202,7 +449,10 @@ export function AbsenceTransactionModal({
     const hasFecha = !!line.fechaEfecto;
     const hasMovement = !!line.movimientoId;
     const hasCantidad = line.cantidad != null && Number(line.cantidad) > 0;
-    const hasMonto = line.monto != null && Number(line.monto) >= 0;
+    const hasMonto =
+      (line.montoInput ?? '').trim().length > 0 &&
+      line.monto != null &&
+      Number(line.monto) >= 0;
     const hasFormula = line.formula.trim().length > 0;
     return hasPayroll && hasFecha && hasMovement && hasCantidad && hasMonto && hasFormula;
   };
@@ -211,20 +461,92 @@ export function AbsenceTransactionModal({
     setLines((prev) => prev.map((line) => (line.key === lineKey ? { ...line, ...changes } : line)));
   };
 
+  const calculateLineAmount = (
+    line: AbsenceTransactionLine,
+    movimientoId?: number,
+    cantidadValue?: number,
+    tipoAusenciaValue?: AbsenceType,
+  ) => {
+    const tipoAusencia = tipoAusenciaValue ?? line.tipoAusencia;
+    const cantidad = parseNonNegative(cantidadValue ?? line.cantidad ?? 0);
+    const movement = filteredMovements.find((m) => m.id === (movimientoId ?? line.movimientoId));
+
+    if (!movement) {
+      return { monto: 0, montoInput: '0', formula: 'Seleccione un movimiento para calcular' };
+    }
+
+    if (tipoAusencia === 'JUSTIFICADA') {
+      return { monto: 0, montoInput: '0', formula: 'Ausencia justificada' };
+    }
+
+    const montoFijo = parseNonNegative(movement.montoFijo);
+    const porcentaje = parseNonNegative(movement.porcentaje);
+
+    if (movement.esMontoFijo === 1 && montoFijo > 0) {
+      const montoCalculado = normalizeIntegerAmount(Math.round(montoFijo * cantidad));
+      return {
+        monto: montoCalculado,
+        montoInput: String(montoCalculado),
+        formula: `Monto fijo: ${montoFijo} × ${cantidad}`,
+      };
+    }
+
+    if (porcentaje > 0) {
+      const salarioBase = parseNonNegative(selectedEmployee?.salarioBase);
+      const isQuincenal = Number(selectedEmployee?.idPeriodoPago) === 9;
+      const baseCalculo = isQuincenal ? salarioBase / 2 : salarioBase;
+      const porcentajeDecimal = porcentaje / 100;
+      const monto = round2(baseCalculo * porcentajeDecimal * cantidad);
+      const baseTxt = canViewEmployeeSensitive ? String(round2(baseCalculo)) : '***';
+      const montoCalculado = normalizeIntegerAmount(Math.round(monto));
+      return {
+        monto: montoCalculado,
+        montoInput: String(montoCalculado),
+        formula: `${baseTxt} × ${porcentaje}% × ${cantidad}`,
+      };
+    }
+
+    return { monto: 0, montoInput: '0', formula: 'Sin configuración de cálculo' };
+  };
+
   const handlePayrollChange = (lineKey: string, payrollId?: number) => {
     const payroll = payrollsByCompany.find((item) => item.id === payrollId);
     updateLine(lineKey, {
       payrollId,
+      payrollLabel: payroll?.nombrePlanilla ?? undefined,
+      payrollEstado: payroll?.estado,
       fechaEfecto: payroll?.fechaFinPeriodo ? dayjs(payroll.fechaFinPeriodo) : undefined,
     });
   };
 
   const handleMovimientoChange = (lineKey: string, movimientoId?: number) => {
-    const movement = filteredMovements.find((m) => m.id === movimientoId);
-    updateLine(lineKey, {
+    const currentLine = lines.find((line) => line.key === lineKey);
+    if (!currentLine) return;
+    const movement = filteredMovements.find((item) => item.id === movimientoId);
+    const cleaned = {
       movimientoId,
-      formula: movement?.formulaAyuda ?? movement?.descripcion ?? '',
-    });
+      movimientoLabel: movement?.nombre,
+      movimientoInactivo: movement ? movement.esInactivo === 1 : false,
+      monto: 0,
+      montoInput: '0',
+      formula: '',
+    };
+    const calculated = calculateLineAmount(currentLine, movimientoId, currentLine.cantidad, currentLine.tipoAusencia);
+    updateLine(lineKey, { ...cleaned, ...calculated });
+  };
+
+  const handleCantidadChange = (lineKey: string, cantidad?: number) => {
+    const currentLine = lines.find((line) => line.key === lineKey);
+    if (!currentLine) return;
+    const calculated = calculateLineAmount(currentLine, currentLine.movimientoId, cantidad, currentLine.tipoAusencia);
+    updateLine(lineKey, { cantidad, ...calculated });
+  };
+
+  const handleTipoAusenciaChange = (lineKey: string, tipoAusencia: AbsenceType) => {
+    const currentLine = lines.find((line) => line.key === lineKey);
+    if (!currentLine) return;
+    const calculated = calculateLineAmount(currentLine, currentLine.movimientoId, currentLine.cantidad, tipoAusencia);
+    updateLine(lineKey, { tipoAusencia, ...calculated });
   };
 
   const addLine = () => {
@@ -233,38 +555,138 @@ export function AbsenceTransactionModal({
       message.warning('Complete la linea actual antes de agregar una nueva.');
       return;
     }
-    setLines((prev) => [...prev, buildEmptyLine()]);
+    const newLine = buildEmptyLine();
+    setLines((prev) => [...prev, newLine]);
+    setActiveLineKeys([newLine.key]);
     setTimeout(() => {
       lastLineRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }, 150);
   };
 
   const removeLine = (lineKey: string) => {
-    setLines((prev) => {
-      if (prev.length <= 1) return prev;
-      return prev.filter((line) => line.key !== lineKey);
+    if (lines.length <= 1) return;
+    const remaining = lines.filter((line) => line.key !== lineKey);
+    setLines(remaining);
+    setActiveLineKeys((prevKeys) => {
+      const next = prevKeys.filter((k) => k !== lineKey);
+      return next.length > 0 ? next : (remaining.length > 0 ? [remaining[remaining.length - 1].key] : []);
     });
   };
 
   const handleAccept = async () => {
+    if (loading) return;
     const values = await form.validateFields();
     if (lines.length === 0 || !lines.every(isLineComplete)) {
       message.error('Complete todas las lineas antes de crear/guardar la ausencia.');
       return;
     }
-    onSubmit({
+
+    const payload = {
       idEmpresa: values.idEmpresa!,
       idEmpleado: values.idEmpleado!,
       observacion: values.observacion,
       lines,
+    };
+
+    modal.confirm({
+      title: mode === 'create' ? 'Confirmar creación de ausencia' : 'Confirmar actualización de ausencia',
+      content:
+        mode === 'create'
+          ? '¿Está seguro de crear esta ausencia con las líneas capturadas?'
+          : '¿Está seguro de guardar los cambios de esta ausencia?',
+      icon: <QuestionCircleOutlined style={{ color: '#5a6c7d', fontSize: 40 }} />,
+      okText: mode === 'create' ? 'Sí, crear' : 'Sí, guardar',
+      cancelText: 'Cancelar',
+      centered: true,
+      width: 420,
+      rootClassName: sharedStyles.companyConfirmModal,
+      okButtonProps: { className: sharedStyles.companyConfirmOk },
+      cancelButtonProps: { className: sharedStyles.companyConfirmCancel },
+      onOk: async () => {
+        await onSubmit(payload);
+      },
     });
   };
 
   const canSubmit =
+    !loading &&
+    !readOnly &&
     !!selectedCompanyId &&
     !!selectedEmployeeId &&
     lines.length > 0 &&
     lines.every(isLineComplete);
+  const sensitiveMaskedValue = '***';
+
+  const showGlobalPreload =
+    loading ||
+    (!!selectedCompanyId && !!selectedEmployeeId && loadingPayrolls) ||
+    (activeTab === 'bitacora' && loadingAuditTrail);
+
+  const auditColumns: ColumnsType<PersonalActionAuditTrailItem> = useMemo(() => [
+    {
+      title: 'Fecha y hora',
+      dataIndex: 'fechaCreacion',
+      key: 'fechaCreacion',
+      width: 170,
+      render: (value: string | null) => formatDateTime12h(value),
+    },
+    {
+      title: 'Quien lo hizo',
+      key: 'actor',
+      width: 220,
+      render: (_, row) => {
+        const actorLabel = row.actorNombre?.trim() || row.actorEmail?.trim() || (row.actorUserId ? `Usuario ID ${row.actorUserId}` : 'Sistema');
+        return (
+          <div>
+            <div style={{ fontWeight: 600, color: '#3d4f5c' }}>{actorLabel}</div>
+            {row.actorEmail ? <div style={{ color: '#8c8c8c', fontSize: 12 }}>{row.actorEmail}</div> : null}
+          </div>
+        );
+      },
+    },
+    {
+      title: 'Accion',
+      key: 'accion',
+      width: 170,
+      render: (_, row) => (
+        <Flex gap={6} wrap="wrap">
+          <Tag className={sharedStyles.tagInactivo}>{row.modulo}</Tag>
+          <Tag className={sharedStyles.tagActivo}>{row.accion}</Tag>
+        </Flex>
+      ),
+    },
+    {
+      title: 'Detalle',
+      dataIndex: 'descripcion',
+      key: 'descripcion',
+      render: (value: string, row) => {
+        const changes = row.cambios ?? [];
+        const tooltipContent = (
+          <div style={{ maxWidth: 520 }}>
+            <div style={{ fontWeight: 600, marginBottom: 8 }}>{value}</div>
+            {changes.length > 0 ? (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                {changes.map((change, index) => (
+                  <div key={`${row.id}-${change.campo}-${index}`} style={{ fontSize: 12, lineHeight: 1.4 }}>
+                    <div><strong>{change.campo}</strong></div>
+                    <div>Antes: {change.antes}</div>
+                    <div>Despues: {change.despues}</div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div style={{ fontSize: 12 }}>Sin detalle de campos para esta accion.</div>
+            )}
+          </div>
+        );
+        return (
+          <Tooltip title={tooltipContent}>
+            <div className={sharedStyles.auditDetailCell}>{value}</div>
+          </Tooltip>
+        );
+      },
+    },
+  ], []);
 
   return (
     <Modal
@@ -293,9 +715,178 @@ export function AbsenceTransactionModal({
         </Flex>
       )}
     >
+      <div style={{ position: 'relative' }}>
+      {showGlobalPreload ? (
+        <div
+          style={{
+            position: 'absolute',
+            inset: 0,
+            zIndex: 20,
+            background: 'rgba(255,255,255,0.72)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            borderRadius: 8,
+          }}
+        >
+          <Spin size="large" tip="Cargando informacion..." />
+        </div>
+      ) : null}
       <Form form={form} layout="vertical" className={sharedStyles.companyFormContent}>
-        <Card size="small" style={{ marginBottom: 16, border: '1px solid #e8ecf0', borderRadius: 10 }}>
-          <Flex gap={12} wrap="wrap">
+        {readOnly ? (
+          <Alert
+            type="warning"
+            showIcon
+            message={readOnlyMessage ?? 'Esta ausencia esta en modo solo lectura por su estado actual.'}
+            className={`${sharedStyles.infoBanner} ${sharedStyles.warningType}`}
+            style={{ marginBottom: 12 }}
+          />
+        ) : null}
+
+        <Tabs
+          activeKey={activeTab}
+          onChange={setActiveTab}
+          className={`${sharedStyles.tabsWrapper} ${sharedStyles.companyModalTabs}`}
+          items={[
+            {
+              key: 'info',
+              label: (
+                <span>
+                  <CalendarOutlined style={{ marginRight: 8, fontSize: 16 }} />
+                  Informacion principal
+                </span>
+              ),
+            },
+            ...(showAudit
+              ? [
+                {
+                  key: 'bitacora',
+                  label: (
+                    <span>
+                      <SearchOutlined style={{ marginRight: 8, fontSize: 16 }} />
+                      Bitacora
+                    </span>
+                  ),
+                },
+              ]
+              : []),
+          ]}
+        />
+
+        {activeTab === 'info' ? (
+        <>
+        {selectedEmployee ? (
+          <Collapse
+            defaultActiveKey={[]}
+            className={`${sharedStyles.employeeAccordion}`}
+            items={[
+              {
+                key: 'empleado',
+                label: (
+                  <div className={sharedStyles.employeeAccordionHeader}>
+                    <div className={sharedStyles.employeeAccordionHeaderLeft}>
+                      <div className={sharedStyles.employeeAccordionAvatarWrap}>
+                        <Avatar size={34} icon={<UserOutlined />} />
+                      </div>
+                      <div className={sharedStyles.employeeAccordionNameBlock}>
+                        <div className={sharedStyles.employeeAccordionName}>
+                          {`${selectedEmployee.nombre || '--'} ${selectedEmployee.apellido1 || ''} ${selectedEmployee.apellido2 || ''}`.trim()}
+                        </div>
+                        <div className={sharedStyles.employeeAccordionId}>
+                          Empleado ID: {selectedEmployee.codigo || '--'}
+                          {canViewEmployeeSensitive && selectedEmployee.cedula ? ` - ${selectedEmployee.cedula}` : ''}
+                          {canViewEmployeeSensitive && selectedEmployee.telefono ? ` - ${selectedEmployee.telefono}` : ''}
+                        </div>
+                        <div className={sharedStyles.employeeAccordionCompany}>
+                          <BankOutlined />
+                          {companies.find((c) => Number(c.id) === selectedCompanyId)?.nombre ?? '--'}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ),
+                children: (
+                  <div className={sharedStyles.employeeAccordionContent}>
+                    <div className={sharedStyles.employeeAccordionGrid}>
+                      <div className={sharedStyles.employeeAccordionItem}>
+                        <IdcardOutlined className={sharedStyles.employeeAccordionItemIcon} />
+                        <div>
+                          <div className={sharedStyles.employeeAccordionItemLabel}>Cédula</div>
+                          <div className={sharedStyles.employeeAccordionItemValue}>
+                            {canViewEmployeeSensitive ? (selectedEmployee.cedula ?? '--') : sensitiveMaskedValue}
+                          </div>
+                        </div>
+                      </div>
+                      <div className={sharedStyles.employeeAccordionItem}>
+                        <MailOutlined className={sharedStyles.employeeAccordionItemIcon} />
+                        <div>
+                          <div className={sharedStyles.employeeAccordionItemLabel}>Email</div>
+                          <div className={sharedStyles.employeeAccordionItemValue}>
+                            {canViewEmployeeSensitive ? (selectedEmployee.email ?? '--') : sensitiveMaskedValue}
+                          </div>
+                        </div>
+                      </div>
+                      <div className={sharedStyles.employeeAccordionItem}>
+                        <CalendarOutlined className={sharedStyles.employeeAccordionItemIcon} />
+                        <div>
+                          <div className={sharedStyles.employeeAccordionItemLabel}>Período</div>
+                          <div className={sharedStyles.employeeAccordionItemValue}>{selectedPayPeriod?.nombre ?? '--'}</div>
+                        </div>
+                      </div>
+                      <div className={sharedStyles.employeeAccordionItem}>
+                        <ClockCircleOutlined className={sharedStyles.employeeAccordionItemIcon} />
+                        <div>
+                          <div className={sharedStyles.employeeAccordionItemLabel}>Jornada</div>
+                          <div className={sharedStyles.employeeAccordionItemValue}>{selectedEmployee.jornada ?? '--'}</div>
+                        </div>
+                      </div>
+                    </div>
+                    <hr className={sharedStyles.employeeAccordionGridHr} />
+                    <div className={sharedStyles.employeeAccordionGrid}>
+                      <div className={sharedStyles.employeeAccordionItem}>
+                        <DollarCircleOutlined className={sharedStyles.employeeAccordionItemIcon} />
+                        <div>
+                          <div className={sharedStyles.employeeAccordionItemLabel}>Salario Base</div>
+                          <div className={sharedStyles.employeeAccordionItemValue}>
+                            {canViewEmployeeSensitive ? formatMoney(selectedEmployee.salarioBase, employeeCurrency) : sensitiveMaskedValue}
+                          </div>
+                        </div>
+                      </div>
+                      <div className={sharedStyles.employeeAccordionItem}>
+                        <DollarCircleOutlined className={sharedStyles.employeeAccordionItemIcon} />
+                        <div>
+                          <div className={sharedStyles.employeeAccordionItemLabel}>Salario {selectedPayPeriod?.nombre ?? 'Período'}</div>
+                          <div className={sharedStyles.employeeAccordionItemValue}>
+                            {canViewEmployeeSensitive ? formatMoney(salaryByPeriod, employeeCurrency) : sensitiveMaskedValue}
+                          </div>
+                        </div>
+                      </div>
+                      <div className={sharedStyles.employeeAccordionItem}>
+                        <DollarCircleOutlined className={sharedStyles.employeeAccordionItemIcon} />
+                        <div>
+                          <div className={sharedStyles.employeeAccordionItemLabel}>Valor por Hora</div>
+                          <div className={sharedStyles.employeeAccordionItemValue}>
+                            {canViewEmployeeSensitive ? `${formatMoney(hourValue, employeeCurrency)}/hora` : sensitiveMaskedValue}
+                          </div>
+                        </div>
+                      </div>
+                      <div className={sharedStyles.employeeAccordionItem}>
+                        <ClockCircleOutlined className={sharedStyles.employeeAccordionItemIcon} />
+                        <div>
+                          <div className={sharedStyles.employeeAccordionItemLabel}>Horas del Período</div>
+                          <div className={sharedStyles.employeeAccordionItemValue}>{`${periodHours} horas`}</div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ),
+              },
+            ]}
+          />
+        ) : null}
+
+        <Card size="small" style={{ marginBottom: 12, border: '1px solid #e8ecf0', borderRadius: 8 }}>
+          <Flex gap={10} wrap="wrap">
             <Form.Item
               style={{ flex: '1 1 300px', marginBottom: 0 }}
               name="idEmpresa"
@@ -306,6 +897,7 @@ export function AbsenceTransactionModal({
                 showSearch
                 optionFilterProp="label"
                 placeholder="Seleccione empresa"
+                disabled={mode === 'edit' || readOnly}
                 options={companies.map((company) => ({
                   value: Number(company.id),
                   label: company.nombre,
@@ -324,17 +916,22 @@ export function AbsenceTransactionModal({
                   showSearch
                   optionFilterProp="label"
                   placeholder="Seleccione empleado"
+                  disabled={mode === 'edit' || readOnly}
+                  loading={employeesLoading}
+                  notFoundContent={employeesLoading ? <Spin size="small" /> : null}
                   options={employeesByCompany.map((employee) => ({
                     value: employee.id,
-                    label: `${employee.nombre} ${employee.apellido1} (${employee.codigo})`,
+                    label: `${[employee.apellido1, employee.apellido2, employee.nombre]
+                      .filter((part) => typeof part === 'string' && part.trim().length > 0)
+                      .join(' ')} (${employee.codigo})`,
                   }))}
                 />
               </Form.Item>
             ) : null}
           </Flex>
 
-          <Form.Item name="observacion" label="Observacion" style={{ marginTop: 12, marginBottom: 0 }}>
-            <Input.TextArea rows={2} maxLength={500} />
+          <Form.Item name="observacion" label="Observacion" style={{ marginTop: 8, marginBottom: 0 }}>
+            <Input.TextArea rows={1} autoSize={{ minRows: 1, maxRows: 3 }} maxLength={500} disabled={readOnly} />
           </Form.Item>
         </Card>
 
@@ -342,31 +939,74 @@ export function AbsenceTransactionModal({
           <Card
             size="small"
             title="Líneas de Transacción"
-            style={{ border: '1px solid #e8ecf0', borderRadius: 10 }}
+            style={{ border: '1px solid #e8ecf0', borderRadius: 8 }}
           >
+            {loading ? (
+              <Flex justify="center" align="center" style={{ minHeight: 220 }}>
+                <Spin size="large" tip="Cargando lineas de transaccion..." />
+              </Flex>
+            ) : (
+            <>
             <div style={{ maxHeight: 420, overflowY: 'auto', marginTop: 8 }}>
-            <Space direction="vertical" size={16} style={{ width: '100%' }}>
-              {lines.map((line, index) => {
-                const selectedMovement = filteredMovements.find((movement) => movement.id === line.movimientoId);
+              <Collapse
+                className={sharedStyles.lineCollapse}
+                activeKey={activeLineKeys}
+                onChange={(keys) => setActiveLineKeys(Array.isArray(keys) ? keys : keys ? [keys] : [])}
+                items={lines.map((line, index) => {
+                  const selectedMovement = filteredMovements.find((movement) => movement.id === line.movimientoId);
+                  const payrollOptions = payrollsByCompany.map((payroll) => ({
+                    value: payroll.id,
+                    label: `${payroll.nombrePlanilla ?? `Planilla #${payroll.id}`} (${getPayrollEstadoLabel(payroll.estado)})`,
+                    disabled: false,
+                  }));
+                  if (
+                    line.payrollId &&
+                    !payrollOptions.some((option) => option.value === line.payrollId)
+                  ) {
+                    payrollOptions.push({
+                      value: line.payrollId,
+                      label: `${line.payrollLabel ?? `Planilla #${line.payrollId}`} (No elegible hoy)`,
+                      disabled: true,
+                    });
+                  }
 
-                return (
-                  <div key={line.key} ref={index === lines.length - 1 ? lastLineRef : undefined}>
-                  <Card
-                    size="small"
-                    title={`Línea ${index + 1}`}
-                    style={{ border: '1px solid #e8ecf0', borderRadius: 8 }}
-                    extra={(
-                      <Button
-                        danger
-                        icon={<DeleteOutlined />}
-                        onClick={() => removeLine(line.key)}
-                        disabled={lines.length <= 1}
-                      >
-                        Eliminar
-                      </Button>
-                    )}
-                  >
-                    <Space direction="vertical" size={16} style={{ width: '100%' }}>
+                  const movementOptions = filteredMovements.map((movement) => ({
+                    value: movement.id,
+                    label: `${movement.nombre} (${movement.esMontoFijo === 1 ? 'Monto' : '%'})${movement.esInactivo === 1 ? ' (Inactivo)' : ''}`,
+                    disabled: movement.esInactivo === 1 && movement.id !== line.movimientoId,
+                  }));
+                  if (
+                    line.movimientoId &&
+                    !movementOptions.some((option) => option.value === line.movimientoId)
+                  ) {
+                    movementOptions.push({
+                      value: line.movimientoId,
+                      label: `${line.movimientoLabel ?? `Movimiento #${line.movimientoId}`} (No elegible hoy)`,
+                      disabled: true,
+                    });
+                  }
+                  return {
+                    key: line.key,
+                    label: (
+                      <Flex justify="space-between" align="center" style={{ width: '100%', paddingRight: 8 }}>
+                        <span style={{ fontWeight: 600, color: '#3d4f5c' }}>Línea {index + 1}</span>
+                        <Button
+                          danger
+                          size="small"
+                          icon={<DeleteOutlined />}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            removeLine(line.key);
+                          }}
+                          disabled={readOnly || lines.length <= 1}
+                        >
+                          Eliminar
+                        </Button>
+                      </Flex>
+                    ),
+                    children: (
+                      <div ref={index === lines.length - 1 ? lastLineRef : undefined}>
+                        <Space direction="vertical" size={16} style={{ width: '100%' }}>
                       <Row gutter={[16, 12]}>
                         <Col xs={24} md={12} lg={8}>
                           <div className={sharedStyles.filterLabel}>1. Periodo de pago (Planilla)</div>
@@ -374,19 +1014,30 @@ export function AbsenceTransactionModal({
                             style={{ width: '100%' }}
                             showSearch
                             optionFilterProp="label"
+                            loading={loadingPayrolls}
+                            notFoundContent={loadingPayrolls ? <Spin size="small" /> : null}
                             value={line.payrollId}
                             placeholder="Seleccione planilla"
-                            options={payrollsByCompany.map((payroll) => ({
-                              value: payroll.id,
-                              label: payroll.nombrePlanilla ?? `Planilla #${payroll.id}`,
-                            }))}
+                            options={payrollOptions}
                             onChange={(value) => handlePayrollChange(line.key, value)}
+                            disabled={readOnly}
                           />
+                          {line.payrollId && !payrollsByCompany.some((item) => item.id === line.payrollId) ? (
+                            <Alert
+                              type="warning"
+                              showIcon
+                              message="La planilla de esta linea ya no es elegible (cerrada, vencida o fuera de reglas)."
+                              className={`${sharedStyles.infoBanner} ${sharedStyles.warningType}`}
+                              style={{ marginTop: 10 }}
+                            />
+                          ) : null}
                           {payrollsByCompany.length === 0 ? (
                             <Alert
-                              type="error"
+                              type={loadingPayrolls ? 'info' : 'error'}
                               showIcon
-                              message="No hay planillas que coincidan con empresa, periodo de pago y moneda del empleado."
+                              message={loadingPayrolls
+                                ? 'Cargando planillas elegibles...'
+                                : 'No hay planillas que coincidan con empresa, periodo de pago y moneda del empleado.'}
                               className={`${sharedStyles.infoBanner} ${sharedStyles.dangerType}`}
                               style={{ marginTop: 10 }}
                             />
@@ -399,15 +1050,13 @@ export function AbsenceTransactionModal({
                               style={{ width: '100%' }}
                               showSearch
                               optionFilterProp="label"
-                              disabled={!line.payrollId}
+                              loading={movementsLoading}
+                              notFoundContent={movementsLoading ? <Spin size="small" /> : null}
+                              disabled={readOnly || !line.payrollId}
                               placeholder={!line.payrollId ? 'Seleccione planilla primero' : 'Seleccione movimiento'}
                               value={line.movimientoId}
                               onChange={(value) => handleMovimientoChange(line.key, value)}
-                              options={filteredMovements.map((movement) => ({
-                                value: movement.id,
-                                label: `${movement.nombre}${movement.esInactivo === 1 ? ' (Inactivo)' : ''}`,
-                                disabled: movement.esInactivo === 1 && movement.id !== line.movimientoId,
-                              }))}
+                              options={movementOptions}
                             />
                           </Tooltip>
                           {selectedMovement?.esInactivo === 1 ? (
@@ -419,10 +1068,10 @@ export function AbsenceTransactionModal({
                           <Tooltip title={!line.movimientoId ? 'Seleccione primero el movimiento' : undefined}>
                             <Select
                               style={{ width: '100%' }}
-                              disabled={!line.movimientoId}
+                              disabled={readOnly || !line.movimientoId}
                               placeholder={!line.movimientoId ? 'Seleccione movimiento primero' : 'Seleccione tipo'}
                               value={line.tipoAusencia}
-                              onChange={(value) => updateLine(line.key, { tipoAusencia: value })}
+                              onChange={(value) => handleTipoAusenciaChange(line.key, value)}
                               options={[
                                 { value: 'JUSTIFICADA', label: 'Justificada' },
                                 { value: 'NO_JUSTIFICADA', label: 'No justificada' },
@@ -434,14 +1083,14 @@ export function AbsenceTransactionModal({
                           <div className={sharedStyles.filterLabel}>4. Cantidad</div>
                           <Tooltip title={!line.movimientoId ? 'Seleccione primero el movimiento' : undefined}>
                             <InputNumber
-                              min={0}
+                              min={1}
                               precision={0}
                               step={1}
                               style={{ width: '100%' }}
-                              disabled={!line.movimientoId}
+                              disabled={readOnly || !line.movimientoId}
                               placeholder={!line.movimientoId ? '-' : undefined}
                               value={line.cantidad}
-                              onChange={(value) => updateLine(line.key, { cantidad: value ?? undefined })}
+                              onChange={(value) => handleCantidadChange(line.key, value ?? undefined)}
                             />
                           </Tooltip>
                         </Col>
@@ -450,29 +1099,21 @@ export function AbsenceTransactionModal({
                             {`5. Monto (${employeePayrollConfig?.moneda ?? 'MONEDA'})`}
                           </div>
                           <Tooltip title={!line.movimientoId ? 'Seleccione primero el movimiento' : undefined}>
-                            <InputNumber
-                              min={0}
-                              precision={2}
-                              step={0.01}
+                            <Input
                               style={{ width: '100%' }}
-                              disabled={!line.movimientoId}
                               placeholder={!line.movimientoId ? '-' : undefined}
-                              value={line.monto}
-                              formatter={(value) => {
-                                if (value == null) return '';
-                                const n = Number(value);
-                                if (Number.isNaN(n)) return '';
-                                return new Intl.NumberFormat('es-CR', {
-                                  minimumFractionDigits: 0,
-                                  maximumFractionDigits: 2,
-                                }).format(n);
+                              maxLength={MAX_ABSENCE_MONTO_DIGITS}
+                              inputMode="numeric"
+                              value={line.montoInput ?? ''}
+                              disabled={readOnly}
+                              onChange={(event) => {
+                                const raw = event.target.value ?? '';
+                                const onlyDigits = raw.replace(/\D+/g, '').slice(0, MAX_ABSENCE_MONTO_DIGITS);
+                                updateLine(line.key, {
+                                  montoInput: onlyDigits,
+                                  monto: onlyDigits.length > 0 ? normalizeIntegerAmount(onlyDigits) : undefined,
+                                });
                               }}
-                              parser={(value) => {
-                                if (!value) return 0;
-                                const parsed = Number(String(value).replace(/[^\d.-]/g, ''));
-                                return Number.isNaN(parsed) ? 0 : parsed;
-                              }}
-                              onChange={(value) => updateLine(line.key, { monto: value ?? undefined })}
                             />
                           </Tooltip>
                         </Col>
@@ -482,10 +1123,10 @@ export function AbsenceTransactionModal({
                             <div style={{ paddingTop: 4 }}>
                               <Switch
                                 checked={line.remuneracion}
-                                disabled={!line.movimientoId}
                                 onChange={(value) => updateLine(line.key, { remuneracion: value })}
                                 checkedChildren="Si"
                                 unCheckedChildren="No"
+                                disabled={readOnly || !line.movimientoId}
                               />
                             </div>
                           </Tooltip>
@@ -514,36 +1155,65 @@ export function AbsenceTransactionModal({
                           </Col>
                         </Row>
                       </div>
-                    </Space>
-                  </Card>
-                  </div>
-                );
-              })}
-            </Space>
+                        </Space>
+                      </div>
+                    ),
+                  };
+                })}
+              />
             </div>
             <Flex justify="center" style={{ marginTop: 16, paddingTop: 16, borderTop: '1px solid #e8ecf0' }}>
-              <Button type="dashed" icon={<PlusOutlined />} onClick={addLine}>
+              <Button type="dashed" icon={<PlusOutlined />} onClick={addLine} disabled={readOnly}>
                 Agregar línea de transacción
               </Button>
             </Flex>
+            </>
+            )}
           </Card>
         ) : null}
+        </>
+        ) : (
+          <div className={sharedStyles.historicoSection}>
+            <p className={sharedStyles.sectionTitle}>Historial de cambios de la ausencia</p>
+            <p className={sharedStyles.sectionDescription} style={{ marginBottom: 16 }}>
+              Muestra quien hizo el cambio, cuando lo hizo y el detalle registrado en bitacora.
+            </p>
+            <Table<PersonalActionAuditTrailItem>
+              rowKey="id"
+              size="small"
+              loading={loadingAuditTrail}
+              columns={auditColumns}
+              dataSource={auditTrail}
+              className={`${sharedStyles.configTable} ${sharedStyles.auditTableCompact}`}
+              pagination={{
+                pageSize: 8,
+                showSizeChanger: true,
+                showTotal: (total) => `${total} registro(s)`,
+              }}
+              locale={{ emptyText: 'No hay registros de bitacora para esta ausencia.' }}
+            />
+          </div>
+        )}
 
         <div className={sharedStyles.companyModalFooter}>
           <Button onClick={onCancel} className={sharedStyles.companyModalBtnCancel}>
-            Cancelar
+            {readOnly ? 'Cerrar' : 'Cancelar'}
           </Button>
-          <Button
-            type="primary"
-            className={sharedStyles.companyModalBtnSubmit}
-            disabled={!canSubmit}
-            onClick={() => void handleAccept()}
-            icon={mode === 'create' ? <PlusOutlined /> : undefined}
-          >
-            {mode === 'create' ? 'Crear ausencia' : 'Guardar cambios'}
-          </Button>
+          {!readOnly ? (
+            <Button
+              type="primary"
+              className={sharedStyles.companyModalBtnSubmit}
+              disabled={!canSubmit}
+              onClick={() => void handleAccept()}
+              icon={mode === 'create' ? <PlusOutlined /> : undefined}
+            >
+              {mode === 'create' ? 'Crear ausencia' : 'Guardar cambios'}
+            </Button>
+          ) : null}
         </div>
       </Form>
+      </div>
     </Modal>
   );
 }
+

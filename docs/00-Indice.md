@@ -2,7 +2,7 @@
 
 **Proyecto:** KPITAL 360 — ERP Multiempresa  
 **Autor:** Roberto — Arquitecto Funcional / Senior Engineer  
-**Última actualización:** 2026-02-27 (Auditoria consolidada Rev.1->Rev.3 documentada para revisión externa)
+**Última actualización:** 2026-02-28 (incluye consolidado final de Ausencias: bitácora, apertura por estado con modo lectura, validaciones de monto/cantidad y estabilidad de carga por tabs/preloads)
 
 ---
 
@@ -58,6 +58,9 @@ Si ya estás en el proyecto y necesitás referencia puntual, usá esta tabla par
 | 40 | [40-BlueprintPlanillaV2Compatible.md](./40-BlueprintPlanillaV2Compatible.md) | Blueprint definitivo y ejecutable para Planilla v2: compatibilidad incremental, estados numericos, slot_key/is_active, RBAC payroll y fases de implementacion. Incluye reglas implementadas de bitácora funcional, filtros de rango y persistencia de id_tipo_planilla. | 20, 21, 34 |
 | 41 | [41-AuditoriaEnterprise-Consolidado.md](./41-AuditoriaEnterprise-Consolidado.md) | Consolidado de auditoria Rev.1 a Rev.3: hallazgos reportados vs verificados en codigo, veredicto final y condicion operacional previa a go-live. | 09, 28, 40 |
 | 42 | [42-AccionesPersonal-Planilla-Fase0Cerrada.md](./42-AccionesPersonal-Planilla-Fase0Cerrada.md) | Acta tecnica consolidada para integrar Acciones de Personal con Planilla sin ruptura: reglas, estados, solape, retroactivos, permisos, trigger anti-delete y fases ejecutables. | 40, 41 |
+| 43 | [43-AccionesPersonal-Ausencias-Implementacion-Operativa.md](./43-AccionesPersonal-Ausencias-Implementacion-Operativa.md) | Cierre operativo de Ausencias: persistencia real (header+lineas), tabla `acc_ausencias_lineas`, estado inicial `PENDING_SUPERVISOR`, reglas de planilla elegible, calculo de monto, avance secuencial, invalidacion, bitacora, apertura en cualquier estado (edicion/lectura), filtros por atencion y estabilidad UI de tabs/preloads. | 42 |
+| 44 | [44-ContratosAPI-Ausencias-20260228.md](./44-ContratosAPI-Ausencias-20260228.md) | Contrato operativo final de Ausencias: catalogos, create, edit, advance, invalidate y audit-trail, con permisos, reglas por estado y validaciones de payload alineadas al flujo enterprise. | 20, 43 |
+| 45 | [45-Handoff-AccionesPersonal-Ausencias.md](./45-Handoff-AccionesPersonal-Ausencias.md) | Handoff operativo para retomar desde cero: estado actual, reglas vigentes, endpoints, permisos, QA minimo, pendientes y roadmap por fases (A->E) con siguiente fase explicita. | 43, 44 |
 ---
 
 ## Estado del Proyecto

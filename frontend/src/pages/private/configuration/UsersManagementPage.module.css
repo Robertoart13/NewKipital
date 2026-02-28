@@ -623,6 +623,317 @@
   padding: 20px 24px;
 }
 
+/* Tarjeta de información de empleado (estilo sistema: limpio, ordenado) */
+.employeeInfoCard {
+  background: #ffffff;
+  border-radius: 12px;
+  border: 1px solid #e8ecf0;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+  margin-bottom: 16px;
+  overflow: hidden;
+}
+
+.employeeInfoCard :global(.ant-card-body) {
+  padding: 20px 24px;
+}
+
+.employeeInfoHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.employeeInfoHeaderLeft {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.employeeInfoAvatarWrap {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: #f1f5f9;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.employeeInfoAvatarWrap :global(.ant-avatar) {
+  background: transparent;
+  color: #64748b;
+}
+
+.employeeInfoNameBlock {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.employeeInfoName {
+  font-size: 18px;
+  font-weight: 600;
+  color: #3d4f5c;
+  line-height: 1.3;
+  margin: 0;
+}
+
+.employeeInfoId {
+  font-size: 12px;
+  color: #8c969e;
+  line-height: 1.4;
+  margin: 0;
+}
+
+.employeeInfoCompanyTag :global(.ant-tag) {
+  border-radius: 6px;
+  padding: 4px 12px;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.employeeInfoDivider {
+  margin: 16px 0 !important;
+  border-color: #e8ecf0;
+}
+
+.employeeInfoGrid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 20px 24px;
+}
+
+@media (min-width: 768px) {
+  .employeeInfoGrid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (min-width: 992px) {
+  .employeeInfoGrid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+.employeeInfoItem {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.employeeInfoItemIcon {
+  font-size: 16px;
+  color: #94a3b8;
+  margin-top: 2px;
+  flex-shrink: 0;
+}
+
+.employeeInfoItemContent {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.employeeInfoItemLabel {
+  font-size: 12px;
+  color: #8c969e;
+  line-height: 1.3;
+}
+
+.employeeInfoItemValue {
+  font-size: 14px;
+  color: #3d4f5c;
+  line-height: 1.4;
+}
+
+/* Acordeón info empleado (colapsable, compacto) */
+.employeeAccordion {
+  margin-bottom: 12px;
+}
+
+.employeeAccordion :global(.ant-collapse) {
+  border: 1px solid #e8ecf0;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
+}
+
+.employeeAccordion :global(.ant-collapse-item) {
+  border-bottom: none !important;
+}
+
+.employeeAccordion :global(.ant-collapse-header) {
+  padding: 8px 12px !important;
+  align-items: center !important;
+}
+
+.employeeAccordion :global(.ant-collapse-content) {
+  border-top: 1px solid #e8ecf0;
+}
+
+.employeeAccordion :global(.ant-collapse-content-box) {
+  padding: 8px 12px 10px !important;
+  background: #fafbfc;
+}
+
+.employeeAccordionHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.employeeAccordionHeaderLeft {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1;
+  min-width: 0;
+}
+
+.employeeAccordionAvatarWrap {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: #f1f5f9;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.employeeAccordionAvatarWrap :global(.ant-avatar) {
+  background: transparent;
+  color: #64748b;
+}
+
+.employeeAccordionNameBlock {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.employeeAccordionName {
+  font-size: 13px;
+  font-weight: 600;
+  color: #3d4f5c;
+  line-height: 1.3;
+  margin: 0;
+  text-transform: uppercase;
+}
+
+.employeeAccordionId {
+  font-size: 11px;
+  color: #8c969e;
+  line-height: 1.4;
+  margin: 0;
+}
+
+.employeeAccordionCompany {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  color: #20638d;
+  font-weight: 500;
+}
+
+.employeeAccordionCompany :global(.anticon) {
+  font-size: 14px;
+}
+
+/* Contenido compacto del acordeón empleado */
+.employeeAccordionContent {
+  font-size: 13px;
+}
+
+.employeeAccordionSection {
+  padding: 4px 0;
+}
+
+.employeeAccordionSection:first-child {
+  padding-top: 0;
+}
+
+.employeeAccordionSectionDivider {
+  margin: 6px 0 !important;
+  padding-top: 6px;
+  border-top: 1px solid #e8ecf0;
+}
+
+.employeeAccordionGrid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 4px 12px;
+}
+
+.employeeAccordionGridHr {
+  margin: 8px 0;
+  border: none;
+  border-top: 1px solid #e8ecf0;
+}
+
+/* Collapse por línea de transacción */
+.lineCollapse :global(.ant-collapse-item) {
+  border: 1px solid #e8ecf0;
+  border-radius: 8px;
+  margin-bottom: 12px;
+  overflow: hidden;
+}
+
+.lineCollapse :global(.ant-collapse-item:last-child) {
+  margin-bottom: 0;
+}
+
+.lineCollapse :global(.ant-collapse-header) {
+  padding: 10px 14px !important;
+  align-items: center !important;
+}
+
+.lineCollapse :global(.ant-collapse-content-box) {
+  padding: 14px !important;
+  background: #fafbfc;
+  border-top: 1px solid #e8ecf0;
+}
+
+@media (max-width: 767px) {
+  .employeeAccordionGrid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+.employeeAccordionItem {
+  display: flex;
+  align-items: flex-start;
+  gap: 5px;
+}
+
+.employeeAccordionItemIcon {
+  font-size: 12px;
+  color: #94a3b8;
+  margin-top: 1px;
+  flex-shrink: 0;
+}
+
+.employeeAccordionItemLabel {
+  font-size: 10px;
+  color: #8c969e;
+  line-height: 1.3;
+}
+
+.employeeAccordionItemValue {
+  font-size: 12px;
+  color: #3d4f5c;
+  line-height: 1.35;
+}
+
 /* Selector de aplicación (Roles: KPITAL / TimeWise) */
 .appSelector {
   margin-bottom: 20px;
@@ -843,6 +1154,57 @@
 .tagInactivo {
   background: #f0f2f4 !important;
   color: #6b7a85 !important;
+  border: none;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  padding: 2px 10px;
+}
+
+/* Tags de estado (ausencias): paleta RRHH del sistema (sobria, azul-gris) */
+.tagEstadoDefault {
+  background: #f0f2f4 !important;
+  color: #6b7a85 !important;
+  border: none;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  padding: 2px 10px;
+}
+
+.tagEstadoWarning {
+  background: #5a6c7d !important;
+  color: #fff !important;
+  border: none;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  padding: 2px 10px;
+}
+
+.tagEstadoSuccess {
+  background: #b8d9c4 !important;
+  color: #3d5a45 !important;
+  border: none;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  padding: 2px 10px;
+}
+
+.tagEstadoInfo {
+  background: #e8f4fd !important;
+  color: #20638d !important;
+  border: none;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  padding: 2px 10px;
+}
+
+.tagEstadoError {
+  background: #ecd8d8 !important;
+  color: #a85c5c !important;
   border: none;
   border-radius: 6px;
   font-size: 12px;
@@ -1366,6 +1728,17 @@
   font-size: 12px;
   color: #8c8c8c;
   padding: 4px 0;
+}
+
+/* Columna Acciones: botones alineados (mismo ancho para Invalidar en todas las filas) */
+.actionsCell {
+  display: inline-flex;
+  min-width: 0;
+}
+
+.actionsCellFirst {
+  display: inline-block;
+  min-width: 140px;
 }
 
 /* Drawer raíz: bordes y sombra del contenedor */

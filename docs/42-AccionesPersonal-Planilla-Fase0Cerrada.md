@@ -701,3 +701,95 @@ Horas Extras, Vacaciones, Incapacidades, Licencias y Ausencias).
 9. Estado del desarrollo por fases:
    - Fase actual: UI-first (estructura, reglas, dependencias, permisos).
    - Fase siguiente: guardado funcional (header + lineas) y validaciones de backend.
+
+### 2026-02-28 - Reglas enterprise consolidadas para catalogo de Planilla (aplica a TODAS las Acciones)
+
+Estas reglas quedan obligatorias para cualquier accion que use `Periodo de pago (Planilla)`
+en crear/editar (Ausencias y siguientes modulos):
+
+1. Fuente de verdad del catalogo:
+   - No usar listado general de planillas en frontend.
+   - Usar endpoint de catalogo elegible por accion:
+     - `GET /personal-actions/absence-payrolls?idEmpresa=&idEmpleado=` (implementado en Ausencias).
+   - Para siguientes acciones, mantener el mismo patron por accion (`{accion}-payrolls`).
+
+2. Validaciones de elegibilidad de planilla (backend):
+   - `id_empresa = empresa seleccionada`.
+   - `id_periodos_pago = idPeriodoPago del empleado`.
+   - `moneda_calendario_nomina = monedaSalario del empleado`.
+   - `es_inactivo = 0`.
+   - `estado_calendario_nomina IN (1,2)`:
+     - `1 = ABIERTA`
+     - `2 = EN_PROCESO`
+   - `fecha_fin_pago >= CURDATE()` (ventana de pago vigente).
+
+3. Estados excluidos del select (no deben aparecer):
+   - `0 = INACTIVA`
+   - `3 = VERIFICADA`
+   - `4 = APLICADA`
+   - `5 = CONTABILIZADA`
+   - `6 = NOTIFICADA`
+
+4. Comportamiento UX del select:
+   - Mostrar `NombrePlanilla (Estado)` para evitar errores operativos.
+   - Ejemplo: `CB-IIQC-15032026-CRC (Abierta)`.
+   - Si no hay planillas elegibles, mostrar mensaje funcional (no tecnico).
+
+5. Regla de cierre de periodo (objetivo de negocio):
+   - Si una planilla ya no es operable por estado/regla de negocio, no debe ser seleccionable.
+   - No se debe permitir agregar nuevas acciones a periodos cerrados.
+
+6. Defensa en profundidad:
+   - Estas validaciones deben existir en backend (obligatorio).
+   - Frontend puede aplicar filtro adicional defensivo, pero no reemplaza backend.
+
+7. Permiso de datos sensibles del empleado:
+   - Permiso oficial: `employee:view-sensitive`.
+   - Si el usuario NO lo tiene:
+     - ocultar/mascarar cedula, email y montos sensibles del empleado (`***`).
+   - Si SI lo tiene:
+     - mostrar datos desencriptados segun reglas del modulo de empleados.
+   - Esta regla aplica transversalmente a todos los modales de Acciones de Personal.
+
+8. Estado de implementacion actual (Ausencias):
+   - Implementado endpoint `absence-payrolls` con elegibilidad enterprise.
+   - Implementado enmascaramiento por `employee:view-sensitive`.
+   - Implementado label de estado en el select de planilla.
+
+9. Estandar de visualizacion en select de Empleado (transversal):
+   - El label del empleado debe mostrarse en este orden:
+     - `Apellido1 Apellido2 Nombre (Codigo)`
+   - No usar orden `Nombre Apellido`.
+   - Este formato aplica a todos los modales/paginas de Acciones de Personal.
+
+10. Regla transversal de calculo de monto por linea (Acciones con monto):
+   - El monto debe recalcularse automaticamente al cambiar:
+     - movimiento
+     - cantidad
+     - tipo de ausencia / tipo equivalente de la accion
+   - No debe depender de edicion manual del campo monto cuando la accion es calculada.
+
+11. Prioridad de calculo (patron oficial):
+   - Si tipo = `JUSTIFICADA`:
+     - `monto = 0`
+     - `formula = "Ausencia justificada"`
+   - Si tipo = `NO_JUSTIFICADA`:
+     - Si movimiento tiene `esMontoFijo = 1` y `montoFijo > 0`:
+       - `monto = montoFijo * cantidad`
+       - `formula = "Monto fijo: montoFijo × cantidad"`
+     - Si no es monto fijo y `porcentaje > 0`:
+       - `base = salarioBaseEmpleado`
+       - si empleado es quincenal (`idPeriodoPago = 9`): `base = salarioBaseEmpleado / 2`
+       - `monto = base * (porcentaje/100) * cantidad`
+       - `formula = "base × porcentaje% × cantidad"`
+     - Si no hay configuracion de movimiento:
+       - `monto = 0`
+       - `formula = "Sin configuración de cálculo"`
+
+12. Regla de visibilidad de formula con permiso sensible:
+   - Permiso: `employee:view-sensitive`.
+   - Si NO tiene permiso y la formula incluye salario/base del empleado:
+     - mostrar base enmascarada: `***`.
+     - ejemplo: `*** × 5% × 2`.
+   - Si SI tiene permiso:
+     - mostrar formula completa con base real.
