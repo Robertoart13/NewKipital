@@ -360,6 +360,32 @@ Decisiones de compatibilidad derivadas:
 3. Migrar logica de solape de `BETWEEN` a interseccion real de intervalos.
 4. Antes de codificar Fase 2, congelar catalogo final de estados (1..3 actual vs 1..9 objetivo) en una sola fuente backend.
 
+### Acta formal de naming (cierre)
+
+Decision oficial:
+
+1. El vinculo de consumo de acciones queda en `acc_acciones_personal.id_calendario_nomina`.
+2. Este campo reemplaza funcionalmente el concepto `consumed_run_id` para mantener compatibilidad con el esquema activo (`mysql_hr_pro`).
+3. El indice operativo oficial es `IDX_accion_consumed` sobre `id_calendario_nomina`.
+4. Regla de inmutabilidad:
+   - solo se setea durante `APPLY` de planilla,
+   - despues de aplicado no se reutiliza para otra corrida.
+5. Criterio de lectura del documento:
+   - donde aparezca `consumed_run_id` en secciones historicas, debe leerse como alias conceptual de `id_calendario_nomina`.
+
+### Cierre tecnico ejecutado (2026-03-01)
+
+Estado de implementacion del cierre de riesgo critico:
+
+1. `APPLY` consume acciones:
+   - al aplicar planilla, acciones aprobadas ligadas pasan a `CONSUMED (5)`.
+2. `APPLY` bloqueado por recalculo:
+   - si `requires_recalculation_calendario_nomina = 1`, backend responde `400`.
+3. Higiene automatica:
+   - job nocturno de expiracion para acciones aprobadas no consumidas con fin de efecto vencido.
+4. Validacion de cierre:
+   - pruebas DoD + unitarias en verde (`24/24`).
+
 ---
 
 ## 18. Plan de ejecucion diaria (operativo)
@@ -793,3 +819,31 @@ en crear/editar (Ausencias y siguientes modulos):
      - ejemplo: `*** × 5% × 2`.
    - Si SI tiene permiso:
      - mostrar formula completa con base real.
+
+### 2026-03-01 - Consolidacion de modulos operativos (corte de trazabilidad)
+
+Estado consolidado al cierre de esta iteracion:
+
+1. Modulos de Acciones de Personal ya implementados con patron operativo:
+   - Ausencias
+   - Licencias y Permisos
+   - Incapacidades
+   - Bonificaciones
+   - Horas Extra
+   - Retenciones
+   - Descuentos
+2. Regla de ejecucion vigente:
+   - split por periodo al crear (una accion por periodo distinto),
+   - misma accion para multiples lineas del mismo periodo.
+3. Deducciones ya cubiertas:
+   - Retenciones y Descuentos con tablas de lineas dedicadas,
+   - permisos por modulo,
+   - avance de estado + invalidacion + bitacora.
+4. Evidencia tecnica asociada:
+   - migraciones seguras aplicadas sin pendientes,
+   - pruebas de servicio de acciones en verde,
+   - build backend/frontend en verde.
+5. Documentos de referencia obligatoria para continuidad:
+   - `45-Handoff-AccionesPersonal-Ausencias.md`
+   - `48-AccionesPersonal-ModeloPorPeriodo-Linea.md`
+   - `49-AccionesPersonal-Descuentos-Implementacion-Operativa.md`

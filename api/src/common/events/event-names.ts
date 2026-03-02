@@ -10,6 +10,7 @@ export const DOMAIN_EVENTS = {
     DEACTIVATED: 'employee.deactivated',
     EMAIL_CHANGED: 'employee.email_changed',
     PAY_PERIOD_CHANGED: 'employee.pay_period_changed',
+    CONTEXT_UPDATED: 'employee.context_updated',
   },
   PERSONAL_ACTION: {
     CREATED: 'personal-action.created',

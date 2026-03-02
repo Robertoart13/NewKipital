@@ -7,13 +7,14 @@ Contexto: Documento complementario de contratos para evitar ambiguedad mientras 
 
 | Metodo | Ruta | Descripcion | Auth | Permiso |
 |--------|------|-------------|------|---------|
+| GET | `/api/personal-actions?idEmpresa=N&estado=1&estado=2&estado=3` | Listado de acciones por empresa con filtro multiestado aplicado en backend (fuente de verdad para vista de Ausencias). | Cookie | `hr_action:view` |
 | GET | `/api/personal-actions/absence-employees?idEmpresa=N` | Catalogo de empleados para Ausencias por empresa. | Cookie | `hr-action-ausencias:view` |
 | GET | `/api/personal-actions/absence-movements?idEmpresa=N&idTipoAccionPersonal=20` | Catalogo de movimientos de Ausencias por empresa/tipo. | Cookie | `hr-action-ausencias:view` |
 | GET | `/api/personal-actions/absence-payrolls?idEmpresa=N&idEmpleado=M` | Catalogo de planillas elegibles por empresa+empleado (periodo/moneda/estado/ventana). | Cookie | `hr-action-ausencias:view` |
 | POST | `/api/personal-actions/ausencias` | Crear ausencia (header + lineas) en transaccion. Estado inicial `PENDING_SUPERVISOR`. | Cookie | `hr-action-ausencias:create` |
 | PATCH | `/api/personal-actions/ausencias/:id` | Editar ausencia existente (flujo controlado por estado y validaciones). | Cookie | `hr-action-ausencias:edit` |
-| PATCH | `/api/personal-actions/ausencias/:id/advance` | Avanzar ausencia al siguiente estado operativo segun flujo secuencial. | Cookie | `hr-action-ausencias:edit` |
-| PATCH | `/api/personal-actions/ausencias/:id/invalidate` | Invalidar ausencia sin borrado fisico (estado `INVALIDATED`). | Cookie | `hr-action-ausencias:edit` |
+| PATCH | `/api/personal-actions/ausencias/:id/advance` | Avanzar ausencia al siguiente estado operativo segun flujo secuencial. | Cookie | Guard `view` + permiso efectivo por estado (`edit` o `approve`) |
+| PATCH | `/api/personal-actions/ausencias/:id/invalidate` | Invalidar ausencia sin borrado fisico (estado `INVALIDATED`). | Cookie | Guard `view` + permiso efectivo `hr-action-ausencias:cancel` |
 | GET | `/api/personal-actions/ausencias/:id/audit-trail?limit=200` | Bitacora operativa de la ausencia (eventos create/update/advance/invalidate). | Cookie | `hr-action-ausencias:view` |
 
 ## 2. Reglas funcionales que afectan contrato
@@ -39,6 +40,10 @@ Contexto: Documento complementario de contratos para evitar ambiguedad mientras 
 8. Consulta de detalle:
    - el modal de ausencia se puede abrir en cualquier estado para lectura y bitacora.
    - en estados `4..9` el backend/frontend operan en modo no editable.
+9. Filtro de estados (performance):
+   - el listado de Ausencias manda estados seleccionados en query (`estado` repetido),
+   - backend filtra en SQL (`IN`) por empresa + estados,
+   - evita carga de estados no requeridos en clientes con volumen alto.
 
 ## 3. Payload de creacion/edicion (resumen)
 

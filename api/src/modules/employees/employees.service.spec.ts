@@ -717,6 +717,55 @@ describe('EmployeesService', () => {
         service.update(1, { vacacionesAcumuladas: '10' }, 1),
       ).rejects.toThrow(BadRequestException);
     });
+
+    it('should emit EMPLOYEE.CONTEXT_UPDATED when termination or currency changes', async () => {
+      employeeRepo.findOne.mockResolvedValue(mockEmployee);
+      userCompanyRepo.findOne.mockResolvedValue({
+        idUsuario: 1,
+        idEmpresa: 1,
+        estado: 1,
+      } as any);
+      authService.resolvePermissions.mockResolvedValue({
+        permissions: ['employee:view-sensitive'],
+        roles: [],
+      });
+      sensitiveDataService.decrypt.mockImplementation((val) => val);
+      sensitiveDataService.encrypt.mockImplementation(
+        (val) => `encrypted-${val}`,
+      );
+
+      const savedEmployee = {
+        ...mockEmployee,
+        monedaSalario: MonedaSalarioEmpleado.USD,
+        fechaSalida: new Date('2026-03-01'),
+      };
+      const mockDataSource = {
+        transaction: jest.fn(async (callback) =>
+          callback({
+            findOne: jest.fn().mockResolvedValue(mockEmployee),
+            save: jest.fn().mockResolvedValue(savedEmployee),
+          }),
+        ),
+      };
+      (service as any).dataSource = mockDataSource;
+
+      await service.update(
+        1,
+        { monedaSalario: MonedaSalarioEmpleado.USD, fechaSalida: '2026-03-01' },
+        1,
+      );
+
+      expect(eventEmitter.emit).toHaveBeenCalledWith(
+        'employee.context_updated',
+        expect.objectContaining({
+          payload: expect.objectContaining({
+            employeeId: 1,
+            changedTermination: true,
+            changedCurrency: true,
+          }),
+        }),
+      );
+    });
   });
 
   describe('inactivate', () => {

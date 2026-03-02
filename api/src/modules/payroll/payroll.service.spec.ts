@@ -20,6 +20,7 @@ import { PayrollEmployeeSnapshot } from './entities/payroll-employee-snapshot.en
 import { PayrollInputSnapshot } from './entities/payroll-input-snapshot.entity';
 import { PayrollResult } from './entities/payroll-result.entity';
 import { PersonalAction } from '../personal-actions/entities/personal-action.entity';
+import { PersonalActionAutoInvalidationService } from '../personal-actions/personal-action-auto-invalidation.service';
 
 describe('PayrollService', () => {
   let service: PayrollService;
@@ -28,6 +29,7 @@ describe('PayrollService', () => {
   let snapshotRepo: jest.Mocked<Repository<PayrollEmployeeSnapshot>>;
   let inputSnapshotRepo: jest.Mocked<Repository<PayrollInputSnapshot>>;
   let resultRepo: jest.Mocked<Repository<PayrollResult>>;
+  let personalActionRepo: jest.Mocked<Repository<PersonalAction>>;
   let vacationService: { applyVacationUsageFromPayroll: jest.Mock };
 
   beforeEach(async () => {
@@ -83,17 +85,55 @@ describe('PayrollService', () => {
           provide: getRepositoryToken(PersonalAction),
           useValue: {
             count: jest.fn(),
-            createQueryBuilder: jest.fn(),
+            createQueryBuilder: jest.fn(() => ({
+              update: jest.fn().mockReturnThis(),
+              set: jest.fn().mockReturnThis(),
+              where: jest.fn().mockReturnThis(),
+              andWhere: jest.fn().mockReturnThis(),
+              execute: jest.fn().mockResolvedValue({ affected: 1 }),
+            })),
             find: jest.fn(),
           },
         },
-        { provide: DataSource, useValue: { createQueryRunner: jest.fn() } },
+        {
+          provide: DataSource,
+          useValue: {
+            createQueryRunner: jest.fn(),
+            transaction: jest.fn(async (cb: (manager: any) => Promise<any>) => {
+              const manager = {
+                createQueryBuilder: jest.fn(() => ({
+                  update: jest.fn().mockReturnThis(),
+                  set: jest.fn().mockReturnThis(),
+                  where: jest.fn().mockReturnThis(),
+                  andWhere: jest.fn().mockReturnThis(),
+                  execute: jest.fn().mockResolvedValue({ affected: 1 }),
+                })),
+              };
+              return cb(manager);
+            }),
+          },
+        },
         { provide: EventEmitter2, useValue: { emit: jest.fn() } },
         { provide: DomainEventsService, useValue: { record: jest.fn() } },
         { provide: AuditOutboxService, useValue: { publish: jest.fn() } },
         {
           provide: EmployeeVacationService,
           useValue: { applyVacationUsageFromPayroll: jest.fn() },
+        },
+        {
+          provide: PersonalActionAutoInvalidationService,
+          useValue: {
+            run: jest.fn().mockResolvedValue({
+              totalInvalidated: 0,
+              byReason: {
+                TERMINATION_EFFECTIVE: 0,
+                COMPANY_MISMATCH: 0,
+                CURRENCY_MISMATCH: 0,
+                MANUAL_INVALIDATION: 0,
+              },
+              sampleActionIds: [],
+            }),
+          },
         },
       ],
     }).compile();
@@ -104,6 +144,7 @@ describe('PayrollService', () => {
     snapshotRepo = module.get(getRepositoryToken(PayrollEmployeeSnapshot));
     inputSnapshotRepo = module.get(getRepositoryToken(PayrollInputSnapshot));
     resultRepo = module.get(getRepositoryToken(PayrollResult));
+    personalActionRepo = module.get(getRepositoryToken(PersonalAction));
     vacationService = module.get(EmployeeVacationService);
 
     snapshotRepo.count.mockResolvedValue(1);
@@ -186,6 +227,23 @@ describe('PayrollService', () => {
     await expect(service.apply(1, 1)).rejects.toThrow(BadRequestException);
   });
 
+  it('apply rejects when payroll requires recalculation', async () => {
+    repo.findOne.mockResolvedValue({
+      id: 2,
+      idEmpresa: 1,
+      estado: EstadoCalendarioNomina.VERIFICADA,
+      versionLock: 0,
+      requiresRecalculation: 1,
+    } as any);
+    userCompanyRepo.findOne.mockResolvedValue({
+      idUsuario: 1,
+      idEmpresa: 1,
+      estado: 1,
+    } as any);
+
+    await expect(service.apply(2, 1)).rejects.toThrow(BadRequestException);
+  });
+
   it('apply triggers vacation usage processing when payroll is applied', async () => {
     const verified = {
       id: 5,
@@ -219,6 +277,7 @@ describe('PayrollService', () => {
       applied.fechaAplicacion,
       1,
     );
+    expect(personalActionRepo.createQueryBuilder).not.toHaveBeenCalled();
   });
 
   it('process rejects when payroll is not abierta', async () => {
@@ -252,4 +311,5 @@ describe('PayrollService', () => {
       service.update(22, { nombrePlanilla: 'Nuevo nombre' } as any, 1),
     ).rejects.toThrow(BadRequestException);
   });
+
 });

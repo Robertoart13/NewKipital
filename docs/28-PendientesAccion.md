@@ -1,6 +1,6 @@
 # 28 - Pendientes de Accion (Backlog Tecnico-Funcional)
 
-**Ultima actualizacion:** 2026-02-27  
+**Ultima actualizacion:** 2026-03-01  
 **Objetivo:** Registrar tareas pendientes que deben implementarse en futuras iteraciones.
 
 ---
@@ -220,3 +220,28 @@ Actualizacion Dia 3 (snapshot/retro/recalculo):
 - Marca automatica de recalculo al aprobar acciones elegibles durante corrida en proceso.
 - Migracion incremental aplicada en `mysql_hr_pro` y validada.
 - Pruebas API se mantienen en verde (`27/27`, `217/217`).
+
+---
+
+## Completado / Actualizado (sesion 2026-03-01)
+
+### Acciones de Personal - avance consolidado por modulo
+
+1. Se cerraron modulos operativos con patron comun:
+   - Ausencias
+   - Licencias y Permisos
+   - Incapacidades
+   - Bonificaciones
+   - Horas Extra
+   - Retenciones
+   - Descuentos
+2. Se oficializo y aplico modelo de split por periodo al guardar:
+   - lineas de periodos distintos crean acciones separadas,
+   - lineas del mismo periodo permanecen en una sola accion.
+3. Se documentaron cierres en docs de implementacion operativa:
+   - `46` Bonificaciones
+   - `47` Horas Extra
+   - `49` Descuentos
+4. Se estabilizo corrida de migraciones con `migration:run:safe` y baseline reconcile.
+5. Pendiente vigente principal:
+   - extender patron a acciones restantes no migradas en menu de Acciones de Personal.

@@ -7,10 +7,21 @@ vi.mock('../interceptors/httpInterceptor', () => ({
 import { httpFetch } from '../interceptors/httpInterceptor';
 import { fetchPayroll, fetchPayrolls } from './payroll';
 import {
+  advanceAbsenceState,
+  advanceDiscountState,
+  advanceRetentionState,
   approvePersonalAction,
+  createDiscount,
+  createRetention,
   createPersonalAction,
   fetchPersonalAction,
+  fetchAbsenceDetail,
+  fetchDiscountDetail,
+  fetchRetentionDetail,
   fetchPersonalActions,
+  invalidateDiscount,
+  invalidateRetention,
+  invalidateAbsence,
   rejectPersonalAction,
 } from './personalActions';
 
@@ -67,6 +78,19 @@ describe('payroll and personal actions api', () => {
     await expect(fetchPersonalAction(20)).resolves.toEqual(payload);
   });
 
+  it('fetchPersonalActions should append multiple estado params when array is provided', async () => {
+    mockHttpFetch.mockResolvedValue({
+      ok: true,
+      json: vi.fn().mockResolvedValue([]),
+    } as any);
+
+    await fetchPersonalActions('11', [1, 2, 3]);
+
+    expect(mockHttpFetch).toHaveBeenCalledWith(
+      '/personal-actions?idEmpresa=11&estado=1&estado=2&estado=3',
+    );
+  });
+
   it('createPersonalAction should post payload to API', async () => {
     const payload = {
       idEmpresa: 2,
@@ -108,6 +132,154 @@ describe('payroll and personal actions api', () => {
     expect(mockHttpFetch).toHaveBeenNthCalledWith(
       2,
       '/personal-actions/12/reject',
+      expect.objectContaining({ method: 'PATCH' }),
+    );
+  });
+
+  it('advanceAbsenceState should send company context in body', async () => {
+    mockHttpFetch.mockResolvedValue({
+      ok: true,
+      json: vi.fn().mockResolvedValue({ id: 10, estado: 2 }),
+    } as any);
+
+    await advanceAbsenceState(10, 1);
+
+    expect(mockHttpFetch).toHaveBeenCalledWith(
+      '/personal-actions/ausencias/10/advance',
+      expect.objectContaining({
+        method: 'PATCH',
+        body: JSON.stringify({ idEmpresa: 1 }),
+      }),
+    );
+  });
+
+  it('invalidateAbsence should send company context and motivo', async () => {
+    mockHttpFetch.mockResolvedValue({
+      ok: true,
+      json: vi.fn().mockResolvedValue({ id: 10, estado: 7 }),
+    } as any);
+
+    await invalidateAbsence(10, 2, 'Motivo QA');
+
+    expect(mockHttpFetch).toHaveBeenCalledWith(
+      '/personal-actions/ausencias/10/invalidate',
+      expect.objectContaining({
+        method: 'PATCH',
+        body: JSON.stringify({ idEmpresa: 2, motivo: 'Motivo QA' }),
+      }),
+    );
+  });
+
+  it('invalidateAbsence should surface backend validation arrays (malicious payload rejected)', async () => {
+    mockHttpFetch.mockResolvedValue({
+      ok: false,
+      json: vi.fn().mockResolvedValue({
+        message: ['Linea 1: movimiento invalido', 'Intento bloqueado'],
+      }),
+    } as any);
+
+    await expect(invalidateAbsence(10, 1, 'DROP TABLE')).rejects.toThrow(
+      'Linea 1: movimiento invalido. Intento bloqueado',
+    );
+  });
+
+  it('fetchAbsenceDetail should fallback to generic message when backend returns non-json error', async () => {
+    mockHttpFetch.mockResolvedValue({
+      ok: false,
+      json: vi.fn().mockRejectedValue(new Error('invalid json')),
+    } as any);
+
+    await expect(fetchAbsenceDetail(77)).rejects.toThrow(
+      'Error al cargar detalle de ausencia',
+    );
+  });
+
+  it('retention endpoints should call expected routes', async () => {
+    mockHttpFetch.mockResolvedValue({
+      ok: true,
+      json: vi.fn().mockResolvedValue({ id: 99, estado: 2 }),
+    } as any);
+
+    await fetchRetentionDetail(99);
+    await createRetention({
+      idEmpresa: 1,
+      idEmpleado: 5,
+      observacion: 'qa',
+      lines: [
+        {
+          payrollId: 10,
+          fechaEfecto: '2026-03-01',
+          movimientoId: 1,
+          cantidad: 1,
+          monto: 1000,
+        },
+      ],
+    });
+    await advanceRetentionState(99);
+    await invalidateRetention(99, 'qa');
+
+    expect(mockHttpFetch).toHaveBeenNthCalledWith(
+      1,
+      '/personal-actions/retenciones/99',
+    );
+    expect(mockHttpFetch).toHaveBeenNthCalledWith(
+      2,
+      '/personal-actions/retenciones',
+      expect.objectContaining({ method: 'POST' }),
+    );
+    expect(mockHttpFetch).toHaveBeenNthCalledWith(
+      3,
+      '/personal-actions/retenciones/99/advance',
+      expect.objectContaining({ method: 'PATCH' }),
+    );
+    expect(mockHttpFetch).toHaveBeenNthCalledWith(
+      4,
+      '/personal-actions/retenciones/99/invalidate',
+      expect.objectContaining({ method: 'PATCH' }),
+    );
+  });
+
+  it('discount endpoints should call expected routes', async () => {
+    mockHttpFetch.mockResolvedValue({
+      ok: true,
+      json: vi.fn().mockResolvedValue({ id: 88, estado: 2 }),
+    } as any);
+
+    await fetchDiscountDetail(88);
+    await createDiscount({
+      idEmpresa: 1,
+      idEmpleado: 5,
+      observacion: 'qa',
+      lines: [
+        {
+          payrollId: 10,
+          fechaEfecto: '2026-03-01',
+          movimientoId: 1,
+          cantidad: 1,
+          monto: 1000,
+        },
+      ],
+    });
+    await advanceDiscountState(88);
+    await invalidateDiscount(88, 'qa');
+
+    expect(mockHttpFetch).toHaveBeenNthCalledWith(
+      1,
+      '/personal-actions/descuentos/88',
+    );
+    expect(mockHttpFetch).toHaveBeenNthCalledWith(
+      2,
+      '/personal-actions/descuentos',
+      expect.objectContaining({ method: 'POST' }),
+    );
+    expect(mockHttpFetch).toHaveBeenNthCalledWith(
+      3,
+      '/personal-actions/descuentos/88/advance',
+      expect.objectContaining({ method: 'PATCH' }),
+    );
+    expect(mockHttpFetch).toHaveBeenNthCalledWith(
+      4,
+      '/personal-actions/descuentos/88/invalidate',
       expect.objectContaining({ method: 'PATCH' }),
     );
   });

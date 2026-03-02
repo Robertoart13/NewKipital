@@ -25,6 +25,12 @@ import {
   PayrollHolidaysPage,
   PersonalActionsPage,
   AbsencesPage,
+  LicensesPage,
+  IncapacitiesPage,
+  BonusesPage,
+  HoursExtrasPage,
+  RetentionsPage,
+  DiscountsPage,
 } from '../pages/private';
 
 /**
@@ -231,26 +237,14 @@ export function AppRouter() {
         <Route path="/personal-actions/deducciones/retenciones" element={(
           <PrivateLayout>
             <PermissionGuard requiredPermission="hr-action-retenciones:view">
-              <PersonalActionsPage
-                pageTitle="Retenciones"
-                pageSubtitle="Acciones de deduccion por retencion"
-                fixedTipoAccion="RETENCION"
-                createPermission="hr-action-retenciones:create"
-                approvePermission="hr-action-retenciones:approve"
-              />
+              <RetentionsPage />
             </PermissionGuard>
           </PrivateLayout>
         )} />
         <Route path="/personal-actions/deducciones/descuentos" element={(
           <PrivateLayout>
             <PermissionGuard requiredPermission="hr-action-descuentos:view">
-              <PersonalActionsPage
-                pageTitle="Descuentos"
-                pageSubtitle="Acciones de deduccion por descuento"
-                fixedTipoAccion="DESCUENTO"
-                createPermission="hr-action-descuentos:create"
-                approvePermission="hr-action-descuentos:approve"
-              />
+              <DiscountsPage />
             </PermissionGuard>
           </PrivateLayout>
         )} />
@@ -271,26 +265,14 @@ export function AppRouter() {
         <Route path="/personal-actions/compensaciones/bonificaciones" element={(
           <PrivateLayout>
             <PermissionGuard requiredPermission="hr-action-bonificaciones:view">
-              <PersonalActionsPage
-                pageTitle="Bonificaciones"
-                pageSubtitle="Acciones de compensacion por bonificacion"
-                fixedTipoAccion="BONIFICACION"
-                createPermission="hr-action-bonificaciones:create"
-                approvePermission="hr-action-bonificaciones:approve"
-              />
+              <BonusesPage />
             </PermissionGuard>
           </PrivateLayout>
         )} />
         <Route path="/personal-actions/compensaciones/horas-extras" element={(
           <PrivateLayout>
             <PermissionGuard requiredPermission="hr-action-horas-extras:view">
-              <PersonalActionsPage
-                pageTitle="Horas Extras"
-                pageSubtitle="Acciones de compensacion por horas extras"
-                fixedTipoAccion="HORA_EXTRA"
-                createPermission="hr-action-horas-extras:create"
-                approvePermission="hr-action-horas-extras:approve"
-              />
+              <HoursExtrasPage />
             </PermissionGuard>
           </PrivateLayout>
         )} />
@@ -310,26 +292,14 @@ export function AppRouter() {
         <Route path="/personal-actions/incapacidades" element={(
           <PrivateLayout>
             <PermissionGuard requiredPermission="hr-action-incapacidades:view">
-              <PersonalActionsPage
-                pageTitle="Incapacidades"
-                pageSubtitle="Gestione incapacidades por empresa"
-                fixedTipoAccion="INCAPACIDAD"
-                createPermission="hr-action-incapacidades:create"
-                approvePermission="hr-action-incapacidades:approve"
-              />
+              <IncapacitiesPage />
             </PermissionGuard>
           </PrivateLayout>
         )} />
         <Route path="/personal-actions/licencias" element={(
           <PrivateLayout>
             <PermissionGuard requiredPermission="hr-action-licencias:view">
-              <PersonalActionsPage
-                pageTitle="Licencias y Permisos"
-                pageSubtitle="Gestione licencias y permisos por empresa"
-                fixedTipoAccion="LICENCIA"
-                createPermission="hr-action-licencias:create"
-                approvePermission="hr-action-licencias:approve"
-              />
+              <LicensesPage />
             </PermissionGuard>
           </PrivateLayout>
         )} />

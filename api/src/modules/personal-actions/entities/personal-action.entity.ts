@@ -154,6 +154,36 @@ export class PersonalAction {
   })
   invalidatedReason: string | null;
 
+  @Column({
+    name: 'invalidated_reason_code_accion',
+    type: 'varchar',
+    length: 64,
+    nullable: true,
+  })
+  invalidatedReasonCode: string | null;
+
+  @Column({
+    name: 'invalidated_by_type_accion',
+    type: 'varchar',
+    length: 16,
+    nullable: true,
+  })
+  invalidatedByType: string | null;
+
+  @Column({
+    name: 'invalidated_by_user_id_accion',
+    type: 'int',
+    nullable: true,
+  })
+  invalidatedByUserId: number | null;
+
+  @Column({
+    name: 'invalidated_meta_accion',
+    type: 'json',
+    nullable: true,
+  })
+  invalidatedMeta: Record<string, unknown> | null;
+
   @Column({ name: 'expired_at_accion', type: 'datetime', nullable: true })
   expiredAt: Date | null;
 

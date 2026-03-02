@@ -11,6 +11,7 @@ import { IntegrationModule } from '../integration/integration.module';
 import { UserCompany } from '../access-control/entities/user-company.entity';
 import { EmployeesModule } from '../employees/employees.module';
 import { PersonalAction } from '../personal-actions/entities/personal-action.entity';
+import { PersonalActionsModule } from '../personal-actions/personal-actions.module';
 
 @Module({
   imports: [
@@ -25,6 +26,7 @@ import { PersonalAction } from '../personal-actions/entities/personal-action.ent
     ]),
     IntegrationModule,
     EmployeesModule,
+    PersonalActionsModule,
   ],
   controllers: [PayrollController],
   providers: [PayrollService],

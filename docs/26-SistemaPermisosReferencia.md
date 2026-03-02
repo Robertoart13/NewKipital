@@ -275,3 +275,58 @@ Implicacion para futuros sistemas:
 - El flujo de sesion/permisos debe disenarse como "last valid state wins" ante errores transitorios.
 - Las politicas fail-closed aplican a backend; en frontend se evita degradacion falsa de UI por condiciones de carrera.
 
+---
+
+## 11. Incidente Documentado (2026-03-01) - Opcion visible por rol adicional
+
+Escenario observado:
+
+1. Se removio `hr-action-incapacidades:view` del rol `GERENTE_NOMINA`.
+2. En UI, la opcion `Incapacidades` seguia visible.
+
+Causa raiz confirmada:
+
+1. El usuario tenia otro rol global activo (`OPERADOR_NOMINA`) que si incluia `hr-action-incapacidades:view`.
+2. La resolucion de permisos usa union de roles efectivos (contextuales + globales), luego aplica denies.
+
+Regla operativa obligatoria:
+
+1. Antes de reportar "menu muestra opcion sin permiso", validar todos los roles efectivos del usuario.
+2. Quitar permiso de un solo rol no implica ocultar menu si otro rol aun lo otorga.
+
+Checklist de revision previa (manual de usuario tecnico):
+
+1. Revisar `sys_rol_permiso` del rol editado.
+2. Revisar `sys_usuario_rol` del usuario (empresa + app).
+3. Revisar `sys_usuario_rol_global` del usuario (global por app).
+4. Revisar `sys_usuario_permiso` (ALLOW/DENY por contexto).
+5. Revisar `sys_usuario_permiso_global` (DENY global por app).
+6. Forzar refresco de permisos (`refreshAuthz=true`) o relogin para validar estado real.
+
+SQL rapido recomendado:
+
+```sql
+-- Roles globales del usuario
+SELECT urg.id_usuario, urg.id_app, a.codigo_app, urg.id_rol, r.codigo_rol, r.nombre_rol
+FROM sys_usuario_rol_global urg
+JOIN sys_roles r ON r.id_rol = urg.id_rol
+JOIN sys_apps a ON a.id_app = urg.id_app
+WHERE urg.id_usuario = :userId AND urg.estado_usuario_rol_global = 1;
+
+-- Roles por contexto del usuario
+SELECT ur.id_usuario, ur.id_empresa, ur.id_app, ur.id_rol, r.codigo_rol, r.nombre_rol
+FROM sys_usuario_rol ur
+JOIN sys_roles r ON r.id_rol = ur.id_rol
+WHERE ur.id_usuario = :userId AND ur.estado_usuario_rol = 1;
+
+-- Permisos potenciales por roles globales para incapacidades
+SELECT DISTINCT p.codigo_permiso
+FROM sys_usuario_rol_global urg
+JOIN sys_rol_permiso rp ON rp.id_rol = urg.id_rol
+JOIN sys_permisos p ON p.id_permiso = rp.id_permiso
+WHERE urg.id_usuario = :userId
+  AND urg.id_app = :appId
+  AND urg.estado_usuario_rol_global = 1
+  AND p.codigo_permiso LIKE 'hr-action-incapacidades:%';
+```
+

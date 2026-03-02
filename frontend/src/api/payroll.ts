@@ -15,6 +15,7 @@ export interface PayrollListItem {
   fechaPagoProgramada?: string | null;
   moneda?: string;
   estado: number;
+  requiresRecalculation?: number;
   fechaAplicacion?: string | null;
 }
 

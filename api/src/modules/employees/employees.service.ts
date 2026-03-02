@@ -443,6 +443,9 @@ export class EmployeesService {
       if (!current) {
         throw new NotFoundException(`Empleado con ID ${id} no encontrado`);
       }
+      const previousTerminationKey = this.toDateKey(current.fechaSalida);
+      const previousCurrency = current.monedaSalario;
+      const previousCompanyId = current.idEmpresa;
       const payloadBefore = this.buildAuditPayloadFromEncrypted(current);
 
       const oldEmail = this.sensitiveDataService.decrypt(current.email) ?? '';
@@ -554,6 +557,10 @@ export class EmployeesService {
 
       const saved = await manager.save(Employee, current);
       const payloadAfter = this.buildAuditPayloadFromEncrypted(saved);
+      const nextTerminationKey = this.toDateKey(saved.fechaSalida);
+      const changedTermination = previousTerminationKey !== nextTerminationKey;
+      const changedCurrency = previousCurrency !== saved.monedaSalario;
+      const changedCompany = previousCompanyId !== saved.idEmpresa;
 
       this.auditOutbox.publish({
         modulo: 'employees',
@@ -584,6 +591,19 @@ export class EmployeesService {
             oldEmail,
             newEmail: normalizedEmail,
             changedBy: modifierId,
+          },
+        });
+      }
+
+      if (changedTermination || changedCompany || changedCurrency) {
+        this.eventEmitter.emit(DOMAIN_EVENTS.EMPLOYEE.CONTEXT_UPDATED, {
+          eventName: DOMAIN_EVENTS.EMPLOYEE.CONTEXT_UPDATED,
+          occurredAt: new Date(),
+          payload: {
+            employeeId: saved.id,
+            changedTermination,
+            changedCompany,
+            changedCurrency,
           },
         });
       }
@@ -715,6 +735,16 @@ export class EmployeesService {
       descripcion: `Empleado liquidado: ${saved.id}`,
       payloadBefore,
       payloadAfter: this.buildAuditPayloadFromEncrypted(saved),
+    });
+    this.eventEmitter.emit(DOMAIN_EVENTS.EMPLOYEE.CONTEXT_UPDATED, {
+      eventName: DOMAIN_EVENTS.EMPLOYEE.CONTEXT_UPDATED,
+      occurredAt: new Date(),
+      payload: {
+        employeeId: saved.id,
+        changedTermination: true,
+        changedCompany: false,
+        changedCurrency: false,
+      },
     });
     return saved;
   }
@@ -1073,5 +1103,12 @@ export class EmployeesService {
     }
 
     return normalized;
+  }
+
+  private toDateKey(dateValue: Date | null): string | null {
+    if (!dateValue) return null;
+    const date = new Date(dateValue);
+    if (Number.isNaN(date.getTime())) return null;
+    return date.toISOString().slice(0, 10);
   }
 }

@@ -18,7 +18,7 @@ export interface SystemPermission {
 export async function fetchPermissionsForCompany(
   companyId: string,
   appCode = 'kpital',
-  refreshAuthz = false,
+  refreshAuthz = true,
 ): Promise<{ permissions: Permission[]; roles: string[] }> {
   const res = await httpFetch('/auth/switch-company', {
     method: 'POST',
@@ -43,7 +43,7 @@ export async function fetchPermissionsForCompany(
  */
 export async function fetchPermissionsForApp(
   appCode = 'kpital',
-  refreshAuthz = false,
+  refreshAuthz = true,
 ): Promise<{ permissions: Permission[]; roles: string[] }> {
   const qs = new URLSearchParams({ appCode });
   if (refreshAuthz) {

@@ -2,7 +2,7 @@
 
 **Proyecto:** KPITAL 360 — ERP Multiempresa  
 **Autor:** Roberto — Arquitecto Funcional / Senior Engineer  
-**Última actualización:** 2026-02-28 (incluye consolidado final de Ausencias: bitácora, apertura por estado con modo lectura, validaciones de monto/cantidad y estabilidad de carga por tabs/preloads)
+**Última actualización:** 2026-03-01 (incluye cierre operativo de Retenciones y Descuentos, y consolidacion de trazabilidad de Acciones de Personal)
 
 ---
 
@@ -61,6 +61,10 @@ Si ya estás en el proyecto y necesitás referencia puntual, usá esta tabla par
 | 43 | [43-AccionesPersonal-Ausencias-Implementacion-Operativa.md](./43-AccionesPersonal-Ausencias-Implementacion-Operativa.md) | Cierre operativo de Ausencias: persistencia real (header+lineas), tabla `acc_ausencias_lineas`, estado inicial `PENDING_SUPERVISOR`, reglas de planilla elegible, calculo de monto, avance secuencial, invalidacion, bitacora, apertura en cualquier estado (edicion/lectura), filtros por atencion y estabilidad UI de tabs/preloads. | 42 |
 | 44 | [44-ContratosAPI-Ausencias-20260228.md](./44-ContratosAPI-Ausencias-20260228.md) | Contrato operativo final de Ausencias: catalogos, create, edit, advance, invalidate y audit-trail, con permisos, reglas por estado y validaciones de payload alineadas al flujo enterprise. | 20, 43 |
 | 45 | [45-Handoff-AccionesPersonal-Ausencias.md](./45-Handoff-AccionesPersonal-Ausencias.md) | Handoff operativo para retomar desde cero: estado actual, reglas vigentes, endpoints, permisos, QA minimo, pendientes y roadmap por fases (A->E) con siguiente fase explicita. | 43, 44 |
+| 46 | [46-AccionesPersonal-Bonificaciones-Implementacion-Operativa.md](./46-AccionesPersonal-Bonificaciones-Implementacion-Operativa.md) | Cierre operativo de Bonificaciones: vista/modal dedicados, tabla `acc_bonificaciones_lineas`, endpoints, permisos, catálogo de tipo de bonificación, cálculo de monto y evidencia de build/tests. | 42, 43 |
+| 47 | [47-AccionesPersonal-HorasExtra-Implementacion-Operativa.md](./47-AccionesPersonal-HorasExtra-Implementacion-Operativa.md) | Cierre operativo de Horas Extra: vista/modal dedicados, tabla `acc_horas_extras_lineas`, fechas inicio/fin por línea, tipo de jornada 6/7/8, cálculo de monto y evidencia de migraciones/build/tests. | 42, 46 |
+| 48 | [48-AccionesPersonal-ModeloPorPeriodo-Linea.md](./48-AccionesPersonal-ModeloPorPeriodo-Linea.md) | Decision vigente de bajo riesgo: split por periodo al guardar (1 accion por periodo distinto, mismas lineas juntas por periodo), con `group_id` comun, transaccionalidad y guard de edicion mono-periodo para Ausencias, Licencias, Incapacidades, Bonificaciones, Horas Extra, Retenciones y Descuentos. | 42, 45, 46, 47 |
+| 49 | [49-AccionesPersonal-Descuentos-Implementacion-Operativa.md](./49-AccionesPersonal-Descuentos-Implementacion-Operativa.md) | Cierre operativo de Descuentos: vista/modal dedicados, tabla `acc_descuentos_lineas`, split por periodo al guardar, guard de edicion mono-periodo, permisos dedicados y evidencia de migraciones/tests/build. | 42, 48 |
 ---
 
 ## Estado del Proyecto

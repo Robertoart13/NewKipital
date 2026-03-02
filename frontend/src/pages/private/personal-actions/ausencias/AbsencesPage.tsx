@@ -83,10 +83,36 @@ const ESTADO_HELP: Record<number, string> = {
   9: 'Rechazada: no fue aprobada en flujo de validacion.',
 };
 
-const NEXT_STATE_ACTION_LABEL: Partial<Record<number, string>> = {
-  1: 'Enviar a Supervisor',
-  2: 'Enviar a RRHH',
-  3: 'Aprobar',
+interface NextStateActionConfig {
+  label: string;
+  requiredPermission: 'edit' | 'approve';
+  confirmText: string;
+  successText: string;
+  deniedText: string;
+}
+
+const NEXT_STATE_ACTION_CONFIG: Partial<Record<number, NextStateActionConfig>> = {
+  1: {
+    label: 'Enviar a Supervisor',
+    requiredPermission: 'edit',
+    confirmText: 'Esta accion se enviara a revision de supervisor. Desea continuar?',
+    successText: 'La ausencia fue enviada a Supervisor.',
+    deniedText: 'No tiene permiso para enviar a Supervisor.',
+  },
+  2: {
+    label: 'Enviar a RRHH',
+    requiredPermission: 'approve',
+    confirmText: 'Esta accion se enviara a revision final de RRHH. Desea continuar?',
+    successText: 'La ausencia fue enviada a RRHH.',
+    deniedText: 'No tiene permiso para enviar a RRHH.',
+  },
+  3: {
+    label: 'Aprobar',
+    requiredPermission: 'approve',
+    confirmText: 'La ausencia quedara APROBADA y lista para proceso operativo. Desea continuar?',
+    successText: 'La ausencia fue aprobada correctamente.',
+    deniedText: 'No tiene permiso para aprobar ausencias.',
+  },
 };
 
 type PaneKey = 'empresa' | 'empleado' | 'periodoPago' | 'movimiento' | 'remuneracion' | 'estado';
@@ -196,6 +222,7 @@ export function AbsencesPage() {
   const activeCompany = useAppSelector((state) => state.activeCompany.company);
   const canCreate = useAppSelector((state) => hasPermission(state, 'hr-action-ausencias:create'));
   const canEdit = useAppSelector((state) => hasPermission(state, 'hr-action-ausencias:edit'));
+  const canCancel = useAppSelector((state) => hasPermission(state, 'hr-action-ausencias:cancel'));
   const canView = useAppSelector((state) =>
     hasPermission(state, 'hr-action-ausencias:view') ||
     hasPermission(state, 'hr_action:view'),
@@ -301,7 +328,10 @@ export function AbsencesPage() {
 
     setLoading(true);
     try {
-      const data = await fetchPersonalActions(String(companyId));
+      const data = await fetchPersonalActions(
+        String(companyId),
+        selectedEstados.length > 0 ? selectedEstados : undefined,
+      );
       const filtered = data.filter((item) => item.tipoAccion.trim().toLowerCase() === 'ausencia');
       setRows(filtered);
     } catch (error) {
@@ -309,7 +339,7 @@ export function AbsencesPage() {
     } finally {
       setLoading(false);
     }
-  }, [companyId, message]);
+  }, [companyId, message, selectedEstados]);
 
   const openEditModal = useCallback(async (row: AbsenceUiRow) => {
     const key = `absence-edit-load-${row.id}`;
@@ -413,8 +443,11 @@ export function AbsencesPage() {
 
   useEffect(() => {
     void loadRows();
+  }, [loadRows]);
+
+  useEffect(() => {
     void loadCatalogs();
-  }, [loadRows, loadCatalogs]);
+  }, [loadCatalogs]);
 
   const rowsWithEmployee = useMemo(() => {
     const map = new Map<number, string>();
@@ -484,12 +517,7 @@ export function AbsencesPage() {
     return result;
   }, [companies, dataFilteredByPaneSelections, paneSearch]);
 
-  const rowsFiltered = useMemo(() => {
-    const base = dataFilteredByPaneSelections();
-    if (!selectedEstados.length) return base;
-    const selected = new Set(selectedEstados.map((item) => Number(item)));
-    return base.filter((row) => selected.has(Number(row.estado)));
-  }, [dataFilteredByPaneSelections, selectedEstados]);
+  const rowsFiltered = useMemo(() => dataFilteredByPaneSelections(), [dataFilteredByPaneSelections]);
 
   const columns: ColumnsType<AbsenceUiRow> = useMemo(() => [
     {
@@ -542,8 +570,11 @@ export function AbsencesPage() {
       key: 'acciones',
       width: 260,
       render: (_, row) => {
-        const canInvalidate = canEdit && [1, 2, 3].includes(row.estado);
-        const nextActionLabel = NEXT_STATE_ACTION_LABEL[row.estado];
+        const canInvalidate = canCancel && [1, 2, 3].includes(row.estado);
+        const nextAction = NEXT_STATE_ACTION_CONFIG[row.estado];
+        const canAdvance = nextAction
+          ? (nextAction.requiredPermission === 'approve' ? canApprove : canEdit)
+          : false;
 
         const onInvalidate = (e: MouseEvent<HTMLElement>) => {
           e.stopPropagation();
@@ -561,7 +592,7 @@ export function AbsencesPage() {
               const key = `absence-invalidate-${row.id}`;
               message.loading({ content: 'Invalidando ausencia...', key, duration: 0 });
               try {
-                await invalidateAbsence(row.id);
+                await invalidateAbsence(row.id, row.idEmpresa);
                 message.success({ content: 'Ausencia invalidada correctamente.', key });
                 await loadRows();
               } catch (error) {
@@ -580,42 +611,44 @@ export function AbsencesPage() {
           </Button>
         );
 
-        const nextBtn = nextActionLabel ? (
-          <Button
-            type="primary"
-            size="small"
-            disabled={!(canApprove || canEdit)}
-            onClick={(e) => {
-              e.stopPropagation();
-              modal.confirm({
-                title: 'Confirmar cambio de estado',
-                content: `Desea ejecutar la accion "${nextActionLabel}" para mover al siguiente estado?`,
-                okText: 'Si, continuar',
-                cancelText: 'Cancelar',
-                centered: true,
-                width: 420,
-                rootClassName: styles.companyConfirmModal,
-                okButtonProps: { className: styles.companyConfirmOk },
-                cancelButtonProps: { className: styles.companyConfirmCancel },
-                onOk: async () => {
-                  const key = `absence-advance-${row.id}`;
-                  message.loading({ content: 'Actualizando estado...', key, duration: 0 });
-                  try {
-                    await advanceAbsenceState(row.id);
-                    message.success({ content: 'Estado actualizado correctamente.', key });
-                    await loadRows();
-                  } catch (error) {
-                    message.error({
-                      content: error instanceof Error ? error.message : 'No se pudo actualizar el estado.',
-                      key,
-                    });
-                  }
-                },
-              });
-            }}
-          >
-            {nextActionLabel}
-          </Button>
+        const nextBtn = nextAction ? (
+          <Tooltip title={!canAdvance ? nextAction.deniedText : undefined}>
+            <Button
+              type="primary"
+              size="small"
+              disabled={!canAdvance}
+              onClick={(e) => {
+                e.stopPropagation();
+                modal.confirm({
+                  title: 'Confirmar cambio de estado',
+                  content: nextAction.confirmText,
+                  okText: 'Si, continuar',
+                  cancelText: 'Cancelar',
+                  centered: true,
+                  width: 420,
+                  rootClassName: styles.companyConfirmModal,
+                  okButtonProps: { className: styles.companyConfirmOk },
+                  cancelButtonProps: { className: styles.companyConfirmCancel },
+                  onOk: async () => {
+                    const key = `absence-advance-${row.id}`;
+                    message.loading({ content: 'Actualizando estado...', key, duration: 0 });
+                    try {
+                      await advanceAbsenceState(row.id, row.idEmpresa);
+                      message.success({ content: nextAction.successText, key });
+                      await loadRows();
+                    } catch (error) {
+                      message.error({
+                        content: error instanceof Error ? error.message : 'No se pudo actualizar el estado.',
+                        key,
+                      });
+                    }
+                  },
+                });
+              }}
+            >
+              {nextAction.label}
+            </Button>
+          </Tooltip>
         ) : null;
 
         return (
@@ -639,7 +672,7 @@ export function AbsencesPage() {
         );
       },
     },
-  ], [canApprove, canEdit, canView, companies, loadRows, message, modal, openEditModal]);
+  ], [canApprove, canCancel, canEdit, canView, companies, loadRows, message, modal, openEditModal]);
 
   const modalTitle = mode === 'create' ? 'Crear Ausencia' : 'Editar Ausencia';
 
@@ -748,8 +781,12 @@ export function AbsencesPage() {
             activeKey={filtersExpanded ? ['filtros'] : []}
             onChange={(keys) => setFiltersExpanded((Array.isArray(keys) ? keys : [keys]).includes('filtros'))}
             className={styles.filtersCollapse}
-          >
-            <Collapse.Panel header="Filtros" key="filtros">
+            items={[
+              {
+                key: 'filtros',
+                label: 'Filtros',
+                children: (
+              <>
               <Flex justify="space-between" align="center" wrap="wrap" gap={12} style={{ marginBottom: 16 }}>
                 <Input
                   placeholder="Search"
@@ -827,8 +864,11 @@ export function AbsencesPage() {
                   </Col>
                 ))}
               </Row>
-            </Collapse.Panel>
-          </Collapse>
+              </>
+                ),
+              },
+            ]}
+          />
 
           <Table
             rowKey="id"
@@ -898,16 +938,23 @@ export function AbsencesPage() {
           const loadingKey = 'absence-save';
           message.loading({ content: 'Guardando ausencia...', key: loadingKey, duration: 0 });
           try {
+            let totalCreated = 1;
             if (mode === 'edit' && editingRow) {
               await updateAbsence(editingRow.id, payload);
             } else {
-              await createAbsence(payload);
+              const created = await createAbsence(payload);
+              totalCreated =
+                Number(created?.totalCreated) > 0
+                  ? Number(created.totalCreated)
+                  : 1;
             }
             message.success({
               content:
                 mode === 'edit'
                   ? 'Ausencia actualizada correctamente.'
-                  : 'Ausencia creada correctamente.',
+                  : totalCreated > 1
+                    ? `Se crearon ${totalCreated} ausencias (una por periodo).`
+                    : 'Ausencia creada correctamente.',
               key: loadingKey,
             });
             setOpenModal(false);

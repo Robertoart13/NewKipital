@@ -183,14 +183,19 @@ Resumen de columnas 3/4/5:
 ### 10.1 Endpoint adicional operativo
 
 1. `PATCH /api/personal-actions/ausencias/:id/advance`
-   - Permiso: `hr-action-ausencias:edit`.
+   - Guard base de endpoint: `hr-action-ausencias:view`.
+   - Permiso efectivo por estado (en servicio):
+     - `DRAFT -> PENDING_SUPERVISOR`: `hr-action-ausencias:edit`
+     - `PENDING_SUPERVISOR -> PENDING_RRHH`: `hr-action-ausencias:approve`
+     - `PENDING_RRHH -> APPROVED`: `hr-action-ausencias:approve`
    - Comportamiento: mueve la ausencia al siguiente estado operativo.
    - Transiciones validas:
      - `DRAFT (1) -> PENDING_SUPERVISOR (2)`
      - `PENDING_SUPERVISOR (2) -> PENDING_RRHH (3)`
      - `PENDING_RRHH (3) -> APPROVED (4)`
 2. `PATCH /api/personal-actions/ausencias/:id/invalidate`
-   - Permiso: `hr-action-ausencias:edit`.
+   - Guard base de endpoint: `hr-action-ausencias:view`.
+   - Permiso efectivo en servicio: `hr-action-ausencias:cancel`.
    - Comportamiento: invalida la ausencia sin borrado fisico.
 
 ### 10.2 Reglas nuevas de edicion
@@ -295,6 +300,32 @@ Resumen de columnas 3/4/5:
    - `Pendiente RRHH`
 3. El usuario puede agregar estados adicionales libremente.
 4. `Limpiar Todo` vuelve a la preseleccion de atencion (`[1,2,3]`) para mantener foco operativo.
+5. Optimización aplicada (escala):
+   - el frontend ya no carga todos los estados y filtra localmente,
+   - consulta directo a backend con estados seleccionados (`?estado=1&estado=2&estado=3`),
+   - el backend ejecuta filtro SQL `IN (...)` por empresa + estados.
+
+### 10.11 Estandares reutilizables para Fase C (hooks/base)
+
+Para replicar en otras Acciones de Personal sin duplicar codigo:
+
+1. Hook monetario unificado:
+   - `frontend/src/hooks/useMoneyFieldFormatter.ts`
+   - sanitiza (solo digitos), formatea visual miles y parsea a entero para persistencia.
+2. Hook de lineas transaccionales:
+   - `frontend/src/hooks/useTransactionLines.ts`
+   - centraliza agregar/eliminar/actualizar linea y `activeLineKeys`.
+3. Regla core de completitud de linea:
+   - `frontend/src/pages/private/personal-actions/shared/coreTransactionLine.ts`
+   - campos base obligatorios: planilla, fecha efecto, movimiento, cantidad, monto, formula.
+4. Hook para estrategia de calculo por accion:
+   - `frontend/src/hooks/useActionAmountStrategy.ts`
+   - separa el esqueleto comun del algoritmo especifico de monto por modulo.
+
+Regla de continuidad:
+
+1. En Fase C se reusan estos hooks como base.
+2. Solo la formula/regla de calculo cambia por accion.
 
 ### 10.6 Escenarios QA sembrados en BD (empresa 1)
 
@@ -308,3 +339,23 @@ Resumen de columnas 3/4/5:
 8. `QA ESC-08 Invalidada bloqueada edicion` (`id_accion=12`, estado `7`)
 9. `QA ESC-09 Expirada bloqueada edicion` (`id_accion=13`, estado `8`)
 10. `QA ESC-10 Rechazada bloqueada edicion` (`id_accion=14`, estado `9`)
+
+### 10.12 Cierre Audit-Ready (2026-03-01)
+
+Consolidado de cierre tecnico previo a escalar a otros modulos:
+
+1. Consumo en apply blindado (backend):
+   - al aplicar planilla, acciones ligadas y aprobadas pasan a `CONSUMED (5)`,
+   - implementado en transaccion para evitar estados parciales.
+2. Bloqueo de apply por recalculo:
+   - backend rechaza `APPLY` cuando `requires_recalculation_calendario_nomina = 1` (`400`),
+   - frontend deshabilita boton `Aplicar` y muestra mensaje explicito.
+3. Higiene automatica:
+   - job nocturno para `EXPIRED` en acciones `APPROVED` no consumidas con fin de efecto vencido.
+4. Decision formal de naming:
+   - se oficializa `id_calendario_nomina` como vinculo de consumo.
+5. Pruebas de cierre ejecutadas:
+   - suite DoD + unitarias en verde (`24/24`),
+   - build API y frontend en verde.
+6. Decision de riesgo controlado:
+   - `INVALIDATED` automatico se mantiene fuera por ahora hasta politica RRHH explicita.

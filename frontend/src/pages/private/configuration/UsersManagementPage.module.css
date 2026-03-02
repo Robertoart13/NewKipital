@@ -503,7 +503,7 @@
 
 .companyModalFooter {
   margin-top: 20px;
-  padding: 20px 24px;
+  padding: 20px 24px 32px;
   border-top: 2px solid #e0e6ed;
   background-color: #f5f7fa;
   margin-left: -24px;
@@ -1630,6 +1630,11 @@
 
 .tabsWrapper :global(.ant-tabs-content) {
   padding: 24px;
+}
+
+/* Tabs solo barra: el contenido se renderiza fuera, elimina el area blanca vacia */
+.tabsBarOnly :global(.ant-tabs-content-holder) {
+  display: none;
 }
 
 .tabsWrapper :global(.ant-tabs-tabpane) {

@@ -65,6 +65,7 @@ import { IntegrationModule } from '../integration/integration.module';
   ],
   exports: [
     EmployeesService,
+    EmployeeSensitiveDataService,
     EmployeeDataAutomationWorkerService,
     EmployeeVacationService,
   ],

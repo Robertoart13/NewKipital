@@ -41,6 +41,12 @@ import type { PersonalActionAuditTrailItem } from '../../../../api/personalActio
 import { fetchAbsencePayrollsCatalog } from '../../../../api/personalActions';
 import sharedStyles from '../../configuration/UsersManagementPage.module.css';
 import { formatDateTime12h } from '../../../../lib/formatDate';
+import {
+  EMPLOYEE_MONEY_MAX_DIGITS,
+} from '../../../../lib/moneyInputSanitizer';
+import { useMoneyFieldFormatter } from '../../../../hooks/useMoneyFieldFormatter';
+import { useTransactionLines } from '../../../../hooks/useTransactionLines';
+import { isCoreTransactionLineComplete } from '../shared/coreTransactionLine';
 
 export type AbsenceType = 'JUSTIFICADA' | 'NO_JUSTIFICADA';
 
@@ -218,11 +224,11 @@ function round2(value: number): number {
   return Number(value.toFixed(2));
 }
 
-const MAX_ABSENCE_MONTO_DIGITS = 10;
+const MAX_ABSENCE_MONTO_DIGITS = EMPLOYEE_MONEY_MAX_DIGITS;
 
 function normalizeIntegerAmount(value: unknown): number {
-  const asText = String(value ?? '');
-  const onlyDigits = asText.replace(/\D+/g, '').slice(0, MAX_ABSENCE_MONTO_DIGITS);
+  const raw = String(value ?? '');
+  const onlyDigits = raw.replace(/\D+/g, '').slice(0, MAX_ABSENCE_MONTO_DIGITS);
   if (!onlyDigits) return 0;
   const parsed = Number.parseInt(onlyDigits, 10);
   if (!Number.isFinite(parsed) || parsed < 0) return 0;
@@ -254,8 +260,25 @@ export function AbsenceTransactionModal({
   onSubmit,
 }: AbsenceTransactionModalProps) {
   const { message, modal } = AntdApp.useApp();
+  const moneyField = useMoneyFieldFormatter(MAX_ABSENCE_MONTO_DIGITS);
   const [form] = Form.useForm<HeaderValues>();
-  const [lines, setLines] = useState<AbsenceTransactionLine[]>([buildEmptyLine()]);
+  const isLineComplete = (line: AbsenceTransactionLine): boolean =>
+    isCoreTransactionLineComplete(line);
+  const {
+    lines,
+    setLines,
+    activeLineKeys,
+    setActiveLineKeys,
+    updateLine,
+    addLine,
+    removeLine,
+  } = useTransactionLines<AbsenceTransactionLine>({
+    buildEmptyLine,
+    isLineComplete,
+    onIncompleteLine: () => {
+      message.warning('Complete la linea actual antes de agregar una nueva.');
+    },
+  });
   const [employeePayrollConfig, setEmployeePayrollConfig] = useState<{
     idPeriodoPago?: number;
     moneda?: string;
@@ -266,7 +289,6 @@ export function AbsenceTransactionModal({
   const [auditLoaded, setAuditLoaded] = useState(false);
   const lastLineRef = useRef<HTMLDivElement>(null);
   const prevEmployeeIdRef = useRef<number | undefined>(undefined);
-  const [activeLineKeys, setActiveLineKeys] = useState<string[]>([]);
 
   useEffect(() => {
     if (!open) return;
@@ -290,7 +312,7 @@ export function AbsenceTransactionModal({
               : String(normalizeIntegerAmount(line.monto)),
         }));
       setLines(draftLines);
-      setActiveLineKeys(draftLines.map((l) => l.key));
+      setActiveLineKeys(mode === 'edit' ? [] : draftLines.map((l) => l.key));
       return;
     }
 
@@ -298,7 +320,7 @@ export function AbsenceTransactionModal({
     const initialLine = buildEmptyLine();
     setLines([initialLine]);
     setActiveLineKeys([initialLine.key]);
-  }, [open, initialDraft, initialCompanyId, form]);
+  }, [open, initialDraft, initialCompanyId, form, mode]);
 
   useEffect(() => {
     if (!open || !showAudit || activeTab !== 'bitacora' || auditLoaded) return;
@@ -397,7 +419,8 @@ export function AbsenceTransactionModal({
     return payPeriods.find((period) => period.id === Number(selectedEmployee.idPeriodoPago)) ?? null;
   }, [payPeriods, selectedEmployee?.idPeriodoPago]);
 
-  const salaryBase = canViewEmployeeSensitive ? toNumber(selectedEmployee?.salarioBase) : 0;
+  // El calculo siempre usa el salario real; el permiso sensible solo controla visibilidad en UI.
+  const salaryBase = toNumber(selectedEmployee?.salarioBase);
   const employeeCurrency = (selectedEmployee?.monedaSalario ?? 'CRC').toUpperCase();
   const salaryByPeriod = calculateSalaryByPeriod(
     salaryBase,
@@ -443,23 +466,6 @@ export function AbsenceTransactionModal({
 
     return list;
   }, [movements, selectedCompanyId, actionTypeIdForAbsence, lines]);
-
-  const isLineComplete = (line: AbsenceTransactionLine): boolean => {
-    const hasPayroll = !!line.payrollId;
-    const hasFecha = !!line.fechaEfecto;
-    const hasMovement = !!line.movimientoId;
-    const hasCantidad = line.cantidad != null && Number(line.cantidad) > 0;
-    const hasMonto =
-      (line.montoInput ?? '').trim().length > 0 &&
-      line.monto != null &&
-      Number(line.monto) >= 0;
-    const hasFormula = line.formula.trim().length > 0;
-    return hasPayroll && hasFecha && hasMovement && hasCantidad && hasMonto && hasFormula;
-  };
-
-  const updateLine = (lineKey: string, changes: Partial<AbsenceTransactionLine>) => {
-    setLines((prev) => prev.map((line) => (line.key === lineKey ? { ...line, ...changes } : line)));
-  };
 
   const calculateLineAmount = (
     line: AbsenceTransactionLine,
@@ -531,46 +537,41 @@ export function AbsenceTransactionModal({
       montoInput: '0',
       formula: '',
     };
-    const calculated = calculateLineAmount(currentLine, movimientoId, currentLine.cantidad, currentLine.tipoAusencia);
+    const calculated = calculateLineAmount(
+      currentLine,
+      movimientoId,
+      currentLine.cantidad,
+      currentLine.tipoAusencia,
+    );
     updateLine(lineKey, { ...cleaned, ...calculated });
   };
 
   const handleCantidadChange = (lineKey: string, cantidad?: number) => {
     const currentLine = lines.find((line) => line.key === lineKey);
     if (!currentLine) return;
-    const calculated = calculateLineAmount(currentLine, currentLine.movimientoId, cantidad, currentLine.tipoAusencia);
+    const calculated = calculateLineAmount(
+      currentLine,
+      currentLine.movimientoId,
+      cantidad,
+      currentLine.tipoAusencia,
+    );
     updateLine(lineKey, { cantidad, ...calculated });
   };
 
   const handleTipoAusenciaChange = (lineKey: string, tipoAusencia: AbsenceType) => {
     const currentLine = lines.find((line) => line.key === lineKey);
     if (!currentLine) return;
-    const calculated = calculateLineAmount(currentLine, currentLine.movimientoId, currentLine.cantidad, tipoAusencia);
+    const calculated = calculateLineAmount(
+      currentLine,
+      currentLine.movimientoId,
+      currentLine.cantidad,
+      tipoAusencia,
+    );
     updateLine(lineKey, { tipoAusencia, ...calculated });
   };
 
-  const addLine = () => {
-    const lastLine = lines[lines.length - 1];
-    if (!lastLine || !isLineComplete(lastLine)) {
-      message.warning('Complete la linea actual antes de agregar una nueva.');
-      return;
-    }
-    const newLine = buildEmptyLine();
-    setLines((prev) => [...prev, newLine]);
-    setActiveLineKeys([newLine.key]);
-    setTimeout(() => {
-      lastLineRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }, 150);
-  };
-
-  const removeLine = (lineKey: string) => {
-    if (lines.length <= 1) return;
-    const remaining = lines.filter((line) => line.key !== lineKey);
-    setLines(remaining);
-    setActiveLineKeys((prevKeys) => {
-      const next = prevKeys.filter((k) => k !== lineKey);
-      return next.length > 0 ? next : (remaining.length > 0 ? [remaining[remaining.length - 1].key] : []);
-    });
+  const handleAddLine = () => {
+    addLine();
   };
 
   const handleAccept = async () => {
@@ -662,10 +663,10 @@ export function AbsenceTransactionModal({
       render: (value: string, row) => {
         const changes = row.cambios ?? [];
         const tooltipContent = (
-          <div style={{ maxWidth: 520 }}>
+          <div style={{ maxWidth: 560, maxHeight: 360, overflowY: 'auto' }}>
             <div style={{ fontWeight: 600, marginBottom: 8 }}>{value}</div>
             {changes.length > 0 ? (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
                 {changes.map((change, index) => (
                   <div key={`${row.id}-${change.campo}-${index}`} style={{ fontSize: 12, lineHeight: 1.4 }}>
                     <div><strong>{change.campo}</strong></div>
@@ -696,7 +697,18 @@ export function AbsenceTransactionModal({
       closable={false}
       footer={null}
       width={1180}
-      destroyOnClose
+      destroyOnHidden
+      centered={false}
+      styles={{
+        wrapper: { alignItems: 'flex-start', paddingTop: 40 },
+        body: {
+          maxHeight: '85vh',
+          overflow: 'hidden',
+          display: 'flex',
+          flexDirection: 'column',
+          padding: 24,
+        },
+      }}
       title={(
         <Flex justify="space-between" align="center" wrap="nowrap" style={{ width: '100%', gap: 16 }}>
           <div className={sharedStyles.companyModalHeader}>
@@ -715,7 +727,7 @@ export function AbsenceTransactionModal({
         </Flex>
       )}
     >
-      <div style={{ position: 'relative' }}>
+      <div style={{ position: 'relative', display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}>
       {showGlobalPreload ? (
         <div
           style={{
@@ -729,51 +741,54 @@ export function AbsenceTransactionModal({
             borderRadius: 8,
           }}
         >
-          <Spin size="large" tip="Cargando informacion..." />
+          <Spin size="large" description="Cargando informacion..." />
         </div>
       ) : null}
-      <Form form={form} layout="vertical" className={sharedStyles.companyFormContent}>
+      <Form form={form} layout="vertical" className={sharedStyles.companyFormContent} style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}>
+        <div style={{ flexShrink: 0 }}>
         {readOnly ? (
           <Alert
             type="warning"
             showIcon
-            message={readOnlyMessage ?? 'Esta ausencia esta en modo solo lectura por su estado actual.'}
+            title={readOnlyMessage ?? 'Esta ausencia esta en modo solo lectura por su estado actual.'}
             className={`${sharedStyles.infoBanner} ${sharedStyles.warningType}`}
             style={{ marginBottom: 12 }}
           />
         ) : null}
 
-        <Tabs
-          activeKey={activeTab}
-          onChange={setActiveTab}
-          className={`${sharedStyles.tabsWrapper} ${sharedStyles.companyModalTabs}`}
-          items={[
-            {
-              key: 'info',
-              label: (
-                <span>
-                  <CalendarOutlined style={{ marginRight: 8, fontSize: 16 }} />
-                  Informacion principal
-                </span>
-              ),
-            },
-            ...(showAudit
-              ? [
-                {
-                  key: 'bitacora',
-                  label: (
-                    <span>
-                      <SearchOutlined style={{ marginRight: 8, fontSize: 16 }} />
-                      Bitacora
-                    </span>
-                  ),
-                },
-              ]
-              : []),
-          ]}
-        />
+        {mode === 'edit' ? (
+          <Tabs
+            activeKey={activeTab}
+            onChange={setActiveTab}
+            className={`${sharedStyles.tabsWrapper} ${sharedStyles.companyModalTabs} ${sharedStyles.tabsBarOnly}`}
+            items={[
+              {
+                key: 'info',
+                label: (
+                  <span>
+                    <CalendarOutlined style={{ marginRight: 8, fontSize: 16 }} />
+                    Informacion principal
+                  </span>
+                ),
+              },
+              ...(showAudit
+                ? [
+                  {
+                    key: 'bitacora',
+                    label: (
+                      <span>
+                        <SearchOutlined style={{ marginRight: 8, fontSize: 16 }} />
+                        Bitacora
+                      </span>
+                    ),
+                  },
+                ]
+                : []),
+            ]}
+          />
+        ) : null}
 
-        {activeTab === 'info' ? (
+        {(mode !== 'edit' || activeTab === 'info') && (
         <>
         {selectedEmployee ? (
           <Collapse
@@ -934,20 +949,37 @@ export function AbsenceTransactionModal({
             <Input.TextArea rows={1} autoSize={{ minRows: 1, maxRows: 3 }} maxLength={500} disabled={readOnly} />
           </Form.Item>
         </Card>
+        </>
+        )}
+        </div>
 
-        {selectedCompanyId && selectedEmployeeId ? (
+        {(mode !== 'edit' || activeTab === 'info') && selectedCompanyId && selectedEmployeeId ? (
           <Card
             size="small"
             title="Líneas de Transacción"
-            style={{ border: '1px solid #e8ecf0', borderRadius: 8 }}
+            style={{
+              border: '1px solid #e8ecf0',
+              borderRadius: 8,
+              flex: '0 0 auto',
+              display: 'flex',
+              flexDirection: 'column',
+              overflow: 'visible',
+              marginTop: 12,
+            }}
+            bodyStyle={{
+              display: 'flex',
+              flexDirection: 'column',
+              padding: 16,
+              overflow: 'visible',
+            }}
           >
             {loading ? (
               <Flex justify="center" align="center" style={{ minHeight: 220 }}>
-                <Spin size="large" tip="Cargando lineas de transaccion..." />
+                <Spin size="large" description="Cargando lineas de transaccion..." />
               </Flex>
             ) : (
             <>
-            <div style={{ maxHeight: 420, overflowY: 'auto', marginTop: 8 }}>
+            <div style={{ overflow: 'visible', marginTop: 0 }}>
               <Collapse
                 className={sharedStyles.lineCollapse}
                 activeKey={activeLineKeys}
@@ -1006,7 +1038,7 @@ export function AbsenceTransactionModal({
                     ),
                     children: (
                       <div ref={index === lines.length - 1 ? lastLineRef : undefined}>
-                        <Space direction="vertical" size={16} style={{ width: '100%' }}>
+                        <Space orientation="vertical" size={16} style={{ width: '100%' }}>
                       <Row gutter={[16, 12]}>
                         <Col xs={24} md={12} lg={8}>
                           <div className={sharedStyles.filterLabel}>1. Periodo de pago (Planilla)</div>
@@ -1026,7 +1058,7 @@ export function AbsenceTransactionModal({
                             <Alert
                               type="warning"
                               showIcon
-                              message="La planilla de esta linea ya no es elegible (cerrada, vencida o fuera de reglas)."
+                              title="La planilla de esta linea ya no es elegible (cerrada, vencida o fuera de reglas)."
                               className={`${sharedStyles.infoBanner} ${sharedStyles.warningType}`}
                               style={{ marginTop: 10 }}
                             />
@@ -1035,7 +1067,7 @@ export function AbsenceTransactionModal({
                             <Alert
                               type={loadingPayrolls ? 'info' : 'error'}
                               showIcon
-                              message={loadingPayrolls
+                              title={loadingPayrolls
                                 ? 'Cargando planillas elegibles...'
                                 : 'No hay planillas que coincidan con empresa, periodo de pago y moneda del empleado.'}
                               className={`${sharedStyles.infoBanner} ${sharedStyles.dangerType}`}
@@ -1102,16 +1134,18 @@ export function AbsenceTransactionModal({
                             <Input
                               style={{ width: '100%' }}
                               placeholder={!line.movimientoId ? '-' : undefined}
-                              maxLength={MAX_ABSENCE_MONTO_DIGITS}
+                              maxLength={moneyField.maxInputLength}
                               inputMode="numeric"
-                              value={line.montoInput ?? ''}
+                              value={moneyField.formatDisplay(line.montoInput)}
                               disabled={readOnly}
                               onChange={(event) => {
                                 const raw = event.target.value ?? '';
-                                const onlyDigits = raw.replace(/\D+/g, '').slice(0, MAX_ABSENCE_MONTO_DIGITS);
+                                const onlyDigits = moneyField.sanitize(raw);
                                 updateLine(line.key, {
                                   montoInput: onlyDigits,
-                                  monto: onlyDigits.length > 0 ? normalizeIntegerAmount(onlyDigits) : undefined,
+                                  monto: onlyDigits.length > 0
+                                    ? (moneyField.parse(onlyDigits) ?? 0)
+                                    : undefined,
                                 });
                               }}
                             />
@@ -1162,8 +1196,8 @@ export function AbsenceTransactionModal({
                 })}
               />
             </div>
-            <Flex justify="center" style={{ marginTop: 16, paddingTop: 16, borderTop: '1px solid #e8ecf0' }}>
-              <Button type="dashed" icon={<PlusOutlined />} onClick={addLine} disabled={readOnly}>
+            <Flex justify="center" style={{ marginTop: 16, paddingTop: 16, borderTop: '1px solid #e8ecf0', flexShrink: 0 }}>
+              <Button type="dashed" icon={<PlusOutlined />} onClick={handleAddLine} disabled={readOnly}>
                 Agregar línea de transacción
               </Button>
             </Flex>
@@ -1171,8 +1205,8 @@ export function AbsenceTransactionModal({
             )}
           </Card>
         ) : null}
-        </>
-        ) : (
+
+        {mode === 'edit' && activeTab === 'bitacora' ? (
           <div className={sharedStyles.historicoSection}>
             <p className={sharedStyles.sectionTitle}>Historial de cambios de la ausencia</p>
             <p className={sharedStyles.sectionDescription} style={{ marginBottom: 16 }}>
@@ -1193,8 +1227,9 @@ export function AbsenceTransactionModal({
               locale={{ emptyText: 'No hay registros de bitacora para esta ausencia.' }}
             />
           </div>
-        )}
+        ) : null}
 
+        <div style={{ flexShrink: 0 }}>
         <div className={sharedStyles.companyModalFooter}>
           <Button onClick={onCancel} className={sharedStyles.companyModalBtnCancel}>
             {readOnly ? 'Cerrar' : 'Cancelar'}
@@ -1210,6 +1245,7 @@ export function AbsenceTransactionModal({
               {mode === 'create' ? 'Crear ausencia' : 'Guardar cambios'}
             </Button>
           ) : null}
+        </div>
         </div>
       </Form>
       </div>

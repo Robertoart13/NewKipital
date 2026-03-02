@@ -1,4 +1,5 @@
 import {
+  Logger,
   Injectable,
   NotFoundException,
   ConflictException,
@@ -6,7 +7,7 @@ import {
   ForbiddenException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { DataSource, Repository } from 'typeorm';
+import { DataSource, EntityManager, Repository } from 'typeorm';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import {
   PayrollCalendar,
@@ -29,11 +30,15 @@ import {
 import { PayrollResult } from './entities/payroll-result.entity';
 import {
   PersonalAction,
+  PersonalActionEstado,
   PERSONAL_ACTION_APPROVED_STATES,
 } from '../personal-actions/entities/personal-action.entity';
+import { PersonalActionAutoInvalidationService } from '../personal-actions/personal-action-auto-invalidation.service';
 
 @Injectable()
 export class PayrollService {
+  private readonly logger = new Logger(PayrollService.name);
+
   constructor(
     @InjectRepository(PayrollCalendar)
     private readonly repo: Repository<PayrollCalendar>,
@@ -52,6 +57,7 @@ export class PayrollService {
     private readonly domainEvents: DomainEventsService,
     private readonly auditOutbox: AuditOutboxService,
     private readonly vacationService: EmployeeVacationService,
+    private readonly autoInvalidationService: PersonalActionAutoInvalidationService,
   ) {}
 
   private readonly auditFieldLabels: Record<string, string> = {
@@ -536,11 +542,38 @@ export class PayrollService {
         await queryRunner.manager.save(PayrollEmployeeSnapshot, snapshot);
       }
 
+      const invalidationSummary = await this.autoInvalidationService.run({
+        manager: queryRunner.manager,
+        source: 'payroll_collector_pre_snapshot',
+        companyId: payroll.idEmpresa,
+        payrollId: payroll.id,
+        payrollCurrency: payroll.moneda,
+      });
+      if (invalidationSummary.totalInvalidated > 0) {
+        this.logger.warn(
+          JSON.stringify({
+            job: 'payroll-collector-auto-invalidation',
+            payrollId: payroll.id,
+            companyId: payroll.idEmpresa,
+            totalInvalidated: invalidationSummary.totalInvalidated,
+            breakdown: {
+              TERMINATION_EFFECTIVE:
+                invalidationSummary.byReason.TERMINATION_EFFECTIVE,
+              COMPANY_MISMATCH:
+                invalidationSummary.byReason.COMPANY_MISMATCH,
+              CURRENCY_MISMATCH:
+                invalidationSummary.byReason.CURRENCY_MISMATCH,
+            },
+            sampleActionIds: invalidationSummary.sampleActionIds.slice(0, 10),
+          }),
+        );
+      }
+
       const approvedActions = await queryRunner.manager
         .createQueryBuilder(PersonalAction, 'a')
         .where('a.idEmpresa = :companyId', { companyId: payroll.idEmpresa })
-        .andWhere('a.estado IN (:...approvedStates)', {
-          approvedStates: PERSONAL_ACTION_APPROVED_STATES,
+        .andWhere('a.estado = :approvedState', {
+          approvedState: PersonalActionEstado.APPROVED,
         })
         .andWhere('a.idCalendarioNomina IS NULL')
         .andWhere('COALESCE(a.fechaInicioEfecto, a.fechaEfecto) IS NOT NULL')
@@ -783,6 +816,11 @@ export class PayrollService {
         'Solo se puede aplicar una planilla en estado Verificada',
       );
     }
+    if (p.requiresRecalculation === 1) {
+      throw new BadRequestException(
+        'La planilla requiere recalculo. Procese nuevamente antes de aplicar.',
+      );
+    }
 
     if (expectedVersion !== undefined && p.versionLock !== expectedVersion) {
       throw new ConflictException(
@@ -791,31 +829,49 @@ export class PayrollService {
     }
 
     const nextVersion = p.versionLock + 1;
+    await this.dataSource.transaction(async (manager) => {
+      const updateResult = await manager
+        .createQueryBuilder()
+        .update(PayrollCalendar)
+        .set({
+          estado: EstadoCalendarioNomina.APLICADA,
+          fechaAplicacion: new Date(),
+          modificadoPor: userId ?? null,
+          isActiveSlot: 0,
+          versionLock: () => 'version_lock_calendario_nomina + 1',
+        })
+        .where('id_calendario_nomina = :id', { id })
+        .andWhere('estado_calendario_nomina = :estado', {
+          estado: EstadoCalendarioNomina.VERIFICADA,
+        })
+        .andWhere('version_lock_calendario_nomina = :version', {
+          version: p.versionLock,
+        })
+        .andWhere('requires_recalculation_calendario_nomina = 0')
+        .execute();
 
-    const updateResult = await this.repo
-      .createQueryBuilder()
-      .update(PayrollCalendar)
-      .set({
-        estado: EstadoCalendarioNomina.APLICADA,
-        fechaAplicacion: new Date(),
-        modificadoPor: userId ?? null,
-        isActiveSlot: 0,
-        versionLock: () => 'version_lock_calendario_nomina + 1',
-      })
-      .where('id_calendario_nomina = :id', { id })
-      .andWhere('estado_calendario_nomina = :estado', {
-        estado: EstadoCalendarioNomina.VERIFICADA,
-      })
-      .andWhere('version_lock_calendario_nomina = :version', {
-        version: p.versionLock,
-      })
-      .execute();
+      if (!updateResult.affected) {
+        throw new ConflictException(
+          'Conflicto de concurrencia al aplicar planilla.',
+        );
+      }
 
-    if (!updateResult.affected) {
-      throw new ConflictException(
-        'Conflicto de concurrencia al aplicar planilla.',
-      );
-    }
+      // Cierre de consumo: todas las acciones aprobadas ligadas a esta planilla
+      // pasan a CONSUMED en forma idempotente.
+      await manager
+        .createQueryBuilder()
+        .update(PersonalAction)
+        .set({
+          estado: PersonalActionEstado.CONSUMED,
+          modificadoPor: userId ?? null,
+          versionLock: () => 'version_lock_accion + 1',
+        })
+        .where('id_calendario_nomina = :id', { id })
+        .andWhere('estado_accion IN (:...approvedStates)', {
+          approvedStates: PERSONAL_ACTION_APPROVED_STATES,
+        })
+        .execute();
+    });
 
     const saved = await this.findOne(id, userId);
     this.auditOutbox.publish({
@@ -1223,4 +1279,5 @@ export class PayrollService {
       );
     }
   }
+
 }

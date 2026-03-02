@@ -3,6 +3,7 @@ import { APP_GUARD } from '@nestjs/core';
 import { ConfigModule } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { EventEmitterModule } from '@nestjs/event-emitter';
+import { ScheduleModule } from '@nestjs/schedule';
 import { databaseConfig } from './config/database.config';
 import { AuthModule } from './modules/auth/auth.module';
 import { CompaniesModule } from './modules/companies/companies.module';
@@ -31,6 +32,7 @@ import { PermissionsGuard } from './common/guards/permissions.guard';
     ConfigModule.forRoot({ isGlobal: true }),
     TypeOrmModule.forRootAsync(databaseConfig),
     EventEmitterModule.forRoot(),
+    ScheduleModule.forRoot(),
     AuthModule,
     CompaniesModule,
     ClassesModule,

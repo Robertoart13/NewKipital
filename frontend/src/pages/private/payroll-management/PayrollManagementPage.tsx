@@ -754,11 +754,18 @@ export function PayrollManagementPage() {
             </Tooltip>
           ) : null}
           {canApply && row.estado === 3 ? (
-            <Tooltip title="Aplica la planilla y bloquea sus resultados para operación final.">
+            <Tooltip
+              title={
+                row.requiresRecalculation === 1
+                  ? 'Existen nuevas acciones aprobadas que requieren recalcular la planilla antes de aplicar.'
+                  : 'Aplica la planilla y bloquea sus resultados para operación final.'
+              }
+            >
               <Button
                 size="small"
                 type="primary"
                 loading={processingId === row.id}
+                disabled={row.requiresRecalculation === 1}
                 onClick={(event) => {
                   event.stopPropagation();
                   void runAction(row.id, () => applyPayroll(row.id), 'Planilla aplicada');

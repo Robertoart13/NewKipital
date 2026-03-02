@@ -301,6 +301,10 @@ export function PayrollCalendarPage() {
       message.warning('No se puede verificar la planilla porque no tiene movimientos cargados para procesar.');
       return;
     }
+    if (action === 'apply' && detail?.requiresRecalculation === 1) {
+      message.warning('No se puede aplicar: existen nuevas acciones aprobadas que requieren recalcular la planilla.');
+      return;
+    }
 
     modal.confirm({
       title: `Confirmar accion`,
@@ -310,7 +314,7 @@ export function PayrollCalendarPage() {
       centered: true,
       onOk: () => runAction(action),
     });
-  }, [message, modal, runAction, snapshotInputs]);
+  }, [detail?.requiresRecalculation, message, modal, runAction, snapshotInputs]);
 
   const periodOptions = useMemo(() => {
     const options = new Map<number, string>();
@@ -938,10 +942,16 @@ export function PayrollCalendarPage() {
                         Verificar
                       </Button>
                     </Tooltip>
-                    <Tooltip title="Aprueba en firme la planilla verificada.">
+                    <Tooltip
+                      title={
+                        detail.requiresRecalculation === 1
+                          ? 'Existen nuevas acciones aprobadas que requieren recalcular la planilla antes de aplicar.'
+                          : 'Aprueba en firme la planilla verificada.'
+                      }
+                    >
                       <Button
                         icon={<CheckCircleOutlined />}
-                        disabled={!canApply || detail.estado !== 3}
+                        disabled={!canApply || detail.estado !== 3 || detail.requiresRecalculation === 1}
                         onClick={() => confirmAction('apply')}
                       >
                         Aplicar
@@ -957,6 +967,13 @@ export function PayrollCalendarPage() {
                     <div style={{ marginTop: 12 }}>
                       <Text type="warning">
                         No se puede verificar esta planilla porque todavía no tiene movimientos procesados.
+                      </Text>
+                    </div>
+                  ) : null}
+                  {detail.estado === 3 && detail.requiresRecalculation === 1 ? (
+                    <div style={{ marginTop: 12 }}>
+                      <Text type="warning">
+                        No se puede aplicar: existen nuevas acciones aprobadas que requieren recalcular la planilla.
                       </Text>
                     </div>
                   ) : null}

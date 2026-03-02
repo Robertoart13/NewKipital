@@ -42,13 +42,15 @@ import {
 import styles from '../../configuration/UsersManagementPage.module.css';
 import { textRules, emailRules, optionalNoSqlInjection } from '../../../../lib/formValidation';
 import {
-  MAX_MONEY_AMOUNT,
-  formatCurrencyInput,
   getCurrencySymbol,
   isMoneyOverMax,
-  parseCurrencyInput,
 } from '../../../../lib/currencyFormat';
 import { formatDateTime12h } from '../../../../lib/formatDate';
+import {
+  EMPLOYEE_MONEY_MAX_DIGITS,
+  sanitizeMoneyDigits,
+} from '../../../../lib/moneyInputSanitizer';
+import { useMoneyFieldFormatter } from '../../../../hooks/useMoneyFieldFormatter';
 
 interface EmployeeEditModalProps {
   employeeId: number | undefined;
@@ -85,12 +87,15 @@ function mapEmployeeToFormValues(emp: EmployeeDetail) {
     idPeriodoPago: emp.idPeriodoPago ?? undefined,
     jornada: emp.jornada ?? undefined,
     codigo: emp.codigo ?? '',
-    salarioBase: salario ?? 0,
+    salarioBase: salario != null ? sanitizeMoneyDigits(salario) : '0',
     monedaSalario: emp.monedaSalario ?? 'CRC',
     numeroCcss: emp.numeroCcss ?? undefined,
     cuentaBanco: emp.cuentaBanco ?? undefined,
     vacacionesAcumuladas: Number.isFinite(vacaciones) ? vacaciones : 0,
-    cesantiaAcumulada: Number.isFinite(cesantia) ? cesantia : 0,
+    cesantiaAcumulada:
+      Number.isFinite(cesantia) && cesantia != null
+        ? sanitizeMoneyDigits(cesantia)
+        : '0',
     activo: emp.estado === 1,
   };
 }
@@ -127,6 +132,7 @@ export function EmployeeEditModal({ employeeId, open, onClose, onSuccess }: Empl
   const canToggleActivo = (activo && canInactivate) || (!activo && canReactivate);
   const monedaSalarioSeleccionada = (Form.useWatch('monedaSalario', form) as string | undefined) ?? 'CRC';
   const currencySymbol = getCurrencySymbol(monedaSalarioSeleccionada);
+  const moneyField = useMoneyFieldFormatter(EMPLOYEE_MONEY_MAX_DIGITS);
   const { data: supervisors = [] } = useSupervisors();
 
   const canSubmit = useMemo(() => {
@@ -257,12 +263,15 @@ export function EmployeeEditModal({ employeeId, open, onClose, onSuccess }: Empl
       tipoContrato: values.tipoContrato || undefined,
       jornada: values.jornada || undefined,
       idPeriodoPago: resolvedPeriodoPago || undefined,
-      salarioBase: values.salarioBase ?? undefined,
+      salarioBase: moneyField.parse(values.salarioBase),
       monedaSalario: values.monedaSalario || undefined,
       numeroCcss: values.numeroCcss?.trim() || undefined,
       cuentaBanco: values.cuentaBanco || undefined,
       vacacionesAcumuladas: values.vacacionesAcumuladas != null ? String(values.vacacionesAcumuladas) : undefined,
-      cesantiaAcumulada: values.cesantiaAcumulada != null ? String(values.cesantiaAcumulada) : undefined,
+      cesantiaAcumulada:
+        moneyField.parse(values.cesantiaAcumulada) != null
+          ? String(moneyField.parse(values.cesantiaAcumulada))
+          : undefined,
     };
     delete payload.vacacionesAcumuladas;
 
@@ -595,25 +604,26 @@ export function EmployeeEditModal({ employeeId, open, onClose, onSuccess }: Empl
             <Form.Item
               name="salarioBase"
               label="Salario Base"
+              validateTrigger={['onBlur', 'onSubmit']}
               rules={[
                 {
                   validator: (_, v) => {
-                    if (v == null || v === '') return Promise.resolve();
-                    const n = Number(v);
+                    const n = moneyField.parse(v);
+                    if (n == null) return Promise.resolve();
                     if (isNaN(n) || n <= 0) return Promise.reject(new Error('El salario debe ser mayor a cero'));
                     if (isMoneyOverMax(n)) return Promise.reject(new Error('Monto demasiado alto'));
                     return Promise.resolve();
                   },
                 },
               ]}
+              getValueFromEvent={moneyField.getFormValueFromEvent}
+              getValueProps={moneyField.getFormValueProps}
             >
-              <InputNumber
-                min={0.01}
-                max={MAX_MONEY_AMOUNT}
-                precision={2}
-                formatter={(value) => formatCurrencyInput(value, currencySymbol)}
-                parser={parseCurrencyInput}
+              <Input
                 style={{ width: '100%' }}
+                maxLength={moneyField.maxInputLength}
+                inputMode="numeric"
+                placeholder={`${currencySymbol} 0`}
               />
             </Form.Item>
           </Col>
@@ -722,11 +732,12 @@ export function EmployeeEditModal({ employeeId, open, onClose, onSuccess }: Empl
               <Form.Item
                 name="cesantiaAcumulada"
                 label="Cesantía Acumulada"
+                validateTrigger={['onBlur', 'onSubmit']}
                 rules={[
                   {
                     validator: (_, value) => {
-                      if (value == null || value === '') return Promise.resolve();
-                      const numericValue = Number(value);
+                      const numericValue = moneyField.parse(value);
+                      if (numericValue == null) return Promise.resolve();
                       if (Number.isNaN(numericValue) || numericValue < 0) {
                         return Promise.reject(new Error('Solo montos positivos o cero'));
                       }
@@ -737,16 +748,15 @@ export function EmployeeEditModal({ employeeId, open, onClose, onSuccess }: Empl
                     },
                   },
                 ]}
+                getValueFromEvent={moneyField.getFormValueFromEvent}
+                getValueProps={moneyField.getFormValueProps}
                 extra="Monto en moneda, 0 o mayor"
               >
-                <InputNumber
-                  min={0}
-                  max={MAX_MONEY_AMOUNT}
-                  precision={2}
-                  formatter={(value) => formatCurrencyInput(value, currencySymbol)}
-                  parser={parseCurrencyInput}
+                <Input
                   style={{ width: '100%' }}
-                  placeholder={`${currencySymbol} 0.00`}
+                  maxLength={moneyField.maxInputLength}
+                  inputMode="numeric"
+                  placeholder={`${currencySymbol} 0`}
                 />
               </Form.Item>
             </Col>
