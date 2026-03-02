@@ -31,6 +31,7 @@ import {
   HoursExtrasPage,
   RetentionsPage,
   DiscountsPage,
+  VacationsPage,
 } from '../pages/private';
 
 /**
@@ -279,13 +280,7 @@ export function AppRouter() {
         <Route path="/personal-actions/compensaciones/vacaciones" element={(
           <PrivateLayout>
             <PermissionGuard requiredPermission="hr-action-vacaciones:view">
-              <PersonalActionsPage
-                pageTitle="Vacaciones"
-                pageSubtitle="Acciones de compensacion por vacaciones"
-                fixedTipoAccion="VACACIONES"
-                createPermission="hr-action-vacaciones:create"
-                approvePermission="hr-action-vacaciones:approve"
-              />
+              <VacationsPage />
             </PermissionGuard>
           </PrivateLayout>
         )} />

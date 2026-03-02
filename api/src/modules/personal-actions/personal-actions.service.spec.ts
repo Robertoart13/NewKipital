@@ -22,6 +22,7 @@ import { BonusLine } from './entities/bonus-line.entity';
 import { OvertimeLine } from './entities/overtime-line.entity';
 import { RetentionLine } from './entities/retention-line.entity';
 import { DiscountLine } from './entities/discount-line.entity';
+import { VacationDate } from './entities/vacation-date.entity';
 import { EmployeesService } from '../employees/employees.service';
 import { AuditOutboxService } from '../integration/audit-outbox.service';
 import { EmployeeSensitiveDataService } from '../../common/services/employee-sensitive-data.service';
@@ -42,6 +43,7 @@ describe('PersonalActionsService', () => {
   let overtimeLineRepo: jest.Mocked<Repository<OvertimeLine>>;
   let retentionLineRepo: jest.Mocked<Repository<RetentionLine>>;
   let discountLineRepo: jest.Mocked<Repository<DiscountLine>>;
+  let vacationDateRepo: jest.Mocked<Repository<VacationDate>>;
   let payrollRepo: jest.Mocked<Repository<PayrollCalendar>>;
   let eventEmitter: jest.Mocked<EventEmitter2>;
   let auditOutbox: jest.Mocked<AuditOutboxService>;
@@ -99,6 +101,10 @@ describe('PersonalActionsService', () => {
     const discountLineRepoMock = {
       count: jest.fn().mockResolvedValue(0),
     };
+    const vacationDateRepoMock = {
+      count: jest.fn().mockResolvedValue(0),
+      find: jest.fn().mockResolvedValue([]),
+    };
 
     const userCompanyRepoMock = {
       findOne: jest.fn(),
@@ -147,6 +153,7 @@ describe('PersonalActionsService', () => {
         { provide: getRepositoryToken(OvertimeLine), useValue: overtimeLineRepoMock },
         { provide: getRepositoryToken(RetentionLine), useValue: retentionLineRepoMock },
         { provide: getRepositoryToken(DiscountLine), useValue: discountLineRepoMock },
+        { provide: getRepositoryToken(VacationDate), useValue: vacationDateRepoMock },
         { provide: getRepositoryToken(UserCompany), useValue: userCompanyRepoMock },
         { provide: getRepositoryToken(PayrollCalendar), useValue: payrollRepoMock },
         { provide: EventEmitter2, useValue: eventEmitterMock },
@@ -171,6 +178,7 @@ describe('PersonalActionsService', () => {
     overtimeLineRepo = module.get(getRepositoryToken(OvertimeLine));
     retentionLineRepo = module.get(getRepositoryToken(RetentionLine));
     discountLineRepo = module.get(getRepositoryToken(DiscountLine));
+    vacationDateRepo = module.get(getRepositoryToken(VacationDate));
     payrollRepo = module.get(getRepositoryToken(PayrollCalendar));
     eventEmitter = module.get(EventEmitter2);
     auditOutbox = module.get(AuditOutboxService);
@@ -1354,5 +1362,14 @@ describe('PersonalActionsService', () => {
     expect(discountLineRepo.count).toHaveBeenCalledWith({
       where: { idAccion: 10 },
     });
+  });
+  it('getVacationAvailability returns zero when employee has no ledger', async () => {
+    const serviceAny = service as any;
+    jest.spyOn(serviceAny, 'getVacationBalanceForEmployee').mockResolvedValue(0);
+    jest.spyOn(serviceAny, 'getVacationReservedDays').mockResolvedValue(0);
+
+    const result = await serviceAny.getVacationAvailability(1, 99);
+
+    expect(result).toEqual({ saldoReal: 0, reservado: 0, disponible: 0 });
   });
 });

@@ -198,6 +198,61 @@ Al intentar inactivar un empleado:
 
 ### Avance registrado (2026-02-27)
 
+---
+
+## PEND-004 - Traslado de empleados entre empresas con portabilidad de saldo de vacaciones
+
+### Estado
+
+- Pendiente
+
+### Prioridad
+
+- Alta
+
+### Contexto del problema
+
+La operacion mueve empleados entre subsidiarias por decision del negocio y requieren mantener los dias disponibles de vacaciones al trasladar el empleado. El modelo actual liga vacaciones a empresa, por lo que el saldo no se porta automaticamente.
+
+### Regla de negocio solicitada
+
+Al trasladar un empleado de empresa origen a empresa destino:
+
+1. El empleado cambia de empresa en su registro base.
+2. El saldo de vacaciones disponible debe trasladarse a la nueva empresa (no se pierde).
+3. La transferencia debe quedar auditada en el ledger con referencia trazable.
+4. La provision futura de vacaciones debe quedar asociada a la empresa destino.
+5. El saldo historico en empresa origen queda registrado y no se modifica luego del traslado.
+
+### Alcance tecnico esperado
+
+Backend:
+
+1. Nuevo flujo transaccional de traslado masivo de empleados entre empresas.
+2. Lectura de saldo actual desde `sys_empleado_vacaciones_ledger` (ultimo `saldo_resultante_vacaciones`).
+3. En empresa origen: registrar ajuste negativo (tipo `ADJUSTMENT` o `REVERSAL`).
+4. En empresa destino: registrar ajuste positivo (tipo `ADJUSTMENT` o `INITIAL`).
+5. Ambos movimientos enlazados por `source_type_vacaciones = 'TRANSFER'` y `source_id_vacaciones` comun.
+6. Garantizar trazabilidad: saldo anterior y saldo posterior registrados en ledger.
+
+Frontend:
+
+1. Vista dedicada para traslado masivo (empresa origen, empresa destino, seleccion de empleados).
+2. Opcion explicita de "trasladar saldo de vacaciones".
+3. Mensajeria clara y resumen por empleado.
+
+Auditoria:
+
+1. Registrar evento de traslado en outbox.
+2. Guardar metadatos de transferencia para trazabilidad.
+3. Considerar tabla dedicada `sys_empleado_transferencias` (origen/destino/saldo/actor/fecha) para consulta operativa.
+
+### Criterios de aceptacion
+
+1. El empleado queda asignado a la empresa destino.
+2. El saldo disponible de vacaciones se conserva (mismo total, nueva cuenta).
+3. La transferencia queda registrada en ledger con referencia comun.
+
 - Estructura incremental aplicada en `acc_acciones_personal`.
 - Indices v2 aplicados.
 - Trigger anti-delete activo.

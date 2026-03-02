@@ -991,9 +991,17 @@ export function HoursExtraTransactionModal({
                   notFoundContent={employeesLoading ? <Spin size="small" /> : null}
                   options={employeesByCompany.map((employee) => ({
                     value: employee.id,
-                    label: `${[employee.apellido1, employee.apellido2, employee.nombre]
-                      .filter((part) => typeof part === 'string' && part.trim().length > 0)
-                      .join(' ')} (${employee.codigo})`,
+                    label: (() => {
+                      const fullName = `${[employee.apellido1, employee.apellido2, employee.nombre]
+                        .filter((part) => typeof part === 'string' && part.trim().length > 0)
+                        .join(' ')}`.trim();
+                      if (fullName) {
+                        return canViewEmployeeSensitive && employee.codigo
+                          ? `${fullName} (${employee.codigo})`
+                          : fullName;
+                      }
+                      return employee.codigo || 'Empleado sin codigo';
+                    })(),
                   }))}
                 />
               </Form.Item>

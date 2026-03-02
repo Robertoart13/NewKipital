@@ -21,6 +21,7 @@ import { UpsertLicenseDto } from './dto/upsert-license.dto';
 import { UpsertOvertimeDto } from './dto/upsert-overtime.dto';
 import { UpsertRetentionDto } from './dto/upsert-retention.dto';
 import { UpsertDiscountDto } from './dto/upsert-discount.dto';
+import { UpsertVacationDto } from './dto/upsert-vacation.dto';
 import { DOMAIN_EVENTS } from '../../common/events/event-names';
 import { UserCompany } from '../access-control/entities/user-company.entity';
 import {
@@ -43,6 +44,7 @@ import {
 } from './entities/overtime-line.entity';
 import { RetentionLine } from './entities/retention-line.entity';
 import { DiscountLine } from './entities/discount-line.entity';
+import { VacationDate } from './entities/vacation-date.entity';
 import { AuditOutboxService } from '../integration/audit-outbox.service';
 import { EmployeeSensitiveDataService } from '../../common/services/employee-sensitive-data.service';
 import {
@@ -71,6 +73,8 @@ export class PersonalActionsService {
     private readonly retentionLineRepo: Repository<RetentionLine>,
     @InjectRepository(DiscountLine)
     private readonly discountLineRepo: Repository<DiscountLine>,
+    @InjectRepository(VacationDate)
+    private readonly vacationDateRepo: Repository<VacationDate>,
     @InjectRepository(UserCompany)
     private readonly userCompanyRepo: Repository<UserCompany>,
     @InjectRepository(PayrollCalendar)
@@ -136,6 +140,13 @@ export class PersonalActionsService {
         ),
       )
       .map((item) => item.id);
+    const vacationIds = actions
+      .filter((item) =>
+        ['vacaciones', 'vacacion', 'vacation'].includes(
+          item.tipoAccion?.trim().toLowerCase(),
+        ),
+      )
+      .map((item) => item.id);
 
     if (
       absenceIds.length === 0 &&
@@ -144,7 +155,8 @@ export class PersonalActionsService {
       bonusIds.length === 0 &&
       overtimeIds.length === 0 &&
       retentionIds.length === 0 &&
-      discountIds.length === 0
+      discountIds.length === 0 &&
+      vacationIds.length === 0
     ) {
       return actions;
     }
@@ -182,6 +194,9 @@ export class PersonalActionsService {
       'acc_descuentos_lineas',
       discountIds,
     );
+    const vacationSummary = await this.buildActionSummaryFromVacations(
+      vacationIds,
+    );
     absenceSummary.forEach((entry, key) => summaryMap.set(key, entry));
     licenseSummary.forEach((entry, key) => summaryMap.set(key, entry));
     disabilitySummary.forEach((entry, key) => summaryMap.set(key, entry));
@@ -189,6 +204,7 @@ export class PersonalActionsService {
     overtimeSummary.forEach((entry, key) => summaryMap.set(key, entry));
     retentionSummary.forEach((entry, key) => summaryMap.set(key, entry));
     discountSummary.forEach((entry, key) => summaryMap.set(key, entry));
+    vacationSummary.forEach((entry, key) => summaryMap.set(key, entry));
 
     return actions.map((action) => {
       const summary = summaryMap.get(action.id);
@@ -788,6 +804,63 @@ export class PersonalActionsService {
     };
   }
 
+  async findVacationDetail(id: number, userId: number) {
+    const action = await this.findOne(id, userId);
+    if (
+      !['vacaciones', 'vacacion', 'vacation'].includes(
+        action.tipoAccion.trim().toLowerCase(),
+      )
+    ) {
+      throw new BadRequestException(
+        'La accion no corresponde al modulo de vacaciones',
+      );
+    }
+
+    const rows = await this.repo.query(
+      `
+      SELECT
+        v.id_vacacion_fecha AS idFecha,
+        v.id_accion AS idAccion,
+        v.id_calendario_nomina AS payrollId,
+        COALESCE(c.nombre_planilla_calendario_nomina, CONCAT('Planilla #', v.id_calendario_nomina)) AS payrollLabel,
+        c.estado_calendario_nomina AS payrollEstado,
+        v.id_movimiento_nomina AS movimientoId,
+        COALESCE(m.nombre_movimiento_nomina, CONCAT('Movimiento #', v.id_movimiento_nomina)) AS movimientoLabel,
+        m.es_inactivo_movimiento_nomina AS movimientoInactivo,
+        v.fecha_vacacion AS fechaVacacion,
+        v.orden_vacacion AS orden
+      FROM acc_vacaciones_fechas v
+      LEFT JOIN nom_calendarios_nomina c
+        ON c.id_calendario_nomina = v.id_calendario_nomina
+      LEFT JOIN nom_movimientos_nomina m
+        ON m.id_movimiento_nomina = v.id_movimiento_nomina
+      WHERE v.id_accion = ?
+      ORDER BY v.fecha_vacacion ASC, v.orden_vacacion ASC, v.id_vacacion_fecha ASC
+      `,
+      [id],
+    );
+
+    return {
+      ...action,
+      fechas: (rows ?? []).map((row: Record<string, unknown>) => ({
+        idFecha: Number(row.idFecha),
+        idAccion: Number(row.idAccion),
+        payrollId: Number(row.payrollId),
+        payrollLabel: row.payrollLabel ? String(row.payrollLabel) : null,
+        payrollEstado:
+          row.payrollEstado == null ? null : Number(row.payrollEstado),
+        movimientoId: Number(row.movimientoId),
+        movimientoLabel: row.movimientoLabel ? String(row.movimientoLabel) : null,
+        movimientoInactivo:
+          row.movimientoInactivo == null
+            ? null
+            : Number(row.movimientoInactivo) === 1,
+        fechaVacacion: this.toYmdFlexible(row.fechaVacacion),
+        orden: Number(row.orden ?? 0),
+      })),
+    };
+  }
+
   async getDiscountAuditTrail(id: number, userId: number, limit = 200) {
     const action = await this.findOne(id, userId);
     if (
@@ -797,6 +870,20 @@ export class PersonalActionsService {
     ) {
       throw new BadRequestException(
         'La accion no corresponde al modulo de descuentos',
+      );
+    }
+    return this.getActionAuditTrailCore(action.id, limit);
+  }
+
+  async getVacationAuditTrail(id: number, userId: number, limit = 200) {
+    const action = await this.findOne(id, userId);
+    if (
+      !['vacaciones', 'vacacion', 'vacation'].includes(
+        action.tipoAccion.trim().toLowerCase(),
+      )
+    ) {
+      throw new BadRequestException(
+        'La accion no corresponde al modulo de vacaciones',
       );
     }
     return this.getActionAuditTrailCore(action.id, limit);
@@ -1102,6 +1189,53 @@ export class PersonalActionsService {
       fechaPagoProgramada: this.toYmdFlexible(row.fechaPagoProgramada),
       moneda: row.moneda ? String(row.moneda) : 'CRC',
       estado: Number(row.estado ?? EstadoCalendarioNomina.ABIERTA),
+    }));
+  }
+
+  async getVacationAvailability(
+    userId: number,
+    idEmpresa: number,
+    idEmpleado: number,
+  ) {
+    await this.assertUserCompanyAccess(userId, idEmpresa);
+
+    const saldoReal = await this.getVacationBalanceForEmployee(
+      idEmpresa,
+      idEmpleado,
+    );
+    const reservado = await this.getVacationReservedDays(
+      idEmpresa,
+      idEmpleado,
+    );
+    const disponible = saldoReal - reservado;
+
+    return {
+      saldoReal,
+      reservado,
+      disponible,
+    };
+  }
+
+  async listVacationHolidays() {
+    const rows = await this.repo.query(
+      `
+      SELECT
+        id_feriado_planilla AS id,
+        nombre_feriado_planilla AS nombre,
+        tipo_feriado_planilla AS tipo,
+        fecha_inicio_feriado_planilla AS fechaInicio,
+        fecha_fin_feriado_planilla AS fechaFin
+      FROM nom_feriados_planilla
+      ORDER BY fecha_inicio_feriado_planilla ASC
+      `,
+    );
+
+    return (rows ?? []).map((row: Record<string, unknown>) => ({
+      id: Number(row.id),
+      nombre: String(row.nombre ?? ''),
+      tipo: String(row.tipo ?? ''),
+      fechaInicio: this.toYmdFlexible(row.fechaInicio) ?? '',
+      fechaFin: this.toYmdFlexible(row.fechaFin) ?? '',
     }));
   }
 
@@ -3461,6 +3595,404 @@ export class PersonalActionsService {
     return this.findOne(action.id, userId);
   }
 
+  async createVacation(dto: UpsertVacationDto, userId: number) {
+    await this.assertUserCompanyAccess(userId, dto.idEmpresa);
+    const { dates, payrollMap } = await this.validateVacationPayload(
+      dto,
+      userId,
+      undefined,
+      true,
+    );
+
+    const employee = await this.getAbsenceEmployee(dto.idEmpresa, dto.idEmpleado);
+    const moneda = String(employee?.monedaSalario ?? 'CRC').toUpperCase();
+    const groupId = `VAC-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`.toUpperCase();
+    const groupedDates = payrollMap && payrollMap.size > 0
+      ? Array.from(payrollMap.entries())
+        .map(([payrollId, fechas]) => ({
+          payrollId,
+          fechas: [...fechas].sort(),
+        }))
+        .sort((a, b) => (a.fechas[0] ?? '').localeCompare(b.fechas[0] ?? ''))
+      : [{ payrollId: dto.payrollId, fechas: [...dates].sort() }];
+
+    // Debug temporal: log fechas recibidas antes de guardar
+    // eslint-disable-next-line no-console
+    console.log('[vacaciones] create payload fechas', {
+      idEmpresa: dto.idEmpresa,
+      idEmpleado: dto.idEmpleado,
+      fechas: dates,
+      grouped: groupedDates.map((g) => ({ payrollId: g.payrollId, fechas: g.fechas })),
+    });
+
+    const created = await this.dataSource.transaction(async (trx) => {
+      const createdActions: Array<{ action: PersonalAction; linesCount: number }> = [];
+
+      for (const group of groupedDates) {
+        const totalDays = group.fechas.length;
+        const firstDate = group.fechas[0] ?? null;
+        const lastDate = group.fechas[group.fechas.length - 1] ?? firstDate;
+
+        const action = trx.create(PersonalAction, {
+          idEmpresa: dto.idEmpresa,
+          idEmpleado: dto.idEmpleado,
+          idCalendarioNomina: null,
+          tipoAccion: 'vacaciones',
+          groupId,
+          origen: 'RRHH',
+          descripcion: dto.observacion ?? null,
+          estado: PersonalActionEstado.PENDING_SUPERVISOR,
+          fechaEfecto: (firstDate as unknown as Date) ?? null,
+          fechaInicioEfecto: (firstDate as unknown as Date) ?? null,
+          fechaFinEfecto: (lastDate as unknown as Date) ?? null,
+          monto: totalDays,
+          moneda,
+          creadoPor: userId,
+          modificadoPor: userId,
+        });
+        const savedAction = await trx.save(action);
+
+        const quotas: ActionQuota[] = [];
+        for (let i = 0; i < group.fechas.length; i += 1) {
+          const fecha = group.fechas[i];
+          const quota = trx.create(ActionQuota, {
+            idAccion: savedAction.id,
+            idEmpresa: dto.idEmpresa,
+            idEmpleado: dto.idEmpleado,
+            idCalendarioNomina: group.payrollId,
+            numeroCuota: i + 1,
+            montoCuota: 1,
+            estado: EstadoCuota.PENDIENTE_APROBACION,
+            fechaEfecto: fecha as unknown as Date,
+            motivoEstado: null,
+          });
+          quotas.push(await trx.save(quota));
+        }
+
+        for (let i = 0; i < group.fechas.length; i += 1) {
+          const fecha = group.fechas[i];
+          const quota = quotas[i];
+          const vacationDate = trx.create(VacationDate, {
+            idAccion: savedAction.id,
+            idCuota: quota.id,
+            idEmpresa: dto.idEmpresa,
+            idEmpleado: dto.idEmpleado,
+            idCalendarioNomina: group.payrollId,
+            idMovimientoNomina: dto.movimientoId,
+            fechaVacacion: fecha as unknown as Date,
+            orden: i + 1,
+          });
+          await trx.save(vacationDate);
+        }
+
+        createdActions.push({ action: savedAction, linesCount: group.fechas.length });
+      }
+
+      return createdActions;
+    });
+
+    for (const item of created) {
+      this.eventEmitter.emit(DOMAIN_EVENTS.PERSONAL_ACTION.CREATED, {
+        eventName: DOMAIN_EVENTS.PERSONAL_ACTION.CREATED,
+        occurredAt: new Date(),
+        payload: {
+          actionId: String(item.action.id),
+          employeeId: String(item.action.idEmpleado),
+          companyId: String(item.action.idEmpresa),
+          type: 'vacaciones',
+          lines: item.linesCount,
+          groupId,
+        },
+      });
+
+      this.auditOutbox.publish({
+        modulo: 'personal-actions',
+        accion: 'create',
+        entidad: 'personal-action',
+        entidadId: item.action.id,
+        actorUserId: userId,
+        companyContextId: item.action.idEmpresa,
+        descripcion: `Vacaciones creadas para empleado #${item.action.idEmpleado}`,
+        payloadAfter: this.buildAbsenceAuditPayload(item.action, item.linesCount),
+      });
+    }
+
+    const firstCreated = created[0]?.action;
+    if (!firstCreated) {
+      throw new BadRequestException('No se pudieron crear vacaciones');
+    }
+    const first = await this.findOne(firstCreated.id, userId);
+
+    return {
+      ...first,
+      totalCreated: created.length,
+      createdActionIds: created.map((item) => item.action.id),
+      groupId,
+    };
+  }
+
+  async updateVacation(id: number, dto: UpsertVacationDto, userId: number) {
+    const action = await this.findOne(id, userId);
+    if (!['vacaciones', 'vacacion', 'vacation'].includes(action.tipoAccion.trim().toLowerCase())) {
+      throw new BadRequestException('La accion no corresponde al modulo de vacaciones');
+    }
+    if (
+      ![
+        PersonalActionEstado.DRAFT,
+        PersonalActionEstado.PENDING_SUPERVISOR,
+        PersonalActionEstado.PENDING_RRHH,
+      ].includes(action.estado)
+    ) {
+      throw new BadRequestException(
+        'Solo se pueden editar vacaciones en estado borrador o pendientes',
+      );
+    }
+    if (action.idEmpresa !== dto.idEmpresa || action.idEmpleado !== dto.idEmpleado) {
+      throw new BadRequestException(
+        'No se permite cambiar empresa o empleado de las vacaciones',
+      );
+    }
+
+    const { dates } = await this.validateVacationPayload(dto, userId, action.id);
+
+    // Debug temporal: log fechas recibidas antes de actualizar
+    // eslint-disable-next-line no-console
+    console.log('[vacaciones] update payload fechas', {
+      idAccion: action.id,
+      idEmpresa: dto.idEmpresa,
+      idEmpleado: dto.idEmpleado,
+      fechas: dates,
+    });
+
+    const payloadBefore = this.buildAbsenceAuditPayload(
+      action,
+      await this.countVacationDates(action.id),
+    );
+
+    const totalDays = dates.length;
+    const firstDate = dates[0] ?? null;
+    const lastDate = dates[dates.length - 1] ?? firstDate;
+
+    await this.dataSource.transaction(async (trx) => {
+      await trx.delete(VacationDate, { idAccion: id });
+      await trx.delete(ActionQuota, { idAccion: id });
+
+      action.descripcion = dto.observacion ?? null;
+      action.fechaEfecto = (firstDate as unknown as Date) ?? null;
+      action.fechaInicioEfecto = (firstDate as unknown as Date) ?? null;
+      action.fechaFinEfecto = (lastDate as unknown as Date) ?? null;
+      action.monto = totalDays;
+      action.modificadoPor = userId;
+      action.versionLock += 1;
+      await trx.save(action);
+
+      const quotas: ActionQuota[] = [];
+      for (let i = 0; i < dates.length; i += 1) {
+        const fecha = dates[i];
+        const quota = trx.create(ActionQuota, {
+          idAccion: action.id,
+          idEmpresa: dto.idEmpresa,
+          idEmpleado: dto.idEmpleado,
+          idCalendarioNomina: dto.payrollId,
+          numeroCuota: i + 1,
+          montoCuota: 1,
+          estado: EstadoCuota.PENDIENTE_APROBACION,
+          fechaEfecto: fecha as unknown as Date,
+          motivoEstado: null,
+        });
+        quotas.push(await trx.save(quota));
+      }
+
+      for (let i = 0; i < dates.length; i += 1) {
+        const fecha = dates[i];
+        const quota = quotas[i];
+        const vacationDate = trx.create(VacationDate, {
+          idAccion: action.id,
+          idCuota: quota.id,
+          idEmpresa: dto.idEmpresa,
+          idEmpleado: dto.idEmpleado,
+          idCalendarioNomina: dto.payrollId,
+          idMovimientoNomina: dto.movimientoId,
+          fechaVacacion: fecha as unknown as Date,
+          orden: i + 1,
+        });
+        await trx.save(vacationDate);
+      }
+    });
+
+    this.auditOutbox.publish({
+      modulo: 'personal-actions',
+      accion: 'update',
+      entidad: 'personal-action',
+      entidadId: action.id,
+      actorUserId: userId,
+      companyContextId: action.idEmpresa,
+      descripcion: `Vacaciones actualizadas para empleado #${action.idEmpleado}`,
+      payloadBefore,
+      payloadAfter: this.buildAbsenceAuditPayload(action, dates.length),
+    });
+
+    return this.findOne(id, userId);
+  }
+
+  async advanceVacationState(
+    id: number,
+    userId: number,
+    userPermissions: string[] = [],
+  ) {
+    const action = await this.findOne(id, userId);
+    if (!['vacaciones', 'vacacion', 'vacation'].includes(action.tipoAccion.trim().toLowerCase())) {
+      throw new BadRequestException('La accion no corresponde al modulo de vacaciones');
+    }
+
+    const nextByState: Partial<Record<PersonalActionEstado, PersonalActionEstado>> = {
+      [PersonalActionEstado.DRAFT]: PersonalActionEstado.PENDING_SUPERVISOR,
+      [PersonalActionEstado.PENDING_SUPERVISOR]: PersonalActionEstado.PENDING_RRHH,
+      [PersonalActionEstado.PENDING_RRHH]: PersonalActionEstado.APPROVED,
+    };
+    const next = nextByState[action.estado];
+    if (!next) {
+      throw new BadRequestException('La accion no tiene un estado siguiente operativo');
+    }
+
+    const requiredPermissionByState: Partial<Record<PersonalActionEstado, string>> = {
+      [PersonalActionEstado.DRAFT]: 'hr-action-vacaciones:edit',
+      [PersonalActionEstado.PENDING_SUPERVISOR]: 'hr-action-vacaciones:approve',
+      [PersonalActionEstado.PENDING_RRHH]: 'hr-action-vacaciones:approve',
+    };
+    const requiredPermission = requiredPermissionByState[action.estado];
+    this.assertActionPermission(
+      userPermissions,
+      requiredPermission,
+      'avanzar el estado de vacaciones',
+    );
+
+    action.estado = next;
+    action.modificadoPor = userId;
+    action.versionLock += 1;
+
+    if (next === PersonalActionEstado.APPROVED) {
+      action.aprobadoPor = userId;
+      action.fechaAprobacion = new Date();
+    }
+
+    const saved = await this.repo.save(action);
+    if (next === PersonalActionEstado.APPROVED) {
+      await this.flagRecalculationForOpenPayrolls(saved);
+      this.eventEmitter.emit(DOMAIN_EVENTS.PERSONAL_ACTION.APPROVED, {
+        eventName: DOMAIN_EVENTS.PERSONAL_ACTION.APPROVED,
+        occurredAt: new Date(),
+        payload: {
+          actionId: String(saved.id),
+          employeeId: String(saved.idEmpleado),
+          companyId: String(saved.idEmpresa),
+        },
+      });
+    }
+
+    this.auditOutbox.publish({
+      modulo: 'personal-actions',
+      accion: 'advance',
+      entidad: 'personal-action',
+      entidadId: saved.id,
+      actorUserId: userId,
+      companyContextId: saved.idEmpresa,
+      descripcion: `Vacaciones movidas al estado ${this.getEstadoNombre(saved.estado)}`,
+      payloadAfter: this.buildAbsenceAuditPayload(
+        saved,
+        await this.countVacationDates(saved.id),
+      ),
+    });
+
+    return saved;
+  }
+
+  async invalidateVacation(
+    id: number,
+    motivo: string | undefined,
+    userId: number,
+    userPermissions: string[] = [],
+  ) {
+    const action = await this.findOne(id, userId);
+    if (!['vacaciones', 'vacacion', 'vacation'].includes(action.tipoAccion.trim().toLowerCase())) {
+      throw new BadRequestException('La accion no corresponde al modulo de vacaciones');
+    }
+
+    if (
+      ![
+        PersonalActionEstado.DRAFT,
+        PersonalActionEstado.PENDING_SUPERVISOR,
+        PersonalActionEstado.PENDING_RRHH,
+      ].includes(action.estado)
+    ) {
+      throw new BadRequestException(
+        'Las vacaciones no se pueden invalidar en su estado actual',
+      );
+    }
+
+    this.assertActionPermission(
+      userPermissions,
+      'hr-action-vacaciones:cancel',
+      'invalidar las vacaciones',
+    );
+
+    await this.dataSource.transaction(async (trx) => {
+      action.estado = PersonalActionEstado.INVALIDATED;
+      action.invalidatedAt = new Date();
+      action.invalidatedReason = motivo?.trim() || 'Invalidadas manualmente por RRHH';
+      action.invalidatedReasonCode =
+        PERSONAL_ACTION_INVALIDATION_REASON.MANUAL_INVALIDATION;
+      action.invalidatedByType = PERSONAL_ACTION_INVALIDATED_BY.USER;
+      action.invalidatedByUserId = userId;
+      action.invalidatedMeta = {
+        invalidated_by_type: PERSONAL_ACTION_INVALIDATED_BY.USER,
+        invalidated_by_user_id: userId,
+        source: 'manual_vacation_invalidation',
+      };
+      action.modificadoPor = userId;
+      action.versionLock += 1;
+      await trx.save(action);
+
+      await trx
+        .createQueryBuilder()
+        .update(ActionQuota)
+        .set({
+          estado: EstadoCuota.CANCELADA,
+          motivoEstado: action.invalidatedReason,
+        })
+        .where('idAccion = :idAccion', { idAccion: action.id })
+        .andWhere('estado != :estadoPagada', { estadoPagada: EstadoCuota.PAGADA })
+        .execute();
+    });
+
+    this.eventEmitter.emit(DOMAIN_EVENTS.PERSONAL_ACTION.CANCELED, {
+      eventName: DOMAIN_EVENTS.PERSONAL_ACTION.CANCELED,
+      occurredAt: new Date(),
+      payload: {
+        actionId: String(action.id),
+        companyId: String(action.idEmpresa),
+        reason: action.invalidatedReason,
+        type: 'invalidated',
+      },
+    });
+
+    this.auditOutbox.publish({
+      modulo: 'personal-actions',
+      accion: 'invalidate',
+      entidad: 'personal-action',
+      entidadId: action.id,
+      actorUserId: userId,
+      companyContextId: action.idEmpresa,
+      descripcion: `Vacaciones invalidadas para empleado #${action.idEmpleado}`,
+      payloadAfter: this.buildAbsenceAuditPayload(
+        action,
+        await this.countVacationDates(action.id),
+      ),
+    });
+
+    return this.findOne(action.id, userId);
+  }
+
   async createDisability(dto: UpsertDisabilityDto, userId: number) {
     await this.assertUserCompanyAccess(userId, dto.idEmpresa);
     await this.validateDisabilityPayload(dto, userId);
@@ -3940,6 +4472,151 @@ export class PersonalActionsService {
     );
   }
 
+  private normalizeVacationDates(
+    fechas: Array<{ fecha: string }>,
+  ): string[] {
+    const normalized = fechas
+      .map((item) => this.toYmdFlexible(item.fecha))
+      .filter((value): value is string => !!value);
+    normalized.sort((a, b) => (a < b ? -1 : a > b ? 1 : 0));
+    return normalized;
+  }
+
+  private async getVacationBalanceForEmployee(
+    idEmpresa: number,
+    idEmpleado: number,
+  ): Promise<number> {
+    const accountRows = await this.repo.query(
+      `
+      SELECT id_vacaciones_cuenta AS idCuenta
+      FROM sys_empleado_vacaciones_cuenta
+      WHERE id_empleado = ?
+        AND id_empresa = ?
+        AND estado_vacaciones_cuenta = 1
+      LIMIT 1
+      `,
+      [idEmpleado, idEmpresa],
+    );
+    if (!accountRows?.length) return 0;
+
+    const accountId = Number(accountRows[0].idCuenta);
+    if (!accountId) return 0;
+
+    const balanceRows = await this.repo.query(
+      `
+      SELECT saldo_resultante_vacaciones AS saldo
+      FROM sys_empleado_vacaciones_ledger
+      WHERE id_vacaciones_cuenta = ?
+      ORDER BY id_vacaciones_ledger DESC
+      LIMIT 1
+      `,
+      [accountId],
+    );
+    const saldo = balanceRows?.[0]?.saldo;
+    return Number(saldo ?? 0);
+  }
+
+  private async getVacationReservedDays(
+    idEmpresa: number,
+    idEmpleado: number,
+    excludeActionId?: number,
+  ): Promise<number> {
+    const rows = await this.repo.query(
+      `
+      SELECT COALESCE(SUM(a.monto_accion), 0) AS reservado
+      FROM acc_acciones_personal a
+      WHERE a.id_empresa = ?
+        AND a.id_empleado = ?
+        AND LOWER(a.tipo_accion) IN ('vacaciones', 'vacacion', 'vacation')
+        AND a.estado_accion IN (1, 2, 3, 4)
+        AND (? IS NULL OR a.id_accion != ?)
+      `,
+      [idEmpresa, idEmpleado, excludeActionId ?? null, excludeActionId ?? null],
+    );
+    const reservado = rows?.[0]?.reservado;
+    return Number(reservado ?? 0);
+  }
+
+  async getBookedVacationDates(
+    userId: number,
+    idEmpresa: number,
+    idEmpleado: number,
+    excludeActionId?: number,
+  ): Promise<string[]> {
+    await this.assertUserCompanyAccess(userId, idEmpresa);
+
+    const rows = await this.repo.query(
+      `
+      SELECT v.fecha_vacacion AS fecha
+      FROM acc_vacaciones_fechas v
+      INNER JOIN acc_acciones_personal a
+        ON a.id_accion = v.id_accion
+      WHERE v.id_empresa = ?
+        AND v.id_empleado = ?
+        AND a.estado_accion IN (1, 2, 3, 4)
+        AND (? IS NULL OR a.id_accion != ?)
+      ORDER BY v.fecha_vacacion ASC
+      `,
+      [idEmpresa, idEmpleado, excludeActionId ?? null, excludeActionId ?? null],
+    );
+
+    return (rows ?? [])
+      .map((row: Record<string, unknown>) => this.toYmdFlexible(row.fecha))
+      .filter((value): value is string => !!value);
+  }
+
+  private async getHolidayRangesBetween(
+    startDate: string,
+    endDate: string,
+  ): Promise<Array<{ start: string; end: string }>> {
+    const rows = await this.repo.query(
+      `
+      SELECT
+        fecha_inicio_feriado_planilla AS startDate,
+        fecha_fin_feriado_planilla AS endDate
+      FROM nom_feriados_planilla
+      WHERE fecha_inicio_feriado_planilla <= ?
+        AND fecha_fin_feriado_planilla >= ?
+      `,
+      [endDate, startDate],
+    );
+
+    return (rows ?? [])
+      .map((row: Record<string, unknown>) => ({
+        start: this.toYmdFlexible(row.startDate) ?? '',
+        end: this.toYmdFlexible(row.endDate) ?? '',
+      }))
+      .filter((item) => item.start && item.end);
+  }
+
+  private isHolidayDate(
+    date: string,
+    ranges: Array<{ start: string; end: string }>,
+  ): boolean {
+    const target = this.parseYmdToUtc(date);
+    for (const range of ranges) {
+      const start = this.parseYmdToUtc(range.start);
+      const end = this.parseYmdToUtc(range.end);
+      if (target >= start && target <= end) return true;
+    }
+    return false;
+  }
+
+  private parseYmdToUtc(value: string): Date {
+    const [yearRaw, monthRaw, dayRaw] = value.split('-');
+    const year = Number(yearRaw);
+    const month = Number(monthRaw);
+    const day = Number(dayRaw);
+    if (
+      !Number.isInteger(year) ||
+      !Number.isInteger(month) ||
+      !Number.isInteger(day)
+    ) {
+      return new Date(NaN);
+    }
+    return new Date(Date.UTC(year, month - 1, day));
+  }
+
   private async countAbsenceLines(idAccion: number): Promise<number> {
     return this.absenceLineRepo.count({ where: { idAccion } });
   }
@@ -3966,6 +4643,10 @@ export class PersonalActionsService {
 
   private async countDiscountLines(idAccion: number): Promise<number> {
     return this.discountLineRepo.count({ where: { idAccion } });
+  }
+
+  private async countVacationDates(idAccion: number): Promise<number> {
+    return this.vacationDateRepo.count({ where: { idAccion } });
   }
 
   private buildAbsenceAuditPayload(
@@ -4467,6 +5148,166 @@ export class PersonalActionsService {
     }
   }
 
+  private async validateVacationPayload(
+    dto: UpsertVacationDto,
+    userId: number,
+    excludeActionId?: number,
+    allowSplit = false,
+  ): Promise<{ dates: string[]; payrollMap?: Map<number, string[]> }> {
+    if (!dto.fechas?.length) {
+      throw new BadRequestException(
+        'Debe incluir al menos una fecha de vacaciones',
+      );
+    }
+
+    const employee = await this.getAbsenceEmployee(dto.idEmpresa, dto.idEmpleado);
+    if (!employee) {
+      throw new BadRequestException(
+        'Empleado no encontrado o inactivo para la empresa seleccionada',
+      );
+    }
+
+    const eligiblePayrolls = await this.findEligibleAbsencePayrolls(
+      userId,
+      dto.idEmpresa,
+      dto.idEmpleado,
+    );
+    const payroll = eligiblePayrolls.find((item) => item.id === dto.payrollId);
+    if (!payroll) {
+      throw new BadRequestException(
+        'Planilla no elegible para empresa/empleado/periodo/moneda o fuera de ventana',
+      );
+    }
+
+    const movementRows = await this.repo.query(
+      `
+      SELECT id_movimiento_nomina AS id
+      FROM nom_movimientos_nomina
+      WHERE id_movimiento_nomina = ?
+        AND id_empresa_movimiento_nomina = ?
+        AND id_tipo_accion_personal_movimiento_nomina = 13
+        AND es_inactivo_movimiento_nomina = 0
+      LIMIT 1
+      `,
+      [dto.movimientoId, dto.idEmpresa],
+    );
+    if (!movementRows?.length) {
+      throw new BadRequestException(
+        'Movimiento no valido para vacaciones en esta empresa',
+      );
+    }
+
+    const dates = this.normalizeVacationDates(dto.fechas);
+    const uniqueDates = new Set(dates);
+    if (uniqueDates.size !== dates.length) {
+      throw new BadRequestException('No se permiten fechas duplicadas');
+    }
+
+    const holidayRanges = await this.getHolidayRangesBetween(
+      dates[0],
+      dates[dates.length - 1],
+    );
+    const bookedDates = await this.getBookedVacationDates(
+      userId,
+      dto.idEmpresa,
+      dto.idEmpleado,
+      excludeActionId,
+    );
+    const bookedSet = new Set(bookedDates);
+
+    const referenceTypeKey =
+      payroll.idTipoPlanilla != null
+        ? `id:${payroll.idTipoPlanilla}`
+        : `tipo:${String(payroll.tipoPlanilla ?? '').toLowerCase()}`;
+
+    const payrollMap = allowSplit ? new Map<number, string[]>() : undefined;
+    const referenceStart = this.toYmdFlexible(payroll.fechaInicioPeriodo);
+    const referenceEnd = this.toYmdFlexible(payroll.fechaFinPeriodo);
+    if (!referenceStart || !referenceEnd) {
+      throw new BadRequestException('Planilla sin rango de periodo valido');
+    }
+    const referenceStartDate = this.parseYmdToUtc(referenceStart);
+    const referenceEndDate = this.parseYmdToUtc(referenceEnd);
+
+    dates.forEach((date, index) => {
+      const asDate = this.parseYmdToUtc(date);
+      if (Number.isNaN(asDate.getTime())) {
+        throw new BadRequestException(`Fecha ${index + 1}: formato invalido`);
+      }
+      const day = asDate.getUTCDay();
+      if (day === 0 || day === 6) {
+        throw new BadRequestException(
+          `Fecha ${index + 1}: no se permiten fines de semana`,
+        );
+      }
+      if (this.isHolidayDate(date, holidayRanges)) {
+        throw new BadRequestException(
+          `Fecha ${index + 1}: coincide con feriado de planilla`,
+        );
+      }
+      if (bookedSet.has(date)) {
+        throw new BadRequestException(
+          `Fecha ${index + 1}: ya se encuentra registrada en otra accion de vacaciones`,
+        );
+      }
+
+      if (!allowSplit) {
+        if (asDate < referenceStartDate || asDate > referenceEndDate) {
+          throw new BadRequestException(
+            `Fecha ${index + 1}: fuera del periodo de planilla seleccionado`,
+          );
+        }
+        return;
+      }
+
+      const matches = eligiblePayrolls.filter((item) => {
+        const key =
+          item.idTipoPlanilla != null
+            ? `id:${item.idTipoPlanilla}`
+            : `tipo:${String(item.tipoPlanilla ?? '').toLowerCase()}`;
+        if (key !== referenceTypeKey) return false;
+        const start = this.toYmdFlexible(item.fechaInicioPeriodo);
+        const end = this.toYmdFlexible(item.fechaFinPeriodo);
+        if (!start || !end) return false;
+        const startDate = this.parseYmdToUtc(start);
+        const endDate = this.parseYmdToUtc(end);
+        return asDate >= startDate && asDate <= endDate;
+      });
+
+      if (matches.length === 0) {
+        throw new BadRequestException(
+          `Fecha ${index + 1}: fuera de un periodo elegible con el mismo tipo de planilla`,
+        );
+      }
+      if (matches.length > 1) {
+        throw new BadRequestException(
+          `Fecha ${index + 1}: coincide con multiples periodos elegibles`,
+        );
+      }
+      const targetPayroll = matches[0];
+      const existing = payrollMap?.get(targetPayroll.id) ?? [];
+      payrollMap?.set(targetPayroll.id, [...existing, date]);
+    });
+
+    const saldoReal = await this.getVacationBalanceForEmployee(
+      dto.idEmpresa,
+      dto.idEmpleado,
+    );
+    const reservado = await this.getVacationReservedDays(
+      dto.idEmpresa,
+      dto.idEmpleado,
+      excludeActionId,
+    );
+    const disponible = saldoReal - reservado;
+    if (dates.length > disponible) {
+      throw new BadRequestException(
+        `La cantidad solicitada (${dates.length}) supera el saldo disponible (${disponible})`,
+      );
+    }
+
+    return { dates, payrollMap };
+  }
+
   private async validateOvertimePayload(dto: UpsertOvertimeDto, userId: number) {
     if (!dto.lines?.length) {
       throw new BadRequestException(
@@ -4643,6 +5484,57 @@ export class PersonalActionsService {
     return map;
   }
 
+  private async buildActionSummaryFromVacations(
+    actionIds: number[],
+  ): Promise<
+    Map<number, { periodos: string | null; movimientos: string | null; rem: 'SI' | 'NO' | 'MIXTA' | null }>
+  > {
+    const map = new Map<
+      number,
+      { periodos: string | null; movimientos: string | null; rem: 'SI' | 'NO' | 'MIXTA' | null }
+    >();
+    if (actionIds.length === 0) return map;
+
+    const rows = await this.repo.query(
+      `
+      SELECT
+        l.id_accion AS idAccion,
+        GROUP_CONCAT(
+          DISTINCT COALESCE(c.nombre_planilla_calendario_nomina, CONCAT('Planilla #', l.id_calendario_nomina))
+          ORDER BY c.fecha_inicio_periodo ASC
+          SEPARATOR ', '
+        ) AS periodos,
+        GROUP_CONCAT(
+          DISTINCT COALESCE(m.nombre_movimiento_nomina, CONCAT('Movimiento #', l.id_movimiento_nomina))
+          ORDER BY m.nombre_movimiento_nomina ASC
+          SEPARATOR ', '
+        ) AS movimientos
+      FROM acc_vacaciones_fechas l
+      LEFT JOIN nom_calendarios_nomina c
+        ON c.id_calendario_nomina = l.id_calendario_nomina
+      LEFT JOIN nom_movimientos_nomina m
+        ON m.id_movimiento_nomina = l.id_movimiento_nomina
+      WHERE l.id_accion IN (?)
+      GROUP BY l.id_accion
+      `,
+      [actionIds],
+    );
+
+    for (const row of rows ?? []) {
+      map.set(Number((row as Record<string, unknown>).idAccion), {
+        periodos: (row as Record<string, unknown>).periodos
+          ? String((row as Record<string, unknown>).periodos)
+          : null,
+        movimientos: (row as Record<string, unknown>).movimientos
+          ? String((row as Record<string, unknown>).movimientos)
+          : null,
+        rem: null,
+      });
+    }
+
+    return map;
+  }
+
   private toYmdFlexible(value: unknown): string | null {
     if (value == null) return null;
     if (value instanceof Date) {
@@ -4662,3 +5554,4 @@ export class PersonalActionsService {
     return value.toISOString().slice(0, 19).replace('T', ' ');
   }
 }
+

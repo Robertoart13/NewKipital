@@ -21,6 +21,7 @@ export class GlobalExceptionFilter implements ExceptionFilter {
     if (exception instanceof HttpException) {
       const status = exception.getStatus();
       const exceptionResponse = exception.getResponse();
+      const requestPath = request.url;
 
       // Si ValidationPipe u otro código ya estructuró el error, pasarlo tal cual
       if (
@@ -28,6 +29,11 @@ export class GlobalExceptionFilter implements ExceptionFilter {
         exceptionResponse !== null &&
         'success' in exceptionResponse
       ) {
+        if (status === HttpStatus.BAD_REQUEST) {
+          this.logger.warn(
+            '[' + request.method + '] ' + requestPath + ' -> ' + status + ': ' + JSON.stringify(exceptionResponse),
+          );
+        }
         response.status(status).json(exceptionResponse);
         return;
       }
@@ -38,9 +44,14 @@ export class GlobalExceptionFilter implements ExceptionFilter {
           : ((exceptionResponse as Record<string, unknown>).message ??
             exception.message);
 
+      if (status === HttpStatus.BAD_REQUEST) {
+        this.logger.warn(
+          '[' + request.method + '] ' + requestPath + ' -> ' + status + ': ' + String(message),
+        );
+      }
       if (status >= 500) {
         this.logger.error(
-          `[${request.method}] ${request.url} → ${status}: ${String(message)}`,
+          `[${request.method}] ${requestPath} → ${status}: ${String(message)}`,
         );
       }
 
@@ -134,3 +145,5 @@ export class GlobalExceptionFilter implements ExceptionFilter {
     return false;
   }
 }
+
+

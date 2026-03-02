@@ -7,6 +7,7 @@ export interface PersonalActionListItem {
   idEmpleado: number;
   idPlanilla?: number | null;
   tipoAccion: string;
+  origen?: 'RRHH' | 'IMPORT' | 'TIMEWISE' | string | null;
   descripcion?: string | null;
   estado: number;
   fechaEfecto?: string | null;
@@ -235,6 +236,19 @@ export interface UpsertDiscountPayload {
   lines: UpsertDiscountLinePayload[];
 }
 
+export interface UpsertVacationDatePayload {
+  fecha: string;
+}
+
+export interface UpsertVacationPayload {
+  idEmpresa: number;
+  idEmpleado: number;
+  payrollId: number;
+  movimientoId: number;
+  observacion?: string;
+  fechas: UpsertVacationDatePayload[];
+}
+
 export interface AbsenceDetailLine {
   idLinea: number;
   idAccion: number;
@@ -255,6 +269,41 @@ export interface AbsenceDetailLine {
 
 export interface AbsenceDetailItem extends PersonalActionListItem {
   lines: AbsenceDetailLine[];
+}
+
+export interface VacationDetailDateItem {
+  idFecha: number;
+  idAccion: number;
+  payrollId: number;
+  payrollLabel?: string | null;
+  payrollEstado?: number | null;
+  movimientoId: number;
+  movimientoLabel?: string | null;
+  movimientoInactivo?: boolean | null;
+  fechaVacacion?: string | null;
+  orden: number;
+}
+
+export interface VacationDetailItem extends PersonalActionListItem {
+  fechas: VacationDetailDateItem[];
+}
+
+export interface VacationAvailability {
+  saldoReal: number;
+  reservado: number;
+  disponible: number;
+}
+
+export interface VacationHolidayItem {
+  id: number;
+  nombre: string;
+  tipo: string;
+  fechaInicio: string;
+  fechaFin: string;
+}
+
+export interface VacationBookedDateItem {
+  fecha: string;
 }
 
 export interface LicenseDetailLine {
@@ -1342,6 +1391,183 @@ export async function fetchDiscountAuditTrail(
   if (!res.ok) {
     throw new Error(
       await extractApiErrorMessage(res, 'Error al cargar bitacora de descuento'),
+    );
+  }
+  return res.json();
+}
+
+/**
+ * GET /personal-actions/vacaciones/:id
+ * Detalle completo de vacaciones para edicion (incluye fechas).
+ */
+export async function fetchVacationDetail(
+  id: number,
+): Promise<VacationDetailItem> {
+  const res = await httpFetch(`/personal-actions/vacaciones/${id}`);
+  if (!res.ok) {
+    throw new Error(
+      await extractApiErrorMessage(res, 'Error al cargar detalle de vacaciones'),
+    );
+  }
+  return res.json();
+}
+
+/**
+ * GET /personal-actions/vacaciones/availability
+ * Saldo real, reservado y disponible de vacaciones.
+ */
+export async function fetchVacationAvailability(
+  idEmpresa: number,
+  idEmpleado: number,
+): Promise<VacationAvailability> {
+  const qs = new URLSearchParams({
+    idEmpresa: String(idEmpresa),
+    idEmpleado: String(idEmpleado),
+  });
+  const res = await httpFetch(`/personal-actions/vacaciones/availability?${qs}`);
+  if (!res.ok) {
+    throw new Error(
+      await extractApiErrorMessage(res, 'Error al cargar saldo de vacaciones'),
+    );
+  }
+  return res.json();
+}
+
+/**
+ * GET /personal-actions/vacaciones/holidays
+ * Lista de feriados de planilla para bloquear fechas.
+ */
+export async function fetchVacationHolidays(idEmpresa?: number): Promise<VacationHolidayItem[]> {
+  const qs = idEmpresa ? `?idEmpresa=${idEmpresa}` : '';
+  const res = await httpFetch(`/personal-actions/vacaciones/holidays${qs}`);
+  if (!res.ok) {
+    throw new Error(
+      await extractApiErrorMessage(res, 'Error al cargar feriados de planilla'),
+    );
+  }
+  return res.json();
+}
+
+/**
+ * GET /personal-actions/vacaciones/booked-dates
+ * Fechas ya registradas en otras acciones de vacaciones.
+ */
+export async function fetchVacationBookedDates(
+  idEmpresa: number,
+  idEmpleado: number,
+  excludeActionId?: number,
+): Promise<VacationBookedDateItem[]> {
+  const qs = new URLSearchParams({
+    idEmpresa: String(idEmpresa),
+    idEmpleado: String(idEmpleado),
+  });
+  if (excludeActionId != null) {
+    qs.append('excludeActionId', String(excludeActionId));
+  }
+  const res = await httpFetch(`/personal-actions/vacaciones/booked-dates?${qs.toString()}`);
+  if (!res.ok) {
+    throw new Error(
+      await extractApiErrorMessage(res, 'Error al cargar fechas reservadas'),
+    );
+  }
+  return res.json();
+}
+
+/**
+ * POST /personal-actions/vacaciones
+ * Crea una accion de vacaciones con fechas seleccionadas.
+ */
+export async function createVacation(
+  payload: UpsertVacationPayload,
+): Promise<PersonalActionCreateResult> {
+  const res = await httpFetch('/personal-actions/vacaciones', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+  if (!res.ok) {
+    throw new Error(
+      await extractApiErrorMessage(res, 'Error al crear vacaciones'),
+    );
+  }
+  return res.json();
+}
+
+/**
+ * PATCH /personal-actions/vacaciones/:id
+ * Actualiza una accion de vacaciones en borrador/pendiente.
+ */
+export async function updateVacation(
+  id: number,
+  payload: UpsertVacationPayload,
+): Promise<PersonalActionListItem> {
+  const res = await httpFetch(`/personal-actions/vacaciones/${id}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+  if (!res.ok) {
+    throw new Error(
+      await extractApiErrorMessage(res, 'Error al actualizar vacaciones'),
+    );
+  }
+  return res.json();
+}
+
+/**
+ * PATCH /personal-actions/vacaciones/:id/advance
+ * Avanza la accion de vacaciones al siguiente estado operativo.
+ */
+export async function advanceVacationState(
+  id: number,
+): Promise<PersonalActionListItem> {
+  const res = await httpFetch(`/personal-actions/vacaciones/${id}/advance`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({}),
+  });
+  if (!res.ok) {
+    throw new Error(
+      await extractApiErrorMessage(res, 'Error al avanzar estado de vacaciones'),
+    );
+  }
+  return res.json();
+}
+
+/**
+ * PATCH /personal-actions/vacaciones/:id/invalidate
+ * Invalida una accion de vacaciones sin eliminar trazabilidad.
+ */
+export async function invalidateVacation(
+  id: number,
+  motivo?: string,
+): Promise<PersonalActionListItem> {
+  const res = await httpFetch(`/personal-actions/vacaciones/${id}/invalidate`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ motivo: motivo ?? '' }),
+  });
+  if (!res.ok) {
+    throw new Error(
+      await extractApiErrorMessage(res, 'Error al invalidar vacaciones'),
+    );
+  }
+  return res.json();
+}
+
+/**
+ * GET /personal-actions/vacaciones/:id/audit-trail
+ * Bitacora de vacaciones.
+ */
+export async function fetchVacationAuditTrail(
+  id: number,
+  limit = 200,
+): Promise<PersonalActionAuditTrailItem[]> {
+  const qs = new URLSearchParams({ limit: String(limit) });
+  const res = await httpFetch(`/personal-actions/vacaciones/${id}/audit-trail?${qs}`);
+  if (!res.ok) {
+    throw new Error(
+      await extractApiErrorMessage(res, 'Error al cargar bitacora de vacaciones'),
     );
   }
   return res.json();

@@ -17,9 +17,11 @@ import { UpsertLicenseDto } from './dto/upsert-license.dto';
 import { UpsertOvertimeDto } from './dto/upsert-overtime.dto';
 import { UpsertRetentionDto } from './dto/upsert-retention.dto';
 import { UpsertDiscountDto } from './dto/upsert-discount.dto';
+import { UpsertVacationDto } from './dto/upsert-vacation.dto';
 import { PersonalActionEstado } from './entities/personal-action.entity';
 import { Public } from '../../common/decorators/public.decorator';
 import { RequirePermissions } from '../../common/decorators/require-permissions.decorator';
+import { AllowWithoutCompany } from '../../common/decorators/allow-without-company.decorator';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 
 @Controller('personal-actions')
@@ -223,6 +225,17 @@ export class PersonalActionsController {
     return this.service.getDiscountAuditTrail(id, user.userId, limit);
   }
 
+  @RequirePermissions('hr-action-vacaciones:view')
+  @Get('vacaciones/:id/audit-trail')
+  findVacationAuditTrail(
+    @Param('id', ParseIntPipe) id: number,
+    @CurrentUser() user: { userId: number },
+    @Query('limit') limitRaw?: string,
+  ) {
+    const limit = limitRaw ? parseInt(limitRaw, 10) : 200;
+    return this.service.getVacationAuditTrail(id, user.userId, limit);
+  }
+
   @RequirePermissions('hr-action-ausencias:view')
   @Get('ausencias/:id/audit-trail')
   findAbsenceAuditTrail(
@@ -256,6 +269,91 @@ export class PersonalActionsController {
       idEmpresa,
       idEmpleado,
     );
+  }
+
+  @AllowWithoutCompany()
+  @RequirePermissions('hr-action-vacaciones:view')
+  @Get('vacaciones/availability')
+  getVacationAvailability(
+    @CurrentUser() user: { userId: number },
+    @Query('idEmpresa') idEmpresaRaw?: string,
+    @Query('idEmpleado') idEmpleadoRaw?: string,
+  ) {
+    // Debug temporal: log inputs when availability fails
+    // eslint-disable-next-line no-console
+    console.log('[vacaciones/availability] raw query', {
+      idEmpresaRaw,
+      idEmpleadoRaw,
+      userId: user?.userId,
+    });
+    const idEmpresa = idEmpresaRaw ? parseInt(idEmpresaRaw, 10) : undefined;
+    const idEmpleado = idEmpleadoRaw ? parseInt(idEmpleadoRaw, 10) : undefined;
+    if (
+      !idEmpresa ||
+      Number.isNaN(idEmpresa) ||
+      !idEmpleado ||
+      Number.isNaN(idEmpleado)
+    ) {
+      // eslint-disable-next-line no-console
+      console.log('[vacaciones/availability] invalid params', {
+        idEmpresa,
+        idEmpleado,
+      });
+      return { saldoReal: 0, reservado: 0, disponible: 0 };
+    }
+    return this.service.getVacationAvailability(
+      user.userId,
+      idEmpresa,
+      idEmpleado,
+    );
+  }
+
+  @AllowWithoutCompany()
+  @RequirePermissions('hr-action-vacaciones:view')
+  @Get('vacaciones/holidays')
+  listVacationHolidays() {
+    // Debug temporal: log when holidays is called
+    // eslint-disable-next-line no-console
+    console.log('[vacaciones/holidays] request', { ts: new Date().toISOString() });
+    return this.service.listVacationHolidays();
+  }
+
+  @RequirePermissions('hr-action-vacaciones:view')
+  @Get('vacaciones/booked-dates')
+  listVacationBookedDates(
+    @CurrentUser() user: { userId: number },
+    @Query('idEmpresa') idEmpresaRaw?: string,
+    @Query('idEmpleado') idEmpleadoRaw?: string,
+    @Query('excludeActionId') excludeActionIdRaw?: string,
+  ) {
+    const idEmpresa = idEmpresaRaw ? parseInt(idEmpresaRaw, 10) : undefined;
+    const idEmpleado = idEmpleadoRaw ? parseInt(idEmpleadoRaw, 10) : undefined;
+    const excludeActionId = excludeActionIdRaw
+      ? parseInt(excludeActionIdRaw, 10)
+      : undefined;
+    if (
+      !idEmpresa ||
+      Number.isNaN(idEmpresa) ||
+      !idEmpleado ||
+      Number.isNaN(idEmpleado)
+    ) {
+      return [];
+    }
+    return this.service.getBookedVacationDates(
+      user.userId,
+      idEmpresa,
+      idEmpleado,
+      Number.isNaN(excludeActionId as number) ? undefined : excludeActionId,
+    );
+  }
+
+  @RequirePermissions('hr-action-vacaciones:view')
+  @Get('vacaciones/:id')
+  findVacationDetail(
+    @Param('id', ParseIntPipe) id: number,
+    @CurrentUser() user: { userId: number },
+  ) {
+    return this.service.findVacationDetail(id, user.userId);
   }
 
   @RequirePermissions('hr_action:view')
@@ -339,6 +437,15 @@ export class PersonalActionsController {
     return this.service.createDiscount(dto, user.userId);
   }
 
+  @RequirePermissions('hr-action-vacaciones:create')
+  @Post('vacaciones')
+  createVacation(
+    @Body() dto: UpsertVacationDto,
+    @CurrentUser() user: { userId: number },
+  ) {
+    return this.service.createVacation(dto, user.userId);
+  }
+
   @RequirePermissions('hr-action-ausencias:edit')
   @Patch('ausencias/:id')
   updateAbsence(
@@ -407,6 +514,16 @@ export class PersonalActionsController {
     @CurrentUser() user: { userId: number },
   ) {
     return this.service.updateDiscount(id, dto, user.userId);
+  }
+
+  @RequirePermissions('hr-action-vacaciones:edit')
+  @Patch('vacaciones/:id')
+  updateVacation(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: UpsertVacationDto,
+    @CurrentUser() user: { userId: number },
+  ) {
+    return this.service.updateVacation(id, dto, user.userId);
   }
 
   @RequirePermissions('hr-action-ausencias:view')
@@ -491,6 +608,19 @@ export class PersonalActionsController {
     @CurrentUser() user: { userId: number; permissions?: string[] },
   ) {
     return this.service.advanceDiscountState(
+      id,
+      user.userId,
+      user.permissions ?? [],
+    );
+  }
+
+  @RequirePermissions('hr-action-vacaciones:view')
+  @Patch('vacaciones/:id/advance')
+  advanceVacationState(
+    @Param('id', ParseIntPipe) id: number,
+    @CurrentUser() user: { userId: number; permissions?: string[] },
+  ) {
+    return this.service.advanceVacationState(
       id,
       user.userId,
       user.permissions ?? [],
@@ -595,6 +725,21 @@ export class PersonalActionsController {
     @CurrentUser() user: { userId: number; permissions?: string[] },
   ) {
     return this.service.invalidateDiscount(
+      id,
+      body?.motivo,
+      user.userId,
+      user.permissions ?? [],
+    );
+  }
+
+  @RequirePermissions('hr-action-vacaciones:view')
+  @Patch('vacaciones/:id/invalidate')
+  invalidateVacation(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() body: { motivo?: string },
+    @CurrentUser() user: { userId: number; permissions?: string[] },
+  ) {
+    return this.service.invalidateVacation(
       id,
       body?.motivo,
       user.userId,
