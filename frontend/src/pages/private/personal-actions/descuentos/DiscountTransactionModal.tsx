@@ -1,4 +1,4 @@
-﻿import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   Alert,
   App as AntdApp,
@@ -672,17 +672,18 @@ export function DiscountTransactionModal({
       className={sharedStyles.companyModal}
       closable={false}
       footer={null}
-      width={1180}
+      width={1600}
       destroyOnHidden
       centered={false}
       styles={{
         wrapper: { alignItems: 'flex-start', paddingTop: 0, marginTop: -80 },
         body: {
-          maxHeight: '85vh',
+          maxHeight: '88vh',
           overflow: 'hidden',
+          overflowX: 'hidden',
           display: 'flex',
           flexDirection: 'column',
-          padding: 24,
+          padding: 16,
         },
       }}
       title={(
@@ -703,7 +704,7 @@ export function DiscountTransactionModal({
         </Flex>
       )}
     >
-      <div style={{ position: 'relative', display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}>
+      <div style={{ position: 'relative', display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0, minWidth: 0, overflow: 'hidden' }}>
       {showGlobalPreload ? (
         <div
           style={{
@@ -720,7 +721,7 @@ export function DiscountTransactionModal({
           <Spin size="large" description="Cargando informacion..." />
         </div>
       ) : null}
-      <Form form={form} layout="vertical" className={sharedStyles.companyFormContent} style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}>
+      <Form form={form} layout="vertical" className={sharedStyles.companyFormContent} style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0, minWidth: 0, overflow: 'hidden' }}>
         <div style={{ flexShrink: 0 }}>
         {readOnly ? (
           <Alert
@@ -765,10 +766,11 @@ export function DiscountTransactionModal({
         ) : null}
 
         {mode !== 'edit' || activeTab === 'info' ? (
-        <>
+        <Row gutter={16} wrap style={{ flex: 1, minHeight: 0, alignItems: 'stretch' }}>
+          <Col xs={24} lg={8} style={{ display: 'flex', flexDirection: 'column', minHeight: 0 }}>
         {selectedEmployee ? (
           <Collapse
-            defaultActiveKey={[]}
+            defaultActiveKey={['empleado']}
             className={`${sharedStyles.employeeAccordion}`}
             items={[
               {
@@ -876,7 +878,7 @@ export function DiscountTransactionModal({
           />
         ) : null}
 
-        <Card size="small" style={{ marginBottom: 12, border: '1px solid #e8ecf0', borderRadius: 8 }}>
+        <Card size="small" style={{ border: '1px solid #e8ecf0', borderRadius: 8 }}>
           <Flex gap={10} wrap="wrap">
             <Form.Item
               style={{ flex: '1 1 300px', marginBottom: 0 }}
@@ -933,28 +935,26 @@ export function DiscountTransactionModal({
             <Input.TextArea rows={1} autoSize={{ minRows: 1, maxRows: 3 }} maxLength={500} disabled={readOnly} />
           </Form.Item>
         </Card>
+          </Col>
 
+          <Col xs={24} lg={16} style={{ display: 'flex', flexDirection: 'column', minHeight: 0 }}>
         {selectedCompanyId && selectedEmployeeId ? (
           <Card
             size="small"
-            title="Líneas de Transacción"
             style={{
               border: '1px solid #e8ecf0',
               borderRadius: 8,
-              flex: 1,
-              minHeight: 200,
+              flex: '0 0 auto',
               display: 'flex',
               flexDirection: 'column',
-              overflow: 'hidden',
-              marginTop: 12,
+              overflow: 'visible',
+              marginTop: 0,
             }}
             bodyStyle={{
-              flex: 1,
-              minHeight: 0,
               display: 'flex',
               flexDirection: 'column',
               padding: 16,
-              overflow: 'hidden',
+              overflow: 'visible',
             }}
           >
             {loading && !showGlobalPreload ? (
@@ -967,7 +967,10 @@ export function DiscountTransactionModal({
               <Collapse
                 className={sharedStyles.lineCollapse}
                 activeKey={activeLineKeys}
-                onChange={(keys) => setActiveLineKeys(Array.isArray(keys) ? keys : keys ? [keys] : [])}
+                onChange={(keys) => {
+                const next = Array.isArray(keys) ? keys : keys ? [keys] : [];
+                setActiveLineKeys(next.length > 0 ? [next[next.length - 1]] : []);
+              }}
                 items={lines.map((line, index) => {
                   const selectedMovement = filteredMovements.find((movement) => movement.id === line.movimientoId);
                   const payrollOptions = payrollsByCompany.map((payroll) => ({
@@ -1123,7 +1126,7 @@ export function DiscountTransactionModal({
 
                       <div style={{ borderTop: '1px solid #e8ecf0', paddingTop: 16, marginTop: 4 }}>
                         <Row gutter={[16, 12]}>
-                          <Col xs={24} md={12}>
+                          <Col xs={24} md={8}>
                             <div className={sharedStyles.filterLabel} style={{ color: '#94a3b8' }}>Fecha Efecto</div>
                             <DatePicker
                               style={{ width: '100%' }}
@@ -1132,8 +1135,8 @@ export function DiscountTransactionModal({
                               disabled
                             />
                           </Col>
-                          <Col xs={24} md={12}>
-                            <div className={sharedStyles.filterLabel} style={{ color: '#94a3b8' }}>Formula</div>
+                          <Col xs={24} md={16}>
+                            <div className={sharedStyles.filterLabel} style={{ color: '#94a3b8' }}>Fórmula</div>
                             <Input
                               value={line.formula}
                               disabled
@@ -1159,7 +1162,8 @@ export function DiscountTransactionModal({
             )}
           </Card>
         ) : null}
-        </>
+          </Col>
+        </Row>
         ) : (
           <div className={sharedStyles.historicoSection}>
             <p className={sharedStyles.sectionTitle}>Historial de cambios del descuento</p>
@@ -1174,11 +1178,12 @@ export function DiscountTransactionModal({
               dataSource={auditTrail}
               className={`${sharedStyles.configTable} ${sharedStyles.auditTableCompact}`}
               pagination={{
-                pageSize: 8,
+                pageSize: 4,
                 showSizeChanger: true,
+                pageSizeOptions: [4, 8, 10],
                 showTotal: (total) => `${total} registro(s)`,
               }}
-              locale={{ emptyText: 'No hay registros de bitacora para este descuento.' }}
+              locale={{ emptyText: 'No hay registros de bitácora para este descuento.' }}
             />
           </div>
         )}

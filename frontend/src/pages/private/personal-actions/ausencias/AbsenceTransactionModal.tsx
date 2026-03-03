@@ -990,7 +990,10 @@ export function AbsenceTransactionModal({
                             <Collapse
                               className={sharedStyles.lineCollapse}
                               activeKey={activeLineKeys}
-                              onChange={(keys) => setActiveLineKeys(Array.isArray(keys) ? keys : keys ? [keys] : [])}
+                              onChange={(keys) => {
+                                const next = Array.isArray(keys) ? keys : keys ? [keys] : [];
+                                setActiveLineKeys(next.length > 0 ? [next[next.length - 1]] : []);
+                              }}
                               items={lines.map((line, index) => {
                                 const selectedMovement = filteredMovements.find((movement) => movement.id === line.movimientoId);
                                 const payrollOptions = payrollsByCompany.map((payroll) => ({
