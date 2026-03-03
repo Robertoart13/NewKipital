@@ -243,7 +243,6 @@ export interface UpsertVacationDatePayload {
 export interface UpsertVacationPayload {
   idEmpresa: number;
   idEmpleado: number;
-  payrollId: number;
   movimientoId: number;
   observacion?: string;
   fechas: UpsertVacationDatePayload[];

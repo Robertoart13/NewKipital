@@ -25,9 +25,10 @@ export class UpsertVacationDto {
   @Min(1)
   idEmpleado: number;
 
+  @IsOptional()
   @IsInt()
   @Min(1)
-  payrollId: number;
+  payrollId?: number;
 
   @IsInt()
   @Min(1)

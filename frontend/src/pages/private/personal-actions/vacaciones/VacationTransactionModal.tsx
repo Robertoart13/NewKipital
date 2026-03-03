@@ -61,7 +61,7 @@ export interface VacationDateSelection {
 export interface VacationFormDraft {
   idEmpresa: number;
   idEmpleado: number;
-  payrollId: number;
+  payrollId?: number;
   movimientoId: number;
   observacion?: string;
   fechas: VacationDateSelection[];
@@ -112,7 +112,6 @@ interface VacationTransactionModalProps {
 interface HeaderValues {
   idEmpresa?: number;
   idEmpleado?: number;
-  payrollId?: number;
   movimientoId?: number;
   observacion?: string;
 }
@@ -215,6 +214,7 @@ export function VacationTransactionModal(props: VacationTransactionModalProps) {
       fechaFinPeriodo: string;
       idTipoPlanilla?: number | null;
       tipoPlanilla?: string | null;
+      estado?: number;
     }>
   >([]);
   const [selectedDates, setSelectedDates] = useState<VacationDateSelection[]>([]);
@@ -224,10 +224,10 @@ export function VacationTransactionModal(props: VacationTransactionModalProps) {
   const [activeTab, setActiveTab] = useState<'info' | 'bitacora'>('info');
   const [auditLoaded, setAuditLoaded] = useState(false);
   const [warnedInvalidDates, setWarnedInvalidDates] = useState(false);
+  const [lockedPayrollId, setLockedPayrollId] = useState<number | null>(null);
 
   const selectedCompanyId = Form.useWatch('idEmpresa', form);
   const selectedEmployeeId = Form.useWatch('idEmpleado', form);
-  const selectedPayrollId = Form.useWatch('payrollId', form);
   const selectedMovementId = Form.useWatch('movimientoId', form);
 
   useEffect(() => {
@@ -239,10 +239,14 @@ export function VacationTransactionModal(props: VacationTransactionModalProps) {
       form.setFieldsValue({
         idEmpresa: initialDraft.idEmpresa,
         idEmpleado: initialDraft.idEmpleado,
-        payrollId: initialDraft.payrollId,
         movimientoId: initialDraft.movimientoId,
         observacion: initialDraft.observacion ?? undefined,
       });
+      setLockedPayrollId(
+        typeof initialDraft.payrollId === 'number' && initialDraft.payrollId > 0
+          ? initialDraft.payrollId
+          : null,
+      );
       const normalizedSelections = (initialDraft.fechas ?? []).map((item) => {
         const baseKey = normalizeSelectionKey(item.key, item.fecha);
         return {
@@ -281,6 +285,7 @@ export function VacationTransactionModal(props: VacationTransactionModalProps) {
     setSelectedDates([]);
     setBookedDates([]);
     setWarnedInvalidDates(false);
+    setLockedPayrollId(null);
     if (initialCompanyId) {
       form.setFieldsValue({ idEmpresa: initialCompanyId });
     }
@@ -316,6 +321,7 @@ export function VacationTransactionModal(props: VacationTransactionModalProps) {
           fechaFinPeriodo: item.fechaFinPeriodo,
           idTipoPlanilla: item.idTipoPlanilla ?? null,
           tipoPlanilla: item.tipoPlanilla ?? null,
+          estado: item.estado,
         }));
         setPayrollOptions(options);
       })
@@ -397,59 +403,139 @@ export function VacationTransactionModal(props: VacationTransactionModalProps) {
       ),
     [bookedDates],
   );
+  const getPayrollTypeKey = useCallback(
+    (item: { idTipoPlanilla?: number | null; tipoPlanilla?: string | null }) =>
+      item.idTipoPlanilla != null
+        ? `id:${item.idTipoPlanilla}`
+        : `tipo:${String(item.tipoPlanilla ?? '').toLowerCase()}`,
+    [],
+  );
+  const getPayrollMatchesForDate = useCallback(
+    (date: Dayjs) => {
+      return payrollOptions.filter((item) => {
+        const start = dayjs(item.fechaInicioPeriodo);
+        const end = dayjs(item.fechaFinPeriodo);
+        return (
+          date.isSame(start, 'day') ||
+          date.isSame(end, 'day') ||
+          (date.isAfter(start, 'day') && date.isBefore(end, 'day'))
+        );
+      });
+    },
+    [payrollOptions],
+  );
+  const pickPreferredPayroll = useCallback(
+    (matches: Array<{
+      id: number;
+      estado?: number;
+      fechaInicioPeriodo: string;
+      fechaFinPeriodo: string;
+    }>) => {
+      if (matches.length === 0) return null;
+      if (matches.length === 1) return matches[0];
+      const ranked = [...matches].sort((a, b) => {
+        const estadoA = Number(a.estado ?? 99);
+        const estadoB = Number(b.estado ?? 99);
+        if (estadoA !== estadoB) return estadoA - estadoB;
+        const startA = a.fechaInicioPeriodo ?? '';
+        const startB = b.fechaInicioPeriodo ?? '';
+        if (startA !== startB) return startA.localeCompare(startB);
+        return Number(a.id) - Number(b.id);
+      });
+      return ranked[0];
+    },
+    [],
+  );
+  const getSinglePayrollForDate = useCallback(
+    (date: Dayjs) => {
+      const matches = getPayrollMatchesForDate(date);
+      return pickPreferredPayroll(matches);
+    },
+    [getPayrollMatchesForDate, pickPreferredPayroll],
+  );
+  const selectionTypeKey = useMemo(() => {
+    if (!selectedDates.length) return null;
+    const first = getSinglePayrollForDate(selectedDates[0].fecha);
+    return first ? getPayrollTypeKey(first) : null;
+  }, [getPayrollTypeKey, getSinglePayrollForDate, selectedDates]);
+  const selectedPayrollSummary = useMemo(() => {
+    if (!selectedDates.length) return { payrolls: [], invalidDates: [], ambiguousDates: [] };
+    const map = new Map<number, string>();
+    const invalidDates: string[] = [];
+    const ambiguousDates: string[] = [];
+    selectedDates.forEach((item) => {
+      const matches = getPayrollMatchesForDate(item.fecha);
+      if (matches.length === 0) {
+        invalidDates.push(item.key);
+        return;
+      }
+      if (matches.length > 1) {
+        ambiguousDates.push(item.key);
+      }
+      const chosen = pickPreferredPayroll(matches);
+      if (chosen) {
+        map.set(chosen.id, chosen.label);
+      }
+    });
+    return {
+      payrolls: Array.from(map.entries())
+        .map(([id, label]) => ({ id, label }))
+        .sort((a, b) => a.label.localeCompare(b.label)),
+      invalidDates,
+      ambiguousDates,
+    };
+  }, [getPayrollMatchesForDate, pickPreferredPayroll, selectedDates]);
+
+  const getDateDisableReason = useCallback(
+    (date: Dayjs) => {
+      if (isWeekend(date)) return 'Fin de semana';
+      if (isHoliday(date, holidays)) return 'Feriado';
+      if (bookedDateSet.has(buildDateKey(date))) return 'Reservado';
+      if (!payrollOptions.length) return 'Sin planillas elegibles';
+
+      const matches = getPayrollMatchesForDate(date);
+      if (matches.length === 0) return 'Sin planilla elegible';
+
+      const match = pickPreferredPayroll(matches);
+      if (!match) return 'Sin planilla elegible';
+      if (lockedPayrollId && Number(match.id) !== Number(lockedPayrollId)) {
+        return 'Fuera de la planilla original';
+      }
+      if (selectionTypeKey && getPayrollTypeKey(match) !== selectionTypeKey) {
+        return 'Tipo de planilla diferente';
+      }
+      return null;
+    },
+    [
+      bookedDateSet,
+      getPayrollMatchesForDate,
+      getPayrollTypeKey,
+      holidays,
+      lockedPayrollId,
+      payrollOptions.length,
+      selectionTypeKey,
+    ],
+  );
 
   const disabledDate = useCallback(
     (date: Dayjs) => {
-      if (isWeekend(date)) return true;
-      if (isHoliday(date, holidays)) return true;
-      if (bookedDateSet.has(buildDateKey(date))) return true;
-      if (!selectedPayrollId) return true;
-
-      const reference = payrollOptions.find(
-        (item) => item.id === Number(selectedPayrollId),
-      );
-      if (!reference) return true;
-
-      const referenceKey = reference.idTipoPlanilla != null
-        ? `id:${reference.idTipoPlanilla}`
-        : `tipo:${String(reference.tipoPlanilla ?? '').toLowerCase()}`;
-
-      const match = payrollOptions.some((item) => {
-        const key = item.idTipoPlanilla != null
-          ? `id:${item.idTipoPlanilla}`
-          : `tipo:${String(item.tipoPlanilla ?? '').toLowerCase()}`;
-        if (key !== referenceKey) return false;
-        const start = item.fechaInicioPeriodo;
-        const end = item.fechaFinPeriodo;
-        return (
-          date.isSame(dayjs(start), 'day') ||
-          date.isSame(dayjs(end), 'day') ||
-          (date.isAfter(dayjs(start), 'day') && date.isBefore(dayjs(end), 'day'))
-        );
-      });
-
-      return !match;
+      return getDateDisableReason(date) != null;
     },
-    [bookedDateSet, holidays, payrollOptions, selectedPayrollId],
+    [
+      getDateDisableReason,
+    ],
   );
 
   const toggleDate = useCallback(
     (date: Dayjs) => {
       const key = buildDateKey(date);
-      // Debug temporal: log raw selection and computed key
-      // eslint-disable-next-line no-console
-      console.log('[vacaciones] calendar select', {
-        input: date.toISOString?.(),
-        local: date.format('YYYY-MM-DD'),
-        key,
-      });
       const existing = selectedDates.find((item) => item.key === key);
       if (existing) {
         setSelectedDates((prev) => prev.filter((item) => item.key !== key));
         return;
       }
       if (selectedDates.length >= availableDays && availableDays >= 0) {
-        message.warning('No hay saldo disponible para agregar mas dias.');
+        message.warning('No hay saldo disponible para agregar más días.');
         return;
       }
       setSelectedDates((prev) =>
@@ -466,9 +552,10 @@ export function VacationTransactionModal(props: VacationTransactionModalProps) {
     !readOnly &&
     !!selectedCompanyId &&
     !!selectedEmployeeId &&
-    !!selectedPayrollId &&
     !!selectedMovementId &&
-    selectedDates.length > 0;
+    selectedDates.length > 0 &&
+    selectedPayrollSummary.invalidDates.length === 0 &&
+    selectedPayrollSummary.payrolls.length > 0;
 
   const showGlobalPreload =
     !!loading ||
@@ -548,11 +635,14 @@ export function VacationTransactionModal(props: VacationTransactionModalProps) {
       message.error('Debe seleccionar al menos una fecha de vacaciones.');
       return;
     }
+    if (selectedPayrollSummary.invalidDates.length > 0 || selectedPayrollSummary.payrolls.length === 0) {
+      message.error('Hay fechas sin planilla válida. Revise las fechas seleccionadas.');
+      return;
+    }
 
     const payload: VacationFormDraft = {
       idEmpresa: Number(values.idEmpresa),
       idEmpleado: Number(values.idEmpleado),
-      payrollId: Number(values.payrollId),
       movimientoId: Number(values.movimientoId),
       observacion: values.observacion?.trim() || undefined,
       fechas: selectedDates,
@@ -576,7 +666,7 @@ export function VacationTransactionModal(props: VacationTransactionModalProps) {
         await onSubmit(payload);
       },
     });
-  }, [activeTab, loading, message, modal, mode, onSubmit, selectedDates]);
+  }, [activeTab, loading, message, modal, mode, onSubmit, selectedDates, selectedPayrollSummary]);
 
   return (
     <Modal
@@ -823,25 +913,6 @@ export function VacationTransactionModal(props: VacationTransactionModalProps) {
                         />
                       </Form.Item>
                     </Col>
-                    <Col xs={24} md={8} lg={8}>
-                      <Form.Item
-                        label="Periodo de Pago"
-                        name="payrollId"
-                        rules={[{ required: true, message: 'Seleccione planilla' }]}
-                      >
-                        <Select
-                          placeholder="Seleccione planilla"
-                          options={payrollOptions.map((item) => ({
-                            value: item.id,
-                            label: item.label,
-                          }))}
-                          loading={loadingPayrolls}
-                          disabled={readOnly}
-                          showSearch
-                          optionFilterProp="label"
-                        />
-                      </Form.Item>
-                    </Col>
                   </Row>
                   <Row gutter={16}>
                     <Col xs={24} md={8} lg={8}>
@@ -910,6 +981,14 @@ export function VacationTransactionModal(props: VacationTransactionModalProps) {
                   }}
                   styles={{ body: { padding: 12 } }}
                 >
+                {selectedPayrollSummary.ambiguousDates.length > 0 ? (
+                  <Alert
+                    type="warning"
+                    showIcon
+                    style={{ marginBottom: 12 }}
+                    message="Hay fechas que coinciden con múltiples planillas. Se asignará la planilla ABIERTA (o la de menor ID si hay empate)."
+                  />
+                ) : null}
                 <Row gutter={16} wrap>
                   <Col xs={24} lg={12}>
                     <div className={styles.calendarCard}>
@@ -933,6 +1012,14 @@ export function VacationTransactionModal(props: VacationTransactionModalProps) {
                               const key = buildDateKey(date);
                               const selected = selectedDates.some((item) => item.key === key);
                               const booked = bookedDateSet.has(key);
+                              const reason = getDateDisableReason(date);
+                              if (reason && !selected) {
+                                return (
+                                  <Tooltip title={reason}>
+                                    <div className={styles.dateDisabledBadge}>Bloqueado</div>
+                                  </Tooltip>
+                                );
+                              }
                               if (booked) {
                                 return (
                                   <div className={styles.dateReservedBadge}>Reservado</div>

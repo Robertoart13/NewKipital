@@ -3614,16 +3614,11 @@ export class PersonalActionsService {
           fechas: [...fechas].sort(),
         }))
         .sort((a, b) => (a.fechas[0] ?? '').localeCompare(b.fechas[0] ?? ''))
-      : [{ payrollId: dto.payrollId, fechas: [...dates].sort() }];
+      : [];
 
-    // Debug temporal: log fechas recibidas antes de guardar
-    // eslint-disable-next-line no-console
-    console.log('[vacaciones] create payload fechas', {
-      idEmpresa: dto.idEmpresa,
-      idEmpleado: dto.idEmpleado,
-      fechas: dates,
-      grouped: groupedDates.map((g) => ({ payrollId: g.payrollId, fechas: g.fechas })),
-    });
+    if (groupedDates.length === 0) {
+      throw new BadRequestException('No se pudieron determinar las planillas de vacaciones.');
+    }
 
     const created = await this.dataSource.transaction(async (trx) => {
       const createdActions: Array<{ action: PersonalAction; linesCount: number }> = [];
@@ -3753,16 +3748,17 @@ export class PersonalActionsService {
       );
     }
 
-    const { dates } = await this.validateVacationPayload(dto, userId, action.id);
-
-    // Debug temporal: log fechas recibidas antes de actualizar
-    // eslint-disable-next-line no-console
-    console.log('[vacaciones] update payload fechas', {
-      idAccion: action.id,
-      idEmpresa: dto.idEmpresa,
-      idEmpleado: dto.idEmpleado,
-      fechas: dates,
-    });
+    const { dates, payrollMap } = await this.validateVacationPayload(
+      dto,
+      userId,
+      action.id,
+      false,
+    );
+    const payrollEntries = Array.from((payrollMap ?? new Map()).entries());
+    const targetPayrollId = payrollEntries[0]?.[0];
+    if (!targetPayrollId) {
+      throw new BadRequestException('No se pudo determinar la planilla de las vacaciones.');
+    }
 
     const payloadBefore = this.buildAbsenceAuditPayload(
       action,
@@ -3793,7 +3789,7 @@ export class PersonalActionsService {
           idAccion: action.id,
           idEmpresa: dto.idEmpresa,
           idEmpleado: dto.idEmpleado,
-          idCalendarioNomina: dto.payrollId,
+          idCalendarioNomina: targetPayrollId,
           numeroCuota: i + 1,
           montoCuota: 1,
           estado: EstadoCuota.PENDIENTE_APROBACION,
@@ -3811,7 +3807,7 @@ export class PersonalActionsService {
           idCuota: quota.id,
           idEmpresa: dto.idEmpresa,
           idEmpleado: dto.idEmpleado,
-          idCalendarioNomina: dto.payrollId,
+          idCalendarioNomina: targetPayrollId,
           idMovimientoNomina: dto.movimientoId,
           fechaVacacion: fecha as unknown as Date,
           orden: i + 1,
@@ -5172,12 +5168,33 @@ export class PersonalActionsService {
       dto.idEmpresa,
       dto.idEmpleado,
     );
-    const payroll = eligiblePayrolls.find((item) => item.id === dto.payrollId);
-    if (!payroll) {
+    const referencePayroll = dto.payrollId
+      ? eligiblePayrolls.find((item) => item.id === dto.payrollId)
+      : null;
+    if (dto.payrollId && !referencePayroll) {
       throw new BadRequestException(
         'Planilla no elegible para empresa/empleado/periodo/moneda o fuera de ventana',
       );
     }
+    const buildPayrollTypeKey = (item: { idTipoPlanilla?: number | null; tipoPlanilla?: string | null }) =>
+      item.idTipoPlanilla != null
+        ? `id:${item.idTipoPlanilla}`
+        : `tipo:${String(item.tipoPlanilla ?? '').toLowerCase()}`;
+    let referenceTypeKey = referencePayroll ? buildPayrollTypeKey(referencePayroll) : null;
+    let lockedPayrollId = referencePayroll ? referencePayroll.id : null;
+    const pickPreferredPayroll = (matches: typeof eligiblePayrolls) => {
+      if (matches.length === 0) return null;
+      if (matches.length === 1) return matches[0];
+      return [...matches].sort((a, b) => {
+        const estadoA = Number(a.estado ?? 99);
+        const estadoB = Number(b.estado ?? 99);
+        if (estadoA !== estadoB) return estadoA - estadoB;
+        const startA = a.fechaInicioPeriodo ?? '';
+        const startB = b.fechaInicioPeriodo ?? '';
+        if (startA !== startB) return startA.localeCompare(startB);
+        return Number(a.id) - Number(b.id);
+      })[0];
+    };
 
     const movementRows = await this.repo.query(
       `
@@ -5215,19 +5232,7 @@ export class PersonalActionsService {
     );
     const bookedSet = new Set(bookedDates);
 
-    const referenceTypeKey =
-      payroll.idTipoPlanilla != null
-        ? `id:${payroll.idTipoPlanilla}`
-        : `tipo:${String(payroll.tipoPlanilla ?? '').toLowerCase()}`;
-
-    const payrollMap = allowSplit ? new Map<number, string[]>() : undefined;
-    const referenceStart = this.toYmdFlexible(payroll.fechaInicioPeriodo);
-    const referenceEnd = this.toYmdFlexible(payroll.fechaFinPeriodo);
-    if (!referenceStart || !referenceEnd) {
-      throw new BadRequestException('Planilla sin rango de periodo valido');
-    }
-    const referenceStartDate = this.parseYmdToUtc(referenceStart);
-    const referenceEndDate = this.parseYmdToUtc(referenceEnd);
+    const payrollMap = new Map<number, string[]>();
 
     dates.forEach((date, index) => {
       const asDate = this.parseYmdToUtc(date);
@@ -5251,21 +5256,7 @@ export class PersonalActionsService {
         );
       }
 
-      if (!allowSplit) {
-        if (asDate < referenceStartDate || asDate > referenceEndDate) {
-          throw new BadRequestException(
-            `Fecha ${index + 1}: fuera del periodo de planilla seleccionado`,
-          );
-        }
-        return;
-      }
-
-      const matches = eligiblePayrolls.filter((item) => {
-        const key =
-          item.idTipoPlanilla != null
-            ? `id:${item.idTipoPlanilla}`
-            : `tipo:${String(item.tipoPlanilla ?? '').toLowerCase()}`;
-        if (key !== referenceTypeKey) return false;
+      let matches = eligiblePayrolls.filter((item) => {
         const start = this.toYmdFlexible(item.fechaInicioPeriodo);
         const end = this.toYmdFlexible(item.fechaFinPeriodo);
         if (!start || !end) return false;
@@ -5273,18 +5264,38 @@ export class PersonalActionsService {
         const endDate = this.parseYmdToUtc(end);
         return asDate >= startDate && asDate <= endDate;
       });
+      if (referenceTypeKey) {
+        matches = matches.filter((item) => buildPayrollTypeKey(item) === referenceTypeKey);
+      }
 
       if (matches.length === 0) {
         throw new BadRequestException(
-          `Fecha ${index + 1}: fuera de un periodo elegible con el mismo tipo de planilla`,
+          `Fecha ${index + 1}: fuera de un periodo de planilla elegible`,
         );
       }
-      if (matches.length > 1) {
+      const targetPayroll = pickPreferredPayroll(matches);
+      if (!targetPayroll) {
         throw new BadRequestException(
-          `Fecha ${index + 1}: coincide con multiples periodos elegibles`,
+          `Fecha ${index + 1}: fuera de un periodo de planilla elegible`,
         );
       }
-      const targetPayroll = matches[0];
+      const targetTypeKey = buildPayrollTypeKey(targetPayroll);
+      if (!referenceTypeKey) {
+        referenceTypeKey = targetTypeKey;
+      } else if (targetTypeKey !== referenceTypeKey) {
+        throw new BadRequestException(
+          `Fecha ${index + 1}: pertenece a un tipo de planilla diferente`,
+        );
+      }
+      if (!allowSplit) {
+        if (!lockedPayrollId) {
+          lockedPayrollId = targetPayroll.id;
+        } else if (lockedPayrollId !== targetPayroll.id) {
+          throw new BadRequestException(
+            'Las fechas deben pertenecer al mismo periodo de planilla. Cree acciones separadas por periodo.',
+          );
+        }
+      }
       const existing = payrollMap?.get(targetPayroll.id) ?? [];
       payrollMap?.set(targetPayroll.id, [...existing, date]);
     });

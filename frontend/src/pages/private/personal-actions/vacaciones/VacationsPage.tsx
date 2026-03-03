@@ -194,7 +194,7 @@ function createDraftFromVacationDetail(detail: VacationDetailItem): VacationForm
   return {
     idEmpresa: detail.idEmpresa,
     idEmpleado: detail.idEmpleado,
-    payrollId: first?.payrollId ?? 0,
+    payrollId: first?.payrollId ?? undefined,
     movimientoId: first?.movimientoId ?? 0,
     observacion: detail.descripcion ?? '',
     fechas,
@@ -337,7 +337,7 @@ export function VacationsPage() {
     setEditingDraft({
       idEmpresa: row.idEmpresa,
       idEmpleado: row.idEmpleado,
-      payrollId: 0,
+      payrollId: undefined,
       movimientoId: 0,
       observacion: row.descripcion ?? '',
       fechas: [],
@@ -659,7 +659,6 @@ export function VacationsPage() {
   const mapDraftToPayload = (draft: VacationFormDraft) => ({
     idEmpresa: draft.idEmpresa,
     idEmpleado: draft.idEmpleado,
-    payrollId: draft.payrollId,
     movimientoId: draft.movimientoId,
     observacion: draft.observacion,
     fechas: draft.fechas.map((item) => ({
@@ -690,7 +689,7 @@ export function VacationsPage() {
               </div>
               <div>
                 <h2 className={styles.gestionTitle}>Gestión de vacaciones</h2>
-                <p className={styles.gestionDesc}>Encabezado de acción + selección de días por planilla</p>
+                <p className={styles.gestionDesc}>Encabezado de acción + selección de días por calendario</p>
               </div>
             </Flex>
             <Button

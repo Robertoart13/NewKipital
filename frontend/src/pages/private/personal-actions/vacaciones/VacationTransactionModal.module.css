@@ -129,6 +129,19 @@
   margin-top: 2px;
 }
 
+.dateDisabledBadge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2px 8px;
+  font-size: 11px;
+  font-weight: 600;
+  border-radius: 6px;
+  background: #f0f1f3;
+  color: #8c8c8c;
+  margin-top: 2px;
+}
+
 /* Fila de estadísticas */
 .statsRow {
   display: flex;
@@ -238,6 +251,7 @@
 .dateRow:hover {
   background: #f7f8fa;
 }
+
 
 .dateRowLabel {
   font-size: 14px;

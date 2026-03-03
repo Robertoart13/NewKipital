@@ -279,13 +279,6 @@ export class PersonalActionsController {
     @Query('idEmpresa') idEmpresaRaw?: string,
     @Query('idEmpleado') idEmpleadoRaw?: string,
   ) {
-    // Debug temporal: log inputs when availability fails
-    // eslint-disable-next-line no-console
-    console.log('[vacaciones/availability] raw query', {
-      idEmpresaRaw,
-      idEmpleadoRaw,
-      userId: user?.userId,
-    });
     const idEmpresa = idEmpresaRaw ? parseInt(idEmpresaRaw, 10) : undefined;
     const idEmpleado = idEmpleadoRaw ? parseInt(idEmpleadoRaw, 10) : undefined;
     if (
@@ -294,11 +287,6 @@ export class PersonalActionsController {
       !idEmpleado ||
       Number.isNaN(idEmpleado)
     ) {
-      // eslint-disable-next-line no-console
-      console.log('[vacaciones/availability] invalid params', {
-        idEmpresa,
-        idEmpleado,
-      });
       return { saldoReal: 0, reservado: 0, disponible: 0 };
     }
     return this.service.getVacationAvailability(
@@ -312,9 +300,6 @@ export class PersonalActionsController {
   @RequirePermissions('hr-action-vacaciones:view')
   @Get('vacaciones/holidays')
   listVacationHolidays() {
-    // Debug temporal: log when holidays is called
-    // eslint-disable-next-line no-console
-    console.log('[vacaciones/holidays] request', { ts: new Date().toISOString() });
     return this.service.listVacationHolidays();
   }
 
