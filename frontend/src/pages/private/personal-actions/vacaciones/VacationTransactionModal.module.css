@@ -13,47 +13,60 @@
   border: 1px solid #e8ecf0;
   overflow: hidden;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  min-width: 280px;
 }
 
 .calendarCardHeader {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 12px 16px;
+  gap: 8px;
+  padding: 8px 12px;
   background: #f7f8fa;
   border-bottom: 1px solid #e8ecf0;
 }
 
 .calendarCardHeaderIcon {
-  width: 36px;
-  height: 36px;
-  border-radius: 8px;
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
   background: #e8f4fd;
   display: flex;
   align-items: center;
   justify-content: center;
   color: #20638d;
-  font-size: 18px;
+  font-size: 14px;
 }
 
 .calendarCardHeaderTitle {
-  font-size: 15px;
+  font-size: 13px;
   font-weight: 600;
   color: #3d4f5c;
   margin: 0;
 }
 
 .calendarContent {
-  padding: 12px;
+  padding: 12px 14px;
 }
 
-/* Overrides para el Calendar de Ant Design (tamaño compacto) */
+/* Overrides para el Calendar de Ant Design - buen tamaño y legibilidad */
+.calendarStyled {
+  min-width: 260px;
+}
+
 .calendarStyled :global(.ant-picker-calendar) {
   background: transparent !important;
 }
 
+.calendarStyled :global(.ant-picker-panel-container) {
+  min-width: 0;
+}
+
+.calendarStyled :global(.ant-picker-content) {
+  min-width: 252px;
+}
+
 .calendarStyled :global(.ant-picker-calendar-header) {
-  padding: 8px 0 16px !important;
+  padding: 8px 0 14px !important;
   border-bottom: none !important;
 }
 
@@ -62,8 +75,8 @@
 }
 
 .calendarStyled :global(.ant-picker-calendar-date-content) {
-  min-height: 46px !important;
-  padding: 2px !important;
+  min-height: 56px !important;
+  padding: 6px 4px !important;
 }
 
 .calendarStyled :global(.ant-picker-content th) {
@@ -72,10 +85,16 @@
   color: #6b7a85 !important;
   padding: 8px 0 !important;
   border: none !important;
+  min-width: 36px !important;
 }
 
 .calendarStyled :global(.ant-picker-cell) {
-  padding: 2px !important;
+  padding: 4px !important;
+  min-width: 36px !important;
+}
+
+.calendarStyled :global(.ant-picker-cell-inner) {
+  min-height: 48px !important;
 }
 
 .calendarStyled :global(.ant-picker-cell-inner) {
@@ -102,62 +121,53 @@
   background: #f0f9ff !important;
 }
 
-/* Tag "Seleccionado" dentro de la celda */
-.dateSelectedBadge {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  padding: 2px 8px;
-  font-size: 11px;
-  font-weight: 600;
-  border-radius: 6px;
-  background: #5a6c7d;
-  color: #fff;
-  margin-top: 2px;
-}
-
-.dateReservedBadge {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  padding: 2px 8px;
-  font-size: 11px;
-  font-weight: 600;
-  border-radius: 6px;
-  background: #cbd5f5;
-  color: #2f3f6b;
-  margin-top: 2px;
-}
-
+/* Badges en celdas (Sel. / Bloq. / Res.) - compactos y sin cortar */
+.dateSelectedBadge,
+.dateReservedBadge,
 .dateDisabledBadge {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: 2px 8px;
-  font-size: 11px;
+  padding: 2px 6px;
+  font-size: 10px;
   font-weight: 600;
-  border-radius: 6px;
-  background: #f0f1f3;
-  color: #8c8c8c;
+  border-radius: 4px;
   margin-top: 2px;
+  white-space: nowrap;
+  line-height: 1.2;
+}
+
+.dateSelectedBadge {
+  background: #5a6c7d;
+  color: #fff;
+}
+
+.dateReservedBadge {
+  background: #cbd5f5;
+  color: #2f3f6b;
+}
+
+.dateDisabledBadge {
+  background: #f0f2f4;
+  color: #6b7a85;
 }
 
 /* Fila de estadísticas */
 .statsRow {
   display: flex;
-  gap: 12px;
-  margin-top: 16px;
-  padding-top: 16px;
+  gap: 8px;
+  margin-top: 10px;
+  padding-top: 10px;
   border-top: 1px solid #e8ecf0;
 }
 
 .statBadge {
   display: flex;
   align-items: center;
-  gap: 6px;
-  padding: 6px 14px;
-  border-radius: 8px;
-  font-size: 13px;
+  gap: 4px;
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 12px;
   font-weight: 600;
 }
 
@@ -185,8 +195,8 @@
 .datesListHeader {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 12px 16px;
+  gap: 8px;
+  padding: 8px 12px;
   background: #f7f8fa;
   border-bottom: 1px solid #e8ecf0;
 }
@@ -197,28 +207,28 @@
 }
 
 .datesListHeaderIcon {
-  width: 36px;
-  height: 36px;
-  border-radius: 8px;
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
   background: #e8f4fd;
   display: flex;
   align-items: center;
   justify-content: center;
   color: #20638d;
-  font-size: 18px;
+  font-size: 14px;
 }
 
 .datesListHeaderTitle {
-  font-size: 15px;
+  font-size: 13px;
   font-weight: 600;
   color: #3d4f5c;
   margin: 0;
 }
 
 .datesListContent {
-  max-height: 360px;
+  max-height: 420px;
   overflow-y: auto;
-  padding: 12px;
+  padding: 8px 10px;
 }
 
 .datesListEmpty {
@@ -243,8 +253,8 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 10px 12px;
-  border-radius: 8px;
+  padding: 6px 10px;
+  border-radius: 6px;
   transition: background 0.2s;
 }
 
@@ -254,13 +264,13 @@
 
 
 .dateRowLabel {
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 600;
   color: #3d4f5c;
 }
 
 .dateRowSub {
-  font-size: 12px;
+  font-size: 11px;
   color: #6b7a85;
-  margin-top: 2px;
+  margin-top: 1px;
 }

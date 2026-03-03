@@ -827,6 +827,8 @@
   line-height: 1.3;
   margin: 0;
   text-transform: uppercase;
+  overflow-wrap: break-word;
+  word-break: break-word;
 }
 
 .employeeAccordionId {
@@ -834,6 +836,8 @@
   color: #8c969e;
   line-height: 1.4;
   margin: 0;
+  overflow-wrap: break-word;
+  word-break: break-word;
 }
 
 .employeeAccordionCompany {

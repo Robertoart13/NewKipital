@@ -227,22 +227,23 @@ export function VacationsPage() {
   }, [activeCompany?.id, companies]);
 
   const [rows, setRows] = useState<VacationUiRow[]>([]);
-  const [employees, setEmployees] = useState<
-    Array<{
-      id: number;
-      idEmpresa: number;
-      codigo: string;
-      nombre: string;
-      apellido1: string;
-      apellido2?: string | null;
-      cedula?: string | null;
-      email?: string | null;
-      jornada?: string | null;
-      idPeriodoPago?: number | null;
-      salarioBase?: number | null;
-      monedaSalario?: string | null;
-    }>
-  >([]);
+  type EmployeeItem = {
+    id: number;
+    idEmpresa: number;
+    codigo: string;
+    nombre: string;
+    apellido1: string;
+    apellido2?: string | null;
+    cedula?: string | null;
+    email?: string | null;
+    telefono?: string | null;
+    jornada?: string | null;
+    idPeriodoPago?: number | null;
+    salarioBase?: number | null;
+    monedaSalario?: string | null;
+  };
+  const [employees, setEmployees] = useState<EmployeeItem[]>([]);
+  const [modalEmployees, setModalEmployees] = useState<EmployeeItem[]>([]);
   const [payPeriods, setPayPeriods] = useState<CatalogPayPeriod[]>([]);
   const [movements, setMovements] = useState<PayrollMovementListItem[]>([]);
   const [holidays, setHolidays] = useState<VacationHolidayItem[]>([]);
@@ -345,7 +346,9 @@ export function VacationsPage() {
     setMode('edit');
     setLoadingEditDetail(true);
     setAuditTrail([]);
+    setModalEmployees([]);
     setOpenModal(true);
+    void fetchAbsenceEmployeesCatalog(row.idEmpresa).then(setModalEmployees).catch(() => setModalEmployees([]));
     message.loading({ content: 'Cargando detalle de vacaciones...', key, duration: 0 });
     try {
       const detail = await fetchVacationDetail(row.id);
@@ -873,7 +876,7 @@ export function VacationsPage() {
         mode={mode}
         title={modalTitle}
         companies={companies}
-        employees={employees}
+        employees={mode === 'edit' && editingRow ? (modalEmployees.length > 0 ? modalEmployees : employees) : employees}
         payPeriods={payPeriods}
         movements={movements}
         holidays={holidays}

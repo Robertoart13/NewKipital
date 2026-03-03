@@ -698,7 +698,7 @@ export function BonusTransactionModal({
       destroyOnHidden
       centered={false}
       styles={{
-        wrapper: { alignItems: 'flex-start', paddingTop: 40 },
+        wrapper: { alignItems: 'flex-start', paddingTop: 0, marginTop: -80 },
         body: {
           maxHeight: '85vh',
           overflow: 'hidden',

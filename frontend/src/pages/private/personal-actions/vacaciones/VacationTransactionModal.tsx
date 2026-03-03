@@ -26,6 +26,7 @@ import {
   ClockCircleOutlined,
   CloseOutlined,
   DeleteOutlined,
+  DollarCircleOutlined,
   MenuOutlined,
   IdcardOutlined,
   MailOutlined,
@@ -146,6 +147,80 @@ function isHoliday(date: Dayjs, holidays: VacationHolidayItem[]) {
   });
 }
 
+function formatMoney(amount: number | null | undefined, currency = 'CRC') {
+  if (amount == null || Number.isNaN(Number(amount))) return '--';
+  return `${currency} ${new Intl.NumberFormat('es-CR', {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 2,
+  }).format(Number(amount))}`;
+}
+
+function toNumber(value: number | string | null | undefined): number {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : 0;
+}
+
+function calculateSalaryByPeriod(salaryBase: number, payPeriodId?: number | null, jornada?: string | null): number {
+  const id = Number(payPeriodId);
+  const isByHours = (jornada ?? '').trim().toLowerCase() === 'por horas';
+  if (isByHours && (id === 8 || id === 11)) return 0;
+
+  switch (id) {
+    case 8:
+      return salaryBase / 4;
+    case 9:
+      return salaryBase / 2;
+    case 10:
+      return salaryBase;
+    case 11:
+      return salaryBase / 2;
+    case 12:
+      return salaryBase / 30;
+    case 13:
+      return salaryBase * 3;
+    case 14:
+      return salaryBase * 6;
+    case 15:
+      return salaryBase * 12;
+    default:
+      return salaryBase;
+  }
+}
+
+function calculateHourValue(salaryBase: number, payPeriodId?: number | null, jornada?: string | null): number {
+  const id = Number(payPeriodId);
+  const isByHours = (jornada ?? '').trim().toLowerCase() === 'por horas';
+  if (isByHours && (id === 8 || id === 11)) return salaryBase;
+  return salaryBase / 30 / 8;
+}
+
+function calculatePeriodHours(payPeriodId?: number | null, jornada?: string | null): number {
+  const id = Number(payPeriodId);
+  const isByHours = (jornada ?? '').trim().toLowerCase() === 'por horas';
+  if (isByHours && (id === 8 || id === 11)) return 0;
+
+  switch (id) {
+    case 8:
+      return 48;
+    case 9:
+      return 96;
+    case 10:
+      return 192;
+    case 11:
+      return 96;
+    case 12:
+      return 10;
+    case 13:
+      return 576;
+    case 14:
+      return 1152;
+    case 15:
+      return 2304;
+    default:
+      return 192;
+  }
+}
+
 function buildDateKey(date: Dayjs) {
   const raw = date.toDate();
   const year = raw.getUTCFullYear();
@@ -229,6 +304,8 @@ export function VacationTransactionModal(props: VacationTransactionModalProps) {
   const selectedCompanyId = Form.useWatch('idEmpresa', form);
   const selectedEmployeeId = Form.useWatch('idEmpleado', form);
   const selectedMovementId = Form.useWatch('movimientoId', form);
+  const resolvedCompanyId = selectedCompanyId ?? initialDraft?.idEmpresa ?? null;
+  const resolvedEmployeeId = selectedEmployeeId ?? initialDraft?.idEmpleado ?? null;
 
   useEffect(() => {
     if (!open) return;
@@ -301,7 +378,7 @@ export function VacationTransactionModal(props: VacationTransactionModalProps) {
   }, [activeTab, auditLoaded, onLoadAuditTrail, open, showAudit]);
 
   useEffect(() => {
-    if (!selectedCompanyId || !selectedEmployeeId) {
+    if (!resolvedCompanyId || !resolvedEmployeeId) {
       setPayrollOptions([]);
       setLocalAvailability(null);
       return;
@@ -309,8 +386,8 @@ export function VacationTransactionModal(props: VacationTransactionModalProps) {
 
     setLoadingPayrolls(true);
     void fetchAbsencePayrollsCatalog(
-      Number(selectedCompanyId),
-      Number(selectedEmployeeId),
+      Number(resolvedCompanyId),
+      Number(resolvedEmployeeId),
     )
       .then((items) => {
         const options = items.map((item) => ({
@@ -330,25 +407,25 @@ export function VacationTransactionModal(props: VacationTransactionModalProps) {
         setPayrollOptions([]);
       })
       .finally(() => setLoadingPayrolls(false));
-  }, [message, selectedCompanyId, selectedEmployeeId]);
+  }, [message, resolvedCompanyId, resolvedEmployeeId]);
 
   useEffect(() => {
-    if (!selectedCompanyId || !selectedEmployeeId) {
+    if (!resolvedCompanyId || !resolvedEmployeeId) {
       setLocalAvailability(null);
       setBookedDates([]);
       return;
     }
 
     void fetchVacationAvailability(
-      Number(selectedCompanyId),
-      Number(selectedEmployeeId),
+      Number(resolvedCompanyId),
+      Number(resolvedEmployeeId),
     )
       .then((resp) => setLocalAvailability(resp ?? null))
       .catch(() => setLocalAvailability(null));
 
     void fetchVacationBookedDates(
-      Number(selectedCompanyId),
-      Number(selectedEmployeeId),
+      Number(resolvedCompanyId),
+      Number(resolvedEmployeeId),
       excludeActionId,
     )
       .then((resp) => {
@@ -365,24 +442,41 @@ export function VacationTransactionModal(props: VacationTransactionModalProps) {
         }
       })
       .catch(() => setBookedDates([]));
-  }, [excludeActionId, selectedCompanyId, selectedEmployeeId]);
+  }, [excludeActionId, resolvedCompanyId, resolvedEmployeeId]);
 
   const filteredEmployees = useMemo(() => {
-    if (!selectedCompanyId) return [];
+    if (!resolvedCompanyId) return [];
     return employees.filter(
-      (emp) => Number(emp.idEmpresa) === Number(selectedCompanyId),
+      (emp) => Number(emp.idEmpresa) === Number(resolvedCompanyId),
     );
-  }, [employees, selectedCompanyId]);
+  }, [employees, resolvedCompanyId]);
 
   const selectedEmployee = useMemo(() => {
-    if (!selectedEmployeeId) return undefined;
-    return employees.find((emp) => emp.id === Number(selectedEmployeeId));
-  }, [employees, selectedEmployeeId]);
+    if (!resolvedEmployeeId) return undefined;
+    return employees.find((emp) => emp.id === Number(resolvedEmployeeId));
+  }, [employees, resolvedEmployeeId]);
 
   const selectedPayPeriod = useMemo(() => {
     if (!selectedEmployee?.idPeriodoPago) return null;
     return payPeriods.find((p) => Number(p.id) === Number(selectedEmployee.idPeriodoPago)) ?? null;
   }, [payPeriods, selectedEmployee?.idPeriodoPago]);
+
+  const salaryBase = toNumber(selectedEmployee?.salarioBase);
+  const employeeCurrency = (selectedEmployee?.monedaSalario ?? 'CRC').toUpperCase();
+  const salaryByPeriod = calculateSalaryByPeriod(
+    salaryBase,
+    selectedEmployee?.idPeriodoPago,
+    selectedEmployee?.jornada,
+  );
+  const hourValue = calculateHourValue(
+    salaryBase,
+    selectedEmployee?.idPeriodoPago,
+    selectedEmployee?.jornada,
+  );
+  const periodHours = calculatePeriodHours(
+    selectedEmployee?.idPeriodoPago,
+    selectedEmployee?.jornada,
+  );
 
   const sensitiveMaskedValue = '***';
 
@@ -550,8 +644,8 @@ export function VacationTransactionModal(props: VacationTransactionModalProps) {
   const canSubmit =
     !loading &&
     !readOnly &&
-    !!selectedCompanyId &&
-    !!selectedEmployeeId &&
+    !!resolvedCompanyId &&
+    !!resolvedEmployeeId &&
     !!selectedMovementId &&
     selectedDates.length > 0 &&
     selectedPayrollSummary.invalidDates.length === 0 &&
@@ -559,7 +653,7 @@ export function VacationTransactionModal(props: VacationTransactionModalProps) {
 
   const showGlobalPreload =
     !!loading ||
-    (!!selectedCompanyId && !!selectedEmployeeId && loadingPayrolls) ||
+    (!!resolvedCompanyId && !!resolvedEmployeeId && loadingPayrolls) ||
     (activeTab === 'bitacora' && !!loadingAuditTrail);
 
   const auditColumns: ColumnsType<PersonalActionAuditTrailItem> = useMemo(() => [
@@ -675,17 +769,18 @@ export function VacationTransactionModal(props: VacationTransactionModalProps) {
       className={sharedStyles.companyModal}
       closable={false}
       footer={null}
-      width={1180}
+      width={1400}
       destroyOnHidden
       centered={false}
       styles={{
-        wrapper: { alignItems: 'flex-start', paddingTop: 40 },
+        wrapper: { alignItems: 'flex-start', paddingTop: 0, marginTop: -80 },
         body: {
-          maxHeight: '85vh',
+          maxHeight: '88vh',
           overflow: 'hidden',
+          overflowX: 'hidden',
           display: 'flex',
           flexDirection: 'column',
-          padding: 24,
+          padding: 16,
         },
       }}
       title={(
@@ -721,6 +816,8 @@ export function VacationTransactionModal(props: VacationTransactionModalProps) {
           flexDirection: 'column',
           flex: 1,
           minHeight: 0,
+          minWidth: 0,
+          overflow: 'hidden',
         }}
       >
         {showGlobalPreload ? (
@@ -744,7 +841,7 @@ export function VacationTransactionModal(props: VacationTransactionModalProps) {
           form={form}
           layout="vertical"
           className={sharedStyles.companyFormContent}
-          style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}
+          style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0, minWidth: 0, overflow: 'hidden' }}
         >
           <div style={{ flexShrink: 0 }}>
             {readOnly && readOnlyMessage ? (
@@ -799,188 +896,187 @@ export function VacationTransactionModal(props: VacationTransactionModalProps) {
               />
             ) : null}
 
-            {(mode !== 'edit' || activeTab === 'info') && (
-              <>
-                {selectedEmployee ? (
-                  <Collapse
-                    defaultActiveKey={[]}
-                    className={sharedStyles.employeeAccordion}
-                    items={[
-                      {
-                        key: 'empleado',
-                        label: (
-                          <div className={sharedStyles.employeeAccordionHeader}>
-                            <div className={sharedStyles.employeeAccordionHeaderLeft}>
-                              <div className={sharedStyles.employeeAccordionAvatarWrap}>
-                                <Avatar size={34} icon={<UserOutlined />} />
-                              </div>
-                              <div className={sharedStyles.employeeAccordionNameBlock}>
-                                <div className={sharedStyles.employeeAccordionName}>
-                                  {`${selectedEmployee.nombre || '--'} ${selectedEmployee.apellido1 || ''} ${selectedEmployee.apellido2 || ''}`.trim()}
+            {(mode !== 'edit' || activeTab === 'info') ? (
+              <Row gutter={16} wrap style={{ flex: 1, minHeight: 0, alignItems: 'stretch' }}>
+                {/* Columna izquierda: formulario */}
+                <Col xs={24} lg={10} style={{ display: 'flex', flexDirection: 'column', minHeight: 0 }}>
+                  {selectedEmployee ? (
+                    <Collapse
+                      defaultActiveKey={[]}
+                      className={sharedStyles.employeeAccordion}
+                      items={[
+                        {
+                          key: 'empleado',
+                          label: (
+                            <div className={sharedStyles.employeeAccordionHeader}>
+                              <div className={sharedStyles.employeeAccordionHeaderLeft}>
+                                <div className={sharedStyles.employeeAccordionAvatarWrap}>
+                                  <Avatar size={34} icon={<UserOutlined />} />
                                 </div>
-                                <div className={sharedStyles.employeeAccordionId}>
-                                  Empleado ID: {selectedEmployee.codigo || '--'}
-                                  {canViewEmployeeSensitive && selectedEmployee.cedula ? ` - ${selectedEmployee.cedula}` : ''}
-                                  {canViewEmployeeSensitive && selectedEmployee.telefono ? ` - ${selectedEmployee.telefono}` : ''}
-                                </div>
-                                <div className={sharedStyles.employeeAccordionCompany}>
-                                  <BankOutlined />
-                                  {companies.find((c) => Number(c.id) === selectedCompanyId)?.nombre ?? '--'}
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                        ),
-                        children: (
-                          <div className={sharedStyles.employeeAccordionContent}>
-                            <div className={sharedStyles.employeeAccordionGrid}>
-                              <div className={sharedStyles.employeeAccordionItem}>
-                                <IdcardOutlined className={sharedStyles.employeeAccordionItemIcon} />
-                                <div>
-                                  <div className={sharedStyles.employeeAccordionItemLabel}>Cédula</div>
-                                  <div className={sharedStyles.employeeAccordionItemValue}>
-                                    {canViewEmployeeSensitive ? (selectedEmployee.cedula ?? '--') : sensitiveMaskedValue}
+                                <div className={sharedStyles.employeeAccordionNameBlock}>
+                                  <div className={sharedStyles.employeeAccordionName}>
+                                    {`${selectedEmployee.nombre || '--'} ${selectedEmployee.apellido1 || ''} ${selectedEmployee.apellido2 || ''}`.trim()}
+                                  </div>
+                                  <div className={sharedStyles.employeeAccordionId}>
+                                    Empleado ID: {selectedEmployee.codigo || '--'}
+                                    {canViewEmployeeSensitive && selectedEmployee.cedula ? ` - ${selectedEmployee.cedula}` : ''}
+                                    {canViewEmployeeSensitive && selectedEmployee.telefono ? ` - ${selectedEmployee.telefono}` : ''}
+                                  </div>
+                                  <div className={sharedStyles.employeeAccordionCompany}>
+                                    <BankOutlined />
+                                    {companies.find((c) => Number(c.id) === Number(selectedCompanyId ?? resolvedCompanyId))?.nombre ?? '--'}
                                   </div>
                                 </div>
                               </div>
-                              <div className={sharedStyles.employeeAccordionItem}>
-                                <MailOutlined className={sharedStyles.employeeAccordionItemIcon} />
-                                <div>
-                                  <div className={sharedStyles.employeeAccordionItemLabel}>Email</div>
-                                  <div className={sharedStyles.employeeAccordionItemValue}>
-                                    {canViewEmployeeSensitive ? (selectedEmployee.email ?? '--') : sensitiveMaskedValue}
+                            </div>
+                          ),
+                          children: (
+                            <div className={sharedStyles.employeeAccordionContent}>
+                              <div className={sharedStyles.employeeAccordionGrid}>
+                                <div className={sharedStyles.employeeAccordionItem}>
+                                  <IdcardOutlined className={sharedStyles.employeeAccordionItemIcon} />
+                                  <div>
+                                    <div className={sharedStyles.employeeAccordionItemLabel}>CÃ©dula</div>
+                                    <div className={sharedStyles.employeeAccordionItemValue}>
+                                      {canViewEmployeeSensitive ? (selectedEmployee.cedula ?? '--') : sensitiveMaskedValue}
+                                    </div>
+                                  </div>
+                                </div>
+                                <div className={sharedStyles.employeeAccordionItem}>
+                                  <MailOutlined className={sharedStyles.employeeAccordionItemIcon} />
+                                  <div>
+                                    <div className={sharedStyles.employeeAccordionItemLabel}>Email</div>
+                                    <div className={sharedStyles.employeeAccordionItemValue}>
+                                      {canViewEmployeeSensitive ? (selectedEmployee.email ?? '--') : sensitiveMaskedValue}
+                                    </div>
+                                  </div>
+                                </div>
+                                <div className={sharedStyles.employeeAccordionItem}>
+                                  <CalendarOutlined className={sharedStyles.employeeAccordionItemIcon} />
+                                  <div>
+                                    <div className={sharedStyles.employeeAccordionItemLabel}>PerÃ­odo</div>
+                                    <div className={sharedStyles.employeeAccordionItemValue}>{selectedPayPeriod?.nombre ?? '--'}</div>
+                                  </div>
+                                </div>
+                                <div className={sharedStyles.employeeAccordionItem}>
+                                  <ClockCircleOutlined className={sharedStyles.employeeAccordionItemIcon} />
+                                  <div>
+                                    <div className={sharedStyles.employeeAccordionItemLabel}>Jornada</div>
+                                    <div className={sharedStyles.employeeAccordionItemValue}>{selectedEmployee.jornada ?? '--'}</div>
                                   </div>
                                 </div>
                               </div>
-                              <div className={sharedStyles.employeeAccordionItem}>
-                                <CalendarOutlined className={sharedStyles.employeeAccordionItemIcon} />
-                                <div>
-                                  <div className={sharedStyles.employeeAccordionItemLabel}>Período</div>
-                                  <div className={sharedStyles.employeeAccordionItemValue}>{selectedPayPeriod?.nombre ?? '--'}</div>
+                              <hr className={sharedStyles.employeeAccordionGridHr} />
+                              <div className={sharedStyles.employeeAccordionGrid}>
+                                <div className={sharedStyles.employeeAccordionItem}>
+                                  <DollarCircleOutlined className={sharedStyles.employeeAccordionItemIcon} />
+                                  <div>
+                                    <div className={sharedStyles.employeeAccordionItemLabel}>Salario Base</div>
+                                    <div className={sharedStyles.employeeAccordionItemValue}>
+                                      {canViewEmployeeSensitive ? formatMoney(selectedEmployee.salarioBase, employeeCurrency) : sensitiveMaskedValue}
+                                    </div>
+                                  </div>
                                 </div>
-                              </div>
-                              <div className={sharedStyles.employeeAccordionItem}>
-                                <ClockCircleOutlined className={sharedStyles.employeeAccordionItemIcon} />
-                                <div>
-                                  <div className={sharedStyles.employeeAccordionItemLabel}>Jornada</div>
-                                  <div className={sharedStyles.employeeAccordionItemValue}>{selectedEmployee.jornada ?? '--'}</div>
+                                <div className={sharedStyles.employeeAccordionItem}>
+                                  <DollarCircleOutlined className={sharedStyles.employeeAccordionItemIcon} />
+                                  <div>
+                                    <div className={sharedStyles.employeeAccordionItemLabel}>Salario {selectedPayPeriod?.nombre ?? 'PerÃ­odo'}</div>
+                                    <div className={sharedStyles.employeeAccordionItemValue}>
+                                      {canViewEmployeeSensitive ? formatMoney(salaryByPeriod, employeeCurrency) : sensitiveMaskedValue}
+                                    </div>
+                                  </div>
+                                </div>
+                                <div className={sharedStyles.employeeAccordionItem}>
+                                  <DollarCircleOutlined className={sharedStyles.employeeAccordionItemIcon} />
+                                  <div>
+                                    <div className={sharedStyles.employeeAccordionItemLabel}>Valor por Hora</div>
+                                    <div className={sharedStyles.employeeAccordionItemValue}>
+                                      {canViewEmployeeSensitive ? `${formatMoney(hourValue, employeeCurrency)}/hora` : sensitiveMaskedValue}
+                                    </div>
+                                  </div>
+                                </div>
+                                <div className={sharedStyles.employeeAccordionItem}>
+                                  <ClockCircleOutlined className={sharedStyles.employeeAccordionItemIcon} />
+                                  <div>
+                                    <div className={sharedStyles.employeeAccordionItemLabel}>Horas del PerÃ­odo</div>
+                                    <div className={sharedStyles.employeeAccordionItemValue}>{`${periodHours} horas`}</div>
+                                  </div>
                                 </div>
                               </div>
                             </div>
-                          </div>
-                        ),
-                      },
-                    ]}
-                  />
-                ) : null}
+                          ),
+                        },
+                      ]}
+                    />
+                  ) : null}
+                  <Card size="small" style={{ border: '1px solid #e8ecf0', borderRadius: 8 }}>
+                    <Form.Item
+                      label="Empresa"
+                      name="idEmpresa"
+                      rules={[{ required: true, message: 'Seleccione empresa' }]}
+                    >
+                      <Select
+                        placeholder="Seleccione empresa"
+                        options={companies.map((company) => ({
+                          value: Number(company.id),
+                          label: company.nombre,
+                        }))}
+                        disabled={readOnly || mode === 'edit'}
+                        showSearch
+                        optionFilterProp="label"
+                      />
+                    </Form.Item>
+                    <Form.Item
+                      label="Empleado"
+                      name="idEmpleado"
+                      rules={[{ required: true, message: 'Seleccione empleado' }]}
+                    >
+                      <Select
+                        placeholder="Seleccione empleado"
+                        options={filteredEmployees.map((emp) => ({
+                          value: emp.id,
+                          label: formatEmployeeLabel(emp, canViewEmployeeSensitive),
+                        }))}
+                        loading={employeesLoading}
+                        disabled={readOnly || mode === 'edit'}
+                        showSearch
+                        optionFilterProp="label"
+                      />
+                    </Form.Item>
+                    <Form.Item
+                      label="Movimiento"
+                      name="movimientoId"
+                      rules={[{ required: true, message: 'Seleccione movimiento' }]}
+                    >
+                      <Select
+                        placeholder="Seleccione movimiento"
+                        options={movementOptions.map((movement) => ({
+                          value: movement.id,
+                          label: movement.nombre,
+                        }))}
+                        loading={movementsLoading}
+                        disabled={readOnly}
+                        showSearch
+                        optionFilterProp="label"
+                      />
+                    </Form.Item>
+                    <Form.Item label="Días disponibles">
+                      <Input value={availableDays} disabled />
+                    </Form.Item>
+                    <Form.Item label="Observación" name="observacion" style={{ marginBottom: 0 }}>
+                      <Input.TextArea
+                        rows={2}
+                        autoSize={{ minRows: 2, maxRows: 4 }}
+                        disabled={readOnly}
+                        maxLength={300}
+                      />
+                    </Form.Item>
+                  </Card>
+                </Col>
 
-                <Card size="small" style={{ marginBottom: 12, marginTop: 12, border: '1px solid #e8ecf0', borderRadius: 8 }}>
-                  <Row gutter={16}>
-                    <Col xs={24} md={8} lg={8}>
-                      <Form.Item
-                        label="Empresa"
-                        name="idEmpresa"
-                        rules={[{ required: true, message: 'Seleccione empresa' }]}
-                      >
-                        <Select
-                          placeholder="Seleccione empresa"
-                          options={companies.map((company) => ({
-                            value: Number(company.id),
-                            label: company.nombre,
-                          }))}
-                          disabled={readOnly || mode === 'edit'}
-                          showSearch
-                          optionFilterProp="label"
-                        />
-                      </Form.Item>
-                    </Col>
-                    <Col xs={24} md={8} lg={8}>
-                      <Form.Item
-                        label="Empleado"
-                        name="idEmpleado"
-                        rules={[{ required: true, message: 'Seleccione empleado' }]}
-                      >
-                        <Select
-                          placeholder="Seleccione empleado"
-                          options={filteredEmployees.map((emp) => ({
-                            value: emp.id,
-                            label: formatEmployeeLabel(emp, canViewEmployeeSensitive),
-                          }))}
-                          loading={employeesLoading}
-                          disabled={readOnly || mode === 'edit'}
-                          showSearch
-                          optionFilterProp="label"
-                        />
-                      </Form.Item>
-                    </Col>
-                  </Row>
-                  <Row gutter={16}>
-                    <Col xs={24} md={8} lg={8}>
-                      <Form.Item
-                        label="Movimiento"
-                        name="movimientoId"
-                        rules={[{ required: true, message: 'Seleccione movimiento' }]}
-                      >
-                        <Select
-                          placeholder="Seleccione movimiento"
-                          options={movementOptions.map((movement) => ({
-                            value: movement.id,
-                            label: movement.nombre,
-                          }))}
-                          loading={movementsLoading}
-                          disabled={readOnly}
-                          showSearch
-                          optionFilterProp="label"
-                        />
-                      </Form.Item>
-                    </Col>
-                    <Col xs={24} md={8} lg={8}>
-                      <Form.Item label="Días disponibles">
-                        <Input value={availableDays} disabled />
-                      </Form.Item>
-                    </Col>
-                    <Col xs={24} md={8} lg={8}>
-                      <Form.Item label="Observación" name="observacion">
-                        <Input.TextArea
-                          rows={1}
-                          autoSize={{ minRows: 1, maxRows: 3 }}
-                          disabled={readOnly}
-                          maxLength={300}
-                        />
-                      </Form.Item>
-                    </Col>
-                  </Row>
-                </Card>
-
-                <Card
-                  size="small"
-                  title={
-                    <span style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                      <span
-                        style={{
-                          width: 32,
-                          height: 32,
-                          borderRadius: 8,
-                          background: '#e8f4fd',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          color: '#20638d',
-                        }}
-                      >
-                        <CalendarOutlined />
-                      </span>
-                      Selección de Fechas de Vacaciones
-                    </span>
-                  }
-                  style={{
-                    marginTop: 12,
-                    border: '1px solid #e8ecf0',
-                    borderRadius: 8,
-                    overflow: 'visible',
-                  }}
-                  styles={{ body: { padding: 12 } }}
-                >
+                {/* Columna derecha: Calendario de vacaciones + Fechas seleccionadas */}
+                <Col xs={24} lg={14} style={{ display: 'flex', flexDirection: 'column', minHeight: 0 }}>
+                <div style={{ flex: 1, minHeight: 0, overflowX: 'hidden', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 0, minWidth: 0 }}>
                 {selectedPayrollSummary.ambiguousDates.length > 0 ? (
                   <Alert
                     type="warning"
@@ -989,8 +1085,8 @@ export function VacationTransactionModal(props: VacationTransactionModalProps) {
                     message="Hay fechas que coinciden con múltiples planillas. Se asignará la planilla ABIERTA (o la de menor ID si hay empate)."
                   />
                 ) : null}
-                <Row gutter={16} wrap>
-                  <Col xs={24} lg={12}>
+                <Row gutter={16} wrap style={{ flex: 1, minHeight: 0 }}>
+                  <Col xs={24} lg={14}>
                     <div className={styles.calendarCard}>
                       <div className={styles.calendarCardHeader}>
                         <div className={styles.calendarCardHeaderIcon}>
@@ -1016,17 +1112,17 @@ export function VacationTransactionModal(props: VacationTransactionModalProps) {
                               if (reason && !selected) {
                                 return (
                                   <Tooltip title={reason}>
-                                    <div className={styles.dateDisabledBadge}>Bloqueado</div>
+                                    <div className={styles.dateDisabledBadge}>Bloq.</div>
                                   </Tooltip>
                                 );
                               }
                               if (booked) {
                                 return (
-                                  <div className={styles.dateReservedBadge}>Reservado</div>
+                                  <div className={styles.dateReservedBadge}>Res.</div>
                                 );
                               }
                               return selected ? (
-                                <div className={styles.dateSelectedBadge}>Seleccionado</div>
+                                <div className={styles.dateSelectedBadge}>Sel.</div>
                               ) : null;
                             }}
                           />
@@ -1042,8 +1138,8 @@ export function VacationTransactionModal(props: VacationTransactionModalProps) {
                       </div>
                     </div>
                   </Col>
-                  <Col xs={24} lg={12}>
-                    <div className={styles.datesListCard}>
+                  <Col xs={24} lg={10}>
+                    <div className={styles.datesListCard} style={{ minHeight: 0, display: 'flex', flexDirection: 'column' }}>
                       <div className={styles.datesListHeader}>
                         <div className={styles.datesListHeaderIcon}>
                           <CalendarOutlined />
@@ -1101,9 +1197,10 @@ export function VacationTransactionModal(props: VacationTransactionModalProps) {
                     </div>
                   </Col>
                 </Row>
-                </Card>
-              </>
-            )}
+                </div>
+                </Col>
+              </Row>
+            ) : null}
 
             {mode === 'edit' && activeTab === 'bitacora' && showAudit ? (
               <div className={sharedStyles.historicoSection} style={{ marginTop: 12 }}>
@@ -1119,8 +1216,9 @@ export function VacationTransactionModal(props: VacationTransactionModalProps) {
                   dataSource={auditTrail ?? []}
                   className={`${sharedStyles.configTable} ${sharedStyles.auditTableCompact}`}
                   pagination={{
-                    pageSize: 8,
+                    pageSize: 4,
                     showSizeChanger: true,
+                    pageSizeOptions: [4, 8, 10],
                     showTotal: (total) => `${total} registro(s)`,
                   }}
                   locale={{ emptyText: 'No hay registros de bitácora para estas vacaciones.' }}
@@ -1152,6 +1250,7 @@ export function VacationTransactionModal(props: VacationTransactionModalProps) {
     </Modal>
   );
 }
+
 
 
 
