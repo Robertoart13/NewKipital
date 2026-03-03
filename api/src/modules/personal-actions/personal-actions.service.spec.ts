@@ -22,6 +22,7 @@ import { BonusLine } from './entities/bonus-line.entity';
 import { OvertimeLine } from './entities/overtime-line.entity';
 import { RetentionLine } from './entities/retention-line.entity';
 import { DiscountLine } from './entities/discount-line.entity';
+import { IncreaseLine } from './entities/increase-line.entity';
 import { VacationDate } from './entities/vacation-date.entity';
 import { EmployeesService } from '../employees/employees.service';
 import { AuditOutboxService } from '../integration/audit-outbox.service';
@@ -43,6 +44,7 @@ describe('PersonalActionsService', () => {
   let overtimeLineRepo: jest.Mocked<Repository<OvertimeLine>>;
   let retentionLineRepo: jest.Mocked<Repository<RetentionLine>>;
   let discountLineRepo: jest.Mocked<Repository<DiscountLine>>;
+  let increaseLineRepo: jest.Mocked<Repository<IncreaseLine>>;
   let vacationDateRepo: jest.Mocked<Repository<VacationDate>>;
   let payrollRepo: jest.Mocked<Repository<PayrollCalendar>>;
   let eventEmitter: jest.Mocked<EventEmitter2>;
@@ -101,6 +103,9 @@ describe('PersonalActionsService', () => {
     const discountLineRepoMock = {
       count: jest.fn().mockResolvedValue(0),
     };
+    const increaseLineRepoMock = {
+      count: jest.fn().mockResolvedValue(0),
+    };
     const vacationDateRepoMock = {
       count: jest.fn().mockResolvedValue(0),
       find: jest.fn().mockResolvedValue([]),
@@ -153,6 +158,7 @@ describe('PersonalActionsService', () => {
         { provide: getRepositoryToken(OvertimeLine), useValue: overtimeLineRepoMock },
         { provide: getRepositoryToken(RetentionLine), useValue: retentionLineRepoMock },
         { provide: getRepositoryToken(DiscountLine), useValue: discountLineRepoMock },
+        { provide: getRepositoryToken(IncreaseLine), useValue: increaseLineRepoMock },
         { provide: getRepositoryToken(VacationDate), useValue: vacationDateRepoMock },
         { provide: getRepositoryToken(UserCompany), useValue: userCompanyRepoMock },
         { provide: getRepositoryToken(PayrollCalendar), useValue: payrollRepoMock },
@@ -178,6 +184,7 @@ describe('PersonalActionsService', () => {
     overtimeLineRepo = module.get(getRepositoryToken(OvertimeLine));
     retentionLineRepo = module.get(getRepositoryToken(RetentionLine));
     discountLineRepo = module.get(getRepositoryToken(DiscountLine));
+    increaseLineRepo = module.get(getRepositoryToken(IncreaseLine));
     vacationDateRepo = module.get(getRepositoryToken(VacationDate));
     payrollRepo = module.get(getRepositoryToken(PayrollCalendar));
     eventEmitter = module.get(EventEmitter2);
@@ -238,6 +245,220 @@ describe('PersonalActionsService', () => {
     await expect(
       service.advanceAbsenceState(10, 1, ['hr-action-ausencias:edit']),
     ).rejects.toThrow(ForbiddenException);
+  });
+
+  it('createIncrease rejects invalid calculation method', async () => {
+    jest.spyOn(service as any, 'findEligibleAbsencePayrolls').mockResolvedValue([
+      { id: 10 },
+    ]);
+    repo.query
+      .mockResolvedValueOnce([
+        {
+          id: 99,
+          idEmpresa: 1,
+          idPeriodoPago: 10,
+          monedaSalario: 'CRC',
+          salarioBaseEncrypted: '1500000',
+        },
+      ])
+      .mockResolvedValueOnce([{ id: 1 }]);
+
+    await expect(
+      service.createIncrease(
+        {
+          idEmpresa: 1,
+          idEmpleado: 99,
+          observacion: 'qa',
+          line: {
+            payrollId: 10,
+            fechaEfecto: '2026-03-01',
+            movimientoId: 1,
+            metodoCalculo: 'INVALIDO',
+            monto: 1000,
+            porcentaje: 0,
+          },
+        } as any,
+        1,
+      ),
+    ).rejects.toThrow(BadRequestException);
+  });
+
+  it('createIncrease allows percentage above 100', async () => {
+    jest.spyOn(service as any, 'findEligibleAbsencePayrolls').mockResolvedValue([
+      { id: 10 },
+    ]);
+    repo.query
+      .mockResolvedValueOnce([
+        {
+          id: 99,
+          idEmpresa: 1,
+          idPeriodoPago: 10,
+          monedaSalario: 'CRC',
+          salarioBaseEncrypted: '1500000',
+        },
+      ])
+      .mockResolvedValueOnce([{ id: 1 }]);
+
+    dataSource.transaction.mockImplementationOnce(
+      async (cb: (trx: any) => Promise<any>) => {
+        let actionId = 2001;
+        const trx = {
+          save: jest.fn(async (value: any) => {
+            if (value?.tipoAccion) return { ...value, id: actionId++ };
+            return value;
+          }),
+          createQueryBuilder: jest.fn(() => ({
+            update: jest.fn().mockReturnThis(),
+            set: jest.fn().mockReturnThis(),
+            where: jest.fn().mockReturnThis(),
+            andWhere: jest.fn().mockReturnThis(),
+            execute: jest.fn().mockResolvedValue({ affected: 1 }),
+          })),
+          delete: jest.fn().mockResolvedValue({ affected: 0 }),
+          create: jest.fn((_: unknown, payload: unknown) => payload),
+        };
+        return cb(trx);
+      },
+    );
+
+    jest.spyOn(service, 'findOne').mockResolvedValue({
+      id: 2001,
+      idEmpresa: 1,
+      idEmpleado: 99,
+      tipoAccion: 'aumento',
+      estado: PersonalActionEstado.PENDING_SUPERVISOR,
+    } as PersonalAction);
+
+    await expect(
+      service.createIncrease(
+        {
+          idEmpresa: 1,
+          idEmpleado: 99,
+          line: {
+            payrollId: 10,
+            fechaEfecto: '2026-03-01',
+            movimientoId: 1,
+            metodoCalculo: 'PORCENTAJE',
+            monto: 0,
+            porcentaje: 150,
+          },
+        } as any,
+        1,
+      ),
+    ).resolves.toEqual(expect.objectContaining({ tipoAccion: 'aumento' }));
+  });
+
+  it('createIncrease rejects when movement is invalid', async () => {
+    jest.spyOn(service as any, 'findEligibleAbsencePayrolls').mockResolvedValue([
+      { id: 10 },
+    ]);
+    repo.query
+      .mockResolvedValueOnce([
+        {
+          id: 99,
+          idEmpresa: 1,
+          idPeriodoPago: 10,
+          monedaSalario: 'CRC',
+          salarioBaseEncrypted: '1500000',
+        },
+      ])
+      .mockResolvedValueOnce([]);
+
+    await expect(
+      service.createIncrease(
+        {
+          idEmpresa: 1,
+          idEmpleado: 99,
+          line: {
+            payrollId: 10,
+            fechaEfecto: '2026-03-01',
+            movimientoId: 99,
+            metodoCalculo: 'MONTO',
+            monto: 1000,
+            porcentaje: 0,
+          },
+        } as any,
+        1,
+      ),
+    ).rejects.toThrow(BadRequestException);
+  });
+
+  it('advanceIncreaseState blocks privilege escalation without approve permission', async () => {
+    repo.findOne.mockResolvedValue({
+      ...baseAction,
+      tipoAccion: 'aumento',
+      estado: PersonalActionEstado.PENDING_SUPERVISOR,
+    } as PersonalAction);
+
+    await expect(
+      service.advanceIncreaseState(10, 1, ['hr-action-aumentos:edit']),
+    ).rejects.toThrow(ForbiddenException);
+  });
+
+  it('createIncrease rejects when salario base is invalid', async () => {
+    jest.spyOn(service as any, 'findEligibleAbsencePayrolls').mockResolvedValue([
+      { id: 10 },
+    ]);
+    repo.query
+      .mockResolvedValueOnce([
+        {
+          id: 99,
+          idEmpresa: 1,
+          idPeriodoPago: 10,
+          monedaSalario: 'CRC',
+          salarioBaseEncrypted: 'NaN',
+        },
+      ]);
+
+    await expect(
+      service.createIncrease(
+        {
+          idEmpresa: 1,
+          idEmpleado: 99,
+          line: {
+            payrollId: 10,
+            fechaEfecto: '2026-03-01',
+            movimientoId: 1,
+            metodoCalculo: 'MONTO',
+            monto: 1000,
+            porcentaje: 0,
+          },
+        } as any,
+        1,
+      ),
+    ).rejects.toThrow(BadRequestException);
+  });
+
+  it('createIncrease rejects when payroll is not eligible', async () => {
+    jest.spyOn(service as any, 'findEligibleAbsencePayrolls').mockResolvedValue([]);
+    repo.query
+      .mockResolvedValueOnce([
+        {
+          id: 99,
+          idEmpresa: 1,
+          idPeriodoPago: 10,
+          monedaSalario: 'CRC',
+          salarioBaseEncrypted: '1500000',
+        },
+      ]);
+
+    await expect(
+      service.createIncrease(
+        {
+          idEmpresa: 1,
+          idEmpleado: 99,
+          line: {
+            payrollId: 10,
+            fechaEfecto: '2026-03-01',
+            movimientoId: 1,
+            metodoCalculo: 'MONTO',
+            monto: 1000,
+            porcentaje: 0,
+          },
+        } as any,
+        1,
+      ),
+    ).rejects.toThrow(BadRequestException);
   });
 
   it('advanceAbsenceState rejects advancing final states', async () => {

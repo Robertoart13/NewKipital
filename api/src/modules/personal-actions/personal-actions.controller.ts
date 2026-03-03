@@ -17,6 +17,7 @@ import { UpsertLicenseDto } from './dto/upsert-license.dto';
 import { UpsertOvertimeDto } from './dto/upsert-overtime.dto';
 import { UpsertRetentionDto } from './dto/upsert-retention.dto';
 import { UpsertDiscountDto } from './dto/upsert-discount.dto';
+import { UpsertIncreaseDto } from './dto/upsert-increase.dto';
 import { UpsertVacationDto } from './dto/upsert-vacation.dto';
 import { PersonalActionEstado } from './entities/personal-action.entity';
 import { Public } from '../../common/decorators/public.decorator';
@@ -159,6 +160,15 @@ export class PersonalActionsController {
     return this.service.findDiscountDetail(id, user.userId);
   }
 
+  @RequirePermissions('hr-action-aumentos:view')
+  @Get('aumentos/:id')
+  findIncreaseDetail(
+    @Param('id', ParseIntPipe) id: number,
+    @CurrentUser() user: { userId: number },
+  ) {
+    return this.service.findIncreaseDetail(id, user.userId);
+  }
+
   @RequirePermissions('hr-action-licencias:view')
   @Get('licencias/:id/audit-trail')
   findLicenseAuditTrail(
@@ -223,6 +233,17 @@ export class PersonalActionsController {
   ) {
     const limit = limitRaw ? parseInt(limitRaw, 10) : 200;
     return this.service.getDiscountAuditTrail(id, user.userId, limit);
+  }
+
+  @RequirePermissions('hr-action-aumentos:view')
+  @Get('aumentos/:id/audit-trail')
+  findIncreaseAuditTrail(
+    @Param('id', ParseIntPipe) id: number,
+    @CurrentUser() user: { userId: number },
+    @Query('limit') limitRaw?: string,
+  ) {
+    const limit = limitRaw ? parseInt(limitRaw, 10) : 200;
+    return this.service.getIncreaseAuditTrail(id, user.userId, limit);
   }
 
   @RequirePermissions('hr-action-vacaciones:view')
@@ -422,6 +443,15 @@ export class PersonalActionsController {
     return this.service.createDiscount(dto, user.userId);
   }
 
+  @RequirePermissions('hr-action-aumentos:create')
+  @Post('aumentos')
+  createIncrease(
+    @Body() dto: UpsertIncreaseDto,
+    @CurrentUser() user: { userId: number },
+  ) {
+    return this.service.createIncrease(dto, user.userId);
+  }
+
   @RequirePermissions('hr-action-vacaciones:create')
   @Post('vacaciones')
   createVacation(
@@ -499,6 +529,16 @@ export class PersonalActionsController {
     @CurrentUser() user: { userId: number },
   ) {
     return this.service.updateDiscount(id, dto, user.userId);
+  }
+
+  @RequirePermissions('hr-action-aumentos:edit')
+  @Patch('aumentos/:id')
+  updateIncrease(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: UpsertIncreaseDto,
+    @CurrentUser() user: { userId: number },
+  ) {
+    return this.service.updateIncrease(id, dto, user.userId);
   }
 
   @RequirePermissions('hr-action-vacaciones:edit')
@@ -593,6 +633,19 @@ export class PersonalActionsController {
     @CurrentUser() user: { userId: number; permissions?: string[] },
   ) {
     return this.service.advanceDiscountState(
+      id,
+      user.userId,
+      user.permissions ?? [],
+    );
+  }
+
+  @RequirePermissions('hr-action-aumentos:view')
+  @Patch('aumentos/:id/advance')
+  advanceIncreaseState(
+    @Param('id', ParseIntPipe) id: number,
+    @CurrentUser() user: { userId: number; permissions?: string[] },
+  ) {
+    return this.service.advanceIncreaseState(
       id,
       user.userId,
       user.permissions ?? [],
@@ -710,6 +763,21 @@ export class PersonalActionsController {
     @CurrentUser() user: { userId: number; permissions?: string[] },
   ) {
     return this.service.invalidateDiscount(
+      id,
+      body?.motivo,
+      user.userId,
+      user.permissions ?? [],
+    );
+  }
+
+  @RequirePermissions('hr-action-aumentos:view')
+  @Patch('aumentos/:id/invalidate')
+  invalidateIncrease(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() body: { motivo?: string },
+    @CurrentUser() user: { userId: number; permissions?: string[] },
+  ) {
+    return this.service.invalidateIncrease(
       id,
       body?.motivo,
       user.userId,

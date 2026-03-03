@@ -11,6 +11,7 @@ import { BonusLine } from './entities/bonus-line.entity';
 import { OvertimeLine } from './entities/overtime-line.entity';
 import { RetentionLine } from './entities/retention-line.entity';
 import { DiscountLine } from './entities/discount-line.entity';
+import { IncreaseLine } from './entities/increase-line.entity';
 import { VacationDate } from './entities/vacation-date.entity';
 import { UserCompany } from '../access-control/entities/user-company.entity';
 import { PayrollCalendar } from '../payroll/entities/payroll-calendar.entity';
@@ -34,6 +35,7 @@ import { PersonalActionEmployeeContextListener } from './personal-action-employe
     OvertimeLine,
     RetentionLine,
     DiscountLine,
+    IncreaseLine,
     VacationDate,
       UserCompany,
       PayrollCalendar,

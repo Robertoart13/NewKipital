@@ -21,6 +21,7 @@ import { UpsertLicenseDto } from './dto/upsert-license.dto';
 import { UpsertOvertimeDto } from './dto/upsert-overtime.dto';
 import { UpsertRetentionDto } from './dto/upsert-retention.dto';
 import { UpsertDiscountDto } from './dto/upsert-discount.dto';
+import { UpsertIncreaseDto } from './dto/upsert-increase.dto';
 import { UpsertVacationDto } from './dto/upsert-vacation.dto';
 import { DOMAIN_EVENTS } from '../../common/events/event-names';
 import { UserCompany } from '../access-control/entities/user-company.entity';
@@ -44,6 +45,10 @@ import {
 } from './entities/overtime-line.entity';
 import { RetentionLine } from './entities/retention-line.entity';
 import { DiscountLine } from './entities/discount-line.entity';
+import {
+  IncreaseLine,
+  MetodoCalculoAumentoLinea,
+} from './entities/increase-line.entity';
 import { VacationDate } from './entities/vacation-date.entity';
 import { AuditOutboxService } from '../integration/audit-outbox.service';
 import { EmployeeSensitiveDataService } from '../../common/services/employee-sensitive-data.service';
@@ -73,6 +78,8 @@ export class PersonalActionsService {
     private readonly retentionLineRepo: Repository<RetentionLine>,
     @InjectRepository(DiscountLine)
     private readonly discountLineRepo: Repository<DiscountLine>,
+    @InjectRepository(IncreaseLine)
+    private readonly increaseLineRepo: Repository<IncreaseLine>,
     @InjectRepository(VacationDate)
     private readonly vacationDateRepo: Repository<VacationDate>,
     @InjectRepository(UserCompany)
@@ -140,6 +147,9 @@ export class PersonalActionsService {
         ),
       )
       .map((item) => item.id);
+    const increaseIds = actions
+      .filter((item) => item.tipoAccion?.trim().toLowerCase() === 'aumento')
+      .map((item) => item.id);
     const vacationIds = actions
       .filter((item) =>
         ['vacaciones', 'vacacion', 'vacation'].includes(
@@ -156,6 +166,7 @@ export class PersonalActionsService {
       overtimeIds.length === 0 &&
       retentionIds.length === 0 &&
       discountIds.length === 0 &&
+      increaseIds.length === 0 &&
       vacationIds.length === 0
     ) {
       return actions;
@@ -194,6 +205,10 @@ export class PersonalActionsService {
       'acc_descuentos_lineas',
       discountIds,
     );
+    const increaseSummary = await this.buildActionSummaryFromLines(
+      'acc_aumentos_lineas',
+      increaseIds,
+    );
     const vacationSummary = await this.buildActionSummaryFromVacations(
       vacationIds,
     );
@@ -204,6 +219,7 @@ export class PersonalActionsService {
     overtimeSummary.forEach((entry, key) => summaryMap.set(key, entry));
     retentionSummary.forEach((entry, key) => summaryMap.set(key, entry));
     discountSummary.forEach((entry, key) => summaryMap.set(key, entry));
+    increaseSummary.forEach((entry, key) => summaryMap.set(key, entry));
     vacationSummary.forEach((entry, key) => summaryMap.set(key, entry));
 
     return actions.map((action) => {
@@ -804,6 +820,75 @@ export class PersonalActionsService {
     };
   }
 
+  async findIncreaseDetail(id: number, userId: number) {
+    const action = await this.findOne(id, userId);
+    if (action.tipoAccion.trim().toLowerCase() !== 'aumento') {
+      throw new BadRequestException(
+        'La accion no corresponde al modulo de aumentos',
+      );
+    }
+
+    const rows = await this.repo.query(
+      `
+      SELECT
+        l.id_linea_aumento AS idLinea,
+        l.id_accion AS idAccion,
+        l.id_calendario_nomina AS payrollId,
+        COALESCE(c.nombre_planilla_calendario_nomina, CONCAT('Planilla #', l.id_calendario_nomina)) AS payrollLabel,
+        c.estado_calendario_nomina AS payrollEstado,
+        l.id_movimiento_nomina AS movimientoId,
+        COALESCE(m.nombre_movimiento_nomina, CONCAT('Movimiento #', l.id_movimiento_nomina)) AS movimientoLabel,
+        m.es_inactivo_movimiento_nomina AS movimientoInactivo,
+        l.metodo_calculo_linea AS metodoCalculo,
+        l.monto_linea AS monto,
+        l.porcentaje_linea AS porcentaje,
+        l.salario_actual_linea AS salarioActual,
+        l.nuevo_salario_linea AS nuevoSalario,
+        l.formula_linea AS formula,
+        l.orden_linea AS orden,
+        l.fecha_efecto_linea AS fechaEfecto
+      FROM acc_aumentos_lineas l
+      LEFT JOIN nom_calendarios_nomina c
+        ON c.id_calendario_nomina = l.id_calendario_nomina
+      LEFT JOIN nom_movimientos_nomina m
+        ON m.id_movimiento_nomina = l.id_movimiento_nomina
+      WHERE l.id_accion = ?
+      ORDER BY l.orden_linea ASC, l.id_linea_aumento ASC
+      `,
+      [id],
+    );
+
+    const row = rows?.[0];
+    const line = row
+      ? {
+        idLinea: Number(row.idLinea),
+        idAccion: Number(row.idAccion),
+        payrollId: Number(row.payrollId),
+        payrollLabel: row.payrollLabel ? String(row.payrollLabel) : null,
+        payrollEstado: row.payrollEstado == null ? null : Number(row.payrollEstado),
+        movimientoId: Number(row.movimientoId),
+        movimientoLabel: row.movimientoLabel ? String(row.movimientoLabel) : null,
+        movimientoInactivo:
+          row.movimientoInactivo == null
+            ? null
+            : Number(row.movimientoInactivo) === 1,
+        metodoCalculo: row.metodoCalculo,
+        monto: Number(row.monto ?? 0),
+        porcentaje: Number(row.porcentaje ?? 0),
+        salarioActual: Number(row.salarioActual ?? 0),
+        nuevoSalario: Number(row.nuevoSalario ?? 0),
+        formula: row.formula ? String(row.formula) : '',
+        orden: Number(row.orden ?? 1),
+        fechaEfecto: this.toYmdFlexible(row.fechaEfecto),
+      }
+      : null;
+
+    return {
+      ...action,
+      line,
+    };
+  }
+
   async findVacationDetail(id: number, userId: number) {
     const action = await this.findOne(id, userId);
     if (
@@ -870,6 +955,16 @@ export class PersonalActionsService {
     ) {
       throw new BadRequestException(
         'La accion no corresponde al modulo de descuentos',
+      );
+    }
+    return this.getActionAuditTrailCore(action.id, limit);
+  }
+
+  async getIncreaseAuditTrail(id: number, userId: number, limit = 200) {
+    const action = await this.findOne(id, userId);
+    if (action.tipoAccion.trim().toLowerCase() !== 'aumento') {
+      throw new BadRequestException(
+        'La accion no corresponde al modulo de aumentos',
       );
     }
     return this.getActionAuditTrailCore(action.id, limit);
@@ -3595,6 +3690,83 @@ export class PersonalActionsService {
     return this.findOne(action.id, userId);
   }
 
+  async invalidateIncrease(
+    id: number,
+    motivo: string | undefined,
+    userId: number,
+    userPermissions: string[] = [],
+  ) {
+    const action = await this.findOne(id, userId);
+    if (action.tipoAccion.trim().toLowerCase() !== 'aumento') {
+      throw new BadRequestException(
+        'La accion no corresponde al modulo de aumentos',
+      );
+    }
+
+    if (
+      ![
+        PersonalActionEstado.DRAFT,
+        PersonalActionEstado.PENDING_SUPERVISOR,
+        PersonalActionEstado.PENDING_RRHH,
+      ].includes(action.estado)
+    ) {
+      throw new BadRequestException(
+        'El aumento no se puede invalidar en su estado actual',
+      );
+    }
+
+    this.assertActionPermission(
+      userPermissions,
+      'hr-action-aumentos:cancel',
+      'invalidar el aumento',
+    );
+
+    await this.dataSource.transaction(async (trx) => {
+      action.estado = PersonalActionEstado.INVALIDATED;
+      action.invalidatedAt = new Date();
+      action.invalidatedReason = motivo?.trim() || 'Invalidado manualmente por RRHH';
+      action.invalidatedReasonCode =
+        PERSONAL_ACTION_INVALIDATION_REASON.MANUAL_INVALIDATION;
+      action.invalidatedByType = PERSONAL_ACTION_INVALIDATED_BY.USER;
+      action.invalidatedByUserId = userId;
+      action.invalidatedMeta = {
+        invalidated_by_type: PERSONAL_ACTION_INVALIDATED_BY.USER,
+        invalidated_by_user_id: userId,
+        source: 'manual_increase_invalidation',
+      };
+      action.modificadoPor = userId;
+      action.versionLock += 1;
+      await trx.save(action);
+    });
+
+    this.eventEmitter.emit(DOMAIN_EVENTS.PERSONAL_ACTION.CANCELED, {
+      eventName: DOMAIN_EVENTS.PERSONAL_ACTION.CANCELED,
+      occurredAt: new Date(),
+      payload: {
+        actionId: String(action.id),
+        companyId: String(action.idEmpresa),
+        reason: action.invalidatedReason,
+        type: 'invalidated',
+      },
+    });
+
+    this.auditOutbox.publish({
+      modulo: 'personal-actions',
+      accion: 'invalidate',
+      entidad: 'personal-action',
+      entidadId: action.id,
+      actorUserId: userId,
+      companyContextId: action.idEmpresa,
+      descripcion: `Aumento invalidado para empleado #${action.idEmpleado}`,
+      payloadAfter: this.buildAbsenceAuditPayload(
+        action,
+        await this.countIncreaseLines(action.id),
+      ),
+    });
+
+    return this.findOne(action.id, userId);
+  }
+
   async createVacation(dto: UpsertVacationDto, userId: number) {
     await this.assertUserCompanyAccess(userId, dto.idEmpresa);
     const { dates, payrollMap } = await this.validateVacationPayload(
@@ -3726,6 +3898,90 @@ export class PersonalActionsService {
     };
   }
 
+  async createIncrease(dto: UpsertIncreaseDto, userId: number) {
+    await this.assertUserCompanyAccess(userId, dto.idEmpresa);
+    const validation = await this.validateIncreasePayload(dto, userId);
+    const { employee, line } = validation;
+    const moneda = String(employee.monedaSalario ?? 'CRC').toUpperCase();
+    const groupId = `AUM-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`.toUpperCase();
+
+    const fechaEfecto = this.toYmdFlexible(dto.line.fechaEfecto);
+    const fecha = fechaEfecto ? new Date(fechaEfecto) : null;
+    const formula = this.buildIncreaseFormula(
+      line.salarioActual,
+      line.monto,
+      line.porcentaje,
+      line.metodoCalculo,
+    );
+
+    const savedAction = await this.dataSource.transaction(async (trx) => {
+      const action = trx.create(PersonalAction, {
+        idEmpresa: dto.idEmpresa,
+        idEmpleado: dto.idEmpleado,
+        idCalendarioNomina: null,
+        tipoAccion: 'aumento',
+        groupId,
+        origen: 'RRHH',
+        descripcion: dto.observacion ?? null,
+        estado: PersonalActionEstado.PENDING_SUPERVISOR,
+        fechaEfecto: fecha,
+        fechaInicioEfecto: fecha,
+        fechaFinEfecto: fecha,
+        monto: line.monto,
+        moneda,
+        creadoPor: userId,
+        modificadoPor: userId,
+      });
+      const saved = await trx.save(action);
+
+      const increaseLine = trx.create(IncreaseLine, {
+        idAccion: saved.id,
+        idEmpresa: dto.idEmpresa,
+        idEmpleado: dto.idEmpleado,
+        idCalendarioNomina: line.payrollId,
+        idMovimientoNomina: line.movimientoId,
+        metodoCalculo: line.metodoCalculo,
+        porcentaje: line.porcentaje,
+        monto: line.monto,
+        salarioActual: line.salarioActual,
+        nuevoSalario: line.nuevoSalario,
+        remuneracion: 1,
+        formula,
+        orden: 1,
+        fechaEfecto: fecha,
+      });
+      await trx.save(increaseLine);
+
+      return saved;
+    });
+
+    this.eventEmitter.emit(DOMAIN_EVENTS.PERSONAL_ACTION.CREATED, {
+      eventName: DOMAIN_EVENTS.PERSONAL_ACTION.CREATED,
+      occurredAt: new Date(),
+      payload: {
+        actionId: String(savedAction.id),
+        employeeId: String(savedAction.idEmpleado),
+        companyId: String(savedAction.idEmpresa),
+        type: 'aumento',
+        lines: 1,
+        groupId,
+      },
+    });
+
+    this.auditOutbox.publish({
+      modulo: 'personal-actions',
+      accion: 'create',
+      entidad: 'personal-action',
+      entidadId: savedAction.id,
+      actorUserId: userId,
+      companyContextId: savedAction.idEmpresa,
+      descripcion: `Aumento creado para empleado #${savedAction.idEmpleado}`,
+      payloadAfter: this.buildAbsenceAuditPayload(savedAction, 1),
+    });
+
+    return this.findOne(savedAction.id, userId);
+  }
+
   async updateVacation(id: number, dto: UpsertVacationDto, userId: number) {
     const action = await this.findOne(id, userId);
     if (!['vacaciones', 'vacacion', 'vacation'].includes(action.tipoAccion.trim().toLowerCase())) {
@@ -3831,6 +4087,93 @@ export class PersonalActionsService {
     return this.findOne(id, userId);
   }
 
+  async updateIncrease(id: number, dto: UpsertIncreaseDto, userId: number) {
+    const action = await this.findOne(id, userId);
+    if (action.tipoAccion.trim().toLowerCase() !== 'aumento') {
+      throw new BadRequestException(
+        'La accion no corresponde al modulo de aumentos',
+      );
+    }
+    if (
+      ![
+        PersonalActionEstado.DRAFT,
+        PersonalActionEstado.PENDING_SUPERVISOR,
+        PersonalActionEstado.PENDING_RRHH,
+      ].includes(action.estado)
+    ) {
+      throw new BadRequestException(
+        'Solo se pueden editar aumentos en estado borrador o pendientes',
+      );
+    }
+    if (action.idEmpresa !== dto.idEmpresa || action.idEmpleado !== dto.idEmpleado) {
+      throw new BadRequestException(
+        'No se permite cambiar empresa o empleado del aumento',
+      );
+    }
+
+    const validation = await this.validateIncreasePayload(dto, userId);
+    const { line } = validation;
+
+    const payloadBefore = this.buildAbsenceAuditPayload(
+      action,
+      await this.countIncreaseLines(action.id),
+    );
+
+    const fechaEfecto = this.toYmdFlexible(dto.line.fechaEfecto);
+    const fecha = fechaEfecto ? new Date(fechaEfecto) : null;
+    const formula = this.buildIncreaseFormula(
+      line.salarioActual,
+      line.monto,
+      line.porcentaje,
+      line.metodoCalculo,
+    );
+
+    await this.dataSource.transaction(async (trx) => {
+      await trx.delete(IncreaseLine, { idAccion: id });
+
+      action.descripcion = dto.observacion ?? null;
+      action.fechaEfecto = fecha;
+      action.fechaInicioEfecto = fecha;
+      action.fechaFinEfecto = fecha;
+      action.monto = line.monto;
+      action.modificadoPor = userId;
+      action.versionLock += 1;
+      await trx.save(action);
+
+      const increaseLine = trx.create(IncreaseLine, {
+        idAccion: action.id,
+        idEmpresa: dto.idEmpresa,
+        idEmpleado: dto.idEmpleado,
+        idCalendarioNomina: line.payrollId,
+        idMovimientoNomina: line.movimientoId,
+        metodoCalculo: line.metodoCalculo,
+        porcentaje: line.porcentaje,
+        monto: line.monto,
+        salarioActual: line.salarioActual,
+        nuevoSalario: line.nuevoSalario,
+        remuneracion: 1,
+        formula,
+        orden: 1,
+        fechaEfecto: fecha,
+      });
+      await trx.save(increaseLine);
+    });
+
+    this.auditOutbox.publish({
+      modulo: 'personal-actions',
+      accion: 'update',
+      entidad: 'personal-action',
+      entidadId: action.id,
+      actorUserId: userId,
+      companyContextId: action.idEmpresa,
+      descripcion: `Aumento actualizado para empleado #${action.idEmpleado}`,
+      payloadBefore,
+      payloadAfter: this.buildAbsenceAuditPayload(action, 1),
+    });
+
+    return this.findOne(id, userId);
+  }
+
   async advanceVacationState(
     id: number,
     userId: number,
@@ -3897,6 +4240,80 @@ export class PersonalActionsService {
       payloadAfter: this.buildAbsenceAuditPayload(
         saved,
         await this.countVacationDates(saved.id),
+      ),
+    });
+
+    return saved;
+  }
+
+  async advanceIncreaseState(
+    id: number,
+    userId: number,
+    userPermissions: string[] = [],
+  ) {
+    const action = await this.findOne(id, userId);
+    if (action.tipoAccion.trim().toLowerCase() !== 'aumento') {
+      throw new BadRequestException(
+        'La accion no corresponde al modulo de aumentos',
+      );
+    }
+
+    const nextByState: Partial<Record<PersonalActionEstado, PersonalActionEstado>> = {
+      [PersonalActionEstado.DRAFT]: PersonalActionEstado.PENDING_SUPERVISOR,
+      [PersonalActionEstado.PENDING_SUPERVISOR]: PersonalActionEstado.PENDING_RRHH,
+      [PersonalActionEstado.PENDING_RRHH]: PersonalActionEstado.APPROVED,
+    };
+    const next = nextByState[action.estado];
+    if (!next) {
+      throw new BadRequestException('La accion no tiene un estado siguiente operativo');
+    }
+
+    const requiredPermissionByState: Partial<Record<PersonalActionEstado, string>> = {
+      [PersonalActionEstado.DRAFT]: 'hr-action-aumentos:edit',
+      [PersonalActionEstado.PENDING_SUPERVISOR]: 'hr-action-aumentos:approve',
+      [PersonalActionEstado.PENDING_RRHH]: 'hr-action-aumentos:approve',
+    };
+    const requiredPermission = requiredPermissionByState[action.estado];
+    this.assertActionPermission(
+      userPermissions,
+      requiredPermission,
+      'avanzar el estado del aumento',
+    );
+
+    action.estado = next;
+    action.modificadoPor = userId;
+    action.versionLock += 1;
+
+    if (next === PersonalActionEstado.APPROVED) {
+      action.aprobadoPor = userId;
+      action.fechaAprobacion = new Date();
+    }
+
+    const saved = await this.repo.save(action);
+    if (next === PersonalActionEstado.APPROVED) {
+      await this.flagRecalculationForOpenPayrolls(saved);
+      this.eventEmitter.emit(DOMAIN_EVENTS.PERSONAL_ACTION.APPROVED, {
+        eventName: DOMAIN_EVENTS.PERSONAL_ACTION.APPROVED,
+        occurredAt: new Date(),
+        payload: {
+          actionId: String(saved.id),
+          employeeId: String(saved.idEmpleado),
+          companyId: String(saved.idEmpresa),
+        },
+      });
+    }
+
+    this.auditOutbox.publish({
+      modulo: 'personal-actions',
+      accion: 'advance',
+      entidad: 'personal-action',
+      entidadId: saved.id,
+      actorUserId: userId,
+      companyContextId: saved.idEmpresa,
+      descripcion: `Aumento movido al estado ${this.getEstadoNombre(saved.estado)}`,
+      payloadAfter: this.buildAbsenceAuditPayload(
+        saved,
+        await this.countIncreaseLines(saved.id),
       ),
     });
 
@@ -4641,6 +5058,10 @@ export class PersonalActionsService {
     return this.discountLineRepo.count({ where: { idAccion } });
   }
 
+  private async countIncreaseLines(idAccion: number): Promise<number> {
+    return this.increaseLineRepo.count({ where: { idAccion } });
+  }
+
   private async countVacationDates(idAccion: number): Promise<number> {
     return this.vacationDateRepo.count({ where: { idAccion } });
   }
@@ -4736,6 +5157,61 @@ export class PersonalActionsService {
     } catch {
       return String(value);
     }
+  }
+
+  private round2(value: number): number {
+    return Number(value.toFixed(2));
+  }
+
+  private buildIncreaseFormula(
+    salarioActual: number,
+    monto: number,
+    porcentaje: number,
+    metodo: MetodoCalculoAumentoLinea,
+  ): string {
+    const salarioText = this.round2(salarioActual).toFixed(2);
+    const montoText = this.round2(monto).toFixed(2);
+    const nuevoText = this.round2(salarioActual + monto).toFixed(2);
+    const porcentajeText = this.round2(porcentaje).toFixed(2);
+
+    if (metodo === MetodoCalculoAumentoLinea.PORCENTAJE) {
+      return `Nuevo salario = ${salarioText} + (${salarioText} x ${porcentajeText}%) = ${nuevoText}`;
+    }
+    return `Nuevo salario = ${salarioText} + ${montoText} = ${nuevoText}`;
+  }
+
+  private async getIncreaseEmployee(idEmpresa: number, idEmpleado: number) {
+    const rows = await this.repo.query(
+      `
+      SELECT
+        id_empleado AS id,
+        id_empresa AS idEmpresa,
+        id_periodos_pago AS idPeriodoPago,
+        moneda_salario_empleado AS monedaSalario,
+        salario_base_empleado AS salarioBaseEncrypted
+      FROM sys_empleados
+      WHERE id_empleado = ?
+        AND id_empresa = ?
+        AND estado_empleado = 1
+      LIMIT 1
+      `,
+      [idEmpleado, idEmpresa],
+    );
+    const row = rows?.[0];
+    if (!row) return null;
+
+    const decrypted = this.sensitiveDataService.decrypt(
+      row.salarioBaseEncrypted ?? null,
+    );
+    const parsed = decrypted == null ? NaN : Number(decrypted);
+
+    return {
+      id: Number(row.id ?? idEmpleado),
+      idEmpresa: Number(row.idEmpresa ?? idEmpresa),
+      idPeriodoPago: row.idPeriodoPago == null ? null : Number(row.idPeriodoPago),
+      monedaSalario: row.monedaSalario ?? 'CRC',
+      salarioBase: Number.isFinite(parsed) ? parsed : null,
+    };
   }
 
   private toYmd(value: Date | string | null): string | null {
@@ -5144,6 +5620,109 @@ export class PersonalActionsService {
     }
   }
 
+  private async validateIncreasePayload(
+    dto: UpsertIncreaseDto,
+    userId: number,
+  ) {
+    if (!dto.line) {
+      throw new BadRequestException(
+        'Debe incluir la informacion del aumento',
+      );
+    }
+
+    const employee = await this.getIncreaseEmployee(dto.idEmpresa, dto.idEmpleado);
+    if (!employee) {
+      throw new BadRequestException(
+        'Empleado no encontrado o inactivo para la empresa seleccionada',
+      );
+    }
+    if (!employee.idPeriodoPago || !employee.monedaSalario) {
+      throw new BadRequestException('Empleado sin configuracion de periodo o moneda');
+    }
+
+    const salarioActual = Number(employee.salarioBase ?? 0);
+    if (!Number.isFinite(salarioActual) || salarioActual <= 0) {
+      throw new BadRequestException('Salario base invalido para calcular el aumento');
+    }
+
+    const eligiblePayrolls = await this.findEligibleAbsencePayrolls(
+      userId,
+      dto.idEmpresa,
+      dto.idEmpleado,
+    );
+    const payroll = eligiblePayrolls.find(
+      (item) => item.id === Number(dto.line.payrollId),
+    );
+    if (!payroll) {
+      throw new BadRequestException(
+        'Planilla no elegible para empresa/empleado/periodo/moneda o fuera de ventana',
+      );
+    }
+
+    const method = dto.line.metodoCalculo;
+    if (
+      method !== MetodoCalculoAumentoLinea.MONTO &&
+      method !== MetodoCalculoAumentoLinea.PORCENTAJE
+    ) {
+      throw new BadRequestException('Metodo de calculo invalido para aumento');
+    }
+
+    const montoRaw = Number(dto.line.monto ?? 0);
+    const porcentajeRaw = Number(dto.line.porcentaje ?? 0);
+
+    if (method === MetodoCalculoAumentoLinea.MONTO) {
+      if (!Number.isFinite(montoRaw) || montoRaw <= 0) {
+        throw new BadRequestException('El monto del aumento debe ser mayor a 0');
+      }
+    }
+
+    if (method === MetodoCalculoAumentoLinea.PORCENTAJE) {
+      if (!Number.isFinite(porcentajeRaw) || porcentajeRaw <= 0) {
+        throw new BadRequestException('El porcentaje del aumento debe ser mayor a 0');
+      }
+    }
+
+    const movementRows = await this.repo.query(
+      `
+      SELECT id_movimiento_nomina AS id
+      FROM nom_movimientos_nomina
+      WHERE id_movimiento_nomina = ?
+        AND id_empresa_movimiento_nomina = ?
+        AND id_tipo_accion_personal_movimiento_nomina = 8
+        AND es_inactivo_movimiento_nomina = 0
+      LIMIT 1
+      `,
+      [dto.line.movimientoId, dto.idEmpresa],
+    );
+    if (!movementRows?.length) {
+      throw new BadRequestException(
+        'Movimiento invalido o inactivo para aumentos en esta empresa',
+      );
+    }
+
+    const monto = method === MetodoCalculoAumentoLinea.PORCENTAJE
+      ? this.round2(salarioActual * (porcentajeRaw / 100))
+      : this.round2(montoRaw);
+    const porcentaje = method === MetodoCalculoAumentoLinea.PORCENTAJE
+      ? this.round2(porcentajeRaw)
+      : this.round2((monto / salarioActual) * 100);
+    const nuevoSalario = this.round2(salarioActual + monto);
+
+    return {
+      employee,
+      payroll,
+      line: {
+        payrollId: Number(dto.line.payrollId),
+        movimientoId: Number(dto.line.movimientoId),
+        metodoCalculo: method,
+        monto,
+        porcentaje,
+        salarioActual,
+        nuevoSalario,
+      },
+    };
+  }
+
   private async validateVacationPayload(
     dto: UpsertVacationDto,
     userId: number,
@@ -5435,7 +6014,8 @@ export class PersonalActionsService {
       | 'acc_bonificaciones_lineas'
       | 'acc_horas_extras_lineas'
       | 'acc_retenciones_lineas'
-      | 'acc_descuentos_lineas',
+      | 'acc_descuentos_lineas'
+      | 'acc_aumentos_lineas',
     actionIds: number[],
   ): Promise<
     Map<number, { periodos: string | null; movimientos: string | null; rem: 'SI' | 'NO' | 'MIXTA' | null }>

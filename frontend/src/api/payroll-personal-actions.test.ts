@@ -10,16 +10,20 @@ import {
   advanceAbsenceState,
   advanceDiscountState,
   advanceRetentionState,
+  advanceIncreaseState,
   approvePersonalAction,
   createDiscount,
+  createIncrease,
   createRetention,
   createPersonalAction,
   fetchPersonalAction,
   fetchAbsenceDetail,
   fetchDiscountDetail,
+  fetchIncreaseDetail,
   fetchRetentionDetail,
   fetchPersonalActions,
   invalidateDiscount,
+  invalidateIncrease,
   invalidateRetention,
   invalidateAbsence,
   rejectPersonalAction,
@@ -235,6 +239,53 @@ describe('payroll and personal actions api', () => {
     expect(mockHttpFetch).toHaveBeenNthCalledWith(
       4,
       '/personal-actions/retenciones/99/invalidate',
+      expect.objectContaining({ method: 'PATCH' }),
+    );
+  });
+
+  it('increase endpoints should call expected routes', async () => {
+    mockHttpFetch.mockResolvedValue({
+      ok: true,
+      json: vi.fn().mockResolvedValue({ id: 77, estado: 2 }),
+    } as any);
+
+    await fetchIncreaseDetail(77);
+    await createIncrease({
+      idEmpresa: 1,
+      idEmpleado: 5,
+      observacion: 'qa',
+      line: {
+        payrollId: 10,
+        fechaEfecto: '2026-03-01',
+        movimientoId: 1,
+        metodoCalculo: 'MONTO',
+        monto: 1000,
+        porcentaje: 0,
+        salarioActual: 2500000,
+        nuevoSalario: 2501000,
+        formula: 'Nuevo salario = 2500000.00 + 1000.00 = 2501000.00',
+      },
+    });
+    await advanceIncreaseState(77);
+    await invalidateIncrease(77, 'qa');
+
+    expect(mockHttpFetch).toHaveBeenNthCalledWith(
+      1,
+      '/personal-actions/aumentos/77',
+    );
+    expect(mockHttpFetch).toHaveBeenNthCalledWith(
+      2,
+      '/personal-actions/aumentos',
+      expect.objectContaining({ method: 'POST' }),
+    );
+    expect(mockHttpFetch).toHaveBeenNthCalledWith(
+      3,
+      '/personal-actions/aumentos/77/advance',
+      expect.objectContaining({ method: 'PATCH' }),
+    );
+    expect(mockHttpFetch).toHaveBeenNthCalledWith(
+      4,
+      '/personal-actions/aumentos/77/invalidate',
       expect.objectContaining({ method: 'PATCH' }),
     );
   });

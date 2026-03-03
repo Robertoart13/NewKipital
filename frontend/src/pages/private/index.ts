@@ -25,4 +25,5 @@ export { BonusesPage } from './personal-actions/bonificaciones/BonusesPage';
 export { HoursExtrasPage } from './personal-actions/horas-extras/HoursExtrasPage';
 export { RetentionsPage } from './personal-actions/retenciones/RetentionsPage';
 export { DiscountsPage } from './personal-actions/descuentos/DiscountsPage';
+export { AumentosPage } from './personal-actions/aumentos/AumentosPage';
 export { VacationsPage } from './personal-actions/vacaciones/VacationsPage';

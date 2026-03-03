@@ -236,6 +236,26 @@ export interface UpsertDiscountPayload {
   lines: UpsertDiscountLinePayload[];
 }
 
+export type IncreaseCalculationMethod = 'MONTO' | 'PORCENTAJE';
+
+export interface UpsertIncreaseLinePayload {
+  payrollId: number;
+  fechaEfecto: string;
+  movimientoId: number;
+  metodoCalculo: IncreaseCalculationMethod;
+  monto: number;
+  porcentaje: number;
+  salarioActual?: number;
+  nuevoSalario?: number;
+  formula?: string;
+}
+
+export interface UpsertIncreasePayload {
+  idEmpresa: number;
+  idEmpleado: number;
+  observacion?: string;
+  line: UpsertIncreaseLinePayload;
+}
 export interface UpsertVacationDatePayload {
   fecha: string;
 }
@@ -442,6 +462,28 @@ export interface DiscountDetailItem extends PersonalActionListItem {
   lines: DiscountDetailLine[];
 }
 
+export interface IncreaseDetailLine {
+  idLinea: number;
+  idAccion: number;
+  payrollId: number;
+  payrollLabel?: string | null;
+  payrollEstado?: number | null;
+  movimientoId: number;
+  movimientoLabel?: string | null;
+  movimientoInactivo?: boolean | null;
+  metodoCalculo: IncreaseCalculationMethod;
+  monto: number;
+  porcentaje: number;
+  salarioActual: number;
+  nuevoSalario: number;
+  formula: string;
+  orden: number;
+  fechaEfecto?: string | null;
+}
+
+export interface IncreaseDetailItem extends PersonalActionListItem {
+  line: IncreaseDetailLine | null;
+}
 export interface PersonalActionAuditTrailItem {
   id: string;
   modulo: string;
@@ -1447,6 +1489,117 @@ export async function fetchVacationHolidays(idEmpresa?: number): Promise<Vacatio
   return res.json();
 }
 
+/**
+ * GET /personal-actions/aumentos/:id/audit-trail
+ * Bitacora de aumento.
+ */
+export async function fetchIncreaseAuditTrail(
+  id: number,
+  limit = 200,
+): Promise<PersonalActionAuditTrailItem[]> {
+  const qs = new URLSearchParams({ limit: String(limit) });
+  const res = await httpFetch(`/personal-actions/aumentos/${id}/audit-trail?${qs}`);
+  if (!res.ok) {
+    throw new Error(
+      await extractApiErrorMessage(res, 'Error al cargar bitacora de aumento'),
+    );
+  }
+  return res.json();
+}
+
+/**
+ * PATCH /personal-actions/aumentos/:id/invalidate
+ * Invalida un aumento sin eliminar trazabilidad.
+ */
+export async function invalidateIncrease(
+  id: number,
+  motivo?: string,
+): Promise<PersonalActionListItem> {
+  const res = await httpFetch(`/personal-actions/aumentos/${id}/invalidate`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ motivo: motivo ?? '' }),
+  });
+  if (!res.ok) {
+    throw new Error(
+      await extractApiErrorMessage(res, 'Error al invalidar aumento'),
+    );
+  }
+  return res.json();
+}
+/**
+ * PATCH /personal-actions/aumentos/:id/advance
+ * Avanza el aumento al siguiente estado operativo.
+ */
+export async function advanceIncreaseState(
+  id: number,
+): Promise<PersonalActionListItem> {
+  const res = await httpFetch(`/personal-actions/aumentos/${id}/advance`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({}),
+  });
+  if (!res.ok) {
+    throw new Error(
+      await extractApiErrorMessage(res, 'Error al avanzar estado de aumento'),
+    );
+  }
+  return res.json();
+}
+/**
+ * PATCH /personal-actions/aumentos/:id
+ * Actualiza un aumento en borrador/pendiente.
+ */
+export async function updateIncrease(
+  id: number,
+  payload: UpsertIncreasePayload,
+): Promise<PersonalActionListItem> {
+  const res = await httpFetch(`/personal-actions/aumentos/${id}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+  if (!res.ok) {
+    throw new Error(
+      await extractApiErrorMessage(res, 'Error al actualizar aumento'),
+    );
+  }
+  return res.json();
+}
+/**
+ * POST /personal-actions/aumentos
+ * Crea una accion de aumento.
+ */
+export async function createIncrease(
+  payload: UpsertIncreasePayload,
+): Promise<PersonalActionListItem> {
+  const res = await httpFetch('/personal-actions/aumentos', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+  if (!res.ok) {
+    throw new Error(
+      await extractApiErrorMessage(res, 'Error al crear aumento'),
+    );
+  }
+  return res.json();
+}
+/**
+ * GET /personal-actions/aumentos/:id
+ * Detalle completo de aumento para edicion.
+ */
+export async function fetchIncreaseDetail(
+  id: number,
+): Promise<IncreaseDetailItem> {
+  const res = await httpFetch(`/personal-actions/aumentos/${id}`);
+  if (!res.ok) {
+    throw new Error(
+      await extractApiErrorMessage(res, 'Error al cargar detalle de aumento'),
+    );
+  }
+  return res.json();
+}
 /**
  * GET /personal-actions/vacaciones/booked-dates
  * Fechas ya registradas en otras acciones de vacaciones.
