@@ -875,7 +875,7 @@
 .employeeAccordionGrid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  gap: 4px 12px;
+  gap: 8px 16px;
 }
 
 .employeeAccordionGridHr {
@@ -916,7 +916,14 @@
 .employeeAccordionItem {
   display: flex;
   align-items: flex-start;
-  gap: 5px;
+  gap: 8px;
+  min-height: 36px;
+  min-width: 0;
+}
+
+.employeeAccordionItem > div:last-child {
+  min-width: 0;
+  flex: 1;
 }
 
 .employeeAccordionItemIcon {
@@ -936,6 +943,8 @@
   font-size: 12px;
   color: #3d4f5c;
   line-height: 1.35;
+  word-break: break-word;
+  overflow-wrap: break-word;
 }
 
 /* Selector de aplicación (Roles: KPITAL / TimeWise) */

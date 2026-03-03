@@ -696,17 +696,18 @@ export function AbsenceTransactionModal({
       className={sharedStyles.companyModal}
       closable={false}
       footer={null}
-      width={1180}
+      width={1600}
       destroyOnHidden
       centered={false}
       styles={{
         wrapper: { alignItems: 'flex-start', paddingTop: 0, marginTop: -80 },
         body: {
-          maxHeight: '85vh',
+          maxHeight: '88vh',
           overflow: 'hidden',
+          overflowX: 'hidden',
           display: 'flex',
           flexDirection: 'column',
-          padding: 24,
+          padding: 16,
         },
       }}
       title={(
@@ -727,537 +728,541 @@ export function AbsenceTransactionModal({
         </Flex>
       )}
     >
-      <div style={{ position: 'relative', display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}>
-      {showGlobalPreload ? (
-        <div
-          style={{
-            position: 'absolute',
-            inset: 0,
-            zIndex: 20,
-            background: 'rgba(255,255,255,0.72)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            borderRadius: 8,
-          }}
-        >
-          <Spin size="large" description="Cargando informacion..." />
-        </div>
-      ) : null}
-      <Form form={form} layout="vertical" className={sharedStyles.companyFormContent} style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}>
-        <div style={{ flexShrink: 0 }}>
-        {readOnly ? (
-          <Alert
-            type="warning"
-            showIcon
-            title={readOnlyMessage ?? 'Esta ausencia esta en modo solo lectura por su estado actual.'}
-            className={`${sharedStyles.infoBanner} ${sharedStyles.warningType}`}
-            style={{ marginBottom: 12 }}
-          />
+      <div style={{ position: 'relative', display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0, minWidth: 0, overflow: 'hidden' }}>
+        {showGlobalPreload ? (
+          <div
+            style={{
+              position: 'absolute',
+              inset: 0,
+              zIndex: 20,
+              background: 'rgba(255,255,255,0.72)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              borderRadius: 8,
+            }}
+          >
+            <Spin size="large" description="Cargando informacion..." />
+          </div>
         ) : null}
+        <Form form={form} layout="vertical" className={sharedStyles.companyFormContent} style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0, minWidth: 0, overflow: 'hidden' }}>
+          <div style={{ flexShrink: 0 }}>
+            {readOnly ? (
+              <Alert
+                type="warning"
+                showIcon
+                title={readOnlyMessage ?? 'Esta ausencia esta en modo solo lectura por su estado actual.'}
+                className={`${sharedStyles.infoBanner} ${sharedStyles.warningType}`}
+                style={{ marginBottom: 12 }}
+              />
+            ) : null}
 
-        {mode === 'edit' ? (
-          <Tabs
-            activeKey={activeTab}
-            onChange={setActiveTab}
-            className={`${sharedStyles.tabsWrapper} ${sharedStyles.companyModalTabs} ${sharedStyles.tabsBarOnly}`}
-            items={[
-              {
-                key: 'info',
-                label: (
-                  <span>
-                    <CalendarOutlined style={{ marginRight: 8, fontSize: 16 }} />
-                    Informacion principal
-                  </span>
-                ),
-              },
-              ...(showAudit
-                ? [
+            {mode === 'edit' ? (
+              <Tabs
+                activeKey={activeTab}
+                onChange={setActiveTab}
+                className={`${sharedStyles.tabsWrapper} ${sharedStyles.companyModalTabs} ${sharedStyles.tabsBarOnly}`}
+                items={[
                   {
-                    key: 'bitacora',
+                    key: 'info',
                     label: (
                       <span>
-                        <SearchOutlined style={{ marginRight: 8, fontSize: 16 }} />
-                        Bitacora
+                        <CalendarOutlined style={{ marginRight: 8, fontSize: 16 }} />
+                        Informacion principal
                       </span>
                     ),
                   },
-                ]
-                : []),
-            ]}
-          />
-        ) : null}
-
-        {(mode !== 'edit' || activeTab === 'info') && (
-        <>
-        {selectedEmployee ? (
-          <Collapse
-            defaultActiveKey={[]}
-            className={`${sharedStyles.employeeAccordion}`}
-            items={[
-              {
-                key: 'empleado',
-                label: (
-                  <div className={sharedStyles.employeeAccordionHeader}>
-                    <div className={sharedStyles.employeeAccordionHeaderLeft}>
-                      <div className={sharedStyles.employeeAccordionAvatarWrap}>
-                        <Avatar size={34} icon={<UserOutlined />} />
-                      </div>
-                      <div className={sharedStyles.employeeAccordionNameBlock}>
-                        <div className={sharedStyles.employeeAccordionName}>
-                          {`${selectedEmployee.nombre || '--'} ${selectedEmployee.apellido1 || ''} ${selectedEmployee.apellido2 || ''}`.trim()}
-                        </div>
-                        <div className={sharedStyles.employeeAccordionId}>
-                          Empleado ID: {selectedEmployee.codigo || '--'}
-                          {canViewEmployeeSensitive && selectedEmployee.cedula ? ` - ${selectedEmployee.cedula}` : ''}
-                          {canViewEmployeeSensitive && selectedEmployee.telefono ? ` - ${selectedEmployee.telefono}` : ''}
-                        </div>
-                        <div className={sharedStyles.employeeAccordionCompany}>
-                          <BankOutlined />
-                          {companies.find((c) => Number(c.id) === selectedCompanyId)?.nombre ?? '--'}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                ),
-                children: (
-                  <div className={sharedStyles.employeeAccordionContent}>
-                    <div className={sharedStyles.employeeAccordionGrid}>
-                      <div className={sharedStyles.employeeAccordionItem}>
-                        <IdcardOutlined className={sharedStyles.employeeAccordionItemIcon} />
-                        <div>
-                          <div className={sharedStyles.employeeAccordionItemLabel}>Cédula</div>
-                          <div className={sharedStyles.employeeAccordionItemValue}>
-                            {canViewEmployeeSensitive ? (selectedEmployee.cedula ?? '--') : sensitiveMaskedValue}
-                          </div>
-                        </div>
-                      </div>
-                      <div className={sharedStyles.employeeAccordionItem}>
-                        <MailOutlined className={sharedStyles.employeeAccordionItemIcon} />
-                        <div>
-                          <div className={sharedStyles.employeeAccordionItemLabel}>Email</div>
-                          <div className={sharedStyles.employeeAccordionItemValue}>
-                            {canViewEmployeeSensitive ? (selectedEmployee.email ?? '--') : sensitiveMaskedValue}
-                          </div>
-                        </div>
-                      </div>
-                      <div className={sharedStyles.employeeAccordionItem}>
-                        <CalendarOutlined className={sharedStyles.employeeAccordionItemIcon} />
-                        <div>
-                          <div className={sharedStyles.employeeAccordionItemLabel}>Período</div>
-                          <div className={sharedStyles.employeeAccordionItemValue}>{selectedPayPeriod?.nombre ?? '--'}</div>
-                        </div>
-                      </div>
-                      <div className={sharedStyles.employeeAccordionItem}>
-                        <ClockCircleOutlined className={sharedStyles.employeeAccordionItemIcon} />
-                        <div>
-                          <div className={sharedStyles.employeeAccordionItemLabel}>Jornada</div>
-                          <div className={sharedStyles.employeeAccordionItemValue}>{selectedEmployee.jornada ?? '--'}</div>
-                        </div>
-                      </div>
-                    </div>
-                    <hr className={sharedStyles.employeeAccordionGridHr} />
-                    <div className={sharedStyles.employeeAccordionGrid}>
-                      <div className={sharedStyles.employeeAccordionItem}>
-                        <DollarCircleOutlined className={sharedStyles.employeeAccordionItemIcon} />
-                        <div>
-                          <div className={sharedStyles.employeeAccordionItemLabel}>Salario Base</div>
-                          <div className={sharedStyles.employeeAccordionItemValue}>
-                            {canViewEmployeeSensitive ? formatMoney(selectedEmployee.salarioBase, employeeCurrency) : sensitiveMaskedValue}
-                          </div>
-                        </div>
-                      </div>
-                      <div className={sharedStyles.employeeAccordionItem}>
-                        <DollarCircleOutlined className={sharedStyles.employeeAccordionItemIcon} />
-                        <div>
-                          <div className={sharedStyles.employeeAccordionItemLabel}>Salario {selectedPayPeriod?.nombre ?? 'Período'}</div>
-                          <div className={sharedStyles.employeeAccordionItemValue}>
-                            {canViewEmployeeSensitive ? formatMoney(salaryByPeriod, employeeCurrency) : sensitiveMaskedValue}
-                          </div>
-                        </div>
-                      </div>
-                      <div className={sharedStyles.employeeAccordionItem}>
-                        <DollarCircleOutlined className={sharedStyles.employeeAccordionItemIcon} />
-                        <div>
-                          <div className={sharedStyles.employeeAccordionItemLabel}>Valor por Hora</div>
-                          <div className={sharedStyles.employeeAccordionItemValue}>
-                            {canViewEmployeeSensitive ? `${formatMoney(hourValue, employeeCurrency)}/hora` : sensitiveMaskedValue}
-                          </div>
-                        </div>
-                      </div>
-                      <div className={sharedStyles.employeeAccordionItem}>
-                        <ClockCircleOutlined className={sharedStyles.employeeAccordionItemIcon} />
-                        <div>
-                          <div className={sharedStyles.employeeAccordionItemLabel}>Horas del Período</div>
-                          <div className={sharedStyles.employeeAccordionItemValue}>{`${periodHours} horas`}</div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                ),
-              },
-            ]}
-          />
-        ) : null}
-
-        <Card size="small" style={{ marginBottom: 12, border: '1px solid #e8ecf0', borderRadius: 8 }}>
-          <Flex gap={10} wrap="wrap">
-            <Form.Item
-              style={{ flex: '1 1 300px', marginBottom: 0 }}
-              name="idEmpresa"
-              label="Empresa"
-              rules={[{ required: true, message: 'Seleccione la empresa' }]}
-            >
-              <Select
-                showSearch
-                optionFilterProp="label"
-                placeholder="Seleccione empresa"
-                disabled={mode === 'edit' || readOnly}
-                options={companies.map((company) => ({
-                  value: Number(company.id),
-                  label: company.nombre,
-                }))}
+                  ...(showAudit
+                    ? [
+                      {
+                        key: 'bitacora',
+                        label: (
+                          <span>
+                            <SearchOutlined style={{ marginRight: 8, fontSize: 16 }} />
+                            Bitacora
+                          </span>
+                        ),
+                      },
+                    ]
+                    : []),
+                ]}
               />
-            </Form.Item>
-
-            {selectedCompanyId ? (
-              <Form.Item
-                style={{ flex: '1 1 380px', marginBottom: 0 }}
-                name="idEmpleado"
-                label="Empleado"
-                rules={[{ required: true, message: 'Seleccione el empleado' }]}
-              >
-                <Select
-                  showSearch
-                  optionFilterProp="label"
-                  placeholder="Seleccione empleado"
-                  disabled={mode === 'edit' || readOnly}
-                  loading={employeesLoading}
-                  notFoundContent={employeesLoading ? <Spin size="small" /> : null}
-                  options={employeesByCompany.map((employee) => ({
-                    value: employee.id,
-                    label: (() => {
-                      const fullName = `${[employee.apellido1, employee.apellido2, employee.nombre]
-                        .filter((part) => typeof part === 'string' && part.trim().length > 0)
-                        .join(' ')}`.trim();
-                      if (fullName) {
-                        return canViewEmployeeSensitive && employee.codigo
-                          ? `${fullName} (${employee.codigo})`
-                          : fullName;
-                      }
-                      return employee.codigo || 'Empleado sin codigo';
-                    })(),
-                  }))}
-                />
-              </Form.Item>
             ) : null}
-          </Flex>
 
-          <Form.Item name="observacion" label="Observacion" style={{ marginTop: 8, marginBottom: 0 }}>
-            <Input.TextArea rows={1} autoSize={{ minRows: 1, maxRows: 3 }} maxLength={500} disabled={readOnly} />
-          </Form.Item>
-        </Card>
-        </>
-        )}
-        </div>
+            {(mode !== 'edit' || activeTab === 'info') ? (
+              <Row gutter={16} wrap style={{ flex: 1, minHeight: 0, alignItems: 'stretch' }}>
+                <Col xs={24} lg={8} style={{ display: 'flex', flexDirection: 'column', minHeight: 0 }}>
+                  {selectedEmployee ? (
+                    <Collapse
+                      defaultActiveKey={['empleado']}
+                      className={`${sharedStyles.employeeAccordion}`}
+                      items={[
+                        {
+                          key: 'empleado',
+                          label: (
+                            <div className={sharedStyles.employeeAccordionHeader}>
+                              <div className={sharedStyles.employeeAccordionHeaderLeft}>
+                                <div className={sharedStyles.employeeAccordionAvatarWrap}>
+                                  <Avatar size={34} icon={<UserOutlined />} />
+                                </div>
+                                <div className={sharedStyles.employeeAccordionNameBlock}>
+                                  <div className={sharedStyles.employeeAccordionName}>
+                                    {`${selectedEmployee.nombre || '--'} ${selectedEmployee.apellido1 || ''} ${selectedEmployee.apellido2 || ''}`.trim()}
+                                  </div>
+                                  <div className={sharedStyles.employeeAccordionId}>
+                                    Empleado ID: {selectedEmployee.codigo || '--'}
+                                    {canViewEmployeeSensitive && selectedEmployee.cedula ? ` - ${selectedEmployee.cedula}` : ''}
+                                    {canViewEmployeeSensitive && selectedEmployee.telefono ? ` - ${selectedEmployee.telefono}` : ''}
+                                  </div>
+                                  <div className={sharedStyles.employeeAccordionCompany}>
+                                    <BankOutlined />
+                                    {companies.find((c) => Number(c.id) === selectedCompanyId)?.nombre ?? '--'}
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          ),
+                          children: (
+                            <div className={sharedStyles.employeeAccordionContent}>
+                              <div className={sharedStyles.employeeAccordionGrid}>
+                                <div className={sharedStyles.employeeAccordionItem}>
+                                  <IdcardOutlined className={sharedStyles.employeeAccordionItemIcon} />
+                                  <div>
+                                    <div className={sharedStyles.employeeAccordionItemLabel}>Cédula</div>
+                                    <div className={sharedStyles.employeeAccordionItemValue}>
+                                      {canViewEmployeeSensitive ? (selectedEmployee.cedula ?? '--') : sensitiveMaskedValue}
+                                    </div>
+                                  </div>
+                                </div>
+                                <div className={sharedStyles.employeeAccordionItem}>
+                                  <MailOutlined className={sharedStyles.employeeAccordionItemIcon} />
+                                  <div>
+                                    <div className={sharedStyles.employeeAccordionItemLabel}>Email</div>
+                                    <div className={sharedStyles.employeeAccordionItemValue}>
+                                      {canViewEmployeeSensitive ? (selectedEmployee.email ?? '--') : sensitiveMaskedValue}
+                                    </div>
+                                  </div>
+                                </div>
+                                <div className={sharedStyles.employeeAccordionItem}>
+                                  <CalendarOutlined className={sharedStyles.employeeAccordionItemIcon} />
+                                  <div>
+                                    <div className={sharedStyles.employeeAccordionItemLabel}>Período</div>
+                                    <div className={sharedStyles.employeeAccordionItemValue}>{selectedPayPeriod?.nombre ?? '--'}</div>
+                                  </div>
+                                </div>
+                                <div className={sharedStyles.employeeAccordionItem}>
+                                  <ClockCircleOutlined className={sharedStyles.employeeAccordionItemIcon} />
+                                  <div>
+                                    <div className={sharedStyles.employeeAccordionItemLabel}>Jornada</div>
+                                    <div className={sharedStyles.employeeAccordionItemValue}>{selectedEmployee.jornada ?? '--'}</div>
+                                  </div>
+                                </div>
+                              </div>
+                              <hr className={sharedStyles.employeeAccordionGridHr} />
+                              <div className={sharedStyles.employeeAccordionGrid}>
+                                <div className={sharedStyles.employeeAccordionItem}>
+                                  <DollarCircleOutlined className={sharedStyles.employeeAccordionItemIcon} />
+                                  <div>
+                                    <div className={sharedStyles.employeeAccordionItemLabel}>Salario Base</div>
+                                    <div className={sharedStyles.employeeAccordionItemValue}>
+                                      {canViewEmployeeSensitive ? formatMoney(selectedEmployee.salarioBase, employeeCurrency) : sensitiveMaskedValue}
+                                    </div>
+                                  </div>
+                                </div>
+                                <div className={sharedStyles.employeeAccordionItem}>
+                                  <DollarCircleOutlined className={sharedStyles.employeeAccordionItemIcon} />
+                                  <div>
+                                    <div className={sharedStyles.employeeAccordionItemLabel}>Salario {selectedPayPeriod?.nombre ?? 'Período'}</div>
+                                    <div className={sharedStyles.employeeAccordionItemValue}>
+                                      {canViewEmployeeSensitive ? formatMoney(salaryByPeriod, employeeCurrency) : sensitiveMaskedValue}
+                                    </div>
+                                  </div>
+                                </div>
+                                <div className={sharedStyles.employeeAccordionItem}>
+                                  <DollarCircleOutlined className={sharedStyles.employeeAccordionItemIcon} />
+                                  <div>
+                                    <div className={sharedStyles.employeeAccordionItemLabel}>Valor por Hora</div>
+                                    <div className={sharedStyles.employeeAccordionItemValue}>
+                                      {canViewEmployeeSensitive ? `${formatMoney(hourValue, employeeCurrency)}/hora` : sensitiveMaskedValue}
+                                    </div>
+                                  </div>
+                                </div>
+                                <div className={sharedStyles.employeeAccordionItem}>
+                                  <ClockCircleOutlined className={sharedStyles.employeeAccordionItemIcon} />
+                                  <div>
+                                    <div className={sharedStyles.employeeAccordionItemLabel}>Horas del Período</div>
+                                    <div className={sharedStyles.employeeAccordionItemValue}>{`${periodHours} horas`}</div>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          ),
+                        },
+                      ]}
+                    />
+                  ) : null}
 
-        {(mode !== 'edit' || activeTab === 'info') && selectedCompanyId && selectedEmployeeId ? (
-          <Card
-            size="small"
-            title="Líneas de Transacción"
-            style={{
-              border: '1px solid #e8ecf0',
-              borderRadius: 8,
-              flex: '0 0 auto',
-              display: 'flex',
-              flexDirection: 'column',
-              overflow: 'visible',
-              marginTop: 12,
-            }}
-            bodyStyle={{
-              display: 'flex',
-              flexDirection: 'column',
-              padding: 16,
-              overflow: 'visible',
-            }}
-          >
-            {loading ? (
-              <Flex justify="center" align="center" style={{ minHeight: 220 }}>
-                <Spin size="large" description="Cargando lineas de transaccion..." />
-              </Flex>
-            ) : (
-            <>
-            <div style={{ overflow: 'visible', marginTop: 0 }}>
-              <Collapse
-                className={sharedStyles.lineCollapse}
-                activeKey={activeLineKeys}
-                onChange={(keys) => setActiveLineKeys(Array.isArray(keys) ? keys : keys ? [keys] : [])}
-                items={lines.map((line, index) => {
-                  const selectedMovement = filteredMovements.find((movement) => movement.id === line.movimientoId);
-                  const payrollOptions = payrollsByCompany.map((payroll) => ({
-                    value: payroll.id,
-                    label: `${payroll.nombrePlanilla ?? `Planilla #${payroll.id}`} (${getPayrollEstadoLabel(payroll.estado)})`,
-                    disabled: false,
-                  }));
-                  if (
-                    line.payrollId &&
-                    !payrollOptions.some((option) => option.value === line.payrollId)
-                  ) {
-                    payrollOptions.push({
-                      value: line.payrollId,
-                      label: `${line.payrollLabel ?? `Planilla #${line.payrollId}`} (No elegible hoy)`,
-                      disabled: true,
-                    });
-                  }
+                  <Card size="small" style={{ marginBottom: 12, border: '1px solid #e8ecf0', borderRadius: 8 }}>
+                    <Flex gap={10} wrap="wrap">
+                      <Form.Item
+                        style={{ flex: '1 1 300px', marginBottom: 0 }}
+                        name="idEmpresa"
+                        label="Empresa"
+                        rules={[{ required: true, message: 'Seleccione la empresa' }]}
+                      >
+                        <Select
+                          showSearch
+                          optionFilterProp="label"
+                          placeholder="Seleccione empresa"
+                          disabled={mode === 'edit' || readOnly}
+                          options={companies.map((company) => ({
+                            value: Number(company.id),
+                            label: company.nombre,
+                          }))}
+                        />
+                      </Form.Item>
 
-                  const movementOptions = filteredMovements.map((movement) => ({
-                    value: movement.id,
-                    label: `${movement.nombre} (${movement.esMontoFijo === 1 ? 'Monto' : '%'})${movement.esInactivo === 1 ? ' (Inactivo)' : ''}`,
-                    disabled: movement.esInactivo === 1 && movement.id !== line.movimientoId,
-                  }));
-                  if (
-                    line.movimientoId &&
-                    !movementOptions.some((option) => option.value === line.movimientoId)
-                  ) {
-                    movementOptions.push({
-                      value: line.movimientoId,
-                      label: `${line.movimientoLabel ?? `Movimiento #${line.movimientoId}`} (No elegible hoy)`,
-                      disabled: true,
-                    });
-                  }
-                  return {
-                    key: line.key,
-                    label: (
-                      <Flex justify="space-between" align="center" style={{ width: '100%', paddingRight: 8 }}>
-                        <span style={{ fontWeight: 600, color: '#3d4f5c' }}>Línea {index + 1}</span>
-                        <Button
-                          danger
-                          size="small"
-                          icon={<DeleteOutlined />}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            removeLine(line.key);
-                          }}
-                          disabled={readOnly || lines.length <= 1}
+                      {selectedCompanyId ? (
+                        <Form.Item
+                          style={{ flex: '1 1 380px', marginBottom: 0 }}
+                          name="idEmpleado"
+                          label="Empleado"
+                          rules={[{ required: true, message: 'Seleccione el empleado' }]}
                         >
-                          Eliminar
-                        </Button>
-                      </Flex>
-                    ),
-                    children: (
-                      <div ref={index === lines.length - 1 ? lastLineRef : undefined}>
-                        <Space orientation="vertical" size={16} style={{ width: '100%' }}>
-                      <Row gutter={[16, 12]}>
-                        <Col xs={24} md={12} lg={8}>
-                          <div className={sharedStyles.filterLabel}>1. Periodo de pago (Planilla)</div>
                           <Select
-                            style={{ width: '100%' }}
                             showSearch
                             optionFilterProp="label"
-                            loading={loadingPayrolls}
-                            notFoundContent={loadingPayrolls ? <Spin size="small" /> : null}
-                            value={line.payrollId}
-                            placeholder="Seleccione planilla"
-                            options={payrollOptions}
-                            onChange={(value) => handlePayrollChange(line.key, value)}
-                            disabled={readOnly}
+                            placeholder="Seleccione empleado"
+                            disabled={mode === 'edit' || readOnly}
+                            loading={employeesLoading}
+                            notFoundContent={employeesLoading ? <Spin size="small" /> : null}
+                            options={employeesByCompany.map((employee) => ({
+                              value: employee.id,
+                              label: (() => {
+                                const fullName = `${[employee.apellido1, employee.apellido2, employee.nombre]
+                                  .filter((part) => typeof part === 'string' && part.trim().length > 0)
+                                  .join(' ')}`.trim();
+                                if (fullName) {
+                                  return canViewEmployeeSensitive && employee.codigo
+                                    ? `${fullName} (${employee.codigo})`
+                                    : fullName;
+                                }
+                                return employee.codigo || 'Empleado sin codigo';
+                              })(),
+                            }))}
                           />
-                          {line.payrollId && !payrollsByCompany.some((item) => item.id === line.payrollId) ? (
-                            <Alert
-                              type="warning"
-                              showIcon
-                              title="La planilla de esta linea ya no es elegible (cerrada, vencida o fuera de reglas)."
-                              className={`${sharedStyles.infoBanner} ${sharedStyles.warningType}`}
-                              style={{ marginTop: 10 }}
+                        </Form.Item>
+                      ) : null}
+                    </Flex>
+
+                    <Form.Item name="observacion" label="Observacion" style={{ marginTop: 8, marginBottom: 0 }}>
+                      <Input.TextArea rows={1} autoSize={{ minRows: 1, maxRows: 3 }} maxLength={500} disabled={readOnly} />
+                    </Form.Item>
+                  </Card>
+                </Col>
+                <Col xs={24} lg={16} style={{ display: 'flex', flexDirection: 'column', minHeight: 0 }}>
+                  {selectedCompanyId && selectedEmployeeId ? (
+                    <Card
+                      size="small"
+                      style={{
+                        border: '1px solid #e8ecf0',
+                        borderRadius: 8,
+                        flex: '0 0 auto',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        overflow: 'visible',
+                        marginTop: 0,
+                      }}
+                      bodyStyle={{
+                        display: 'flex',
+                        flexDirection: 'column',
+                        padding: 16,
+                        overflow: 'visible',
+                      }}
+                    >
+                      {loading ? (
+                        <Flex justify="center" align="center" style={{ minHeight: 220 }}>
+                          <Spin size="large" description="Cargando lineas de transaccion..." />
+                        </Flex>
+                      ) : (
+                        <>
+                          <div style={{ overflow: 'visible', marginTop: 0 }}>
+                            <Collapse
+                              className={sharedStyles.lineCollapse}
+                              activeKey={activeLineKeys}
+                              onChange={(keys) => setActiveLineKeys(Array.isArray(keys) ? keys : keys ? [keys] : [])}
+                              items={lines.map((line, index) => {
+                                const selectedMovement = filteredMovements.find((movement) => movement.id === line.movimientoId);
+                                const payrollOptions = payrollsByCompany.map((payroll) => ({
+                                  value: payroll.id,
+                                  label: `${payroll.nombrePlanilla ?? `Planilla #${payroll.id}`} (${getPayrollEstadoLabel(payroll.estado)})`,
+                                  disabled: false,
+                                }));
+                                if (
+                                  line.payrollId &&
+                                  !payrollOptions.some((option) => option.value === line.payrollId)
+                                ) {
+                                  payrollOptions.push({
+                                    value: line.payrollId,
+                                    label: `${line.payrollLabel ?? `Planilla #${line.payrollId}`} (No elegible hoy)`,
+                                    disabled: true,
+                                  });
+                                }
+
+                                const movementOptions = filteredMovements.map((movement) => ({
+                                  value: movement.id,
+                                  label: `${movement.nombre} (${movement.esMontoFijo === 1 ? 'Monto' : '%'})${movement.esInactivo === 1 ? ' (Inactivo)' : ''}`,
+                                  disabled: movement.esInactivo === 1 && movement.id !== line.movimientoId,
+                                }));
+                                if (
+                                  line.movimientoId &&
+                                  !movementOptions.some((option) => option.value === line.movimientoId)
+                                ) {
+                                  movementOptions.push({
+                                    value: line.movimientoId,
+                                    label: `${line.movimientoLabel ?? `Movimiento #${line.movimientoId}`} (No elegible hoy)`,
+                                    disabled: true,
+                                  });
+                                }
+                                return {
+                                  key: line.key,
+                                  label: (
+                                    <Flex justify="space-between" align="center" style={{ width: '100%', paddingRight: 8 }}>
+                                      <span style={{ fontWeight: 600, color: '#3d4f5c' }}>Línea # {index + 1}</span>
+                                      <Button
+                                        danger
+                                        size="small"
+                                        icon={<DeleteOutlined />}
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          removeLine(line.key);
+                                        }}
+                                        disabled={readOnly || lines.length <= 1}
+                                      >
+                                        Eliminar
+                                      </Button>
+                                    </Flex>
+                                  ),
+                                  children: (
+                                    <div ref={index === lines.length - 1 ? lastLineRef : undefined}>
+                                      <Space orientation="vertical" size={16} style={{ width: '100%' }}>
+                                        <Row gutter={[16, 12]}>
+                                          <Col xs={24} md={12} lg={8}>
+                                            <div className={sharedStyles.filterLabel}>1. Periodo de pago (Planilla)</div>
+                                            <Select
+                                              style={{ width: '100%' }}
+                                              showSearch
+                                              optionFilterProp="label"
+                                              loading={loadingPayrolls}
+                                              notFoundContent={loadingPayrolls ? <Spin size="small" /> : null}
+                                              value={line.payrollId}
+                                              placeholder="Seleccione planilla"
+                                              options={payrollOptions}
+                                              onChange={(value) => handlePayrollChange(line.key, value)}
+                                              disabled={readOnly}
+                                            />
+                                            {line.payrollId && !payrollsByCompany.some((item) => item.id === line.payrollId) ? (
+                                              <Alert
+                                                type="warning"
+                                                showIcon
+                                                title="La planilla de esta linea ya no es elegible (cerrada, vencida o fuera de reglas)."
+                                                className={`${sharedStyles.infoBanner} ${sharedStyles.warningType}`}
+                                                style={{ marginTop: 10 }}
+                                              />
+                                            ) : null}
+                                            {payrollsByCompany.length === 0 ? (
+                                              <Alert
+                                                type={loadingPayrolls ? 'info' : 'error'}
+                                                showIcon
+                                                title={loadingPayrolls
+                                                  ? 'Cargando planillas elegibles...'
+                                                  : 'No hay planillas que coincidan con empresa, periodo de pago y moneda del empleado.'}
+                                                className={`${sharedStyles.infoBanner} ${sharedStyles.dangerType}`}
+                                                style={{ marginTop: 10 }}
+                                              />
+                                            ) : null}
+                                          </Col>
+                                          <Col xs={24} md={12} lg={8}>
+                                            <div className={sharedStyles.filterLabel}>2. Movimiento</div>
+                                            <Tooltip title={!line.payrollId ? 'Seleccione primero el periodo de pago' : undefined}>
+                                              <Select
+                                                style={{ width: '100%' }}
+                                                showSearch
+                                                optionFilterProp="label"
+                                                loading={movementsLoading}
+                                                notFoundContent={movementsLoading ? <Spin size="small" /> : null}
+                                                disabled={readOnly || !line.payrollId}
+                                                placeholder={!line.payrollId ? 'Seleccione planilla primero' : 'Seleccione movimiento'}
+                                                value={line.movimientoId}
+                                                onChange={(value) => handleMovimientoChange(line.key, value)}
+                                                options={movementOptions}
+                                              />
+                                            </Tooltip>
+                                            {selectedMovement?.esInactivo === 1 ? (
+                                              <Tag color="orange" style={{ marginTop: 6 }}>Inactivo</Tag>
+                                            ) : null}
+                                          </Col>
+                                          <Col xs={24} md={12} lg={8}>
+                                            <div className={sharedStyles.filterLabel}>3. Tipo de Ausencia</div>
+                                            <Tooltip title={!line.movimientoId ? 'Seleccione primero el movimiento' : undefined}>
+                                              <Select
+                                                style={{ width: '100%' }}
+                                                disabled={readOnly || !line.movimientoId}
+                                                placeholder={!line.movimientoId ? 'Seleccione movimiento primero' : 'Seleccione tipo'}
+                                                value={line.tipoAusencia}
+                                                onChange={(value) => handleTipoAusenciaChange(line.key, value)}
+                                                options={[
+                                                  { value: 'JUSTIFICADA', label: 'Justificada' },
+                                                  { value: 'NO_JUSTIFICADA', label: 'No justificada' },
+                                                ]}
+                                              />
+                                            </Tooltip>
+                                          </Col>
+                                          <Col xs={24} md={12} lg={8}>
+                                            <div className={sharedStyles.filterLabel}>4. Cantidad</div>
+                                            <Tooltip title={!line.movimientoId ? 'Seleccione primero el movimiento' : undefined}>
+                                              <InputNumber
+                                                min={1}
+                                                precision={0}
+                                                step={1}
+                                                style={{ width: '100%' }}
+                                                disabled={readOnly || !line.movimientoId}
+                                                placeholder={!line.movimientoId ? '-' : undefined}
+                                                value={line.cantidad}
+                                                onChange={(value) => handleCantidadChange(line.key, value ?? undefined)}
+                                              />
+                                            </Tooltip>
+                                          </Col>
+                                          <Col xs={24} md={12} lg={8}>
+                                            <div className={sharedStyles.filterLabel}>
+                                              {`5. Monto (${employeePayrollConfig?.moneda ?? 'MONEDA'})`}
+                                            </div>
+                                            <Tooltip title={!line.movimientoId ? 'Seleccione primero el movimiento' : undefined}>
+                                              <Input
+                                                style={{ width: '100%' }}
+                                                placeholder={!line.movimientoId ? '-' : undefined}
+                                                maxLength={moneyField.maxInputLength}
+                                                inputMode="numeric"
+                                                value={moneyField.formatDisplay(line.montoInput)}
+                                                disabled={readOnly}
+                                                onChange={(event) => {
+                                                  const raw = event.target.value ?? '';
+                                                  const onlyDigits = moneyField.sanitize(raw);
+                                                  updateLine(line.key, {
+                                                    montoInput: onlyDigits,
+                                                    monto: onlyDigits.length > 0
+                                                      ? (moneyField.parse(onlyDigits) ?? 0)
+                                                      : undefined,
+                                                  });
+                                                }}
+                                              />
+                                            </Tooltip>
+                                          </Col>
+                                          <Col xs={24} md={12} lg={8}>
+                                            <div className={sharedStyles.filterLabel}>6. Remuneracion</div>
+                                            <Tooltip title={!line.movimientoId ? 'Seleccione primero el movimiento' : undefined}>
+                                              <div style={{ paddingTop: 4 }}>
+                                                <Switch
+                                                  checked={line.remuneracion}
+                                                  onChange={(value) => updateLine(line.key, { remuneracion: value })}
+                                                  checkedChildren="Si"
+                                                  unCheckedChildren="No"
+                                                  disabled={readOnly || !line.movimientoId}
+                                                />
+                                              </div>
+                                            </Tooltip>
+                                          </Col>
+                                        </Row>
+
+                                        <div style={{ borderTop: '1px solid #e8ecf0', paddingTop: 16, marginTop: 4 }}>
+                                          <Row gutter={[16, 12]}>
+                                            <Col xs={24} md={8}>
+                                              <div className={sharedStyles.filterLabel} style={{ color: '#94a3b8' }}>Fecha Efecto</div>
+                                              <DatePicker
+                                                style={{ width: '100%' }}
+                                                value={line.fechaEfecto}
+                                                format="YYYY-MM-DD"
+                                                disabled
+                                              />
+                                            </Col>
+                                            <Col xs={24} md={16}>
+                                              <div className={sharedStyles.filterLabel} style={{ color: '#94a3b8' }}>Fórmula</div>
+                                              <Input
+                                                value={line.formula}
+                                                disabled
+                                                readOnly
+                                                placeholder="Derivado del movimiento"
+                                              />
+                                            </Col>
+                                          </Row>
+                                        </div>
+                                      </Space>
+                                    </div>
+                                  ),
+                                };
+                              })}
                             />
-                          ) : null}
-                          {payrollsByCompany.length === 0 ? (
-                            <Alert
-                              type={loadingPayrolls ? 'info' : 'error'}
-                              showIcon
-                              title={loadingPayrolls
-                                ? 'Cargando planillas elegibles...'
-                                : 'No hay planillas que coincidan con empresa, periodo de pago y moneda del empleado.'}
-                              className={`${sharedStyles.infoBanner} ${sharedStyles.dangerType}`}
-                              style={{ marginTop: 10 }}
-                            />
-                          ) : null}
-                        </Col>
-                        <Col xs={24} md={12} lg={8}>
-                          <div className={sharedStyles.filterLabel}>2. Movimiento</div>
-                          <Tooltip title={!line.payrollId ? 'Seleccione primero el periodo de pago' : undefined}>
-                            <Select
-                              style={{ width: '100%' }}
-                              showSearch
-                              optionFilterProp="label"
-                              loading={movementsLoading}
-                              notFoundContent={movementsLoading ? <Spin size="small" /> : null}
-                              disabled={readOnly || !line.payrollId}
-                              placeholder={!line.payrollId ? 'Seleccione planilla primero' : 'Seleccione movimiento'}
-                              value={line.movimientoId}
-                              onChange={(value) => handleMovimientoChange(line.key, value)}
-                              options={movementOptions}
-                            />
-                          </Tooltip>
-                          {selectedMovement?.esInactivo === 1 ? (
-                            <Tag color="orange" style={{ marginTop: 6 }}>Inactivo</Tag>
-                          ) : null}
-                        </Col>
-                        <Col xs={24} md={12} lg={8}>
-                          <div className={sharedStyles.filterLabel}>3. Tipo de Ausencia</div>
-                          <Tooltip title={!line.movimientoId ? 'Seleccione primero el movimiento' : undefined}>
-                            <Select
-                              style={{ width: '100%' }}
-                              disabled={readOnly || !line.movimientoId}
-                              placeholder={!line.movimientoId ? 'Seleccione movimiento primero' : 'Seleccione tipo'}
-                              value={line.tipoAusencia}
-                              onChange={(value) => handleTipoAusenciaChange(line.key, value)}
-                              options={[
-                                { value: 'JUSTIFICADA', label: 'Justificada' },
-                                { value: 'NO_JUSTIFICADA', label: 'No justificada' },
-                              ]}
-                            />
-                          </Tooltip>
-                        </Col>
-                        <Col xs={24} md={12} lg={8}>
-                          <div className={sharedStyles.filterLabel}>4. Cantidad</div>
-                          <Tooltip title={!line.movimientoId ? 'Seleccione primero el movimiento' : undefined}>
-                            <InputNumber
-                              min={1}
-                              precision={0}
-                              step={1}
-                              style={{ width: '100%' }}
-                              disabled={readOnly || !line.movimientoId}
-                              placeholder={!line.movimientoId ? '-' : undefined}
-                              value={line.cantidad}
-                              onChange={(value) => handleCantidadChange(line.key, value ?? undefined)}
-                            />
-                          </Tooltip>
-                        </Col>
-                        <Col xs={24} md={12} lg={8}>
-                          <div className={sharedStyles.filterLabel}>
-                            {`5. Monto (${employeePayrollConfig?.moneda ?? 'MONEDA'})`}
                           </div>
-                          <Tooltip title={!line.movimientoId ? 'Seleccione primero el movimiento' : undefined}>
-                            <Input
-                              style={{ width: '100%' }}
-                              placeholder={!line.movimientoId ? '-' : undefined}
-                              maxLength={moneyField.maxInputLength}
-                              inputMode="numeric"
-                              value={moneyField.formatDisplay(line.montoInput)}
-                              disabled={readOnly}
-                              onChange={(event) => {
-                                const raw = event.target.value ?? '';
-                                const onlyDigits = moneyField.sanitize(raw);
-                                updateLine(line.key, {
-                                  montoInput: onlyDigits,
-                                  monto: onlyDigits.length > 0
-                                    ? (moneyField.parse(onlyDigits) ?? 0)
-                                    : undefined,
-                                });
-                              }}
-                            />
-                          </Tooltip>
-                        </Col>
-                        <Col xs={24} md={12} lg={8}>
-                          <div className={sharedStyles.filterLabel}>6. Remuneracion</div>
-                          <Tooltip title={!line.movimientoId ? 'Seleccione primero el movimiento' : undefined}>
-                            <div style={{ paddingTop: 4 }}>
-                              <Switch
-                                checked={line.remuneracion}
-                                onChange={(value) => updateLine(line.key, { remuneracion: value })}
-                                checkedChildren="Si"
-                                unCheckedChildren="No"
-                                disabled={readOnly || !line.movimientoId}
-                              />
-                            </div>
-                          </Tooltip>
-                        </Col>
-                      </Row>
+                          <Flex justify="center" style={{ marginTop: 16, paddingTop: 16, borderTop: '1px solid #e8ecf0', flexShrink: 0 }}>
+                            <Button type="dashed" icon={<PlusOutlined />} onClick={handleAddLine} disabled={readOnly}>
+                              Agregar línea de transacción
+                            </Button>
+                          </Flex>
+                        </>
+                      )}
+                    </Card>
+                  ) : null}
+                </Col>
+              </Row>
+            ) : null}
 
-                      <div style={{ borderTop: '1px solid #e8ecf0', paddingTop: 16, marginTop: 4 }}>
-                        <Row gutter={[16, 12]}>
-                          <Col xs={24} md={12}>
-                            <div className={sharedStyles.filterLabel} style={{ color: '#94a3b8' }}>Fecha Efecto</div>
-                            <DatePicker
-                              style={{ width: '100%' }}
-                              value={line.fechaEfecto}
-                              format="YYYY-MM-DD"
-                              disabled
-                            />
-                          </Col>
-                          <Col xs={24} md={12}>
-                            <div className={sharedStyles.filterLabel} style={{ color: '#94a3b8' }}>Formula</div>
-                            <Input
-                              value={line.formula}
-                              disabled
-                              readOnly
-                              placeholder="Derivado del movimiento"
-                            />
-                          </Col>
-                        </Row>
-                      </div>
-                        </Space>
-                      </div>
-                    ),
-                  };
-                })}
-              />
+            {mode === 'edit' && activeTab === 'bitacora' ? (
+              <div className={sharedStyles.historicoSection}>
+                <p className={sharedStyles.sectionTitle}>Historial de cambios de la ausencia</p>
+                <p className={sharedStyles.sectionDescription} style={{ marginBottom: 16 }}>
+                  Muestra quien hizo el cambio, cuando lo hizo y el detalle registrado en bitacora.
+                </p>
+                <Table<PersonalActionAuditTrailItem>
+                  rowKey="id"
+                  size="small"
+                  loading={loadingAuditTrail}
+                  columns={auditColumns}
+                  dataSource={auditTrail}
+                  className={`${sharedStyles.configTable} ${sharedStyles.auditTableCompact}`}
+                  pagination={{
+                    pageSize: 4,
+                    showSizeChanger: true,
+                    pageSizeOptions: [4, 8, 10],
+                    showTotal: (total) => `${total} registro(s)`,
+                  }}
+                  locale={{ emptyText: 'No hay registros de bitacora para esta ausencia.' }}
+                />
+              </div>
+            ) : null}
+
+            <div style={{ flexShrink: 0 }}>
+              <div className={sharedStyles.companyModalFooter}>
+                <Button onClick={onCancel} className={sharedStyles.companyModalBtnCancel}>
+                  {readOnly ? 'Cerrar' : 'Cancelar'}
+                </Button>
+                {!readOnly ? (
+                  <Button
+                    type="primary"
+                    className={sharedStyles.companyModalBtnSubmit}
+                    disabled={!canSubmit}
+                    onClick={() => void handleAccept()}
+                    icon={mode === 'create' ? <PlusOutlined /> : undefined}
+                  >
+                    {mode === 'create' ? 'Crear ausencia' : 'Guardar cambios'}
+                  </Button>
+                ) : null}
+              </div>
             </div>
-            <Flex justify="center" style={{ marginTop: 16, paddingTop: 16, borderTop: '1px solid #e8ecf0', flexShrink: 0 }}>
-              <Button type="dashed" icon={<PlusOutlined />} onClick={handleAddLine} disabled={readOnly}>
-                Agregar línea de transacción
-              </Button>
-            </Flex>
-            </>
-            )}
-          </Card>
-        ) : null}
-
-        {mode === 'edit' && activeTab === 'bitacora' ? (
-          <div className={sharedStyles.historicoSection}>
-            <p className={sharedStyles.sectionTitle}>Historial de cambios de la ausencia</p>
-            <p className={sharedStyles.sectionDescription} style={{ marginBottom: 16 }}>
-              Muestra quien hizo el cambio, cuando lo hizo y el detalle registrado en bitacora.
-            </p>
-            <Table<PersonalActionAuditTrailItem>
-              rowKey="id"
-              size="small"
-              loading={loadingAuditTrail}
-              columns={auditColumns}
-              dataSource={auditTrail}
-              className={`${sharedStyles.configTable} ${sharedStyles.auditTableCompact}`}
-              pagination={{
-                pageSize: 8,
-                showSizeChanger: true,
-                showTotal: (total) => `${total} registro(s)`,
-              }}
-              locale={{ emptyText: 'No hay registros de bitacora para esta ausencia.' }}
-            />
           </div>
-        ) : null}
-
-        <div style={{ flexShrink: 0 }}>
-        <div className={sharedStyles.companyModalFooter}>
-          <Button onClick={onCancel} className={sharedStyles.companyModalBtnCancel}>
-            {readOnly ? 'Cerrar' : 'Cancelar'}
-          </Button>
-          {!readOnly ? (
-            <Button
-              type="primary"
-              className={sharedStyles.companyModalBtnSubmit}
-              disabled={!canSubmit}
-              onClick={() => void handleAccept()}
-              icon={mode === 'create' ? <PlusOutlined /> : undefined}
-            >
-              {mode === 'create' ? 'Crear ausencia' : 'Guardar cambios'}
-            </Button>
-          ) : null}
-        </div>
-        </div>
-      </Form>
+        </Form>
       </div>
     </Modal>
   );
 }
+
 
