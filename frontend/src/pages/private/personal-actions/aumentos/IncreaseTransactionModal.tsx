@@ -342,12 +342,6 @@ export function IncreaseTransactionModal({
     (!!selectedCompanyId && !!selectedEmployeeId && loadingPayrolls) ||
     (activeTab === 'bitacora' && loadingAuditTrail);
 
-  useEffect(() => {
-    if (mode === 'edit' && showAudit && activeTab === 'bitacora' && onLoadAuditTrail) {
-      void onLoadAuditTrail();
-    }
-  }, [mode, showAudit, activeTab, onLoadAuditTrail]);
-
   const auditColumns: ColumnsType<PersonalActionAuditTrailItem> = useMemo(() => [
     {
       title: 'Fecha y hora',

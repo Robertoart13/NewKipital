@@ -262,6 +262,45 @@ Regla:
 
 ---
 
+## 13.1 TimeWise: asignacion automatica de planilla (regla enterprise)
+
+Regla base:
+
+1. El empleado **NO selecciona** periodo de pago.
+2. El sistema asigna automaticamente la planilla segun:
+   - fechas de la accion (fecha efectiva o rango),
+   - calendario de planillas de la empresa,
+   - reglas de corte (cutoff) y estado de planilla.
+
+Casos clave:
+
+- **Vacaciones / ausencias con fechas**: se parte el rango por periodos y se generan acciones/lineas por planilla.
+- **Licencias largas** (ej. maternidad): se generan **acciones por periodo** (no se reutiliza una sola accion).
+- **Aumentos**: la **fecha efectiva** la define supervisor/RRHH; se aplica en la planilla que contiene esa fecha.
+- **Horas extra**: se registran con fecha real; se asignan por corte:
+  - si la fecha cae fuera del corte actual, se van a la **siguiente planilla**.
+
+---
+
+## 13.2 Traslado masivo de empleados entre empresas (regla enterprise)
+
+1. El traslado es **backend-driven** (job/worker) y no depende del frontend.
+2. Validacion en dos fases:
+   - **Pre-validacion batch** (UI): feedback inmediato por empleado.
+   - **Revalidacion final** (backend): evita condiciones de carrera.
+3. Bloqueos:
+   - No trasladar si hay **planilla en proceso** para el empleado.
+   - No trasladar si hay **acciones de personal pendientes** (no automaticas).
+4. Acciones recurrentes del sistema (CCSS/IVM/impuestos):
+   - **No bloquean** traslado.
+5. Reubicacion de acciones futuras:
+   - Se mueven las acciones **no consumidas** con fecha >= fecha efectiva de traslado.
+   - Se reasignan a planillas de la empresa destino por calendario y fechas.
+6. Si existen multiples planillas abiertas del mismo periodo:
+   - aplica prioridad: **ABIERTA > EN_PROCESO > menor fecha inicio > menor ID**.
+
+---
+
 ## 14. Snapshot (campos minimos)
 
 En items de snapshot de planilla guardar:
@@ -866,3 +905,10 @@ SOLAPE-PLANILLAS-2026-03-02)
 - TimeWise: acciones de vacaciones se crean en estado Borrador sin planilla. RRHH completa fechas/movimiento en KPITAL; el sistema asigna planilla por fecha.
 - Planilla: al cargar una planilla se consumen las fechas cuyo `id_calendario_nomina` coincide con la planilla y estado aprobado. No se requiere que el header tenga planilla.
 ---
+## Actualizacion 2026-03-04 - TimeWise + Traslados masivos (reglas consolidadas)
+
+- TimeWise: el empleado no selecciona planilla. El sistema asigna por fechas + calendario + corte.
+- Licencias largas se descomponen en acciones por periodo (no se reutiliza la misma accion).
+- Aumentos: fecha efectiva la define supervisor/RRHH; empleado no define periodo.
+- Horas extra: asignacion por fecha real y corte de planilla.
+- Traslados masivos: validacion batch + revalidacion final; ejecucion por job en backend; reubicacion de acciones futuras por fecha efectiva.

@@ -94,6 +94,15 @@ Transiciones prohibidas: desde APLICADA a cualquier otro estado; VERIFICADA → 
 *Documento completo (tablas UC-01 a UC-31 y checklist detallado) se mantiene como referencia interna. Índice general: docs/00-Indice.md. Estado de implementación: docs/35-EstadoDOC34Implementacion.md. Reporte ejecutivo Comité: docs/37-ReporteEjecutivoDOC34-ComiteTecnico.md.*
 
 ---
+## Actualizaci?n 2026-03-04 ? Reglas enterprise adicionales (TimeWise + Traslados)
+
+- TimeWise: el empleado no selecciona periodo de pago; el sistema asigna planilla por fechas + calendario + corte.
+- Licencias largas generan acciones por periodo (no se reutiliza una sola acci?n).
+- Aumentos: fecha efectiva definida por supervisor/RRHH; se aplica en planilla correspondiente.
+- Horas extra: asignaci?n por fecha real y corte de planilla.
+- Traslado masivo: validaci?n batch + revalidaci?n final; ejecuci?n por job backend; reubicaci?n de acciones futuras por fecha efectiva.
+
+---
 ## Actualizaci?n 2026-03-02 ? Vacaciones sin selecci?n de planilla (ACTUALIZACION-VACACIONES-2026-03-02
 UI-PLANILLAS-REMOVIDA-2026-03-02
 SOLAPE-PLANILLAS-2026-03-02)
