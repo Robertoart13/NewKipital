@@ -74,4 +74,3 @@ export class BonusLine {
   @UpdateDateColumn({ name: 'fecha_modificacion_linea' })
   fechaModificacion: Date;
 }
-

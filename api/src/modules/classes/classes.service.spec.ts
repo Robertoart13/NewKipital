@@ -1,10 +1,14 @@
-import { Test, TestingModule } from '@nestjs/testing';
 import { ConflictException, NotFoundException } from '@nestjs/common';
+import { Test } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+
+import { AuditOutboxService } from '../integration/audit-outbox.service';
+
 import { ClassesService } from './classes.service';
 import { OrgClass } from './entities/class.entity';
-import { AuditOutboxService } from '../integration/audit-outbox.service';
+
+import type { TestingModule } from '@nestjs/testing';
+import type { Repository } from 'typeorm';
 
 describe('ClassesService', () => {
   let service: ClassesService;

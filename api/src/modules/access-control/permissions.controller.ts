@@ -11,13 +11,15 @@ import {
   Query,
   UseInterceptors,
 } from '@nestjs/common';
+
+import { CacheScope } from '../../common/decorators/cache-scope.decorator';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { RequirePermissions } from '../../common/decorators/require-permissions.decorator';
-import { CacheScope } from '../../common/decorators/cache-scope.decorator';
 import { CacheResponseInterceptor } from '../../common/interceptors/cache-response.interceptor';
-import { CreatePermissionDto } from './dto/create-permission.dto';
-import { UpdatePermissionDto } from './dto/update-permission.dto';
-import { PermissionsService } from './permissions.service';
+
+import type { CreatePermissionDto } from './dto/create-permission.dto';
+import type { UpdatePermissionDto } from './dto/update-permission.dto';
+import type { PermissionsService } from './permissions.service';
 
 @CacheScope('permissions')
 @UseInterceptors(CacheResponseInterceptor)
@@ -33,10 +35,7 @@ export class PermissionsController {
 
   @RequirePermissions('config:permissions')
   @Post()
-  create(
-    @Body() dto: CreatePermissionDto,
-    @CurrentUser() user: { userId: number },
-  ) {
+  create(@Body() dto: CreatePermissionDto, @CurrentUser() user: { userId: number }) {
     return this.service.create(dto, user.userId);
   }
 
@@ -68,19 +67,13 @@ export class PermissionsController {
 
   @RequirePermissions('config:permissions')
   @Patch(':id/inactivate')
-  inactivate(
-    @Param('id', ParseIntPipe) id: number,
-    @CurrentUser() user: { userId: number },
-  ) {
+  inactivate(@Param('id', ParseIntPipe) id: number, @CurrentUser() user: { userId: number }) {
     return this.service.inactivate(id, user.userId);
   }
 
   @RequirePermissions('config:permissions')
   @Patch(':id/reactivate')
-  reactivate(
-    @Param('id', ParseIntPipe) id: number,
-    @CurrentUser() user: { userId: number },
-  ) {
+  reactivate(@Param('id', ParseIntPipe) id: number, @CurrentUser() user: { userId: number }) {
     return this.service.reactivate(id, user.userId);
   }
 }

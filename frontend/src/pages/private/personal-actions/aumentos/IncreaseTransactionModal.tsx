@@ -16,7 +16,6 @@ import {
   Modal,
   Row,
   Select,
-  Space,
   Spin,
   Switch,
   Table,
@@ -40,9 +39,9 @@ import {
 } from '@ant-design/icons';
 import dayjs, { type Dayjs } from 'dayjs';
 import type { PayrollListItem } from '../../../../api/payroll';
-import type { PayrollMovementListItem } from '../../../../api/payrollMovements';
 import type { CatalogPayPeriod } from '../../../../api/catalogs';
 import type {
+  AbsenceMovementCatalogItem,
   IncreaseCalculationMethod,
   PersonalActionAuditTrailItem,
 } from '../../../../api/personalActions';
@@ -97,7 +96,7 @@ interface IncreaseTransactionModalProps {
     monedaSalario?: string | null;
   }>;
   payPeriods: CatalogPayPeriod[];
-  movements: PayrollMovementListItem[];
+  movements: AbsenceMovementCatalogItem[];
   actionTypeIdForIncrease?: number;
   canViewEmployeeSensitive?: boolean;
   employeesLoading?: boolean;

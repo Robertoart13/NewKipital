@@ -27,8 +27,6 @@ import {
   PlusOutlined,
   ReloadOutlined,
   SearchOutlined,
-  SortAscendingOutlined,
-  SortDescendingOutlined,
   UpOutlined,
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
@@ -45,12 +43,12 @@ import {
   invalidateIncrease,
   updateIncrease,
   type AbsenceEmployeeCatalogItem,
+  type AbsenceMovementCatalogItem,
   type IncreaseDetailItem,
   type PersonalActionAuditTrailItem,
   type PersonalActionListItem,
 } from '../../../../api/personalActions';
 import { fetchPayPeriods, type CatalogPayPeriod } from '../../../../api/catalogs';
-import type { PayrollMovementListItem } from '../../../../api/payrollMovements';
 import styles from '../../configuration/UsersManagementPage.module.css';
 import {
   IncreaseTransactionModal,
@@ -238,7 +236,7 @@ export function AumentosPage() {
   const [rows, setRows] = useState<IncreaseUiRow[]>([]);
   const [loading, setLoading] = useState(false);
   const [employees, setEmployees] = useState<AbsenceEmployeeCatalogItem[]>([]);
-  const [movements, setMovements] = useState<PayrollMovementListItem[]>([]);
+  const [movements, setMovements] = useState<AbsenceMovementCatalogItem[]>([]);
   const [payPeriods, setPayPeriods] = useState<CatalogPayPeriod[]>([]);
   const employeesLoading = false;
   const movementsLoading = false;

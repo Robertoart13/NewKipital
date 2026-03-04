@@ -1,10 +1,6 @@
-import {
-  MigrationInterface,
-  QueryRunner,
-  Table,
-  TableColumn,
-  TableIndex,
-} from 'typeorm';
+import { Table, TableColumn, TableIndex } from 'typeorm';
+
+import type { MigrationInterface, QueryRunner } from 'typeorm';
 
 export class AddSecurityAndOutboxTables1708532200000 implements MigrationInterface {
   public async up(queryRunner: QueryRunner): Promise<void> {
@@ -79,10 +75,7 @@ export class AddSecurityAndOutboxTables1708532200000 implements MigrationInterfa
     }
 
     const refreshTable = await queryRunner.getTable('sys_refresh_sessions');
-    if (
-      refreshTable &&
-      !refreshTable.indices.find((i) => i.name === 'IDX_refresh_session_jti')
-    ) {
+    if (refreshTable && !refreshTable.indices.find((i) => i.name === 'IDX_refresh_session_jti')) {
       await queryRunner.createIndex(
         'sys_refresh_sessions',
         new TableIndex({
@@ -92,10 +85,7 @@ export class AddSecurityAndOutboxTables1708532200000 implements MigrationInterfa
         }),
       );
     }
-    if (
-      refreshTable &&
-      !refreshTable.indices.find((i) => i.name === 'IDX_refresh_session_user')
-    ) {
+    if (refreshTable && !refreshTable.indices.find((i) => i.name === 'IDX_refresh_session_user')) {
       await queryRunner.createIndex(
         'sys_refresh_sessions',
         new TableIndex({
@@ -105,8 +95,7 @@ export class AddSecurityAndOutboxTables1708532200000 implements MigrationInterfa
       );
     }
 
-    const hasDomainEventsTable =
-      await queryRunner.hasTable('sys_domain_events');
+    const hasDomainEventsTable = await queryRunner.hasTable('sys_domain_events');
     if (!hasDomainEventsTable) {
       await queryRunner.query(`
         CREATE TABLE sys_domain_events (
@@ -153,10 +142,7 @@ export class AddSecurityAndOutboxTables1708532200000 implements MigrationInterfa
       'version_lock_calendario_nomina',
     );
     if (hasVersionLock) {
-      await queryRunner.dropColumn(
-        'nom_calendarios_nomina',
-        'version_lock_calendario_nomina',
-      );
+      await queryRunner.dropColumn('nom_calendarios_nomina', 'version_lock_calendario_nomina');
     }
     await queryRunner.query('DROP TABLE IF EXISTS sys_domain_events');
     const hasRefreshTable = await queryRunner.hasTable('sys_refresh_sessions');

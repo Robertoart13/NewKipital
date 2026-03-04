@@ -5,16 +5,19 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
-import { PayrollMovement } from './entities/payroll-movement.entity';
-import { CreatePayrollMovementDto } from './dto/create-payroll-movement.dto';
-import { UpdatePayrollMovementDto } from './dto/update-payroll-movement.dto';
-import { Company } from '../companies/entities/company.entity';
-import { PayrollArticle } from '../payroll-articles/entities/payroll-article.entity';
+
 import { PersonalActionType } from '../accounting-accounts/entities/personal-action-type.entity';
 import { OrgClass } from '../classes/entities/class.entity';
+import { Company } from '../companies/entities/company.entity';
+import { PayrollArticle } from '../payroll-articles/entities/payroll-article.entity';
 import { OrgProject } from '../projects/entities/project.entity';
-import { AuditOutboxService } from '../integration/audit-outbox.service';
+
+import { PayrollMovement } from './entities/payroll-movement.entity';
+
+import type { AuditOutboxService } from '../integration/audit-outbox.service';
+import type { CreatePayrollMovementDto } from './dto/create-payroll-movement.dto';
+import type { UpdatePayrollMovementDto } from './dto/update-payroll-movement.dto';
+import type { Repository } from 'typeorm';
 
 @Injectable()
 export class PayrollMovementsService {
@@ -49,29 +52,15 @@ export class PayrollMovementsService {
     esInactivo: 'Estado',
   };
 
-  async create(
-    dto: CreatePayrollMovementDto,
-    actorUserId: number,
-  ): Promise<PayrollMovement> {
+  async create(dto: CreatePayrollMovementDto, actorUserId: number): Promise<PayrollMovement> {
     await this.assertCompanyActive(dto.idEmpresa);
-    const article = await this.assertArticleByCompany(
-      dto.idArticuloNomina,
-      dto.idEmpresa,
-      true,
-    );
+    const article = await this.assertArticleByCompany(dto.idArticuloNomina, dto.idEmpresa, true);
     await this.assertActionTypeActive(dto.idTipoAccionPersonal);
-    this.assertArticleActionMatch(
-      article.idTipoAccionPersonal,
-      dto.idTipoAccionPersonal,
-    );
+    this.assertArticleActionMatch(article.idTipoAccionPersonal, dto.idTipoAccionPersonal);
     await this.assertOptionalClass(dto.idClase ?? null);
     await this.assertOptionalProject(dto.idProyecto ?? null, dto.idEmpresa);
 
-    const normalized = this.normalizeCalculation(
-      dto.esMontoFijo,
-      dto.montoFijo,
-      dto.porcentaje,
-    );
+    const normalized = this.normalizeCalculation(dto.esMontoFijo, dto.montoFijo, dto.porcentaje);
 
     const entity = this.repo.create({
       idEmpresa: dto.idEmpresa,
@@ -126,9 +115,7 @@ export class PayrollMovementsService {
   async findOne(id: number): Promise<PayrollMovement> {
     const found = await this.repo.findOne({ where: { id } });
     if (!found) {
-      throw new NotFoundException(
-        `Movimiento de nomina con ID ${id} no encontrado`,
-      );
+      throw new NotFoundException(`Movimiento de nomina con ID ${id} no encontrado`);
     }
     return found;
   }
@@ -143,11 +130,9 @@ export class PayrollMovementsService {
 
     const nextEmpresa = dto.idEmpresa ?? found.idEmpresa;
     const nextArticulo = dto.idArticuloNomina ?? found.idArticuloNomina;
-    const nextTipoAccion =
-      dto.idTipoAccionPersonal ?? found.idTipoAccionPersonal;
+    const nextTipoAccion = dto.idTipoAccionPersonal ?? found.idTipoAccionPersonal;
     const nextClase = dto.idClase === undefined ? found.idClase : dto.idClase;
-    const nextProyecto =
-      dto.idProyecto === undefined ? found.idProyecto : dto.idProyecto;
+    const nextProyecto = dto.idProyecto === undefined ? found.idProyecto : dto.idProyecto;
     const nextEsMontoFijo = dto.esMontoFijo ?? found.esMontoFijo;
     const nextMonto = dto.montoFijo ?? found.montoFijo;
     const nextPorcentaje = dto.porcentaje ?? found.porcentaje;
@@ -159,33 +144,19 @@ export class PayrollMovementsService {
       true,
       found.idArticuloNomina,
     );
-    await this.assertActionTypeActive(
-      nextTipoAccion,
-      found.idTipoAccionPersonal,
-    );
+    await this.assertActionTypeActive(nextTipoAccion, found.idTipoAccionPersonal);
     this.assertArticleActionMatch(article.idTipoAccionPersonal, nextTipoAccion);
     await this.assertOptionalClass(nextClase ?? null, found.idClase ?? null);
-    await this.assertOptionalProject(
-      nextProyecto ?? null,
-      nextEmpresa,
-      found.idProyecto ?? null,
-    );
-    const normalized = this.normalizeCalculation(
-      nextEsMontoFijo,
-      nextMonto,
-      nextPorcentaje,
-    );
+    await this.assertOptionalProject(nextProyecto ?? null, nextEmpresa, found.idProyecto ?? null);
+    const normalized = this.normalizeCalculation(nextEsMontoFijo, nextMonto, nextPorcentaje);
 
     if (dto.idEmpresa !== undefined) found.idEmpresa = nextEmpresa;
     if (dto.nombre !== undefined) found.nombre = dto.nombre.trim();
-    if (dto.idArticuloNomina !== undefined)
-      found.idArticuloNomina = nextArticulo;
-    if (dto.idTipoAccionPersonal !== undefined)
-      found.idTipoAccionPersonal = nextTipoAccion;
+    if (dto.idArticuloNomina !== undefined) found.idArticuloNomina = nextArticulo;
+    if (dto.idTipoAccionPersonal !== undefined) found.idTipoAccionPersonal = nextTipoAccion;
     if (dto.idClase !== undefined) found.idClase = nextClase ?? null;
     if (dto.idProyecto !== undefined) found.idProyecto = nextProyecto ?? null;
-    if (dto.descripcion !== undefined)
-      found.descripcion = dto.descripcion.trim() || '--';
+    if (dto.descripcion !== undefined) found.descripcion = dto.descripcion.trim() || '--';
     if (
       dto.esMontoFijo !== undefined ||
       dto.montoFijo !== undefined ||
@@ -280,10 +251,8 @@ export class PayrollMovementsService {
     );
 
     return (rows ?? []).map((row: Record<string, unknown>) => {
-      const payloadBefore =
-        (row.payloadBefore as Record<string, unknown> | null) ?? null;
-      const payloadAfter =
-        (row.payloadAfter as Record<string, unknown> | null) ?? null;
+      const payloadBefore = (row.payloadBefore as Record<string, unknown> | null) ?? null;
+      const payloadAfter = (row.payloadAfter as Record<string, unknown> | null) ?? null;
       return {
         id: String(row.id ?? ''),
         modulo: String(row.modulo ?? ''),
@@ -294,9 +263,7 @@ export class PayrollMovementsService {
         actorNombre: row.actorNombre ? String(row.actorNombre) : null,
         actorEmail: row.actorEmail ? String(row.actorEmail) : null,
         descripcion: String(row.descripcion ?? ''),
-        fechaCreacion: row.fechaCreacion
-          ? new Date(String(row.fechaCreacion)).toISOString()
-          : null,
+        fechaCreacion: row.fechaCreacion ? new Date(String(row.fechaCreacion)).toISOString() : null,
         metadata: (row.metadata as Record<string, unknown> | null) ?? null,
         cambios: this.buildAuditChanges(payloadBefore, payloadAfter),
       };
@@ -317,12 +284,8 @@ export class PayrollMovementsService {
     return qb.getMany();
   }
 
-  async listPersonalActionTypes(
-    includeInactive = false,
-  ): Promise<PersonalActionType[]> {
-    const qb = this.actionTypeRepo
-      .createQueryBuilder('t')
-      .orderBy('t.nombre', 'ASC');
+  async listPersonalActionTypes(includeInactive = false): Promise<PersonalActionType[]> {
+    const qb = this.actionTypeRepo.createQueryBuilder('t').orderBy('t.nombre', 'ASC');
     if (!includeInactive) {
       qb.andWhere('t.estado = 1');
     }
@@ -330,19 +293,14 @@ export class PayrollMovementsService {
   }
 
   async listClasses(includeInactive = false): Promise<OrgClass[]> {
-    const qb = this.classRepo
-      .createQueryBuilder('c')
-      .orderBy('c.nombre', 'ASC');
+    const qb = this.classRepo.createQueryBuilder('c').orderBy('c.nombre', 'ASC');
     if (!includeInactive) {
       qb.andWhere('c.esInactivo = 0');
     }
     return qb.getMany();
   }
 
-  async listProjects(
-    idEmpresa: number,
-    includeInactive = false,
-  ): Promise<OrgProject[]> {
+  async listProjects(idEmpresa: number, includeInactive = false): Promise<OrgProject[]> {
     const qb = this.projectRepo
       .createQueryBuilder('p')
       .where('p.idEmpresa = :idEmpresa', { idEmpresa })
@@ -383,12 +341,8 @@ export class PayrollMovementsService {
     payloadAfter: Record<string, unknown> | null,
   ): Array<{ campo: string; antes: string; despues: string }> {
     if (!payloadBefore || !payloadAfter) return [];
-    const keys = new Set<string>([
-      ...Object.keys(payloadBefore),
-      ...Object.keys(payloadAfter),
-    ]);
-    const changes: Array<{ campo: string; antes: string; despues: string }> =
-      [];
+    const keys = new Set<string>([...Object.keys(payloadBefore), ...Object.keys(payloadAfter)]);
+    const changes: Array<{ campo: string; antes: string; despues: string }> = [];
     for (const key of keys) {
       if (!(key in this.auditFieldLabels)) continue;
       const beforeValue = this.normalizeAuditValue(payloadBefore[key]);
@@ -417,10 +371,7 @@ export class PayrollMovementsService {
     const porcentaje = (porcentajeRaw ?? '').trim();
 
     const montoValue = this.parseNonNegativeValue(montoFijo, 'Monto fijo');
-    const porcentajeValue = this.parseNonNegativeValue(
-      porcentaje,
-      'Porcentaje',
-    );
+    const porcentajeValue = this.parseNonNegativeValue(porcentaje, 'Porcentaje');
 
     if (esMontoFijo === 1) {
       if (porcentajeValue !== 0) {
@@ -492,9 +443,7 @@ export class PayrollMovementsService {
       article.esInactivo === 1 &&
       (allowedInactiveSameId == null || allowedInactiveSameId !== article.id)
     ) {
-      throw new BadRequestException(
-        'El articulo de nomina seleccionado esta inactivo.',
-      );
+      throw new BadRequestException('El articulo de nomina seleccionado esta inactivo.');
     }
     return article;
   }
@@ -513,9 +462,7 @@ export class PayrollMovementsService {
       actionType.estado !== 1 &&
       (allowInactiveSameId == null || allowInactiveSameId !== actionType.id)
     ) {
-      throw new BadRequestException(
-        'El tipo de accion personal seleccionado esta inactivo.',
-      );
+      throw new BadRequestException('El tipo de accion personal seleccionado esta inactivo.');
     }
   }
 
@@ -547,9 +494,7 @@ export class PayrollMovementsService {
       throw new ConflictException('Proyecto no encontrado.');
     }
     if (found.idEmpresa !== idEmpresa) {
-      throw new BadRequestException(
-        'El proyecto seleccionado no pertenece a la empresa.',
-      );
+      throw new BadRequestException('El proyecto seleccionado no pertenece a la empresa.');
     }
     if (
       found.esInactivo === 1 &&

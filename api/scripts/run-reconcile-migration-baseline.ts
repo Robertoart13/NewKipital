@@ -1,6 +1,7 @@
 import 'dotenv/config';
 import { readFileSync, readdirSync } from 'node:fs';
 import { join, resolve } from 'node:path';
+
 import dataSource from '../src/typeorm.config';
 
 type DiscoveredMigration = {
@@ -60,16 +61,13 @@ async function main(): Promise<void> {
       0,
     );
 
-    const appliedKey = new Set(
-      appliedRows.map((row) => `${Number(row.timestamp)}::${row.name}`),
-    );
+    const appliedKey = new Set(appliedRows.map((row) => `${Number(row.timestamp)}::${row.name}`));
 
     const baselineCandidates = discovered.filter(
       (migration) => migration.timestamp <= maxAppliedTimestamp,
     );
     const missingLegacy = baselineCandidates.filter(
-      (migration) =>
-        !appliedKey.has(`${migration.timestamp}::${migration.name}`),
+      (migration) => !appliedKey.has(`${migration.timestamp}::${migration.name}`),
     );
 
     console.log(
@@ -89,15 +87,13 @@ async function main(): Promise<void> {
         `[baseline] ${apply ? 'INSERT' : 'PLAN'} ${migration.timestamp} ${migration.name}`,
       );
       if (!apply) continue;
-      await dataSource.query(
-        'INSERT INTO migrations (`timestamp`, `name`) VALUES (?, ?)',
-        [migration.timestamp, migration.name],
-      );
+      await dataSource.query('INSERT INTO migrations (`timestamp`, `name`) VALUES (?, ?)', [
+        migration.timestamp,
+        migration.name,
+      ]);
     }
 
-    console.log(
-      `[baseline] ${apply ? 'Reconciliacion aplicada' : 'Dry-run completado'}.`,
-    );
+    console.log(`[baseline] ${apply ? 'Reconciliacion aplicada' : 'Dry-run completado'}.`);
   } finally {
     await dataSource.destroy();
   }

@@ -1,10 +1,14 @@
-import { Test, TestingModule } from '@nestjs/testing';
-import { getRepositoryToken } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
 import { EventEmitter2 } from '@nestjs/event-emitter';
-import { IdentitySyncWorkflow } from './identity-sync.workflow';
-import { User } from '../../modules/auth/entities/user.entity';
+import { Test } from '@nestjs/testing';
+import { getRepositoryToken } from '@nestjs/typeorm';
+
 import { DOMAIN_EVENTS } from '../../common/events/event-names';
+import { User } from '../../modules/auth/entities/user.entity';
+
+import { IdentitySyncWorkflow } from './identity-sync.workflow';
+
+import type { TestingModule } from '@nestjs/testing';
+import type { Repository } from 'typeorm';
 
 describe('IdentitySyncWorkflow', () => {
   let workflow: IdentitySyncWorkflow;
@@ -69,9 +73,7 @@ describe('IdentitySyncWorkflow', () => {
         },
       };
 
-      userRepo.findOne
-        .mockResolvedValueOnce(createMockUser())
-        .mockResolvedValueOnce(null);
+      userRepo.findOne.mockResolvedValueOnce(createMockUser()).mockResolvedValueOnce(null);
       userRepo.save.mockResolvedValue({
         ...createMockUser(),
         email: 'new.email@example.com',
@@ -210,9 +212,7 @@ describe('IdentitySyncWorkflow', () => {
         },
       };
 
-      userRepo.findOne
-        .mockResolvedValueOnce(createMockUser())
-        .mockResolvedValueOnce(null);
+      userRepo.findOne.mockResolvedValueOnce(createMockUser()).mockResolvedValueOnce(null);
       userRepo.save.mockResolvedValue({
         ...createMockUser(),
         email: 'new@example.com',
@@ -241,9 +241,7 @@ describe('IdentitySyncWorkflow', () => {
         },
       };
 
-      userRepo.findOne
-        .mockResolvedValueOnce(createMockUser())
-        .mockResolvedValueOnce(null);
+      userRepo.findOne.mockResolvedValueOnce(createMockUser()).mockResolvedValueOnce(null);
       userRepo.save.mockResolvedValue({
         ...createMockUser(),
         email: 'new@example.com',
@@ -272,9 +270,7 @@ describe('IdentitySyncWorkflow', () => {
         },
       };
 
-      userRepo.findOne
-        .mockResolvedValueOnce(createMockUser())
-        .mockResolvedValueOnce(null);
+      userRepo.findOne.mockResolvedValueOnce(createMockUser()).mockResolvedValueOnce(null);
       userRepo.save.mockResolvedValue({
         ...createMockUser(),
         email: 'new@example.com',
@@ -284,20 +280,17 @@ describe('IdentitySyncWorkflow', () => {
       await workflow.handleEmailChange(event);
 
       // Assert
-      expect(eventEmitter.emit).toHaveBeenCalledWith(
-        DOMAIN_EVENTS.IDENTITY.LOGIN_UPDATED,
-        {
-          eventName: DOMAIN_EVENTS.IDENTITY.LOGIN_UPDATED,
-          occurredAt: expect.any(Date),
-          payload: {
-            userId: '1',
-            previousEmail: 'old.email@example.com',
-            newEmail: 'new@example.com',
-            updatedBy: 5,
-            trigger: 'employee.email_changed',
-          },
+      expect(eventEmitter.emit).toHaveBeenCalledWith(DOMAIN_EVENTS.IDENTITY.LOGIN_UPDATED, {
+        eventName: DOMAIN_EVENTS.IDENTITY.LOGIN_UPDATED,
+        occurredAt: expect.any(Date),
+        payload: {
+          userId: '1',
+          previousEmail: 'old.email@example.com',
+          newEmail: 'new@example.com',
+          updatedBy: 5,
+          trigger: 'employee.email_changed',
         },
-      );
+      });
     });
 
     it('should handle multiple sync requests for the same user', async () => {
@@ -365,9 +358,7 @@ describe('IdentitySyncWorkflow', () => {
       userRepo.findOne.mockRejectedValue(new Error('Database error'));
 
       // Act & Assert
-      await expect(workflow.handleEmailChange(event)).rejects.toThrow(
-        'Database error',
-      );
+      await expect(workflow.handleEmailChange(event)).rejects.toThrow('Database error');
     });
 
     it('should update modificadoPor to changedBy user', async () => {
@@ -382,9 +373,7 @@ describe('IdentitySyncWorkflow', () => {
         },
       };
 
-      userRepo.findOne
-        .mockResolvedValueOnce(createMockUser())
-        .mockResolvedValueOnce(null);
+      userRepo.findOne.mockResolvedValueOnce(createMockUser()).mockResolvedValueOnce(null);
       userRepo.save.mockResolvedValue({
         ...createMockUser(),
         email: 'new@example.com',
@@ -421,9 +410,7 @@ describe('IdentitySyncWorkflow', () => {
         failedAttempts: 3,
       };
 
-      userRepo.findOne
-        .mockResolvedValueOnce(userWithData)
-        .mockResolvedValueOnce(null);
+      userRepo.findOne.mockResolvedValueOnce(userWithData).mockResolvedValueOnce(null);
       userRepo.save.mockResolvedValue({
         ...userWithData,
         email: 'new@example.com',

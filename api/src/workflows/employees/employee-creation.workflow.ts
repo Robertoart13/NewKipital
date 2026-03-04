@@ -1,11 +1,16 @@
 ﻿import { Injectable, Logger, ConflictException } from '@nestjs/common';
-import { DataSource } from 'typeorm';
-import { EventEmitter2 } from '@nestjs/event-emitter';
 import * as bcrypt from 'bcrypt';
-import {
-  Employee,
-  MonedaSalarioEmpleado,
-} from '../../modules/employees/entities/employee.entity';
+
+import { UserRole } from '../../modules/access-control/entities/user-role.entity';
+import { WorkflowResult } from '../common/workflow.interface';
+import { DOMAIN_EVENTS } from '../../common/events/event-names';
+import { CreateEmployeeDto } from '../../modules/employees/dto/create-employee.dto';
+import { UserStatus } from '../../modules/auth/constants/user-status.enum';
+import { EmployeeSensitiveDataService } from '../../common/services/employee-sensitive-data.service';
+import { App } from '../../modules/access-control/entities/app.entity';
+import { UserApp } from '../../modules/access-control/entities/user-app.entity';
+import { UserCompany } from '../../modules/access-control/entities/user-company.entity';
+import { User } from '../../modules/auth/entities/user.entity';
 import {
   EmployeeAguinaldoProvision,
   EstadoProvisionAguinaldoEmpleado,
@@ -15,16 +20,10 @@ import {
   EmployeeVacationLedger,
   VacationMovementType,
 } from '../../modules/employees/entities/employee-vacation-ledger.entity';
-import { User } from '../../modules/auth/entities/user.entity';
-import { App } from '../../modules/access-control/entities/app.entity';
-import { UserApp } from '../../modules/access-control/entities/user-app.entity';
-import { UserCompany } from '../../modules/access-control/entities/user-company.entity';
-import { UserRole } from '../../modules/access-control/entities/user-role.entity';
-import { WorkflowResult } from '../common/workflow.interface';
-import { DOMAIN_EVENTS } from '../../common/events/event-names';
-import { CreateEmployeeDto } from '../../modules/employees/dto/create-employee.dto';
-import { UserStatus } from '../../modules/auth/constants/user-status.enum';
-import { EmployeeSensitiveDataService } from '../../common/services/employee-sensitive-data.service';
+import { Employee, MonedaSalarioEmpleado } from '../../modules/employees/entities/employee.entity';
+
+import type { EventEmitter2 } from '@nestjs/event-emitter';
+import type { DataSource } from 'typeorm';
 
 export interface EmployeeCreationResult {
   employee: Employee;
@@ -65,9 +64,7 @@ export class EmployeeCreationWorkflow {
           where: { email: normalizedEmail },
         });
         if (existingUser) {
-          throw new ConflictException(
-            `Ya existe un usuario con email '${normalizedEmail}'`,
-          );
+          throw new ConflictException(`Ya existe un usuario con email '${normalizedEmail}'`);
         }
 
         let passwordHash: string | null = null;
@@ -212,12 +209,8 @@ export class EmployeeCreationWorkflow {
         monedaSalario: dto.monedaSalario ?? MonedaSalarioEmpleado.CRC,
         numeroCcss: this.sensitiveDataService.encrypt(dto.numeroCcss ?? null),
         cuentaBanco: this.sensitiveDataService.encrypt(dto.cuentaBanco ?? null),
-        vacacionesAcumuladas: this.sensitiveDataService.encrypt(
-          dto.vacacionesAcumuladas ?? null,
-        ),
-        cesantiaAcumulada: this.sensitiveDataService.encrypt(
-          dto.cesantiaAcumulada ?? null,
-        ),
+        vacacionesAcumuladas: this.sensitiveDataService.encrypt(dto.vacacionesAcumuladas ?? null),
+        cesantiaAcumulada: this.sensitiveDataService.encrypt(dto.cesantiaAcumulada ?? null),
         estado: 1,
         creadoPor: creatorId ?? null,
         modificadoPor: creatorId ?? null,
@@ -234,9 +227,7 @@ export class EmployeeCreationWorkflow {
       const vacationInitialDaysRaw = dto.vacacionesAcumuladas ?? '0';
       const vacationInitialDays = Number.parseInt(vacationInitialDaysRaw, 10);
       const validInitialDays =
-        Number.isInteger(vacationInitialDays) && vacationInitialDays >= 0
-          ? vacationInitialDays
-          : 0;
+        Number.isInteger(vacationInitialDays) && vacationInitialDays >= 0 ? vacationInitialDays : 0;
 
       const fechaIngreso = this.parseDateOnlyForDb(dto.fechaIngreso);
       const anchorDay = fechaIngreso.getDate();
@@ -254,10 +245,7 @@ export class EmployeeCreationWorkflow {
         modificadoPor: creatorId ?? null,
       });
 
-      const savedVacationAccount = await manager.save(
-        EmployeeVacationAccount,
-        vacationAccount,
-      );
+      const savedVacationAccount = await manager.save(EmployeeVacationAccount, vacationAccount);
 
       const initialLedger = manager.create(EmployeeVacationLedger, {
         idEmpleado: savedEmployee.id,
@@ -280,12 +268,8 @@ export class EmployeeCreationWorkflow {
             idEmpleado: savedEmployee.id,
             idEmpresa: item.idEmpresa,
             montoProvisionado:
-              this.sensitiveDataService.encrypt(
-                String(item.montoProvisionado),
-              ) ?? '0',
-            fechaInicioLaboral: this.parseDateOnlyForDb(
-              item.fechaInicioLaboral,
-            ),
+              this.sensitiveDataService.encrypt(String(item.montoProvisionado)) ?? '0',
+            fechaInicioLaboral: this.parseDateOnlyForDb(item.fechaInicioLaboral),
             fechaFinLaboral: item.fechaFinLaboral
               ? this.parseDateOnlyForDb(item.fechaFinLaboral)
               : null,
@@ -296,8 +280,7 @@ export class EmployeeCreationWorkflow {
             creadoPor: creatorId ?? null,
             modificadoPor: creatorId ?? null,
             datosEncriptados: 1,
-            versionEncriptacion:
-              EmployeeSensitiveDataService.getEncryptedVersion(),
+            versionEncriptacion: EmployeeSensitiveDataService.getEncryptedVersion(),
             fechaEncriptacion: new Date(),
           }),
         );
@@ -330,9 +313,7 @@ export class EmployeeCreationWorkflow {
       };
     } catch (error) {
       await queryRunner.rollbackTransaction();
-      this.logger.error(
-        `Rollback creación empleado: ${(error as Error).message}`,
-      );
+      this.logger.error(`Rollback creación empleado: ${(error as Error).message}`);
       return { success: false, error: (error as Error).message };
     } finally {
       await queryRunner.release();

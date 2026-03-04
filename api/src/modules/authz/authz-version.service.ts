@@ -1,7 +1,9 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+
 import { AuthzVersion } from './entities/authz-version.entity';
+
+import type { Repository } from 'typeorm';
 
 @Injectable()
 export class AuthzVersionService {
@@ -23,9 +25,7 @@ export class AuthzVersionService {
   }
 
   async bumpUsers(userIds: number[]): Promise<void> {
-    const ids = [...new Set(userIds)].filter(
-      (id) => Number.isInteger(id) && id >= 0,
-    );
+    const ids = [...new Set(userIds)].filter((id) => Number.isInteger(id) && id >= 0);
     if (ids.length === 0) return;
 
     await this.ensureRows(ids);

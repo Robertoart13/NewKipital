@@ -46,6 +46,9 @@ export interface PayrollSnapshotSummary {
   totalBruto: string;
   totalDeducciones: string;
   totalNeto: string;
+  totalDevengado: string;
+  totalCargasSociales: string;
+  totalImpuestoRenta: string;
 }
 
 export interface PayrollAuditTrailItem {
@@ -61,6 +64,64 @@ export interface PayrollAuditTrailItem {
   fechaCreacion: string | null;
   metadata: Record<string, unknown> | null;
   cambios: Array<{ campo: string; antes: string; despues: string }>;
+}
+
+export interface IntercompanyTransferBlockingReason {
+  code: string;
+  message: string;
+  metadata?: Record<string, unknown>;
+}
+
+export interface IntercompanyTransferActionPlan {
+  idAccion: number;
+  tipoAccion: string;
+  estado: number;
+  fechaEfecto?: string | null;
+  fechaInicioEfecto?: string | null;
+  fechaFinEfecto?: string | null;
+  idCalendarioOrigen?: number | null;
+  shouldMove: boolean;
+  requiresSplit: boolean;
+  crossesTransfer: boolean;
+  assignedToPayroll: boolean;
+  calendarAssignments?: Array<{
+    date: string;
+    calendarId: number;
+    calendarName: string | null;
+  }>;
+}
+
+export interface IntercompanyTransferSimulationResult {
+  employeeId: number;
+  fromCompanyId: number;
+  toCompanyId: number;
+  effectiveDate: string;
+  eligible: boolean;
+  transferId: number | null;
+  blockingReasons: IntercompanyTransferBlockingReason[];
+  actionsToMove: IntercompanyTransferActionPlan[];
+  actionsIgnored: number;
+  aguinaldoProvision?: {
+    totalBruto: number;
+    montoProvisionado: number;
+  };
+}
+
+export interface IntercompanyTransferSimulationPayload {
+  idEmpresaDestino: number;
+  fechaEfectiva: string;
+  empleados: Array<{ idEmpleado: number }>;
+  motivo?: string;
+}
+
+export interface IntercompanyTransferExecutionPayload {
+  transferIds: number[];
+}
+
+export interface IntercompanyTransferExecutionResult {
+  transferId: number;
+  status: 'EXECUTED' | 'FAILED';
+  message: string;
 }
 
 async function extractApiErrorMessage(res: Response, fallback: string): Promise<string> {
@@ -172,5 +233,33 @@ export async function fetchPayrollAuditTrail(id: number, limit = 200): Promise<P
   const qs = new URLSearchParams({ limit: String(limit) });
   const res = await httpFetch(`/payroll/${id}/audit-trail?${qs}`);
   if (!res.ok) throw new Error(await extractApiErrorMessage(res, 'Error al cargar bitacora de planilla'));
+  return res.json();
+}
+
+export async function simulateIntercompanyTransfer(
+  payload: IntercompanyTransferSimulationPayload,
+): Promise<IntercompanyTransferSimulationResult[]> {
+  const res = await httpFetch('/payroll/intercompany-transfer/simulate', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+  if (!res.ok) {
+    throw new Error(await extractApiErrorMessage(res, 'Error al simular traslado interempresas'));
+  }
+  return res.json();
+}
+
+export async function executeIntercompanyTransfer(
+  payload: IntercompanyTransferExecutionPayload,
+): Promise<IntercompanyTransferExecutionResult[]> {
+  const res = await httpFetch('/payroll/intercompany-transfer/execute', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+  if (!res.ok) {
+    throw new Error(await extractApiErrorMessage(res, 'Error al ejecutar traslado interempresas'));
+  }
   return res.json();
 }

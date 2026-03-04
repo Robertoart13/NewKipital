@@ -1,23 +1,14 @@
 import { Transform } from 'class-transformer';
-import {
-  IsOptional,
-  IsString,
-  Matches,
-  MaxLength,
-  MinLength,
-} from 'class-validator';
+import { IsOptional, IsString, Matches, MaxLength, MinLength } from 'class-validator';
 
 export class UpdatePermissionDto {
   @IsOptional()
-  @Transform(({ value }) =>
-    typeof value === 'string' ? value.trim().toLowerCase() : value,
-  )
+  @Transform(({ value }) => (typeof value === 'string' ? value.trim().toLowerCase() : value))
   @IsString()
   @MinLength(3)
   @MaxLength(100)
   @Matches(/^[a-z][a-z0-9-_]*(?::[a-z][a-z0-9-_]*)+$/, {
-    message:
-      'codigo debe cumplir formato module:action[:subaction] en minusculas',
+    message: 'codigo debe cumplir formato module:action[:subaction] en minusculas',
   })
   codigo?: string;
 
@@ -34,9 +25,7 @@ export class UpdatePermissionDto {
   descripcion?: string;
 
   @IsOptional()
-  @Transform(({ value }) =>
-    typeof value === 'string' ? value.trim().toLowerCase() : value,
-  )
+  @Transform(({ value }) => (typeof value === 'string' ? value.trim().toLowerCase() : value))
   @IsString()
   @MaxLength(50)
   modulo?: string;

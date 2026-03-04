@@ -1,12 +1,12 @@
-import { Test, TestingModule } from '@nestjs/testing';
+import { Test } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
-import {
-  PersonalAction,
-  PersonalActionEstado,
-} from './entities/personal-action.entity';
-import { PersonalActionAutoInvalidationService } from './personal-action-auto-invalidation.service';
+
 import { PERSONAL_ACTION_INVALIDATION_REASON } from './constants/personal-action-invalidation.constants';
+import { PersonalAction, PersonalActionEstado } from './entities/personal-action.entity';
+import { PersonalActionAutoInvalidationService } from './personal-action-auto-invalidation.service';
+
+import type { TestingModule } from '@nestjs/testing';
+import type { Repository } from 'typeorm';
 
 type DbEmployee = {
   id: number;
@@ -42,32 +42,23 @@ describe('PersonalActionAutoInvalidationService', () => {
   const getEmployee = (employeeId: number): DbEmployee | undefined =>
     employees.find((employee) => employee.id === employeeId);
 
-  const selectByReason = (
-    reasonCode: string,
-    payrollCurrency?: string | null,
-  ): DbAction[] =>
+  const selectByReason = (reasonCode: string, payrollCurrency?: string | null): DbAction[] =>
     actions.filter((action) => {
       if (action.estado !== PersonalActionEstado.APPROVED) return false;
       if (action.payrollId != null) return false;
       const employee = getEmployee(action.employeeId);
       if (!employee) return false;
 
-      if (
-        reasonCode === PERSONAL_ACTION_INVALIDATION_REASON.TERMINATION_EFFECTIVE
-      ) {
+      if (reasonCode === PERSONAL_ACTION_INVALIDATION_REASON.TERMINATION_EFFECTIVE) {
         if (!employee.terminationDate) return false;
         return toTime(action.effectiveStart) > toTime(employee.terminationDate);
       }
 
-      if (
-        reasonCode === PERSONAL_ACTION_INVALIDATION_REASON.COMPANY_MISMATCH
-      ) {
+      if (reasonCode === PERSONAL_ACTION_INVALIDATION_REASON.COMPANY_MISMATCH) {
         return employee.companyId !== action.companyId;
       }
 
-      if (
-        reasonCode === PERSONAL_ACTION_INVALIDATION_REASON.CURRENCY_MISMATCH
-      ) {
+      if (reasonCode === PERSONAL_ACTION_INVALIDATION_REASON.CURRENCY_MISMATCH) {
         if (employee.currency !== action.currency) return true;
         if (payrollCurrency && payrollCurrency !== action.currency) return true;
         return false;
@@ -178,9 +169,7 @@ describe('PersonalActionAutoInvalidationService', () => {
 
         const payrollCurrency =
           reasonCode === PERSONAL_ACTION_INVALIDATION_REASON.CURRENCY_MISMATCH
-            ? (params.find((param) => param === 'CRC' || param === 'USD') as
-                | string
-                | undefined)
+            ? (params.find((param) => param === 'CRC' || param === 'USD') as string | undefined)
             : undefined;
         const candidates = selectByReason(reasonCode, payrollCurrency);
 

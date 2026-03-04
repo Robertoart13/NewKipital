@@ -1,8 +1,6 @@
-import { MigrationInterface, QueryRunner } from 'typeorm';
+import type { MigrationInterface, QueryRunner } from 'typeorm';
 
-export class CreateRetentionLinesTable1708538000000
-  implements MigrationInterface
-{
+export class CreateRetentionLinesTable1708538000000 implements MigrationInterface {
   public async up(queryRunner: QueryRunner): Promise<void> {
     await queryRunner.query(`
       CREATE TABLE IF NOT EXISTS acc_retenciones_lineas (
@@ -50,4 +48,3 @@ export class CreateRetentionLinesTable1708538000000
     `);
   }
 }
-

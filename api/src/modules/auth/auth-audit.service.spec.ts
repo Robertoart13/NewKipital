@@ -1,5 +1,6 @@
 ﻿import { AuthAuditService } from './auth-audit.service';
-import { DomainEventsService } from '../integration/domain-events.service';
+
+import type { DomainEventsService } from '../integration/domain-events.service';
 
 describe('AuthAuditService', () => {
   let service: AuthAuditService;
@@ -7,9 +8,7 @@ describe('AuthAuditService', () => {
 
   beforeEach(() => {
     domainEvents = { record: jest.fn().mockResolvedValue(undefined) };
-    service = new AuthAuditService(
-      domainEvents as unknown as DomainEventsService,
-    );
+    service = new AuthAuditService(domainEvents as unknown as DomainEventsService);
   });
 
   it('should record a successful auth event', async () => {

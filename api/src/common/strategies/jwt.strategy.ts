@@ -1,9 +1,11 @@
 import { Injectable, UnauthorizedException } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
 import { PassportStrategy } from '@nestjs/passport';
 import { Strategy } from 'passport-jwt';
-import { Request } from 'express';
+
 import { COOKIE_NAME } from '../../config/cookie.config';
+
+import type { ConfigService } from '@nestjs/config';
+import type { Request } from 'express';
 
 export interface TokenPayload {
   sub: number;
@@ -30,8 +32,7 @@ function extractFromAuthHeader(req: Request): string | null {
 export class JwtStrategy extends PassportStrategy(Strategy) {
   constructor(config: ConfigService) {
     super({
-      jwtFromRequest: (req: Request) =>
-        extractFromCookie(req) ?? extractFromAuthHeader(req),
+      jwtFromRequest: (req: Request) => extractFromCookie(req) ?? extractFromAuthHeader(req),
       ignoreExpiration: false,
       secretOrKey: config.getOrThrow<string>('JWT_SECRET'),
     });

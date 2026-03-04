@@ -1,13 +1,16 @@
 import { Controller, Get, UseInterceptors } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
-import { Department } from './entities/department.entity';
-import { Position } from './entities/position.entity';
-import { PayPeriod } from '../payroll/entities/pay-period.entity';
-import { RequirePermissions } from '../../common/decorators/require-permissions.decorator';
+
 import { AllowWithoutCompany } from '../../common/decorators/allow-without-company.decorator';
 import { CacheScope } from '../../common/decorators/cache-scope.decorator';
+import { RequirePermissions } from '../../common/decorators/require-permissions.decorator';
 import { CacheResponseInterceptor } from '../../common/interceptors/cache-response.interceptor';
+import { PayPeriod } from '../payroll/entities/pay-period.entity';
+
+import { Department } from './entities/department.entity';
+import { Position } from './entities/position.entity';
+
+import type { Repository } from 'typeorm';
 
 @CacheScope('catalogs')
 @UseInterceptors(CacheResponseInterceptor)

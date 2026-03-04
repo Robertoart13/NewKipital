@@ -1,12 +1,16 @@
-import { Test, TestingModule } from '@nestjs/testing';
-import { getRepositoryToken } from '@nestjs/typeorm';
 import { NotFoundException } from '@nestjs/common';
-import { Repository } from 'typeorm';
-import { NotificationsService } from './notifications.service';
-import { Notification } from './entities/notification.entity';
-import { NotificationUser } from './entities/notification-user.entity';
+import { Test } from '@nestjs/testing';
+import { getRepositoryToken } from '@nestjs/typeorm';
+
 import { UserRole } from '../access-control/entities/user-role.entity';
+
+import { NotificationUser } from './entities/notification-user.entity';
+import { Notification } from './entities/notification.entity';
 import { NotificationsGateway } from './notifications.gateway';
+import { NotificationsService } from './notifications.service';
+
+import type { TestingModule } from '@nestjs/testing';
+import type { Repository } from 'typeorm';
 
 describe('NotificationsService', () => {
   let service: NotificationsService;
@@ -113,10 +117,9 @@ describe('NotificationsService', () => {
     const qb = notifUserRepo.createQueryBuilder();
     await service.getUnreadCount(7, 4, 9);
 
-    expect(qb.andWhere).toHaveBeenCalledWith(
-      '(n.id_app IS NULL OR n.id_app = :idApp)',
-      { idApp: 4 },
-    );
+    expect(qb.andWhere).toHaveBeenCalledWith('(n.id_app IS NULL OR n.id_app = :idApp)', {
+      idApp: 4,
+    });
     expect(qb.andWhere).toHaveBeenCalledWith(
       '(n.id_empresa IS NULL OR n.id_empresa = :idEmpresa)',
       { idEmpresa: 9 },

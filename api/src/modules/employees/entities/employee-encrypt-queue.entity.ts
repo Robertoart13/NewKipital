@@ -6,6 +6,7 @@ import {
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
+
 import { EmployeeQueueStatus } from './employee-identity-queue.entity';
 
 @Entity('sys_empleado_encrypt_queue')

@@ -1,12 +1,10 @@
-import {
-  Injectable,
-  NotFoundException,
-  ConflictException,
-} from '@nestjs/common';
+import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+
 import { App } from './entities/app.entity';
-import { CreateAppDto } from './dto/create-app.dto';
+
+import type { CreateAppDto } from './dto/create-app.dto';
+import type { Repository } from 'typeorm';
 
 @Injectable()
 export class AppsService {

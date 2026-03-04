@@ -5,33 +5,43 @@ import {
   ForbiddenException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { DataSource, Repository } from 'typeorm';
-import { EventEmitter2 } from '@nestjs/event-emitter';
-import {
-  PersonalAction,
-  PERSONAL_ACTION_APPROVED_STATES,
-  PERSONAL_ACTION_PENDING_STATES,
-  PersonalActionEstado,
-} from './entities/personal-action.entity';
-import { CreatePersonalActionDto } from './dto/create-personal-action.dto';
-import { UpsertAbsenceDto } from './dto/upsert-absence.dto';
-import { UpsertBonusDto } from './dto/upsert-bonus.dto';
-import { UpsertDisabilityDto } from './dto/upsert-disability.dto';
-import { UpsertLicenseDto } from './dto/upsert-license.dto';
-import { UpsertOvertimeDto } from './dto/upsert-overtime.dto';
-import { UpsertRetentionDto } from './dto/upsert-retention.dto';
-import { UpsertDiscountDto } from './dto/upsert-discount.dto';
-import { UpsertIncreaseDto } from './dto/upsert-increase.dto';
-import { UpsertVacationDto } from './dto/upsert-vacation.dto';
+import { In } from 'typeorm';
+
 import { DOMAIN_EVENTS } from '../../common/events/event-names';
 import { UserCompany } from '../access-control/entities/user-company.entity';
 import {
   EstadoCalendarioNomina,
   PayrollCalendar,
 } from '../payroll/entities/payroll-calendar.entity';
-import { EmployeesService } from '../employees/employees.service';
-import { ActionQuota, EstadoCuota } from './entities/action-quota.entity';
+
+import { PayrollEmployeeVerification } from '../payroll/entities/payroll-employee-verification.entity';
+import {
+  PERSONAL_ACTION_INVALIDATED_BY,
+  PERSONAL_ACTION_INVALIDATION_REASON,
+} from './constants/personal-action-invalidation.constants';
 import { AbsenceLine } from './entities/absence-line.entity';
+import { ActionQuota, EstadoCuota } from './entities/action-quota.entity';
+import {
+  PersonalAction,
+  PERSONAL_ACTION_APPROVED_STATES,
+  PERSONAL_ACTION_PENDING_STATES,
+  PersonalActionEstado,
+} from './entities/personal-action.entity';
+import type { CreatePersonalActionDto } from './dto/create-personal-action.dto';
+import type { UpsertAbsenceDto } from './dto/upsert-absence.dto';
+import type { UpsertBonusDto } from './dto/upsert-bonus.dto';
+import type { UpsertDisabilityDto } from './dto/upsert-disability.dto';
+import type { UpsertLicenseDto } from './dto/upsert-license.dto';
+import type { UpsertOvertimeDto } from './dto/upsert-overtime.dto';
+import type { UpsertRetentionDto } from './dto/upsert-retention.dto';
+import type { UpsertDiscountDto } from './dto/upsert-discount.dto';
+import type { UpsertIncreaseDto } from './dto/upsert-increase.dto';
+import type { UpsertVacationDto } from './dto/upsert-vacation.dto';
+
+
+import type { EmployeeSensitiveDataService } from '../../common/services/employee-sensitive-data.service';
+import type { EmployeesService } from '../employees/employees.service';
+
 import {
   DisabilityLine,
   TipoIncapacidadLinea,
@@ -39,23 +49,18 @@ import {
 } from './entities/disability-line.entity';
 import { LicenseLine } from './entities/license-line.entity';
 import { BonusLine } from './entities/bonus-line.entity';
-import {
-  OvertimeLine,
-  TipoJornadaHoraExtraLinea,
-} from './entities/overtime-line.entity';
+import { OvertimeLine, TipoJornadaHoraExtraLinea } from './entities/overtime-line.entity';
 import { RetentionLine } from './entities/retention-line.entity';
 import { DiscountLine } from './entities/discount-line.entity';
-import {
-  IncreaseLine,
-  MetodoCalculoAumentoLinea,
-} from './entities/increase-line.entity';
+import { IncreaseLine, MetodoCalculoAumentoLinea } from './entities/increase-line.entity';
 import { VacationDate } from './entities/vacation-date.entity';
-import { AuditOutboxService } from '../integration/audit-outbox.service';
-import { EmployeeSensitiveDataService } from '../../common/services/employee-sensitive-data.service';
-import {
-  PERSONAL_ACTION_INVALIDATED_BY,
-  PERSONAL_ACTION_INVALIDATION_REASON,
-} from './constants/personal-action-invalidation.constants';
+
+import type { AuditOutboxService } from '../integration/audit-outbox.service';
+
+
+
+import type { EventEmitter2 } from '@nestjs/event-emitter';
+import type { DataSource, Repository } from 'typeorm';
 
 @Injectable()
 export class PersonalActionsService {
@@ -86,6 +91,8 @@ export class PersonalActionsService {
     private readonly userCompanyRepo: Repository<UserCompany>,
     @InjectRepository(PayrollCalendar)
     private readonly payrollRepo: Repository<PayrollCalendar>,
+    @InjectRepository(PayrollEmployeeVerification)
+    private readonly payrollVerificationRepo: Repository<PayrollEmployeeVerification>,
     private readonly employeesService: EmployeesService,
     private readonly sensitiveDataService: EmployeeSensitiveDataService,
     private readonly eventEmitter: EventEmitter2,
@@ -97,11 +104,15 @@ export class PersonalActionsService {
     userId: number,
     idEmpresa?: number,
     estados?: PersonalActionEstado[],
-  ): Promise<Array<PersonalAction & {
-    periodoPagoResumen?: string | null;
-    movimientoResumen?: string | null;
-    remuneracionResumen?: 'SI' | 'NO' | 'MIXTA' | null;
-  }>> {
+  ): Promise<
+    Array<
+      PersonalAction & {
+        periodoPagoResumen?: string | null;
+        movimientoResumen?: string | null;
+        remuneracionResumen?: 'SI' | 'NO' | 'MIXTA' | null;
+      }
+    >
+  > {
     const qb = this.repo.createQueryBuilder('a').where('1=1');
 
     if (idEmpresa != null) {
@@ -135,16 +146,12 @@ export class PersonalActionsService {
       .map((item) => item.id);
     const retentionIds = actions
       .filter((item) =>
-        ['retencion', 'deduccion_retencion'].includes(
-          item.tipoAccion?.trim().toLowerCase(),
-        ),
+        ['retencion', 'deduccion_retencion'].includes(item.tipoAccion?.trim().toLowerCase()),
       )
       .map((item) => item.id);
     const discountIds = actions
       .filter((item) =>
-        ['descuento', 'deduccion_descuento'].includes(
-          item.tipoAccion?.trim().toLowerCase(),
-        ),
+        ['descuento', 'deduccion_descuento'].includes(item.tipoAccion?.trim().toLowerCase()),
       )
       .map((item) => item.id);
     const increaseIds = actions
@@ -152,9 +159,7 @@ export class PersonalActionsService {
       .map((item) => item.id);
     const vacationIds = actions
       .filter((item) =>
-        ['vacaciones', 'vacacion', 'vacation'].includes(
-          item.tipoAccion?.trim().toLowerCase(),
-        ),
+        ['vacaciones', 'vacacion', 'vacation'].includes(item.tipoAccion?.trim().toLowerCase()),
       )
       .map((item) => item.id);
 
@@ -209,9 +214,7 @@ export class PersonalActionsService {
       'acc_aumentos_lineas',
       increaseIds,
     );
-    const vacationSummary = await this.buildActionSummaryFromVacations(
-      vacationIds,
-    );
+    const vacationSummary = await this.buildActionSummaryFromVacations(vacationIds);
     absenceSummary.forEach((entry, key) => summaryMap.set(key, entry));
     licenseSummary.forEach((entry, key) => summaryMap.set(key, entry));
     disabilitySummary.forEach((entry, key) => summaryMap.set(key, entry));
@@ -287,14 +290,11 @@ export class PersonalActionsService {
         idAccion: Number(line.idAccion),
         payrollId: Number(line.payrollId),
         payrollLabel: line.payrollLabel ? String(line.payrollLabel) : null,
-        payrollEstado:
-          line.payrollEstado == null ? null : Number(line.payrollEstado),
+        payrollEstado: line.payrollEstado == null ? null : Number(line.payrollEstado),
         movimientoId: Number(line.movimientoId),
         movimientoLabel: line.movimientoLabel ? String(line.movimientoLabel) : null,
         movimientoInactivo:
-          line.movimientoInactivo == null
-            ? null
-            : Number(line.movimientoInactivo) === 1,
+          line.movimientoInactivo == null ? null : Number(line.movimientoInactivo) === 1,
         tipoAusencia: String(line.tipoAusencia ?? 'JUSTIFICADA'),
         cantidad: Number(line.cantidad ?? 0),
         monto: Number(line.monto ?? 0),
@@ -344,10 +344,8 @@ export class PersonalActionsService {
     );
 
     return (rows ?? []).map((row: Record<string, unknown>) => {
-      const payloadBefore =
-        (row.payloadBefore as Record<string, unknown> | null) ?? null;
-      const payloadAfter =
-        (row.payloadAfter as Record<string, unknown> | null) ?? null;
+      const payloadBefore = (row.payloadBefore as Record<string, unknown> | null) ?? null;
+      const payloadAfter = (row.payloadAfter as Record<string, unknown> | null) ?? null;
 
       return {
         id: String(row.id ?? ''),
@@ -359,9 +357,7 @@ export class PersonalActionsService {
         actorNombre: row.actorNombre ? String(row.actorNombre) : null,
         actorEmail: row.actorEmail ? String(row.actorEmail) : null,
         descripcion: String(row.descripcion ?? ''),
-        fechaCreacion: row.fechaCreacion
-          ? new Date(String(row.fechaCreacion)).toISOString()
-          : null,
+        fechaCreacion: row.fechaCreacion ? new Date(String(row.fechaCreacion)).toISOString() : null,
         metadata: (row.metadata as Record<string, unknown> | null) ?? null,
         cambios: this.buildAuditChanges(payloadBefore, payloadAfter),
       };
@@ -410,14 +406,11 @@ export class PersonalActionsService {
         idAccion: Number(line.idAccion),
         payrollId: Number(line.payrollId),
         payrollLabel: line.payrollLabel ? String(line.payrollLabel) : null,
-        payrollEstado:
-          line.payrollEstado == null ? null : Number(line.payrollEstado),
+        payrollEstado: line.payrollEstado == null ? null : Number(line.payrollEstado),
         movimientoId: Number(line.movimientoId),
         movimientoLabel: line.movimientoLabel ? String(line.movimientoLabel) : null,
         movimientoInactivo:
-          line.movimientoInactivo == null
-            ? null
-            : Number(line.movimientoInactivo) === 1,
+          line.movimientoInactivo == null ? null : Number(line.movimientoInactivo) === 1,
         tipoLicencia: String(line.tipoLicencia ?? 'permiso_con_goce'),
         cantidad: Number(line.cantidad ?? 0),
         monto: Number(line.monto ?? 0),
@@ -440,9 +433,7 @@ export class PersonalActionsService {
   async findDisabilityDetail(id: number, userId: number) {
     const action = await this.findOne(id, userId);
     if (action.tipoAccion.trim().toLowerCase() !== 'incapacidad') {
-      throw new BadRequestException(
-        'La accion no corresponde al modulo de incapacidades',
-      );
+      throw new BadRequestException('La accion no corresponde al modulo de incapacidades');
     }
 
     const lines = await this.repo.query(
@@ -486,20 +477,13 @@ export class PersonalActionsService {
         idAccion: Number(line.idAccion),
         payrollId: Number(line.payrollId),
         payrollLabel: line.payrollLabel ? String(line.payrollLabel) : null,
-        payrollEstado:
-          line.payrollEstado == null ? null : Number(line.payrollEstado),
+        payrollEstado: line.payrollEstado == null ? null : Number(line.payrollEstado),
         movimientoId: Number(line.movimientoId),
         movimientoLabel: line.movimientoLabel ? String(line.movimientoLabel) : null,
         movimientoInactivo:
-          line.movimientoInactivo == null
-            ? null
-            : Number(line.movimientoInactivo) === 1,
-        tipoIncapacidad: String(
-          line.tipoIncapacidad ?? TipoIncapacidadLinea.ENFERMEDAD_COMUN_CCSS,
-        ),
-        tipoInstitucion: String(
-          line.tipoInstitucion ?? TipoInstitucionIncapacidadLinea.CCSS,
-        ),
+          line.movimientoInactivo == null ? null : Number(line.movimientoInactivo) === 1,
+        tipoIncapacidad: String(line.tipoIncapacidad ?? TipoIncapacidadLinea.ENFERMEDAD_COMUN_CCSS),
+        tipoInstitucion: String(line.tipoInstitucion ?? TipoInstitucionIncapacidadLinea.CCSS),
         cantidad: Number(line.cantidad ?? 0),
         monto: Number(line.monto ?? 0),
         montoIns: Number(line.montoIns ?? 0),
@@ -517,9 +501,7 @@ export class PersonalActionsService {
   async getDisabilityAuditTrail(id: number, userId: number, limit = 200) {
     const action = await this.findOne(id, userId);
     if (action.tipoAccion.trim().toLowerCase() !== 'incapacidad') {
-      throw new BadRequestException(
-        'La accion no corresponde al modulo de incapacidades',
-      );
+      throw new BadRequestException('La accion no corresponde al modulo de incapacidades');
     }
     return this.getActionAuditTrailCore(action.id, limit);
   }
@@ -527,9 +509,7 @@ export class PersonalActionsService {
   async findBonusDetail(id: number, userId: number) {
     const action = await this.findOne(id, userId);
     if (action.tipoAccion.trim().toLowerCase() !== 'bonificacion') {
-      throw new BadRequestException(
-        'La accion no corresponde al modulo de bonificaciones',
-      );
+      throw new BadRequestException('La accion no corresponde al modulo de bonificaciones');
     }
 
     const lines = await this.repo.query(
@@ -568,14 +548,11 @@ export class PersonalActionsService {
         idAccion: Number(line.idAccion),
         payrollId: Number(line.payrollId),
         payrollLabel: line.payrollLabel ? String(line.payrollLabel) : null,
-        payrollEstado:
-          line.payrollEstado == null ? null : Number(line.payrollEstado),
+        payrollEstado: line.payrollEstado == null ? null : Number(line.payrollEstado),
         movimientoId: Number(line.movimientoId),
         movimientoLabel: line.movimientoLabel ? String(line.movimientoLabel) : null,
         movimientoInactivo:
-          line.movimientoInactivo == null
-            ? null
-            : Number(line.movimientoInactivo) === 1,
+          line.movimientoInactivo == null ? null : Number(line.movimientoInactivo) === 1,
         tipoBonificacion: String(line.tipoBonificacion ?? 'ordinaria_salarial'),
         cantidad: Number(line.cantidad ?? 0),
         monto: Number(line.monto ?? 0),
@@ -590,9 +567,7 @@ export class PersonalActionsService {
   async getBonusAuditTrail(id: number, userId: number, limit = 200) {
     const action = await this.findOne(id, userId);
     if (action.tipoAccion.trim().toLowerCase() !== 'bonificacion') {
-      throw new BadRequestException(
-        'La accion no corresponde al modulo de bonificaciones',
-      );
+      throw new BadRequestException('La accion no corresponde al modulo de bonificaciones');
     }
     return this.getActionAuditTrailCore(action.id, limit);
   }
@@ -600,9 +575,7 @@ export class PersonalActionsService {
   async findOvertimeDetail(id: number, userId: number) {
     const action = await this.findOne(id, userId);
     if (action.tipoAccion.trim().toLowerCase() !== 'hora_extra') {
-      throw new BadRequestException(
-        'La accion no corresponde al modulo de horas extras',
-      );
+      throw new BadRequestException('La accion no corresponde al modulo de horas extras');
     }
 
     const lines = await this.repo.query(
@@ -643,14 +616,11 @@ export class PersonalActionsService {
         idAccion: Number(line.idAccion),
         payrollId: Number(line.payrollId),
         payrollLabel: line.payrollLabel ? String(line.payrollLabel) : null,
-        payrollEstado:
-          line.payrollEstado == null ? null : Number(line.payrollEstado),
+        payrollEstado: line.payrollEstado == null ? null : Number(line.payrollEstado),
         movimientoId: Number(line.movimientoId),
         movimientoLabel: line.movimientoLabel ? String(line.movimientoLabel) : null,
         movimientoInactivo:
-          line.movimientoInactivo == null
-            ? null
-            : Number(line.movimientoInactivo) === 1,
+          line.movimientoInactivo == null ? null : Number(line.movimientoInactivo) === 1,
         fechaInicioHoraExtra: this.toYmdFlexible(line.fechaInicioHoraExtra),
         fechaFinHoraExtra: this.toYmdFlexible(line.fechaFinHoraExtra),
         tipoJornadaHorasExtras: String(
@@ -669,23 +639,15 @@ export class PersonalActionsService {
   async getOvertimeAuditTrail(id: number, userId: number, limit = 200) {
     const action = await this.findOne(id, userId);
     if (action.tipoAccion.trim().toLowerCase() !== 'hora_extra') {
-      throw new BadRequestException(
-        'La accion no corresponde al modulo de horas extras',
-      );
+      throw new BadRequestException('La accion no corresponde al modulo de horas extras');
     }
     return this.getActionAuditTrailCore(action.id, limit);
   }
 
   async findRetentionDetail(id: number, userId: number) {
     const action = await this.findOne(id, userId);
-    if (
-      !['retencion', 'deduccion_retencion'].includes(
-        action.tipoAccion.trim().toLowerCase(),
-      )
-    ) {
-      throw new BadRequestException(
-        'La accion no corresponde al modulo de retenciones',
-      );
+    if (!['retencion', 'deduccion_retencion'].includes(action.tipoAccion.trim().toLowerCase())) {
+      throw new BadRequestException('La accion no corresponde al modulo de retenciones');
     }
 
     const lines = await this.repo.query(
@@ -723,14 +685,11 @@ export class PersonalActionsService {
         idAccion: Number(line.idAccion),
         payrollId: Number(line.payrollId),
         payrollLabel: line.payrollLabel ? String(line.payrollLabel) : null,
-        payrollEstado:
-          line.payrollEstado == null ? null : Number(line.payrollEstado),
+        payrollEstado: line.payrollEstado == null ? null : Number(line.payrollEstado),
         movimientoId: Number(line.movimientoId),
         movimientoLabel: line.movimientoLabel ? String(line.movimientoLabel) : null,
         movimientoInactivo:
-          line.movimientoInactivo == null
-            ? null
-            : Number(line.movimientoInactivo) === 1,
+          line.movimientoInactivo == null ? null : Number(line.movimientoInactivo) === 1,
         cantidad: Number(line.cantidad ?? 0),
         monto: Number(line.monto ?? 0),
         remuneracion: Number(line.remuneracion ?? 0) === 1,
@@ -743,28 +702,16 @@ export class PersonalActionsService {
 
   async getRetentionAuditTrail(id: number, userId: number, limit = 200) {
     const action = await this.findOne(id, userId);
-    if (
-      !['retencion', 'deduccion_retencion'].includes(
-        action.tipoAccion.trim().toLowerCase(),
-      )
-    ) {
-      throw new BadRequestException(
-        'La accion no corresponde al modulo de retenciones',
-      );
+    if (!['retencion', 'deduccion_retencion'].includes(action.tipoAccion.trim().toLowerCase())) {
+      throw new BadRequestException('La accion no corresponde al modulo de retenciones');
     }
     return this.getActionAuditTrailCore(action.id, limit);
   }
 
   async findDiscountDetail(id: number, userId: number) {
     const action = await this.findOne(id, userId);
-    if (
-      !['descuento', 'deduccion_descuento'].includes(
-        action.tipoAccion.trim().toLowerCase(),
-      )
-    ) {
-      throw new BadRequestException(
-        'La accion no corresponde al modulo de descuentos',
-      );
+    if (!['descuento', 'deduccion_descuento'].includes(action.tipoAccion.trim().toLowerCase())) {
+      throw new BadRequestException('La accion no corresponde al modulo de descuentos');
     }
 
     const lines = await this.repo.query(
@@ -802,14 +749,11 @@ export class PersonalActionsService {
         idAccion: Number(line.idAccion),
         payrollId: Number(line.payrollId),
         payrollLabel: line.payrollLabel ? String(line.payrollLabel) : null,
-        payrollEstado:
-          line.payrollEstado == null ? null : Number(line.payrollEstado),
+        payrollEstado: line.payrollEstado == null ? null : Number(line.payrollEstado),
         movimientoId: Number(line.movimientoId),
         movimientoLabel: line.movimientoLabel ? String(line.movimientoLabel) : null,
         movimientoInactivo:
-          line.movimientoInactivo == null
-            ? null
-            : Number(line.movimientoInactivo) === 1,
+          line.movimientoInactivo == null ? null : Number(line.movimientoInactivo) === 1,
         cantidad: Number(line.cantidad ?? 0),
         monto: Number(line.monto ?? 0),
         remuneracion: Number(line.remuneracion ?? 0) === 1,
@@ -823,9 +767,7 @@ export class PersonalActionsService {
   async findIncreaseDetail(id: number, userId: number) {
     const action = await this.findOne(id, userId);
     if (action.tipoAccion.trim().toLowerCase() !== 'aumento') {
-      throw new BadRequestException(
-        'La accion no corresponde al modulo de aumentos',
-      );
+      throw new BadRequestException('La accion no corresponde al modulo de aumentos');
     }
 
     const rows = await this.repo.query(
@@ -861,26 +803,24 @@ export class PersonalActionsService {
     const row = rows?.[0];
     const line = row
       ? {
-        idLinea: Number(row.idLinea),
-        idAccion: Number(row.idAccion),
-        payrollId: Number(row.payrollId),
-        payrollLabel: row.payrollLabel ? String(row.payrollLabel) : null,
-        payrollEstado: row.payrollEstado == null ? null : Number(row.payrollEstado),
-        movimientoId: Number(row.movimientoId),
-        movimientoLabel: row.movimientoLabel ? String(row.movimientoLabel) : null,
-        movimientoInactivo:
-          row.movimientoInactivo == null
-            ? null
-            : Number(row.movimientoInactivo) === 1,
-        metodoCalculo: row.metodoCalculo,
-        monto: Number(row.monto ?? 0),
-        porcentaje: Number(row.porcentaje ?? 0),
-        salarioActual: Number(row.salarioActual ?? 0),
-        nuevoSalario: Number(row.nuevoSalario ?? 0),
-        formula: row.formula ? String(row.formula) : '',
-        orden: Number(row.orden ?? 1),
-        fechaEfecto: this.toYmdFlexible(row.fechaEfecto),
-      }
+          idLinea: Number(row.idLinea),
+          idAccion: Number(row.idAccion),
+          payrollId: Number(row.payrollId),
+          payrollLabel: row.payrollLabel ? String(row.payrollLabel) : null,
+          payrollEstado: row.payrollEstado == null ? null : Number(row.payrollEstado),
+          movimientoId: Number(row.movimientoId),
+          movimientoLabel: row.movimientoLabel ? String(row.movimientoLabel) : null,
+          movimientoInactivo:
+            row.movimientoInactivo == null ? null : Number(row.movimientoInactivo) === 1,
+          metodoCalculo: row.metodoCalculo,
+          monto: Number(row.monto ?? 0),
+          porcentaje: Number(row.porcentaje ?? 0),
+          salarioActual: Number(row.salarioActual ?? 0),
+          nuevoSalario: Number(row.nuevoSalario ?? 0),
+          formula: row.formula ? String(row.formula) : '',
+          orden: Number(row.orden ?? 1),
+          fechaEfecto: this.toYmdFlexible(row.fechaEfecto),
+        }
       : null;
 
     return {
@@ -891,14 +831,8 @@ export class PersonalActionsService {
 
   async findVacationDetail(id: number, userId: number) {
     const action = await this.findOne(id, userId);
-    if (
-      !['vacaciones', 'vacacion', 'vacation'].includes(
-        action.tipoAccion.trim().toLowerCase(),
-      )
-    ) {
-      throw new BadRequestException(
-        'La accion no corresponde al modulo de vacaciones',
-      );
+    if (!['vacaciones', 'vacacion', 'vacation'].includes(action.tipoAccion.trim().toLowerCase())) {
+      throw new BadRequestException('La accion no corresponde al modulo de vacaciones');
     }
 
     const rows = await this.repo.query(
@@ -932,14 +866,11 @@ export class PersonalActionsService {
         idAccion: Number(row.idAccion),
         payrollId: Number(row.payrollId),
         payrollLabel: row.payrollLabel ? String(row.payrollLabel) : null,
-        payrollEstado:
-          row.payrollEstado == null ? null : Number(row.payrollEstado),
+        payrollEstado: row.payrollEstado == null ? null : Number(row.payrollEstado),
         movimientoId: Number(row.movimientoId),
         movimientoLabel: row.movimientoLabel ? String(row.movimientoLabel) : null,
         movimientoInactivo:
-          row.movimientoInactivo == null
-            ? null
-            : Number(row.movimientoInactivo) === 1,
+          row.movimientoInactivo == null ? null : Number(row.movimientoInactivo) === 1,
         fechaVacacion: this.toYmdFlexible(row.fechaVacacion),
         orden: Number(row.orden ?? 0),
       })),
@@ -948,14 +879,8 @@ export class PersonalActionsService {
 
   async getDiscountAuditTrail(id: number, userId: number, limit = 200) {
     const action = await this.findOne(id, userId);
-    if (
-      !['descuento', 'deduccion_descuento'].includes(
-        action.tipoAccion.trim().toLowerCase(),
-      )
-    ) {
-      throw new BadRequestException(
-        'La accion no corresponde al modulo de descuentos',
-      );
+    if (!['descuento', 'deduccion_descuento'].includes(action.tipoAccion.trim().toLowerCase())) {
+      throw new BadRequestException('La accion no corresponde al modulo de descuentos');
     }
     return this.getActionAuditTrailCore(action.id, limit);
   }
@@ -963,31 +888,20 @@ export class PersonalActionsService {
   async getIncreaseAuditTrail(id: number, userId: number, limit = 200) {
     const action = await this.findOne(id, userId);
     if (action.tipoAccion.trim().toLowerCase() !== 'aumento') {
-      throw new BadRequestException(
-        'La accion no corresponde al modulo de aumentos',
-      );
+      throw new BadRequestException('La accion no corresponde al modulo de aumentos');
     }
     return this.getActionAuditTrailCore(action.id, limit);
   }
 
   async getVacationAuditTrail(id: number, userId: number, limit = 200) {
     const action = await this.findOne(id, userId);
-    if (
-      !['vacaciones', 'vacacion', 'vacation'].includes(
-        action.tipoAccion.trim().toLowerCase(),
-      )
-    ) {
-      throw new BadRequestException(
-        'La accion no corresponde al modulo de vacaciones',
-      );
+    if (!['vacaciones', 'vacacion', 'vacation'].includes(action.tipoAccion.trim().toLowerCase())) {
+      throw new BadRequestException('La accion no corresponde al modulo de vacaciones');
     }
     return this.getActionAuditTrailCore(action.id, limit);
   }
 
-  async create(
-    dto: CreatePersonalActionDto,
-    userId?: number,
-  ): Promise<PersonalAction> {
+  async create(dto: CreatePersonalActionDto, userId?: number): Promise<PersonalAction> {
     if (userId != null) {
       await this.assertUserCompanyAccess(userId, dto.idEmpresa);
     }
@@ -1026,9 +940,7 @@ export class PersonalActionsService {
   async approve(id: number, userId?: number): Promise<PersonalAction> {
     const action = await this.findOne(id, userId);
     if (!PERSONAL_ACTION_PENDING_STATES.includes(action.estado)) {
-      throw new BadRequestException(
-        'Solo se puede aprobar una accion en estado pendiente',
-      );
+      throw new BadRequestException('Solo se puede aprobar una accion en estado pendiente');
     }
 
     action.estado = PersonalActionEstado.APPROVED;
@@ -1059,10 +971,13 @@ export class PersonalActionsService {
   ): Promise<PersonalAction> {
     const action = await this.findOne(id, userId);
     if (!PERSONAL_ACTION_APPROVED_STATES.includes(action.estado)) {
-      throw new BadRequestException(
-        'Solo se puede asociar una accion aprobada a una planilla',
-      );
+      throw new BadRequestException('Solo se puede asociar una accion aprobada a una planilla');
     }
+    await this.assertEmployeeNotVerifiedForPayrolls(
+      action.idEmpleado,
+      [idCalendarioNomina],
+      'acciones',
+    );
 
     action.idCalendarioNomina = idCalendarioNomina;
     action.modificadoPor = userId ?? null;
@@ -1078,16 +993,10 @@ export class PersonalActionsService {
     return this.associateToCalendar(id, idCalendarioNomina, userId);
   }
 
-  async reject(
-    id: number,
-    motivo: string,
-    userId?: number,
-  ): Promise<PersonalAction> {
+  async reject(id: number, motivo: string, userId?: number): Promise<PersonalAction> {
     const action = await this.findOne(id, userId);
     if (!PERSONAL_ACTION_PENDING_STATES.includes(action.estado)) {
-      throw new BadRequestException(
-        'Solo se puede rechazar una accion pendiente',
-      );
+      throw new BadRequestException('Solo se puede rechazar una accion pendiente');
     }
 
     action.estado = PersonalActionEstado.REJECTED;
@@ -1154,9 +1063,7 @@ export class PersonalActionsService {
     const pageSize = 100;
     let page = 1;
     let total = 0;
-    const allEmployees: Awaited<
-      ReturnType<EmployeesService['findAll']>
-    >['data'] = [];
+    const allEmployees: Awaited<ReturnType<EmployeesService['findAll']>>['data'] = [];
 
     do {
       const result = await this.employeesService.findAll(userId, idEmpresa, {
@@ -1195,10 +1102,7 @@ export class PersonalActionsService {
       }
       const decrypted = this.sensitiveDataService.decrypt(raw);
       const parsed = decrypted == null ? NaN : Number(decrypted);
-      salaryByEmployeeId.set(
-        Number(row.id),
-        Number.isFinite(parsed) ? parsed : null,
-      );
+      salaryByEmployeeId.set(Number(row.id), Number.isFinite(parsed) ? parsed : null);
     });
 
     return allEmployees.map((employee) => ({
@@ -1220,11 +1124,7 @@ export class PersonalActionsService {
     }));
   }
 
-  async findEligibleAbsencePayrolls(
-    userId: number,
-    idEmpresa: number,
-    idEmpleado: number,
-  ) {
+  async findEligibleAbsencePayrolls(userId: number, idEmpresa: number, idEmpleado: number) {
     await this.assertUserCompanyAccess(userId, idEmpresa);
 
     const employees = await this.findAbsenceEmployeesCatalog(userId, idEmpresa);
@@ -1272,8 +1172,7 @@ export class PersonalActionsService {
       id: Number(row.id),
       idEmpresa: Number(row.idEmpresa),
       idPeriodoPago: Number(row.idPeriodoPago),
-      idTipoPlanilla:
-        row.idTipoPlanilla == null ? null : Number(row.idTipoPlanilla),
+      idTipoPlanilla: row.idTipoPlanilla == null ? null : Number(row.idTipoPlanilla),
       nombrePlanilla: row.nombrePlanilla ? String(row.nombrePlanilla) : null,
       tipoPlanilla: row.tipoPlanilla ? String(row.tipoPlanilla) : 'Regular',
       fechaInicioPeriodo: this.toYmdFlexible(row.fechaInicioPeriodo) ?? '',
@@ -1287,21 +1186,11 @@ export class PersonalActionsService {
     }));
   }
 
-  async getVacationAvailability(
-    userId: number,
-    idEmpresa: number,
-    idEmpleado: number,
-  ) {
+  async getVacationAvailability(userId: number, idEmpresa: number, idEmpleado: number) {
     await this.assertUserCompanyAccess(userId, idEmpresa);
 
-    const saldoReal = await this.getVacationBalanceForEmployee(
-      idEmpresa,
-      idEmpleado,
-    );
-    const reservado = await this.getVacationReservedDays(
-      idEmpresa,
-      idEmpleado,
-    );
+    const saldoReal = await this.getVacationBalanceForEmployee(idEmpresa, idEmpleado);
+    const reservado = await this.getVacationReservedDays(idEmpresa, idEmpleado);
     const disponible = saldoReal - reservado;
 
     return {
@@ -1342,19 +1231,18 @@ export class PersonalActionsService {
     const moneda = String(employee.monedaSalario ?? 'CRC').toUpperCase();
     const groupId = `AUS-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`.toUpperCase();
     const groupedLines = this.groupLinesByPayroll(dto.lines);
+    await this.assertEmployeeNotVerifiedForPayrolls(
+      dto.idEmpleado,
+      dto.lines.map((line) => line.payrollId),
+      'ausencias',
+    );
 
     const created = await this.dataSource.transaction(async (trx) => {
-      const createdActions: Array<{ action: PersonalAction; linesCount: number }> =
-        [];
+      const createdActions: Array<{ action: PersonalAction; linesCount: number }> = [];
 
       for (const group of groupedLines) {
-        const totalMonto = group.lines.reduce(
-          (sum, line) => sum + Number(line.monto || 0),
-          0,
-        );
-        const firstDate = group.lines[0]?.fechaEfecto
-          ? new Date(group.lines[0].fechaEfecto)
-          : null;
+        const totalMonto = group.lines.reduce((sum, line) => sum + Number(line.monto || 0), 0);
+        const firstDate = group.lines[0]?.fechaEfecto ? new Date(group.lines[0].fechaEfecto) : null;
         const lastDate = group.lines[group.lines.length - 1]?.fechaEfecto
           ? new Date(group.lines[group.lines.length - 1].fechaEfecto)
           : firstDate;
@@ -1482,8 +1370,10 @@ export class PersonalActionsService {
     }
 
     await this.validateAbsencePayload(dto, userId);
-    this.assertSinglePayrollOnUpdate(
-      dto.lines,
+    this.assertSinglePayrollOnUpdate(dto.lines, 'ausencias');
+    await this.assertEmployeeNotVerifiedForPayrolls(
+      dto.idEmpleado,
+      dto.lines.map((line) => line.payrollId),
       'ausencias',
     );
 
@@ -1565,11 +1455,7 @@ export class PersonalActionsService {
     return this.findOne(id, userId);
   }
 
-  async advanceAbsenceState(
-    id: number,
-    userId: number,
-    userPermissions: string[] = [],
-  ) {
+  async advanceAbsenceState(id: number, userId: number, userPermissions: string[] = []) {
     const action = await this.findOne(id, userId);
     if (action.tipoAccion.trim().toLowerCase() !== 'ausencia') {
       throw new BadRequestException('La accion no corresponde al modulo de ausencias');
@@ -1585,9 +1471,7 @@ export class PersonalActionsService {
       throw new BadRequestException('La accion no tiene un estado siguiente operativo');
     }
 
-    const requiredPermissionByState: Partial<
-      Record<PersonalActionEstado, string>
-    > = {
+    const requiredPermissionByState: Partial<Record<PersonalActionEstado, string>> = {
       [PersonalActionEstado.DRAFT]: 'hr-action-ausencias:edit',
       [PersonalActionEstado.PENDING_SUPERVISOR]: 'hr-action-ausencias:approve',
       [PersonalActionEstado.PENDING_RRHH]: 'hr-action-ausencias:approve',
@@ -1630,10 +1514,7 @@ export class PersonalActionsService {
       actorUserId: userId,
       companyContextId: saved.idEmpresa,
       descripcion: `Ausencia movida al estado ${this.getEstadoNombre(saved.estado)}`,
-      payloadAfter: this.buildAbsenceAuditPayload(
-        saved,
-        await this.countAbsenceLines(saved.id),
-      ),
+      payloadAfter: this.buildAbsenceAuditPayload(saved, await this.countAbsenceLines(saved.id)),
     });
 
     return saved;
@@ -1657,9 +1538,7 @@ export class PersonalActionsService {
         PersonalActionEstado.PENDING_RRHH,
       ].includes(action.estado)
     ) {
-      throw new BadRequestException(
-        'La ausencia no se puede invalidar en su estado actual',
-      );
+      throw new BadRequestException('La ausencia no se puede invalidar en su estado actual');
     }
 
     this.assertActionPermission(
@@ -1672,8 +1551,7 @@ export class PersonalActionsService {
       action.estado = PersonalActionEstado.INVALIDATED;
       action.invalidatedAt = new Date();
       action.invalidatedReason = motivo?.trim() || 'Invalidada manualmente por RRHH';
-      action.invalidatedReasonCode =
-        PERSONAL_ACTION_INVALIDATION_REASON.MANUAL_INVALIDATION;
+      action.invalidatedReasonCode = PERSONAL_ACTION_INVALIDATION_REASON.MANUAL_INVALIDATION;
       action.invalidatedByType = PERSONAL_ACTION_INVALIDATED_BY.USER;
       action.invalidatedByUserId = userId;
       action.invalidatedMeta = {
@@ -1716,10 +1594,7 @@ export class PersonalActionsService {
       actorUserId: userId,
       companyContextId: action.idEmpresa,
       descripcion: `Ausencia invalidada para empleado #${action.idEmpleado}`,
-      payloadAfter: this.buildAbsenceAuditPayload(
-        action,
-        await this.countAbsenceLines(action.id),
-      ),
+      payloadAfter: this.buildAbsenceAuditPayload(action, await this.countAbsenceLines(action.id)),
     });
 
     return this.findOne(action.id, userId);
@@ -1733,19 +1608,18 @@ export class PersonalActionsService {
     const moneda = String(employee?.monedaSalario ?? 'CRC').toUpperCase();
     const groupId = `LIC-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`.toUpperCase();
     const groupedLines = this.groupLinesByPayroll(dto.lines);
+    await this.assertEmployeeNotVerifiedForPayrolls(
+      dto.idEmpleado,
+      dto.lines.map((line) => line.payrollId),
+      'licencias',
+    );
 
     const created = await this.dataSource.transaction(async (trx) => {
-      const createdActions: Array<{ action: PersonalAction; linesCount: number }> =
-        [];
+      const createdActions: Array<{ action: PersonalAction; linesCount: number }> = [];
 
       for (const group of groupedLines) {
-        const totalMonto = group.lines.reduce(
-          (sum, line) => sum + Number(line.monto || 0),
-          0,
-        );
-        const firstDate = group.lines[0]?.fechaEfecto
-          ? new Date(group.lines[0].fechaEfecto)
-          : null;
+        const totalMonto = group.lines.reduce((sum, line) => sum + Number(line.monto || 0), 0);
+        const firstDate = group.lines[0]?.fechaEfecto ? new Date(group.lines[0].fechaEfecto) : null;
         const lastDate = group.lines[group.lines.length - 1]?.fechaEfecto
           ? new Date(group.lines[group.lines.length - 1].fechaEfecto)
           : firstDate;
@@ -1874,6 +1748,11 @@ export class PersonalActionsService {
 
     await this.validateLicensePayload(dto, userId);
     this.assertSinglePayrollOnUpdate(dto.lines, 'licencias');
+    await this.assertEmployeeNotVerifiedForPayrolls(
+      dto.idEmpleado,
+      dto.lines.map((line) => line.payrollId),
+      'licencias',
+    );
 
     const payloadBefore = this.buildAbsenceAuditPayload(
       action,
@@ -1953,11 +1832,7 @@ export class PersonalActionsService {
     return this.findOne(id, userId);
   }
 
-  async advanceLicenseState(
-    id: number,
-    userId: number,
-    userPermissions: string[] = [],
-  ) {
+  async advanceLicenseState(id: number, userId: number, userPermissions: string[] = []) {
     const action = await this.findOne(id, userId);
     if (action.tipoAccion.trim().toLowerCase() !== 'licencia') {
       throw new BadRequestException('La accion no corresponde al modulo de licencias');
@@ -1973,9 +1848,7 @@ export class PersonalActionsService {
       throw new BadRequestException('La accion no tiene un estado siguiente operativo');
     }
 
-    const requiredPermissionByState: Partial<
-      Record<PersonalActionEstado, string>
-    > = {
+    const requiredPermissionByState: Partial<Record<PersonalActionEstado, string>> = {
       [PersonalActionEstado.DRAFT]: 'hr-action-licencias:edit',
       [PersonalActionEstado.PENDING_SUPERVISOR]: 'hr-action-licencias:approve',
       [PersonalActionEstado.PENDING_RRHH]: 'hr-action-licencias:approve',
@@ -2018,10 +1891,7 @@ export class PersonalActionsService {
       actorUserId: userId,
       companyContextId: saved.idEmpresa,
       descripcion: `Licencia movida al estado ${this.getEstadoNombre(saved.estado)}`,
-      payloadAfter: this.buildAbsenceAuditPayload(
-        saved,
-        await this.countLicenseLines(saved.id),
-      ),
+      payloadAfter: this.buildAbsenceAuditPayload(saved, await this.countLicenseLines(saved.id)),
     });
 
     return saved;
@@ -2045,9 +1915,7 @@ export class PersonalActionsService {
         PersonalActionEstado.PENDING_RRHH,
       ].includes(action.estado)
     ) {
-      throw new BadRequestException(
-        'La licencia no se puede invalidar en su estado actual',
-      );
+      throw new BadRequestException('La licencia no se puede invalidar en su estado actual');
     }
 
     this.assertActionPermission(
@@ -2060,8 +1928,7 @@ export class PersonalActionsService {
       action.estado = PersonalActionEstado.INVALIDATED;
       action.invalidatedAt = new Date();
       action.invalidatedReason = motivo?.trim() || 'Invalidada manualmente por RRHH';
-      action.invalidatedReasonCode =
-        PERSONAL_ACTION_INVALIDATION_REASON.MANUAL_INVALIDATION;
+      action.invalidatedReasonCode = PERSONAL_ACTION_INVALIDATION_REASON.MANUAL_INVALIDATION;
       action.invalidatedByType = PERSONAL_ACTION_INVALIDATED_BY.USER;
       action.invalidatedByUserId = userId;
       action.invalidatedMeta = {
@@ -2104,10 +1971,7 @@ export class PersonalActionsService {
       actorUserId: userId,
       companyContextId: action.idEmpresa,
       descripcion: `Licencia invalidada para empleado #${action.idEmpleado}`,
-      payloadAfter: this.buildAbsenceAuditPayload(
-        action,
-        await this.countLicenseLines(action.id),
-      ),
+      payloadAfter: this.buildAbsenceAuditPayload(action, await this.countLicenseLines(action.id)),
     });
 
     return this.findOne(action.id, userId);
@@ -2121,19 +1985,18 @@ export class PersonalActionsService {
     const moneda = String(employee?.monedaSalario ?? 'CRC').toUpperCase();
     const groupId = `BON-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`.toUpperCase();
     const groupedLines = this.groupLinesByPayroll(dto.lines);
+    await this.assertEmployeeNotVerifiedForPayrolls(
+      dto.idEmpleado,
+      dto.lines.map((line) => line.payrollId),
+      'bonificaciones',
+    );
 
     const created = await this.dataSource.transaction(async (trx) => {
-      const createdActions: Array<{ action: PersonalAction; linesCount: number }> =
-        [];
+      const createdActions: Array<{ action: PersonalAction; linesCount: number }> = [];
 
       for (const group of groupedLines) {
-        const totalMonto = group.lines.reduce(
-          (sum, line) => sum + Number(line.monto || 0),
-          0,
-        );
-        const firstDate = group.lines[0]?.fechaEfecto
-          ? new Date(group.lines[0].fechaEfecto)
-          : null;
+        const totalMonto = group.lines.reduce((sum, line) => sum + Number(line.monto || 0), 0);
+        const firstDate = group.lines[0]?.fechaEfecto ? new Date(group.lines[0].fechaEfecto) : null;
         const lastDate = group.lines[group.lines.length - 1]?.fechaEfecto
           ? new Date(group.lines[group.lines.length - 1].fechaEfecto)
           : firstDate;
@@ -2243,9 +2106,7 @@ export class PersonalActionsService {
   async updateBonus(id: number, dto: UpsertBonusDto, userId: number) {
     const action = await this.findOne(id, userId);
     if (action.tipoAccion.trim().toLowerCase() !== 'bonificacion') {
-      throw new BadRequestException(
-        'La accion no corresponde al modulo de bonificaciones',
-      );
+      throw new BadRequestException('La accion no corresponde al modulo de bonificaciones');
     }
     if (
       ![
@@ -2259,13 +2120,16 @@ export class PersonalActionsService {
       );
     }
     if (action.idEmpresa !== dto.idEmpresa || action.idEmpleado !== dto.idEmpleado) {
-      throw new BadRequestException(
-        'No se permite cambiar empresa o empleado de la bonificacion',
-      );
+      throw new BadRequestException('No se permite cambiar empresa o empleado de la bonificacion');
     }
 
     await this.validateBonusPayload(dto, userId);
     this.assertSinglePayrollOnUpdate(dto.lines, 'bonificaciones');
+    await this.assertEmployeeNotVerifiedForPayrolls(
+      dto.idEmpleado,
+      dto.lines.map((line) => line.payrollId),
+      'bonificaciones',
+    );
 
     const payloadBefore = this.buildAbsenceAuditPayload(
       action,
@@ -2344,16 +2208,10 @@ export class PersonalActionsService {
     return this.findOne(id, userId);
   }
 
-  async advanceBonusState(
-    id: number,
-    userId: number,
-    userPermissions: string[] = [],
-  ) {
+  async advanceBonusState(id: number, userId: number, userPermissions: string[] = []) {
     const action = await this.findOne(id, userId);
     if (action.tipoAccion.trim().toLowerCase() !== 'bonificacion') {
-      throw new BadRequestException(
-        'La accion no corresponde al modulo de bonificaciones',
-      );
+      throw new BadRequestException('La accion no corresponde al modulo de bonificaciones');
     }
 
     const nextByState: Partial<Record<PersonalActionEstado, PersonalActionEstado>> = {
@@ -2366,9 +2224,7 @@ export class PersonalActionsService {
       throw new BadRequestException('La accion no tiene un estado siguiente operativo');
     }
 
-    const requiredPermissionByState: Partial<
-      Record<PersonalActionEstado, string>
-    > = {
+    const requiredPermissionByState: Partial<Record<PersonalActionEstado, string>> = {
       [PersonalActionEstado.DRAFT]: 'hr-action-bonificaciones:edit',
       [PersonalActionEstado.PENDING_SUPERVISOR]: 'hr-action-bonificaciones:approve',
       [PersonalActionEstado.PENDING_RRHH]: 'hr-action-bonificaciones:approve',
@@ -2411,10 +2267,7 @@ export class PersonalActionsService {
       actorUserId: userId,
       companyContextId: saved.idEmpresa,
       descripcion: `Bonificacion movida al estado ${this.getEstadoNombre(saved.estado)}`,
-      payloadAfter: this.buildAbsenceAuditPayload(
-        saved,
-        await this.countBonusLines(saved.id),
-      ),
+      payloadAfter: this.buildAbsenceAuditPayload(saved, await this.countBonusLines(saved.id)),
     });
 
     return saved;
@@ -2428,9 +2281,7 @@ export class PersonalActionsService {
   ) {
     const action = await this.findOne(id, userId);
     if (action.tipoAccion.trim().toLowerCase() !== 'bonificacion') {
-      throw new BadRequestException(
-        'La accion no corresponde al modulo de bonificaciones',
-      );
+      throw new BadRequestException('La accion no corresponde al modulo de bonificaciones');
     }
 
     if (
@@ -2440,9 +2291,7 @@ export class PersonalActionsService {
         PersonalActionEstado.PENDING_RRHH,
       ].includes(action.estado)
     ) {
-      throw new BadRequestException(
-        'La bonificacion no se puede invalidar en su estado actual',
-      );
+      throw new BadRequestException('La bonificacion no se puede invalidar en su estado actual');
     }
 
     this.assertActionPermission(
@@ -2455,8 +2304,7 @@ export class PersonalActionsService {
       action.estado = PersonalActionEstado.INVALIDATED;
       action.invalidatedAt = new Date();
       action.invalidatedReason = motivo?.trim() || 'Invalidada manualmente por RRHH';
-      action.invalidatedReasonCode =
-        PERSONAL_ACTION_INVALIDATION_REASON.MANUAL_INVALIDATION;
+      action.invalidatedReasonCode = PERSONAL_ACTION_INVALIDATION_REASON.MANUAL_INVALIDATION;
       action.invalidatedByType = PERSONAL_ACTION_INVALIDATED_BY.USER;
       action.invalidatedByUserId = userId;
       action.invalidatedMeta = {
@@ -2499,10 +2347,7 @@ export class PersonalActionsService {
       actorUserId: userId,
       companyContextId: action.idEmpresa,
       descripcion: `Bonificacion invalidada para empleado #${action.idEmpleado}`,
-      payloadAfter: this.buildAbsenceAuditPayload(
-        action,
-        await this.countBonusLines(action.id),
-      ),
+      payloadAfter: this.buildAbsenceAuditPayload(action, await this.countBonusLines(action.id)),
     });
 
     return this.findOne(action.id, userId);
@@ -2516,19 +2361,18 @@ export class PersonalActionsService {
     const moneda = String(employee?.monedaSalario ?? 'CRC').toUpperCase();
     const groupId = `HEX-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`.toUpperCase();
     const groupedLines = this.groupLinesByPayroll(dto.lines);
+    await this.assertEmployeeNotVerifiedForPayrolls(
+      dto.idEmpleado,
+      dto.lines.map((line) => line.payrollId),
+      'horas extras',
+    );
 
     const created = await this.dataSource.transaction(async (trx) => {
-      const createdActions: Array<{ action: PersonalAction; linesCount: number }> =
-        [];
+      const createdActions: Array<{ action: PersonalAction; linesCount: number }> = [];
 
       for (const group of groupedLines) {
-        const totalMonto = group.lines.reduce(
-          (sum, line) => sum + Number(line.monto || 0),
-          0,
-        );
-        const firstDate = group.lines[0]?.fechaEfecto
-          ? new Date(group.lines[0].fechaEfecto)
-          : null;
+        const totalMonto = group.lines.reduce((sum, line) => sum + Number(line.monto || 0), 0);
+        const firstDate = group.lines[0]?.fechaEfecto ? new Date(group.lines[0].fechaEfecto) : null;
         const lastDate = group.lines[group.lines.length - 1]?.fechaEfecto
           ? new Date(group.lines[group.lines.length - 1].fechaEfecto)
           : firstDate;
@@ -2640,9 +2484,7 @@ export class PersonalActionsService {
   async updateOvertime(id: number, dto: UpsertOvertimeDto, userId: number) {
     const action = await this.findOne(id, userId);
     if (action.tipoAccion.trim().toLowerCase() !== 'hora_extra') {
-      throw new BadRequestException(
-        'La accion no corresponde al modulo de horas extras',
-      );
+      throw new BadRequestException('La accion no corresponde al modulo de horas extras');
     }
     if (
       ![
@@ -2656,13 +2498,16 @@ export class PersonalActionsService {
       );
     }
     if (action.idEmpresa !== dto.idEmpresa || action.idEmpleado !== dto.idEmpleado) {
-      throw new BadRequestException(
-        'No se permite cambiar empresa o empleado de la hora extra',
-      );
+      throw new BadRequestException('No se permite cambiar empresa o empleado de la hora extra');
     }
 
     await this.validateOvertimePayload(dto, userId);
     this.assertSinglePayrollOnUpdate(dto.lines, 'horas extras');
+    await this.assertEmployeeNotVerifiedForPayrolls(
+      dto.idEmpleado,
+      dto.lines.map((line) => line.payrollId),
+      'horas extras',
+    );
 
     const payloadBefore = this.buildAbsenceAuditPayload(
       action,
@@ -2743,16 +2588,10 @@ export class PersonalActionsService {
     return this.findOne(id, userId);
   }
 
-  async advanceOvertimeState(
-    id: number,
-    userId: number,
-    userPermissions: string[] = [],
-  ) {
+  async advanceOvertimeState(id: number, userId: number, userPermissions: string[] = []) {
     const action = await this.findOne(id, userId);
     if (action.tipoAccion.trim().toLowerCase() !== 'hora_extra') {
-      throw new BadRequestException(
-        'La accion no corresponde al modulo de horas extras',
-      );
+      throw new BadRequestException('La accion no corresponde al modulo de horas extras');
     }
 
     const nextByState: Partial<Record<PersonalActionEstado, PersonalActionEstado>> = {
@@ -2765,9 +2604,7 @@ export class PersonalActionsService {
       throw new BadRequestException('La accion no tiene un estado siguiente operativo');
     }
 
-    const requiredPermissionByState: Partial<
-      Record<PersonalActionEstado, string>
-    > = {
+    const requiredPermissionByState: Partial<Record<PersonalActionEstado, string>> = {
       [PersonalActionEstado.DRAFT]: 'hr-action-horas-extras:edit',
       [PersonalActionEstado.PENDING_SUPERVISOR]: 'hr-action-horas-extras:approve',
       [PersonalActionEstado.PENDING_RRHH]: 'hr-action-horas-extras:approve',
@@ -2810,10 +2647,7 @@ export class PersonalActionsService {
       actorUserId: userId,
       companyContextId: saved.idEmpresa,
       descripcion: `Hora extra movida al estado ${this.getEstadoNombre(saved.estado)}`,
-      payloadAfter: this.buildAbsenceAuditPayload(
-        saved,
-        await this.countOvertimeLines(saved.id),
-      ),
+      payloadAfter: this.buildAbsenceAuditPayload(saved, await this.countOvertimeLines(saved.id)),
     });
 
     return saved;
@@ -2827,9 +2661,7 @@ export class PersonalActionsService {
   ) {
     const action = await this.findOne(id, userId);
     if (action.tipoAccion.trim().toLowerCase() !== 'hora_extra') {
-      throw new BadRequestException(
-        'La accion no corresponde al modulo de horas extras',
-      );
+      throw new BadRequestException('La accion no corresponde al modulo de horas extras');
     }
 
     if (
@@ -2839,9 +2671,7 @@ export class PersonalActionsService {
         PersonalActionEstado.PENDING_RRHH,
       ].includes(action.estado)
     ) {
-      throw new BadRequestException(
-        'La hora extra no se puede invalidar en su estado actual',
-      );
+      throw new BadRequestException('La hora extra no se puede invalidar en su estado actual');
     }
 
     this.assertActionPermission(
@@ -2854,8 +2684,7 @@ export class PersonalActionsService {
       action.estado = PersonalActionEstado.INVALIDATED;
       action.invalidatedAt = new Date();
       action.invalidatedReason = motivo?.trim() || 'Invalidada manualmente por RRHH';
-      action.invalidatedReasonCode =
-        PERSONAL_ACTION_INVALIDATION_REASON.MANUAL_INVALIDATION;
+      action.invalidatedReasonCode = PERSONAL_ACTION_INVALIDATION_REASON.MANUAL_INVALIDATION;
       action.invalidatedByType = PERSONAL_ACTION_INVALIDATED_BY.USER;
       action.invalidatedByUserId = userId;
       action.invalidatedMeta = {
@@ -2898,10 +2727,7 @@ export class PersonalActionsService {
       actorUserId: userId,
       companyContextId: action.idEmpresa,
       descripcion: `Hora extra invalidada para empleado #${action.idEmpleado}`,
-      payloadAfter: this.buildAbsenceAuditPayload(
-        action,
-        await this.countOvertimeLines(action.id),
-      ),
+      payloadAfter: this.buildAbsenceAuditPayload(action, await this.countOvertimeLines(action.id)),
     });
 
     return this.findOne(action.id, userId);
@@ -2915,19 +2741,18 @@ export class PersonalActionsService {
     const moneda = String(employee?.monedaSalario ?? 'CRC').toUpperCase();
     const groupId = `RET-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`.toUpperCase();
     const groupedLines = this.groupLinesByPayroll(dto.lines);
+    await this.assertEmployeeNotVerifiedForPayrolls(
+      dto.idEmpleado,
+      dto.lines.map((line) => line.payrollId),
+      'retenciones',
+    );
 
     const created = await this.dataSource.transaction(async (trx) => {
-      const createdActions: Array<{ action: PersonalAction; linesCount: number }> =
-        [];
+      const createdActions: Array<{ action: PersonalAction; linesCount: number }> = [];
 
       for (const group of groupedLines) {
-        const totalMonto = group.lines.reduce(
-          (sum, line) => sum + Number(line.monto || 0),
-          0,
-        );
-        const firstDate = group.lines[0]?.fechaEfecto
-          ? new Date(group.lines[0].fechaEfecto)
-          : null;
+        const totalMonto = group.lines.reduce((sum, line) => sum + Number(line.monto || 0), 0);
+        const firstDate = group.lines[0]?.fechaEfecto ? new Date(group.lines[0].fechaEfecto) : null;
         const lastDate = group.lines[group.lines.length - 1]?.fechaEfecto
           ? new Date(group.lines[group.lines.length - 1].fechaEfecto)
           : firstDate;
@@ -3036,9 +2861,7 @@ export class PersonalActionsService {
   async updateRetention(id: number, dto: UpsertRetentionDto, userId: number) {
     const action = await this.findOne(id, userId);
     if (!['retencion', 'deduccion_retencion'].includes(action.tipoAccion.trim().toLowerCase())) {
-      throw new BadRequestException(
-        'La accion no corresponde al modulo de retenciones',
-      );
+      throw new BadRequestException('La accion no corresponde al modulo de retenciones');
     }
     if (
       ![
@@ -3052,13 +2875,16 @@ export class PersonalActionsService {
       );
     }
     if (action.idEmpresa !== dto.idEmpresa || action.idEmpleado !== dto.idEmpleado) {
-      throw new BadRequestException(
-        'No se permite cambiar empresa o empleado de la retencion',
-      );
+      throw new BadRequestException('No se permite cambiar empresa o empleado de la retencion');
     }
 
     await this.validateRetentionPayload(dto, userId);
     this.assertSinglePayrollOnUpdate(dto.lines, 'retenciones');
+    await this.assertEmployeeNotVerifiedForPayrolls(
+      dto.idEmpleado,
+      dto.lines.map((line) => line.payrollId),
+      'retenciones',
+    );
 
     const payloadBefore = this.buildAbsenceAuditPayload(
       action,
@@ -3136,16 +2962,10 @@ export class PersonalActionsService {
     return this.findOne(id, userId);
   }
 
-  async advanceRetentionState(
-    id: number,
-    userId: number,
-    userPermissions: string[] = [],
-  ) {
+  async advanceRetentionState(id: number, userId: number, userPermissions: string[] = []) {
     const action = await this.findOne(id, userId);
     if (!['retencion', 'deduccion_retencion'].includes(action.tipoAccion.trim().toLowerCase())) {
-      throw new BadRequestException(
-        'La accion no corresponde al modulo de retenciones',
-      );
+      throw new BadRequestException('La accion no corresponde al modulo de retenciones');
     }
 
     const nextByState: Partial<Record<PersonalActionEstado, PersonalActionEstado>> = {
@@ -3158,9 +2978,7 @@ export class PersonalActionsService {
       throw new BadRequestException('La accion no tiene un estado siguiente operativo');
     }
 
-    const requiredPermissionByState: Partial<
-      Record<PersonalActionEstado, string>
-    > = {
+    const requiredPermissionByState: Partial<Record<PersonalActionEstado, string>> = {
       [PersonalActionEstado.DRAFT]: 'hr-action-retenciones:edit',
       [PersonalActionEstado.PENDING_SUPERVISOR]: 'hr-action-retenciones:approve',
       [PersonalActionEstado.PENDING_RRHH]: 'hr-action-retenciones:approve',
@@ -3203,10 +3021,7 @@ export class PersonalActionsService {
       actorUserId: userId,
       companyContextId: saved.idEmpresa,
       descripcion: `Retencion movida al estado ${this.getEstadoNombre(saved.estado)}`,
-      payloadAfter: this.buildAbsenceAuditPayload(
-        saved,
-        await this.countRetentionLines(saved.id),
-      ),
+      payloadAfter: this.buildAbsenceAuditPayload(saved, await this.countRetentionLines(saved.id)),
     });
 
     return saved;
@@ -3220,9 +3035,7 @@ export class PersonalActionsService {
   ) {
     const action = await this.findOne(id, userId);
     if (!['retencion', 'deduccion_retencion'].includes(action.tipoAccion.trim().toLowerCase())) {
-      throw new BadRequestException(
-        'La accion no corresponde al modulo de retenciones',
-      );
+      throw new BadRequestException('La accion no corresponde al modulo de retenciones');
     }
 
     if (
@@ -3232,9 +3045,7 @@ export class PersonalActionsService {
         PersonalActionEstado.PENDING_RRHH,
       ].includes(action.estado)
     ) {
-      throw new BadRequestException(
-        'La retencion no se puede invalidar en su estado actual',
-      );
+      throw new BadRequestException('La retencion no se puede invalidar en su estado actual');
     }
 
     this.assertActionPermission(
@@ -3247,8 +3058,7 @@ export class PersonalActionsService {
       action.estado = PersonalActionEstado.INVALIDATED;
       action.invalidatedAt = new Date();
       action.invalidatedReason = motivo?.trim() || 'Invalidada manualmente por RRHH';
-      action.invalidatedReasonCode =
-        PERSONAL_ACTION_INVALIDATION_REASON.MANUAL_INVALIDATION;
+      action.invalidatedReasonCode = PERSONAL_ACTION_INVALIDATION_REASON.MANUAL_INVALIDATION;
       action.invalidatedByType = PERSONAL_ACTION_INVALIDATED_BY.USER;
       action.invalidatedByUserId = userId;
       action.invalidatedMeta = {
@@ -3308,18 +3118,18 @@ export class PersonalActionsService {
     const moneda = String(employee?.monedaSalario ?? 'CRC').toUpperCase();
     const groupId = `DSC-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`.toUpperCase();
     const groupedLines = this.groupLinesByPayroll(dto.lines);
+    await this.assertEmployeeNotVerifiedForPayrolls(
+      dto.idEmpleado,
+      dto.lines.map((line) => line.payrollId),
+      'descuentos',
+    );
 
     const created = await this.dataSource.transaction(async (trx) => {
       const createdActions: Array<{ action: PersonalAction; linesCount: number }> = [];
 
       for (const group of groupedLines) {
-        const totalMonto = group.lines.reduce(
-          (sum, line) => sum + Number(line.monto || 0),
-          0,
-        );
-        const firstDate = group.lines[0]?.fechaEfecto
-          ? new Date(group.lines[0].fechaEfecto)
-          : null;
+        const totalMonto = group.lines.reduce((sum, line) => sum + Number(line.monto || 0), 0);
+        const firstDate = group.lines[0]?.fechaEfecto ? new Date(group.lines[0].fechaEfecto) : null;
         const lastDate = group.lines[group.lines.length - 1]?.fechaEfecto
           ? new Date(group.lines[group.lines.length - 1].fechaEfecto)
           : firstDate;
@@ -3428,9 +3238,7 @@ export class PersonalActionsService {
   async updateDiscount(id: number, dto: UpsertDiscountDto, userId: number) {
     const action = await this.findOne(id, userId);
     if (!['descuento', 'deduccion_descuento'].includes(action.tipoAccion.trim().toLowerCase())) {
-      throw new BadRequestException(
-        'La accion no corresponde al modulo de descuentos',
-      );
+      throw new BadRequestException('La accion no corresponde al modulo de descuentos');
     }
     if (
       ![
@@ -3444,13 +3252,16 @@ export class PersonalActionsService {
       );
     }
     if (action.idEmpresa !== dto.idEmpresa || action.idEmpleado !== dto.idEmpleado) {
-      throw new BadRequestException(
-        'No se permite cambiar empresa o empleado del descuento',
-      );
+      throw new BadRequestException('No se permite cambiar empresa o empleado del descuento');
     }
 
     await this.validateDiscountPayload(dto, userId);
     this.assertSinglePayrollOnUpdate(dto.lines, 'descuentos');
+    await this.assertEmployeeNotVerifiedForPayrolls(
+      dto.idEmpleado,
+      dto.lines.map((line) => line.payrollId),
+      'descuentos',
+    );
 
     const payloadBefore = this.buildAbsenceAuditPayload(
       action,
@@ -3528,16 +3339,10 @@ export class PersonalActionsService {
     return this.findOne(id, userId);
   }
 
-  async advanceDiscountState(
-    id: number,
-    userId: number,
-    userPermissions: string[] = [],
-  ) {
+  async advanceDiscountState(id: number, userId: number, userPermissions: string[] = []) {
     const action = await this.findOne(id, userId);
     if (!['descuento', 'deduccion_descuento'].includes(action.tipoAccion.trim().toLowerCase())) {
-      throw new BadRequestException(
-        'La accion no corresponde al modulo de descuentos',
-      );
+      throw new BadRequestException('La accion no corresponde al modulo de descuentos');
     }
 
     const nextByState: Partial<Record<PersonalActionEstado, PersonalActionEstado>> = {
@@ -3593,10 +3398,7 @@ export class PersonalActionsService {
       actorUserId: userId,
       companyContextId: saved.idEmpresa,
       descripcion: `Descuento movido al estado ${this.getEstadoNombre(saved.estado)}`,
-      payloadAfter: this.buildAbsenceAuditPayload(
-        saved,
-        await this.countDiscountLines(saved.id),
-      ),
+      payloadAfter: this.buildAbsenceAuditPayload(saved, await this.countDiscountLines(saved.id)),
     });
 
     return saved;
@@ -3610,9 +3412,7 @@ export class PersonalActionsService {
   ) {
     const action = await this.findOne(id, userId);
     if (!['descuento', 'deduccion_descuento'].includes(action.tipoAccion.trim().toLowerCase())) {
-      throw new BadRequestException(
-        'La accion no corresponde al modulo de descuentos',
-      );
+      throw new BadRequestException('La accion no corresponde al modulo de descuentos');
     }
 
     if (
@@ -3622,9 +3422,7 @@ export class PersonalActionsService {
         PersonalActionEstado.PENDING_RRHH,
       ].includes(action.estado)
     ) {
-      throw new BadRequestException(
-        'El descuento no se puede invalidar en su estado actual',
-      );
+      throw new BadRequestException('El descuento no se puede invalidar en su estado actual');
     }
 
     this.assertActionPermission(
@@ -3637,8 +3435,7 @@ export class PersonalActionsService {
       action.estado = PersonalActionEstado.INVALIDATED;
       action.invalidatedAt = new Date();
       action.invalidatedReason = motivo?.trim() || 'Invalidado manualmente por RRHH';
-      action.invalidatedReasonCode =
-        PERSONAL_ACTION_INVALIDATION_REASON.MANUAL_INVALIDATION;
+      action.invalidatedReasonCode = PERSONAL_ACTION_INVALIDATION_REASON.MANUAL_INVALIDATION;
       action.invalidatedByType = PERSONAL_ACTION_INVALIDATED_BY.USER;
       action.invalidatedByUserId = userId;
       action.invalidatedMeta = {
@@ -3681,10 +3478,7 @@ export class PersonalActionsService {
       actorUserId: userId,
       companyContextId: action.idEmpresa,
       descripcion: `Descuento invalidado para empleado #${action.idEmpleado}`,
-      payloadAfter: this.buildAbsenceAuditPayload(
-        action,
-        await this.countDiscountLines(action.id),
-      ),
+      payloadAfter: this.buildAbsenceAuditPayload(action, await this.countDiscountLines(action.id)),
     });
 
     return this.findOne(action.id, userId);
@@ -3698,9 +3492,7 @@ export class PersonalActionsService {
   ) {
     const action = await this.findOne(id, userId);
     if (action.tipoAccion.trim().toLowerCase() !== 'aumento') {
-      throw new BadRequestException(
-        'La accion no corresponde al modulo de aumentos',
-      );
+      throw new BadRequestException('La accion no corresponde al modulo de aumentos');
     }
 
     if (
@@ -3710,9 +3502,7 @@ export class PersonalActionsService {
         PersonalActionEstado.PENDING_RRHH,
       ].includes(action.estado)
     ) {
-      throw new BadRequestException(
-        'El aumento no se puede invalidar en su estado actual',
-      );
+      throw new BadRequestException('El aumento no se puede invalidar en su estado actual');
     }
 
     this.assertActionPermission(
@@ -3725,8 +3515,7 @@ export class PersonalActionsService {
       action.estado = PersonalActionEstado.INVALIDATED;
       action.invalidatedAt = new Date();
       action.invalidatedReason = motivo?.trim() || 'Invalidado manualmente por RRHH';
-      action.invalidatedReasonCode =
-        PERSONAL_ACTION_INVALIDATION_REASON.MANUAL_INVALIDATION;
+      action.invalidatedReasonCode = PERSONAL_ACTION_INVALIDATION_REASON.MANUAL_INVALIDATION;
       action.invalidatedByType = PERSONAL_ACTION_INVALIDATED_BY.USER;
       action.invalidatedByUserId = userId;
       action.invalidatedMeta = {
@@ -3758,10 +3547,7 @@ export class PersonalActionsService {
       actorUserId: userId,
       companyContextId: action.idEmpresa,
       descripcion: `Aumento invalidado para empleado #${action.idEmpleado}`,
-      payloadAfter: this.buildAbsenceAuditPayload(
-        action,
-        await this.countIncreaseLines(action.id),
-      ),
+      payloadAfter: this.buildAbsenceAuditPayload(action, await this.countIncreaseLines(action.id)),
     });
 
     return this.findOne(action.id, userId);
@@ -3769,28 +3555,29 @@ export class PersonalActionsService {
 
   async createVacation(dto: UpsertVacationDto, userId: number) {
     await this.assertUserCompanyAccess(userId, dto.idEmpresa);
-    const { dates, payrollMap } = await this.validateVacationPayload(
-      dto,
-      userId,
-      undefined,
-      true,
-    );
+    const { dates, payrollMap } = await this.validateVacationPayload(dto, userId, undefined, true);
 
     const employee = await this.getAbsenceEmployee(dto.idEmpresa, dto.idEmpleado);
     const moneda = String(employee?.monedaSalario ?? 'CRC').toUpperCase();
     const groupId = `VAC-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`.toUpperCase();
-    const groupedDates = payrollMap && payrollMap.size > 0
-      ? Array.from(payrollMap.entries())
-        .map(([payrollId, fechas]) => ({
-          payrollId,
-          fechas: [...fechas].sort(),
-        }))
-        .sort((a, b) => (a.fechas[0] ?? '').localeCompare(b.fechas[0] ?? ''))
-      : [];
+    const groupedDates =
+      payrollMap && payrollMap.size > 0
+        ? Array.from(payrollMap.entries())
+            .map(([payrollId, fechas]) => ({
+              payrollId,
+              fechas: [...fechas].sort(),
+            }))
+            .sort((a, b) => (a.fechas[0] ?? '').localeCompare(b.fechas[0] ?? ''))
+        : [];
 
     if (groupedDates.length === 0) {
       throw new BadRequestException('No se pudieron determinar las planillas de vacaciones.');
     }
+    await this.assertEmployeeNotVerifiedForPayrolls(
+      dto.idEmpleado,
+      groupedDates.map((group) => group.payrollId),
+      'vacaciones',
+    );
 
     const created = await this.dataSource.transaction(async (trx) => {
       const createdActions: Array<{ action: PersonalAction; linesCount: number }> = [];
@@ -3913,6 +3700,8 @@ export class PersonalActionsService {
       line.porcentaje,
       line.metodoCalculo,
     );
+    await this.assertEmployeeNotVerifiedForPayrolls(dto.idEmpleado, [line.payrollId], 'aumentos');
+    await this.assertEmployeeNotVerifiedForPayrolls(dto.idEmpleado, [line.payrollId], 'aumentos');
 
     const savedAction = await this.dataSource.transaction(async (trx) => {
       const action = trx.create(PersonalAction, {
@@ -3999,22 +3788,20 @@ export class PersonalActionsService {
       );
     }
     if (action.idEmpresa !== dto.idEmpresa || action.idEmpleado !== dto.idEmpleado) {
-      throw new BadRequestException(
-        'No se permite cambiar empresa o empleado de las vacaciones',
-      );
+      throw new BadRequestException('No se permite cambiar empresa o empleado de las vacaciones');
     }
 
-    const { dates, payrollMap } = await this.validateVacationPayload(
-      dto,
-      userId,
-      action.id,
-      false,
-    );
+    const { dates, payrollMap } = await this.validateVacationPayload(dto, userId, action.id, false);
     const payrollEntries = Array.from((payrollMap ?? new Map()).entries());
     const targetPayrollId = payrollEntries[0]?.[0];
     if (!targetPayrollId) {
       throw new BadRequestException('No se pudo determinar la planilla de las vacaciones.');
     }
+    await this.assertEmployeeNotVerifiedForPayrolls(
+      dto.idEmpleado,
+      [targetPayrollId],
+      'vacaciones',
+    );
 
     const payloadBefore = this.buildAbsenceAuditPayload(
       action,
@@ -4090,9 +3877,7 @@ export class PersonalActionsService {
   async updateIncrease(id: number, dto: UpsertIncreaseDto, userId: number) {
     const action = await this.findOne(id, userId);
     if (action.tipoAccion.trim().toLowerCase() !== 'aumento') {
-      throw new BadRequestException(
-        'La accion no corresponde al modulo de aumentos',
-      );
+      throw new BadRequestException('La accion no corresponde al modulo de aumentos');
     }
     if (
       ![
@@ -4106,9 +3891,7 @@ export class PersonalActionsService {
       );
     }
     if (action.idEmpresa !== dto.idEmpresa || action.idEmpleado !== dto.idEmpleado) {
-      throw new BadRequestException(
-        'No se permite cambiar empresa o empleado del aumento',
-      );
+      throw new BadRequestException('No se permite cambiar empresa o empleado del aumento');
     }
 
     const validation = await this.validateIncreasePayload(dto, userId);
@@ -4174,11 +3957,7 @@ export class PersonalActionsService {
     return this.findOne(id, userId);
   }
 
-  async advanceVacationState(
-    id: number,
-    userId: number,
-    userPermissions: string[] = [],
-  ) {
+  async advanceVacationState(id: number, userId: number, userPermissions: string[] = []) {
     const action = await this.findOne(id, userId);
     if (!['vacaciones', 'vacacion', 'vacation'].includes(action.tipoAccion.trim().toLowerCase())) {
       throw new BadRequestException('La accion no corresponde al modulo de vacaciones');
@@ -4237,25 +4016,16 @@ export class PersonalActionsService {
       actorUserId: userId,
       companyContextId: saved.idEmpresa,
       descripcion: `Vacaciones movidas al estado ${this.getEstadoNombre(saved.estado)}`,
-      payloadAfter: this.buildAbsenceAuditPayload(
-        saved,
-        await this.countVacationDates(saved.id),
-      ),
+      payloadAfter: this.buildAbsenceAuditPayload(saved, await this.countVacationDates(saved.id)),
     });
 
     return saved;
   }
 
-  async advanceIncreaseState(
-    id: number,
-    userId: number,
-    userPermissions: string[] = [],
-  ) {
+  async advanceIncreaseState(id: number, userId: number, userPermissions: string[] = []) {
     const action = await this.findOne(id, userId);
     if (action.tipoAccion.trim().toLowerCase() !== 'aumento') {
-      throw new BadRequestException(
-        'La accion no corresponde al modulo de aumentos',
-      );
+      throw new BadRequestException('La accion no corresponde al modulo de aumentos');
     }
 
     const nextByState: Partial<Record<PersonalActionEstado, PersonalActionEstado>> = {
@@ -4311,10 +4081,7 @@ export class PersonalActionsService {
       actorUserId: userId,
       companyContextId: saved.idEmpresa,
       descripcion: `Aumento movido al estado ${this.getEstadoNombre(saved.estado)}`,
-      payloadAfter: this.buildAbsenceAuditPayload(
-        saved,
-        await this.countIncreaseLines(saved.id),
-      ),
+      payloadAfter: this.buildAbsenceAuditPayload(saved, await this.countIncreaseLines(saved.id)),
     });
 
     return saved;
@@ -4338,9 +4105,7 @@ export class PersonalActionsService {
         PersonalActionEstado.PENDING_RRHH,
       ].includes(action.estado)
     ) {
-      throw new BadRequestException(
-        'Las vacaciones no se pueden invalidar en su estado actual',
-      );
+      throw new BadRequestException('Las vacaciones no se pueden invalidar en su estado actual');
     }
 
     this.assertActionPermission(
@@ -4353,8 +4118,7 @@ export class PersonalActionsService {
       action.estado = PersonalActionEstado.INVALIDATED;
       action.invalidatedAt = new Date();
       action.invalidatedReason = motivo?.trim() || 'Invalidadas manualmente por RRHH';
-      action.invalidatedReasonCode =
-        PERSONAL_ACTION_INVALIDATION_REASON.MANUAL_INVALIDATION;
+      action.invalidatedReasonCode = PERSONAL_ACTION_INVALIDATION_REASON.MANUAL_INVALIDATION;
       action.invalidatedByType = PERSONAL_ACTION_INVALIDATED_BY.USER;
       action.invalidatedByUserId = userId;
       action.invalidatedMeta = {
@@ -4397,10 +4161,7 @@ export class PersonalActionsService {
       actorUserId: userId,
       companyContextId: action.idEmpresa,
       descripcion: `Vacaciones invalidadas para empleado #${action.idEmpleado}`,
-      payloadAfter: this.buildAbsenceAuditPayload(
-        action,
-        await this.countVacationDates(action.id),
-      ),
+      payloadAfter: this.buildAbsenceAuditPayload(action, await this.countVacationDates(action.id)),
     });
 
     return this.findOne(action.id, userId);
@@ -4414,19 +4175,18 @@ export class PersonalActionsService {
     const moneda = String(employee?.monedaSalario ?? 'CRC').toUpperCase();
     const groupId = `INC-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`.toUpperCase();
     const groupedLines = this.groupLinesByPayroll(dto.lines);
+    await this.assertEmployeeNotVerifiedForPayrolls(
+      dto.idEmpleado,
+      dto.lines.map((line) => line.payrollId),
+      'incapacidades',
+    );
 
     const created = await this.dataSource.transaction(async (trx) => {
-      const createdActions: Array<{ action: PersonalAction; linesCount: number }> =
-        [];
+      const createdActions: Array<{ action: PersonalAction; linesCount: number }> = [];
 
       for (const group of groupedLines) {
-        const totalMonto = group.lines.reduce(
-          (sum, line) => sum + Number(line.monto || 0),
-          0,
-        );
-        const firstDate = group.lines[0]?.fechaEfecto
-          ? new Date(group.lines[0].fechaEfecto)
-          : null;
+        const totalMonto = group.lines.reduce((sum, line) => sum + Number(line.monto || 0), 0);
+        const firstDate = group.lines[0]?.fechaEfecto ? new Date(group.lines[0].fechaEfecto) : null;
         const lastDate = group.lines[group.lines.length - 1]?.fechaEfecto
           ? new Date(group.lines[group.lines.length - 1].fechaEfecto)
           : firstDate;
@@ -4541,9 +4301,7 @@ export class PersonalActionsService {
   async updateDisability(id: number, dto: UpsertDisabilityDto, userId: number) {
     const action = await this.findOne(id, userId);
     if (action.tipoAccion.trim().toLowerCase() !== 'incapacidad') {
-      throw new BadRequestException(
-        'La accion no corresponde al modulo de incapacidades',
-      );
+      throw new BadRequestException('La accion no corresponde al modulo de incapacidades');
     }
     if (
       ![
@@ -4557,13 +4315,16 @@ export class PersonalActionsService {
       );
     }
     if (action.idEmpresa !== dto.idEmpresa || action.idEmpleado !== dto.idEmpleado) {
-      throw new BadRequestException(
-        'No se permite cambiar empresa o empleado de la incapacidad',
-      );
+      throw new BadRequestException('No se permite cambiar empresa o empleado de la incapacidad');
     }
 
     await this.validateDisabilityPayload(dto, userId);
     this.assertSinglePayrollOnUpdate(dto.lines, 'incapacidades');
+    await this.assertEmployeeNotVerifiedForPayrolls(
+      dto.idEmpleado,
+      dto.lines.map((line) => line.payrollId),
+      'incapacidades',
+    );
 
     const payloadBefore = this.buildAbsenceAuditPayload(
       action,
@@ -4648,16 +4409,10 @@ export class PersonalActionsService {
     return this.findOne(id, userId);
   }
 
-  async advanceDisabilityState(
-    id: number,
-    userId: number,
-    userPermissions: string[] = [],
-  ) {
+  async advanceDisabilityState(id: number, userId: number, userPermissions: string[] = []) {
     const action = await this.findOne(id, userId);
     if (action.tipoAccion.trim().toLowerCase() !== 'incapacidad') {
-      throw new BadRequestException(
-        'La accion no corresponde al modulo de incapacidades',
-      );
+      throw new BadRequestException('La accion no corresponde al modulo de incapacidades');
     }
 
     const nextByState: Partial<Record<PersonalActionEstado, PersonalActionEstado>> = {
@@ -4670,9 +4425,7 @@ export class PersonalActionsService {
       throw new BadRequestException('La accion no tiene un estado siguiente operativo');
     }
 
-    const requiredPermissionByState: Partial<
-      Record<PersonalActionEstado, string>
-    > = {
+    const requiredPermissionByState: Partial<Record<PersonalActionEstado, string>> = {
       [PersonalActionEstado.DRAFT]: 'hr-action-incapacidades:edit',
       [PersonalActionEstado.PENDING_SUPERVISOR]: 'hr-action-incapacidades:approve',
       [PersonalActionEstado.PENDING_RRHH]: 'hr-action-incapacidades:approve',
@@ -4715,10 +4468,7 @@ export class PersonalActionsService {
       actorUserId: userId,
       companyContextId: saved.idEmpresa,
       descripcion: `Incapacidad movida al estado ${this.getEstadoNombre(saved.estado)}`,
-      payloadAfter: this.buildAbsenceAuditPayload(
-        saved,
-        await this.countDisabilityLines(saved.id),
-      ),
+      payloadAfter: this.buildAbsenceAuditPayload(saved, await this.countDisabilityLines(saved.id)),
     });
 
     return saved;
@@ -4732,9 +4482,7 @@ export class PersonalActionsService {
   ) {
     const action = await this.findOne(id, userId);
     if (action.tipoAccion.trim().toLowerCase() !== 'incapacidad') {
-      throw new BadRequestException(
-        'La accion no corresponde al modulo de incapacidades',
-      );
+      throw new BadRequestException('La accion no corresponde al modulo de incapacidades');
     }
 
     if (
@@ -4744,9 +4492,7 @@ export class PersonalActionsService {
         PersonalActionEstado.PENDING_RRHH,
       ].includes(action.estado)
     ) {
-      throw new BadRequestException(
-        'La incapacidad no se puede invalidar en su estado actual',
-      );
+      throw new BadRequestException('La incapacidad no se puede invalidar en su estado actual');
     }
 
     this.assertActionPermission(
@@ -4759,8 +4505,7 @@ export class PersonalActionsService {
       action.estado = PersonalActionEstado.INVALIDATED;
       action.invalidatedAt = new Date();
       action.invalidatedReason = motivo?.trim() || 'Invalidada manualmente por RRHH';
-      action.invalidatedReasonCode =
-        PERSONAL_ACTION_INVALIDATION_REASON.MANUAL_INVALIDATION;
+      action.invalidatedReasonCode = PERSONAL_ACTION_INVALIDATION_REASON.MANUAL_INVALIDATION;
       action.invalidatedByType = PERSONAL_ACTION_INVALIDATED_BY.USER;
       action.invalidatedByUserId = userId;
       action.invalidatedMeta = {
@@ -4831,33 +4576,22 @@ export class PersonalActionsService {
     return rows.map((row) => row.idEmpresa);
   }
 
-  private async assertUserCompanyAccess(
-    userId: number,
-    companyId: number,
-  ): Promise<void> {
+  private async assertUserCompanyAccess(userId: number, companyId: number): Promise<void> {
     const exists = await this.userCompanyRepo.findOne({
       where: { idUsuario: userId, idEmpresa: companyId, estado: 1 },
     });
 
     if (!exists) {
-      throw new ForbiddenException(
-        `No tiene acceso a la empresa ${companyId}.`,
-      );
+      throw new ForbiddenException(`No tiene acceso a la empresa ${companyId}.`);
     }
   }
 
-  private async flagRecalculationForOpenPayrolls(
-    action: PersonalAction,
-  ): Promise<void> {
+  private async flagRecalculationForOpenPayrolls(action: PersonalAction): Promise<void> {
     const start = this.toYmd(action.fechaInicioEfecto ?? action.fechaEfecto);
     if (!start) return;
-    const end = this.toYmd(
-      action.fechaFinEfecto ?? action.fechaInicioEfecto ?? action.fechaEfecto,
-    );
+    const end = this.toYmd(action.fechaFinEfecto ?? action.fechaInicioEfecto ?? action.fechaEfecto);
     if (!end) return;
-    const approvedAt = action.fechaAprobacion
-      ? this.toYmdDateTime(action.fechaAprobacion)
-      : null;
+    const approvedAt = action.fechaAprobacion ? this.toYmdDateTime(action.fechaAprobacion) : null;
     const moneda = (action.moneda || 'CRC').toUpperCase();
 
     await this.payrollRepo.query(
@@ -4885,9 +4619,7 @@ export class PersonalActionsService {
     );
   }
 
-  private normalizeVacationDates(
-    fechas: Array<{ fecha: string }>,
-  ): string[] {
+  private normalizeVacationDates(fechas: Array<{ fecha: string }>): string[] {
     const normalized = fechas
       .map((item) => this.toYmdFlexible(item.fecha))
       .filter((value): value is string => !!value);
@@ -5002,10 +4734,7 @@ export class PersonalActionsService {
       .filter((item) => item.start && item.end);
   }
 
-  private isHolidayDate(
-    date: string,
-    ranges: Array<{ start: string; end: string }>,
-  ): boolean {
+  private isHolidayDate(date: string, ranges: Array<{ start: string; end: string }>): boolean {
     const target = this.parseYmdToUtc(date);
     for (const range of ranges) {
       const start = this.parseYmdToUtc(range.start);
@@ -5020,11 +4749,7 @@ export class PersonalActionsService {
     const year = Number(yearRaw);
     const month = Number(monthRaw);
     const day = Number(dayRaw);
-    if (
-      !Number.isInteger(year) ||
-      !Number.isInteger(month) ||
-      !Number.isInteger(day)
-    ) {
+    if (!Number.isInteger(year) || !Number.isInteger(month) || !Number.isInteger(day)) {
       return new Date(NaN);
     }
     return new Date(Date.UTC(year, month - 1, day));
@@ -5124,10 +4849,7 @@ export class PersonalActionsService {
     after: Record<string, unknown> | null,
   ): Array<{ campo: string; antes: string; despues: string }> {
     if (!before && !after) return [];
-    const keys = new Set<string>([
-      ...Object.keys(before ?? {}),
-      ...Object.keys(after ?? {}),
-    ]);
+    const keys = new Set<string>([...Object.keys(before ?? {}), ...Object.keys(after ?? {})]);
     const output: Array<{ campo: string; antes: string; despues: string }> = [];
 
     keys.forEach((key) => {
@@ -5200,9 +4922,7 @@ export class PersonalActionsService {
     const row = rows?.[0];
     if (!row) return null;
 
-    const decrypted = this.sensitiveDataService.decrypt(
-      row.salarioBaseEncrypted ?? null,
-    );
+    const decrypted = this.sensitiveDataService.decrypt(row.salarioBaseEncrypted ?? null);
     const parsed = decrypted == null ? NaN : Number(decrypted);
 
     return {
@@ -5248,7 +4968,9 @@ export class PersonalActionsService {
 
     const employee = await this.getAbsenceEmployee(dto.idEmpresa, dto.idEmpleado);
     if (!employee) {
-      throw new BadRequestException('Empleado no encontrado o inactivo para la empresa seleccionada');
+      throw new BadRequestException(
+        'Empleado no encontrado o inactivo para la empresa seleccionada',
+      );
     }
 
     const eligiblePayrolls = await this.findEligibleAbsencePayrolls(
@@ -5300,7 +5022,9 @@ export class PersonalActionsService {
 
     const employee = await this.getAbsenceEmployee(dto.idEmpresa, dto.idEmpleado);
     if (!employee) {
-      throw new BadRequestException('Empleado no encontrado o inactivo para la empresa seleccionada');
+      throw new BadRequestException(
+        'Empleado no encontrado o inactivo para la empresa seleccionada',
+      );
     }
 
     const eligiblePayrolls = await this.findEligibleAbsencePayrolls(
@@ -5352,7 +5076,9 @@ export class PersonalActionsService {
 
     const employee = await this.getAbsenceEmployee(dto.idEmpresa, dto.idEmpleado);
     if (!employee) {
-      throw new BadRequestException('Empleado no encontrado o inactivo para la empresa seleccionada');
+      throw new BadRequestException(
+        'Empleado no encontrado o inactivo para la empresa seleccionada',
+      );
     }
 
     const eligiblePayrolls = await this.findEligibleAbsencePayrolls(
@@ -5436,9 +5162,7 @@ export class PersonalActionsService {
 
   private async validateBonusPayload(dto: UpsertBonusDto, userId: number) {
     if (!dto.lines?.length) {
-      throw new BadRequestException(
-        'Debe incluir al menos una linea de transaccion',
-      );
+      throw new BadRequestException('Debe incluir al menos una linea de transaccion');
     }
 
     const employee = await this.getAbsenceEmployee(dto.idEmpresa, dto.idEmpleado);
@@ -5458,14 +5182,10 @@ export class PersonalActionsService {
 
     for (const [index, line] of dto.lines.entries()) {
       if (line.cantidad < 1) {
-        throw new BadRequestException(
-          `Linea ${index + 1}: cantidad debe ser mayor a 0`,
-        );
+        throw new BadRequestException(`Linea ${index + 1}: cantidad debe ser mayor a 0`);
       }
       if (line.monto < 0) {
-        throw new BadRequestException(
-          `Linea ${index + 1}: monto no puede ser negativo`,
-        );
+        throw new BadRequestException(`Linea ${index + 1}: monto no puede ser negativo`);
       }
       const payroll = payrollMap.get(line.payrollId);
       if (!payroll) {
@@ -5494,14 +5214,9 @@ export class PersonalActionsService {
     }
   }
 
-  private async validateRetentionPayload(
-    dto: UpsertRetentionDto,
-    userId: number,
-  ) {
+  private async validateRetentionPayload(dto: UpsertRetentionDto, userId: number) {
     if (!dto.lines?.length) {
-      throw new BadRequestException(
-        'Debe incluir al menos una linea de transaccion',
-      );
+      throw new BadRequestException('Debe incluir al menos una linea de transaccion');
     }
 
     const employee = await this.getAbsenceEmployee(dto.idEmpresa, dto.idEmpleado);
@@ -5521,14 +5236,10 @@ export class PersonalActionsService {
 
     for (const [index, line] of dto.lines.entries()) {
       if (line.cantidad < 1) {
-        throw new BadRequestException(
-          `Linea ${index + 1}: cantidad debe ser mayor a 0`,
-        );
+        throw new BadRequestException(`Linea ${index + 1}: cantidad debe ser mayor a 0`);
       }
       if (line.monto < 0) {
-        throw new BadRequestException(
-          `Linea ${index + 1}: monto no puede ser negativo`,
-        );
+        throw new BadRequestException(`Linea ${index + 1}: monto no puede ser negativo`);
       }
       const payroll = payrollMap.get(line.payrollId);
       if (!payroll) {
@@ -5557,14 +5268,9 @@ export class PersonalActionsService {
     }
   }
 
-  private async validateDiscountPayload(
-    dto: UpsertDiscountDto,
-    userId: number,
-  ) {
+  private async validateDiscountPayload(dto: UpsertDiscountDto, userId: number) {
     if (!dto.lines?.length) {
-      throw new BadRequestException(
-        'Debe incluir al menos una linea de transaccion',
-      );
+      throw new BadRequestException('Debe incluir al menos una linea de transaccion');
     }
 
     const employee = await this.getAbsenceEmployee(dto.idEmpresa, dto.idEmpleado);
@@ -5584,14 +5290,10 @@ export class PersonalActionsService {
 
     for (const [index, line] of dto.lines.entries()) {
       if (line.cantidad < 1) {
-        throw new BadRequestException(
-          `Linea ${index + 1}: cantidad debe ser mayor a 0`,
-        );
+        throw new BadRequestException(`Linea ${index + 1}: cantidad debe ser mayor a 0`);
       }
       if (line.monto < 0) {
-        throw new BadRequestException(
-          `Linea ${index + 1}: monto no puede ser negativo`,
-        );
+        throw new BadRequestException(`Linea ${index + 1}: monto no puede ser negativo`);
       }
       const payroll = payrollMap.get(line.payrollId);
       if (!payroll) {
@@ -5620,14 +5322,9 @@ export class PersonalActionsService {
     }
   }
 
-  private async validateIncreasePayload(
-    dto: UpsertIncreaseDto,
-    userId: number,
-  ) {
+  private async validateIncreasePayload(dto: UpsertIncreaseDto, userId: number) {
     if (!dto.line) {
-      throw new BadRequestException(
-        'Debe incluir la informacion del aumento',
-      );
+      throw new BadRequestException('Debe incluir la informacion del aumento');
     }
 
     const employee = await this.getIncreaseEmployee(dto.idEmpresa, dto.idEmpleado);
@@ -5650,9 +5347,7 @@ export class PersonalActionsService {
       dto.idEmpresa,
       dto.idEmpleado,
     );
-    const payroll = eligiblePayrolls.find(
-      (item) => item.id === Number(dto.line.payrollId),
-    );
+    const payroll = eligiblePayrolls.find((item) => item.id === Number(dto.line.payrollId));
     if (!payroll) {
       throw new BadRequestException(
         'Planilla no elegible para empresa/empleado/periodo/moneda o fuera de ventana',
@@ -5695,17 +5390,17 @@ export class PersonalActionsService {
       [dto.line.movimientoId, dto.idEmpresa],
     );
     if (!movementRows?.length) {
-      throw new BadRequestException(
-        'Movimiento invalido o inactivo para aumentos en esta empresa',
-      );
+      throw new BadRequestException('Movimiento invalido o inactivo para aumentos en esta empresa');
     }
 
-    const monto = method === MetodoCalculoAumentoLinea.PORCENTAJE
-      ? this.round2(salarioActual * (porcentajeRaw / 100))
-      : this.round2(montoRaw);
-    const porcentaje = method === MetodoCalculoAumentoLinea.PORCENTAJE
-      ? this.round2(porcentajeRaw)
-      : this.round2((monto / salarioActual) * 100);
+    const monto =
+      method === MetodoCalculoAumentoLinea.PORCENTAJE
+        ? this.round2(salarioActual * (porcentajeRaw / 100))
+        : this.round2(montoRaw);
+    const porcentaje =
+      method === MetodoCalculoAumentoLinea.PORCENTAJE
+        ? this.round2(porcentajeRaw)
+        : this.round2((monto / salarioActual) * 100);
     const nuevoSalario = this.round2(salarioActual + monto);
 
     return {
@@ -5730,9 +5425,7 @@ export class PersonalActionsService {
     allowSplit = false,
   ): Promise<{ dates: string[]; payrollMap?: Map<number, string[]> }> {
     if (!dto.fechas?.length) {
-      throw new BadRequestException(
-        'Debe incluir al menos una fecha de vacaciones',
-      );
+      throw new BadRequestException('Debe incluir al menos una fecha de vacaciones');
     }
 
     const employee = await this.getAbsenceEmployee(dto.idEmpresa, dto.idEmpleado);
@@ -5755,7 +5448,10 @@ export class PersonalActionsService {
         'Planilla no elegible para empresa/empleado/periodo/moneda o fuera de ventana',
       );
     }
-    const buildPayrollTypeKey = (item: { idTipoPlanilla?: number | null; tipoPlanilla?: string | null }) =>
+    const buildPayrollTypeKey = (item: {
+      idTipoPlanilla?: number | null;
+      tipoPlanilla?: string | null;
+    }) =>
       item.idTipoPlanilla != null
         ? `id:${item.idTipoPlanilla}`
         : `tipo:${String(item.tipoPlanilla ?? '').toLowerCase()}`;
@@ -5788,9 +5484,7 @@ export class PersonalActionsService {
       [dto.movimientoId, dto.idEmpresa],
     );
     if (!movementRows?.length) {
-      throw new BadRequestException(
-        'Movimiento no valido para vacaciones en esta empresa',
-      );
+      throw new BadRequestException('Movimiento no valido para vacaciones en esta empresa');
     }
 
     const dates = this.normalizeVacationDates(dto.fechas);
@@ -5799,10 +5493,7 @@ export class PersonalActionsService {
       throw new BadRequestException('No se permiten fechas duplicadas');
     }
 
-    const holidayRanges = await this.getHolidayRangesBetween(
-      dates[0],
-      dates[dates.length - 1],
-    );
+    const holidayRanges = await this.getHolidayRangesBetween(dates[0], dates[dates.length - 1]);
     const bookedDates = await this.getBookedVacationDates(
       userId,
       dto.idEmpresa,
@@ -5820,14 +5511,10 @@ export class PersonalActionsService {
       }
       const day = asDate.getUTCDay();
       if (day === 0 || day === 6) {
-        throw new BadRequestException(
-          `Fecha ${index + 1}: no se permiten fines de semana`,
-        );
+        throw new BadRequestException(`Fecha ${index + 1}: no se permiten fines de semana`);
       }
       if (this.isHolidayDate(date, holidayRanges)) {
-        throw new BadRequestException(
-          `Fecha ${index + 1}: coincide con feriado de planilla`,
-        );
+        throw new BadRequestException(`Fecha ${index + 1}: coincide con feriado de planilla`);
       }
       if (bookedSet.has(date)) {
         throw new BadRequestException(
@@ -5879,10 +5566,7 @@ export class PersonalActionsService {
       payrollMap?.set(targetPayroll.id, [...existing, date]);
     });
 
-    const saldoReal = await this.getVacationBalanceForEmployee(
-      dto.idEmpresa,
-      dto.idEmpleado,
-    );
+    const saldoReal = await this.getVacationBalanceForEmployee(dto.idEmpresa, dto.idEmpleado);
     const reservado = await this.getVacationReservedDays(
       dto.idEmpresa,
       dto.idEmpleado,
@@ -5900,9 +5584,7 @@ export class PersonalActionsService {
 
   private async validateOvertimePayload(dto: UpsertOvertimeDto, userId: number) {
     if (!dto.lines?.length) {
-      throw new BadRequestException(
-        'Debe incluir al menos una linea de transaccion',
-      );
+      throw new BadRequestException('Debe incluir al menos una linea de transaccion');
     }
 
     const employee = await this.getAbsenceEmployee(dto.idEmpresa, dto.idEmpleado);
@@ -5922,14 +5604,10 @@ export class PersonalActionsService {
 
     for (const [index, line] of dto.lines.entries()) {
       if (line.cantidad < 1) {
-        throw new BadRequestException(
-          `Linea ${index + 1}: cantidad debe ser mayor a 0`,
-        );
+        throw new BadRequestException(`Linea ${index + 1}: cantidad debe ser mayor a 0`);
       }
       if (line.monto < 0) {
-        throw new BadRequestException(
-          `Linea ${index + 1}: monto no puede ser negativo`,
-        );
+        throw new BadRequestException(`Linea ${index + 1}: monto no puede ser negativo`);
       }
       const inicio = new Date(line.fechaInicioHoraExtra);
       const fin = new Date(line.fechaFinHoraExtra);
@@ -5994,6 +5672,32 @@ export class PersonalActionsService {
     }));
   }
 
+  private async assertEmployeeNotVerifiedForPayrolls(
+    idEmpleado: number,
+    payrollIds: number[],
+    modulo: string,
+  ): Promise<void> {
+    const uniquePayrolls = Array.from(
+      new Set(payrollIds.map((payrollId) => Number(payrollId)).filter((id) => id > 0)),
+    );
+    if (uniquePayrolls.length === 0) return;
+
+    const verifications = await this.payrollVerificationRepo.find({
+      where: {
+        idEmpleado,
+        idNomina: In(uniquePayrolls),
+        verificado: 1,
+      },
+      take: 1,
+    });
+
+    if (verifications.length > 0) {
+      throw new BadRequestException(
+        `No se pueden agregar acciones de ${modulo} porque el empleado ya fue verificado en la planilla seleccionada.`,
+      );
+    }
+  }
+
   private assertSinglePayrollOnUpdate<T extends { payrollId: number }>(
     lines: T[],
     modulo: string,
@@ -6018,7 +5722,10 @@ export class PersonalActionsService {
       | 'acc_aumentos_lineas',
     actionIds: number[],
   ): Promise<
-    Map<number, { periodos: string | null; movimientos: string | null; rem: 'SI' | 'NO' | 'MIXTA' | null }>
+    Map<
+      number,
+      { periodos: string | null; movimientos: string | null; rem: 'SI' | 'NO' | 'MIXTA' | null }
+    >
   > {
     const map = new Map<
       number,
@@ -6078,7 +5785,10 @@ export class PersonalActionsService {
   private async buildActionSummaryFromVacations(
     actionIds: number[],
   ): Promise<
-    Map<number, { periodos: string | null; movimientos: string | null; rem: 'SI' | 'NO' | 'MIXTA' | null }>
+    Map<
+      number,
+      { periodos: string | null; movimientos: string | null; rem: 'SI' | 'NO' | 'MIXTA' | null }
+    >
   > {
     const map = new Map<
       number,
@@ -6145,4 +5855,3 @@ export class PersonalActionsService {
     return value.toISOString().slice(0, 19).replace('T', ' ');
   }
 }
-

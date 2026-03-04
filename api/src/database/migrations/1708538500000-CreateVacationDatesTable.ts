@@ -1,8 +1,6 @@
-﻿import { MigrationInterface, QueryRunner } from 'typeorm';
+﻿import type { MigrationInterface, QueryRunner } from 'typeorm';
 
-export class CreateVacationDatesTable1708538500000
-  implements MigrationInterface
-{
+export class CreateVacationDatesTable1708538500000 implements MigrationInterface {
   public async up(queryRunner: QueryRunner): Promise<void> {
     await queryRunner.query(`
       CREATE TABLE IF NOT EXISTS acc_vacaciones_fechas (

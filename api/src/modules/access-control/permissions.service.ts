@@ -4,14 +4,16 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
-import { CreatePermissionDto } from './dto/create-permission.dto';
-import { UpdatePermissionDto } from './dto/update-permission.dto';
+
 import { Permission } from './entities/permission.entity';
-import { AuditOutboxService } from '../integration/audit-outbox.service';
-import { AuthzVersionService } from '../authz/authz-version.service';
+
+import type { AuditOutboxService } from '../integration/audit-outbox.service';
+import type { CreatePermissionDto } from './dto/create-permission.dto';
+import type { UpdatePermissionDto } from './dto/update-permission.dto';
+import type { AuthzVersionService } from '../authz/authz-version.service';
+import type { ConfigService } from '@nestjs/config';
+import type { Repository } from 'typeorm';
 
 export type PermissionCatalogMode = 'migration' | 'ui';
 
@@ -26,17 +28,11 @@ export class PermissionsService {
   ) {}
 
   getCatalogMode(): PermissionCatalogMode {
-    const raw = this.configService.get<string>(
-      'PERMISSIONS_CATALOG_MODE',
-      'migration',
-    );
+    const raw = this.configService.get<string>('PERMISSIONS_CATALOG_MODE', 'migration');
     return raw?.trim().toLowerCase() === 'ui' ? 'ui' : 'migration';
   }
 
-  async create(
-    dto: CreatePermissionDto,
-    actorUserId?: number,
-  ): Promise<Permission> {
+  async create(dto: CreatePermissionDto, actorUserId?: number): Promise<Permission> {
     this.ensureCatalogEditable();
 
     const codigo = dto.codigo.toLowerCase();
@@ -44,9 +40,7 @@ export class PermissionsService {
     const modulo = dto.modulo.toLowerCase();
 
     if (moduloFromCode !== modulo) {
-      throw new ConflictException(
-        'modulo debe coincidir con el prefijo del codigo',
-      );
+      throw new ConflictException('modulo debe coincidir con el prefijo del codigo');
     }
 
     const existing = await this.repo.findOne({ where: { codigo } });
@@ -83,10 +77,7 @@ export class PermissionsService {
     return saved;
   }
 
-  async findAll(
-    modulo?: string,
-    includeInactive = true,
-  ): Promise<Permission[]> {
+  async findAll(modulo?: string, includeInactive = true): Promise<Permission[]> {
     const qb = this.repo.createQueryBuilder('p');
 
     if (!includeInactive) {
@@ -102,10 +93,7 @@ export class PermissionsService {
       }
     }
 
-    return qb
-      .orderBy('p.modulo', 'ASC')
-      .addOrderBy('p.codigo', 'ASC')
-      .getMany();
+    return qb.orderBy('p.modulo', 'ASC').addOrderBy('p.codigo', 'ASC').getMany();
   }
 
   async findOne(id: number): Promise<Permission> {
@@ -116,11 +104,7 @@ export class PermissionsService {
     return perm;
   }
 
-  async update(
-    id: number,
-    dto: UpdatePermissionDto,
-    actorUserId?: number,
-  ): Promise<Permission> {
+  async update(id: number, dto: UpdatePermissionDto, actorUserId?: number): Promise<Permission> {
     this.ensureCatalogEditable();
 
     const perm = await this.findOne(id);
@@ -128,9 +112,7 @@ export class PermissionsService {
     const nextModulo = dto.modulo?.toLowerCase() ?? perm.modulo;
 
     if (this.extractModule(nextCodigo) !== nextModulo) {
-      throw new ConflictException(
-        'modulo debe coincidir con el prefijo del codigo',
-      );
+      throw new ConflictException('modulo debe coincidir con el prefijo del codigo');
     }
 
     if (nextCodigo !== perm.codigo) {

@@ -1,9 +1,12 @@
-import { Test, TestingModule } from '@nestjs/testing';
+import { Test } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
-import { PersonalActionsHygieneService } from './personal-actions-hygiene.service';
+
 import { PersonalAction } from './entities/personal-action.entity';
 import { PersonalActionAutoInvalidationService } from './personal-action-auto-invalidation.service';
+import { PersonalActionsHygieneService } from './personal-actions-hygiene.service';
+
+import type { TestingModule } from '@nestjs/testing';
+import type { Repository } from 'typeorm';
 
 describe('PersonalActionsHygieneService', () => {
   let service: PersonalActionsHygieneService;

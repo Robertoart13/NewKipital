@@ -1,5 +1,6 @@
-import { MigrationInterface, QueryRunner } from 'typeorm';
 import * as bcrypt from 'bcrypt';
+
+import type { MigrationInterface, QueryRunner } from 'typeorm';
 
 /**
  * Seed: Identity Core — datos base para que el sistema funcione.
@@ -54,11 +55,7 @@ export class SeedIdentityCore1708531600000 implements MigrationInterface {
       ['employee:edit', 'Editar empleado', 'employee'],
       ['personal-action:view', 'Ver acciones de personal', 'personal-action'],
       ['personal-action:create', 'Crear acción de personal', 'personal-action'],
-      [
-        'personal-action:approve',
-        'Aprobar acción de personal',
-        'personal-action',
-      ],
+      ['personal-action:approve', 'Aprobar acción de personal', 'personal-action'],
       ['company:manage', 'Gestionar empresas', 'company'],
       ['report:view', 'Ver reportes', 'report'],
       ['config:users', 'Gestionar usuarios', 'config'],
@@ -160,13 +157,9 @@ export class SeedIdentityCore1708531600000 implements MigrationInterface {
       `DELETE FROM sys_usuarios WHERE email_usuario = 'roberto@kpital360.com'`,
     );
     await queryRunner.query(`DELETE FROM sys_rol_permiso`);
-    await queryRunner.query(
-      `DELETE FROM sys_roles WHERE codigo_rol = 'ADMIN_SISTEMA'`,
-    );
+    await queryRunner.query(`DELETE FROM sys_roles WHERE codigo_rol = 'ADMIN_SISTEMA'`);
     await queryRunner.query(`DELETE FROM sys_permisos`);
     await queryRunner.query(`DELETE FROM sys_apps`);
-    await queryRunner.query(
-      `DELETE FROM sys_empresas WHERE cedula_empresa = '3-101-999999'`,
-    );
+    await queryRunner.query(`DELETE FROM sys_empresas WHERE cedula_empresa = '3-101-999999'`);
   }
 }

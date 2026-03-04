@@ -1,12 +1,14 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { EntityManager, Repository } from 'typeorm';
-import { PersonalAction, PersonalActionEstado } from './entities/personal-action.entity';
+
 import {
   PERSONAL_ACTION_INVALIDATED_BY,
   PERSONAL_ACTION_INVALIDATION_REASON,
   type PersonalActionInvalidationReasonCode,
 } from './constants/personal-action-invalidation.constants';
+import { PersonalAction, PersonalActionEstado } from './entities/personal-action.entity';
+
+import type { EntityManager, Repository } from 'typeorm';
 
 interface AutoInvalidationOptions {
   manager?: EntityManager;
@@ -189,9 +191,7 @@ export class PersonalActionAutoInvalidationService {
       const payrollCurrencyCondition = includePayrollCurrencyCheck
         ? ' OR a.moneda_accion <> ?'
         : '';
-      const payrollCurrencyParams = includePayrollCurrencyCheck
-        ? [options.payrollCurrency]
-        : [];
+      const payrollCurrencyParams = includePayrollCurrencyCheck ? [options.payrollCurrency] : [];
 
       whereSql = `
         FROM acc_acciones_personal a
@@ -204,11 +204,7 @@ export class PersonalActionAutoInvalidationService {
           )
           ${scope.sql}
       `;
-      whereParams = [
-        PersonalActionEstado.APPROVED,
-        ...payrollCurrencyParams,
-        ...scope.params,
-      ];
+      whereParams = [PersonalActionEstado.APPROVED, ...payrollCurrencyParams, ...scope.params];
       updateSql = `
         UPDATE acc_acciones_personal a
         INNER JOIN sys_empleados e ON e.id_empleado = a.id_empleado
@@ -272,11 +268,7 @@ export class PersonalActionAutoInvalidationService {
       ? sampleRows.map((row) => Number(row.id_accion))
       : [];
 
-    const raw = await this.execQuery<{ affectedRows?: number }>(
-      updateSql,
-      updateParams,
-      manager,
-    );
+    const raw = await this.execQuery<{ affectedRows?: number }>(updateSql, updateParams, manager);
     const first = Array.isArray(raw) ? raw[0] : (raw as { affectedRows?: number });
     const affected = Number(first?.affectedRows ?? 0);
 
@@ -305,11 +297,7 @@ export class PersonalActionAutoInvalidationService {
     };
   }
 
-  private execQuery<T>(
-    sql: string,
-    params: unknown[],
-    manager?: EntityManager,
-  ): Promise<T[] | T> {
+  private execQuery<T>(sql: string, params: unknown[], manager?: EntityManager): Promise<T[] | T> {
     if (manager) return manager.query(sql, params);
     return this.personalActionRepo.query(sql, params);
   }

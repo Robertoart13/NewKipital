@@ -8,9 +8,11 @@ import {
   ManyToOne,
   JoinColumn,
 } from 'typeorm';
+
+import { PayPeriod } from '../../payroll/entities/pay-period.entity';
+
 import { Department } from './department.entity';
 import { Position } from './position.entity';
-import { PayPeriod } from '../../payroll/entities/pay-period.entity';
 
 export enum GeneroEmpleado {
   MASCULINO = 'Masculino',

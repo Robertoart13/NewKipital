@@ -9,24 +9,28 @@ import {
   ParseIntPipe,
   UseInterceptors,
 } from '@nestjs/common';
-import { PersonalActionsService } from './personal-actions.service';
-import { CreatePersonalActionDto } from './dto/create-personal-action.dto';
-import { UpsertAbsenceDto } from './dto/upsert-absence.dto';
-import { UpsertBonusDto } from './dto/upsert-bonus.dto';
-import { UpsertDisabilityDto } from './dto/upsert-disability.dto';
-import { UpsertLicenseDto } from './dto/upsert-license.dto';
-import { UpsertOvertimeDto } from './dto/upsert-overtime.dto';
-import { UpsertRetentionDto } from './dto/upsert-retention.dto';
-import { UpsertDiscountDto } from './dto/upsert-discount.dto';
-import { UpsertIncreaseDto } from './dto/upsert-increase.dto';
-import { UpsertVacationDto } from './dto/upsert-vacation.dto';
-import { PersonalActionEstado } from './entities/personal-action.entity';
+
+import { AllowWithoutCompany } from '../../common/decorators/allow-without-company.decorator';
+import { CacheScope } from '../../common/decorators/cache-scope.decorator';
+import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { Public } from '../../common/decorators/public.decorator';
 import { RequirePermissions } from '../../common/decorators/require-permissions.decorator';
-import { AllowWithoutCompany } from '../../common/decorators/allow-without-company.decorator';
-import { CurrentUser } from '../../common/decorators/current-user.decorator';
-import { CacheScope } from '../../common/decorators/cache-scope.decorator';
 import { CacheResponseInterceptor } from '../../common/interceptors/cache-response.interceptor';
+
+import type { UpsertDiscountDto } from './dto/upsert-discount.dto';
+
+import type { CreatePersonalActionDto } from './dto/create-personal-action.dto';
+import type { UpsertAbsenceDto } from './dto/upsert-absence.dto';
+import type { UpsertBonusDto } from './dto/upsert-bonus.dto';
+import type { UpsertDisabilityDto } from './dto/upsert-disability.dto';
+import type { UpsertIncreaseDto } from './dto/upsert-increase.dto';
+import type { UpsertLicenseDto } from './dto/upsert-license.dto';
+import type { UpsertOvertimeDto } from './dto/upsert-overtime.dto';
+import type { UpsertRetentionDto } from './dto/upsert-retention.dto';
+
+import type { UpsertVacationDto } from './dto/upsert-vacation.dto';
+import type { PersonalActionEstado } from './entities/personal-action.entity';
+import type { PersonalActionsService } from './personal-actions.service';
 
 @CacheScope('personal-actions')
 @UseInterceptors(CacheResponseInterceptor)
@@ -48,11 +52,7 @@ export class PersonalActionsController {
     @Query('estado') estadoRaw?: string | string[],
   ) {
     const idEmpresa = idEmpresaRaw ? parseInt(idEmpresaRaw, 10) : undefined;
-    const estadoList = Array.isArray(estadoRaw)
-      ? estadoRaw
-      : estadoRaw
-        ? [estadoRaw]
-        : [];
+    const estadoList = Array.isArray(estadoRaw) ? estadoRaw : estadoRaw ? [estadoRaw] : [];
     const estados = estadoList
       .map((value) => parseInt(String(value), 10))
       .filter((value) => Number.isInteger(value))
@@ -84,11 +84,7 @@ export class PersonalActionsController {
     ) {
       return [];
     }
-    return this.service.findAbsenceMovementsCatalog(
-      user.userId,
-      idEmpresa,
-      idTipoAccionPersonal,
-    );
+    return this.service.findAbsenceMovementsCatalog(user.userId, idEmpresa, idTipoAccionPersonal);
   }
 
   @RequirePermissions('hr-action-ausencias:view')
@@ -131,10 +127,7 @@ export class PersonalActionsController {
 
   @RequirePermissions('hr-action-bonificaciones:view')
   @Get('bonificaciones/:id')
-  findBonusDetail(
-    @Param('id', ParseIntPipe) id: number,
-    @CurrentUser() user: { userId: number },
-  ) {
+  findBonusDetail(@Param('id', ParseIntPipe) id: number, @CurrentUser() user: { userId: number }) {
     return this.service.findBonusDetail(id, user.userId);
   }
 
@@ -282,19 +275,10 @@ export class PersonalActionsController {
   ) {
     const idEmpresa = idEmpresaRaw ? parseInt(idEmpresaRaw, 10) : undefined;
     const idEmpleado = idEmpleadoRaw ? parseInt(idEmpleadoRaw, 10) : undefined;
-    if (
-      !idEmpresa ||
-      Number.isNaN(idEmpresa) ||
-      !idEmpleado ||
-      Number.isNaN(idEmpleado)
-    ) {
+    if (!idEmpresa || Number.isNaN(idEmpresa) || !idEmpleado || Number.isNaN(idEmpleado)) {
       return [];
     }
-    return this.service.findEligibleAbsencePayrolls(
-      user.userId,
-      idEmpresa,
-      idEmpleado,
-    );
+    return this.service.findEligibleAbsencePayrolls(user.userId, idEmpresa, idEmpleado);
   }
 
   @AllowWithoutCompany()
@@ -307,19 +291,10 @@ export class PersonalActionsController {
   ) {
     const idEmpresa = idEmpresaRaw ? parseInt(idEmpresaRaw, 10) : undefined;
     const idEmpleado = idEmpleadoRaw ? parseInt(idEmpleadoRaw, 10) : undefined;
-    if (
-      !idEmpresa ||
-      Number.isNaN(idEmpresa) ||
-      !idEmpleado ||
-      Number.isNaN(idEmpleado)
-    ) {
+    if (!idEmpresa || Number.isNaN(idEmpresa) || !idEmpleado || Number.isNaN(idEmpleado)) {
       return { saldoReal: 0, reservado: 0, disponible: 0 };
     }
-    return this.service.getVacationAvailability(
-      user.userId,
-      idEmpresa,
-      idEmpleado,
-    );
+    return this.service.getVacationAvailability(user.userId, idEmpresa, idEmpleado);
   }
 
   @AllowWithoutCompany()
@@ -339,15 +314,8 @@ export class PersonalActionsController {
   ) {
     const idEmpresa = idEmpresaRaw ? parseInt(idEmpresaRaw, 10) : undefined;
     const idEmpleado = idEmpleadoRaw ? parseInt(idEmpleadoRaw, 10) : undefined;
-    const excludeActionId = excludeActionIdRaw
-      ? parseInt(excludeActionIdRaw, 10)
-      : undefined;
-    if (
-      !idEmpresa ||
-      Number.isNaN(idEmpresa) ||
-      !idEmpleado ||
-      Number.isNaN(idEmpleado)
-    ) {
+    const excludeActionId = excludeActionIdRaw ? parseInt(excludeActionIdRaw, 10) : undefined;
+    if (!idEmpresa || Number.isNaN(idEmpresa) || !idEmpleado || Number.isNaN(idEmpleado)) {
       return [];
     }
     return this.service.getBookedVacationDates(
@@ -369,100 +337,67 @@ export class PersonalActionsController {
 
   @RequirePermissions('hr_action:view')
   @Get(':id')
-  findOne(
-    @Param('id', ParseIntPipe) id: number,
-    @CurrentUser() user: { userId: number },
-  ) {
+  findOne(@Param('id', ParseIntPipe) id: number, @CurrentUser() user: { userId: number }) {
     return this.service.findOne(id, user.userId);
   }
 
   @RequirePermissions('hr_action:create')
   @Post()
-  create(
-    @Body() dto: CreatePersonalActionDto,
-    @CurrentUser() user: { userId: number },
-  ) {
+  create(@Body() dto: CreatePersonalActionDto, @CurrentUser() user: { userId: number }) {
     return this.service.create(dto, user.userId);
   }
 
   @RequirePermissions('hr-action-ausencias:create')
   @Post('ausencias')
-  createAbsence(
-    @Body() dto: UpsertAbsenceDto,
-    @CurrentUser() user: { userId: number },
-  ) {
+  createAbsence(@Body() dto: UpsertAbsenceDto, @CurrentUser() user: { userId: number }) {
     return this.service.createAbsence(dto, user.userId);
   }
 
   @RequirePermissions('hr-action-licencias:create')
   @Post('licencias')
-  createLicense(
-    @Body() dto: UpsertLicenseDto,
-    @CurrentUser() user: { userId: number },
-  ) {
+  createLicense(@Body() dto: UpsertLicenseDto, @CurrentUser() user: { userId: number }) {
     return this.service.createLicense(dto, user.userId);
   }
 
   @RequirePermissions('hr-action-incapacidades:create')
   @Post('incapacidades')
-  createDisability(
-    @Body() dto: UpsertDisabilityDto,
-    @CurrentUser() user: { userId: number },
-  ) {
+  createDisability(@Body() dto: UpsertDisabilityDto, @CurrentUser() user: { userId: number }) {
     return this.service.createDisability(dto, user.userId);
   }
 
   @RequirePermissions('hr-action-bonificaciones:create')
   @Post('bonificaciones')
-  createBonus(
-    @Body() dto: UpsertBonusDto,
-    @CurrentUser() user: { userId: number },
-  ) {
+  createBonus(@Body() dto: UpsertBonusDto, @CurrentUser() user: { userId: number }) {
     return this.service.createBonus(dto, user.userId);
   }
 
   @RequirePermissions('hr-action-horas-extras:create')
   @Post('horas-extras')
-  createOvertime(
-    @Body() dto: UpsertOvertimeDto,
-    @CurrentUser() user: { userId: number },
-  ) {
+  createOvertime(@Body() dto: UpsertOvertimeDto, @CurrentUser() user: { userId: number }) {
     return this.service.createOvertime(dto, user.userId);
   }
 
   @RequirePermissions('hr-action-retenciones:create')
   @Post('retenciones')
-  createRetention(
-    @Body() dto: UpsertRetentionDto,
-    @CurrentUser() user: { userId: number },
-  ) {
+  createRetention(@Body() dto: UpsertRetentionDto, @CurrentUser() user: { userId: number }) {
     return this.service.createRetention(dto, user.userId);
   }
 
   @RequirePermissions('hr-action-descuentos:create')
   @Post('descuentos')
-  createDiscount(
-    @Body() dto: UpsertDiscountDto,
-    @CurrentUser() user: { userId: number },
-  ) {
+  createDiscount(@Body() dto: UpsertDiscountDto, @CurrentUser() user: { userId: number }) {
     return this.service.createDiscount(dto, user.userId);
   }
 
   @RequirePermissions('hr-action-aumentos:create')
   @Post('aumentos')
-  createIncrease(
-    @Body() dto: UpsertIncreaseDto,
-    @CurrentUser() user: { userId: number },
-  ) {
+  createIncrease(@Body() dto: UpsertIncreaseDto, @CurrentUser() user: { userId: number }) {
     return this.service.createIncrease(dto, user.userId);
   }
 
   @RequirePermissions('hr-action-vacaciones:create')
   @Post('vacaciones')
-  createVacation(
-    @Body() dto: UpsertVacationDto,
-    @CurrentUser() user: { userId: number },
-  ) {
+  createVacation(@Body() dto: UpsertVacationDto, @CurrentUser() user: { userId: number }) {
     return this.service.createVacation(dto, user.userId);
   }
 
@@ -563,11 +498,7 @@ export class PersonalActionsController {
     @Body() body: { idEmpresa?: number },
     @CurrentUser() user: { userId: number; permissions?: string[] },
   ) {
-    return this.service.advanceAbsenceState(
-      id,
-      user.userId,
-      user.permissions ?? [],
-    );
+    return this.service.advanceAbsenceState(id, user.userId, user.permissions ?? []);
   }
 
   @RequirePermissions('hr-action-licencias:view')
@@ -576,11 +507,7 @@ export class PersonalActionsController {
     @Param('id', ParseIntPipe) id: number,
     @CurrentUser() user: { userId: number; permissions?: string[] },
   ) {
-    return this.service.advanceLicenseState(
-      id,
-      user.userId,
-      user.permissions ?? [],
-    );
+    return this.service.advanceLicenseState(id, user.userId, user.permissions ?? []);
   }
 
   @RequirePermissions('hr-action-incapacidades:view')
@@ -589,11 +516,7 @@ export class PersonalActionsController {
     @Param('id', ParseIntPipe) id: number,
     @CurrentUser() user: { userId: number; permissions?: string[] },
   ) {
-    return this.service.advanceDisabilityState(
-      id,
-      user.userId,
-      user.permissions ?? [],
-    );
+    return this.service.advanceDisabilityState(id, user.userId, user.permissions ?? []);
   }
 
   @RequirePermissions('hr-action-bonificaciones:view')
@@ -611,11 +534,7 @@ export class PersonalActionsController {
     @Param('id', ParseIntPipe) id: number,
     @CurrentUser() user: { userId: number; permissions?: string[] },
   ) {
-    return this.service.advanceOvertimeState(
-      id,
-      user.userId,
-      user.permissions ?? [],
-    );
+    return this.service.advanceOvertimeState(id, user.userId, user.permissions ?? []);
   }
 
   @RequirePermissions('hr-action-retenciones:view')
@@ -624,11 +543,7 @@ export class PersonalActionsController {
     @Param('id', ParseIntPipe) id: number,
     @CurrentUser() user: { userId: number; permissions?: string[] },
   ) {
-    return this.service.advanceRetentionState(
-      id,
-      user.userId,
-      user.permissions ?? [],
-    );
+    return this.service.advanceRetentionState(id, user.userId, user.permissions ?? []);
   }
 
   @RequirePermissions('hr-action-descuentos:view')
@@ -637,11 +552,7 @@ export class PersonalActionsController {
     @Param('id', ParseIntPipe) id: number,
     @CurrentUser() user: { userId: number; permissions?: string[] },
   ) {
-    return this.service.advanceDiscountState(
-      id,
-      user.userId,
-      user.permissions ?? [],
-    );
+    return this.service.advanceDiscountState(id, user.userId, user.permissions ?? []);
   }
 
   @RequirePermissions('hr-action-aumentos:view')
@@ -650,11 +561,7 @@ export class PersonalActionsController {
     @Param('id', ParseIntPipe) id: number,
     @CurrentUser() user: { userId: number; permissions?: string[] },
   ) {
-    return this.service.advanceIncreaseState(
-      id,
-      user.userId,
-      user.permissions ?? [],
-    );
+    return this.service.advanceIncreaseState(id, user.userId, user.permissions ?? []);
   }
 
   @RequirePermissions('hr-action-vacaciones:view')
@@ -663,11 +570,7 @@ export class PersonalActionsController {
     @Param('id', ParseIntPipe) id: number,
     @CurrentUser() user: { userId: number; permissions?: string[] },
   ) {
-    return this.service.advanceVacationState(
-      id,
-      user.userId,
-      user.permissions ?? [],
-    );
+    return this.service.advanceVacationState(id, user.userId, user.permissions ?? []);
   }
 
   @RequirePermissions('hr-action-ausencias:view')
@@ -677,12 +580,7 @@ export class PersonalActionsController {
     @Body() body: { idEmpresa?: number; motivo?: string },
     @CurrentUser() user: { userId: number; permissions?: string[] },
   ) {
-    return this.service.invalidateAbsence(
-      id,
-      body?.motivo,
-      user.userId,
-      user.permissions ?? [],
-    );
+    return this.service.invalidateAbsence(id, body?.motivo, user.userId, user.permissions ?? []);
   }
 
   @RequirePermissions('hr-action-licencias:view')
@@ -692,12 +590,7 @@ export class PersonalActionsController {
     @Body() body: { motivo?: string },
     @CurrentUser() user: { userId: number; permissions?: string[] },
   ) {
-    return this.service.invalidateLicense(
-      id,
-      body?.motivo,
-      user.userId,
-      user.permissions ?? [],
-    );
+    return this.service.invalidateLicense(id, body?.motivo, user.userId, user.permissions ?? []);
   }
 
   @RequirePermissions('hr-action-incapacidades:view')
@@ -707,12 +600,7 @@ export class PersonalActionsController {
     @Body() body: { motivo?: string },
     @CurrentUser() user: { userId: number; permissions?: string[] },
   ) {
-    return this.service.invalidateDisability(
-      id,
-      body?.motivo,
-      user.userId,
-      user.permissions ?? [],
-    );
+    return this.service.invalidateDisability(id, body?.motivo, user.userId, user.permissions ?? []);
   }
 
   @RequirePermissions('hr-action-bonificaciones:view')
@@ -722,12 +610,7 @@ export class PersonalActionsController {
     @Body() body: { motivo?: string },
     @CurrentUser() user: { userId: number; permissions?: string[] },
   ) {
-    return this.service.invalidateBonus(
-      id,
-      body?.motivo,
-      user.userId,
-      user.permissions ?? [],
-    );
+    return this.service.invalidateBonus(id, body?.motivo, user.userId, user.permissions ?? []);
   }
 
   @RequirePermissions('hr-action-horas-extras:view')
@@ -737,12 +620,7 @@ export class PersonalActionsController {
     @Body() body: { motivo?: string },
     @CurrentUser() user: { userId: number; permissions?: string[] },
   ) {
-    return this.service.invalidateOvertime(
-      id,
-      body?.motivo,
-      user.userId,
-      user.permissions ?? [],
-    );
+    return this.service.invalidateOvertime(id, body?.motivo, user.userId, user.permissions ?? []);
   }
 
   @RequirePermissions('hr-action-retenciones:view')
@@ -752,12 +630,7 @@ export class PersonalActionsController {
     @Body() body: { motivo?: string },
     @CurrentUser() user: { userId: number; permissions?: string[] },
   ) {
-    return this.service.invalidateRetention(
-      id,
-      body?.motivo,
-      user.userId,
-      user.permissions ?? [],
-    );
+    return this.service.invalidateRetention(id, body?.motivo, user.userId, user.permissions ?? []);
   }
 
   @RequirePermissions('hr-action-descuentos:view')
@@ -767,12 +640,7 @@ export class PersonalActionsController {
     @Body() body: { motivo?: string },
     @CurrentUser() user: { userId: number; permissions?: string[] },
   ) {
-    return this.service.invalidateDiscount(
-      id,
-      body?.motivo,
-      user.userId,
-      user.permissions ?? [],
-    );
+    return this.service.invalidateDiscount(id, body?.motivo, user.userId, user.permissions ?? []);
   }
 
   @RequirePermissions('hr-action-aumentos:view')
@@ -782,12 +650,7 @@ export class PersonalActionsController {
     @Body() body: { motivo?: string },
     @CurrentUser() user: { userId: number; permissions?: string[] },
   ) {
-    return this.service.invalidateIncrease(
-      id,
-      body?.motivo,
-      user.userId,
-      user.permissions ?? [],
-    );
+    return this.service.invalidateIncrease(id, body?.motivo, user.userId, user.permissions ?? []);
   }
 
   @RequirePermissions('hr-action-vacaciones:view')
@@ -797,20 +660,12 @@ export class PersonalActionsController {
     @Body() body: { motivo?: string },
     @CurrentUser() user: { userId: number; permissions?: string[] },
   ) {
-    return this.service.invalidateVacation(
-      id,
-      body?.motivo,
-      user.userId,
-      user.permissions ?? [],
-    );
+    return this.service.invalidateVacation(id, body?.motivo, user.userId, user.permissions ?? []);
   }
 
   @RequirePermissions('hr_action:approve')
   @Patch(':id/approve')
-  approve(
-    @Param('id', ParseIntPipe) id: number,
-    @CurrentUser() user: { userId: number },
-  ) {
+  approve(@Param('id', ParseIntPipe) id: number, @CurrentUser() user: { userId: number }) {
     return this.service.approve(id, user.userId);
   }
 

@@ -1,33 +1,33 @@
-import {
-  ForbiddenException,
-  Injectable,
-  Logger,
-  UnauthorizedException,
-} from '@nestjs/common';
-import { JwtService } from '@nestjs/jwt';
-import { ConfigService } from '@nestjs/config';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, In, IsNull, MoreThan, QueryFailedError } from 'typeorm';
-import * as bcrypt from 'bcrypt';
 import { randomUUID } from 'crypto';
-import { User } from './entities/user.entity';
-import { UsersService } from './users.service';
+
+import { ForbiddenException, Injectable, Logger, UnauthorizedException } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import * as bcrypt from 'bcrypt';
+import { In, IsNull, MoreThan, QueryFailedError } from 'typeorm';
+
 import { App } from '../access-control/entities/app.entity';
-import { UserApp } from '../access-control/entities/user-app.entity';
-import { UserCompany } from '../access-control/entities/user-company.entity';
-import { UserRole } from '../access-control/entities/user-role.entity';
-import { UserRoleGlobal } from '../access-control/entities/user-role-global.entity';
 import { UserRoleExclusion } from '../access-control/entities/user-role-exclusion.entity';
 import { Role } from '../access-control/entities/role.entity';
 import { RolePermission } from '../access-control/entities/role-permission.entity';
 import { Permission } from '../access-control/entities/permission.entity';
+import { UserApp } from '../access-control/entities/user-app.entity';
+import { UserCompany } from '../access-control/entities/user-company.entity';
 import { UserPermissionOverride } from '../access-control/entities/user-permission-override.entity';
 import { UserPermissionGlobalDeny } from '../access-control/entities/user-permission-global-deny.entity';
+import { UserRoleGlobal } from '../access-control/entities/user-role-global.entity';
+import { UserRole } from '../access-control/entities/user-role.entity';
 import { Company } from '../companies/entities/company.entity';
-import type { TokenPayload } from '../../common/strategies/jwt.strategy';
+
 import { RefreshSession } from './entities/refresh-session.entity';
-import { AuthzVersionService } from '../authz/authz-version.service';
-import { PermissionsCacheService } from '../authz/permissions-cache.service';
+
+import type { User } from './entities/user.entity';
+import type { UsersService } from './users.service';
+import type { TokenPayload } from '../../common/strategies/jwt.strategy';
+import type { AuthzVersionService } from '../authz/authz-version.service';
+import type { PermissionsCacheService } from '../authz/permissions-cache.service';
+import type { ConfigService } from '@nestjs/config';
+import type { JwtService } from '@nestjs/jwt';
+import type { Repository } from 'typeorm';
 
 export interface SessionData {
   user: {
@@ -120,14 +120,9 @@ export class AuthService {
     ip?: string,
     userAgent?: string,
   ): Promise<IssuedSession> {
-    const user = await this.usersService.findByMicrosoftIdentity(
-      microsoftOid,
-      microsoftTid,
-    );
+    const user = await this.usersService.findByMicrosoftIdentity(microsoftOid, microsoftTid);
     if (!user) {
-      throw new ForbiddenException(
-        'Su cuenta Microsoft no esta aprovisionada en KPITAL',
-      );
+      throw new ForbiddenException('Su cuenta Microsoft no esta aprovisionada en KPITAL');
     }
 
     await this.usersService.registerSuccessfulLogin(user.id, ip);
@@ -141,10 +136,7 @@ export class AuthService {
     ip?: string,
     userAgent?: string,
   ): Promise<IssuedSession> {
-    let user = await this.usersService.findByMicrosoftIdentity(
-      microsoftOid,
-      microsoftTid,
-    );
+    let user = await this.usersService.findByMicrosoftIdentity(microsoftOid, microsoftTid);
 
     if (!user) {
       user = await this.usersService.findByEmail(email);
@@ -155,11 +147,7 @@ export class AuthService {
       }
 
       if (!user.microsoftOid || !user.microsoftTid) {
-        await this.usersService.bindMicrosoftIdentity(
-          user.id,
-          microsoftOid,
-          microsoftTid,
-        );
+        await this.usersService.bindMicrosoftIdentity(user.id, microsoftOid, microsoftTid);
         user = await this.usersService.findByEmail(email);
       }
     }
@@ -215,13 +203,7 @@ export class AuthService {
       stored.replacedByJti = newJti;
       await this.refreshSessionRepo.save(stored);
 
-      await this.persistRefreshSession(
-        user.id,
-        newJti,
-        newRefreshToken,
-        ip,
-        userAgent,
-      );
+      await this.persistRefreshSession(user.id, newJti, newRefreshToken, ip, userAgent);
 
       const accessToken = this.signAccessToken(user);
       const session = await this.buildSession(user);
@@ -233,10 +215,7 @@ export class AuthService {
         session,
       };
     } catch (error) {
-      if (
-        error instanceof UnauthorizedException ||
-        error instanceof ForbiddenException
-      ) {
+      if (error instanceof UnauthorizedException || error instanceof ForbiddenException) {
         throw error;
       }
       if (this.isTransientDatabaseConnectionError(error)) {
@@ -282,20 +261,11 @@ export class AuthService {
     let roles: string[] = [];
 
     if (companyId && appCode) {
-      const resolved = await this.resolvePermissions(
-        user.id,
-        companyId,
-        appCode,
-        options,
-      );
+      const resolved = await this.resolvePermissions(user.id, companyId, appCode, options);
       permissions = resolved.permissions;
       roles = resolved.roles;
     } else if (appCode) {
-      const resolved = await this.resolvePermissionsAcrossCompanies(
-        user.id,
-        appCode,
-        options,
-      );
+      const resolved = await this.resolvePermissionsAcrossCompanies(user.id, appCode, options);
       permissions = resolved.permissions;
       roles = resolved.roles;
     }
@@ -381,16 +351,12 @@ export class AuthService {
         },
       });
       const excludedRoleIds = new Set(exclusions.map((e) => e.idRol));
-      globalRoleIds = globalRoles
-        .map((gr) => gr.idRol)
-        .filter((rid) => !excludedRoleIds.has(rid));
+      globalRoleIds = globalRoles.map((gr) => gr.idRol).filter((rid) => !excludedRoleIds.has(rid));
     } catch {
       // sys_usuario_rol_global o sys_usuario_rol_exclusion no existen → solo roles por contexto
     }
 
-    const roleIds = Array.from(
-      new Set([...perCompanyRoleIds, ...globalRoleIds]),
-    );
+    const roleIds = Array.from(new Set([...perCompanyRoleIds, ...globalRoleIds]));
 
     let basePermissions: string[] = [];
     if (roleIds.length > 0) {
@@ -425,14 +391,10 @@ export class AuthService {
     }
 
     const allowOverrides = new Set(
-      overrideRows
-        .filter((row) => row.efecto === 'ALLOW')
-        .map((row) => row.codigo),
+      overrideRows.filter((row) => row.efecto === 'ALLOW').map((row) => row.codigo),
     );
     const denyOverrides = new Set(
-      overrideRows
-        .filter((row) => row.efecto === 'DENY')
-        .map((row) => row.codigo),
+      overrideRows.filter((row) => row.efecto === 'DENY').map((row) => row.codigo),
     );
 
     const effective = new Set(basePermissions);
@@ -485,12 +447,7 @@ export class AuthService {
   ): Promise<{ permissions: string[]; roles: string[] }> {
     const normalizedAppCode = appCode.trim().toLowerCase();
     const versionToken = await this.authzVersionService.getToken(userId);
-    const cacheKey = this.buildPermissionCacheKey(
-      userId,
-      0,
-      normalizedAppCode,
-      versionToken,
-    );
+    const cacheKey = this.buildPermissionCacheKey(userId, 0, normalizedAppCode, versionToken);
     if (!options?.bypassCache) {
       const cached = this.permissionsCache.get<{
         permissions: string[];
@@ -634,10 +591,7 @@ export class AuthService {
   ): Promise<void> {
     const tokenHash = await bcrypt.hash(refreshToken, 10);
     const expiresAt = new Date(
-      Date.now() +
-        this.parseDurationToMs(
-          this.config.get<string>('JWT_REFRESH_EXPIRATION', '30d'),
-        ),
+      Date.now() + this.parseDurationToMs(this.config.get<string>('JWT_REFRESH_EXPIRATION', '30d')),
     );
 
     const session = this.refreshSessionRepo.create({
@@ -723,9 +677,7 @@ export class AuthService {
     }
 
     if (error instanceof Error) {
-      return /ECONNRESET|PROTOCOL_CONNECTION_LOST|ETIMEDOUT|ECONNREFUSED|EPIPE/.test(
-        error.message,
-      );
+      return /ECONNRESET|PROTOCOL_CONNECTION_LOST|ETIMEDOUT|ECONNREFUSED|EPIPE/.test(error.message);
     }
 
     return false;

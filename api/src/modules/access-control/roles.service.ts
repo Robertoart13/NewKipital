@@ -5,19 +5,22 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { In, Repository } from 'typeorm';
-import { Role } from './entities/role.entity';
+import { In } from 'typeorm';
+
 import { App } from './entities/app.entity';
 import { Permission } from './entities/permission.entity';
 import { RolePermission } from './entities/role-permission.entity';
-import { UserRole } from './entities/user-role.entity';
+import { Role } from './entities/role.entity';
 import { UserRoleGlobal } from './entities/user-role-global.entity';
-import { CreateRoleDto } from './dto/create-role.dto';
-import { AssignRolePermissionDto } from './dto/assign-role-permission.dto';
-import { UpdateRoleDto } from './dto/update-role.dto';
-import { AuditOutboxService } from '../integration/audit-outbox.service';
-import { AuthzVersionService } from '../authz/authz-version.service';
-import { AuthzRealtimeService } from '../authz/authz-realtime.service';
+import { UserRole } from './entities/user-role.entity';
+
+import type { AssignRolePermissionDto } from './dto/assign-role-permission.dto';
+import type { CreateRoleDto } from './dto/create-role.dto';
+import type { UpdateRoleDto } from './dto/update-role.dto';
+import type { AuthzRealtimeService } from '../authz/authz-realtime.service';
+import type { AuthzVersionService } from '../authz/authz-version.service';
+import type { AuditOutboxService } from '../integration/audit-outbox.service';
+import type { Repository } from 'typeorm';
 
 @Injectable()
 export class RolesService {
@@ -51,9 +54,7 @@ export class RolesService {
       where: { codigo: dto.appCode.trim().toLowerCase(), estado: 1 },
     });
     if (!app) {
-      throw new BadRequestException(
-        `Aplicacion '${dto.appCode}' no encontrada`,
-      );
+      throw new BadRequestException(`Aplicacion '${dto.appCode}' no encontrada`);
     }
 
     const role = this.roleRepo.create({
@@ -111,24 +112,17 @@ export class RolesService {
     return role;
   }
 
-  async updateMetadata(
-    id: number,
-    dto: UpdateRoleDto,
-    userId: number,
-  ): Promise<Role> {
+  async updateMetadata(id: number, dto: UpdateRoleDto, userId: number): Promise<Role> {
     const role = await this.findOne(id);
     const nextNombre = dto.nombre?.trim();
     const nextDescripcion = dto.descripcion?.trim();
 
     if (!nextNombre && nextDescripcion === undefined) {
-      throw new BadRequestException(
-        'Debe enviar al menos un campo para actualizar',
-      );
+      throw new BadRequestException('Debe enviar al menos un campo para actualizar');
     }
 
     if (nextNombre) role.nombre = nextNombre;
-    if (dto.descripcion !== undefined)
-      role.descripcion = nextDescripcion || null;
+    if (dto.descripcion !== undefined) role.descripcion = nextDescripcion || null;
     role.modificadoPor = userId;
 
     const saved = await this.roleRepo.save(role);
@@ -195,17 +189,13 @@ export class RolesService {
     return saved;
   }
 
-  async assignPermission(
-    dto: AssignRolePermissionDto,
-  ): Promise<RolePermission> {
+  async assignPermission(dto: AssignRolePermissionDto): Promise<RolePermission> {
     await this.findOne(dto.idRol);
     const perm = await this.permissionRepo.findOne({
       where: { id: dto.idPermiso },
     });
     if (!perm) {
-      throw new NotFoundException(
-        `Permiso con ID ${dto.idPermiso} no encontrado`,
-      );
+      throw new NotFoundException(`Permiso con ID ${dto.idPermiso} no encontrado`);
     }
 
     const existing = await this.rpRepo.findOne({
@@ -217,10 +207,7 @@ export class RolesService {
 
     const rp = this.rpRepo.create(dto);
     const saved = await this.rpRepo.save(rp);
-    await this.notifyRolePermissionsChanged(
-      dto.idRol,
-      'role.permission.assign',
-    );
+    await this.notifyRolePermissionsChanged(dto.idRol, 'role.permission.assign');
     return saved;
   }
 
@@ -255,9 +242,7 @@ export class RolesService {
   ): Promise<Permission[]> {
     const role = await this.findOne(idRol);
 
-    const normalized = [
-      ...new Set(codes.map((c) => c.trim().toLowerCase()).filter(Boolean)),
-    ];
+    const normalized = [...new Set(codes.map((c) => c.trim().toLowerCase()).filter(Boolean))];
     const permissions = normalized.length
       ? await this.permissionRepo.find({
           where: { codigo: In(normalized), estado: 1 },
@@ -267,9 +252,7 @@ export class RolesService {
     if (permissions.length !== normalized.length) {
       const found = new Set(permissions.map((p) => p.codigo));
       const missing = normalized.filter((code) => !found.has(code));
-      throw new NotFoundException(
-        `Permisos no encontrados o inactivos: ${missing.join(', ')}`,
-      );
+      throw new NotFoundException(`Permisos no encontrados o inactivos: ${missing.join(', ')}`);
     }
 
     const desiredIds = new Set(permissions.map((p) => p.id));
@@ -305,10 +288,7 @@ export class RolesService {
     return result;
   }
 
-  private async notifyRolePermissionsChanged(
-    roleId: number,
-    reason: string,
-  ): Promise<void> {
+  private async notifyRolePermissionsChanged(roleId: number, reason: string): Promise<void> {
     const affectedUserIds = await this.getAffectedUserIdsByRole(roleId);
     if (affectedUserIds.length === 0) return;
 

@@ -1,10 +1,6 @@
-import {
-  MigrationInterface,
-  QueryRunner,
-  Table,
-  TableForeignKey,
-  TableIndex,
-} from 'typeorm';
+import { Table, TableForeignKey, TableIndex } from 'typeorm';
+
+import type { MigrationInterface, QueryRunner } from 'typeorm';
 
 /**
  * Directiva 40 - Blueprint Planilla v2 compatible (fase 1 incremental).
@@ -102,9 +98,7 @@ export class EnhancePayrollV2Compatible1708536400000 implements MigrationInterfa
     const addColumnIfMissing = async (name: string, ddl: string) => {
       const has = await queryRunner.hasColumn('nom_calendarios_nomina', name);
       if (!has) {
-        await queryRunner.query(
-          `ALTER TABLE nom_calendarios_nomina ADD COLUMN ${ddl}`,
-        );
+        await queryRunner.query(`ALTER TABLE nom_calendarios_nomina ADD COLUMN ${ddl}`);
       }
     };
 
@@ -210,14 +204,9 @@ export class EnhancePayrollV2Compatible1708536400000 implements MigrationInterfa
     `);
 
     const table = await queryRunner.getTable('nom_calendarios_nomina');
-    const oldIndex = table?.indices.find(
-      (idx) => idx.name === 'UQ_calendario_slot_operativo',
-    );
+    const oldIndex = table?.indices.find((idx) => idx.name === 'UQ_calendario_slot_operativo');
     if (oldIndex) {
-      await queryRunner.dropIndex(
-        'nom_calendarios_nomina',
-        'UQ_calendario_slot_operativo',
-      );
+      await queryRunner.dropIndex('nom_calendarios_nomina', 'UQ_calendario_slot_operativo');
     }
 
     const hasUniqueSlot = table?.indices.some(
@@ -228,10 +217,7 @@ export class EnhancePayrollV2Compatible1708536400000 implements MigrationInterfa
         'nom_calendarios_nomina',
         new TableIndex({
           name: 'UQ_calendario_slot_key_active',
-          columnNames: [
-            'slot_key_calendario_nomina',
-            'is_active_slot_calendario_nomina',
-          ],
+          columnNames: ['slot_key_calendario_nomina', 'is_active_slot_calendario_nomina'],
           isUnique: true,
         }),
       );
@@ -313,20 +299,13 @@ export class EnhancePayrollV2Compatible1708536400000 implements MigrationInterfa
     `);
 
     const table = await queryRunner.getTable('nom_calendarios_nomina');
-    if (
-      table?.indices.some((idx) => idx.name === 'UQ_calendario_slot_key_active')
-    ) {
-      await queryRunner.dropIndex(
-        'nom_calendarios_nomina',
-        'UQ_calendario_slot_key_active',
-      );
+    if (table?.indices.some((idx) => idx.name === 'UQ_calendario_slot_key_active')) {
+      await queryRunner.dropIndex('nom_calendarios_nomina', 'UQ_calendario_slot_key_active');
     }
 
     const dropColumnIfExists = async (name: string) => {
       if (await queryRunner.hasColumn('nom_calendarios_nomina', name)) {
-        await queryRunner.query(
-          `ALTER TABLE nom_calendarios_nomina DROP COLUMN ${name}`,
-        );
+        await queryRunner.query(`ALTER TABLE nom_calendarios_nomina DROP COLUMN ${name}`);
       }
     };
 
@@ -334,10 +313,7 @@ export class EnhancePayrollV2Compatible1708536400000 implements MigrationInterfa
       (fk) => fk.name === 'FK_calendario_tipo_planilla',
     );
     if (hasFkTipoPlanilla) {
-      await queryRunner.dropForeignKey(
-        'nom_calendarios_nomina',
-        'FK_calendario_tipo_planilla',
-      );
+      await queryRunner.dropForeignKey('nom_calendarios_nomina', 'FK_calendario_tipo_planilla');
     }
 
     await dropColumnIfExists('is_active_slot_calendario_nomina');

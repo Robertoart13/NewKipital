@@ -10,24 +10,11 @@ export const CACHE_QUERY_ALLOWLIST: Record<string, Set<string>> = {
     'search',
   ]),
   catalogs: new Set(['idEmpresa']),
-  payroll: new Set([
-    'idEmpresa',
-    'idEmpleado',
-    'estado',
-    'page',
-    'size',
-    'sort',
-  ]),
+  payroll: new Set(['idEmpresa', 'idEmpleado', 'estado', 'page', 'size', 'sort']),
   'payroll-articles': new Set(['idEmpresa', 'includeInactive', 'page', 'size', 'sort']),
   'payroll-movements': new Set(['idEmpresa', 'idTipoAccionPersonal']),
   'payroll-holidays': new Set(['year']),
-  'personal-actions': new Set([
-    'idEmpresa',
-    'estado',
-    'page',
-    'size',
-    'sort',
-  ]),
+  'personal-actions': new Set(['idEmpresa', 'estado', 'page', 'size', 'sort']),
   roles: new Set(['includeInactive', 'appCode']),
   permissions: new Set(['modulo', 'includeInactive']),
   apps: new Set([]),
@@ -42,6 +29,4 @@ export const CACHE_QUERY_ALLOWLIST: Record<string, Set<string>> = {
   'accounting-accounts': new Set(['includeInactive', 'inactiveOnly']),
 };
 
-export const CACHE_USER_SCOPED: Set<string> = new Set([
-  'notifications',
-]);
+export const CACHE_USER_SCOPED: Set<string> = new Set(['notifications']);

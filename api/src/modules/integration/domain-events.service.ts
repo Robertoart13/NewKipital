@@ -1,7 +1,9 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+
 import { DomainEventEntity } from './entities/domain-event.entity';
+
+import type { Repository } from 'typeorm';
 
 interface RecordDomainEventInput {
   aggregateType: string;
@@ -25,8 +27,7 @@ export class DomainEventsService {
   async record(input: RecordDomainEventInput): Promise<void> {
     const occurredAt = input.occurredAt ?? new Date();
     const idempotencyKey =
-      input.idempotencyKey ??
-      `${input.eventName}:${input.aggregateId}:${occurredAt.getTime()}`;
+      input.idempotencyKey ?? `${input.eventName}:${input.aggregateId}:${occurredAt.getTime()}`;
 
     const event = this.repository.create({
       aggregateType: input.aggregateType,

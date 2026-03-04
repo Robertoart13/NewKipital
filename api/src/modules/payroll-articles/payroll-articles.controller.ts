@@ -11,14 +11,16 @@ import {
   Query,
   UseInterceptors,
 } from '@nestjs/common';
+
+import { CacheScope } from '../../common/decorators/cache-scope.decorator';
+import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { Public } from '../../common/decorators/public.decorator';
 import { RequirePermissions } from '../../common/decorators/require-permissions.decorator';
-import { CurrentUser } from '../../common/decorators/current-user.decorator';
-import { CacheScope } from '../../common/decorators/cache-scope.decorator';
 import { CacheResponseInterceptor } from '../../common/interceptors/cache-response.interceptor';
-import { PayrollArticlesService } from './payroll-articles.service';
-import { CreatePayrollArticleDto } from './dto/create-payroll-article.dto';
-import { UpdatePayrollArticleDto } from './dto/update-payroll-article.dto';
+
+import type { CreatePayrollArticleDto } from './dto/create-payroll-article.dto';
+import type { UpdatePayrollArticleDto } from './dto/update-payroll-article.dto';
+import type { PayrollArticlesService } from './payroll-articles.service';
 
 @CacheScope('payroll-articles')
 @UseInterceptors(CacheResponseInterceptor)
@@ -61,19 +63,12 @@ export class PayrollArticlesController {
           .filter((value) => Number.isFinite(value) && value > 0)
       : undefined;
     if (!idsReferencia || idsReferencia.length === 0) return [];
-    return this.service.listAccountsByCompany(
-      idEmpresa,
-      includeInactive ?? false,
-      idsReferencia,
-    );
+    return this.service.listAccountsByCompany(idEmpresa, includeInactive ?? false, idsReferencia);
   }
 
   @RequirePermissions('payroll-article:create')
   @Post()
-  create(
-    @Body() dto: CreatePayrollArticleDto,
-    @CurrentUser() user: { userId: number },
-  ) {
+  create(@Body() dto: CreatePayrollArticleDto, @CurrentUser() user: { userId: number }) {
     return this.service.create(dto, user.userId);
   }
 
@@ -120,19 +115,13 @@ export class PayrollArticlesController {
 
   @RequirePermissions('payroll-article:inactivate')
   @Patch(':id/inactivate')
-  inactivate(
-    @Param('id', ParseIntPipe) id: number,
-    @CurrentUser() user: { userId: number },
-  ) {
+  inactivate(@Param('id', ParseIntPipe) id: number, @CurrentUser() user: { userId: number }) {
     return this.service.inactivate(id, user.userId);
   }
 
   @RequirePermissions('payroll-article:reactivate')
   @Patch(':id/reactivate')
-  reactivate(
-    @Param('id', ParseIntPipe) id: number,
-    @CurrentUser() user: { userId: number },
-  ) {
+  reactivate(@Param('id', ParseIntPipe) id: number, @CurrentUser() user: { userId: number }) {
     return this.service.reactivate(id, user.userId);
   }
 

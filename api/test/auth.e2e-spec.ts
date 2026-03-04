@@ -1,7 +1,11 @@
-import { Test, TestingModule } from '@nestjs/testing';
-import { INestApplication, ValidationPipe } from '@nestjs/common';
+import { ValidationPipe } from '@nestjs/common';
+import { Test } from '@nestjs/testing';
 import request from 'supertest';
+
 import { AppModule } from '../src/app.module';
+
+import type { INestApplication } from '@nestjs/common';
+import type { TestingModule } from '@nestjs/testing';
 
 describe('AuthController (e2e)', () => {
   let app: INestApplication;
@@ -14,9 +18,7 @@ describe('AuthController (e2e)', () => {
     }).compile();
 
     app = moduleFixture.createNestApplication();
-    app.useGlobalPipes(
-      new ValidationPipe({ whitelist: true, transform: true }),
-    );
+    app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
     await app.init();
   });
 
@@ -38,10 +40,7 @@ describe('AuthController (e2e)', () => {
           expect(response.body).toHaveProperty('refreshToken');
           expect(response.body).toHaveProperty('session');
           expect(response.body.session).toHaveProperty('user');
-          expect(response.body.session.user).toHaveProperty(
-            'email',
-            'ana.garcia@roccacr.com',
-          );
+          expect(response.body.session.user).toHaveProperty('email', 'ana.garcia@roccacr.com');
 
           accessToken = response.body.accessToken;
           refreshToken = response.body.refreshToken;
@@ -57,10 +56,7 @@ describe('AuthController (e2e)', () => {
         })
         .expect(401)
         .then((response) => {
-          expect(response.body).toHaveProperty(
-            'message',
-            'Credenciales invalidas',
-          );
+          expect(response.body).toHaveProperty('message', 'Credenciales invalidas');
         });
     });
 
@@ -73,10 +69,7 @@ describe('AuthController (e2e)', () => {
         })
         .expect(401)
         .then((response) => {
-          expect(response.body).toHaveProperty(
-            'message',
-            'Credenciales invalidas',
-          );
+          expect(response.body).toHaveProperty('message', 'Credenciales invalidas');
         });
     });
 
@@ -176,36 +169,25 @@ describe('AuthController (e2e)', () => {
     });
 
     it('should reject refresh with missing token', () => {
-      return request(app.getHttpServer())
-        .post('/auth/refresh')
-        .send({})
-        .expect(400);
+      return request(app.getHttpServer()).post('/auth/refresh').send({}).expect(400);
     });
 
     it('should reject refresh with revoked token', async () => {
       // First, logout to revoke the token
-      await request(app.getHttpServer())
-        .post('/auth/logout')
-        .send({ refreshToken })
-        .expect(200);
+      await request(app.getHttpServer()).post('/auth/logout').send({ refreshToken }).expect(200);
 
       // Then try to use the revoked token
-      return request(app.getHttpServer())
-        .post('/auth/refresh')
-        .send({ refreshToken })
-        .expect(401);
+      return request(app.getHttpServer()).post('/auth/refresh').send({ refreshToken }).expect(401);
     });
   });
 
   describe('POST /auth/switch-company', () => {
     beforeEach(async () => {
       // Login to get fresh tokens
-      const response = await request(app.getHttpServer())
-        .post('/auth/login')
-        .send({
-          email: 'ana.garcia@roccacr.com',
-          password: 'Demo2026!',
-        });
+      const response = await request(app.getHttpServer()).post('/auth/login').send({
+        email: 'ana.garcia@roccacr.com',
+        password: 'Demo2026!',
+      });
 
       accessToken = response.body.accessToken;
     });
@@ -261,12 +243,10 @@ describe('AuthController (e2e)', () => {
   describe('POST /auth/logout', () => {
     beforeEach(async () => {
       // Login to get fresh tokens
-      const response = await request(app.getHttpServer())
-        .post('/auth/login')
-        .send({
-          email: 'ana.garcia@roccacr.com',
-          password: 'Demo2026!',
-        });
+      const response = await request(app.getHttpServer()).post('/auth/login').send({
+        email: 'ana.garcia@roccacr.com',
+        password: 'Demo2026!',
+      });
 
       accessToken = response.body.accessToken;
       refreshToken = response.body.refreshToken;
@@ -283,24 +263,15 @@ describe('AuthController (e2e)', () => {
     });
 
     it('should handle logout without refresh token gracefully', () => {
-      return request(app.getHttpServer())
-        .post('/auth/logout')
-        .send({})
-        .expect(200);
+      return request(app.getHttpServer()).post('/auth/logout').send({}).expect(200);
     });
 
     it('should invalidate refresh token after logout', async () => {
       // Logout
-      await request(app.getHttpServer())
-        .post('/auth/logout')
-        .send({ refreshToken })
-        .expect(200);
+      await request(app.getHttpServer()).post('/auth/logout').send({ refreshToken }).expect(200);
 
       // Try to refresh with the logged-out token
-      return request(app.getHttpServer())
-        .post('/auth/refresh')
-        .send({ refreshToken })
-        .expect(401);
+      return request(app.getHttpServer()).post('/auth/refresh').send({ refreshToken }).expect(401);
     });
   });
 
@@ -344,31 +315,25 @@ describe('AuthController (e2e)', () => {
 
   describe('Session Cookies', () => {
     it('should set httpOnly cookie on login', async () => {
-      const response = await request(app.getHttpServer())
-        .post('/auth/login')
-        .send({
-          email: 'ana.garcia@roccacr.com',
-          password: 'Demo2026!',
-        });
+      const response = await request(app.getHttpServer()).post('/auth/login').send({
+        email: 'ana.garcia@roccacr.com',
+        password: 'Demo2026!',
+      });
 
       const cookies = response.headers['set-cookie'];
       expect(cookies).toBeDefined();
 
       // Check for httpOnly flag
-      const hasHttpOnlyCookie = cookies.some((cookie: string) =>
-        cookie.includes('HttpOnly'),
-      );
+      const hasHttpOnlyCookie = cookies.some((cookie: string) => cookie.includes('HttpOnly'));
       expect(hasHttpOnlyCookie).toBe(true);
     });
 
     it('should clear cookie on logout', async () => {
       // First login
-      const loginResponse = await request(app.getHttpServer())
-        .post('/auth/login')
-        .send({
-          email: 'ana.garcia@roccacr.com',
-          password: 'Demo2026!',
-        });
+      const loginResponse = await request(app.getHttpServer()).post('/auth/login').send({
+        email: 'ana.garcia@roccacr.com',
+        password: 'Demo2026!',
+      });
 
       const refreshToken = loginResponse.body.refreshToken;
 
@@ -382,8 +347,7 @@ describe('AuthController (e2e)', () => {
       // Should clear or expire cookies
       if (cookies) {
         const hasExpiredCookie = cookies.some(
-          (cookie: string) =>
-            cookie.includes('Max-Age=0') || cookie.includes('expires='),
+          (cookie: string) => cookie.includes('Max-Age=0') || cookie.includes('expires='),
         );
         expect(hasExpiredCookie).toBe(true);
       }

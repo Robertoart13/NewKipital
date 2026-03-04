@@ -166,7 +166,46 @@ Dispara **EmployeeMovedWorkflow**.
 
 **4.3 Si NO existe planilla destino compatible:** BLOQUEAR traslado. El sistema explica qué cuotas/acciones impiden el movimiento. RRHH debe resolver antes de mover.
 
-**4.4 Nada se pierde sin motivo.** Si se cancela algo, debe ser con motivo y trazabilidad.
+**4.4 Regla de fecha efectiva:** Traslado **solo al inicio de periodo**. No se permite mitad de periodo.
+
+**4.5 Acciones pendientes bloqueantes:** Definir lista (ej. licencias/incapacidades/aumentos pendientes). Recurrentes de ley no bloquean.
+
+**4.6 Política por estado (acordada):**
+- Se trasladan: DRAFT, PENDING_SUPERVISOR, PENDING_RRHH, APPROVED.
+- No se trasladan: CONSUMED, INVALIDATED, CANCELLED, EXPIRED, REJECTED.
+
+### 4.6.1 Politica por tipo de accion (portabilidad)
+
+**Regla base:** todas las acciones de personal **no consumidas** se trasladan y se recalculan por calendario destino.
+
+**Excepciones operativas:**
+- Acciones de ley recurrentes (CCSS/IVM/Impuesto): **no se trasladan**. Se recalculan en la empresa destino en la planilla correspondiente.
+- Si negocio define que una accion es **no portable**, debe marcarse en el workflow y quedar documentado por tipo/movimiento.
+
+**Matriz base (default PORTABLE):**
+- Ausencias: PORTABLE (por fecha efectiva/rango).
+- Licencias: PORTABLE (por rango).
+- Incapacidades: PORTABLE (por rango).
+- Vacaciones: PORTABLE en continuidad; **liquidacion** si traslado con cierre (ver politica de continuidad).
+- Horas extra: PORTABLE si fecha >= traslado.
+- Bonificaciones: PORTABLE (si no existe regla de empresa contraria).
+- Aumentos: PORTABLE (se aplica en planilla destino segun fecha efectiva).
+- Retenciones/Descuentos: PORTABLE si son personales; si son internas de empresa, REQUIERE definicion de negocio.
+
+**4.7 Si un rango cruza traslado:** recalcular por calendario destino (solo futuros).
+
+**4.8 Simulación previa:** obligatoria antes de ejecutar (impacto movidas/invalidas/recalculadas).
+
+**4.9 Auditoría:** registrar traslado con origen/destino, fecha efectiva, usuario y resumen técnico.
+
+### Implementación base (2026-03-04)
+
+- API de simulación y ejecución: `/api/payroll/intercompany-transfer/simulate` y `/api/payroll/intercompany-transfer/execute`.
+- Tabla de auditoría: `sys_empleado_transferencias` (estado, resumen JSON, actor, fechas).
+- Validaciones activas: periodo destino obligatorio, inicio de periodo, planilla origen en estados bloqueantes, reasignación de acciones/lineas por fecha.
+- Pendiente: portabilidad de saldo de vacaciones (ver `docs/28-PendientesAccion.md` PEND-004).
+
+**4.10 Nada se pierde sin motivo.** Si se cancela algo, debe ser con motivo y trazabilidad.
 
 ---
 

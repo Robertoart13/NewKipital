@@ -20,7 +20,11 @@ export class PayrollHoliday {
   @Column({ name: 'descripcion_feriado_planilla', type: 'text', nullable: true })
   descripcion: string | null;
 
-  @Column({ name: 'fecha_creacion_feriado_planilla', type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
+  @Column({
+    name: 'fecha_creacion_feriado_planilla',
+    type: 'timestamp',
+    default: () => 'CURRENT_TIMESTAMP',
+  })
   fechaCreacion: Date;
 
   @Column({
@@ -31,4 +35,3 @@ export class PayrollHoliday {
   })
   fechaModificacion: Date;
 }
-

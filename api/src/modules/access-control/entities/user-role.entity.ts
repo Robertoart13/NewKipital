@@ -21,11 +21,7 @@ import {
  * Reglas: NO delete físico. Solo inactivación lógica.
  */
 @Entity('sys_usuario_rol')
-@Index(
-  'UQ_usuario_rol_empresa_app',
-  ['idUsuario', 'idRol', 'idEmpresa', 'idApp'],
-  { unique: true },
-)
+@Index('UQ_usuario_rol_empresa_app', ['idUsuario', 'idRol', 'idEmpresa', 'idApp'], { unique: true })
 export class UserRole {
   @PrimaryGeneratedColumn({ name: 'id_usuario_rol' })
   id: number;

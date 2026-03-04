@@ -1,4 +1,4 @@
-import { MigrationInterface, QueryRunner } from 'typeorm';
+import type { MigrationInterface, QueryRunner } from 'typeorm';
 
 /**
  * Directiva 40 - Cierre de capa de permisos payroll enterprise (sin NetSuite operativo).

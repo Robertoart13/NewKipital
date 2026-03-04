@@ -57,19 +57,13 @@ describe('UserAssignmentService', () => {
       authzRealtime,
     );
 
-    jest
-      .spyOn(service as any, 'assertUserCanBeMutated')
-      .mockResolvedValue(undefined);
+    jest.spyOn(service as any, 'assertUserCanBeMutated').mockResolvedValue(undefined);
     jest.spyOn(service as any, 'resolveAppId').mockResolvedValue(1);
     jest
       .spyOn(service as any, 'getRoleLabels')
       .mockResolvedValue(['Master Administrator (MASTER)']);
-    jest
-      .spyOn(service as any, 'getUserLabel')
-      .mockResolvedValue('Usuario Test (ID 2)');
-    jest
-      .spyOn(service as any, 'publishAudit')
-      .mockImplementation(() => undefined);
+    jest.spyOn(service as any, 'getUserLabel').mockResolvedValue('Usuario Test (ID 2)');
+    jest.spyOn(service as any, 'publishAudit').mockImplementation(() => undefined);
     jest.spyOn(service as any, 'bumpUserAuthz').mockResolvedValue(undefined);
 
     roleRepo.find.mockResolvedValue([{ id: 5, estado: 1, idApp: 1 }]);
@@ -135,28 +129,16 @@ describe('UserAssignmentService', () => {
       authzRealtime,
     );
 
-    jest
-      .spyOn(service as any, 'assertUserCanBeMutated')
-      .mockResolvedValue(undefined);
+    jest.spyOn(service as any, 'assertUserCanBeMutated').mockResolvedValue(undefined);
     jest.spyOn(service as any, 'resolveAppId').mockResolvedValue(1);
-    jest
-      .spyOn(service as any, 'getUserLabel')
-      .mockResolvedValue('Usuario Test (ID 2)');
-    jest
-      .spyOn(service as any, 'publishAudit')
-      .mockImplementation(() => undefined);
+    jest.spyOn(service as any, 'getUserLabel').mockResolvedValue('Usuario Test (ID 2)');
+    jest.spyOn(service as any, 'publishAudit').mockImplementation(() => undefined);
     jest.spyOn(service as any, 'bumpUserAuthz').mockResolvedValue(undefined);
 
     permRepo.find
-      .mockResolvedValueOnce([
-        { id: 90, codigo: 'payroll-article:create', estado: 1 },
-      ]) // resolve normalized deny
-      .mockResolvedValueOnce([
-        { id: 90, codigo: 'payroll-article:create', estado: 1 },
-      ]) // before labels by id
-      .mockResolvedValueOnce([
-        { id: 90, codigo: 'payroll-article:create', estado: 1 },
-      ]); // getGlobalPermissionDenials
+      .mockResolvedValueOnce([{ id: 90, codigo: 'payroll-article:create', estado: 1 }]) // resolve normalized deny
+      .mockResolvedValueOnce([{ id: 90, codigo: 'payroll-article:create', estado: 1 }]) // before labels by id
+      .mockResolvedValueOnce([{ id: 90, codigo: 'payroll-article:create', estado: 1 }]); // getGlobalPermissionDenials
 
     userPermGlobalDenyRepo.find
       .mockResolvedValueOnce([

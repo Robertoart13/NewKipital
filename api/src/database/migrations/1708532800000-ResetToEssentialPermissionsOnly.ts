@@ -1,4 +1,4 @@
-import { MigrationInterface, QueryRunner } from 'typeorm';
+import type { MigrationInterface, QueryRunner } from 'typeorm';
 
 /**
  * Reset completo: elimina TODOS los roles y permisos.
@@ -71,9 +71,7 @@ export class ResetToEssentialPermissionsOnly1708532800000 implements MigrationIn
     const companies = await queryRunner.query(
       `SELECT ue.id_empresa FROM sys_usuario_empresa ue WHERE ue.id_usuario = ${adminUserId} AND ue.estado_usuario_empresa = 1 LIMIT 1`,
     );
-    const apps = await queryRunner.query(
-      `SELECT id_app FROM sys_apps WHERE estado_app = 1`,
-    );
+    const apps = await queryRunner.query(`SELECT id_app FROM sys_apps WHERE estado_app = 1`);
     if (companies.length === 0 || apps.length === 0) {
       return;
     }

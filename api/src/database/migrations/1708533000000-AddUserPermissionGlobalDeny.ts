@@ -1,10 +1,6 @@
-import {
-  MigrationInterface,
-  QueryRunner,
-  Table,
-  TableForeignKey,
-  TableIndex,
-} from 'typeorm';
+import { Table, TableForeignKey, TableIndex } from 'typeorm';
+
+import type { MigrationInterface, QueryRunner } from 'typeorm';
 
 /**
  * Tabla sys_usuario_permiso_global: denegación de permisos a nivel global.

@@ -1,10 +1,12 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { OnEvent } from '@nestjs/event-emitter';
-import { EventEmitter2 } from '@nestjs/event-emitter';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
-import { User } from '../../modules/auth/entities/user.entity';
+
 import { DOMAIN_EVENTS } from '../../common/events/event-names';
+import { User } from '../../modules/auth/entities/user.entity';
+
+import type { EventEmitter2 } from '@nestjs/event-emitter';
+import type { Repository } from 'typeorm';
 
 interface EmployeeEmailChangedPayload {
   employeeId: string;
@@ -35,15 +37,11 @@ export class IdentitySyncWorkflow {
   ) {}
 
   @OnEvent(DOMAIN_EVENTS.EMPLOYEE.EMAIL_CHANGED)
-  async handleEmailChange(event: {
-    payload: EmployeeEmailChangedPayload;
-  }): Promise<void> {
+  async handleEmailChange(event: { payload: EmployeeEmailChangedPayload }): Promise<void> {
     const { userId, oldEmail, newEmail, changedBy, employeeId } = event.payload;
 
     if (!userId) {
-      this.logger.debug(
-        `Empleado #${employeeId} sin usuario vinculado — no se sincroniza`,
-      );
+      this.logger.debug(`Empleado #${employeeId} sin usuario vinculado — no se sincroniza`);
       return;
     }
 
@@ -51,9 +49,7 @@ export class IdentitySyncWorkflow {
 
     const user = await this.userRepo.findOne({ where: { id: Number(userId) } });
     if (!user) {
-      this.logger.error(
-        `Usuario #${userId} no encontrado para sincronizar email`,
-      );
+      this.logger.error(`Usuario #${userId} no encontrado para sincronizar email`);
       return;
     }
 

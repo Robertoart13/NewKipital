@@ -1,16 +1,16 @@
-﻿import { Test, TestingModule } from '@nestjs/testing';
+﻿import { ConflictException, ForbiddenException, NotFoundException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { Test } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import {
-  ConflictException,
-  ForbiddenException,
-  NotFoundException,
-} from '@nestjs/common';
-import { Repository } from 'typeorm';
-import { PermissionsService } from './permissions.service';
-import { Permission } from './entities/permission.entity';
-import { AuditOutboxService } from '../integration/audit-outbox.service';
+
 import { AuthzVersionService } from '../authz/authz-version.service';
+import { AuditOutboxService } from '../integration/audit-outbox.service';
+
+import { Permission } from './entities/permission.entity';
+import { PermissionsService } from './permissions.service';
+
+import type { TestingModule } from '@nestjs/testing';
+import type { Repository } from 'typeorm';
 
 describe('PermissionsService', () => {
   let service: PermissionsService;
@@ -71,10 +71,7 @@ describe('PermissionsService', () => {
     configService.get.mockReturnValue('migration');
 
     await expect(
-      service.create(
-        { codigo: 'employee:view', nombre: 'Ver', modulo: 'employee' },
-        10,
-      ),
+      service.create({ codigo: 'employee:view', nombre: 'Ver', modulo: 'employee' }, 10),
     ).rejects.toThrow(ForbiddenException);
   });
 
@@ -82,10 +79,7 @@ describe('PermissionsService', () => {
     repo.findOne.mockResolvedValue({ id: 2, codigo: 'employee:view' } as any);
 
     await expect(
-      service.create(
-        { codigo: 'employee:view', nombre: 'Ver', modulo: 'employee' },
-        10,
-      ),
+      service.create({ codigo: 'employee:view', nombre: 'Ver', modulo: 'employee' }, 10),
     ).rejects.toThrow(ConflictException);
   });
 

@@ -34,6 +34,9 @@ export const canCancelPayroll = (state: RootState) =>
 export const canViewPayroll = (state: RootState) =>
   selectPermissions(state).includes('payroll:view');
 
+export const canIntercompanyTransfer = (state: RootState) =>
+  selectPermissions(state).includes('payroll:intercompany-transfer');
+
 export const canCreateEmployee = (state: RootState) =>
   selectPermissions(state).includes('employee:create');
 

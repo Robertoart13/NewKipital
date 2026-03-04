@@ -5,23 +5,24 @@ import {
   ForbiddenException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { In, Repository } from 'typeorm';
 import * as bcrypt from 'bcrypt';
-import { User } from './entities/user.entity';
-import { UserApp } from '../access-control/entities/user-app.entity';
-import { UserRole } from '../access-control/entities/user-role.entity';
-import { UserRoleGlobal } from '../access-control/entities/user-role-global.entity';
+import { In } from 'typeorm';
+
 import { App } from '../access-control/entities/app.entity';
 import { Role } from '../access-control/entities/role.entity';
-import { CreateUserDto } from './dto/create-user.dto';
-import { UpdateUserDto } from './dto/update-user.dto';
-import { UserStatus } from './constants/user-status.enum';
-import { AuditOutboxService } from '../integration/audit-outbox.service';
+import { UserApp } from '../access-control/entities/user-app.entity';
+import { UserRoleGlobal } from '../access-control/entities/user-role-global.entity';
+import { UserRole } from '../access-control/entities/user-role.entity';
 
-const TIMEWISE_SUPERVISOR_ROLES = [
-  'SUPERVISOR_TIMEWISE',
-  'SUPERVISOR_GLOBAL_TIMEWISE',
-];
+import { UserStatus } from './constants/user-status.enum';
+import { User } from './entities/user.entity';
+
+import type { CreateUserDto } from './dto/create-user.dto';
+import type { UpdateUserDto } from './dto/update-user.dto';
+import type { AuditOutboxService } from '../integration/audit-outbox.service';
+import type { Repository } from 'typeorm';
+
+const TIMEWISE_SUPERVISOR_ROLES = ['SUPERVISOR_TIMEWISE', 'SUPERVISOR_GLOBAL_TIMEWISE'];
 
 @Injectable()
 export class UsersService {
@@ -158,18 +159,13 @@ export class UsersService {
         where: { idUsuario: In(ids), idApp: timewiseApp.id, estado: 1 },
       });
       const timewiseOnlyUserIds = new Set(
-        hasTimewise
-          .filter((ua) => !kpitalUserIds.has(ua.idUsuario))
-          .map((ua) => ua.idUsuario),
+        hasTimewise.filter((ua) => !kpitalUserIds.has(ua.idUsuario)).map((ua) => ua.idUsuario),
       );
       const configUserIds = new Set<number>();
       for (const uid of ids) {
         if (kpitalUserIds.has(uid)) {
           configUserIds.add(uid);
-        } else if (
-          timewiseOnlyUserIds.has(uid) &&
-          twSupervisorUserIds.has(uid)
-        ) {
+        } else if (timewiseOnlyUserIds.has(uid) && twSupervisorUserIds.has(uid)) {
           configUserIds.add(uid);
         }
       }
@@ -195,10 +191,7 @@ export class UsersService {
     return this.repo.findOne({ where: { username: username.toLowerCase() } });
   }
 
-  async findByMicrosoftIdentity(
-    microsoftOid: string,
-    microsoftTid: string,
-  ): Promise<User | null> {
+  async findByMicrosoftIdentity(microsoftOid: string, microsoftTid: string): Promise<User | null> {
     return this.repo.findOne({
       where: {
         microsoftOid,
@@ -218,15 +211,9 @@ export class UsersService {
     } as Partial<User>);
   }
 
-  async update(
-    id: number,
-    dto: UpdateUserDto,
-    modifierId?: number,
-  ): Promise<User> {
+  async update(id: number, dto: UpdateUserDto, modifierId?: number): Promise<User> {
     if (await this.isProtectedMasterUser(id)) {
-      throw new ConflictException(
-        'El usuario MASTER esta protegido y no puede ser modificado',
-      );
+      throw new ConflictException('El usuario MASTER esta protegido y no puede ser modificado');
     }
     const user = await this.repo.findOne({ where: { id } });
     if (!user) {
@@ -288,11 +275,7 @@ export class UsersService {
     return this.sanitize(saved);
   }
 
-  async inactivate(
-    id: number,
-    modifierId: number,
-    motivo?: string,
-  ): Promise<User> {
+  async inactivate(id: number, modifierId: number, motivo?: string): Promise<User> {
     await this.assertCanRestrictUser(id, modifierId);
     const user = await this.repo.findOne({ where: { id } });
     if (!user) {
@@ -355,8 +338,7 @@ export class UsersService {
       throw new NotFoundException(`Usuario con ID ${id} no encontrado`);
     }
     user.estado = UserStatus.BLOQUEADO;
-    user.motivoInactivacion =
-      motivo ?? 'Bloqueado manualmente por administrador';
+    user.motivoInactivacion = motivo ?? 'Bloqueado manualmente por administrador';
     user.modificadoPor = modifierId;
     const saved = await this.repo.save(user);
     this.auditOutbox.publish({
@@ -390,15 +372,11 @@ export class UsersService {
     }
 
     if (user.estado === UserStatus.INACTIVO) {
-      throw new ForbiddenException(
-        'Usuario inactivo. Contacte al administrador.',
-      );
+      throw new ForbiddenException('Usuario inactivo. Contacte al administrador.');
     }
 
     if (user.estado === UserStatus.BLOQUEADO) {
-      throw new ForbiddenException(
-        'Usuario bloqueado. Contacte al administrador.',
-      );
+      throw new ForbiddenException('Usuario bloqueado. Contacte al administrador.');
     }
 
     if (user.lockedUntil && user.lockedUntil > new Date()) {
@@ -416,11 +394,7 @@ export class UsersService {
     return user;
   }
 
-  async registerFailedAttempt(
-    id: number,
-    maxAttempts = 5,
-    lockMinutes = 15,
-  ): Promise<void> {
+  async registerFailedAttempt(id: number, maxAttempts = 5, lockMinutes = 15): Promise<void> {
     const user = await this.repo.findOne({ where: { id } });
     if (!user) return;
 
@@ -453,14 +427,9 @@ export class UsersService {
     return rest as User;
   }
 
-  private async assertCanRestrictUser(
-    targetUserId: number,
-    actorUserId: number,
-  ): Promise<void> {
+  private async assertCanRestrictUser(targetUserId: number, actorUserId: number): Promise<void> {
     if (targetUserId === actorUserId) {
-      throw new ForbiddenException(
-        'No puede bloquear o inactivar su propio usuario',
-      );
+      throw new ForbiddenException('No puede bloquear o inactivar su propio usuario');
     }
 
     if (await this.isProtectedMasterUser(targetUserId)) {
@@ -549,9 +518,7 @@ export class UsersService {
     return rows.length > 0;
   }
 
-  private async countOtherActiveConfigAdmins(
-    excludedUserId: number,
-  ): Promise<number> {
+  private async countOtherActiveConfigAdmins(excludedUserId: number): Promise<number> {
     const rows = await this.repo.query(
       `
       SELECT COUNT(DISTINCT u.id_usuario) AS total

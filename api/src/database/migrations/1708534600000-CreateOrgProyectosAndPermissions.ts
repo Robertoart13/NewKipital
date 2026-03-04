@@ -1,10 +1,6 @@
-import {
-  MigrationInterface,
-  QueryRunner,
-  Table,
-  TableForeignKey,
-  TableIndex,
-} from 'typeorm';
+import { Table, TableForeignKey, TableIndex } from 'typeorm';
+
+import type { MigrationInterface, QueryRunner } from 'typeorm';
 
 export class CreateOrgProyectosAndPermissions1708534600000 implements MigrationInterface {
   public async up(queryRunner: QueryRunner): Promise<void> {

@@ -1,36 +1,35 @@
-import { Test, TestingModule } from '@nestjs/testing';
-import { getRepositoryToken } from '@nestjs/typeorm';
-import {
-  BadRequestException,
-  ForbiddenException,
-  NotFoundException,
-} from '@nestjs/common';
-import { DataSource, Repository } from 'typeorm';
+import { BadRequestException, ForbiddenException, NotFoundException } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
-import { PersonalActionsService } from './personal-actions.service';
-import {
-  PersonalAction,
-  PersonalActionEstado,
-} from './entities/personal-action.entity';
+import { Test } from '@nestjs/testing';
+import { getRepositoryToken } from '@nestjs/typeorm';
+import { DataSource } from 'typeorm';
+
+import { EmployeeSensitiveDataService } from '../../common/services/employee-sensitive-data.service';
 import { UserCompany } from '../access-control/entities/user-company.entity';
-import { PayrollCalendar } from '../payroll/entities/payroll-calendar.entity';
-import { ActionQuota } from './entities/action-quota.entity';
-import { AbsenceLine } from './entities/absence-line.entity';
-import { DisabilityLine } from './entities/disability-line.entity';
-import { LicenseLine } from './entities/license-line.entity';
-import { BonusLine } from './entities/bonus-line.entity';
-import { OvertimeLine } from './entities/overtime-line.entity';
-import { RetentionLine } from './entities/retention-line.entity';
-import { DiscountLine } from './entities/discount-line.entity';
-import { IncreaseLine } from './entities/increase-line.entity';
-import { VacationDate } from './entities/vacation-date.entity';
 import { EmployeesService } from '../employees/employees.service';
 import { AuditOutboxService } from '../integration/audit-outbox.service';
-import { EmployeeSensitiveDataService } from '../../common/services/employee-sensitive-data.service';
+import { PayrollCalendar } from '../payroll/entities/payroll-calendar.entity';
+import { PayrollEmployeeVerification } from '../payroll/entities/payroll-employee-verification.entity';
+
 import {
   PERSONAL_ACTION_INVALIDATED_BY,
   PERSONAL_ACTION_INVALIDATION_REASON,
 } from './constants/personal-action-invalidation.constants';
+import { AbsenceLine } from './entities/absence-line.entity';
+import { ActionQuota } from './entities/action-quota.entity';
+import { DisabilityLine } from './entities/disability-line.entity';
+import { DiscountLine } from './entities/discount-line.entity';
+import { LicenseLine } from './entities/license-line.entity';
+import { BonusLine } from './entities/bonus-line.entity';
+import { OvertimeLine } from './entities/overtime-line.entity';
+import { RetentionLine } from './entities/retention-line.entity';
+import { IncreaseLine } from './entities/increase-line.entity';
+import { VacationDate } from './entities/vacation-date.entity';
+import { PersonalAction, PersonalActionEstado } from './entities/personal-action.entity';
+import { PersonalActionsService } from './personal-actions.service';
+
+import type { TestingModule } from '@nestjs/testing';
+import type { Repository } from 'typeorm';
 
 describe('PersonalActionsService', () => {
   let service: PersonalActionsService;
@@ -162,6 +161,10 @@ describe('PersonalActionsService', () => {
         { provide: getRepositoryToken(VacationDate), useValue: vacationDateRepoMock },
         { provide: getRepositoryToken(UserCompany), useValue: userCompanyRepoMock },
         { provide: getRepositoryToken(PayrollCalendar), useValue: payrollRepoMock },
+        {
+          provide: getRepositoryToken(PayrollEmployeeVerification),
+          useValue: { find: jest.fn().mockResolvedValue([]) },
+        },
         { provide: EventEmitter2, useValue: eventEmitterMock },
         { provide: EmployeesService, useValue: { findAll: jest.fn() } },
         {
@@ -202,10 +205,7 @@ describe('PersonalActionsService', () => {
     userCompanyRepo.findOne.mockResolvedValue(null);
 
     await expect(
-      service.create(
-        { idEmpresa: 1, idEmpleado: 1, tipoAccion: 'BONO' } as any,
-        9,
-      ),
+      service.create({ idEmpresa: 1, idEmpleado: 1, tipoAccion: 'BONO' } as any, 9),
     ).rejects.toThrow(ForbiddenException);
   });
 
@@ -231,9 +231,7 @@ describe('PersonalActionsService', () => {
       estado: PersonalActionEstado.APPROVED,
     } as any);
 
-    await expect(service.reject(1, 'motivo', 1)).rejects.toThrow(
-      BadRequestException,
-    );
+    await expect(service.reject(1, 'motivo', 1)).rejects.toThrow(BadRequestException);
   });
 
   it('advanceAbsenceState blocks privilege escalation from supervisor step without approve permission', async () => {
@@ -242,15 +240,13 @@ describe('PersonalActionsService', () => {
       estado: PersonalActionEstado.PENDING_SUPERVISOR,
     } as PersonalAction);
 
-    await expect(
-      service.advanceAbsenceState(10, 1, ['hr-action-ausencias:edit']),
-    ).rejects.toThrow(ForbiddenException);
+    await expect(service.advanceAbsenceState(10, 1, ['hr-action-ausencias:edit'])).rejects.toThrow(
+      ForbiddenException,
+    );
   });
 
   it('createIncrease rejects invalid calculation method', async () => {
-    jest.spyOn(service as any, 'findEligibleAbsencePayrolls').mockResolvedValue([
-      { id: 10 },
-    ]);
+    jest.spyOn(service as any, 'findEligibleAbsencePayrolls').mockResolvedValue([{ id: 10 }]);
     repo.query
       .mockResolvedValueOnce([
         {
@@ -284,9 +280,7 @@ describe('PersonalActionsService', () => {
   });
 
   it('createIncrease allows percentage above 100', async () => {
-    jest.spyOn(service as any, 'findEligibleAbsencePayrolls').mockResolvedValue([
-      { id: 10 },
-    ]);
+    jest.spyOn(service as any, 'findEligibleAbsencePayrolls').mockResolvedValue([{ id: 10 }]);
     repo.query
       .mockResolvedValueOnce([
         {
@@ -299,27 +293,25 @@ describe('PersonalActionsService', () => {
       ])
       .mockResolvedValueOnce([{ id: 1 }]);
 
-    dataSource.transaction.mockImplementationOnce(
-      async (cb: (trx: any) => Promise<any>) => {
-        let actionId = 2001;
-        const trx = {
-          save: jest.fn(async (value: any) => {
-            if (value?.tipoAccion) return { ...value, id: actionId++ };
-            return value;
-          }),
-          createQueryBuilder: jest.fn(() => ({
-            update: jest.fn().mockReturnThis(),
-            set: jest.fn().mockReturnThis(),
-            where: jest.fn().mockReturnThis(),
-            andWhere: jest.fn().mockReturnThis(),
-            execute: jest.fn().mockResolvedValue({ affected: 1 }),
-          })),
-          delete: jest.fn().mockResolvedValue({ affected: 0 }),
-          create: jest.fn((_: unknown, payload: unknown) => payload),
-        };
-        return cb(trx);
-      },
-    );
+    dataSource.transaction.mockImplementationOnce(async (cb: (trx: any) => Promise<any>) => {
+      let actionId = 2001;
+      const trx = {
+        save: jest.fn(async (value: any) => {
+          if (value?.tipoAccion) return { ...value, id: actionId++ };
+          return value;
+        }),
+        createQueryBuilder: jest.fn(() => ({
+          update: jest.fn().mockReturnThis(),
+          set: jest.fn().mockReturnThis(),
+          where: jest.fn().mockReturnThis(),
+          andWhere: jest.fn().mockReturnThis(),
+          execute: jest.fn().mockResolvedValue({ affected: 1 }),
+        })),
+        delete: jest.fn().mockResolvedValue({ affected: 0 }),
+        create: jest.fn((_: unknown, payload: unknown) => payload),
+      };
+      return cb(trx);
+    });
 
     jest.spyOn(service, 'findOne').mockResolvedValue({
       id: 2001,
@@ -349,9 +341,7 @@ describe('PersonalActionsService', () => {
   });
 
   it('createIncrease rejects when movement is invalid', async () => {
-    jest.spyOn(service as any, 'findEligibleAbsencePayrolls').mockResolvedValue([
-      { id: 10 },
-    ]);
+    jest.spyOn(service as any, 'findEligibleAbsencePayrolls').mockResolvedValue([{ id: 10 }]);
     repo.query
       .mockResolvedValueOnce([
         {
@@ -390,25 +380,22 @@ describe('PersonalActionsService', () => {
       estado: PersonalActionEstado.PENDING_SUPERVISOR,
     } as PersonalAction);
 
-    await expect(
-      service.advanceIncreaseState(10, 1, ['hr-action-aumentos:edit']),
-    ).rejects.toThrow(ForbiddenException);
+    await expect(service.advanceIncreaseState(10, 1, ['hr-action-aumentos:edit'])).rejects.toThrow(
+      ForbiddenException,
+    );
   });
 
   it('createIncrease rejects when salario base is invalid', async () => {
-    jest.spyOn(service as any, 'findEligibleAbsencePayrolls').mockResolvedValue([
-      { id: 10 },
+    jest.spyOn(service as any, 'findEligibleAbsencePayrolls').mockResolvedValue([{ id: 10 }]);
+    repo.query.mockResolvedValueOnce([
+      {
+        id: 99,
+        idEmpresa: 1,
+        idPeriodoPago: 10,
+        monedaSalario: 'CRC',
+        salarioBaseEncrypted: 'NaN',
+      },
     ]);
-    repo.query
-      .mockResolvedValueOnce([
-        {
-          id: 99,
-          idEmpresa: 1,
-          idPeriodoPago: 10,
-          monedaSalario: 'CRC',
-          salarioBaseEncrypted: 'NaN',
-        },
-      ]);
 
     await expect(
       service.createIncrease(
@@ -431,16 +418,15 @@ describe('PersonalActionsService', () => {
 
   it('createIncrease rejects when payroll is not eligible', async () => {
     jest.spyOn(service as any, 'findEligibleAbsencePayrolls').mockResolvedValue([]);
-    repo.query
-      .mockResolvedValueOnce([
-        {
-          id: 99,
-          idEmpresa: 1,
-          idPeriodoPago: 10,
-          monedaSalario: 'CRC',
-          salarioBaseEncrypted: '1500000',
-        },
-      ]);
+    repo.query.mockResolvedValueOnce([
+      {
+        id: 99,
+        idEmpresa: 1,
+        idPeriodoPago: 10,
+        monedaSalario: 'CRC',
+        salarioBaseEncrypted: '1500000',
+      },
+    ]);
 
     await expect(
       service.createIncrease(
@@ -482,9 +468,7 @@ describe('PersonalActionsService', () => {
     repo.findOne.mockImplementation(async () => action);
     repo.save.mockImplementation(async (entity) => entity as PersonalAction);
 
-    const result = await service.advanceAbsenceState(10, 1, [
-      'hr-action-ausencias:approve',
-    ]);
+    const result = await service.advanceAbsenceState(10, 1, ['hr-action-ausencias:approve']);
 
     expect(result.estado).toBe(PersonalActionEstado.APPROVED);
     expect(result.aprobadoPor).toBe(1);
@@ -527,9 +511,7 @@ describe('PersonalActionsService', () => {
 
     repo.findOne.mockImplementation(async () => action);
 
-    const result = await service.invalidateAbsence(10, '   ', 1, [
-      'hr-action-ausencias:cancel',
-    ]);
+    const result = await service.invalidateAbsence(10, '   ', 1, ['hr-action-ausencias:cancel']);
 
     expect(result.estado).toBe(PersonalActionEstado.INVALIDATED);
     expect(result.invalidatedAt).toBeInstanceOf(Date);
@@ -572,9 +554,9 @@ describe('PersonalActionsService', () => {
       estado: PersonalActionEstado.PENDING_SUPERVISOR,
     } as PersonalAction);
 
-    await expect(
-      service.advanceLicenseState(10, 1, ['hr-action-licencias:edit']),
-    ).rejects.toThrow(ForbiddenException);
+    await expect(service.advanceLicenseState(10, 1, ['hr-action-licencias:edit'])).rejects.toThrow(
+      ForbiddenException,
+    );
   });
 
   it('invalidateLicense should set forensic metadata as USER', async () => {
@@ -701,43 +683,42 @@ describe('PersonalActionsService', () => {
   });
 
   it('createAbsence splits actions by payroll period and keeps a shared group id', async () => {
-    jest
-      .spyOn(service as any, 'validateAbsencePayload')
-      .mockResolvedValue(undefined);
+    jest.spyOn(service as any, 'validateAbsencePayload').mockResolvedValue(undefined);
     jest.spyOn(service as any, 'getAbsenceEmployee').mockResolvedValue({
       monedaSalario: 'CRC',
     });
 
-    dataSource.transaction.mockImplementationOnce(
-      async (cb: (trx: any) => Promise<any>) => {
-        let actionId = 101;
-        let quotaId = 501;
-        const trx = {
-          save: jest.fn(async (value: any) => {
-            if (value?.tipoAccion) return { ...value, id: actionId++ };
-            if (value?.numeroCuota != null) return { ...value, id: quotaId++ };
-            return value;
-          }),
-          createQueryBuilder: jest.fn(() => ({
-            update: jest.fn().mockReturnThis(),
-            set: jest.fn().mockReturnThis(),
-            where: jest.fn().mockReturnThis(),
-            andWhere: jest.fn().mockReturnThis(),
-            execute: jest.fn().mockResolvedValue({ affected: 1 }),
-          })),
-          delete: jest.fn().mockResolvedValue({ affected: 0 }),
-          create: jest.fn((_: unknown, payload: unknown) => payload),
-        };
-        return cb(trx);
-      },
-    );
+    dataSource.transaction.mockImplementationOnce(async (cb: (trx: any) => Promise<any>) => {
+      let actionId = 101;
+      let quotaId = 501;
+      const trx = {
+        save: jest.fn(async (value: any) => {
+          if (value?.tipoAccion) return { ...value, id: actionId++ };
+          if (value?.numeroCuota != null) return { ...value, id: quotaId++ };
+          return value;
+        }),
+        createQueryBuilder: jest.fn(() => ({
+          update: jest.fn().mockReturnThis(),
+          set: jest.fn().mockReturnThis(),
+          where: jest.fn().mockReturnThis(),
+          andWhere: jest.fn().mockReturnThis(),
+          execute: jest.fn().mockResolvedValue({ affected: 1 }),
+        })),
+        delete: jest.fn().mockResolvedValue({ affected: 0 }),
+        create: jest.fn((_: unknown, payload: unknown) => payload),
+      };
+      return cb(trx);
+    });
 
-    repo.findOne.mockImplementation(async ({ where }: any) => ({
-      ...baseAction,
-      id: where.id,
-      estado: PersonalActionEstado.PENDING_SUPERVISOR,
-      tipoAccion: 'ausencia',
-    } as PersonalAction));
+    repo.findOne.mockImplementation(
+      async ({ where }: any) =>
+        ({
+          ...baseAction,
+          id: where.id,
+          estado: PersonalActionEstado.PENDING_SUPERVISOR,
+          tipoAccion: 'ausencia',
+        }) as PersonalAction,
+    );
 
     const result: any = await service.createAbsence(
       {
@@ -782,9 +763,7 @@ describe('PersonalActionsService', () => {
       tipoAccion: 'ausencia',
       estado: PersonalActionEstado.PENDING_SUPERVISOR,
     } as PersonalAction);
-    jest
-      .spyOn(service as any, 'validateAbsencePayload')
-      .mockResolvedValue(undefined);
+    jest.spyOn(service as any, 'validateAbsencePayload').mockResolvedValue(undefined);
 
     await expect(
       service.updateAbsence(
@@ -820,43 +799,42 @@ describe('PersonalActionsService', () => {
   });
 
   it('createLicense splits actions by payroll period', async () => {
-    jest
-      .spyOn(service as any, 'validateLicensePayload')
-      .mockResolvedValue(undefined);
+    jest.spyOn(service as any, 'validateLicensePayload').mockResolvedValue(undefined);
     jest.spyOn(service as any, 'getAbsenceEmployee').mockResolvedValue({
       monedaSalario: 'CRC',
     });
 
-    dataSource.transaction.mockImplementationOnce(
-      async (cb: (trx: any) => Promise<any>) => {
-        let actionId = 201;
-        let quotaId = 601;
-        const trx = {
-          save: jest.fn(async (value: any) => {
-            if (value?.tipoAccion) return { ...value, id: actionId++ };
-            if (value?.numeroCuota != null) return { ...value, id: quotaId++ };
-            return value;
-          }),
-          createQueryBuilder: jest.fn(() => ({
-            update: jest.fn().mockReturnThis(),
-            set: jest.fn().mockReturnThis(),
-            where: jest.fn().mockReturnThis(),
-            andWhere: jest.fn().mockReturnThis(),
-            execute: jest.fn().mockResolvedValue({ affected: 1 }),
-          })),
-          delete: jest.fn().mockResolvedValue({ affected: 0 }),
-          create: jest.fn((_: unknown, payload: unknown) => payload),
-        };
-        return cb(trx);
-      },
-    );
+    dataSource.transaction.mockImplementationOnce(async (cb: (trx: any) => Promise<any>) => {
+      let actionId = 201;
+      let quotaId = 601;
+      const trx = {
+        save: jest.fn(async (value: any) => {
+          if (value?.tipoAccion) return { ...value, id: actionId++ };
+          if (value?.numeroCuota != null) return { ...value, id: quotaId++ };
+          return value;
+        }),
+        createQueryBuilder: jest.fn(() => ({
+          update: jest.fn().mockReturnThis(),
+          set: jest.fn().mockReturnThis(),
+          where: jest.fn().mockReturnThis(),
+          andWhere: jest.fn().mockReturnThis(),
+          execute: jest.fn().mockResolvedValue({ affected: 1 }),
+        })),
+        delete: jest.fn().mockResolvedValue({ affected: 0 }),
+        create: jest.fn((_: unknown, payload: unknown) => payload),
+      };
+      return cb(trx);
+    });
 
-    repo.findOne.mockImplementation(async ({ where }: any) => ({
-      ...baseAction,
-      id: where.id,
-      estado: PersonalActionEstado.PENDING_SUPERVISOR,
-      tipoAccion: 'licencia',
-    } as PersonalAction));
+    repo.findOne.mockImplementation(
+      async ({ where }: any) =>
+        ({
+          ...baseAction,
+          id: where.id,
+          estado: PersonalActionEstado.PENDING_SUPERVISOR,
+          tipoAccion: 'licencia',
+        }) as PersonalAction,
+    );
 
     const result: any = await service.createLicense(
       {
@@ -898,9 +876,7 @@ describe('PersonalActionsService', () => {
       tipoAccion: 'licencia',
       estado: PersonalActionEstado.PENDING_SUPERVISOR,
     } as PersonalAction);
-    jest
-      .spyOn(service as any, 'validateLicensePayload')
-      .mockResolvedValue(undefined);
+    jest.spyOn(service as any, 'validateLicensePayload').mockResolvedValue(undefined);
 
     await expect(
       service.updateLicense(
@@ -936,43 +912,42 @@ describe('PersonalActionsService', () => {
   });
 
   it('createDisability splits actions by payroll period', async () => {
-    jest
-      .spyOn(service as any, 'validateDisabilityPayload')
-      .mockResolvedValue(undefined);
+    jest.spyOn(service as any, 'validateDisabilityPayload').mockResolvedValue(undefined);
     jest.spyOn(service as any, 'getAbsenceEmployee').mockResolvedValue({
       monedaSalario: 'CRC',
     });
 
-    dataSource.transaction.mockImplementationOnce(
-      async (cb: (trx: any) => Promise<any>) => {
-        let actionId = 301;
-        let quotaId = 701;
-        const trx = {
-          save: jest.fn(async (value: any) => {
-            if (value?.tipoAccion) return { ...value, id: actionId++ };
-            if (value?.numeroCuota != null) return { ...value, id: quotaId++ };
-            return value;
-          }),
-          createQueryBuilder: jest.fn(() => ({
-            update: jest.fn().mockReturnThis(),
-            set: jest.fn().mockReturnThis(),
-            where: jest.fn().mockReturnThis(),
-            andWhere: jest.fn().mockReturnThis(),
-            execute: jest.fn().mockResolvedValue({ affected: 1 }),
-          })),
-          delete: jest.fn().mockResolvedValue({ affected: 0 }),
-          create: jest.fn((_: unknown, payload: unknown) => payload),
-        };
-        return cb(trx);
-      },
-    );
+    dataSource.transaction.mockImplementationOnce(async (cb: (trx: any) => Promise<any>) => {
+      let actionId = 301;
+      let quotaId = 701;
+      const trx = {
+        save: jest.fn(async (value: any) => {
+          if (value?.tipoAccion) return { ...value, id: actionId++ };
+          if (value?.numeroCuota != null) return { ...value, id: quotaId++ };
+          return value;
+        }),
+        createQueryBuilder: jest.fn(() => ({
+          update: jest.fn().mockReturnThis(),
+          set: jest.fn().mockReturnThis(),
+          where: jest.fn().mockReturnThis(),
+          andWhere: jest.fn().mockReturnThis(),
+          execute: jest.fn().mockResolvedValue({ affected: 1 }),
+        })),
+        delete: jest.fn().mockResolvedValue({ affected: 0 }),
+        create: jest.fn((_: unknown, payload: unknown) => payload),
+      };
+      return cb(trx);
+    });
 
-    repo.findOne.mockImplementation(async ({ where }: any) => ({
-      ...baseAction,
-      id: where.id,
-      estado: PersonalActionEstado.PENDING_SUPERVISOR,
-      tipoAccion: 'incapacidad',
-    } as PersonalAction));
+    repo.findOne.mockImplementation(
+      async ({ where }: any) =>
+        ({
+          ...baseAction,
+          id: where.id,
+          estado: PersonalActionEstado.PENDING_SUPERVISOR,
+          tipoAccion: 'incapacidad',
+        }) as PersonalAction,
+    );
 
     const result: any = await service.createDisability(
       {
@@ -1016,9 +991,7 @@ describe('PersonalActionsService', () => {
       tipoAccion: 'incapacidad',
       estado: PersonalActionEstado.PENDING_SUPERVISOR,
     } as PersonalAction);
-    jest
-      .spyOn(service as any, 'validateDisabilityPayload')
-      .mockResolvedValue(undefined);
+    jest.spyOn(service as any, 'validateDisabilityPayload').mockResolvedValue(undefined);
 
     await expect(
       service.updateDisability(
@@ -1056,43 +1029,42 @@ describe('PersonalActionsService', () => {
   });
 
   it('createBonus splits actions by payroll period', async () => {
-    jest
-      .spyOn(service as any, 'validateBonusPayload')
-      .mockResolvedValue(undefined);
+    jest.spyOn(service as any, 'validateBonusPayload').mockResolvedValue(undefined);
     jest.spyOn(service as any, 'getAbsenceEmployee').mockResolvedValue({
       monedaSalario: 'CRC',
     });
 
-    dataSource.transaction.mockImplementationOnce(
-      async (cb: (trx: any) => Promise<any>) => {
-        let actionId = 401;
-        let quotaId = 801;
-        const trx = {
-          save: jest.fn(async (value: any) => {
-            if (value?.tipoAccion) return { ...value, id: actionId++ };
-            if (value?.numeroCuota != null) return { ...value, id: quotaId++ };
-            return value;
-          }),
-          createQueryBuilder: jest.fn(() => ({
-            update: jest.fn().mockReturnThis(),
-            set: jest.fn().mockReturnThis(),
-            where: jest.fn().mockReturnThis(),
-            andWhere: jest.fn().mockReturnThis(),
-            execute: jest.fn().mockResolvedValue({ affected: 1 }),
-          })),
-          delete: jest.fn().mockResolvedValue({ affected: 0 }),
-          create: jest.fn((_: unknown, payload: unknown) => payload),
-        };
-        return cb(trx);
-      },
-    );
+    dataSource.transaction.mockImplementationOnce(async (cb: (trx: any) => Promise<any>) => {
+      let actionId = 401;
+      let quotaId = 801;
+      const trx = {
+        save: jest.fn(async (value: any) => {
+          if (value?.tipoAccion) return { ...value, id: actionId++ };
+          if (value?.numeroCuota != null) return { ...value, id: quotaId++ };
+          return value;
+        }),
+        createQueryBuilder: jest.fn(() => ({
+          update: jest.fn().mockReturnThis(),
+          set: jest.fn().mockReturnThis(),
+          where: jest.fn().mockReturnThis(),
+          andWhere: jest.fn().mockReturnThis(),
+          execute: jest.fn().mockResolvedValue({ affected: 1 }),
+        })),
+        delete: jest.fn().mockResolvedValue({ affected: 0 }),
+        create: jest.fn((_: unknown, payload: unknown) => payload),
+      };
+      return cb(trx);
+    });
 
-    repo.findOne.mockImplementation(async ({ where }: any) => ({
-      ...baseAction,
-      id: where.id,
-      estado: PersonalActionEstado.PENDING_SUPERVISOR,
-      tipoAccion: 'bonificacion',
-    } as PersonalAction));
+    repo.findOne.mockImplementation(
+      async ({ where }: any) =>
+        ({
+          ...baseAction,
+          id: where.id,
+          estado: PersonalActionEstado.PENDING_SUPERVISOR,
+          tipoAccion: 'bonificacion',
+        }) as PersonalAction,
+    );
 
     const result: any = await service.createBonus(
       {
@@ -1134,9 +1106,7 @@ describe('PersonalActionsService', () => {
       tipoAccion: 'bonificacion',
       estado: PersonalActionEstado.PENDING_SUPERVISOR,
     } as PersonalAction);
-    jest
-      .spyOn(service as any, 'validateBonusPayload')
-      .mockResolvedValue(undefined);
+    jest.spyOn(service as any, 'validateBonusPayload').mockResolvedValue(undefined);
 
     await expect(
       service.updateBonus(
@@ -1172,43 +1142,42 @@ describe('PersonalActionsService', () => {
   });
 
   it('createOvertime splits actions by payroll period', async () => {
-    jest
-      .spyOn(service as any, 'validateOvertimePayload')
-      .mockResolvedValue(undefined);
+    jest.spyOn(service as any, 'validateOvertimePayload').mockResolvedValue(undefined);
     jest.spyOn(service as any, 'getAbsenceEmployee').mockResolvedValue({
       monedaSalario: 'CRC',
     });
 
-    dataSource.transaction.mockImplementationOnce(
-      async (cb: (trx: any) => Promise<any>) => {
-        let actionId = 501;
-        let quotaId = 901;
-        const trx = {
-          save: jest.fn(async (value: any) => {
-            if (value?.tipoAccion) return { ...value, id: actionId++ };
-            if (value?.numeroCuota != null) return { ...value, id: quotaId++ };
-            return value;
-          }),
-          createQueryBuilder: jest.fn(() => ({
-            update: jest.fn().mockReturnThis(),
-            set: jest.fn().mockReturnThis(),
-            where: jest.fn().mockReturnThis(),
-            andWhere: jest.fn().mockReturnThis(),
-            execute: jest.fn().mockResolvedValue({ affected: 1 }),
-          })),
-          delete: jest.fn().mockResolvedValue({ affected: 0 }),
-          create: jest.fn((_: unknown, payload: unknown) => payload),
-        };
-        return cb(trx);
-      },
-    );
+    dataSource.transaction.mockImplementationOnce(async (cb: (trx: any) => Promise<any>) => {
+      let actionId = 501;
+      let quotaId = 901;
+      const trx = {
+        save: jest.fn(async (value: any) => {
+          if (value?.tipoAccion) return { ...value, id: actionId++ };
+          if (value?.numeroCuota != null) return { ...value, id: quotaId++ };
+          return value;
+        }),
+        createQueryBuilder: jest.fn(() => ({
+          update: jest.fn().mockReturnThis(),
+          set: jest.fn().mockReturnThis(),
+          where: jest.fn().mockReturnThis(),
+          andWhere: jest.fn().mockReturnThis(),
+          execute: jest.fn().mockResolvedValue({ affected: 1 }),
+        })),
+        delete: jest.fn().mockResolvedValue({ affected: 0 }),
+        create: jest.fn((_: unknown, payload: unknown) => payload),
+      };
+      return cb(trx);
+    });
 
-    repo.findOne.mockImplementation(async ({ where }: any) => ({
-      ...baseAction,
-      id: where.id,
-      estado: PersonalActionEstado.PENDING_SUPERVISOR,
-      tipoAccion: 'hora_extra',
-    } as PersonalAction));
+    repo.findOne.mockImplementation(
+      async ({ where }: any) =>
+        ({
+          ...baseAction,
+          id: where.id,
+          estado: PersonalActionEstado.PENDING_SUPERVISOR,
+          tipoAccion: 'hora_extra',
+        }) as PersonalAction,
+    );
 
     const result: any = await service.createOvertime(
       {
@@ -1254,9 +1223,7 @@ describe('PersonalActionsService', () => {
       tipoAccion: 'hora_extra',
       estado: PersonalActionEstado.PENDING_SUPERVISOR,
     } as PersonalAction);
-    jest
-      .spyOn(service as any, 'validateOvertimePayload')
-      .mockResolvedValue(undefined);
+    jest.spyOn(service as any, 'validateOvertimePayload').mockResolvedValue(undefined);
 
     await expect(
       service.updateOvertime(
@@ -1296,43 +1263,42 @@ describe('PersonalActionsService', () => {
   });
 
   it('createRetention splits actions by payroll period', async () => {
-    jest
-      .spyOn(service as any, 'validateRetentionPayload')
-      .mockResolvedValue(undefined);
+    jest.spyOn(service as any, 'validateRetentionPayload').mockResolvedValue(undefined);
     jest.spyOn(service as any, 'getAbsenceEmployee').mockResolvedValue({
       monedaSalario: 'CRC',
     });
 
-    dataSource.transaction.mockImplementationOnce(
-      async (cb: (trx: any) => Promise<any>) => {
-        let actionId = 601;
-        let quotaId = 1001;
-        const trx = {
-          save: jest.fn(async (value: any) => {
-            if (value?.tipoAccion) return { ...value, id: actionId++ };
-            if (value?.numeroCuota != null) return { ...value, id: quotaId++ };
-            return value;
-          }),
-          createQueryBuilder: jest.fn(() => ({
-            update: jest.fn().mockReturnThis(),
-            set: jest.fn().mockReturnThis(),
-            where: jest.fn().mockReturnThis(),
-            andWhere: jest.fn().mockReturnThis(),
-            execute: jest.fn().mockResolvedValue({ affected: 1 }),
-          })),
-          delete: jest.fn().mockResolvedValue({ affected: 0 }),
-          create: jest.fn((_: unknown, payload: unknown) => payload),
-        };
-        return cb(trx);
-      },
-    );
+    dataSource.transaction.mockImplementationOnce(async (cb: (trx: any) => Promise<any>) => {
+      let actionId = 601;
+      let quotaId = 1001;
+      const trx = {
+        save: jest.fn(async (value: any) => {
+          if (value?.tipoAccion) return { ...value, id: actionId++ };
+          if (value?.numeroCuota != null) return { ...value, id: quotaId++ };
+          return value;
+        }),
+        createQueryBuilder: jest.fn(() => ({
+          update: jest.fn().mockReturnThis(),
+          set: jest.fn().mockReturnThis(),
+          where: jest.fn().mockReturnThis(),
+          andWhere: jest.fn().mockReturnThis(),
+          execute: jest.fn().mockResolvedValue({ affected: 1 }),
+        })),
+        delete: jest.fn().mockResolvedValue({ affected: 0 }),
+        create: jest.fn((_: unknown, payload: unknown) => payload),
+      };
+      return cb(trx);
+    });
 
-    repo.findOne.mockImplementation(async ({ where }: any) => ({
-      ...baseAction,
-      id: where.id,
-      estado: PersonalActionEstado.PENDING_SUPERVISOR,
-      tipoAccion: 'deduccion_retencion',
-    } as PersonalAction));
+    repo.findOne.mockImplementation(
+      async ({ where }: any) =>
+        ({
+          ...baseAction,
+          id: where.id,
+          estado: PersonalActionEstado.PENDING_SUPERVISOR,
+          tipoAccion: 'deduccion_retencion',
+        }) as PersonalAction,
+    );
 
     const result: any = await service.createRetention(
       {
@@ -1370,9 +1336,7 @@ describe('PersonalActionsService', () => {
       tipoAccion: 'deduccion_retencion',
       estado: PersonalActionEstado.PENDING_SUPERVISOR,
     } as PersonalAction);
-    jest
-      .spyOn(service as any, 'validateRetentionPayload')
-      .mockResolvedValue(undefined);
+    jest.spyOn(service as any, 'validateRetentionPayload').mockResolvedValue(undefined);
 
     await expect(
       service.updateRetention(
@@ -1441,43 +1405,42 @@ describe('PersonalActionsService', () => {
   });
 
   it('createDiscount splits actions by payroll period', async () => {
-    jest
-      .spyOn(service as any, 'validateDiscountPayload')
-      .mockResolvedValue(undefined);
+    jest.spyOn(service as any, 'validateDiscountPayload').mockResolvedValue(undefined);
     jest.spyOn(service as any, 'getAbsenceEmployee').mockResolvedValue({
       monedaSalario: 'CRC',
     });
 
-    dataSource.transaction.mockImplementationOnce(
-      async (cb: (trx: any) => Promise<any>) => {
-        let actionId = 701;
-        let quotaId = 1101;
-        const trx = {
-          save: jest.fn(async (value: any) => {
-            if (value?.tipoAccion) return { ...value, id: actionId++ };
-            if (value?.numeroCuota != null) return { ...value, id: quotaId++ };
-            return value;
-          }),
-          createQueryBuilder: jest.fn(() => ({
-            update: jest.fn().mockReturnThis(),
-            set: jest.fn().mockReturnThis(),
-            where: jest.fn().mockReturnThis(),
-            andWhere: jest.fn().mockReturnThis(),
-            execute: jest.fn().mockResolvedValue({ affected: 1 }),
-          })),
-          delete: jest.fn().mockResolvedValue({ affected: 0 }),
-          create: jest.fn((_: unknown, payload: unknown) => payload),
-        };
-        return cb(trx);
-      },
-    );
+    dataSource.transaction.mockImplementationOnce(async (cb: (trx: any) => Promise<any>) => {
+      let actionId = 701;
+      let quotaId = 1101;
+      const trx = {
+        save: jest.fn(async (value: any) => {
+          if (value?.tipoAccion) return { ...value, id: actionId++ };
+          if (value?.numeroCuota != null) return { ...value, id: quotaId++ };
+          return value;
+        }),
+        createQueryBuilder: jest.fn(() => ({
+          update: jest.fn().mockReturnThis(),
+          set: jest.fn().mockReturnThis(),
+          where: jest.fn().mockReturnThis(),
+          andWhere: jest.fn().mockReturnThis(),
+          execute: jest.fn().mockResolvedValue({ affected: 1 }),
+        })),
+        delete: jest.fn().mockResolvedValue({ affected: 0 }),
+        create: jest.fn((_: unknown, payload: unknown) => payload),
+      };
+      return cb(trx);
+    });
 
-    repo.findOne.mockImplementation(async ({ where }: any) => ({
-      ...baseAction,
-      id: where.id,
-      estado: PersonalActionEstado.PENDING_SUPERVISOR,
-      tipoAccion: 'deduccion_descuento',
-    } as PersonalAction));
+    repo.findOne.mockImplementation(
+      async ({ where }: any) =>
+        ({
+          ...baseAction,
+          id: where.id,
+          estado: PersonalActionEstado.PENDING_SUPERVISOR,
+          tipoAccion: 'deduccion_descuento',
+        }) as PersonalAction,
+    );
 
     const result: any = await service.createDiscount(
       {
@@ -1515,9 +1478,7 @@ describe('PersonalActionsService', () => {
       tipoAccion: 'deduccion_descuento',
       estado: PersonalActionEstado.PENDING_SUPERVISOR,
     } as PersonalAction);
-    jest
-      .spyOn(service as any, 'validateDiscountPayload')
-      .mockResolvedValue(undefined);
+    jest.spyOn(service as any, 'validateDiscountPayload').mockResolvedValue(undefined);
 
     await expect(
       service.updateDiscount(

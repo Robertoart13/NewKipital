@@ -1,4 +1,4 @@
-import { MigrationInterface, QueryRunner } from 'typeorm';
+import type { MigrationInterface, QueryRunner } from 'typeorm';
 
 export class AddDepartmentsPermissions1708534800000 implements MigrationInterface {
   public async up(queryRunner: QueryRunner): Promise<void> {

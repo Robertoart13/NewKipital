@@ -1,6 +1,9 @@
-﻿import { ExecutionContext, ForbiddenException } from '@nestjs/common';
-import { Reflector } from '@nestjs/core';
+﻿import { ForbiddenException } from '@nestjs/common';
+
 import { AppAccessGuard } from './app-access.guard';
+
+import type { ExecutionContext } from '@nestjs/common';
+import type { Reflector } from '@nestjs/core';
 
 describe('AppAccessGuard', () => {
   let guard: AppAccessGuard;
@@ -27,29 +30,23 @@ describe('AppAccessGuard', () => {
 
   it('should allow access when user has the required app', () => {
     reflector.getAllAndOverride.mockReturnValue('kpital');
-    expect(
-      guard.canActivate(createContext({ enabledApps: ['kpital', 'timewise'] })),
-    ).toBe(true);
+    expect(guard.canActivate(createContext({ enabledApps: ['kpital', 'timewise'] }))).toBe(true);
   });
 
   it('should throw ForbiddenException when user lacks the required app', () => {
     reflector.getAllAndOverride.mockReturnValue('kpital');
-    expect(() =>
-      guard.canActivate(createContext({ enabledApps: ['timewise'] })),
-    ).toThrow(ForbiddenException);
+    expect(() => guard.canActivate(createContext({ enabledApps: ['timewise'] }))).toThrow(
+      ForbiddenException,
+    );
   });
 
   it('should throw when user object is missing', () => {
     reflector.getAllAndOverride.mockReturnValue('kpital');
-    expect(() => guard.canActivate(createContext(null))).toThrow(
-      ForbiddenException,
-    );
+    expect(() => guard.canActivate(createContext(null))).toThrow(ForbiddenException);
   });
 
   it('should throw when enabledApps is missing', () => {
     reflector.getAllAndOverride.mockReturnValue('timewise');
-    expect(() => guard.canActivate(createContext({ userId: 1 }))).toThrow(
-      ForbiddenException,
-    );
+    expect(() => guard.canActivate(createContext({ userId: 1 }))).toThrow(ForbiddenException);
   });
 });

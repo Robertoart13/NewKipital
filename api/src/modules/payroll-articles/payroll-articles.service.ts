@@ -5,15 +5,19 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { In, Repository } from 'typeorm';
-import { PayrollArticle } from './entities/payroll-article.entity';
-import { PayrollArticleType } from './entities/payroll-article-type.entity';
-import { CreatePayrollArticleDto } from './dto/create-payroll-article.dto';
-import { UpdatePayrollArticleDto } from './dto/update-payroll-article.dto';
-import { Company } from '../companies/entities/company.entity';
-import { PersonalActionType } from '../accounting-accounts/entities/personal-action-type.entity';
+import { In } from 'typeorm';
+
 import { AccountingAccount } from '../accounting-accounts/entities/accounting-account.entity';
-import { AuditOutboxService } from '../integration/audit-outbox.service';
+import { PersonalActionType } from '../accounting-accounts/entities/personal-action-type.entity';
+import { Company } from '../companies/entities/company.entity';
+
+import { PayrollArticleType } from './entities/payroll-article-type.entity';
+import { PayrollArticle } from './entities/payroll-article.entity';
+
+import type { CreatePayrollArticleDto } from './dto/create-payroll-article.dto';
+import type { UpdatePayrollArticleDto } from './dto/update-payroll-article.dto';
+import type { AuditOutboxService } from '../integration/audit-outbox.service';
+import type { Repository } from 'typeorm';
 
 type AllowedAccountMapping = {
   id: number;
@@ -92,10 +96,7 @@ export class PayrollArticlesService {
     esInactivo: 'Estado',
   };
 
-  async create(
-    dto: CreatePayrollArticleDto,
-    actorUserId: number,
-  ): Promise<PayrollArticle> {
+  async create(dto: CreatePayrollArticleDto, actorUserId: number): Promise<PayrollArticle> {
     await this.assertCompanyActive(dto.idEmpresa);
     await this.assertTipoAccionActivo(dto.idTipoAccionPersonal);
     await this.assertTipoArticuloActivo(dto.idTipoArticuloNomina);
@@ -156,9 +157,7 @@ export class PayrollArticlesService {
   async findOne(id: number): Promise<PayrollArticle> {
     const found = await this.repo.findOne({ where: { id } });
     if (!found) {
-      throw new NotFoundException(
-        `Articulo de nomina con ID ${id} no encontrado`,
-      );
+      throw new NotFoundException(`Articulo de nomina con ID ${id} no encontrado`);
     }
     return found;
   }
@@ -291,10 +290,8 @@ export class PayrollArticlesService {
     );
 
     return (rows ?? []).map((row: Record<string, unknown>) => {
-      const payloadBefore =
-        (row.payloadBefore as Record<string, unknown> | null) ?? null;
-      const payloadAfter =
-        (row.payloadAfter as Record<string, unknown> | null) ?? null;
+      const payloadBefore = (row.payloadBefore as Record<string, unknown> | null) ?? null;
+      const payloadAfter = (row.payloadAfter as Record<string, unknown> | null) ?? null;
       return {
         id: String(row.id ?? ''),
         modulo: String(row.modulo ?? ''),
@@ -305,9 +302,7 @@ export class PayrollArticlesService {
         actorNombre: row.actorNombre ? String(row.actorNombre) : null,
         actorEmail: row.actorEmail ? String(row.actorEmail) : null,
         descripcion: String(row.descripcion ?? ''),
-        fechaCreacion: row.fechaCreacion
-          ? new Date(String(row.fechaCreacion)).toISOString()
-          : null,
+        fechaCreacion: row.fechaCreacion ? new Date(String(row.fechaCreacion)).toISOString() : null,
         metadata: (row.metadata as Record<string, unknown> | null) ?? null,
         cambios: this.buildAuditChanges(payloadBefore, payloadAfter),
       };
@@ -367,12 +362,8 @@ export class PayrollArticlesService {
     payloadAfter: Record<string, unknown> | null,
   ): Array<{ campo: string; antes: string; despues: string }> {
     if (!payloadBefore || !payloadAfter) return [];
-    const keys = new Set<string>([
-      ...Object.keys(payloadBefore),
-      ...Object.keys(payloadAfter),
-    ]);
-    const changes: Array<{ campo: string; antes: string; despues: string }> =
-      [];
+    const keys = new Set<string>([...Object.keys(payloadBefore), ...Object.keys(payloadAfter)]);
+    const changes: Array<{ campo: string; antes: string; despues: string }> = [];
     for (const key of keys) {
       if (!(key in this.auditFieldLabels)) continue;
       const beforeValue = this.normalizeAuditValue(payloadBefore[key]);
@@ -388,9 +379,7 @@ export class PayrollArticlesService {
   }
 
   private getRulesForTipo(idTipoArticuloNomina: number): AllowedAccountMapping {
-    const rules = PAYROLL_ARTICLE_TYPE_RULES.find(
-      (item) => item.id === idTipoArticuloNomina,
-    );
+    const rules = PAYROLL_ARTICLE_TYPE_RULES.find((item) => item.id === idTipoArticuloNomina);
     if (!rules) {
       throw new BadRequestException('Tipo de articulo de nomina no soportado.');
     }
@@ -406,29 +395,21 @@ export class PayrollArticlesService {
     }
   }
 
-  private async assertTipoAccionActivo(
-    idTipoAccionPersonal: number,
-  ): Promise<void> {
+  private async assertTipoAccionActivo(idTipoAccionPersonal: number): Promise<void> {
     const found = await this.actionTypeRepo.findOne({
       where: { id: idTipoAccionPersonal },
     });
     if (!found || found.estado !== 1) {
-      throw new BadRequestException(
-        'Debe seleccionar un tipo de accion personal activo.',
-      );
+      throw new BadRequestException('Debe seleccionar un tipo de accion personal activo.');
     }
   }
 
-  private async assertTipoArticuloActivo(
-    idTipoArticuloNomina: number,
-  ): Promise<void> {
+  private async assertTipoArticuloActivo(idTipoArticuloNomina: number): Promise<void> {
     const found = await this.typeRepo.findOne({
       where: { id: idTipoArticuloNomina },
     });
     if (!found || found.esInactivo === 1) {
-      throw new BadRequestException(
-        'Debe seleccionar un tipo de articulo de nomina activo.',
-      );
+      throw new BadRequestException('Debe seleccionar un tipo de articulo de nomina activo.');
     }
   }
 
@@ -441,23 +422,17 @@ export class PayrollArticlesService {
     const rules = this.getRulesForTipo(idTipoArticuloNomina);
 
     if (rules.requiresGasto && !idCuentaGasto) {
-      throw new BadRequestException(
-        'Debe seleccionar la cuenta principal del articulo.',
-      );
+      throw new BadRequestException('Debe seleccionar la cuenta principal del articulo.');
     }
     if (rules.requiresPasivo && !idCuentaPasivo) {
       throw new BadRequestException('Debe seleccionar la cuenta pasivo.');
     }
     if (!rules.allowsPasivo && idCuentaPasivo) {
-      throw new BadRequestException(
-        'La cuenta pasivo no aplica para este tipo de articulo.',
-      );
+      throw new BadRequestException('La cuenta pasivo no aplica para este tipo de articulo.');
     }
 
     const targetAccounts = Array.from(
-      new Set(
-        [idCuentaGasto, idCuentaPasivo].filter((value) => !!value) as number[],
-      ),
+      new Set([idCuentaGasto, idCuentaPasivo].filter((value) => !!value) as number[]),
     );
     const accounts = await this.accountRepo.find({
       where: { id: In(targetAccounts) },
@@ -467,9 +442,7 @@ export class PayrollArticlesService {
     }
     for (const account of accounts) {
       if (account.idEmpresa !== idEmpresa) {
-        throw new BadRequestException(
-          'La cuenta contable no pertenece a la empresa seleccionada.',
-        );
+        throw new BadRequestException('La cuenta contable no pertenece a la empresa seleccionada.');
       }
       if (!rules.allowedAccountTypes.includes(account.idTipoErp)) {
         throw new BadRequestException(
@@ -477,9 +450,7 @@ export class PayrollArticlesService {
         );
       }
       if (account.esInactivo === 1) {
-        throw new BadRequestException(
-          'La cuenta contable seleccionada esta inactiva.',
-        );
+        throw new BadRequestException('La cuenta contable seleccionada esta inactiva.');
       }
     }
   }

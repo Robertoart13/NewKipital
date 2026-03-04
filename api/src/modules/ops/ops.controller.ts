@@ -1,20 +1,10 @@
-import {
-  Body,
-  Controller,
-  Get,
-  Param,
-  ParseIntPipe,
-  Post,
-  Query,
-} from '@nestjs/common';
+import { Body, Controller, Get, Param, ParseIntPipe, Post, Query } from '@nestjs/common';
+
 import { RequirePermissions } from '../../common/decorators/require-permissions.decorator';
-import { AppCacheService } from '../../common/services/app-cache.service';
-import {
-  ListQueueJobsDto,
-  QueueTypeDto,
-  RequeueJobDto,
-} from './dto/list-queue-jobs.dto';
-import { OpsService } from './ops.service';
+
+import type { ListQueueJobsDto, RequeueJobDto } from './dto/list-queue-jobs.dto';
+import type { OpsService } from './ops.service';
+import type { AppCacheService } from '../../common/services/app-cache.service';
 
 @Controller('ops/queues')
 export class OpsController {
@@ -89,10 +79,7 @@ export class OpsController {
 
   @RequirePermissions('automation:admin')
   @Post('requeue/:id')
-  async requeue(
-    @Param('id', ParseIntPipe) id: number,
-    @Body() body: RequeueJobDto,
-  ) {
+  async requeue(@Param('id', ParseIntPipe) id: number, @Body() body: RequeueJobDto) {
     const data = await this.opsService.requeue(body.queue, id);
     return { success: true, data, message: 'Job reencolado', error: null };
   }

@@ -1,10 +1,6 @@
-import {
-  MigrationInterface,
-  QueryRunner,
-  Table,
-  TableForeignKey,
-  TableIndex,
-} from 'typeorm';
+import { Table, TableForeignKey, TableIndex } from 'typeorm';
+
+import type { MigrationInterface, QueryRunner } from 'typeorm';
 
 export class AddUserPermissionOverrides1708532400000 implements MigrationInterface {
   public async up(queryRunner: QueryRunner): Promise<void> {
@@ -102,9 +98,7 @@ export class AddUserPermissionOverrides1708532400000 implements MigrationInterfa
       );
     }
 
-    if (
-      !table.foreignKeys.find((fk) => fk.name === 'FK_usuario_permiso_usuario')
-    ) {
+    if (!table.foreignKeys.find((fk) => fk.name === 'FK_usuario_permiso_usuario')) {
       await queryRunner.createForeignKey(
         'sys_usuario_permiso',
         new TableForeignKey({
@@ -118,9 +112,7 @@ export class AddUserPermissionOverrides1708532400000 implements MigrationInterfa
       );
     }
 
-    if (
-      !table.foreignKeys.find((fk) => fk.name === 'FK_usuario_permiso_empresa')
-    ) {
+    if (!table.foreignKeys.find((fk) => fk.name === 'FK_usuario_permiso_empresa')) {
       await queryRunner.createForeignKey(
         'sys_usuario_permiso',
         new TableForeignKey({
@@ -148,9 +140,7 @@ export class AddUserPermissionOverrides1708532400000 implements MigrationInterfa
       );
     }
 
-    if (
-      !table.foreignKeys.find((fk) => fk.name === 'FK_usuario_permiso_permiso')
-    ) {
+    if (!table.foreignKeys.find((fk) => fk.name === 'FK_usuario_permiso_permiso')) {
       await queryRunner.createForeignKey(
         'sys_usuario_permiso',
         new TableForeignKey({

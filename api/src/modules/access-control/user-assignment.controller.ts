@@ -10,16 +10,18 @@ import {
   ParseIntPipe,
   UseInterceptors,
 } from '@nestjs/common';
-import { UserAssignmentService } from './user-assignment.service';
-import { AssignUserAppDto } from './dto/assign-user-app.dto';
-import { AssignUserCompanyDto } from './dto/assign-user-company.dto';
-import { AssignUserRoleDto } from './dto/assign-user-role.dto';
-import { ReplaceUserContextRolesDto } from './dto/replace-user-context-roles.dto';
-import { ReplaceUserPermissionOverridesDto } from './dto/replace-user-permission-overrides.dto';
-import { RequirePermissions } from '../../common/decorators/require-permissions.decorator';
-import { CurrentUser } from '../../common/decorators/current-user.decorator';
+
 import { CacheScope } from '../../common/decorators/cache-scope.decorator';
+import { CurrentUser } from '../../common/decorators/current-user.decorator';
+import { RequirePermissions } from '../../common/decorators/require-permissions.decorator';
 import { CacheResponseInterceptor } from '../../common/interceptors/cache-response.interceptor';
+
+import type { AssignUserAppDto } from './dto/assign-user-app.dto';
+import type { AssignUserCompanyDto } from './dto/assign-user-company.dto';
+import type { AssignUserRoleDto } from './dto/assign-user-role.dto';
+import type { ReplaceUserContextRolesDto } from './dto/replace-user-context-roles.dto';
+import type { ReplaceUserPermissionOverridesDto } from './dto/replace-user-permission-overrides.dto';
+import type { UserAssignmentService } from './user-assignment.service';
 
 @CacheScope('user-assignments')
 @UseInterceptors(CacheResponseInterceptor)
@@ -31,10 +33,7 @@ export class UserAssignmentController {
 
   @RequirePermissions('config:users:assign-apps')
   @Post('apps')
-  assignApp(
-    @Body() dto: AssignUserAppDto,
-    @CurrentUser() user: { userId: number },
-  ) {
+  assignApp(@Body() dto: AssignUserAppDto, @CurrentUser() user: { userId: number }) {
     return this.service.assignApp(dto, user.userId);
   }
 
@@ -58,10 +57,7 @@ export class UserAssignmentController {
 
   @RequirePermissions('config:users:assign-companies')
   @Post('companies')
-  assignCompany(
-    @Body() dto: AssignUserCompanyDto,
-    @CurrentUser() user: { userId: number },
-  ) {
+  assignCompany(@Body() dto: AssignUserCompanyDto, @CurrentUser() user: { userId: number }) {
     return this.service.assignCompany(dto, user.userId);
   }
 
@@ -85,10 +81,7 @@ export class UserAssignmentController {
 
   @RequirePermissions('config:users:assign-roles')
   @Post('roles')
-  assignRole(
-    @Body() dto: AssignUserRoleDto,
-    @CurrentUser() user: { userId: number },
-  ) {
+  assignRole(@Body() dto: AssignUserRoleDto, @CurrentUser() user: { userId: number }) {
     return this.service.assignRole(dto, user.userId);
   }
 
@@ -101,13 +94,7 @@ export class UserAssignmentController {
     @Param('idApp', ParseIntPipe) idApp: number,
     @CurrentUser() user: { userId: number },
   ) {
-    return this.service.revokeRole(
-      idUsuario,
-      idRol,
-      idEmpresa,
-      idApp,
-      user.userId,
-    );
+    return this.service.revokeRole(idUsuario, idRol, idEmpresa, idApp, user.userId);
   }
 
   @RequirePermissions('config:users')
@@ -161,10 +148,6 @@ export class UserAssignmentController {
     @Query('companyId', ParseIntPipe) companyId: number,
     @Query('appCode') appCode: string,
   ) {
-    return this.service.getUserPermissionOverrides(
-      idUsuario,
-      companyId,
-      appCode,
-    );
+    return this.service.getUserPermissionOverrides(idUsuario, companyId, appCode);
   }
 }

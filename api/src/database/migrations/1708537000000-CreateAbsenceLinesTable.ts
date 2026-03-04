@@ -1,14 +1,8 @@
-import {
-  MigrationInterface,
-  QueryRunner,
-  Table,
-  TableForeignKey,
-  TableIndex,
-} from 'typeorm';
+import { Table, TableForeignKey, TableIndex } from 'typeorm';
 
-export class CreateAbsenceLinesTable1708537000000
-  implements MigrationInterface
-{
+import type { MigrationInterface, QueryRunner } from 'typeorm';
+
+export class CreateAbsenceLinesTable1708537000000 implements MigrationInterface {
   public async up(queryRunner: QueryRunner): Promise<void> {
     const exists = await queryRunner.hasTable('acc_ausencias_lineas');
     if (exists) return;
@@ -165,4 +159,3 @@ export class CreateAbsenceLinesTable1708537000000
     await queryRunner.dropTable('acc_ausencias_lineas');
   }
 }
-

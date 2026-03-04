@@ -1,8 +1,13 @@
-import { INestApplication, ValidationPipe } from '@nestjs/common';
-import { Test, TestingModule } from '@nestjs/testing';
+import { ValidationPipe } from '@nestjs/common';
+import { Test } from '@nestjs/testing';
 import { DataSource } from 'typeorm';
+
 import { AppModule } from '../src/app.module';
 import { AuthService } from '../src/modules/auth/auth.service';
+
+import type { INestApplication } from '@nestjs/common';
+import type { TestingModule } from '@nestjs/testing';
+
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const supertest = require('supertest');
 
@@ -35,9 +40,7 @@ function asArray(body: unknown): CatalogItem[] {
     const typedBody = body as Record<string, unknown>;
     const data = typedBody.data;
     if (Array.isArray(data)) return data as CatalogItem[];
-    const firstArray = Object.values(typedBody).find((value) =>
-      Array.isArray(value),
-    );
+    const firstArray = Object.values(typedBody).find((value) => Array.isArray(value));
     if (Array.isArray(firstArray)) return firstArray as CatalogItem[];
   }
   return [];
@@ -70,13 +73,10 @@ describe('PersonalActions (e2e)', () => {
     }).compile();
 
     app = moduleFixture.createNestApplication();
-    app.useGlobalPipes(
-      new ValidationPipe({ whitelist: true, transform: true }),
-    );
+    app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
     await app.init();
     dataSource = app.get(DataSource);
-    const requestFactory =
-      typeof supertest === 'function' ? supertest : supertest.default;
+    const requestFactory = typeof supertest === 'function' ? supertest : supertest.default;
     agent = requestFactory.agent(app.getHttpServer()) as SupertestRequestBuilder;
 
     const authService = app.get(AuthService);
@@ -111,9 +111,7 @@ describe('PersonalActions (e2e)', () => {
     return requestBuilder;
   }
 
-  async function findFlowContext(
-    actionTypeId: number,
-  ): Promise<FlowContext | null> {
+  async function findFlowContext(actionTypeId: number): Promise<FlowContext | null> {
     const companyIds = [...new Set(sessionCompanyIds)].filter((id) => id > 0);
     for (const companyId of companyIds) {
       const movements = await dataSource.query(
@@ -155,12 +153,8 @@ describe('PersonalActions (e2e)', () => {
         [companyId],
       );
       if (!contexts?.[0]) continue;
-      const employeeId = toPositiveInt(
-        (contexts[0] as { employeeId?: unknown }).employeeId,
-      );
-      const payrollId = toPositiveInt(
-        (contexts[0] as { payrollId?: unknown }).payrollId,
-      );
+      const employeeId = toPositiveInt((contexts[0] as { employeeId?: unknown }).employeeId);
+      const payrollId = toPositiveInt((contexts[0] as { payrollId?: unknown }).payrollId);
       if (!employeeId || !payrollId) continue;
 
       return { companyId, employeeId, payrollId, movementId };
@@ -168,153 +162,129 @@ describe('PersonalActions (e2e)', () => {
     return null;
   }
 
-  it(
-    'debe completar flujo e2e de Ausencias (crear -> editar -> avanzar -> invalidar)',
-    async () => {
-      const context = await findFlowContext(20);
-      expect(context).not.toBeNull();
-      const ctx = context as FlowContext;
-      const today = new Date().toISOString().slice(0, 10);
+  it('debe completar flujo e2e de Ausencias (crear -> editar -> avanzar -> invalidar)', async () => {
+    const context = await findFlowContext(20);
+    expect(context).not.toBeNull();
+    const ctx = context as FlowContext;
+    const today = new Date().toISOString().slice(0, 10);
 
-      const createResponse = await withAuth(
-        agent.post('/personal-actions/ausencias'),
-      )
-        .send({
-          idEmpresa: ctx.companyId,
-          idEmpleado: ctx.employeeId,
-          observacion: 'E2E Ausencia create',
-          lines: [
-            {
-              payrollId: ctx.payrollId,
-              fechaEfecto: today,
-              movimientoId: ctx.movementId,
-              tipoAusencia: 'JUSTIFICADA',
-              cantidad: 1,
-              monto: 1500,
-              remuneracion: true,
-              formula: 'E2E formula ausencia',
-            },
-          ],
-        });
-      expect([200, 201]).toContain(createResponse.status);
-      const createdId = extractActionId(createResponse.body);
-      expect(toPositiveInt(createResponse.body.estado)).toBe(2);
+    const createResponse = await withAuth(agent.post('/personal-actions/ausencias')).send({
+      idEmpresa: ctx.companyId,
+      idEmpleado: ctx.employeeId,
+      observacion: 'E2E Ausencia create',
+      lines: [
+        {
+          payrollId: ctx.payrollId,
+          fechaEfecto: today,
+          movimientoId: ctx.movementId,
+          tipoAusencia: 'JUSTIFICADA',
+          cantidad: 1,
+          monto: 1500,
+          remuneracion: true,
+          formula: 'E2E formula ausencia',
+        },
+      ],
+    });
+    expect([200, 201]).toContain(createResponse.status);
+    const createdId = extractActionId(createResponse.body);
+    expect(toPositiveInt(createResponse.body.estado)).toBe(2);
 
-      const updateResponse = await withAuth(
-        agent.patch(`/personal-actions/ausencias/${createdId}`),
-      )
-        .send({
-          idEmpresa: ctx.companyId,
-          idEmpleado: ctx.employeeId,
-          observacion: 'E2E Ausencia update',
-          lines: [
-            {
-              payrollId: ctx.payrollId,
-              fechaEfecto: today,
-              movimientoId: ctx.movementId,
-              tipoAusencia: 'NO_JUSTIFICADA',
-              cantidad: 2,
-              monto: 2500,
-              remuneracion: false,
-              formula: 'E2E formula ausencia update',
-            },
-          ],
-        });
-      expect(updateResponse.status).toBe(200);
-      expect(toPositiveInt(updateResponse.body.id)).toBe(createdId);
+    const updateResponse = await withAuth(
+      agent.patch(`/personal-actions/ausencias/${createdId}`),
+    ).send({
+      idEmpresa: ctx.companyId,
+      idEmpleado: ctx.employeeId,
+      observacion: 'E2E Ausencia update',
+      lines: [
+        {
+          payrollId: ctx.payrollId,
+          fechaEfecto: today,
+          movimientoId: ctx.movementId,
+          tipoAusencia: 'NO_JUSTIFICADA',
+          cantidad: 2,
+          monto: 2500,
+          remuneracion: false,
+          formula: 'E2E formula ausencia update',
+        },
+      ],
+    });
+    expect(updateResponse.status).toBe(200);
+    expect(toPositiveInt(updateResponse.body.id)).toBe(createdId);
 
-      const advanceResponse = await withAuth(
-        agent.patch(`/personal-actions/ausencias/${createdId}/advance`),
-      )
-        .send({ idEmpresa: ctx.companyId });
-      expect(advanceResponse.status).toBe(200);
-      expect(toPositiveInt(advanceResponse.body.estado)).toBe(3);
+    const advanceResponse = await withAuth(
+      agent.patch(`/personal-actions/ausencias/${createdId}/advance`),
+    ).send({ idEmpresa: ctx.companyId });
+    expect(advanceResponse.status).toBe(200);
+    expect(toPositiveInt(advanceResponse.body.estado)).toBe(3);
 
-      const invalidateResponse = await withAuth(
-        agent.patch(`/personal-actions/ausencias/${createdId}/invalidate`),
-      )
-        .send({ idEmpresa: ctx.companyId, motivo: 'E2E invalidacion ausencia' });
-      expect(invalidateResponse.status).toBe(200);
-      expect(toPositiveInt(invalidateResponse.body.estado)).toBe(7);
-      expect(String(invalidateResponse.body.invalidatedByType ?? '')).toBe(
-        'USER',
-      );
-    },
-    120000,
-  );
+    const invalidateResponse = await withAuth(
+      agent.patch(`/personal-actions/ausencias/${createdId}/invalidate`),
+    ).send({ idEmpresa: ctx.companyId, motivo: 'E2E invalidacion ausencia' });
+    expect(invalidateResponse.status).toBe(200);
+    expect(toPositiveInt(invalidateResponse.body.estado)).toBe(7);
+    expect(String(invalidateResponse.body.invalidatedByType ?? '')).toBe('USER');
+  }, 120000);
 
-  it(
-    'debe completar flujo e2e de Licencias (crear -> editar -> avanzar -> invalidar)',
-    async () => {
-      const context = await findFlowContext(23);
-      expect(context).not.toBeNull();
-      const ctx = context as FlowContext;
-      const today = new Date().toISOString().slice(0, 10);
+  it('debe completar flujo e2e de Licencias (crear -> editar -> avanzar -> invalidar)', async () => {
+    const context = await findFlowContext(23);
+    expect(context).not.toBeNull();
+    const ctx = context as FlowContext;
+    const today = new Date().toISOString().slice(0, 10);
 
-      const createResponse = await withAuth(
-        agent.post('/personal-actions/licencias'),
-      )
-        .send({
-          idEmpresa: ctx.companyId,
-          idEmpleado: ctx.employeeId,
-          observacion: 'E2E Licencia create',
-          lines: [
-            {
-              payrollId: ctx.payrollId,
-              fechaEfecto: today,
-              movimientoId: ctx.movementId,
-              tipoLicencia: 'permiso_con_goce',
-              cantidad: 1,
-              monto: 3200,
-              remuneracion: true,
-              formula: 'E2E formula licencia',
-            },
-          ],
-        });
-      expect([200, 201]).toContain(createResponse.status);
-      const createdId = extractActionId(createResponse.body);
-      expect(toPositiveInt(createResponse.body.estado)).toBe(2);
+    const createResponse = await withAuth(agent.post('/personal-actions/licencias')).send({
+      idEmpresa: ctx.companyId,
+      idEmpleado: ctx.employeeId,
+      observacion: 'E2E Licencia create',
+      lines: [
+        {
+          payrollId: ctx.payrollId,
+          fechaEfecto: today,
+          movimientoId: ctx.movementId,
+          tipoLicencia: 'permiso_con_goce',
+          cantidad: 1,
+          monto: 3200,
+          remuneracion: true,
+          formula: 'E2E formula licencia',
+        },
+      ],
+    });
+    expect([200, 201]).toContain(createResponse.status);
+    const createdId = extractActionId(createResponse.body);
+    expect(toPositiveInt(createResponse.body.estado)).toBe(2);
 
-      const updateResponse = await withAuth(
-        agent.patch(`/personal-actions/licencias/${createdId}`),
-      )
-        .send({
-          idEmpresa: ctx.companyId,
-          idEmpleado: ctx.employeeId,
-          observacion: 'E2E Licencia update',
-          lines: [
-            {
-              payrollId: ctx.payrollId,
-              fechaEfecto: today,
-              movimientoId: ctx.movementId,
-              tipoLicencia: 'permiso_sin_goce',
-              cantidad: 1.5,
-              monto: 4800,
-              remuneracion: false,
-              formula: 'E2E formula licencia update',
-            },
-          ],
-        });
-      expect(updateResponse.status).toBe(200);
-      expect(toPositiveInt(updateResponse.body.id)).toBe(createdId);
+    const updateResponse = await withAuth(
+      agent.patch(`/personal-actions/licencias/${createdId}`),
+    ).send({
+      idEmpresa: ctx.companyId,
+      idEmpleado: ctx.employeeId,
+      observacion: 'E2E Licencia update',
+      lines: [
+        {
+          payrollId: ctx.payrollId,
+          fechaEfecto: today,
+          movimientoId: ctx.movementId,
+          tipoLicencia: 'permiso_sin_goce',
+          cantidad: 1.5,
+          monto: 4800,
+          remuneracion: false,
+          formula: 'E2E formula licencia update',
+        },
+      ],
+    });
+    expect(updateResponse.status).toBe(200);
+    expect(toPositiveInt(updateResponse.body.id)).toBe(createdId);
 
-      const advanceResponse = await withAuth(
-        agent.patch(`/personal-actions/licencias/${createdId}/advance`),
-      )
-        .send({});
-      expect(advanceResponse.status).toBe(200);
-      expect(toPositiveInt(advanceResponse.body.estado)).toBe(3);
+    const advanceResponse = await withAuth(
+      agent.patch(`/personal-actions/licencias/${createdId}/advance`),
+    ).send({});
+    expect(advanceResponse.status).toBe(200);
+    expect(toPositiveInt(advanceResponse.body.estado)).toBe(3);
 
-      const invalidateResponse = await withAuth(
-        agent.patch(`/personal-actions/licencias/${createdId}/invalidate`),
-      )
-        .send({ motivo: 'E2E invalidacion licencia' });
-      expect(invalidateResponse.status).toBe(200);
-      expect(toPositiveInt(invalidateResponse.body.estado)).toBe(7);
-      expect(String(invalidateResponse.body.invalidatedByType ?? '')).toBe(
-        'USER',
-      );
-    },
-    120000,
-  );
+    const invalidateResponse = await withAuth(
+      agent.patch(`/personal-actions/licencias/${createdId}/invalidate`),
+    ).send({ motivo: 'E2E invalidacion licencia' });
+    expect(invalidateResponse.status).toBe(200);
+    expect(toPositiveInt(invalidateResponse.body.estado)).toBe(7);
+    expect(String(invalidateResponse.body.invalidatedByType ?? '')).toBe('USER');
+  }, 120000);
 });

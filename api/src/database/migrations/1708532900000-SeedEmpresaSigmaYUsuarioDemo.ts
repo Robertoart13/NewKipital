@@ -1,5 +1,6 @@
-import { MigrationInterface, QueryRunner } from 'typeorm';
 import * as bcrypt from 'bcrypt';
+
+import type { MigrationInterface, QueryRunner } from 'typeorm';
 
 /**
  * Seed: Empresa adicional + Usuario de ejemplo para probar gestión multi-empresa.
@@ -114,18 +115,10 @@ export class SeedEmpresaSigmaYUsuarioDemo1708532900000 implements MigrationInter
     );
     if (u) {
       const uid = u.id_usuario;
-      await queryRunner.query(
-        `DELETE FROM sys_usuario_rol WHERE id_usuario = ${uid}`,
-      );
-      await queryRunner.query(
-        `DELETE FROM sys_usuario_empresa WHERE id_usuario = ${uid}`,
-      );
-      await queryRunner.query(
-        `DELETE FROM sys_usuario_app WHERE id_usuario = ${uid}`,
-      );
-      await queryRunner.query(
-        `DELETE FROM sys_usuarios WHERE id_usuario = ${uid}`,
-      );
+      await queryRunner.query(`DELETE FROM sys_usuario_rol WHERE id_usuario = ${uid}`);
+      await queryRunner.query(`DELETE FROM sys_usuario_empresa WHERE id_usuario = ${uid}`);
+      await queryRunner.query(`DELETE FROM sys_usuario_app WHERE id_usuario = ${uid}`);
+      await queryRunner.query(`DELETE FROM sys_usuarios WHERE id_usuario = ${uid}`);
     }
     const [sigma] = await queryRunner.query(
       `SELECT id_empresa FROM sys_empresas WHERE prefijo_empresa = 'RS' LIMIT 1`,
@@ -134,9 +127,7 @@ export class SeedEmpresaSigmaYUsuarioDemo1708532900000 implements MigrationInter
       await queryRunner.query(
         `DELETE FROM sys_usuario_empresa WHERE id_empresa = ${sigma.id_empresa}`,
       );
-      await queryRunner.query(
-        `DELETE FROM sys_empresas WHERE id_empresa = ${sigma.id_empresa}`,
-      );
+      await queryRunner.query(`DELETE FROM sys_empresas WHERE id_empresa = ${sigma.id_empresa}`);
     }
   }
 }

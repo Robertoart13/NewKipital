@@ -23,14 +23,12 @@ async function run() {
 
   await ds.initialize();
 
-  const [roberto] = (await ds.query(
-    `SELECT id_usuario FROM sys_usuarios WHERE email_usuario = ?`,
-    [ROBERTO_EMAIL],
-  )) as unknown as { id_usuario: number }[];
-  const [ana] = (await ds.query(
-    `SELECT id_usuario FROM sys_usuarios WHERE email_usuario = ?`,
-    [ANA_EMAIL],
-  )) as unknown as { id_usuario: number }[];
+  const [roberto] = (await ds.query(`SELECT id_usuario FROM sys_usuarios WHERE email_usuario = ?`, [
+    ROBERTO_EMAIL,
+  ])) as unknown as { id_usuario: number }[];
+  const [ana] = (await ds.query(`SELECT id_usuario FROM sys_usuarios WHERE email_usuario = ?`, [
+    ANA_EMAIL,
+  ])) as unknown as { id_usuario: number }[];
 
   if (!roberto?.id_usuario || !ana?.id_usuario) {
     console.log('No se encontraron ambos usuarios. Verifica emails.');
@@ -58,24 +56,34 @@ async function run() {
     [anaId],
   )) as unknown;
   const rowsA = Array.isArray(anaRoles) ? anaRoles[0] : anaRoles;
-  const anaRolesList = (Array.isArray(rowsA) ? rowsA : [rowsA]).filter(Boolean) as { id_rol: number; id_empresa: number; id_app: number }[];
+  const anaRolesList = (Array.isArray(rowsA) ? rowsA : [rowsA]).filter(Boolean) as {
+    id_rol: number;
+    id_empresa: number;
+    id_app: number;
+  }[];
 
   const anaCompanies = (await ds.query(
     `SELECT id_empresa FROM sys_usuario_empresa WHERE id_usuario = ? AND estado_usuario_empresa = 1`,
     [anaId],
   )) as unknown;
   const acRows = Array.isArray(anaCompanies) ? anaCompanies[0] : anaCompanies;
-  const anaCompaniesList = (Array.isArray(acRows) ? acRows : [acRows]).filter(Boolean) as { id_empresa: number }[];
+  const anaCompaniesList = (Array.isArray(acRows) ? acRows : [acRows]).filter(Boolean) as {
+    id_empresa: number;
+  }[];
 
   const [masterRole] = (await ds.query(
     `SELECT id_rol FROM sys_roles WHERE codigo_rol = 'MASTER' AND estado_rol = 1 LIMIT 1`,
   )) as unknown as { id_rol: number }[];
-  const masterId = Array.isArray(masterRole) ? masterRole[0]?.id_rol : (masterRole as { id_rol: number })?.id_rol;
+  const masterId = Array.isArray(masterRole)
+    ? masterRole[0]?.id_rol
+    : (masterRole as { id_rol: number })?.id_rol;
 
   const [kpitalApp] = (await ds.query(
     `SELECT id_app FROM sys_apps WHERE codigo_app = 'kpital' AND estado_app = 1 LIMIT 1`,
   )) as unknown as { id_app: number }[];
-  const kpitalId = Array.isArray(kpitalApp) ? kpitalApp[0]?.id_app : (kpitalApp as { id_app: number })?.id_app;
+  const kpitalId = Array.isArray(kpitalApp)
+    ? kpitalApp[0]?.id_app
+    : (kpitalApp as { id_app: number })?.id_app;
 
   console.log('Roberto roles (sys_usuario_rol):', robertoRolesList?.length ?? 0);
   console.log('Ana roles (sys_usuario_rol):', anaRolesList?.length ?? 0);
@@ -103,7 +111,9 @@ async function run() {
     }
   }
 
-  console.log(`Listo. Se agregaron ${added} asignaciones de rol MASTER a Ana María en sys_usuario_rol.`);
+  console.log(
+    `Listo. Se agregaron ${added} asignaciones de rol MASTER a Ana María en sys_usuario_rol.`,
+  );
   console.log('Ana debe cerrar sesión y volver a entrar para que se apliquen los permisos.');
   await ds.destroy();
 }

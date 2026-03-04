@@ -7,37 +7,63 @@ import {
   ForbiddenException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { DataSource, EntityManager, Repository } from 'typeorm';
-import { EventEmitter2 } from '@nestjs/event-emitter';
+
+import { DOMAIN_EVENTS } from '../../common/events/event-names';
+import { UserCompany } from '../access-control/entities/user-company.entity';
+import {
+  EmployeeAguinaldoProvision,
+  EstadoProvisionAguinaldoEmpleado,
+} from '../employees/entities/employee-aguinaldo-provision.entity';
+import {
+  PersonalAction,
+  PersonalActionEstado,
+  PERSONAL_ACTION_APPROVED_STATES,
+} from '../personal-actions/entities/personal-action.entity';
+
 import {
   PayrollCalendar,
   EstadoCalendarioNomina,
   TipoPlanilla,
   MonedaCalendario,
 } from './entities/payroll-calendar.entity';
-import { CreatePayrollDto } from './dto/create-payroll.dto';
-import { UpdatePayrollDto } from './dto/update-payroll.dto';
-import { DOMAIN_EVENTS } from '../../common/events/event-names';
-import { DomainEventsService } from '../integration/domain-events.service';
-import { AuditOutboxService } from '../integration/audit-outbox.service';
-import { UserCompany } from '../access-control/entities/user-company.entity';
-import { EmployeeVacationService } from '../employees/services/employee-vacation.service';
+
+import type { DomainEventsService } from '../integration/domain-events.service';
+
+
+import type { EmployeeVacationService } from '../employees/services/employee-vacation.service';
+
 import { PayrollEmployeeSnapshot } from './entities/payroll-employee-snapshot.entity';
 import {
   PayrollInputSnapshot,
   PayrollInputSourceType,
 } from './entities/payroll-input-snapshot.entity';
+import { PayrollPlanillaSnapshotJson } from './entities/payroll-planilla-snapshot.entity';
 import { PayrollResult } from './entities/payroll-result.entity';
-import {
-  PersonalAction,
-  PersonalActionEstado,
-  PERSONAL_ACTION_APPROVED_STATES,
-} from '../personal-actions/entities/personal-action.entity';
-import { PersonalActionAutoInvalidationService } from '../personal-actions/personal-action-auto-invalidation.service';
+import { PayrollSocialCharge } from './entities/payroll-social-charge.entity';
+import type { UpdatePayrollDto } from './dto/update-payroll.dto';
+import type { CreatePayrollDto } from './dto/create-payroll.dto';
+import type { AuditOutboxService } from '../integration/audit-outbox.service';
+
+import type { PersonalActionAutoInvalidationService } from '../personal-actions/personal-action-auto-invalidation.service';
+import type { EventEmitter2 } from '@nestjs/event-emitter';
+import type { DataSource, EntityManager, Repository } from 'typeorm';
 
 @Injectable()
 export class PayrollService {
   private readonly logger = new Logger(PayrollService.name);
+
+  private readonly rentaTramos = [
+    { limite: 922000, porcentaje: 0 },
+    { limite: 1352000, porcentaje: 0.1 },
+    { limite: 2373000, porcentaje: 0.15 },
+    { limite: 4745000, porcentaje: 0.2 },
+    { limite: Infinity, porcentaje: 0.25 },
+  ];
+
+  private readonly creditosFiscales = {
+    porHijo: 1720,
+    porConyuge: 2600,
+  };
 
   constructor(
     @InjectRepository(PayrollCalendar)
@@ -50,6 +76,12 @@ export class PayrollService {
     private readonly inputSnapshotRepo: Repository<PayrollInputSnapshot>,
     @InjectRepository(PayrollResult)
     private readonly payrollResultRepo: Repository<PayrollResult>,
+    @InjectRepository(PayrollPlanillaSnapshotJson)
+    private readonly planillaSnapshotRepo: Repository<PayrollPlanillaSnapshotJson>,
+    @InjectRepository(PayrollSocialCharge)
+    private readonly socialChargeRepo: Repository<PayrollSocialCharge>,
+    @InjectRepository(EmployeeAguinaldoProvision)
+    private readonly aguinaldoProvisionRepo: Repository<EmployeeAguinaldoProvision>,
     @InjectRepository(PersonalAction)
     private readonly personalActionRepo: Repository<PersonalAction>,
     private readonly dataSource: DataSource,
@@ -88,17 +120,11 @@ export class PayrollService {
     fechaHastaRaw?: string,
   ): Promise<PayrollCalendar[]> {
     const qb = this.repo.createQueryBuilder('p').where('1=1');
-    const fechaDesde = fechaDesdeRaw
-      ? this.parseQueryDate(fechaDesdeRaw, 'fechaDesde')
-      : undefined;
-    const fechaHasta = fechaHastaRaw
-      ? this.parseQueryDate(fechaHastaRaw, 'fechaHasta')
-      : undefined;
+    const fechaDesde = fechaDesdeRaw ? this.parseQueryDate(fechaDesdeRaw, 'fechaDesde') : undefined;
+    const fechaHasta = fechaHastaRaw ? this.parseQueryDate(fechaHastaRaw, 'fechaHasta') : undefined;
 
     if (fechaDesde && fechaHasta && fechaDesde > fechaHasta) {
-      throw new BadRequestException(
-        'fechaDesde no puede ser mayor que fechaHasta.',
-      );
+      throw new BadRequestException('fechaDesde no puede ser mayor que fechaHasta.');
     }
 
     if (idEmpresa != null) {
@@ -122,13 +148,10 @@ export class PayrollService {
     }
 
     if (fechaDesde && fechaHasta) {
-      qb.andWhere(
-        'p.fechaFinPeriodo >= :fechaDesde AND p.fechaInicioPeriodo <= :fechaHasta',
-        {
-          fechaDesde: this.toYmd(fechaDesde),
-          fechaHasta: this.toYmd(fechaHasta),
-        },
-      );
+      qb.andWhere('p.fechaFinPeriodo >= :fechaDesde AND p.fechaInicioPeriodo <= :fechaHasta', {
+        fechaDesde: this.toYmd(fechaDesde),
+        fechaHasta: this.toYmd(fechaHasta),
+      });
     } else if (fechaDesde) {
       qb.andWhere('p.fechaFinPeriodo >= :fechaDesde', {
         fechaDesde: this.toYmd(fechaDesde),
@@ -151,17 +174,13 @@ export class PayrollService {
     return p;
   }
 
-  async create(
-    dto: CreatePayrollDto,
-    userId?: number,
-  ): Promise<PayrollCalendar> {
+  async create(dto: CreatePayrollDto, userId?: number): Promise<PayrollCalendar> {
     if (userId != null) {
       await this.assertUserCompanyAccess(userId, dto.idEmpresa);
     }
     const tipo = (dto.tipoPlanilla as TipoPlanilla) ?? TipoPlanilla.REGULAR;
     const moneda = dto.moneda ?? MonedaCalendario.CRC;
-    const resolvedTipoPlanillaId =
-      dto.idTipoPlanilla ?? this.resolveTipoPlanillaId(tipo);
+    const resolvedTipoPlanillaId = dto.idTipoPlanilla ?? this.resolveTipoPlanillaId(tipo);
     const inicio = new Date(dto.periodoInicio);
     const fin = new Date(dto.periodoFin);
     this.validateDateRules(
@@ -170,17 +189,9 @@ export class PayrollService {
       dto.fechaCorte ? new Date(dto.fechaCorte) : fin,
       new Date(dto.fechaInicioPago),
       new Date(dto.fechaFinPago),
-      dto.fechaPagoProgramada
-        ? new Date(dto.fechaPagoProgramada)
-        : new Date(dto.fechaFinPago),
+      dto.fechaPagoProgramada ? new Date(dto.fechaPagoProgramada) : new Date(dto.fechaFinPago),
     );
-    const slotKey = this.buildSlotKey(
-      dto.idEmpresa,
-      inicio,
-      fin,
-      resolvedTipoPlanillaId,
-      moneda,
-    );
+    const slotKey = this.buildSlotKey(dto.idEmpresa, inicio, fin, resolvedTipoPlanillaId, moneda);
 
     const existeOperativa = await this.repo
       .createQueryBuilder('p')
@@ -198,8 +209,7 @@ export class PayrollService {
       idEmpresa: dto.idEmpresa,
       idPeriodoPago: dto.idPeriodoPago,
       idTipoPlanilla: resolvedTipoPlanillaId,
-      nombrePlanilla:
-        dto.nombrePlanilla?.trim() || `Planilla ${tipo} ${dto.periodoInicio}`,
+      nombrePlanilla: dto.nombrePlanilla?.trim() || `Planilla ${tipo} ${dto.periodoInicio}`,
       tipoPlanilla: tipo,
       fechaInicioPeriodo: inicio,
       fechaFinPeriodo: fin,
@@ -256,42 +266,32 @@ export class PayrollService {
     const p = await this.findOne(id, userId);
     const payloadBefore = this.buildAuditPayload(p);
     if (p.estado !== EstadoCalendarioNomina.EN_PROCESO) {
-      throw new BadRequestException(
-        'Solo se puede verificar una planilla en estado En Proceso',
-      );
+      throw new BadRequestException('Solo se puede verificar una planilla en estado En Proceso');
     }
 
     const snapshotCount = await this.snapshotRepo.count({
       where: { idNomina: p.id },
     });
     if (snapshotCount === 0) {
-      throw new BadRequestException(
-        'No se puede verificar la planilla sin snapshot de empleados',
-      );
+      throw new BadRequestException('No se puede verificar la planilla sin snapshot de empleados');
     }
 
     const inputCount = await this.inputSnapshotRepo.count({
       where: { idNomina: p.id },
     });
     if (inputCount === 0) {
-      throw new BadRequestException(
-        'No se puede verificar la planilla sin snapshot de inputs',
-      );
+      throw new BadRequestException('No se puede verificar la planilla sin snapshot de inputs');
     }
 
     const resultCount = await this.payrollResultRepo.count({
       where: { idNomina: p.id },
     });
     if (resultCount === 0) {
-      throw new BadRequestException(
-        'No se puede verificar la planilla sin resultados calculados',
-      );
+      throw new BadRequestException('No se puede verificar la planilla sin resultados calculados');
     }
 
     if (p.esInactivo) {
-      throw new BadRequestException(
-        'No se puede verificar una planilla inactiva',
-      );
+      throw new BadRequestException('No se puede verificar una planilla inactiva');
     }
     p.estado = EstadoCalendarioNomina.VERIFICADA;
     p.modificadoPor = userId ?? null;
@@ -326,29 +326,18 @@ export class PayrollService {
     return saved;
   }
 
-  async update(
-    id: number,
-    dto: UpdatePayrollDto,
-    userId?: number,
-  ): Promise<PayrollCalendar> {
+  async update(id: number, dto: UpdatePayrollDto, userId?: number): Promise<PayrollCalendar> {
     const payroll = await this.findOne(id, userId);
     const payloadBefore = this.buildAuditPayload(payroll);
 
-    if (
-      payroll.estado === EstadoCalendarioNomina.INACTIVA ||
-      payroll.esInactivo === 1
-    ) {
-      throw new BadRequestException(
-        'No se puede editar una planilla inactiva.',
-      );
+    if (payroll.estado === EstadoCalendarioNomina.INACTIVA || payroll.esInactivo === 1) {
+      throw new BadRequestException('No se puede editar una planilla inactiva.');
     }
     if (
       payroll.estado === EstadoCalendarioNomina.APLICADA ||
       payroll.estado === EstadoCalendarioNomina.CONTABILIZADA
     ) {
-      throw new BadRequestException(
-        'No se puede editar una planilla aplicada o contabilizada.',
-      );
+      throw new BadRequestException('No se puede editar una planilla aplicada o contabilizada.');
     }
     if (payroll.estado === EstadoCalendarioNomina.EN_PROCESO) {
       throw new BadRequestException(
@@ -366,21 +355,13 @@ export class PayrollService {
       await this.assertUserCompanyAccess(userId, nextCompanyId);
     }
 
-    const nextStart = dto.periodoInicio
-      ? new Date(dto.periodoInicio)
-      : payroll.fechaInicioPeriodo;
-    const nextEnd = dto.periodoFin
-      ? new Date(dto.periodoFin)
-      : payroll.fechaFinPeriodo;
-    const nextCutoff = dto.fechaCorte
-      ? new Date(dto.fechaCorte)
-      : (payroll.fechaCorte ?? nextEnd);
+    const nextStart = dto.periodoInicio ? new Date(dto.periodoInicio) : payroll.fechaInicioPeriodo;
+    const nextEnd = dto.periodoFin ? new Date(dto.periodoFin) : payroll.fechaFinPeriodo;
+    const nextCutoff = dto.fechaCorte ? new Date(dto.fechaCorte) : (payroll.fechaCorte ?? nextEnd);
     const nextPayStart = dto.fechaInicioPago
       ? new Date(dto.fechaInicioPago)
       : payroll.fechaInicioPago;
-    const nextPayEnd = dto.fechaFinPago
-      ? new Date(dto.fechaFinPago)
-      : payroll.fechaFinPago;
+    const nextPayEnd = dto.fechaFinPago ? new Date(dto.fechaFinPago) : payroll.fechaFinPago;
     const nextProgrammed = dto.fechaPagoProgramada
       ? new Date(dto.fechaPagoProgramada)
       : (payroll.fechaPagoProgramada ?? nextPayEnd);
@@ -394,12 +375,9 @@ export class PayrollService {
       nextProgrammed,
     );
 
-    const nextTipoPlanilla =
-      (dto.tipoPlanilla as TipoPlanilla) ?? payroll.tipoPlanilla;
+    const nextTipoPlanilla = (dto.tipoPlanilla as TipoPlanilla) ?? payroll.tipoPlanilla;
     const nextTipoPlanillaId =
-      dto.idTipoPlanilla ??
-      payroll.idTipoPlanilla ??
-      this.resolveTipoPlanillaId(nextTipoPlanilla);
+      dto.idTipoPlanilla ?? payroll.idTipoPlanilla ?? this.resolveTipoPlanillaId(nextTipoPlanilla);
     const nextMoneda = dto.moneda ?? payroll.moneda;
     const nextSlotKey = this.buildSlotKey(
       nextCompanyId,
@@ -425,8 +403,7 @@ export class PayrollService {
     payroll.idEmpresa = nextCompanyId;
     payroll.idPeriodoPago = dto.idPeriodoPago ?? payroll.idPeriodoPago;
     payroll.idTipoPlanilla = nextTipoPlanillaId;
-    payroll.nombrePlanilla =
-      dto.nombrePlanilla?.trim() || payroll.nombrePlanilla;
+    payroll.nombrePlanilla = dto.nombrePlanilla?.trim() || payroll.nombrePlanilla;
     payroll.tipoPlanilla = nextTipoPlanilla;
     payroll.fechaInicioPeriodo = nextStart;
     payroll.fechaFinPeriodo = nextEnd;
@@ -435,8 +412,7 @@ export class PayrollService {
     payroll.fechaFinPago = nextPayEnd;
     payroll.fechaPagoProgramada = nextProgrammed;
     payroll.moneda = nextMoneda;
-    payroll.descripcionEvento =
-      dto.descripcionEvento ?? payroll.descripcionEvento;
+    payroll.descripcionEvento = dto.descripcionEvento ?? payroll.descripcionEvento;
     payroll.etiquetaColor = dto.etiquetaColor ?? payroll.etiquetaColor;
     payroll.slotKey = nextSlotKey;
     payroll.modificadoPor = userId ?? null;
@@ -470,14 +446,10 @@ export class PayrollService {
     const payroll = await this.findOne(id, userId);
     const payloadBefore = this.buildAuditPayload(payroll);
     if (payroll.estado !== EstadoCalendarioNomina.ABIERTA) {
-      throw new BadRequestException(
-        'Solo se puede procesar una planilla en estado Abierta',
-      );
+      throw new BadRequestException('Solo se puede procesar una planilla en estado Abierta');
     }
     if (payroll.esInactivo) {
-      throw new BadRequestException(
-        'No se puede procesar una planilla inactiva',
-      );
+      throw new BadRequestException('No se puede procesar una planilla inactiva');
     }
 
     const queryRunner = this.dataSource.createQueryRunner();
@@ -510,15 +482,21 @@ export class PayrollService {
         jornada_empleado: string | null;
         moneda_salario_empleado: 'CRC' | 'USD' | null;
         cuenta_banco_empleado: string | null;
+        id_periodos_pago: number | null;
+        cantidad_hijos_empleado: number | null;
+        estado_civil_empleado: string | null;
       }> = await queryRunner.manager.query(
         `
-          SELECT
-            id_empleado,
-            salario_base_empleado,
-            jornada_empleado,
-            moneda_salario_empleado,
-            cuenta_banco_empleado
-          FROM sys_empleados
+            SELECT
+              id_empleado,
+              salario_base_empleado,
+              jornada_empleado,
+              moneda_salario_empleado,
+              cuenta_banco_empleado,
+              id_periodos_pago,
+              cantidad_hijos_empleado,
+              estado_civil_empleado
+            FROM sys_empleados
           WHERE id_empresa = ?
             AND estado_empleado = 1
             AND fecha_ingreso_empleado <= ?
@@ -527,15 +505,59 @@ export class PayrollService {
         [payroll.idEmpresa, end, start],
       );
 
+      const periodIds = Array.from(
+        new Set(
+          employees.map((emp) => emp.id_periodos_pago).filter((idPeriod) => idPeriod != null),
+        ),
+      );
+      const periodMap = new Map<number, { dias: number; nombre: string }>();
+      if (periodIds.length > 0) {
+        const periods: Array<{
+          id_periodos_pago: number;
+          dias_periodo_pago: number;
+          nombre_periodo_pago: string;
+        }> = await queryRunner.manager.query(
+          `
+              SELECT id_periodos_pago, dias_periodo_pago, nombre_periodo_pago
+              FROM nom_periodos_pago
+              WHERE id_periodos_pago IN (${periodIds.map(() => '?').join(',')})
+            `,
+          periodIds,
+        );
+        for (const period of periods) {
+          periodMap.set(period.id_periodos_pago, {
+            dias: Number(period.dias_periodo_pago ?? 0),
+            nombre: String(period.nombre_periodo_pago ?? ''),
+          });
+        }
+      }
+
+      const socialChargeConfigs = await this.loadSocialChargeConfigs(
+        queryRunner.manager,
+        payroll.idEmpresa,
+      );
+      const quincenalPeriodIds = Array.from(periodMap.entries())
+        .filter(([, info]) => this.isQuincenalPeriod(info.nombre))
+        .map(([id]) => id);
+      const shouldApplyQuincenalTax =
+        quincenalPeriodIds.length > 0 && this.isSecondHalfOfMonth(payroll.fechaFinPeriodo);
+      const previousQuincenalTotals = shouldApplyQuincenalTax
+        ? await this.getPreviousQuincenalTotals(
+            queryRunner.manager,
+            payroll.idEmpresa,
+            payroll.fechaFinPeriodo,
+            payroll.fechaInicioPeriodo,
+            quincenalPeriodIds,
+          )
+        : new Map<number, number>();
+
       for (const employee of employees) {
         const snapshot = queryRunner.manager.create(PayrollEmployeeSnapshot, {
           idNomina: payroll.id,
           idEmpleado: employee.id_empleado,
           salarioBase: this.toMoney(employee.salario_base_empleado),
           jornada: employee.jornada_empleado,
-          moneda: (employee.moneda_salario_empleado ?? payroll.moneda) as
-            | 'CRC'
-            | 'USD',
+          moneda: (employee.moneda_salario_empleado ?? payroll.moneda) as 'CRC' | 'USD',
           centroCosto: null,
           cuentaBanco: employee.cuenta_banco_empleado,
         });
@@ -557,12 +579,9 @@ export class PayrollService {
             companyId: payroll.idEmpresa,
             totalInvalidated: invalidationSummary.totalInvalidated,
             breakdown: {
-              TERMINATION_EFFECTIVE:
-                invalidationSummary.byReason.TERMINATION_EFFECTIVE,
-              COMPANY_MISMATCH:
-                invalidationSummary.byReason.COMPANY_MISMATCH,
-              CURRENCY_MISMATCH:
-                invalidationSummary.byReason.CURRENCY_MISMATCH,
+              TERMINATION_EFFECTIVE: invalidationSummary.byReason.TERMINATION_EFFECTIVE,
+              COMPANY_MISMATCH: invalidationSummary.byReason.COMPANY_MISMATCH,
+              CURRENCY_MISMATCH: invalidationSummary.byReason.CURRENCY_MISMATCH,
             },
             sampleActionIds: invalidationSummary.sampleActionIds.slice(0, 10),
           }),
@@ -582,16 +601,10 @@ export class PayrollService {
            AND COALESCE(a.fechaFinEfecto, a.fechaInicioEfecto, a.fechaEfecto) >= :start`,
           { start, end },
         )
-        .andWhere(
-          '(a.fechaAprobacion IS NULL OR a.fechaAprobacion <= :cutoff)',
-          { cutoff },
-        )
+        .andWhere('(a.fechaAprobacion IS NULL OR a.fechaAprobacion <= :cutoff)', { cutoff })
         .getMany();
 
-      const resultAccumulator = new Map<
-        number,
-        { gross: number; ded: number }
-      >();
+      const resultAccumulator = new Map<number, { gross: number; ded: number }>();
 
       for (const action of approvedActions) {
         const amount = Number(action.monto ?? 0);
@@ -633,20 +646,152 @@ export class PayrollService {
         resultAccumulator.set(key, prev);
       }
 
+      const snapshotEmployees: Array<Record<string, unknown>> = [];
+      let totalBrutoPlanilla = 0;
+      let totalDeduccionesPlanilla = 0;
+      let totalNetoPlanilla = 0;
+      let totalDevengadoPlanilla = 0;
+      let totalCargasPlanilla = 0;
+      let totalImpuestoPlanilla = 0;
+
       for (const employee of employees) {
         const totals = resultAccumulator.get(employee.id_empleado) ?? {
           gross: 0,
           ded: 0,
         };
+        const salarioBaseText = this.toMoney(employee.salario_base_empleado);
+        const salarioBase = Number(salarioBaseText);
+        const periodInfo = employee.id_periodos_pago
+          ? periodMap.get(employee.id_periodos_pago)
+          : null;
+        const diasPeriodo = periodInfo?.dias && periodInfo.dias > 0 ? periodInfo.dias : 30;
+        const nombrePeriodo = periodInfo?.nombre ?? '';
+        const isHourly = String(employee.jornada_empleado ?? '').toLowerCase() === 'por horas';
+        const devengadoDias = isHourly ? null : diasPeriodo;
+        const devengadoHoras = isHourly ? diasPeriodo * 8 : null;
+        const salarioBrutoPeriodo = isHourly
+          ? salarioBase * (devengadoHoras ?? 0)
+          : salarioBase * (diasPeriodo / 30);
+        const totalBruto = salarioBrutoPeriodo + totals.gross;
+        const socialChargeDetail = this.calculateSocialCharges(totalBruto, socialChargeConfigs);
+        const cargasSociales = socialChargeDetail.total;
+        const impuestoRenta = this.calculateIncomeTax({
+          totalBruto,
+          periodName: nombrePeriodo,
+          isSecondHalf: shouldApplyQuincenalTax,
+          previousQuincenalTotal: previousQuincenalTotals.get(employee.id_empleado) ?? 0,
+          cantidadHijos: Number(employee.cantidad_hijos_empleado ?? 0),
+          estadoCivil: employee.estado_civil_empleado ?? null,
+        });
+        const totalDeducciones = totals.ded + cargasSociales + impuestoRenta;
+        const totalNeto = totalBruto - totalDeducciones;
+
+        totalBrutoPlanilla += totalBruto;
+        totalDeduccionesPlanilla += totalDeducciones;
+        totalNetoPlanilla += totalNeto;
+        totalDevengadoPlanilla += salarioBrutoPeriodo;
+        totalCargasPlanilla += cargasSociales;
+        totalImpuestoPlanilla += impuestoRenta;
+
         const result = queryRunner.manager.create(PayrollResult, {
           idNomina: payroll.id,
           idEmpleado: employee.id_empleado,
-          totalBruto: totals.gross.toFixed(2),
-          totalDeducciones: totals.ded.toFixed(2),
-          totalNeto: (totals.gross - totals.ded).toFixed(2),
+          totalBruto: totalBruto.toFixed(2),
+          salarioBrutoPeriodo: salarioBrutoPeriodo.toFixed(2),
+          devengadoDias: devengadoDias != null ? devengadoDias.toFixed(4) : null,
+          devengadoHoras: devengadoHoras != null ? devengadoHoras.toFixed(4) : null,
+          cargasSociales: cargasSociales.toFixed(2),
+          impuestoRenta: impuestoRenta.toFixed(2),
+          totalDeducciones: totalDeducciones.toFixed(2),
+          totalNeto: totalNeto.toFixed(2),
         });
         await queryRunner.manager.save(PayrollResult, result);
+
+        for (const charge of socialChargeDetail.items) {
+          const chargeInput = queryRunner.manager.create(PayrollInputSnapshot, {
+            idNomina: payroll.id,
+            idEmpleado: employee.id_empleado,
+            sourceType: PayrollInputSourceType.MANUAL,
+            sourceId: charge.idCargaSocial,
+            movementId: charge.idMovimiento,
+            conceptoCodigo: 'CCSS',
+            tipoAccion: 'carga_social',
+            unidades: '1.0000',
+            montoBase: totalBruto.toFixed(6),
+            montoFinal: charge.monto.toFixed(2),
+            isRetro: 0,
+            originalPeriod: null,
+            monto: charge.monto.toFixed(4),
+          });
+          await queryRunner.manager.save(PayrollInputSnapshot, chargeInput);
+        }
+
+        if (impuestoRenta > 0) {
+          const rentaInput = queryRunner.manager.create(PayrollInputSnapshot, {
+            idNomina: payroll.id,
+            idEmpleado: employee.id_empleado,
+            sourceType: PayrollInputSourceType.MANUAL,
+            sourceId: null,
+            movementId: null,
+            conceptoCodigo: 'RENTA',
+            tipoAccion: 'impuesto_renta',
+            unidades: '1.0000',
+            montoBase: totalBruto.toFixed(6),
+            montoFinal: impuestoRenta.toFixed(2),
+            isRetro: 0,
+            originalPeriod: null,
+            monto: impuestoRenta.toFixed(4),
+          });
+          await queryRunner.manager.save(PayrollInputSnapshot, rentaInput);
+        }
+
+        snapshotEmployees.push({
+          idEmpleado: employee.id_empleado,
+          salarioBase: salarioBaseText,
+          salarioBrutoPeriodo,
+          devengadoDias,
+          devengadoHoras,
+          cargasSociales,
+          impuestoRenta,
+          totalBruto,
+          totalDeducciones,
+          totalNeto,
+          cargasSocialesDetalle: socialChargeDetail.items,
+          acciones: approvedActions
+            .filter((action) => action.idEmpleado === employee.id_empleado)
+            .map((action) => ({
+              idAccion: action.id,
+              tipoAccion: action.tipoAccion,
+              monto: Number(action.monto ?? 0),
+              fechaEfecto: action.fechaEfecto ?? action.fechaInicioEfecto ?? null,
+            })),
+        });
       }
+
+      await queryRunner.manager.delete(PayrollPlanillaSnapshotJson, {
+        idNomina: payroll.id,
+      });
+      const planillaSnapshot = queryRunner.manager.create(PayrollPlanillaSnapshotJson, {
+        idNomina: payroll.id,
+        snapshot: {
+          idNomina: payroll.id,
+          idEmpresa: payroll.idEmpresa,
+          periodoInicio: payroll.fechaInicioPeriodo,
+          periodoFin: payroll.fechaFinPeriodo,
+          moneda: payroll.moneda,
+          totals: {
+            totalBruto: totalBrutoPlanilla,
+            totalDeducciones: totalDeduccionesPlanilla,
+            totalNeto: totalNetoPlanilla,
+            totalDevengado: totalDevengadoPlanilla,
+            totalCargasSociales: totalCargasPlanilla,
+            totalImpuestoRenta: totalImpuestoPlanilla,
+          },
+          empleados: snapshotEmployees,
+          generatedAt: new Date(),
+        },
+      });
+      await queryRunner.manager.save(PayrollPlanillaSnapshotJson, planillaSnapshot);
 
       await this.domainEvents.record({
         aggregateType: 'payroll',
@@ -699,6 +844,9 @@ export class PayrollService {
     totalBruto: string;
     totalDeducciones: string;
     totalNeto: string;
+    totalDevengado: string;
+    totalCargasSociales: string;
+    totalImpuestoRenta: string;
   }> {
     const payroll = await this.findOne(id, userId);
     const [empleados, inputs, accionesLigadas] = await Promise.all([
@@ -712,11 +860,17 @@ export class PayrollService {
       .select('COALESCE(SUM(r.totalBruto), 0)', 'totalBruto')
       .addSelect('COALESCE(SUM(r.totalDeducciones), 0)', 'totalDeducciones')
       .addSelect('COALESCE(SUM(r.totalNeto), 0)', 'totalNeto')
+      .addSelect('COALESCE(SUM(r.salarioBrutoPeriodo), 0)', 'totalDevengado')
+      .addSelect('COALESCE(SUM(r.cargasSociales), 0)', 'totalCargasSociales')
+      .addSelect('COALESCE(SUM(r.impuestoRenta), 0)', 'totalImpuestoRenta')
       .where('r.idNomina = :id', { id })
       .getRawOne<{
         totalBruto: string;
         totalDeducciones: string;
         totalNeto: string;
+        totalDevengado: string;
+        totalCargasSociales: string;
+        totalImpuestoRenta: string;
       }>();
 
     return {
@@ -727,6 +881,9 @@ export class PayrollService {
       totalBruto: sums?.totalBruto ?? '0.00',
       totalDeducciones: sums?.totalDeducciones ?? '0.00',
       totalNeto: sums?.totalNeto ?? '0.00',
+      totalDevengado: sums?.totalDevengado ?? '0.00',
+      totalCargasSociales: sums?.totalCargasSociales ?? '0.00',
+      totalImpuestoRenta: sums?.totalImpuestoRenta ?? '0.00',
     };
   }
 
@@ -781,10 +938,8 @@ export class PayrollService {
     );
 
     return (rows ?? []).map((row: Record<string, unknown>) => {
-      const payloadBefore =
-        (row.payloadBefore as Record<string, unknown> | null) ?? null;
-      const payloadAfter =
-        (row.payloadAfter as Record<string, unknown> | null) ?? null;
+      const payloadBefore = (row.payloadBefore as Record<string, unknown> | null) ?? null;
+      const payloadAfter = (row.payloadAfter as Record<string, unknown> | null) ?? null;
       return {
         id: String(row.id ?? ''),
         modulo: String(row.modulo ?? 'payroll'),
@@ -795,26 +950,18 @@ export class PayrollService {
         actorNombre: row.actorNombre ? String(row.actorNombre) : null,
         actorEmail: row.actorEmail ? String(row.actorEmail) : null,
         descripcion: String(row.descripcion ?? ''),
-        fechaCreacion: row.fechaCreacion
-          ? new Date(String(row.fechaCreacion)).toISOString()
-          : null,
+        fechaCreacion: row.fechaCreacion ? new Date(String(row.fechaCreacion)).toISOString() : null,
         metadata: (row.metadata as Record<string, unknown> | null) ?? null,
         cambios: this.buildAuditChanges(payloadBefore, payloadAfter),
       };
     });
   }
 
-  async apply(
-    id: number,
-    userId?: number,
-    expectedVersion?: number,
-  ): Promise<PayrollCalendar> {
+  async apply(id: number, userId?: number, expectedVersion?: number): Promise<PayrollCalendar> {
     const p = await this.findOne(id, userId);
     const payloadBefore = this.buildAuditPayload(p);
     if (p.estado !== EstadoCalendarioNomina.VERIFICADA) {
-      throw new BadRequestException(
-        'Solo se puede aplicar una planilla en estado Verificada',
-      );
+      throw new BadRequestException('Solo se puede aplicar una planilla en estado Verificada');
     }
     if (p.requiresRecalculation === 1) {
       throw new BadRequestException(
@@ -851,9 +998,7 @@ export class PayrollService {
         .execute();
 
       if (!updateResult.affected) {
-        throw new ConflictException(
-          'Conflicto de concurrencia al aplicar planilla.',
-        );
+        throw new ConflictException('Conflicto de concurrencia al aplicar planilla.');
       }
 
       // Cierre de consumo: todas las acciones aprobadas ligadas a esta planilla
@@ -871,6 +1016,8 @@ export class PayrollService {
           approvedStates: PERSONAL_ACTION_APPROVED_STATES,
         })
         .execute();
+
+      await this.createAguinaldoProvisionsFromPayroll(manager, p, userId ?? null);
     });
 
     const saved = await this.findOne(id, userId);
@@ -912,11 +1059,55 @@ export class PayrollService {
     return saved;
   }
 
-  async reopen(
-    id: number,
-    motivo: string,
-    userId?: number,
-  ): Promise<PayrollCalendar> {
+  /**
+   * Registra provisión de aguinaldo por planilla aplicada.
+   * Fórmula base: total_bruto / 12 por empleado.
+   */
+  private async createAguinaldoProvisionsFromPayroll(
+    manager: EntityManager,
+    payroll: PayrollCalendar,
+    userId: number | null,
+  ): Promise<void> {
+    const registroEmpresa = `Planilla aplicada #${payroll.id}`;
+    const existing = await manager.find(EmployeeAguinaldoProvision, {
+      where: {
+        idEmpresa: payroll.idEmpresa,
+        fechaInicioLaboral: payroll.fechaInicioPeriodo,
+        fechaFinLaboral: payroll.fechaFinPeriodo,
+        registroEmpresa,
+      },
+    });
+    const existingByEmployee = new Set(existing.map((row) => Number(row.idEmpleado)));
+
+    const results = await manager.find(PayrollResult, {
+      where: { idNomina: payroll.id },
+    });
+
+    const provisions = results
+      .filter((row) => !existingByEmployee.has(Number(row.idEmpleado)))
+      .map((row) => {
+        const totalBruto = Number(row.totalBruto ?? 0);
+        const provision = totalBruto / 12;
+        return manager.create(EmployeeAguinaldoProvision, {
+          idEmpleado: row.idEmpleado,
+          idEmpresa: payroll.idEmpresa,
+          montoProvisionado: provision.toFixed(2),
+          fechaInicioLaboral: payroll.fechaInicioPeriodo,
+          fechaFinLaboral: payroll.fechaFinPeriodo,
+          registroEmpresa,
+          estado: EstadoProvisionAguinaldoEmpleado.PENDIENTE,
+          creadoPor: userId,
+          modificadoPor: userId,
+        });
+      })
+      .filter((row) => Number(row.montoProvisionado) > 0);
+
+    if (provisions.length > 0) {
+      await manager.save(EmployeeAguinaldoProvision, provisions);
+    }
+  }
+
+  async reopen(id: number, motivo: string, userId?: number): Promise<PayrollCalendar> {
     const p = await this.findOne(id, userId);
     const payloadBefore = this.buildAuditPayload(p);
     if (p.estado !== EstadoCalendarioNomina.VERIFICADA) {
@@ -1014,17 +1205,12 @@ export class PayrollService {
     return rows.map((row) => row.idEmpresa);
   }
 
-  private async assertUserCompanyAccess(
-    userId: number,
-    companyId: number,
-  ): Promise<void> {
+  private async assertUserCompanyAccess(userId: number, companyId: number): Promise<void> {
     const exists = await this.userCompanyRepo.findOne({
       where: { idUsuario: userId, idEmpresa: companyId, estado: 1 },
     });
     if (!exists) {
-      throw new ForbiddenException(
-        `No tiene acceso a la empresa ${companyId}.`,
-      );
+      throw new ForbiddenException(`No tiene acceso a la empresa ${companyId}.`);
     }
   }
 
@@ -1045,11 +1231,8 @@ export class PayrollService {
       const direct = value.slice(0, 10);
       if (/^\d{4}-\d{2}-\d{2}$/.test(direct)) return direct;
       const parsed = new Date(value);
-      if (!Number.isNaN(parsed.getTime()))
-        return parsed.toISOString().slice(0, 10);
-      throw new BadRequestException(
-        'Fecha invalida para conversion YYYY-MM-DD.',
-      );
+      if (!Number.isNaN(parsed.getTime())) return parsed.toISOString().slice(0, 10);
+      throw new BadRequestException('Fecha invalida para conversion YYYY-MM-DD.');
     }
     if (value instanceof Date && !Number.isNaN(value.getTime())) {
       return value.toISOString().slice(0, 10);
@@ -1059,9 +1242,7 @@ export class PayrollService {
 
   private parseQueryDate(value: string, fieldName: string): Date {
     if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) {
-      throw new BadRequestException(
-        `${fieldName} debe tener formato YYYY-MM-DD.`,
-      );
+      throw new BadRequestException(`${fieldName} debe tener formato YYYY-MM-DD.`);
     }
     const parsed = new Date(`${value}T00:00:00`);
     if (Number.isNaN(parsed.getTime())) {
@@ -1088,30 +1269,19 @@ export class PayrollService {
       idTipoPlanilla: entity.idTipoPlanilla ?? null,
       nombrePlanilla: entity.nombrePlanilla ?? null,
       tipoPlanilla: entity.tipoPlanilla ?? null,
-      fechaInicioPeriodo: entity.fechaInicioPeriodo
-        ? this.toYmd(entity.fechaInicioPeriodo)
-        : null,
-      fechaFinPeriodo: entity.fechaFinPeriodo
-        ? this.toYmd(entity.fechaFinPeriodo)
-        : null,
+      fechaInicioPeriodo: entity.fechaInicioPeriodo ? this.toYmd(entity.fechaInicioPeriodo) : null,
+      fechaFinPeriodo: entity.fechaFinPeriodo ? this.toYmd(entity.fechaFinPeriodo) : null,
       fechaCorte: entity.fechaCorte ? this.toYmd(entity.fechaCorte) : null,
-      fechaInicioPago: entity.fechaInicioPago
-        ? this.toYmd(entity.fechaInicioPago)
-        : null,
-      fechaFinPago: entity.fechaFinPago
-        ? this.toYmd(entity.fechaFinPago)
-        : null,
+      fechaInicioPago: entity.fechaInicioPago ? this.toYmd(entity.fechaInicioPago) : null,
+      fechaFinPago: entity.fechaFinPago ? this.toYmd(entity.fechaFinPago) : null,
       fechaPagoProgramada: entity.fechaPagoProgramada
         ? this.toYmd(entity.fechaPagoProgramada)
         : null,
       moneda: entity.moneda ?? null,
       estado: this.normalizeEstadoValue(entity.estado),
       esInactivo: entity.esInactivo === 1 ? 'Inactivo' : 'Activo',
-      requiresRecalculation:
-        entity.requiresRecalculation === 1 ? 'Si' : 'No',
-      lastSnapshotAt: entity.lastSnapshotAt
-        ? this.toYmd(entity.lastSnapshotAt)
-        : null,
+      requiresRecalculation: entity.requiresRecalculation === 1 ? 'Si' : 'No',
+      lastSnapshotAt: entity.lastSnapshotAt ? this.toYmd(entity.lastSnapshotAt) : null,
     };
   }
 
@@ -1141,12 +1311,8 @@ export class PayrollService {
     payloadAfter: Record<string, unknown> | null,
   ): Array<{ campo: string; antes: string; despues: string }> {
     if (!payloadBefore || !payloadAfter) return [];
-    const keys = new Set<string>([
-      ...Object.keys(payloadBefore),
-      ...Object.keys(payloadAfter),
-    ]);
-    const changes: Array<{ campo: string; antes: string; despues: string }> =
-      [];
+    const keys = new Set<string>([...Object.keys(payloadBefore), ...Object.keys(payloadAfter)]);
+    const changes: Array<{ campo: string; antes: string; despues: string }> = [];
     for (const key of keys) {
       if (!(key in this.auditFieldLabels)) continue;
       const beforeValue = this.normalizeAuditValue(payloadBefore[key]);
@@ -1199,8 +1365,7 @@ export class PayrollService {
     montoOriginal: number,
   ): { unidades: number; montoBase: number; montoFinal: number } {
     const actionStart = action.fechaInicioEfecto ?? action.fechaEfecto;
-    const actionEnd =
-      action.fechaFinEfecto ?? action.fechaInicioEfecto ?? action.fechaEfecto;
+    const actionEnd = action.fechaFinEfecto ?? action.fechaInicioEfecto ?? action.fechaEfecto;
 
     if (!actionStart || !actionEnd) {
       return { unidades: 1, montoBase: montoOriginal, montoFinal: montoOriginal };
@@ -1219,10 +1384,8 @@ export class PayrollService {
     }
 
     const millisecondsPerDay = 1000 * 60 * 60 * 24;
-    const overlapDays =
-      Math.floor((overlapEnd - overlapStart) / millisecondsPerDay) + 1;
-    const actionDays =
-      Math.floor((end.getTime() - start.getTime()) / millisecondsPerDay) + 1;
+    const overlapDays = Math.floor((overlapEnd - overlapStart) / millisecondsPerDay) + 1;
+    const actionDays = Math.floor((end.getTime() - start.getTime()) / millisecondsPerDay) + 1;
 
     if (actionDays <= 0) {
       return { unidades: overlapDays, montoBase: montoOriginal, montoFinal: montoOriginal };
@@ -1242,6 +1405,170 @@ export class PayrollService {
     return new Date(Date.UTC(value.getUTCFullYear(), value.getUTCMonth(), value.getUTCDate()));
   }
 
+  private async loadSocialChargeConfigs(
+    manager: EntityManager,
+    companyId: number,
+  ): Promise<
+    Array<{
+      id: number;
+      nombre: string;
+      porcentaje: number;
+      idMovimiento: number;
+    }>
+  > {
+    const charges = await manager.find(PayrollSocialCharge, {
+      where: { idEmpresa: companyId, esInactivo: 0 },
+      order: { id: 'ASC' },
+    });
+    return charges.map((charge) => ({
+      id: charge.id,
+      nombre: charge.nombre,
+      porcentaje: Number(charge.porcentaje ?? 0),
+      idMovimiento: charge.idMovimiento,
+    }));
+  }
+
+  private calculateSocialCharges(
+    totalBruto: number,
+    configs: Array<{
+      id: number;
+      nombre: string;
+      porcentaje: number;
+      idMovimiento: number;
+    }>,
+  ): {
+    total: number;
+    items: Array<{
+      idCargaSocial: number;
+      nombre: string;
+      porcentaje: number;
+      monto: number;
+      idMovimiento: number;
+    }>;
+  } {
+    if (!configs.length || totalBruto <= 0) {
+      return { total: 0, items: [] };
+    }
+    let total = 0;
+    const items = configs.map((config) => {
+      const monto = Number((totalBruto * config.porcentaje).toFixed(2));
+      total += monto;
+      return {
+        idCargaSocial: config.id,
+        nombre: config.nombre,
+        porcentaje: config.porcentaje,
+        monto,
+        idMovimiento: config.idMovimiento,
+      };
+    });
+    return { total: Number(total.toFixed(2)), items };
+  }
+
+  private calculateIncomeTax(params: {
+    totalBruto: number;
+    periodName: string;
+    isSecondHalf: boolean;
+    previousQuincenalTotal: number;
+    cantidadHijos: number;
+    estadoCivil: string | null;
+  }): number {
+    const periodName = params.periodName.toLowerCase();
+    const isMonthly = this.isMonthlyPeriod(periodName);
+    const isQuincenal = this.isQuincenalPeriod(periodName);
+
+    if (!isMonthly && !isQuincenal) return 0;
+    if (isQuincenal && !params.isSecondHalf) return 0;
+
+    const base = (isQuincenal ? params.previousQuincenalTotal : 0) + params.totalBruto;
+    if (base <= 0) return 0;
+
+    let impuesto = 0;
+    let acumulado = 0;
+    for (const tramo of this.rentaTramos) {
+      const limite = tramo.limite;
+      if (base <= acumulado) break;
+      const baseTramo = Math.min(base, limite) - acumulado;
+      if (baseTramo > 0 && tramo.porcentaje > 0) {
+        impuesto += baseTramo * tramo.porcentaje;
+      }
+      acumulado = limite;
+      if (limite === Infinity) break;
+    }
+
+    const creditos =
+      (params.cantidadHijos || 0) * this.creditosFiscales.porHijo +
+      (this.isCivilStatusWithSpouse(params.estadoCivil) ? this.creditosFiscales.porConyuge : 0);
+    const resultado = Math.max(0, impuesto - creditos);
+    return Number(resultado.toFixed(2));
+  }
+
+  private isSecondHalfOfMonth(date: Date): boolean {
+    return date.getUTCDate() >= 16;
+  }
+
+  private isQuincenalPeriod(name: string): boolean {
+    return name.toLowerCase().includes('quincen');
+  }
+
+  private isMonthlyPeriod(name: string): boolean {
+    return name.toLowerCase().includes('mensual');
+  }
+
+  private isCivilStatusWithSpouse(status: string | null): boolean {
+    if (!status) return false;
+    const normalized = status.toLowerCase();
+    return normalized === 'casado' || normalized === 'unión libre';
+  }
+
+  private async getPreviousQuincenalTotals(
+    manager: EntityManager,
+    companyId: number,
+    fechaFinPeriodo: Date,
+    fechaInicioPeriodo: Date,
+    periodIds: number[],
+  ): Promise<Map<number, number>> {
+    if (periodIds.length === 0) return new Map();
+    const params = [
+      companyId,
+      ...periodIds,
+      this.toYmd(fechaInicioPeriodo),
+      this.toYmd(fechaFinPeriodo),
+      this.toYmd(fechaFinPeriodo),
+    ];
+    const rows: Array<{
+      id_empleado: number;
+      total_bruto_resultado: string;
+    }> = await manager.query(
+      `
+        SELECT r.id_empleado, r.total_bruto_resultado
+        FROM nomina_resultados r
+        INNER JOIN nom_calendarios_nomina p
+          ON p.id_calendario_nomina = r.id_nomina
+        INNER JOIN (
+          SELECT r2.id_empleado, p2.id_periodos_pago, MAX(p2.fecha_fin_periodo) AS max_fin
+          FROM nomina_resultados r2
+          INNER JOIN nom_calendarios_nomina p2
+            ON p2.id_calendario_nomina = r2.id_nomina
+          WHERE p2.id_empresa = ?
+            AND p2.id_periodos_pago IN (${periodIds.map(() => '?').join(',')})
+            AND p2.fecha_fin_periodo < ?
+            AND YEAR(p2.fecha_fin_periodo) = YEAR(?)
+            AND MONTH(p2.fecha_fin_periodo) = MONTH(?)
+          GROUP BY r2.id_empleado, p2.id_periodos_pago
+        ) last
+          ON last.id_empleado = r.id_empleado
+         AND last.max_fin = p.fecha_fin_periodo
+         AND last.id_periodos_pago = p.id_periodos_pago
+      `,
+      params,
+    );
+    const map = new Map<number, number>();
+    for (const row of rows) {
+      map.set(row.id_empleado, Number(row.total_bruto_resultado ?? 0));
+    }
+    return map;
+  }
+
   private validateDateRules(
     periodoInicio: Date,
     periodoFin: Date,
@@ -1251,33 +1578,21 @@ export class PayrollService {
     fechaPagoProgramada: Date,
   ): void {
     if (periodoInicio > periodoFin) {
-      throw new BadRequestException(
-        'Inicio Periodo no puede ser mayor que Fin Periodo.',
-      );
+      throw new BadRequestException('Inicio Periodo no puede ser mayor que Fin Periodo.');
     }
     if (fechaCorte < periodoInicio || fechaCorte > periodoFin) {
-      throw new BadRequestException(
-        'Fecha Corte debe estar dentro del Periodo de Nomina.',
-      );
+      throw new BadRequestException('Fecha Corte debe estar dentro del Periodo de Nomina.');
     }
     if (fechaInicioPago > fechaFinPago) {
-      throw new BadRequestException(
-        'Inicio Pago no puede ser mayor que Fin Pago.',
-      );
+      throw new BadRequestException('Inicio Pago no puede ser mayor que Fin Pago.');
     }
-    if (
-      fechaPagoProgramada < fechaInicioPago ||
-      fechaPagoProgramada > fechaFinPago
-    ) {
+    if (fechaPagoProgramada < fechaInicioPago || fechaPagoProgramada > fechaFinPago) {
       throw new BadRequestException(
         'Fecha Pago Programada debe estar dentro de la Ventana de Pago.',
       );
     }
     if (fechaPagoProgramada < fechaCorte) {
-      throw new BadRequestException(
-        'Fecha Pago Programada no puede ser menor que Fecha Corte.',
-      );
+      throw new BadRequestException('Fecha Pago Programada no puede ser menor que Fecha Corte.');
     }
   }
-
 }

@@ -1,12 +1,14 @@
 import {
-  ArgumentsHost,
   ForbiddenException,
   HttpException,
   HttpStatus,
   NotFoundException,
   UnauthorizedException,
 } from '@nestjs/common';
+
 import { GlobalExceptionFilter } from './http-exception.filter';
+
+import type { ArgumentsHost } from '@nestjs/common';
 
 function createMockHost(method = 'GET', url = '/api/test') {
   const json = jest.fn();
@@ -28,10 +30,7 @@ describe('GlobalExceptionFilter', () => {
 
   it('normalizes HttpException with string message', () => {
     const host = createMockHost();
-    const exception = new HttpException(
-      'Recurso no encontrado',
-      HttpStatus.NOT_FOUND,
-    );
+    const exception = new HttpException('Recurso no encontrado', HttpStatus.NOT_FOUND);
 
     filter.catch(exception, host);
 

@@ -1,3 +1,6 @@
+import { mkdirSync } from 'node:fs';
+import { basename, extname, join } from 'node:path';
+
 import {
   BadRequestException,
   Body,
@@ -15,26 +18,22 @@ import {
   UploadedFile,
   UseInterceptors,
 } from '@nestjs/common';
-import { CompaniesService } from './companies.service';
-import { CreateCompanyDto } from './dto/create-company.dto';
-import { UpdateCompanyDto } from './dto/update-company.dto';
-import { Public } from '../../common/decorators/public.decorator';
-import { RequirePermissions } from '../../common/decorators/require-permissions.decorator';
-import { CurrentUser } from '../../common/decorators/current-user.decorator';
-import { CacheScope } from '../../common/decorators/cache-scope.decorator';
-import { CacheResponseInterceptor } from '../../common/interceptors/cache-response.interceptor';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
-import { basename, extname, join } from 'node:path';
-import { mkdirSync } from 'node:fs';
+
+import { CacheScope } from '../../common/decorators/cache-scope.decorator';
+import { CurrentUser } from '../../common/decorators/current-user.decorator';
+import { Public } from '../../common/decorators/public.decorator';
+import { RequirePermissions } from '../../common/decorators/require-permissions.decorator';
+import { CacheResponseInterceptor } from '../../common/interceptors/cache-response.interceptor';
+
+import type { CompaniesService } from './companies.service';
+import type { CreateCompanyDto } from './dto/create-company.dto';
+import type { UpdateCompanyDto } from './dto/update-company.dto';
+
 import type { Response } from 'express';
 
-const COMPANY_LOGO_TEMP_DIR = join(
-  process.cwd(),
-  'uploads',
-  'logoEmpresa',
-  'temp',
-);
+const COMPANY_LOGO_TEMP_DIR = join(process.cwd(), 'uploads', 'logoEmpresa', 'temp');
 const MAX_LOGO_SIZE_BYTES = 5 * 1024 * 1024;
 const ALLOWED_IMAGE_MIME_TYPES = new Set([
   'image/png',
@@ -58,10 +57,7 @@ export class CompaniesController {
 
   @RequirePermissions('company:create')
   @Post()
-  create(
-    @Body() dto: CreateCompanyDto,
-    @CurrentUser() user: { userId: number },
-  ) {
+  create(@Body() dto: CreateCompanyDto, @CurrentUser() user: { userId: number }) {
     return this.service.create(dto, user.userId);
   }
 
@@ -86,10 +82,7 @@ export class CompaniesController {
 
   @RequirePermissions('company:view')
   @Get(':id')
-  findOne(
-    @Param('id', ParseIntPipe) id: number,
-    @CurrentUser() user: { userId: number },
-  ) {
+  findOne(@Param('id', ParseIntPipe) id: number, @CurrentUser() user: { userId: number }) {
     return this.service.findOne(id, user.userId);
   }
 
@@ -105,19 +98,13 @@ export class CompaniesController {
 
   @RequirePermissions('company:inactivate')
   @Patch(':id/inactivate')
-  inactivate(
-    @Param('id', ParseIntPipe) id: number,
-    @CurrentUser() user: { userId: number },
-  ) {
+  inactivate(@Param('id', ParseIntPipe) id: number, @CurrentUser() user: { userId: number }) {
     return this.service.inactivate(id, user.userId);
   }
 
   @RequirePermissions('company:reactivate')
   @Patch(':id/reactivate')
-  reactivate(
-    @Param('id', ParseIntPipe) id: number,
-    @CurrentUser() user: { userId: number },
-  ) {
+  reactivate(@Param('id', ParseIntPipe) id: number, @CurrentUser() user: { userId: number }) {
     return this.service.reactivate(id, user.userId);
   }
 
@@ -140,10 +127,7 @@ export class CompaniesController {
       limits: { fileSize: MAX_LOGO_SIZE_BYTES },
       fileFilter: (_req, file, callback) => {
         if (!ALLOWED_IMAGE_MIME_TYPES.has(file.mimetype)) {
-          return callback(
-            new BadRequestException('Solo se permiten archivos de imagen'),
-            false,
-          );
+          return callback(new BadRequestException('Solo se permiten archivos de imagen'), false);
         }
         callback(null, true);
       },
@@ -171,11 +155,7 @@ export class CompaniesController {
     @Body() body: { tempFileName: string },
     @CurrentUser() user: { userId: number },
   ) {
-    return this.service.commitTempLogo(
-      id,
-      basename(body?.tempFileName ?? ''),
-      user.userId,
-    );
+    return this.service.commitTempLogo(id, basename(body?.tempFileName ?? ''), user.userId);
   }
 
   @RequirePermissions('company:view')
@@ -188,9 +168,7 @@ export class CompaniesController {
     const logo = await this.service.resolveCompanyLogo(id, user.userId);
     res.setHeader('Content-Type', logo.mimeType);
     res.setHeader('Cache-Control', 'public, max-age=300');
-    return new StreamableFile(
-      this.service.createLogoReadStream(logo.absolutePath),
-    );
+    return new StreamableFile(this.service.createLogoReadStream(logo.absolutePath));
   }
 
   @RequirePermissions('config:companies:audit')

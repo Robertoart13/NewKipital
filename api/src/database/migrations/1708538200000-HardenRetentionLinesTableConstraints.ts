@@ -1,8 +1,6 @@
-import { MigrationInterface, QueryRunner } from 'typeorm';
+import type { MigrationInterface, QueryRunner } from 'typeorm';
 
-export class HardenRetentionLinesTableConstraints1708538200000
-  implements MigrationInterface
-{
+export class HardenRetentionLinesTableConstraints1708538200000 implements MigrationInterface {
   public async up(queryRunner: QueryRunner): Promise<void> {
     const hasTable = await this.tableExists(queryRunner, 'acc_retenciones_lineas');
     if (!hasTable) return;
@@ -98,42 +96,15 @@ export class HardenRetentionLinesTableConstraints1708538200000
     const hasTable = await this.tableExists(queryRunner, 'acc_retenciones_lineas');
     if (!hasTable) return;
 
-    await this.dropFkIfExists(
-      queryRunner,
-      'acc_retenciones_lineas',
-      'FK_ret_linea_movimiento',
-    );
-    await this.dropFkIfExists(
-      queryRunner,
-      'acc_retenciones_lineas',
-      'FK_ret_linea_calendario',
-    );
-    await this.dropFkIfExists(
-      queryRunner,
-      'acc_retenciones_lineas',
-      'FK_ret_linea_empleado',
-    );
-    await this.dropFkIfExists(
-      queryRunner,
-      'acc_retenciones_lineas',
-      'FK_ret_linea_empresa',
-    );
-    await this.dropFkIfExists(
-      queryRunner,
-      'acc_retenciones_lineas',
-      'FK_ret_linea_cuota',
-    );
-    await this.dropFkIfExists(
-      queryRunner,
-      'acc_retenciones_lineas',
-      'FK_ret_linea_accion',
-    );
+    await this.dropFkIfExists(queryRunner, 'acc_retenciones_lineas', 'FK_ret_linea_movimiento');
+    await this.dropFkIfExists(queryRunner, 'acc_retenciones_lineas', 'FK_ret_linea_calendario');
+    await this.dropFkIfExists(queryRunner, 'acc_retenciones_lineas', 'FK_ret_linea_empleado');
+    await this.dropFkIfExists(queryRunner, 'acc_retenciones_lineas', 'FK_ret_linea_empresa');
+    await this.dropFkIfExists(queryRunner, 'acc_retenciones_lineas', 'FK_ret_linea_cuota');
+    await this.dropFkIfExists(queryRunner, 'acc_retenciones_lineas', 'FK_ret_linea_accion');
   }
 
-  private async tableExists(
-    queryRunner: QueryRunner,
-    tableName: string,
-  ): Promise<boolean> {
+  private async tableExists(queryRunner: QueryRunner, tableName: string): Promise<boolean> {
     const rows = (await queryRunner.query(
       `
       SELECT 1
@@ -192,9 +163,7 @@ export class HardenRetentionLinesTableConstraints1708538200000
     columnName: string,
   ): Promise<void> {
     if (await this.indexExists(queryRunner, tableName, indexName)) return;
-    await queryRunner.query(
-      `ALTER TABLE ${tableName} ADD INDEX ${indexName} (${columnName})`,
-    );
+    await queryRunner.query(`ALTER TABLE ${tableName} ADD INDEX ${indexName} (${columnName})`);
   }
 
   private async ensureFk(
@@ -217,9 +186,6 @@ export class HardenRetentionLinesTableConstraints1708538200000
     fkName: string,
   ): Promise<void> {
     if (!(await this.fkExists(queryRunner, tableName, fkName))) return;
-    await queryRunner.query(
-      `ALTER TABLE ${tableName} DROP FOREIGN KEY ${fkName}`,
-    );
+    await queryRunner.query(`ALTER TABLE ${tableName} DROP FOREIGN KEY ${fkName}`);
   }
 }
-

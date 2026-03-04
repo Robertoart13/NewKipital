@@ -1,4 +1,4 @@
-import { MigrationInterface, QueryRunner } from 'typeorm';
+import type { MigrationInterface, QueryRunner } from 'typeorm';
 
 export class AddQueueMonitoringIndexes1708534000000 implements MigrationInterface {
   name = 'AddQueueMonitoringIndexes1708534000000';
@@ -94,9 +94,7 @@ export class AddQueueMonitoringIndexes1708534000000 implements MigrationInterfac
     )) as Array<{ cnt: number }>;
 
     if (Number(row?.cnt ?? 0) > 0) return;
-    await queryRunner.query(
-      `CREATE INDEX ${indexName} ON ${tableName} (${columns})`,
-    );
+    await queryRunner.query(`CREATE INDEX ${indexName} ON ${tableName} (${columns})`);
   }
 
   private async dropIndexIfExists(

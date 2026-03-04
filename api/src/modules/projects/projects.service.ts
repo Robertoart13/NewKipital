@@ -5,12 +5,15 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
-import { OrgProject } from './entities/project.entity';
+
 import { Company } from '../companies/entities/company.entity';
-import { CreateProjectDto } from './dto/create-project.dto';
-import { UpdateProjectDto } from './dto/update-project.dto';
-import { AuditOutboxService } from '../integration/audit-outbox.service';
+
+import { OrgProject } from './entities/project.entity';
+
+import type { AuditOutboxService } from '../integration/audit-outbox.service';
+import type { CreateProjectDto } from './dto/create-project.dto';
+import type { UpdateProjectDto } from './dto/update-project.dto';
+import type { Repository } from 'typeorm';
 
 @Injectable()
 export class ProjectsService {
@@ -31,10 +34,7 @@ export class ProjectsService {
     esInactivo: 'Estado',
   };
 
-  async create(
-    dto: CreateProjectDto,
-    actorUserId: number,
-  ): Promise<OrgProject> {
+  async create(dto: CreateProjectDto, actorUserId: number): Promise<OrgProject> {
     await this.assertCompanyActive(dto.idEmpresa);
     await this.assertCodigoUnique(dto.codigo);
     if (dto.idExterno?.trim()) {
@@ -90,11 +90,7 @@ export class ProjectsService {
     return found;
   }
 
-  async update(
-    id: number,
-    dto: UpdateProjectDto,
-    actorUserId: number,
-  ): Promise<OrgProject> {
+  async update(id: number, dto: UpdateProjectDto, actorUserId: number): Promise<OrgProject> {
     const found = await this.findOne(id);
     const payloadBefore = this.buildAuditPayload(found);
 
@@ -207,10 +203,8 @@ export class ProjectsService {
     );
 
     return (rows ?? []).map((row: Record<string, unknown>) => {
-      const payloadBefore =
-        (row.payloadBefore as Record<string, unknown> | null) ?? null;
-      const payloadAfter =
-        (row.payloadAfter as Record<string, unknown> | null) ?? null;
+      const payloadBefore = (row.payloadBefore as Record<string, unknown> | null) ?? null;
+      const payloadAfter = (row.payloadAfter as Record<string, unknown> | null) ?? null;
       return {
         id: String(row.id ?? ''),
         modulo: String(row.modulo ?? ''),
@@ -221,9 +215,7 @@ export class ProjectsService {
         actorNombre: row.actorNombre ? String(row.actorNombre) : null,
         actorEmail: row.actorEmail ? String(row.actorEmail) : null,
         descripcion: String(row.descripcion ?? ''),
-        fechaCreacion: row.fechaCreacion
-          ? new Date(String(row.fechaCreacion)).toISOString()
-          : null,
+        fechaCreacion: row.fechaCreacion ? new Date(String(row.fechaCreacion)).toISOString() : null,
         metadata: (row.metadata as Record<string, unknown> | null) ?? null,
         cambios: this.buildAuditChanges(payloadBefore, payloadAfter),
       };
@@ -254,12 +246,8 @@ export class ProjectsService {
     payloadAfter: Record<string, unknown> | null,
   ): Array<{ campo: string; antes: string; despues: string }> {
     if (!payloadBefore || !payloadAfter) return [];
-    const keys = new Set<string>([
-      ...Object.keys(payloadBefore),
-      ...Object.keys(payloadAfter),
-    ]);
-    const changes: Array<{ campo: string; antes: string; despues: string }> =
-      [];
+    const keys = new Set<string>([...Object.keys(payloadBefore), ...Object.keys(payloadAfter)]);
+    const changes: Array<{ campo: string; antes: string; despues: string }> = [];
     for (const key of keys) {
       if (!(key in this.auditFieldLabels)) continue;
       const beforeValue = this.normalizeAuditValue(payloadBefore[key]);
@@ -274,20 +262,14 @@ export class ProjectsService {
     return changes;
   }
 
-  private async assertCodigoUnique(
-    codigo: string,
-    exceptId?: number,
-  ): Promise<void> {
+  private async assertCodigoUnique(codigo: string, exceptId?: number): Promise<void> {
     const existing = await this.repo.findOne({ where: { codigo } });
     if (existing && existing.id !== exceptId) {
       throw new ConflictException('Ya existe un proyecto con ese codigo');
     }
   }
 
-  private async assertIdExternoUnique(
-    idExterno: string,
-    exceptId?: number,
-  ): Promise<void> {
+  private async assertIdExternoUnique(idExterno: string, exceptId?: number): Promise<void> {
     const existing = await this.repo.findOne({ where: { idExterno } });
     if (existing && existing.id !== exceptId) {
       throw new ConflictException('Ya existe un proyecto con ese ID externo');

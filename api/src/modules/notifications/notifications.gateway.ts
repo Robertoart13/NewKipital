@@ -1,13 +1,11 @@
-import {
-  WebSocketGateway,
-  WebSocketServer,
-  OnGatewayConnection,
-  OnGatewayDisconnect,
-} from '@nestjs/websockets';
-import { Server, Socket } from 'socket.io';
-import { JwtService } from '@nestjs/jwt';
-import { ConfigService } from '@nestjs/config';
+import { WebSocketGateway, WebSocketServer } from '@nestjs/websockets';
+
 import { COOKIE_NAME } from '../../config/cookie.config';
+
+import type { ConfigService } from '@nestjs/config';
+import type { JwtService } from '@nestjs/jwt';
+import type { OnGatewayConnection, OnGatewayDisconnect } from '@nestjs/websockets';
+import type { Server, Socket } from 'socket.io';
 
 const USER_ROOM_PREFIX = 'user:';
 
@@ -25,9 +23,7 @@ function getAllowedSocketOrigins(): string[] {
     : ['https://kpital360.com', 'https://timewise.kpital360.com'];
 }
 
-function parseCookie(
-  header: string | string[] | undefined,
-): Record<string, string> {
+function parseCookie(header: string | string[] | undefined): Record<string, string> {
   const str = Array.isArray(header) ? header[0] : (header ?? '');
   return Object.fromEntries(
     str.split(';').map((s) => {
@@ -48,9 +44,7 @@ function parseCookie(
     credentials: true,
   },
 })
-export class NotificationsGateway
-  implements OnGatewayConnection, OnGatewayDisconnect
-{
+export class NotificationsGateway implements OnGatewayConnection, OnGatewayDisconnect {
   @WebSocketServer()
   server!: Server;
 
@@ -62,9 +56,7 @@ export class NotificationsGateway
   ) {}
 
   async handleConnection(client: Socket) {
-    const cookieHeader = (
-      client.handshake?.headers as Record<string, string> | undefined
-    )?.cookie;
+    const cookieHeader = (client.handshake?.headers as Record<string, string> | undefined)?.cookie;
     const cookies = parseCookie(cookieHeader);
     const token = cookies[COOKIE_NAME];
     if (!token) {
@@ -99,9 +91,7 @@ export class NotificationsGateway
   }
 
   emitNewNotification(userId: number, idNotificacion: number): void {
-    this.server
-      .to(USER_ROOM_PREFIX + userId)
-      .emit('notification:new', { idNotificacion });
+    this.server.to(USER_ROOM_PREFIX + userId).emit('notification:new', { idNotificacion });
   }
 
   emitCountUpdate(userId: number): void {

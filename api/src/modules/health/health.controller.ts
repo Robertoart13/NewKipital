@@ -1,20 +1,16 @@
-import {
-  Controller,
-  Get,
-  Inject,
-  Optional,
-} from '@nestjs/common';
-import {
-  HealthCheck,
-  HealthCheckError,
+import { Controller, Get, Inject, Optional } from '@nestjs/common';
+import { HealthCheck, HealthCheckError } from '@nestjs/terminus';
+
+import { Public } from '../../common/decorators/public.decorator';
+import { SkipCsrf } from '../../common/decorators/skip-csrf.decorator';
+import { REDIS_CLIENT } from '../../config/redis.config';
+
+import type {
   HealthCheckService,
   HealthIndicatorResult,
   TypeOrmHealthIndicator,
 } from '@nestjs/terminus';
 import type Redis from 'ioredis';
-import { Public } from '../../common/decorators/public.decorator';
-import { SkipCsrf } from '../../common/decorators/skip-csrf.decorator';
-import { REDIS_CLIENT } from '../../config/redis.config';
 
 /**
  * GET /api/health

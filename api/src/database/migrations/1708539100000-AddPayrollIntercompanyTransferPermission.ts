@@ -1,11 +1,9 @@
-import { MigrationInterface, QueryRunner } from 'typeorm';
+import type { MigrationInterface, QueryRunner } from 'typeorm';
 
 /**
  * Permiso enterprise: traslado interempresas (planillas).
  */
-export class AddPayrollIntercompanyTransferPermission1708539100000
-  implements MigrationInterface
-{
+export class AddPayrollIntercompanyTransferPermission1708539100000 implements MigrationInterface {
   public async up(queryRunner: QueryRunner): Promise<void> {
     const now = new Date().toISOString().slice(0, 19).replace('T', ' ');
 

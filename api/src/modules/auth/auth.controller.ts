@@ -13,15 +13,11 @@ import {
   ForbiddenException,
 } from '@nestjs/common';
 import { IsEmail, IsString, MinLength } from 'class-validator';
-import { ConfigService } from '@nestjs/config';
-import type { Request, Response } from 'express';
-import { AuthService } from './auth.service';
-import { UsersService } from './users.service';
-import { MicrosoftAuthService } from './microsoft-auth.service';
-import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
+
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { Public } from '../../common/decorators/public.decorator';
 import { SkipCsrf } from '../../common/decorators/skip-csrf.decorator';
+import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import {
   COOKIE_NAME,
   CSRF_COOKIE_NAME,
@@ -33,11 +29,19 @@ import {
   getCsrfCookieOptions,
   getRefreshCookieOptions,
 } from '../../config/cookie.config';
-import { AuthAuditService } from './auth-audit.service';
-import { AuthRateLimitService } from './auth-rate-limit.service';
-import { DomainEventsService } from '../integration/domain-events.service';
-import { AuthzRealtimeService } from '../authz/authz-realtime.service';
-import { AuthzVersionService } from '../authz/authz-version.service';
+
+import type { AuthzVersionService } from '../authz/authz-version.service';
+
+import type { AuthAuditService } from './auth-audit.service';
+import type { AuthRateLimitService } from './auth-rate-limit.service';
+
+import type { AuthService } from './auth.service';
+import type { MicrosoftAuthService } from './microsoft-auth.service';
+import type { UsersService } from './users.service';
+import type { AuthzRealtimeService } from '../authz/authz-realtime.service';
+import type { DomainEventsService } from '../integration/domain-events.service';
+import type { ConfigService } from '@nestjs/config';
+import type { Request, Response } from 'express';
 
 class LoginDto {
   @IsEmail()
@@ -117,16 +121,14 @@ export class AuthController {
     @Req() req: Request,
     @Res({ passthrough: true }) res: Response,
   ) {
-    const ip =
-      (req.headers['x-forwarded-for'] as string)?.split(',')[0] || req.ip;
+    const ip = (req.headers['x-forwarded-for'] as string)?.split(',')[0] || req.ip;
     await this.rateLimit.consume(`microsoft-exchange:${ip}`, 10, 60_000);
 
-    const identity =
-      await this.microsoftAuthService.exchangeCodeAndValidateIdentity(
-        dto.code,
-        dto.codeVerifier,
-        dto.redirectUri,
-      );
+    const identity = await this.microsoftAuthService.exchangeCodeAndValidateIdentity(
+      dto.code,
+      dto.codeVerifier,
+      dto.redirectUri,
+    );
 
     let issued: Awaited<ReturnType<AuthService['loginWithMicrosoftIdentity']>>;
     try {
@@ -152,12 +154,7 @@ export class AuthController {
       throw error;
     }
 
-    this.setSessionCookies(
-      res,
-      issued.accessToken,
-      issued.refreshToken,
-      issued.csrfToken,
-    );
+    this.setSessionCookies(res, issued.accessToken, issued.refreshToken, issued.csrfToken);
 
     await this.audit.record({
       event: 'login_success',
@@ -203,18 +200,13 @@ export class AuthController {
     @Req() req: Request,
     @Res({ passthrough: true }) res: Response,
   ) {
-    const ip =
-      (req.headers['x-forwarded-for'] as string)?.split(',')[0] || req.ip;
+    const ip = (req.headers['x-forwarded-for'] as string)?.split(',')[0] || req.ip;
     await this.rateLimit.consume(`microsoft-validate:${ip}`, 10, 60_000);
 
     const allowedTenant =
       this.config.get<string>('MICROSOFT_TENANT_ID') ??
       this.config.get<string>('MSAL_TENANT_ID') ??
-      this.config
-        .get<string>('MSAL_AUTHORITY')
-        ?.split('/')
-        .filter(Boolean)
-        .at(-1);
+      this.config.get<string>('MSAL_AUTHORITY')?.split('/').filter(Boolean).at(-1);
 
     if (allowedTenant && dto.tenantId !== allowedTenant) {
       await this.audit.record({
@@ -239,10 +231,7 @@ export class AuthController {
       .filter(Boolean);
     const emailDomain = dto.email.split('@')[1]?.toLowerCase();
 
-    if (
-      !emailDomain ||
-      (allowedDomains.length > 0 && !allowedDomains.includes(emailDomain))
-    ) {
+    if (!emailDomain || (allowedDomains.length > 0 && !allowedDomains.includes(emailDomain))) {
       await this.audit.record({
         event: 'microsoft_validate_failed',
         outcome: 'failed',
@@ -263,12 +252,7 @@ export class AuthController {
       req.headers['user-agent'],
     );
 
-    this.setSessionCookies(
-      res,
-      issued.accessToken,
-      issued.refreshToken,
-      issued.csrfToken,
-    );
+    this.setSessionCookies(res, issued.accessToken, issued.refreshToken, issued.csrfToken);
 
     await this.audit.record({
       event: 'login_success',
@@ -311,8 +295,7 @@ export class AuthController {
     @Req() req: Request,
     @Res({ passthrough: true }) res: Response,
   ) {
-    const ip =
-      (req.headers['x-forwarded-for'] as string)?.split(',')[0] || req.ip;
+    const ip = (req.headers['x-forwarded-for'] as string)?.split(',')[0] || req.ip;
     await this.rateLimit.consume(`login:${ip}`, 5, 60_000);
 
     try {
@@ -323,12 +306,7 @@ export class AuthController {
         req.headers['user-agent'],
       );
 
-      this.setSessionCookies(
-        res,
-        issued.accessToken,
-        issued.refreshToken,
-        issued.csrfToken,
-      );
+      this.setSessionCookies(res, issued.accessToken, issued.refreshToken, issued.csrfToken);
 
       await this.audit.record({
         event: 'login_success',
@@ -364,17 +342,11 @@ export class AuthController {
 
   @Public()
   @Post('refresh')
-  async refresh(
-    @Req() req: Request,
-    @Res({ passthrough: true }) res: Response,
-  ) {
-    const ip =
-      (req.headers['x-forwarded-for'] as string)?.split(',')[0] || req.ip;
+  async refresh(@Req() req: Request, @Res({ passthrough: true }) res: Response) {
+    const ip = (req.headers['x-forwarded-for'] as string)?.split(',')[0] || req.ip;
     await this.rateLimit.consume(`refresh:${ip}`, 10, 60_000);
 
-    const refreshToken = req.cookies?.[REFRESH_COOKIE_NAME] as
-      | string
-      | undefined;
+    const refreshToken = req.cookies?.[REFRESH_COOKIE_NAME] as string | undefined;
     if (!refreshToken) {
       throw new UnauthorizedException('Refresh token ausente');
     }
@@ -385,12 +357,7 @@ export class AuthController {
       req.headers['user-agent'],
     );
 
-    this.setSessionCookies(
-      res,
-      issued.accessToken,
-      issued.refreshToken,
-      issued.csrfToken,
-    );
+    this.setSessionCookies(res, issued.accessToken, issued.refreshToken, issued.csrfToken);
 
     await this.audit.record({
       event: 'refresh_used',
@@ -412,15 +379,10 @@ export class AuthController {
    */
   @Post('logout')
   async logout(@Req() req: Request, @Res({ passthrough: true }) res: Response) {
-    await this.authService.revokeRefreshToken(
-      req.cookies?.[REFRESH_COOKIE_NAME],
-    );
+    await this.authService.revokeRefreshToken(req.cookies?.[REFRESH_COOKIE_NAME]);
 
     res.clearCookie(COOKIE_NAME, getClearCookieOptions(this.config));
-    res.clearCookie(
-      REFRESH_COOKIE_NAME,
-      getClearRefreshCookieOptions(this.config),
-    );
+    res.clearCookie(REFRESH_COOKIE_NAME, getClearRefreshCookieOptions(this.config));
     res.clearCookie(CSRF_COOKIE_NAME, getClearCsrfCookieOptions(this.config));
 
     await this.audit.record({
@@ -453,12 +415,7 @@ export class AuthController {
     const companyId = companyIdRaw ? parseInt(companyIdRaw, 10) : undefined;
     const bypassCache = this.toBoolean(refreshAuthzRaw);
 
-    const session = await this.authService.buildSession(
-      user,
-      companyId,
-      appCode,
-      { bypassCache },
-    );
+    const session = await this.authService.buildSession(user, companyId, appCode, { bypassCache });
 
     return {
       authenticated: true,
@@ -545,9 +502,7 @@ export class AuthController {
   private toBoolean(value: string | number | boolean | undefined): boolean {
     if (value === true || value === 1) return true;
     if (typeof value === 'string') {
-      return ['1', 'true', 'yes', 'y', 'on'].includes(
-        value.trim().toLowerCase(),
-      );
+      return ['1', 'true', 'yes', 'y', 'on'].includes(value.trim().toLowerCase());
     }
     return false;
   }
@@ -559,11 +514,7 @@ export class AuthController {
     csrfToken: string,
   ): void {
     res.cookie(COOKIE_NAME, accessToken, getCookieOptions(this.config));
-    res.cookie(
-      REFRESH_COOKIE_NAME,
-      refreshToken,
-      getRefreshCookieOptions(this.config),
-    );
+    res.cookie(REFRESH_COOKIE_NAME, refreshToken, getRefreshCookieOptions(this.config));
     res.cookie(CSRF_COOKIE_NAME, csrfToken, getCsrfCookieOptions(this.config));
   }
 }

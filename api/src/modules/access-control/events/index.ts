@@ -1,4 +1,4 @@
-import { DomainEvent } from '../../../common/events/domain-event.interface';
+import type { DomainEvent } from '../../../common/events/domain-event.interface';
 
 export interface RoleAssignedEvent extends DomainEvent<{
   userId: string;

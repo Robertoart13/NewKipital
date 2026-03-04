@@ -85,4 +85,3 @@ export class LicenseLine {
   @UpdateDateColumn({ name: 'fecha_modificacion_linea' })
   fechaModificacion: Date;
 }
-

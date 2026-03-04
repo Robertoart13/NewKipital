@@ -1,26 +1,28 @@
-﻿import { Test, TestingModule } from '@nestjs/testing';
-import { getRepositoryToken } from '@nestjs/typeorm';
-import {
-  BadRequestException,
-  ConflictException,
-  ForbiddenException,
-} from '@nestjs/common';
-import { DataSource, Repository } from 'typeorm';
+﻿import { BadRequestException, ConflictException, ForbiddenException } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
-import { PayrollService } from './payroll.service';
-import {
-  PayrollCalendar,
-  EstadoCalendarioNomina,
-} from './entities/payroll-calendar.entity';
+import { Test } from '@nestjs/testing';
+import { getRepositoryToken } from '@nestjs/typeorm';
+import { DataSource } from 'typeorm';
+
 import { UserCompany } from '../access-control/entities/user-company.entity';
-import { DomainEventsService } from '../integration/domain-events.service';
-import { AuditOutboxService } from '../integration/audit-outbox.service';
+
+import { PayrollPlanillaSnapshotJson } from './entities/payroll-planilla-snapshot.entity';
+import { PayrollSocialCharge } from './entities/payroll-social-charge.entity';
+import { EmployeeAguinaldoProvision } from '../employees/entities/employee-aguinaldo-provision.entity';
 import { EmployeeVacationService } from '../employees/services/employee-vacation.service';
+import { AuditOutboxService } from '../integration/audit-outbox.service';
+import { DomainEventsService } from '../integration/domain-events.service';
+import { PersonalAction } from '../personal-actions/entities/personal-action.entity';
+import { PersonalActionAutoInvalidationService } from '../personal-actions/personal-action-auto-invalidation.service';
+
+import { PayrollCalendar, EstadoCalendarioNomina } from './entities/payroll-calendar.entity';
 import { PayrollEmployeeSnapshot } from './entities/payroll-employee-snapshot.entity';
 import { PayrollInputSnapshot } from './entities/payroll-input-snapshot.entity';
 import { PayrollResult } from './entities/payroll-result.entity';
-import { PersonalAction } from '../personal-actions/entities/personal-action.entity';
-import { PersonalActionAutoInvalidationService } from '../personal-actions/personal-action-auto-invalidation.service';
+import { PayrollService } from './payroll.service';
+
+import type { TestingModule } from '@nestjs/testing';
+import type { Repository } from 'typeorm';
 
 describe('PayrollService', () => {
   let service: PayrollService;
@@ -82,6 +84,28 @@ describe('PayrollService', () => {
           },
         },
         {
+          provide: getRepositoryToken(PayrollPlanillaSnapshotJson),
+          useValue: {
+            count: jest.fn(),
+            createQueryBuilder: jest.fn(),
+            find: jest.fn(),
+          },
+        },
+        {
+          provide: getRepositoryToken(PayrollSocialCharge),
+          useValue: {
+            find: jest.fn(),
+          },
+        },
+        {
+          provide: getRepositoryToken(EmployeeAguinaldoProvision),
+          useValue: {
+            count: jest.fn(),
+            createQueryBuilder: jest.fn(),
+            find: jest.fn(),
+          },
+        },
+        {
           provide: getRepositoryToken(PersonalAction),
           useValue: {
             count: jest.fn(),
@@ -108,6 +132,9 @@ describe('PayrollService', () => {
                   andWhere: jest.fn().mockReturnThis(),
                   execute: jest.fn().mockResolvedValue({ affected: 1 }),
                 })),
+                find: jest.fn().mockResolvedValue([]),
+                save: jest.fn().mockResolvedValue([]),
+                create: jest.fn((entity) => entity),
               };
               return cb(manager);
             }),
@@ -307,9 +334,8 @@ describe('PayrollService', () => {
       estado: 1,
     } as any);
 
-    await expect(
-      service.update(22, { nombrePlanilla: 'Nuevo nombre' } as any, 1),
-    ).rejects.toThrow(BadRequestException);
+    await expect(service.update(22, { nombrePlanilla: 'Nuevo nombre' } as any, 1)).rejects.toThrow(
+      BadRequestException,
+    );
   });
-
 });

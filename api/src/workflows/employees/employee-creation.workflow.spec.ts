@@ -1,17 +1,22 @@
-import { Test, TestingModule } from '@nestjs/testing';
-import { DataSource, QueryRunner, EntityManager } from 'typeorm';
 import { EventEmitter2 } from '@nestjs/event-emitter';
-import { ConflictException } from '@nestjs/common';
-import { EmployeeCreationWorkflow } from './employee-creation.workflow';
-import { Employee } from '../../modules/employees/entities/employee.entity';
-import { User } from '../../modules/auth/entities/user.entity';
-import { App } from '../../modules/access-control/entities/app.entity';
-import { UserApp } from '../../modules/access-control/entities/user-app.entity';
-import { UserCompany } from '../../modules/access-control/entities/user-company.entity';
-import { UserRole } from '../../modules/access-control/entities/user-role.entity';
-import { EmployeeSensitiveDataService } from '../../common/services/employee-sensitive-data.service';
-import { CreateEmployeeDto } from '../../modules/employees/dto/create-employee.dto';
+import { Test } from '@nestjs/testing';
+import { DataSource } from 'typeorm';
+
 import { DOMAIN_EVENTS } from '../../common/events/event-names';
+import { EmployeeSensitiveDataService } from '../../common/services/employee-sensitive-data.service';
+import { User } from '../../modules/auth/entities/user.entity';
+import { Employee } from '../../modules/employees/entities/employee.entity';
+
+import { EmployeeCreationWorkflow } from './employee-creation.workflow';
+
+import type { CreateEmployeeDto } from '../../modules/employees/dto/create-employee.dto';
+import type { TestingModule } from '@nestjs/testing';
+import type { QueryRunner, EntityManager } from 'typeorm';
+
+
+
+
+
 
 describe('EmployeeCreationWorkflow', () => {
   let workflow: EmployeeCreationWorkflow;
@@ -88,9 +93,7 @@ describe('EmployeeCreationWorkflow', () => {
       // Arrange
       sensitiveDataService.hashCedula.mockReturnValue('hash-cedula');
       sensitiveDataService.hashEmail.mockReturnValue('hash-email');
-      sensitiveDataService.encrypt.mockImplementation(
-        (val) => `encrypted-${val}`,
-      );
+      sensitiveDataService.encrypt.mockImplementation((val) => `encrypted-${val}`);
       mockManager.findOne.mockResolvedValue(null);
       mockManager.save.mockImplementation((entity, data) =>
         Promise.resolve({ ...data, id: 1, codigo: 'KPid-1-EMP001' }),
@@ -123,9 +126,7 @@ describe('EmployeeCreationWorkflow', () => {
 
       sensitiveDataService.hashCedula.mockReturnValue('hash-cedula');
       sensitiveDataService.hashEmail.mockReturnValue('hash-email');
-      sensitiveDataService.encrypt.mockImplementation(
-        (val) => `encrypted-${val}`,
-      );
+      sensitiveDataService.encrypt.mockImplementation((val) => `encrypted-${val}`);
       mockManager.findOne
         .mockResolvedValueOnce(null) // No existing user
         .mockResolvedValueOnce(mockTimewiseApp) // Find TimeWise app
@@ -158,9 +159,7 @@ describe('EmployeeCreationWorkflow', () => {
 
       sensitiveDataService.hashCedula.mockReturnValue('hash-cedula');
       sensitiveDataService.hashEmail.mockReturnValue('hash-email');
-      sensitiveDataService.encrypt.mockImplementation(
-        (val) => `encrypted-${val}`,
-      );
+      sensitiveDataService.encrypt.mockImplementation((val) => `encrypted-${val}`);
       mockManager.findOne
         .mockResolvedValueOnce(null) // No existing user
         .mockResolvedValueOnce(mockKpitalApp) // Find KPITAL app
@@ -196,9 +195,7 @@ describe('EmployeeCreationWorkflow', () => {
 
       sensitiveDataService.hashCedula.mockReturnValue('hash-cedula');
       sensitiveDataService.hashEmail.mockReturnValue('hash-email');
-      sensitiveDataService.encrypt.mockImplementation(
-        (val) => `encrypted-${val}`,
-      );
+      sensitiveDataService.encrypt.mockImplementation((val) => `encrypted-${val}`);
       mockManager.findOne
         .mockResolvedValueOnce(null) // No existing user
         .mockResolvedValueOnce(mockTimewiseApp) // Find TimeWise app
@@ -216,9 +213,7 @@ describe('EmployeeCreationWorkflow', () => {
       // Assert
       expect(result.success).toBe(true);
       expect(result.data?.user).toBeDefined();
-      expect(result.data?.appsAssigned).toEqual(
-        expect.arrayContaining(['timewise', 'kpital']),
-      );
+      expect(result.data?.appsAssigned).toEqual(expect.arrayContaining(['timewise', 'kpital']));
       expect(mockQueryRunner.commitTransaction).toHaveBeenCalled();
     });
 
@@ -248,9 +243,7 @@ describe('EmployeeCreationWorkflow', () => {
       // Arrange
       sensitiveDataService.hashCedula.mockReturnValue('hash-cedula');
       sensitiveDataService.hashEmail.mockReturnValue('hash-email');
-      sensitiveDataService.encrypt.mockImplementation(
-        (val) => `encrypted-${val}`,
-      );
+      sensitiveDataService.encrypt.mockImplementation((val) => `encrypted-${val}`);
       mockManager.findOne.mockResolvedValue(null);
 
       let savedEmployeeId: number | undefined;
@@ -291,13 +284,9 @@ describe('EmployeeCreationWorkflow', () => {
 
       sensitiveDataService.hashCedula.mockReturnValue('hash-cedula');
       sensitiveDataService.hashEmail.mockReturnValue('hash-email');
-      sensitiveDataService.encrypt.mockImplementation(
-        (val) => `encrypted-${val}`,
-      );
+      sensitiveDataService.encrypt.mockImplementation((val) => `encrypted-${val}`);
       mockManager.findOne.mockResolvedValue(null);
-      mockManager.save.mockImplementation((entity, data) =>
-        Promise.resolve({ ...data, id: 1 }),
-      );
+      mockManager.save.mockImplementation((entity, data) => Promise.resolve({ ...data, id: 1 }));
 
       // Act
       const result = await workflow.execute(dtoWithProvisiones, 1);
@@ -343,16 +332,10 @@ describe('EmployeeCreationWorkflow', () => {
       const mockKpitalApp = { id: 1, codigo: 'kpital', estado: 1 };
       sensitiveDataService.hashCedula.mockReturnValue('hash-cedula');
       sensitiveDataService.hashEmail.mockReturnValue('hash-email');
-      sensitiveDataService.encrypt.mockImplementation(
-        (val) => `encrypted-${val}`,
-      );
-      mockManager.findOne
-        .mockResolvedValueOnce(null)
-        .mockResolvedValue(mockKpitalApp);
+      sensitiveDataService.encrypt.mockImplementation((val) => `encrypted-${val}`);
+      mockManager.findOne.mockResolvedValueOnce(null).mockResolvedValue(mockKpitalApp);
 
-      mockManager.save.mockImplementation((entity, data) =>
-        Promise.resolve({ ...data, id: 1 }),
-      );
+      mockManager.save.mockImplementation((entity, data) => Promise.resolve({ ...data, id: 1 }));
 
       // Act
       const result = await workflow.execute(dtoWithPassword, 1);
@@ -373,13 +356,9 @@ describe('EmployeeCreationWorkflow', () => {
       // Arrange
       sensitiveDataService.hashCedula.mockReturnValue('hash-cedula');
       sensitiveDataService.hashEmail.mockReturnValue('hash-email');
-      sensitiveDataService.encrypt.mockImplementation(
-        (val) => `encrypted-${val}`,
-      );
+      sensitiveDataService.encrypt.mockImplementation((val) => `encrypted-${val}`);
       mockManager.findOne.mockResolvedValue(null);
-      mockManager.save.mockImplementation((entity, data) =>
-        Promise.resolve({ ...data, id: 1 }),
-      );
+      mockManager.save.mockImplementation((entity, data) => Promise.resolve({ ...data, id: 1 }));
 
       // Act
       await workflow.execute(mockCreateDto, 1);
@@ -408,16 +387,12 @@ describe('EmployeeCreationWorkflow', () => {
 
       sensitiveDataService.hashCedula.mockReturnValue('hash-cedula');
       sensitiveDataService.hashEmail.mockReturnValue('hash-email');
-      sensitiveDataService.encrypt.mockImplementation(
-        (val) => `encrypted-${val}`,
-      );
+      sensitiveDataService.encrypt.mockImplementation((val) => `encrypted-${val}`);
       mockManager.findOne
         .mockResolvedValueOnce(null) // No existing user
         .mockResolvedValueOnce(null); // App not found
 
-      mockManager.save.mockImplementation((entity, data) =>
-        Promise.resolve({ ...data, id: 1 }),
-      );
+      mockManager.save.mockImplementation((entity, data) => Promise.resolve({ ...data, id: 1 }));
 
       // Act
       const result = await workflow.execute(dtoWithAccess, 1);

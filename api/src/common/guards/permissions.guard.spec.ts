@@ -1,12 +1,13 @@
-import { Test, TestingModule } from '@nestjs/testing';
-import {
-  ExecutionContext,
-  ForbiddenException,
-  UnauthorizedException,
-} from '@nestjs/common';
+import { ForbiddenException, UnauthorizedException } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
-import { PermissionsGuard } from './permissions.guard';
+import { Test } from '@nestjs/testing';
+
 import { AuthService } from '../../modules/auth/auth.service';
+
+import { PermissionsGuard } from './permissions.guard';
+
+import type { ExecutionContext } from '@nestjs/common';
+import type { TestingModule } from '@nestjs/testing';
 
 describe('PermissionsGuard', () => {
   let guard: PermissionsGuard;
@@ -87,19 +88,13 @@ describe('PermissionsGuard', () => {
       const context = createMockExecutionContext(undefined);
 
       // Act & Assert
-      await expect(guard.canActivate(context)).rejects.toThrow(
-        UnauthorizedException,
-      );
-      await expect(guard.canActivate(context)).rejects.toThrow(
-        'Sesion no valida',
-      );
+      await expect(guard.canActivate(context)).rejects.toThrow(UnauthorizedException);
+      await expect(guard.canActivate(context)).rejects.toThrow('Sesion no valida');
     });
 
     it('should allow access with valid permissions and companyId', async () => {
       // Arrange
-      reflector.getAllAndOverride
-        .mockReturnValueOnce(['employee:view'])
-        .mockReturnValueOnce(false);
+      reflector.getAllAndOverride.mockReturnValueOnce(['employee:view']).mockReturnValueOnce(false);
 
       authService.resolvePermissions.mockResolvedValue({
         permissions: ['employee:view', 'employee:create'],
@@ -118,12 +113,9 @@ describe('PermissionsGuard', () => {
 
       // Assert
       expect(result).toBe(true);
-      expect(authService.resolvePermissions).toHaveBeenCalledWith(
-        1,
-        123,
-        'kpital',
-        { bypassCache: false },
-      );
+      expect(authService.resolvePermissions).toHaveBeenCalledWith(1, 123, 'kpital', {
+        bypassCache: false,
+      });
     });
 
     it('should throw ForbiddenException when user lacks required permissions', async () => {
@@ -137,10 +129,7 @@ describe('PermissionsGuard', () => {
         roles: ['EMPLOYEE_VIEWER'],
       });
 
-      const context = createMockExecutionContext(
-        { userId: 1 },
-        { companyId: '123' },
-      );
+      const context = createMockExecutionContext({ userId: 1 }, { companyId: '123' });
 
       // Act & Assert
       const execution = guard.canActivate(context);
@@ -152,59 +141,42 @@ describe('PermissionsGuard', () => {
 
     it('should resolve permissions across companies when no companyId provided', async () => {
       // Arrange
-      reflector.getAllAndOverride
-        .mockReturnValueOnce(['employee:view'])
-        .mockReturnValueOnce(true);
+      reflector.getAllAndOverride.mockReturnValueOnce(['employee:view']).mockReturnValueOnce(true);
 
       authService.resolvePermissionsAcrossCompanies.mockResolvedValue({
         permissions: ['employee:view'],
         roles: ['EMPLOYEE_VIEWER'],
       });
 
-      const context = createMockExecutionContext(
-        { userId: 1 },
-        {},
-        {},
-        { 'x-app-code': 'kpital' },
-      );
+      const context = createMockExecutionContext({ userId: 1 }, {}, {}, { 'x-app-code': 'kpital' });
 
       // Act
       const result = await guard.canActivate(context);
 
       // Assert
       expect(result).toBe(true);
-      expect(
-        authService.resolvePermissionsAcrossCompanies,
-      ).not.toHaveBeenCalled();
+      expect(authService.resolvePermissionsAcrossCompanies).not.toHaveBeenCalled();
     });
 
     it('should extract companyId from idEmpresa query param', async () => {
       // Arrange
-      reflector.getAllAndOverride
-        .mockReturnValueOnce(['employee:view'])
-        .mockReturnValueOnce(false);
+      reflector.getAllAndOverride.mockReturnValueOnce(['employee:view']).mockReturnValueOnce(false);
 
       authService.resolvePermissions.mockResolvedValue({
         permissions: ['employee:view'],
         roles: ['EMPLOYEE_VIEWER'],
       });
 
-      const context = createMockExecutionContext(
-        { userId: 1 },
-        { idEmpresa: '456' },
-      );
+      const context = createMockExecutionContext({ userId: 1 }, { idEmpresa: '456' });
 
       // Act
       const result = await guard.canActivate(context);
 
       // Assert
       expect(result).toBe(true);
-      expect(authService.resolvePermissions).toHaveBeenCalledWith(
-        1,
-        456,
-        'kpital',
-        { bypassCache: false },
-      );
+      expect(authService.resolvePermissions).toHaveBeenCalledWith(1, 456, 'kpital', {
+        bypassCache: false,
+      });
     });
 
     it('should extract companyId from body', async () => {
@@ -218,23 +190,16 @@ describe('PermissionsGuard', () => {
         roles: ['EMPLOYEE_MANAGER'],
       });
 
-      const context = createMockExecutionContext(
-        { userId: 1 },
-        {},
-        { idEmpresa: 789 },
-      );
+      const context = createMockExecutionContext({ userId: 1 }, {}, { idEmpresa: 789 });
 
       // Act
       const result = await guard.canActivate(context);
 
       // Assert
       expect(result).toBe(true);
-      expect(authService.resolvePermissions).toHaveBeenCalledWith(
-        1,
-        789,
-        'kpital',
-        { bypassCache: false },
-      );
+      expect(authService.resolvePermissions).toHaveBeenCalledWith(1, 789, 'kpital', {
+        bypassCache: false,
+      });
     });
 
     it('should support legacy company:manage permission for granular permissions', async () => {
@@ -248,10 +213,7 @@ describe('PermissionsGuard', () => {
         roles: ['COMPANY_ADMIN'],
       });
 
-      const context = createMockExecutionContext(
-        { userId: 1 },
-        { companyId: '123' },
-      );
+      const context = createMockExecutionContext({ userId: 1 }, { companyId: '123' });
 
       // Act
       const result = await guard.canActivate(context);
@@ -262,37 +224,27 @@ describe('PermissionsGuard', () => {
 
     it('should use default appCode "kpital" when not provided', async () => {
       // Arrange
-      reflector.getAllAndOverride
-        .mockReturnValueOnce(['employee:view'])
-        .mockReturnValueOnce(false);
+      reflector.getAllAndOverride.mockReturnValueOnce(['employee:view']).mockReturnValueOnce(false);
 
       authService.resolvePermissions.mockResolvedValue({
         permissions: ['employee:view'],
         roles: ['EMPLOYEE_VIEWER'],
       });
 
-      const context = createMockExecutionContext(
-        { userId: 1 },
-        { companyId: '123' },
-      );
+      const context = createMockExecutionContext({ userId: 1 }, { companyId: '123' });
 
       // Act
       await guard.canActivate(context);
 
       // Assert
-      expect(authService.resolvePermissions).toHaveBeenCalledWith(
-        1,
-        123,
-        'kpital',
-        { bypassCache: false },
-      );
+      expect(authService.resolvePermissions).toHaveBeenCalledWith(1, 123, 'kpital', {
+        bypassCache: false,
+      });
     });
 
     it('should extract appCode from query parameter', async () => {
       // Arrange
-      reflector.getAllAndOverride
-        .mockReturnValueOnce(['employee:view'])
-        .mockReturnValueOnce(false);
+      reflector.getAllAndOverride.mockReturnValueOnce(['employee:view']).mockReturnValueOnce(false);
 
       authService.resolvePermissions.mockResolvedValue({
         permissions: ['employee:view'],
@@ -308,19 +260,14 @@ describe('PermissionsGuard', () => {
       await guard.canActivate(context);
 
       // Assert
-      expect(authService.resolvePermissions).toHaveBeenCalledWith(
-        1,
-        123,
-        'timewise',
-        { bypassCache: false },
-      );
+      expect(authService.resolvePermissions).toHaveBeenCalledWith(1, 123, 'timewise', {
+        bypassCache: false,
+      });
     });
 
     it('should extract appCode from body', async () => {
       // Arrange
-      reflector.getAllAndOverride
-        .mockReturnValueOnce(['employee:view'])
-        .mockReturnValueOnce(false);
+      reflector.getAllAndOverride.mockReturnValueOnce(['employee:view']).mockReturnValueOnce(false);
 
       authService.resolvePermissions.mockResolvedValue({
         permissions: ['employee:view'],
@@ -337,19 +284,14 @@ describe('PermissionsGuard', () => {
       await guard.canActivate(context);
 
       // Assert
-      expect(authService.resolvePermissions).toHaveBeenCalledWith(
-        1,
-        123,
-        'timewise',
-        { bypassCache: false },
-      );
+      expect(authService.resolvePermissions).toHaveBeenCalledWith(1, 123, 'timewise', {
+        bypassCache: false,
+      });
     });
 
     it('should extract appCode from headers', async () => {
       // Arrange
-      reflector.getAllAndOverride
-        .mockReturnValueOnce(['employee:view'])
-        .mockReturnValueOnce(false);
+      reflector.getAllAndOverride.mockReturnValueOnce(['employee:view']).mockReturnValueOnce(false);
 
       authService.resolvePermissions.mockResolvedValue({
         permissions: ['employee:view'],
@@ -367,19 +309,14 @@ describe('PermissionsGuard', () => {
       await guard.canActivate(context);
 
       // Assert
-      expect(authService.resolvePermissions).toHaveBeenCalledWith(
-        1,
-        123,
-        'timewise',
-        { bypassCache: false },
-      );
+      expect(authService.resolvePermissions).toHaveBeenCalledWith(1, 123, 'timewise', {
+        bypassCache: false,
+      });
     });
 
     it('should normalize appCode to lowercase', async () => {
       // Arrange
-      reflector.getAllAndOverride
-        .mockReturnValueOnce(['employee:view'])
-        .mockReturnValueOnce(false);
+      reflector.getAllAndOverride.mockReturnValueOnce(['employee:view']).mockReturnValueOnce(false);
 
       authService.resolvePermissions.mockResolvedValue({
         permissions: ['employee:view'],
@@ -395,19 +332,14 @@ describe('PermissionsGuard', () => {
       await guard.canActivate(context);
 
       // Assert
-      expect(authService.resolvePermissions).toHaveBeenCalledWith(
-        1,
-        123,
-        'timewise',
-        { bypassCache: false },
-      );
+      expect(authService.resolvePermissions).toHaveBeenCalledWith(1, 123, 'timewise', {
+        bypassCache: false,
+      });
     });
 
     it('should inject resolved permissions and roles into request.user', async () => {
       // Arrange
-      reflector.getAllAndOverride
-        .mockReturnValueOnce(['employee:view'])
-        .mockReturnValueOnce(false);
+      reflector.getAllAndOverride.mockReturnValueOnce(['employee:view']).mockReturnValueOnce(false);
 
       authService.resolvePermissions.mockResolvedValue({
         permissions: ['employee:view', 'employee:create'],
@@ -442,28 +374,21 @@ describe('PermissionsGuard', () => {
 
     it('should handle invalid companyId gracefully', async () => {
       // Arrange
-      reflector.getAllAndOverride
-        .mockReturnValueOnce(['employee:view'])
-        .mockReturnValueOnce(true);
+      reflector.getAllAndOverride.mockReturnValueOnce(['employee:view']).mockReturnValueOnce(true);
 
       authService.resolvePermissionsAcrossCompanies.mockResolvedValue({
         permissions: ['employee:view'],
         roles: ['EMPLOYEE_VIEWER'],
       });
 
-      const context = createMockExecutionContext(
-        { userId: 1 },
-        { companyId: 'invalid' },
-      );
+      const context = createMockExecutionContext({ userId: 1 }, { companyId: 'invalid' });
 
       // Act
       const result = await guard.canActivate(context);
 
       // Assert
       expect(result).toBe(true);
-      expect(
-        authService.resolvePermissionsAcrossCompanies,
-      ).not.toHaveBeenCalled();
+      expect(authService.resolvePermissionsAcrossCompanies).not.toHaveBeenCalled();
     });
   });
 });

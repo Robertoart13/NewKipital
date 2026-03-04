@@ -1,11 +1,12 @@
-import { Test, TestingModule } from '@nestjs/testing';
-import {
-  HealthCheckError,
-  HealthCheckService,
-  TypeOrmHealthIndicator,
-} from '@nestjs/terminus';
-import { HealthController } from './health.controller';
+import { HealthCheckService, TypeOrmHealthIndicator } from '@nestjs/terminus';
+import { Test } from '@nestjs/testing';
+
 import { REDIS_CLIENT } from '../../config/redis.config';
+
+import { HealthController } from './health.controller';
+
+import type { HealthCheckError } from '@nestjs/terminus';
+import type { TestingModule } from '@nestjs/testing';
 
 describe('HealthController', () => {
   let controller: HealthController;
@@ -81,12 +82,10 @@ describe('HealthController', () => {
     const module: TestingModule = await buildModule(mockRedis);
     const ctrl = module.get(HealthController);
     const hcs = module.get(HealthCheckService) as { check: jest.Mock };
-    hcs.check.mockImplementation(
-      async (checks: Array<() => Promise<unknown>>) => {
-        for (const check of checks) await check();
-        return { status: 'ok' };
-      },
-    );
+    hcs.check.mockImplementation(async (checks: Array<() => Promise<unknown>>) => {
+      for (const check of checks) await check();
+      return { status: 'ok' };
+    });
 
     await ctrl.check();
 
@@ -101,19 +100,17 @@ describe('HealthController', () => {
     const ctrl = module.get(HealthController);
     const hcs = module.get(HealthCheckService) as { check: jest.Mock };
 
-    hcs.check.mockImplementation(
-      async (checks: Array<() => Promise<unknown>>) => {
-        for (const check of checks) {
-          try {
-            await check();
-          } catch (e) {
-            // swallow to simulate terminus collecting errors
-            return { status: 'error', error: (e as HealthCheckError).causes };
-          }
+    hcs.check.mockImplementation(async (checks: Array<() => Promise<unknown>>) => {
+      for (const check of checks) {
+        try {
+          await check();
+        } catch (e) {
+          // swallow to simulate terminus collecting errors
+          return { status: 'error', error: (e as HealthCheckError).causes };
         }
-        return { status: 'ok' };
-      },
-    );
+      }
+      return { status: 'ok' };
+    });
 
     const result = await ctrl.check();
     expect((result as { status: string }).status).toBe('error');

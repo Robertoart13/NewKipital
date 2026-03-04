@@ -1,18 +1,16 @@
-import { MigrationInterface, QueryRunner, TableIndex } from 'typeorm';
+import { TableIndex } from 'typeorm';
+
+import type { MigrationInterface, QueryRunner } from 'typeorm';
 
 /**
  * Dia 3 - Snapshot enriquecido + flags de recalculo en planilla.
  */
-export class EnhancePayrollSnapshotsAndRecalculationFlags1708536900000
-  implements MigrationInterface
-{
+export class EnhancePayrollSnapshotsAndRecalculationFlags1708536900000 implements MigrationInterface {
   public async up(queryRunner: QueryRunner): Promise<void> {
     const addPayrollColumnIfMissing = async (name: string, ddl: string) => {
       const has = await queryRunner.hasColumn('nom_calendarios_nomina', name);
       if (!has) {
-        await queryRunner.query(
-          `ALTER TABLE nom_calendarios_nomina ADD COLUMN ${ddl}`,
-        );
+        await queryRunner.query(`ALTER TABLE nom_calendarios_nomina ADD COLUMN ${ddl}`);
       }
     };
 
@@ -28,9 +26,7 @@ export class EnhancePayrollSnapshotsAndRecalculationFlags1708536900000
     const addInputColumnIfMissing = async (name: string, ddl: string) => {
       const has = await queryRunner.hasColumn('nomina_inputs_snapshot', name);
       if (!has) {
-        await queryRunner.query(
-          `ALTER TABLE nomina_inputs_snapshot ADD COLUMN ${ddl}`,
-        );
+        await queryRunner.query(`ALTER TABLE nomina_inputs_snapshot ADD COLUMN ${ddl}`);
       }
     };
 
@@ -64,9 +60,7 @@ export class EnhancePayrollSnapshotsAndRecalculationFlags1708536900000
     );
 
     const table = await queryRunner.getTable('nomina_inputs_snapshot');
-    const hasRetroIndex = table?.indices.some(
-      (idx) => idx.name === 'IDX_input_retro_v2',
-    );
+    const hasRetroIndex = table?.indices.some((idx) => idx.name === 'IDX_input_retro_v2');
     if (!hasRetroIndex) {
       await queryRunner.createIndex(
         'nomina_inputs_snapshot',
@@ -87,9 +81,7 @@ export class EnhancePayrollSnapshotsAndRecalculationFlags1708536900000
     const dropInputColumnIfExists = async (name: string) => {
       const has = await queryRunner.hasColumn('nomina_inputs_snapshot', name);
       if (has) {
-        await queryRunner.query(
-          `ALTER TABLE nomina_inputs_snapshot DROP COLUMN \`${name}\``,
-        );
+        await queryRunner.query(`ALTER TABLE nomina_inputs_snapshot DROP COLUMN \`${name}\``);
       }
     };
 
@@ -104,9 +96,7 @@ export class EnhancePayrollSnapshotsAndRecalculationFlags1708536900000
     const dropPayrollColumnIfExists = async (name: string) => {
       const has = await queryRunner.hasColumn('nom_calendarios_nomina', name);
       if (has) {
-        await queryRunner.query(
-          `ALTER TABLE nom_calendarios_nomina DROP COLUMN \`${name}\``,
-        );
+        await queryRunner.query(`ALTER TABLE nom_calendarios_nomina DROP COLUMN \`${name}\``);
       }
     };
 
@@ -114,4 +104,3 @@ export class EnhancePayrollSnapshotsAndRecalculationFlags1708536900000
     await dropPayrollColumnIfExists('requires_recalculation_calendario_nomina');
   }
 }
-

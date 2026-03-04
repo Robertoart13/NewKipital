@@ -10,14 +10,16 @@ import {
   ParseBoolPipe,
   UseInterceptors,
 } from '@nestjs/common';
-import { PayrollService } from './payroll.service';
-import { CreatePayrollDto } from './dto/create-payroll.dto';
-import { UpdatePayrollDto } from './dto/update-payroll.dto';
+
+import { CacheScope } from '../../common/decorators/cache-scope.decorator';
+import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { Public } from '../../common/decorators/public.decorator';
 import { RequirePermissions } from '../../common/decorators/require-permissions.decorator';
-import { CurrentUser } from '../../common/decorators/current-user.decorator';
-import { CacheScope } from '../../common/decorators/cache-scope.decorator';
 import { CacheResponseInterceptor } from '../../common/interceptors/cache-response.interceptor';
+
+import type { CreatePayrollDto } from './dto/create-payroll.dto';
+import type { UpdatePayrollDto } from './dto/update-payroll.dto';
+import type { PayrollService } from './payroll.service';
 
 @CacheScope('payroll')
 @UseInterceptors(CacheResponseInterceptor)
@@ -56,19 +58,13 @@ export class PayrollController {
 
   @RequirePermissions('payroll:view')
   @Get(':id')
-  findOne(
-    @Param('id', ParseIntPipe) id: number,
-    @CurrentUser() user: { userId: number },
-  ) {
+  findOne(@Param('id', ParseIntPipe) id: number, @CurrentUser() user: { userId: number }) {
     return this.service.findOne(id, user.userId);
   }
 
   @RequirePermissions('payroll:create')
   @Post()
-  create(
-    @Body() dto: CreatePayrollDto,
-    @CurrentUser() user: { userId: number },
-  ) {
+  create(@Body() dto: CreatePayrollDto, @CurrentUser() user: { userId: number }) {
     return this.service.create(dto, user.userId);
   }
 
@@ -84,19 +80,13 @@ export class PayrollController {
 
   @RequirePermissions('payroll:verify')
   @Patch(':id/verify')
-  verify(
-    @Param('id', ParseIntPipe) id: number,
-    @CurrentUser() user: { userId: number },
-  ) {
+  verify(@Param('id', ParseIntPipe) id: number, @CurrentUser() user: { userId: number }) {
     return this.service.verify(id, user.userId);
   }
 
   @RequirePermissions('payroll:process')
   @Patch(':id/process')
-  process(
-    @Param('id', ParseIntPipe) id: number,
-    @CurrentUser() user: { userId: number },
-  ) {
+  process(@Param('id', ParseIntPipe) id: number, @CurrentUser() user: { userId: number }) {
     return this.service.process(id, user.userId);
   }
 
@@ -118,28 +108,18 @@ export class PayrollController {
     @Body('motivo') motivo: string,
     @CurrentUser() user: { userId: number },
   ) {
-    return this.service.reopen(
-      id,
-      motivo ?? 'Reapertura sin motivo',
-      user.userId,
-    );
+    return this.service.reopen(id, motivo ?? 'Reapertura sin motivo', user.userId);
   }
 
   @RequirePermissions('payroll:cancel')
   @Patch(':id/inactivate')
-  inactivate(
-    @Param('id', ParseIntPipe) id: number,
-    @CurrentUser() user: { userId: number },
-  ) {
+  inactivate(@Param('id', ParseIntPipe) id: number, @CurrentUser() user: { userId: number }) {
     return this.service.inactivate(id, user.userId);
   }
 
   @RequirePermissions('payroll:view')
   @Get(':id/snapshot-summary')
-  snapshotSummary(
-    @Param('id', ParseIntPipe) id: number,
-    @CurrentUser() user: { userId: number },
-  ) {
+  snapshotSummary(@Param('id', ParseIntPipe) id: number, @CurrentUser() user: { userId: number }) {
     return this.service.getSnapshotSummary(id, user.userId);
   }
 

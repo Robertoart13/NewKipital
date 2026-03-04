@@ -1,12 +1,16 @@
-import { Test, TestingModule } from '@nestjs/testing';
+import { Test } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
-import { OpsService } from './ops.service';
-import { Employee } from '../employees/entities/employee.entity';
-import { EmployeeIdentityQueue } from '../employees/entities/employee-identity-queue.entity';
+
 import { EmployeeEncryptQueue } from '../employees/entities/employee-encrypt-queue.entity';
+import { EmployeeIdentityQueue } from '../employees/entities/employee-identity-queue.entity';
+import { Employee } from '../employees/entities/employee.entity';
 import { EmployeeDataAutomationWorkerService } from '../employees/services/employee-data-automation-worker.service';
 import { EmployeeVacationService } from '../employees/services/employee-vacation.service';
+
+import { OpsService } from './ops.service';
+
+import type { TestingModule } from '@nestjs/testing';
+import type { Repository } from 'typeorm';
 
 describe('OpsService', () => {
   let service: OpsService;
@@ -53,24 +57,20 @@ describe('OpsService', () => {
 
   it('getSummary should aggregate queue and throughput metrics', async () => {
     identityQueueRepo.query.mockImplementation(async (sql: string) => {
-      if (sql.includes('GROUP BY estado_queue'))
-        return [{ estado_queue: 'PENDING', cnt: 2 }];
+      if (sql.includes('GROUP BY estado_queue')) return [{ estado_queue: 'PENDING', cnt: 2 }];
       if (sql.includes('MIN(ts) AS oldest_pending'))
         return [{ oldest_pending: '2026-02-24T10:00:00.000Z' }];
       if (sql.includes('INTERVAL 5 MINUTE')) return [{ cnt: 3 }];
-      if (sql.includes('DONE') && sql.includes('INTERVAL 15 MINUTE'))
-        return [{ cnt: 6 }];
+      if (sql.includes('DONE') && sql.includes('INTERVAL 15 MINUTE')) return [{ cnt: 6 }];
       if (sql.includes("LIKE 'ERROR%'")) return [{ cnt: 1 }];
       if (sql.includes("estado_queue = 'PROCESSING'")) return [{ cnt: 1 }];
       if (sql.includes('TIMESTAMPDIFF')) return [{ age: 22 }];
       return [{ cnt: 0 }];
     });
     encryptQueueRepo.query.mockImplementation(async (sql: string) => {
-      if (sql.includes('GROUP BY estado_queue'))
-        return [{ estado_queue: 'DONE', cnt: 9 }];
+      if (sql.includes('GROUP BY estado_queue')) return [{ estado_queue: 'DONE', cnt: 9 }];
       if (sql.includes('INTERVAL 5 MINUTE')) return [{ cnt: 2 }];
-      if (sql.includes('DONE') && sql.includes('INTERVAL 15 MINUTE'))
-        return [{ cnt: 4 }];
+      if (sql.includes('DONE') && sql.includes('INTERVAL 15 MINUTE')) return [{ cnt: 4 }];
       if (sql.includes("LIKE 'ERROR%'")) return [{ cnt: 2 }];
       if (sql.includes("estado_queue = 'PROCESSING'")) return [{ cnt: 3 }];
       return [{ cnt: 0 }];
@@ -132,12 +132,8 @@ describe('OpsService', () => {
   });
 
   it('healthCheck should return healthy false when stuck jobs exist', async () => {
-    identityQueueRepo.query
-      .mockResolvedValueOnce([{ cnt: 5 }])
-      .mockResolvedValueOnce([{ cnt: 1 }]);
-    encryptQueueRepo.query
-      .mockResolvedValueOnce([{ cnt: 2 }])
-      .mockResolvedValueOnce([{ cnt: 0 }]);
+    identityQueueRepo.query.mockResolvedValueOnce([{ cnt: 5 }]).mockResolvedValueOnce([{ cnt: 1 }]);
+    encryptQueueRepo.query.mockResolvedValueOnce([{ cnt: 2 }]).mockResolvedValueOnce([{ cnt: 0 }]);
 
     const result = await service.healthCheck();
 

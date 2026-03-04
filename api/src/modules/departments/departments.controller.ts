@@ -11,14 +11,16 @@ import {
   ParseBoolPipe,
   UseInterceptors,
 } from '@nestjs/common';
+
+import { CacheScope } from '../../common/decorators/cache-scope.decorator';
+import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { Public } from '../../common/decorators/public.decorator';
 import { RequirePermissions } from '../../common/decorators/require-permissions.decorator';
-import { CurrentUser } from '../../common/decorators/current-user.decorator';
-import { CacheScope } from '../../common/decorators/cache-scope.decorator';
 import { CacheResponseInterceptor } from '../../common/interceptors/cache-response.interceptor';
-import { DepartmentsService } from './departments.service';
-import { CreateDepartmentDto } from './dto/create-department.dto';
-import { UpdateDepartmentDto } from './dto/update-department.dto';
+
+import type { DepartmentsService } from './departments.service';
+import type { CreateDepartmentDto } from './dto/create-department.dto';
+import type { UpdateDepartmentDto } from './dto/update-department.dto';
 
 @CacheScope('departments')
 @UseInterceptors(CacheResponseInterceptor)
@@ -34,10 +36,7 @@ export class DepartmentsController {
 
   @RequirePermissions('department:create')
   @Post()
-  create(
-    @Body() dto: CreateDepartmentDto,
-    @CurrentUser() user: { userId: number },
-  ) {
+  create(@Body() dto: CreateDepartmentDto, @CurrentUser() user: { userId: number }) {
     return this.service.create(dto, user.userId);
   }
 
@@ -49,10 +48,7 @@ export class DepartmentsController {
     @Query('inactiveOnly', new ParseBoolPipe({ optional: true }))
     inactiveOnly?: boolean,
   ) {
-    return this.service.findAll(
-      includeInactive ?? false,
-      inactiveOnly ?? false,
-    );
+    return this.service.findAll(includeInactive ?? false, inactiveOnly ?? false);
   }
 
   @RequirePermissions('department:view')
@@ -73,19 +69,13 @@ export class DepartmentsController {
 
   @RequirePermissions('department:inactivate')
   @Patch(':id/inactivate')
-  inactivate(
-    @Param('id', ParseIntPipe) id: number,
-    @CurrentUser() user: { userId: number },
-  ) {
+  inactivate(@Param('id', ParseIntPipe) id: number, @CurrentUser() user: { userId: number }) {
     return this.service.inactivate(id, user.userId);
   }
 
   @RequirePermissions('department:reactivate')
   @Patch(':id/reactivate')
-  reactivate(
-    @Param('id', ParseIntPipe) id: number,
-    @CurrentUser() user: { userId: number },
-  ) {
+  reactivate(@Param('id', ParseIntPipe) id: number, @CurrentUser() user: { userId: number }) {
     return this.service.reactivate(id, user.userId);
   }
 

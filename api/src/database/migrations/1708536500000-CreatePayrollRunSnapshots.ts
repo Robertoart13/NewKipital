@@ -1,10 +1,6 @@
-import {
-  MigrationInterface,
-  QueryRunner,
-  Table,
-  TableForeignKey,
-  TableIndex,
-} from 'typeorm';
+import { Table, TableForeignKey, TableIndex } from 'typeorm';
+
+import type { MigrationInterface, QueryRunner } from 'typeorm';
 
 /**
  * Directiva 40 (sin NetSuite) - Snapshot y resultados de corrida de planilla.
@@ -16,9 +12,7 @@ import {
  */
 export class CreatePayrollRunSnapshots1708536500000 implements MigrationInterface {
   public async up(queryRunner: QueryRunner): Promise<void> {
-    const hasEmployeeSnapshot = await queryRunner.hasTable(
-      'nomina_empleados_snapshot',
-    );
+    const hasEmployeeSnapshot = await queryRunner.hasTable('nomina_empleados_snapshot');
     if (!hasEmployeeSnapshot) {
       await queryRunner.createTable(
         new Table({
@@ -121,9 +115,7 @@ export class CreatePayrollRunSnapshots1708536500000 implements MigrationInterfac
       );
     }
 
-    const hasInputSnapshot = await queryRunner.hasTable(
-      'nomina_inputs_snapshot',
-    );
+    const hasInputSnapshot = await queryRunner.hasTable('nomina_inputs_snapshot');
     if (!hasInputSnapshot) {
       await queryRunner.createTable(
         new Table({

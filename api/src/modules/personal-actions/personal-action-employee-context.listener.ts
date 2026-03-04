@@ -1,11 +1,14 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { OnEvent } from '@nestjs/event-emitter';
+
 import { DOMAIN_EVENTS } from '../../common/events/event-names';
-import { PersonalActionAutoInvalidationService } from './personal-action-auto-invalidation.service';
+
 import {
   PERSONAL_ACTION_INVALIDATION_REASON,
   type PersonalActionInvalidationReasonCode,
 } from './constants/personal-action-invalidation.constants';
+
+import type { PersonalActionAutoInvalidationService } from './personal-action-auto-invalidation.service';
 
 interface EmployeeContextUpdatedEvent {
   payload: {
@@ -20,9 +23,7 @@ interface EmployeeContextUpdatedEvent {
 export class PersonalActionEmployeeContextListener {
   private readonly logger = new Logger(PersonalActionEmployeeContextListener.name);
 
-  constructor(
-    private readonly autoInvalidationService: PersonalActionAutoInvalidationService,
-  ) {}
+  constructor(private readonly autoInvalidationService: PersonalActionAutoInvalidationService) {}
 
   @OnEvent(DOMAIN_EVENTS.EMPLOYEE.CONTEXT_UPDATED)
   async onEmployeeContextUpdated(event: EmployeeContextUpdatedEvent): Promise<void> {

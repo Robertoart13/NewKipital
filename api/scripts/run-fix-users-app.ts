@@ -24,7 +24,10 @@ async function run() {
   )) as unknown;
   const rows = Array.isArray(kpitalRows) ? kpitalRows[0] : kpitalRows;
   const first = Array.isArray(rows) ? rows[0] : rows;
-  const appId = first && typeof first === 'object' && 'idApp' in first ? (first as { idApp: number }).idApp : null;
+  const appId =
+    first && typeof first === 'object' && 'idApp' in first
+      ? (first as { idApp: number }).idApp
+      : null;
   if (!appId) {
     console.log('App KPITAL no encontrada. Nada que hacer.');
     await ds.destroy();

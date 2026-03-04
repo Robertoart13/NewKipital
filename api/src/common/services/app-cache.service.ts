@@ -1,9 +1,12 @@
-import { Inject, Injectable, Logger } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
 import { createHash } from 'crypto';
-import type Redis from 'ioredis';
+
+import { Inject, Injectable, Logger } from '@nestjs/common';
+
 import { REDIS_CLIENT } from '../../config/redis.config';
 import { DEFAULT_CACHE_TTL_MS } from '../constants/cache.constants';
+
+import type { ConfigService } from '@nestjs/config';
+import type Redis from 'ioredis';
 
 type CacheEntry<T> = {
   value: T;
@@ -51,15 +54,11 @@ export class AppCacheService {
     private readonly config: ConfigService,
   ) {
     this.strictRedis =
-      (this.config.get<string>('CACHE_STRICT_REDIS') ?? 'false').toLowerCase() ===
-      'true';
-    this.envPrefix =
-      (this.config.get<string>('CACHE_ENV_PREFIX') ?? 'prod').trim() || 'prod';
-    this.keyVersion =
-      (this.config.get<string>('CACHE_KEY_VERSION') ?? 'v1').trim() || 'v1';
+      (this.config.get<string>('CACHE_STRICT_REDIS') ?? 'false').toLowerCase() === 'true';
+    this.envPrefix = (this.config.get<string>('CACHE_ENV_PREFIX') ?? 'prod').trim() || 'prod';
+    this.keyVersion = (this.config.get<string>('CACHE_KEY_VERSION') ?? 'v1').trim() || 'v1';
     this.allowStaleWhileRevalidate =
-      (this.config.get<string>('CACHE_SWR_ENABLED') ?? 'true').toLowerCase() ===
-      'true';
+      (this.config.get<string>('CACHE_SWR_ENABLED') ?? 'true').toLowerCase() === 'true';
     this.redisTimeoutMs = Math.max(
       Number(this.config.get<number>('CACHE_REDIS_TIMEOUT_MS') ?? 75),
       10,
@@ -83,13 +82,7 @@ export class AppCacheService {
     ttlMs: number = DEFAULT_CACHE_TTL_MS,
   ): Promise<T> {
     const version = await this.getScopeVersion(scope, companyKey);
-    const key = this.buildCacheKey(
-      scope,
-      companyKey,
-      userScope,
-      version,
-      keyParts,
-    );
+    const key = this.buildCacheKey(scope, companyKey, userScope, version, keyParts);
     const cached = await this.get<T>(key);
     if (cached !== null) {
       this.stats.hits += 1;
@@ -99,7 +92,8 @@ export class AppCacheService {
 
     if (this.isBreakerOpen()) {
       this.stats.breakerOpen += 1;
-      return loader();
+      const { value } = await loader();
+      return value;
     }
 
     if (this.redisClient) {
@@ -203,12 +197,7 @@ export class AppCacheService {
     if (this.redisClient) {
       try {
         await this.withRedisTimeout(
-          this.redisClient.set(
-            key,
-            JSON.stringify(value),
-            'PX',
-            Math.max(ttlMs, 0),
-          ),
+          this.redisClient.set(key, JSON.stringify(value), 'PX', Math.max(ttlMs, 0)),
         );
         this.stats.sets += 1;
         this.recordBreakerSuccess();
@@ -230,10 +219,7 @@ export class AppCacheService {
     this.stats.sets += 1;
   }
 
-  private async getScopeVersion(
-    scope: string,
-    companyKey: string,
-  ): Promise<number> {
+  private async getScopeVersion(scope: string, companyKey: string): Promise<number> {
     if (this.redisClient) {
       try {
         const key = this.buildScopeVersionKey(scope, companyKey);
@@ -270,10 +256,7 @@ export class AppCacheService {
     return 1;
   }
 
-  private async bumpScopeVersion(
-    scope: string,
-    companyKey: string,
-  ): Promise<void> {
+  private async bumpScopeVersion(scope: string, companyKey: string): Promise<void> {
     if (this.redisClient) {
       try {
         const key = this.buildScopeVersionKey(scope, companyKey);
@@ -347,11 +330,7 @@ export class AppCacheService {
     }
   }
 
-  private async tryAcquireLock(
-    lockKey: string,
-    owner: string,
-    ttlMs: number,
-  ): Promise<boolean> {
+  private async tryAcquireLock(lockKey: string, owner: string, ttlMs: number): Promise<boolean> {
     if (!this.redisClient) return false;
     try {
       const result = await this.withRedisTimeout(
@@ -365,10 +344,7 @@ export class AppCacheService {
     }
   }
 
-  private async waitForLockRelease(
-    lockKey: string,
-    waitMs: number,
-  ): Promise<void> {
+  private async waitForLockRelease(lockKey: string, waitMs: number): Promise<void> {
     if (!this.redisClient) return;
     await new Promise((resolve) => setTimeout(resolve, waitMs));
     try {

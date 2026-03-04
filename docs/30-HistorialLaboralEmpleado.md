@@ -154,3 +154,23 @@ SOLAPE-PLANILLAS-2026-03-02)
 - TimeWise: acciones de vacaciones se crean en estado Borrador sin planilla. RRHH completa fechas/movimiento en KPITAL; el sistema asigna planilla por fecha.
 - Planilla: al cargar una planilla se consumen las fechas cuyo `id_calendario_nomina` coincide con la planilla y estado aprobado. No se requiere que el header tenga planilla.
 ---
+## Actualizacion 2026-03-04 - Fuente de provision de aguinaldo
+
+- La provision de aguinaldo se calcula con base en resultados de planilla por empleado (`nomina_resultados`).
+- El devengado monetario se obtiene desde `salario_bruto_periodo_resultado` y acciones aplicadas (total bruto).
+- El detalle por planilla queda en `nomina_planilla_snapshot_json` para auditoria.
+- En traslados interempresas, el saldo a provisionar se toma del historico de planillas (no del dato manual).
+- En cada planilla aplicada se registra una provision automatica por empleado:
+  - `monto_provisionado = total_bruto / 12`
+  - `fecha_inicio_laboral = fecha_inicio_periodo`
+  - `fecha_fin_laboral = fecha_fin_periodo`
+  - `registro_empresa = "Planilla aplicada #<id_planilla>"`
+
+## Actualizacion 2026-03-04 - Traslado interempresas (continuidad)
+
+- En traslado con continuidad se crea una fila en `sys_empleado_provision_aguinaldo` para la **empresa origen**:
+  - `monto_provisionado = SUM(total_bruto_resultado) / 12` hasta `fecha_efectiva`.
+  - `fecha_inicio_laboral = fecha_ingreso_empleado`.
+  - `fecha_fin_laboral = fecha_efectiva`.
+  - `registro_empresa = "Traslado de empresa"`.
+  - `estado = Pendiente`.

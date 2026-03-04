@@ -1,26 +1,33 @@
-import { Test, TestingModule } from '@nestjs/testing';
 import {
   ForbiddenException,
   ConflictException,
   NotFoundException,
   BadRequestException,
 } from '@nestjs/common';
-import { getRepositoryToken } from '@nestjs/typeorm';
-import { DataSource, Repository } from 'typeorm';
 import { EventEmitter2 } from '@nestjs/event-emitter';
-import { EmployeesService } from './employees.service';
-import { Employee, MonedaSalarioEmpleado } from './entities/employee.entity';
-import { EmployeeAguinaldoProvision } from './entities/employee-aguinaldo-provision.entity';
-import { UserCompany } from '../access-control/entities/user-company.entity';
-import { User } from '../auth/entities/user.entity';
-import { EmployeeCreationWorkflow } from '../../workflows/employees/employee-creation.workflow';
-import { AuthService } from '../auth/auth.service';
+import { Test } from '@nestjs/testing';
+import { getRepositoryToken } from '@nestjs/typeorm';
+import { DataSource } from 'typeorm';
+
 import { EmployeeSensitiveDataService } from '../../common/services/employee-sensitive-data.service';
-import { CreateEmployeeDto } from './dto/create-employee.dto';
+import { EmployeeCreationWorkflow } from '../../workflows/employees/employee-creation.workflow';
+import { UserCompany } from '../access-control/entities/user-company.entity';
+import { AuthService } from '../auth/auth.service';
+import { User } from '../auth/entities/user.entity';
+
+
+import { AuditOutboxService } from '../integration/audit-outbox.service';
 import { PayrollCalendar } from '../payroll/entities/payroll-calendar.entity';
 import { PersonalAction } from '../personal-actions/entities/personal-action.entity';
+
+import { EmployeesService } from './employees.service';
+import { EmployeeAguinaldoProvision } from './entities/employee-aguinaldo-provision.entity';
+import { Employee, MonedaSalarioEmpleado } from './entities/employee.entity';
 import { EmployeeVacationService } from './services/employee-vacation.service';
-import { AuditOutboxService } from '../integration/audit-outbox.service';
+
+import type { CreateEmployeeDto } from './dto/create-employee.dto';
+import type { TestingModule } from '@nestjs/testing';
+import type { Repository } from 'typeorm';
 
 describe('EmployeesService', () => {
   let service: EmployeesService;
@@ -116,9 +123,7 @@ describe('EmployeesService', () => {
       encrypt: jest.fn(),
       decrypt: jest.fn(),
     };
-    mockSensitiveDataService.decrypt.mockImplementation(
-      (value) => value as string,
-    );
+    mockSensitiveDataService.decrypt.mockImplementation((value) => value as string);
 
     const mockEventEmitter = {
       emit: jest.fn(),
@@ -228,9 +233,7 @@ describe('EmployeesService', () => {
       userCompanyRepo.findOne.mockResolvedValue(null);
 
       // Act & Assert
-      await expect(service.create(mockCreateDto, 1)).rejects.toThrow(
-        ForbiddenException,
-      );
+      await expect(service.create(mockCreateDto, 1)).rejects.toThrow(ForbiddenException);
       await expect(service.create(mockCreateDto, 1)).rejects.toThrow(
         'No tiene acceso a la empresa seleccionada',
       );
@@ -250,9 +253,7 @@ describe('EmployeesService', () => {
       });
 
       // Act & Assert
-      await expect(service.create(mockCreateDto, 1)).rejects.toThrow(
-        ConflictException,
-      );
+      await expect(service.create(mockCreateDto, 1)).rejects.toThrow(ConflictException);
       await expect(service.create(mockCreateDto, 1)).rejects.toThrow(
         "Ya existe un empleado con código 'EMP001'",
       );
@@ -279,9 +280,7 @@ describe('EmployeesService', () => {
       // Act & Assert
       const execution = service.create(mockCreateDto, 1);
       await expect(execution).rejects.toThrow(ConflictException);
-      await expect(execution).rejects.toThrow(
-        "Ya existe un empleado con cédula '123456789'",
-      );
+      await expect(execution).rejects.toThrow("Ya existe un empleado con cédula '123456789'");
     });
 
     it('should throw ConflictException when email already exists', async () => {
@@ -348,11 +347,7 @@ describe('EmployeesService', () => {
 
       // Assert
       expect(result).toHaveProperty('success', true);
-      expect(authService.resolvePermissions).toHaveBeenCalledWith(
-        1,
-        1,
-        'timewise',
-      );
+      expect(authService.resolvePermissions).toHaveBeenCalledWith(1, 1, 'timewise');
     });
 
     it('should throw ForbiddenException when creating TimeWise access without permission', async () => {
@@ -382,9 +377,7 @@ describe('EmployeesService', () => {
       });
 
       // Act & Assert
-      await expect(service.create(dtoWithTW, 1)).rejects.toThrow(
-        ForbiddenException,
-      );
+      await expect(service.create(dtoWithTW, 1)).rejects.toThrow(ForbiddenException);
       await expect(service.create(dtoWithTW, 1)).rejects.toThrow(
         'No tiene permiso para asignar roles de TimeWise',
       );
@@ -428,11 +421,7 @@ describe('EmployeesService', () => {
 
       // Assert
       expect(result).toHaveProperty('success', true);
-      expect(authService.resolvePermissions).toHaveBeenCalledWith(
-        1,
-        1,
-        'kpital',
-      );
+      expect(authService.resolvePermissions).toHaveBeenCalledWith(1, 1, 'kpital');
     });
 
     it('should throw BadRequestException when vacaciones acumuladas is negative', async () => {
@@ -462,9 +451,7 @@ describe('EmployeesService', () => {
         ...mockCreateDto,
         fechaIngreso: '2026-01-31',
       };
-      await expect(service.create(dtoWithInvalidFecha, 1)).rejects.toThrow(
-        BadRequestException,
-      );
+      await expect(service.create(dtoWithInvalidFecha, 1)).rejects.toThrow(BadRequestException);
       await expect(service.create(dtoWithInvalidFecha, 1)).rejects.toThrow(
         'Fecha de ingreso debe estar entre el día 1 y 28 del mes.',
       );
@@ -493,9 +480,7 @@ describe('EmployeesService', () => {
       } as any);
 
       // Act & Assert
-      await expect(service.create(dtoWithInvalidProvision, 1)).rejects.toThrow(
-        BadRequestException,
-      );
+      await expect(service.create(dtoWithInvalidProvision, 1)).rejects.toThrow(BadRequestException);
       await expect(service.create(dtoWithInvalidProvision, 1)).rejects.toThrow(
         'fecha inicio laboral no puede ser futura',
       );
@@ -516,9 +501,7 @@ describe('EmployeesService', () => {
         getManyAndCount: jest.fn().mockResolvedValue([[mockEmployee], 1]),
       };
 
-      (employeeRepo.createQueryBuilder as jest.Mock).mockReturnValue(
-        mockQueryBuilder,
-      );
+      (employeeRepo.createQueryBuilder as jest.Mock).mockReturnValue(mockQueryBuilder);
       userCompanyRepo.findOne.mockResolvedValue({
         idUsuario: 1,
         idEmpresa: 1,
@@ -580,9 +563,7 @@ describe('EmployeesService', () => {
         getManyAndCount: jest.fn().mockResolvedValue([[], 0]),
       };
 
-      (employeeRepo.createQueryBuilder as jest.Mock).mockReturnValue(
-        mockQueryBuilder,
-      );
+      (employeeRepo.createQueryBuilder as jest.Mock).mockReturnValue(mockQueryBuilder);
       userCompanyRepo.findOne.mockResolvedValue({
         idUsuario: 1,
         idEmpresa: 1,
@@ -651,9 +632,7 @@ describe('EmployeesService', () => {
         roles: [],
       });
       sensitiveDataService.decrypt.mockImplementation((val) => val);
-      sensitiveDataService.encrypt.mockImplementation(
-        (val) => `encrypted-${val}`,
-      );
+      sensitiveDataService.encrypt.mockImplementation((val) => `encrypted-${val}`);
       sensitiveDataService.hashEmail.mockReturnValue('hash-new-email');
 
       const mockDataSource = {
@@ -685,9 +664,9 @@ describe('EmployeesService', () => {
       sensitiveDataService.decrypt.mockImplementation((val) => val);
 
       // Act & Assert
-      await expect(
-        service.update(1, { nombre: 'Jane' }, undefined as any),
-      ).rejects.toThrow(ForbiddenException);
+      await expect(service.update(1, { nombre: 'Jane' }, undefined as any)).rejects.toThrow(
+        ForbiddenException,
+      );
     });
 
     it('should reject editing vacacionesAcumuladas in update payload', async () => {
@@ -713,9 +692,9 @@ describe('EmployeesService', () => {
       };
       (service as any).dataSource = mockDataSource;
 
-      await expect(
-        service.update(1, { vacacionesAcumuladas: '10' }, 1),
-      ).rejects.toThrow(BadRequestException);
+      await expect(service.update(1, { vacacionesAcumuladas: '10' }, 1)).rejects.toThrow(
+        BadRequestException,
+      );
     });
 
     it('should emit EMPLOYEE.CONTEXT_UPDATED when termination or currency changes', async () => {
@@ -730,9 +709,7 @@ describe('EmployeesService', () => {
         roles: [],
       });
       sensitiveDataService.decrypt.mockImplementation((val) => val);
-      sensitiveDataService.encrypt.mockImplementation(
-        (val) => `encrypted-${val}`,
-      );
+      sensitiveDataService.encrypt.mockImplementation((val) => `encrypted-${val}`);
 
       const savedEmployee = {
         ...mockEmployee,

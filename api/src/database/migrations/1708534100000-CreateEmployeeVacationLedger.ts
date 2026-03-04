@@ -1,10 +1,6 @@
-﻿import {
-  MigrationInterface,
-  QueryRunner,
-  Table,
-  TableForeignKey,
-  TableIndex,
-} from 'typeorm';
+﻿import { Table, TableForeignKey, TableIndex } from 'typeorm';
+
+import type { MigrationInterface, QueryRunner } from 'typeorm';
 
 export class CreateEmployeeVacationLedger1708534100000 implements MigrationInterface {
   public async up(queryRunner: QueryRunner): Promise<void> {
@@ -132,13 +128,7 @@ export class CreateEmployeeVacationLedger1708534100000 implements MigrationInter
           {
             name: 'tipo_movimiento_vacaciones',
             type: 'enum',
-            enum: [
-              'INITIAL',
-              'MONTHLY_ACCRUAL',
-              'VACATION_USAGE',
-              'REVERSAL',
-              'ADJUSTMENT',
-            ],
+            enum: ['INITIAL', 'MONTHLY_ACCRUAL', 'VACATION_USAGE', 'REVERSAL', 'ADJUSTMENT'],
             isNullable: false,
           },
           { name: 'dias_delta_vacaciones', type: 'int', isNullable: false },
@@ -218,11 +208,7 @@ export class CreateEmployeeVacationLedger1708534100000 implements MigrationInter
       'sys_empleado_vacaciones_ledger',
       new TableIndex({
         name: 'UQ_vacaciones_ledger_provision_periodo',
-        columnNames: [
-          'id_empleado',
-          'tipo_movimiento_vacaciones',
-          'periodo_referencia_vacaciones',
-        ],
+        columnNames: ['id_empleado', 'tipo_movimiento_vacaciones', 'periodo_referencia_vacaciones'],
         isUnique: true,
       }),
     );
@@ -439,10 +425,7 @@ export class CreateEmployeeVacationLedger1708534100000 implements MigrationInter
   }
 
   public async down(queryRunner: QueryRunner): Promise<void> {
-    await queryRunner.dropTable(
-      'sys_empleado_vacaciones_provision_monto',
-      true,
-    );
+    await queryRunner.dropTable('sys_empleado_vacaciones_provision_monto', true);
     await queryRunner.dropTable('sys_empleado_vacaciones_ledger', true);
     await queryRunner.dropTable('sys_empleado_vacaciones_cuenta', true);
   }

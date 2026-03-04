@@ -521,9 +521,12 @@ export function VacationTransactionModal(props: VacationTransactionModalProps) {
   const pickPreferredPayroll = useCallback(
     (matches: Array<{
       id: number;
+      label: string;
       estado?: number;
       fechaInicioPeriodo: string;
       fechaFinPeriodo: string;
+      idTipoPlanilla?: number | null;
+      tipoPlanilla?: string | null;
     }>) => {
       if (matches.length === 0) return null;
       if (matches.length === 1) return matches[0];

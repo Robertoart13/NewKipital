@@ -4,10 +4,9 @@ import {
   Column,
   Index,
   CreateDateColumn,
-  ManyToOne,
   OneToMany,
-  JoinColumn,
 } from 'typeorm';
+
 import { NotificationUser } from './notification-user.entity';
 
 @Entity('sys_notificaciones')

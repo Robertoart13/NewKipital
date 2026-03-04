@@ -1,5 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { DomainEventsService } from '../integration/domain-events.service';
+
+import type { DomainEventsService } from '../integration/domain-events.service';
 
 interface AuthAuditInput {
   event: string;

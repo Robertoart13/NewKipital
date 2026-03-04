@@ -11,14 +11,16 @@ import {
   ParseBoolPipe,
   UseInterceptors,
 } from '@nestjs/common';
-import { EmployeesService } from './employees.service';
-import { CreateEmployeeDto } from './dto/create-employee.dto';
-import { UpdateEmployeeDto } from './dto/update-employee.dto';
+
+import { CacheScope } from '../../common/decorators/cache-scope.decorator';
+import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { Public } from '../../common/decorators/public.decorator';
 import { RequirePermissions } from '../../common/decorators/require-permissions.decorator';
-import { CurrentUser } from '../../common/decorators/current-user.decorator';
-import { CacheScope } from '../../common/decorators/cache-scope.decorator';
 import { CacheResponseInterceptor } from '../../common/interceptors/cache-response.interceptor';
+
+import type { CreateEmployeeDto } from './dto/create-employee.dto';
+import type { UpdateEmployeeDto } from './dto/update-employee.dto';
+import type { EmployeesService } from './employees.service';
 
 @CacheScope('employees')
 @UseInterceptors(CacheResponseInterceptor)
@@ -34,10 +36,7 @@ export class EmployeesController {
 
   @RequirePermissions('employee:create')
   @Post()
-  create(
-    @Body() dto: CreateEmployeeDto,
-    @CurrentUser() user: { userId: number },
-  ) {
+  create(@Body() dto: CreateEmployeeDto, @CurrentUser() user: { userId: number }) {
     return this.service.create(dto, user.userId);
   }
 
@@ -71,32 +70,23 @@ export class EmployeesController {
           .map((value) => parseInt(value.trim(), 10))
           .filter((n) => !Number.isNaN(n) && n > 0)
       : undefined;
-    return this.service.findAll(
-      user.userId,
-      Number.isNaN(idEmpresa!) ? undefined : idEmpresa,
-      {
-        includeInactive: includeInactive ?? false,
-        page: page ? parseInt(page, 10) : undefined,
-        pageSize: pageSize ? parseInt(pageSize, 10) : undefined,
-        search: search || undefined,
-        idDepartamento: idDepartamento
-          ? parseInt(idDepartamento, 10)
-          : undefined,
-        idPuesto: idPuesto ? parseInt(idPuesto, 10) : undefined,
-        estado: estado !== undefined ? parseInt(estado, 10) : undefined,
-        sort: sort || undefined,
-        order: order ?? undefined,
-        companyIds,
-      },
-    );
+    return this.service.findAll(user.userId, Number.isNaN(idEmpresa!) ? undefined : idEmpresa, {
+      includeInactive: includeInactive ?? false,
+      page: page ? parseInt(page, 10) : undefined,
+      pageSize: pageSize ? parseInt(pageSize, 10) : undefined,
+      search: search || undefined,
+      idDepartamento: idDepartamento ? parseInt(idDepartamento, 10) : undefined,
+      idPuesto: idPuesto ? parseInt(idPuesto, 10) : undefined,
+      estado: estado !== undefined ? parseInt(estado, 10) : undefined,
+      sort: sort || undefined,
+      order: order ?? undefined,
+      companyIds,
+    });
   }
 
   @RequirePermissions('employee:view')
   @Get(':id')
-  findOne(
-    @Param('id', ParseIntPipe) id: number,
-    @CurrentUser() user: { userId: number },
-  ) {
+  findOne(@Param('id', ParseIntPipe) id: number, @CurrentUser() user: { userId: number }) {
     return this.service.findOne(id, user.userId);
   }
 
@@ -112,19 +102,13 @@ export class EmployeesController {
 
   @RequirePermissions('employee:inactivate')
   @Patch(':id/inactivate')
-  inactivate(
-    @Param('id', ParseIntPipe) id: number,
-    @CurrentUser() user: { userId: number },
-  ) {
+  inactivate(@Param('id', ParseIntPipe) id: number, @CurrentUser() user: { userId: number }) {
     return this.service.inactivate(id, user.userId);
   }
 
   @RequirePermissions('employee:reactivate')
   @Patch(':id/reactivate')
-  reactivate(
-    @Param('id', ParseIntPipe) id: number,
-    @CurrentUser() user: { userId: number },
-  ) {
+  reactivate(@Param('id', ParseIntPipe) id: number, @CurrentUser() user: { userId: number }) {
     return this.service.reactivate(id, user.userId);
   }
 

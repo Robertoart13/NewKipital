@@ -1,7 +1,11 @@
-import { Test, TestingModule } from '@nestjs/testing';
-import { INestApplication, ValidationPipe } from '@nestjs/common';
+import { ValidationPipe } from '@nestjs/common';
+import { Test } from '@nestjs/testing';
 import request from 'supertest';
+
 import { AppModule } from '../src/app.module';
+
+import type { INestApplication } from '@nestjs/common';
+import type { TestingModule } from '@nestjs/testing';
 
 describe('EmployeesController (e2e)', () => {
   let app: INestApplication;
@@ -15,18 +19,14 @@ describe('EmployeesController (e2e)', () => {
     }).compile();
 
     app = moduleFixture.createNestApplication();
-    app.useGlobalPipes(
-      new ValidationPipe({ whitelist: true, transform: true }),
-    );
+    app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
     await app.init();
 
     // Login to get access token
-    const loginResponse = await request(app.getHttpServer())
-      .post('/auth/login')
-      .send({
-        email: 'ana.garcia@roccacr.com',
-        password: 'Demo2026!',
-      });
+    const loginResponse = await request(app.getHttpServer()).post('/auth/login').send({
+      email: 'ana.garcia@roccacr.com',
+      password: 'Demo2026!',
+    });
 
     accessToken = loginResponse.body.accessToken;
   });
@@ -51,9 +51,7 @@ describe('EmployeesController (e2e)', () => {
     });
 
     it('should reject request without authentication', () => {
-      return request(app.getHttpServer())
-        .get(`/employees?idEmpresa=${testCompanyId}`)
-        .expect(401);
+      return request(app.getHttpServer()).get(`/employees?idEmpresa=${testCompanyId}`).expect(401);
     });
 
     it('should reject request without company access', () => {
@@ -101,9 +99,7 @@ describe('EmployeesController (e2e)', () => {
 
     it('should support sorting', () => {
       return request(app.getHttpServer())
-        .get(
-          `/employees?idEmpresa=${testCompanyId}&sort=fechaIngreso&order=DESC`,
-        )
+        .get(`/employees?idEmpresa=${testCompanyId}&sort=fechaIngreso&order=DESC`)
         .set('Authorization', `Bearer ${accessToken}`)
         .expect(200);
     });
@@ -295,9 +291,7 @@ describe('EmployeesController (e2e)', () => {
     });
 
     it('should reject request without authentication', () => {
-      return request(app.getHttpServer())
-        .get(`/employees/${testEmployeeId}`)
-        .expect(401);
+      return request(app.getHttpServer()).get(`/employees/${testEmployeeId}`).expect(401);
     });
   });
 

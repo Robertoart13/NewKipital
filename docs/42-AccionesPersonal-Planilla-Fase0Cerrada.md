@@ -172,6 +172,63 @@ se marca `requires_recalculation = 1` y se bloquea `APPLY` hasta reprocesar.
 
 ---
 
+## 8.1 Resultados de planilla (gap y estrategia enterprise)
+
+### Estado actual
+
+- `nomina_empleados_snapshot`: foto del empleado (salario base, jornada, moneda).
+- `nomina_inputs_snapshot`: movimientos/inputs por empleado.
+- `nomina_resultados`: totales por empleado (bruto, deducciones, neto).
+
+### Gap identificado (2026-03-04)
+
+No se persisten aÃºn los campos necesarios para:
+
+- `devengado_dias` / `devengado_horas`
+- `salario_bruto_periodo`
+- `cargas_sociales` por empleado
+- `impuesto_renta` por empleado
+
+### Estrategia propuesta (Enterprise CR)
+
+1. **Persistencia normalizada para reportes rÃ¡pidos**  
+   Guardar los campos anteriores en `nomina_resultados` para permitir sumatorias por planilla sin recalcular.
+
+2. **Snapshot JSON completo para auditorÃ­a**  
+   Persistir JSON con empleado + acciones + montos finales por planilla.
+
+3. **Devengado real como base de aguinaldo**  
+   - Quincenal/mensual: salario proporcional segÃºn dÃ­as trabajados + ajustes.  
+   - Semanal/bisemanal (por hora): horas efectivas * tarifa + extras.  
+
+Resultado: reportes rÃ¡pidos, trazabilidad completa y base correcta para provisiÃ³n de aguinaldo y traslados.
+
+---
+
+## 8.1.1 Actualizacion (2026-03-04)
+
+Esta actualizacion **sustituye** la lectura de "gap" en la seccion 8.1.
+
+### Estado actual
+
+- `nomina_empleados_snapshot`: foto del empleado (salario base, jornada, moneda).
+- `nomina_inputs_snapshot`: movimientos/inputs por empleado, incluyendo cargas sociales e impuesto renta.
+- `nomina_resultados`: totales por empleado con `salario_bruto_periodo`, `devengado_dias/devengado_horas`, `cargas_sociales_resultado`, `impuesto_renta_resultado`.
+
+### Calculo legal (procesamiento)
+
+- **Cargas sociales (CCSS)**: se calcula por empresa desde `nom_cargas_sociales` y se aplica sobre `total_bruto`.
+- **Impuesto de renta**: calculo con tramos CR + creditos por hijo y conyuge; en quincenal solo se aplica en segunda quincena (acumula primera).
+
+---
+
+## 8.2 Bloqueo por empleado verificado
+
+- Si un empleado esta **verificado** en una planilla, **no se permite agregar ni editar** acciones de personal que apunten a esa planilla.
+- Para permitir cambios, primero se debe **desmarcar** la verificacion del empleado en esa planilla.
+
+---
+
 ## 9. Invalidacion y expiracion
 
 ### Invalidacion automatica
@@ -288,16 +345,39 @@ Casos clave:
 2. Validacion en dos fases:
    - **Pre-validacion batch** (UI): feedback inmediato por empleado.
    - **Revalidacion final** (backend): evita condiciones de carrera.
-3. Bloqueos:
-   - No trasladar si hay **planilla en proceso** para el empleado.
-   - No trasladar si hay **acciones de personal pendientes** (no automaticas).
-4. Acciones recurrentes del sistema (CCSS/IVM/impuestos):
+3. Bloqueos obligatorios:
+   - Planilla del empleado en estado **EN_PROCESO / CALCULATED / READY_TO_APPLY**.
+   - **Acciones pendientes bloqueantes** (segun politica).
+   - **No existen periodos/planillas en empresa destino**.
+4. Regla de fecha efectiva:
+   - Traslado **solo al inicio de periodo** (no se permite mitad de periodo).
+5. Acciones recurrentes del sistema (CCSS/IVM/impuestos):
    - **No bloquean** traslado.
-5. Reubicacion de acciones futuras:
-   - Se mueven las acciones **no consumidas** con fecha >= fecha efectiva de traslado.
-   - Se reasignan a planillas de la empresa destino por calendario y fechas.
-6. Si existen multiples planillas abiertas del mismo periodo:
+6. Politica por estado (acordada):
+   - **Se trasladan:** DRAFT, PENDING_SUPERVISOR, PENDING_RRHH, APPROVED.
+   - **No se trasladan:** CONSUMED, INVALIDATED, CANCELLED, EXPIRED, REJECTED.
+6.1 Politica por tipo de accion (portabilidad):
+   - Regla base: toda accion **no consumida** se traslada y se recalcula por calendario destino.
+   - Excepcion: acciones de ley recurrentes (CCSS/IVM/Impuesto) **no se trasladan**; se recalculan en destino.
+   - Matriz base (default PORTABLE):
+     - Ausencias: PORTABLE (por fecha efectiva/rango).
+     - Licencias: PORTABLE (por rango).
+     - Incapacidades: PORTABLE (por rango).
+     - Vacaciones: PORTABLE en continuidad; **liquidacion** si traslado con cierre.
+     - Horas extra: PORTABLE si fecha >= traslado.
+     - Bonificaciones: PORTABLE (si no hay regla empresa contraria).
+     - Aumentos: PORTABLE (aplica en planilla destino segun fecha efectiva).
+     - Retenciones/Descuentos: PORTABLE si son personales; si son internas de empresa, REQUIERE definicion.
+7. Reubicacion de acciones futuras:
+   - Se mueven las acciones **no consumidas** con fecha >= fecha efectiva.
+   - Se reasignan a planillas destino por calendario/fecha.
+   - Si un rango cruza traslado, se **recalcula por calendario destino**.
+8. Si existen multiples planillas abiertas del mismo periodo:
    - aplica prioridad: **ABIERTA > EN_PROCESO > menor fecha inicio > menor ID**.
+9. Simulacion previa:
+   - **Obligatoria** en enterprise (impacto: movidas/invalidas/recalculadas).
+10. Auditoria:
+   - Registrar traslado con origen/destino, fecha efectiva, usuario y resumen tecnico.
 
 ---
 
@@ -912,3 +992,17 @@ SOLAPE-PLANILLAS-2026-03-02)
 - Aumentos: fecha efectiva la define supervisor/RRHH; empleado no define periodo.
 - Horas extra: asignacion por fecha real y corte de planilla.
 - Traslados masivos: validacion batch + revalidacion final; ejecucion por job en backend; reubicacion de acciones futuras por fecha efectiva.
+
+---
+## Actualizacion 2026-03-04 - Resultados y snapshot JSON (Implementado)
+
+- `nomina_resultados` extendida con:
+  - `salario_bruto_periodo_resultado`
+  - `devengado_dias_resultado`
+  - `devengado_horas_resultado`
+  - `cargas_sociales_resultado`
+  - `impuesto_renta_resultado`
+- Nueva tabla `nomina_planilla_snapshot_json` con snapshot JSON completo por planilla.
+- El snapshot incluye totales por planilla + detalle por empleado + acciones aplicadas.
+- Devengado se calcula desde salario base prorrateado por `dias_periodo_pago` (quincenal/mensual) o horas estimadas (por horas).
+- Aguinaldo: al aplicar planilla se registra provision por empleado con `total_bruto / 12` usando fechas del periodo.

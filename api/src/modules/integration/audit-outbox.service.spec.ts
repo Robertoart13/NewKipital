@@ -1,5 +1,6 @@
 ﻿import { AuditOutboxService } from './audit-outbox.service';
-import { DomainEventsService } from './domain-events.service';
+
+import type { DomainEventsService } from './domain-events.service';
 
 describe('AuditOutboxService', () => {
   let service: AuditOutboxService;
@@ -7,9 +8,7 @@ describe('AuditOutboxService', () => {
 
   beforeEach(() => {
     domainEvents = { record: jest.fn().mockResolvedValue(undefined) };
-    service = new AuditOutboxService(
-      domainEvents as unknown as DomainEventsService,
-    );
+    service = new AuditOutboxService(domainEvents as unknown as DomainEventsService);
   });
 
   it('should publish audit event with normalized modulo and accion', () => {

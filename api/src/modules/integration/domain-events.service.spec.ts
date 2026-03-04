@@ -1,8 +1,11 @@
-import { Test, TestingModule } from '@nestjs/testing';
+import { Test } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+
 import { DomainEventsService } from './domain-events.service';
 import { DomainEventEntity } from './entities/domain-event.entity';
+
+import type { TestingModule } from '@nestjs/testing';
+import type { Repository } from 'typeorm';
 
 describe('DomainEventsService', () => {
   let service: DomainEventsService;
@@ -73,9 +76,7 @@ describe('DomainEventsService', () => {
   });
 
   it('record should swallow repository duplicate errors and log warning', async () => {
-    const warnSpy = jest
-      .spyOn((service as any).logger, 'warn')
-      .mockImplementation();
+    const warnSpy = jest.spyOn((service as any).logger, 'warn').mockImplementation();
     repository.save.mockRejectedValue(new Error('duplicate key'));
 
     await expect(

@@ -55,6 +55,20 @@ Cuando un empleado tiene varias planillas abiertas y se aprueba un aumento: reca
 
 - **4.1 Base de datos:** Historial de salarios, UNIQUE codigo por empresa, UNIQUE planilla operativa, protección física planilla aplicada, auditoría de cambios de estado, historial periodo de pago.
 - **4.2 API/Backend:** 409 en inactivar empleado (planillas/acciones), 409 en traslado, validación id_empresa, motor usa historial salarial, handlers idempotentes, permisos por empresa.
+
+## 6. Resultados por empleado (reporte RRHH)
+
+### Necesidad operativa
+
+RRHH requiere:
+- Totales por planilla (bruto, neto, cargas sociales, impuesto renta, devengado).
+- Detalle por empleado con acciones de personal para auditoría.
+
+### Lineamiento actual
+
+1. Persistir resultados **normalizados** por empleado en `nomina_resultados` (campos adicionales).
+2. Persistir **snapshot JSON** completo por planilla para trazabilidad.
+3. Devengado real se usa como base de provisión de aguinaldo y traslados interempresas.
 - **4.3 Lógica de negocio:** Definir estados bloqueantes (PEND-002), política planilla Verificada + SalaryIncreased, tramos renta configurables, rubros gravables, jornada parcial.
 - **4.4 Frontend:** Mostrar detalle en 409, campos sensibles como '--', advertencia en acciones que afectan salario, estados de planilla visibles y acciones deshabilitadas según estado.
 
@@ -101,6 +115,11 @@ Transiciones prohibidas: desde APLICADA a cualquier otro estado; VERIFICADA → 
 - Aumentos: fecha efectiva definida por supervisor/RRHH; se aplica en planilla correspondiente.
 - Horas extra: asignaci?n por fecha real y corte de planilla.
 - Traslado masivo: validaci?n batch + revalidaci?n final; ejecuci?n por job backend; reubicaci?n de acciones futuras por fecha efectiva.
+- Bloqueo obligatorio si **no existen periodos en empresa destino**.
+- Traslado **solo al inicio de periodo** (no mitad de periodo).
+- Acciones recurrentes de ley no bloquean.
+- Politica por tipo de accion (portabilidad) definida en DOC-42 y DOC-21.
+- Simulacion previa obligatoria antes de ejecutar.
 
 ---
 ## Actualizaci?n 2026-03-02 ? Vacaciones sin selecci?n de planilla (ACTUALIZACION-VACACIONES-2026-03-02
@@ -114,3 +133,10 @@ SOLAPE-PLANILLAS-2026-03-02)
 - TimeWise: acciones de vacaciones se crean en estado Borrador sin planilla. RRHH completa fechas/movimiento en KPITAL; el sistema asigna planilla por fecha.
 - Planilla: al cargar una planilla se consumen las fechas cuyo `id_calendario_nomina` coincide con la planilla y estado aprobado. No se requiere que el header tenga planilla.
 ---
+## Actualizacion 2026-03-04 - Resultados por planilla (Implementado)
+
+- `nomina_resultados` extendida con devengado/salario bruto periodo/cargas/impuesto.
+- Tabla nueva `nomina_planilla_snapshot_json` con snapshot JSON completo por planilla.
+- La base de devengado sirve para provisiones de aguinaldo y traslados interempresas.
+- Bloqueo operativo: si el empleado esta verificado en una planilla, no se permiten nuevas acciones que apunten a esa planilla hasta desmarcar verificacion.
+- CCSS e impuesto de renta se calculan en `process` y quedan visibles antes de verificar.

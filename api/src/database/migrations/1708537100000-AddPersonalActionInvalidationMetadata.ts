@@ -1,8 +1,8 @@
-import { MigrationInterface, QueryRunner, TableColumn } from 'typeorm';
+import { TableColumn } from 'typeorm';
 
-export class AddPersonalActionInvalidationMetadata1708537100000
-  implements MigrationInterface
-{
+import type { MigrationInterface, QueryRunner } from 'typeorm';
+
+export class AddPersonalActionInvalidationMetadata1708537100000 implements MigrationInterface {
   public async up(queryRunner: QueryRunner): Promise<void> {
     const hasReasonCode = await queryRunner.hasColumn(
       'acc_acciones_personal',
@@ -20,10 +20,7 @@ export class AddPersonalActionInvalidationMetadata1708537100000
       );
     }
 
-    const hasMeta = await queryRunner.hasColumn(
-      'acc_acciones_personal',
-      'invalidated_meta_accion',
-    );
+    const hasMeta = await queryRunner.hasColumn('acc_acciones_personal', 'invalidated_meta_accion');
     if (!hasMeta) {
       await queryRunner.addColumn(
         'acc_acciones_personal',
@@ -37,15 +34,9 @@ export class AddPersonalActionInvalidationMetadata1708537100000
   }
 
   public async down(queryRunner: QueryRunner): Promise<void> {
-    const hasMeta = await queryRunner.hasColumn(
-      'acc_acciones_personal',
-      'invalidated_meta_accion',
-    );
+    const hasMeta = await queryRunner.hasColumn('acc_acciones_personal', 'invalidated_meta_accion');
     if (hasMeta) {
-      await queryRunner.dropColumn(
-        'acc_acciones_personal',
-        'invalidated_meta_accion',
-      );
+      await queryRunner.dropColumn('acc_acciones_personal', 'invalidated_meta_accion');
     }
 
     const hasReasonCode = await queryRunner.hasColumn(
@@ -53,11 +44,7 @@ export class AddPersonalActionInvalidationMetadata1708537100000
       'invalidated_reason_code_accion',
     );
     if (hasReasonCode) {
-      await queryRunner.dropColumn(
-        'acc_acciones_personal',
-        'invalidated_reason_code_accion',
-      );
+      await queryRunner.dropColumn('acc_acciones_personal', 'invalidated_reason_code_accion');
     }
   }
 }
-

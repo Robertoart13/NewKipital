@@ -1,8 +1,8 @@
-import { MigrationInterface, QueryRunner, TableColumn } from 'typeorm';
+import { TableColumn } from 'typeorm';
 
-export class AddPersonalActionInvalidatedByColumns1708537200000
-  implements MigrationInterface
-{
+import type { MigrationInterface, QueryRunner } from 'typeorm';
+
+export class AddPersonalActionInvalidatedByColumns1708537200000 implements MigrationInterface {
   public async up(queryRunner: QueryRunner): Promise<void> {
     const hasType = await queryRunner.hasColumn(
       'acc_acciones_personal',
@@ -42,10 +42,7 @@ export class AddPersonalActionInvalidatedByColumns1708537200000
       'invalidated_by_user_id_accion',
     );
     if (hasUserId) {
-      await queryRunner.dropColumn(
-        'acc_acciones_personal',
-        'invalidated_by_user_id_accion',
-      );
+      await queryRunner.dropColumn('acc_acciones_personal', 'invalidated_by_user_id_accion');
     }
 
     const hasType = await queryRunner.hasColumn(
@@ -53,11 +50,7 @@ export class AddPersonalActionInvalidatedByColumns1708537200000
       'invalidated_by_type_accion',
     );
     if (hasType) {
-      await queryRunner.dropColumn(
-        'acc_acciones_personal',
-        'invalidated_by_type_accion',
-      );
+      await queryRunner.dropColumn('acc_acciones_personal', 'invalidated_by_type_accion');
     }
   }
 }
-

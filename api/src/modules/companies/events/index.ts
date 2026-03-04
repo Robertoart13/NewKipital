@@ -1,4 +1,4 @@
-import { DomainEvent } from '../../../common/events/domain-event.interface';
+import type { DomainEvent } from '../../../common/events/domain-event.interface';
 
 export interface CompanyCreatedEvent extends DomainEvent<{
   companyId: string;

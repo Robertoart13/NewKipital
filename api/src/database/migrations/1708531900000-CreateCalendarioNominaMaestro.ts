@@ -1,11 +1,6 @@
-import {
-  MigrationInterface,
-  QueryRunner,
-  Table,
-  TableIndex,
-  TableForeignKey,
-  TableUnique,
-} from 'typeorm';
+import { Table, TableIndex, TableForeignKey } from 'typeorm';
+
+import type { MigrationInterface, QueryRunner } from 'typeorm';
 
 /**
  * Directiva 21 — Tabla Maestra de Planillas (Calendario de Nómina).
@@ -19,10 +14,7 @@ import {
 export class CreateCalendarioNominaMaestro1708531900000 implements MigrationInterface {
   public async up(queryRunner: QueryRunner): Promise<void> {
     // 1. Drop FK de acc_acciones_personal a nom_planillas
-    await queryRunner.dropForeignKey(
-      'acc_acciones_personal',
-      'FK_accion_planilla',
-    );
+    await queryRunner.dropForeignKey('acc_acciones_personal', 'FK_accion_planilla');
 
     // 2. Drop nom_planillas
     await queryRunner.dropTable('nom_planillas', true);
@@ -307,10 +299,7 @@ export class CreateCalendarioNominaMaestro1708531900000 implements MigrationInte
 
   public async down(queryRunner: QueryRunner): Promise<void> {
     await queryRunner.dropTable('acc_cuotas_accion', true);
-    await queryRunner.dropForeignKey(
-      'acc_acciones_personal',
-      'FK_accion_calendario_nomina',
-    );
+    await queryRunner.dropForeignKey('acc_acciones_personal', 'FK_accion_calendario_nomina');
     await queryRunner.query(
       'ALTER TABLE acc_acciones_personal CHANGE COLUMN id_calendario_nomina id_planilla INT NULL',
     );

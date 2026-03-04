@@ -1,16 +1,10 @@
-import {
-  MigrationInterface,
-  QueryRunner,
-  Table,
-  TableForeignKey,
-  TableIndex,
-} from 'typeorm';
+import { Table, TableForeignKey, TableIndex } from 'typeorm';
+
+import type { MigrationInterface, QueryRunner } from 'typeorm';
 
 export class CreatePayrollArticlesAndPermissions1708536100000 implements MigrationInterface {
   public async up(queryRunner: QueryRunner): Promise<void> {
-    const hasTipoArticulo = await queryRunner.hasTable(
-      'nom_tipo_articulo_nomina',
-    );
+    const hasTipoArticulo = await queryRunner.hasTable('nom_tipo_articulo_nomina');
     if (!hasTipoArticulo) {
       await queryRunner.createTable(
         new Table({
@@ -278,9 +272,7 @@ export class CreatePayrollArticlesAndPermissions1708536100000 implements Migrati
       await queryRunner.dropTable('nom_articulos_nomina', true);
     }
 
-    const hasTipoArticulo = await queryRunner.hasTable(
-      'nom_tipo_articulo_nomina',
-    );
+    const hasTipoArticulo = await queryRunner.hasTable('nom_tipo_articulo_nomina');
     if (hasTipoArticulo) {
       await queryRunner.dropTable('nom_tipo_articulo_nomina', true);
     }

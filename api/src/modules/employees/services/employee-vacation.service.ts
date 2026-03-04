@@ -1,25 +1,25 @@
 ﻿import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { EntityManager, In, Repository } from 'typeorm';
-import { Employee } from '../entities/employee.entity';
+import { In } from 'typeorm';
+
+import {
+  PERSONAL_ACTION_APPROVED_STATES,
+  PersonalAction,
+} from '../../personal-actions/entities/personal-action.entity';
 import { EmployeeVacationAccount } from '../entities/employee-vacation-account.entity';
 import {
   EmployeeVacationLedger,
   VacationMovementType,
 } from '../entities/employee-vacation-ledger.entity';
 import { EmployeeVacationMonetaryProvision } from '../entities/employee-vacation-monetary-provision.entity';
-import {
-  PERSONAL_ACTION_APPROVED_STATES,
-  PersonalAction,
-} from '../../personal-actions/entities/personal-action.entity';
-import { EmployeeSensitiveDataService } from '../../../common/services/employee-sensitive-data.service';
+import { Employee } from '../entities/employee.entity';
+
+import type { EmployeeSensitiveDataService } from '../../../common/services/employee-sensitive-data.service';
+import type { EntityManager, Repository } from 'typeorm';
 
 const VACATION_ACTION_TYPES = new Set(['vacaciones', 'vacacion', 'vacation']);
 
-const PAY_PERIOD_FORMULAS: Record<
-  number,
-  { divisor: number; label: string } | null
-> = {
+const PAY_PERIOD_FORMULAS: Record<number, { divisor: number; label: string } | null> = {
   8: { divisor: 7, label: 'SEMANAL: salario_base / 7' },
   9: { divisor: 30, label: 'QUINCENAL: (salario_base / 2) / 15' },
   10: { divisor: 30, label: 'MENSUAL: salario_base / 30' },
@@ -66,8 +66,7 @@ export class EmployeeVacationService {
     initialDays: number,
     actorId?: number,
   ): Promise<void> {
-    const diasIniciales =
-      Number.isInteger(initialDays) && initialDays >= 0 ? initialDays : 0;
+    const diasIniciales = Number.isInteger(initialDays) && initialDays >= 0 ? initialDays : 0;
     const fechaIngreso = this.toDateOnly(employee.fechaIngreso);
     this.assertJoinDateWithinPolicy(fechaIngreso);
 
@@ -186,9 +185,7 @@ export class EmployeeVacationService {
     for (const row of rows) {
       summary.processedEmployees += 1;
       try {
-        const startAnchorDate = this.toDateOnly(
-          row.fecha_ingreso_ancla_vacaciones,
-        );
+        const startAnchorDate = this.toDateOnly(row.fecha_ingreso_ancla_vacaciones);
         const lastProvisionDate = row.ultima_fecha_provision_vacaciones
           ? this.toDateOnly(row.ultima_fecha_provision_vacaciones)
           : null;
@@ -196,79 +193,68 @@ export class EmployeeVacationService {
           ? this.toDateOnly(row.fecha_salida_empleado)
           : null;
 
-        const cutoffDate =
-          terminationDate && terminationDate < todayCR
-            ? terminationDate
-            : todayCR;
+        const cutoffDate = terminationDate && terminationDate < todayCR ? terminationDate : todayCR;
 
         let nextDueDate = lastProvisionDate
-          ? this.addOneMonthWithAnchor(
-              lastProvisionDate,
-              row.dia_ancla_vacaciones,
-            )
-          : this.addOneMonthWithAnchor(
-              startAnchorDate,
-              row.dia_ancla_vacaciones,
-            );
+          ? this.addOneMonthWithAnchor(lastProvisionDate, row.dia_ancla_vacaciones)
+          : this.addOneMonthWithAnchor(startAnchorDate, row.dia_ancla_vacaciones);
 
         while (nextDueDate <= cutoffDate) {
-          const result = await this.ledgerRepo.manager.transaction(
-            async (manager) => {
-              const employee = await manager.findOne(Employee, {
-                where: { id: row.id_empleado },
-              });
-              if (!employee || employee.estado !== 1) {
-                return { created: false, skipped: true };
-              }
+          const result = await this.ledgerRepo.manager.transaction(async (manager) => {
+            const employee = await manager.findOne(Employee, {
+              where: { id: row.id_empleado },
+            });
+            if (!employee || employee.estado !== 1) {
+              return { created: false, skipped: true };
+            }
 
-              const account = await manager.findOne(EmployeeVacationAccount, {
-                where: { id: row.id_vacaciones_cuenta },
-              });
-              if (!account || account.estado !== 1) {
-                return { created: false, skipped: true };
-              }
+            const account = await manager.findOne(EmployeeVacationAccount, {
+              where: { id: row.id_vacaciones_cuenta },
+            });
+            if (!account || account.estado !== 1) {
+              return { created: false, skipped: true };
+            }
 
-              const periodRef = this.getPeriodRef(nextDueDate);
-              const movement = await this.appendMovement(manager, {
-                account,
-                employee,
-                movementType: VacationMovementType.MONTHLY_ACCRUAL,
-                daysDelta: 1,
-                effectiveDate: nextDueDate,
-                periodRef,
-                sourceType: 'VACATION_MONTHLY_PROVISION',
-                sourceId: null,
-                description: 'ProvisiÃ³n mensual automÃ¡tica de vacaciones',
-                actorId: null,
-              });
+            const periodRef = this.getPeriodRef(nextDueDate);
+            const movement = await this.appendMovement(manager, {
+              account,
+              employee,
+              movementType: VacationMovementType.MONTHLY_ACCRUAL,
+              daysDelta: 1,
+              effectiveDate: nextDueDate,
+              periodRef,
+              sourceType: 'VACATION_MONTHLY_PROVISION',
+              sourceId: null,
+              description: 'ProvisiÃ³n mensual automÃ¡tica de vacaciones',
+              actorId: null,
+            });
 
-              account.ultimaFechaProvision = nextDueDate;
-              await manager.save(EmployeeVacationAccount, account);
+            account.ultimaFechaProvision = nextDueDate;
+            await manager.save(EmployeeVacationAccount, account);
 
-              if (movement.created) {
-                const money = this.calculateProvisionAmount(
-                  row.id_periodos_pago,
-                  row.salario_base_empleado,
-                );
-                await manager.save(
-                  EmployeeVacationMonetaryProvision,
-                  manager.create(EmployeeVacationMonetaryProvision, {
-                    idEmpleado: account.idEmpleado,
-                    idEmpresa: account.idEmpresa,
-                    idVacacionesLedger: movement.ledger.id,
-                    idPeriodoPago: row.id_periodos_pago,
-                    fechaProvision: nextDueDate,
-                    diasProvisionados: 1,
-                    montoProvisionado: money.amount.toFixed(2),
-                    formulaAplicada: money.formula,
-                    creadoPor: null,
-                  }),
-                );
-              }
+            if (movement.created) {
+              const money = this.calculateProvisionAmount(
+                row.id_periodos_pago,
+                row.salario_base_empleado,
+              );
+              await manager.save(
+                EmployeeVacationMonetaryProvision,
+                manager.create(EmployeeVacationMonetaryProvision, {
+                  idEmpleado: account.idEmpleado,
+                  idEmpresa: account.idEmpresa,
+                  idVacacionesLedger: movement.ledger.id,
+                  idPeriodoPago: row.id_periodos_pago,
+                  fechaProvision: nextDueDate,
+                  diasProvisionados: 1,
+                  montoProvisionado: money.amount.toFixed(2),
+                  formulaAplicada: money.formula,
+                  creadoPor: null,
+                }),
+              );
+            }
 
-              return { created: movement.created, skipped: false };
-            },
-          );
+            return { created: movement.created, skipped: false };
+          });
 
           if (result.skipped) {
             summary.accrualsSkipped += 1;
@@ -278,10 +264,7 @@ export class EmployeeVacationService {
             summary.accrualsSkipped += 1;
           }
 
-          nextDueDate = this.addOneMonthWithAnchor(
-            nextDueDate,
-            row.dia_ancla_vacaciones,
-          );
+          nextDueDate = this.addOneMonthWithAnchor(nextDueDate, row.dia_ancla_vacaciones);
         }
       } catch (error) {
         summary.errors += 1;
@@ -327,33 +310,31 @@ export class EmployeeVacationService {
         continue;
       }
 
-      const created = await this.ledgerRepo.manager.transaction(
-        async (manager) => {
-          const employee = await manager.findOne(Employee, {
-            where: { id: action.idEmpleado },
-          });
-          if (!employee) return false;
+      const created = await this.ledgerRepo.manager.transaction(async (manager) => {
+        const employee = await manager.findOne(Employee, {
+          where: { id: action.idEmpleado },
+        });
+        if (!employee) return false;
 
-          const account = await manager.findOne(EmployeeVacationAccount, {
-            where: { idEmpleado: action.idEmpleado },
-          });
-          if (!account) return false;
+        const account = await manager.findOne(EmployeeVacationAccount, {
+          where: { idEmpleado: action.idEmpleado },
+        });
+        if (!account) return false;
 
-          const movement = await this.appendMovement(manager, {
-            account,
-            employee,
-            movementType: VacationMovementType.VACATION_USAGE,
-            daysDelta: -days,
-            effectiveDate: this.toDateOnly(effectiveDate),
-            sourceType: 'PAYROLL_APPLIED_ACTION',
-            sourceId: action.id,
-            description: `Descuento vacaciones por acciÃ³n #${action.id} aplicada en planilla #${payrollId}`,
-            actorId,
-          });
+        const movement = await this.appendMovement(manager, {
+          account,
+          employee,
+          movementType: VacationMovementType.VACATION_USAGE,
+          daysDelta: -days,
+          effectiveDate: this.toDateOnly(effectiveDate),
+          sourceType: 'PAYROLL_APPLIED_ACTION',
+          sourceId: action.id,
+          description: `Descuento vacaciones por acciÃ³n #${action.id} aplicada en planilla #${payrollId}`,
+          actorId,
+        });
 
-          return movement.created;
-        },
-      );
+        return movement.created;
+      });
 
       if (created) {
         processedActions += 1;
@@ -394,10 +375,7 @@ export class EmployeeVacationService {
       }
     }
 
-    if (
-      input.movementType === VacationMovementType.MONTHLY_ACCRUAL &&
-      input.periodRef
-    ) {
+    if (input.movementType === VacationMovementType.MONTHLY_ACCRUAL && input.periodRef) {
       const existingByPeriod = await manager.findOne(EmployeeVacationLedger, {
         where: {
           idEmpleado: input.employee.id,
@@ -455,9 +433,7 @@ export class EmployeeVacationService {
       };
     }
 
-    const formula = idPeriodoPago
-      ? PAY_PERIOD_FORMULAS[idPeriodoPago]
-      : undefined;
+    const formula = idPeriodoPago ? PAY_PERIOD_FORMULAS[idPeriodoPago] : undefined;
     if (!formula) {
       return {
         amount: this.roundMoney(salary / 30),
@@ -488,15 +464,7 @@ export class EmployeeVacationService {
 
   private toDateOnly(value: Date | string): Date {
     if (value instanceof Date) {
-      return new Date(
-        value.getFullYear(),
-        value.getMonth(),
-        value.getDate(),
-        12,
-        0,
-        0,
-        0,
-      );
+      return new Date(value.getFullYear(), value.getMonth(), value.getDate(), 12, 0, 0, 0);
     }
 
     const raw = value.includes('T') ? value.split('T')[0] : value;
@@ -521,9 +489,7 @@ export class EmployeeVacationService {
   assertJoinDateWithinPolicy(fechaIngreso: Date): void {
     const day = this.getDay(fechaIngreso);
     if (day < 1 || day > 28) {
-      throw new Error(
-        'La fecha de ingreso debe estar entre el dÃ­a 1 y 28 del mes.',
-      );
+      throw new Error('La fecha de ingreso debe estar entre el dÃ­a 1 y 28 del mes.');
     }
   }
 }

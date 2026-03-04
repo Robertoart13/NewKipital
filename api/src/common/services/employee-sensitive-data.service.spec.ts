@@ -1,5 +1,6 @@
-﻿import { ConfigService } from '@nestjs/config';
-import { EmployeeSensitiveDataService } from './employee-sensitive-data.service';
+﻿import { EmployeeSensitiveDataService } from './employee-sensitive-data.service';
+
+import type { ConfigService } from '@nestjs/config';
 
 describe('EmployeeSensitiveDataService', () => {
   let service: EmployeeSensitiveDataService;

@@ -1,19 +1,13 @@
-import {
-  Controller,
-  Get,
-  Post,
-  Param,
-  Query,
-  ParseIntPipe,
-  UseInterceptors,
-} from '@nestjs/common';
-import { CurrentUser } from '../../common/decorators/current-user.decorator';
-import { NotificationsService } from './notifications.service';
+import { Controller, Get, Post, Param, Query, ParseIntPipe, UseInterceptors } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
-import { App } from '../access-control/entities/app.entity';
+
 import { CacheScope } from '../../common/decorators/cache-scope.decorator';
+import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { CacheResponseInterceptor } from '../../common/interceptors/cache-response.interceptor';
+import { App } from '../access-control/entities/app.entity';
+
+import type { NotificationsService } from './notifications.service';
+import type { Repository } from 'typeorm';
 
 @CacheScope('notifications')
 @UseInterceptors(CacheResponseInterceptor)
@@ -71,18 +65,12 @@ export class NotificationsController {
   }
 
   @Post(':id/read')
-  markAsRead(
-    @Param('id', ParseIntPipe) id: number,
-    @CurrentUser() user: { userId: number },
-  ) {
+  markAsRead(@Param('id', ParseIntPipe) id: number, @CurrentUser() user: { userId: number }) {
     return this.notificationsService.markAsRead(id, user.userId);
   }
 
   @Post(':id/delete')
-  markAsDeleted(
-    @Param('id', ParseIntPipe) id: number,
-    @CurrentUser() user: { userId: number },
-  ) {
+  markAsDeleted(@Param('id', ParseIntPipe) id: number, @CurrentUser() user: { userId: number }) {
     return this.notificationsService.markAsDeleted(id, user.userId);
   }
 

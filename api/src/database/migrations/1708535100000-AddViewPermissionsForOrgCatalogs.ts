@@ -1,4 +1,4 @@
-import { MigrationInterface, QueryRunner } from 'typeorm';
+import type { MigrationInterface, QueryRunner } from 'typeorm';
 
 export class AddViewPermissionsForOrgCatalogs1708535100000 implements MigrationInterface {
   public async up(queryRunner: QueryRunner): Promise<void> {

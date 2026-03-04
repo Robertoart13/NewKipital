@@ -11,14 +11,16 @@ import {
   Query,
   UseInterceptors,
 } from '@nestjs/common';
+
+import { CacheScope } from '../../common/decorators/cache-scope.decorator';
+import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { Public } from '../../common/decorators/public.decorator';
 import { RequirePermissions } from '../../common/decorators/require-permissions.decorator';
-import { CurrentUser } from '../../common/decorators/current-user.decorator';
-import { CacheScope } from '../../common/decorators/cache-scope.decorator';
 import { CacheResponseInterceptor } from '../../common/interceptors/cache-response.interceptor';
-import { PayrollMovementsService } from './payroll-movements.service';
-import { CreatePayrollMovementDto } from './dto/create-payroll-movement.dto';
-import { UpdatePayrollMovementDto } from './dto/update-payroll-movement.dto';
+
+import type { CreatePayrollMovementDto } from './dto/create-payroll-movement.dto';
+import type { UpdatePayrollMovementDto } from './dto/update-payroll-movement.dto';
+import type { PayrollMovementsService } from './payroll-movements.service';
 
 @CacheScope('payroll-movements')
 @UseInterceptors(CacheResponseInterceptor)
@@ -41,10 +43,7 @@ export class PayrollMovementsController {
     includeInactive?: boolean,
   ) {
     if (!idEmpresa) return [];
-    return this.service.listArticlesByCompany(
-      idEmpresa,
-      includeInactive ?? false,
-    );
+    return this.service.listArticlesByCompany(idEmpresa, includeInactive ?? false);
   }
 
   @RequirePermissions('payroll-movement:view')
@@ -79,10 +78,7 @@ export class PayrollMovementsController {
 
   @RequirePermissions('payroll-movement:create')
   @Post()
-  create(
-    @Body() dto: CreatePayrollMovementDto,
-    @CurrentUser() user: { userId: number },
-  ) {
+  create(@Body() dto: CreatePayrollMovementDto, @CurrentUser() user: { userId: number }) {
     return this.service.create(dto, user.userId);
   }
 
@@ -129,19 +125,13 @@ export class PayrollMovementsController {
 
   @RequirePermissions('payroll-movement:inactivate')
   @Patch(':id/inactivate')
-  inactivate(
-    @Param('id', ParseIntPipe) id: number,
-    @CurrentUser() user: { userId: number },
-  ) {
+  inactivate(@Param('id', ParseIntPipe) id: number, @CurrentUser() user: { userId: number }) {
     return this.service.inactivate(id, user.userId);
   }
 
   @RequirePermissions('payroll-movement:reactivate')
   @Patch(':id/reactivate')
-  reactivate(
-    @Param('id', ParseIntPipe) id: number,
-    @CurrentUser() user: { userId: number },
-  ) {
+  reactivate(@Param('id', ParseIntPipe) id: number, @CurrentUser() user: { userId: number }) {
     return this.service.reactivate(id, user.userId);
   }
 

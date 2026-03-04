@@ -1,5 +1,6 @@
-import { MigrationInterface, QueryRunner } from 'typeorm';
 import * as bcrypt from 'bcrypt';
+
+import type { MigrationInterface, QueryRunner } from 'typeorm';
 
 /**
  * Seed: Usuario roberto@roccacr.com para login local.
@@ -30,12 +31,8 @@ export class SeedUsuarioRobertoRocca1708532000000 implements MigrationInterface 
 
     const companyId = companies[0].id_empresa;
     const adminRoleId = roles[0].id_rol;
-    const kpitalApp = apps.find(
-      (a: { codigo_app: string }) => a.codigo_app === 'kpital',
-    );
-    const timewiseApp = apps.find(
-      (a: { codigo_app: string }) => a.codigo_app === 'timewise',
-    );
+    const kpitalApp = apps.find((a: { codigo_app: string }) => a.codigo_app === 'kpital');
+    const timewiseApp = apps.find((a: { codigo_app: string }) => a.codigo_app === 'timewise');
 
     const existing = await queryRunner.query(
       `SELECT id_usuario FROM sys_usuarios WHERE email_usuario = 'roberto@roccacr.com' LIMIT 1`,
@@ -103,17 +100,9 @@ export class SeedUsuarioRobertoRocca1708532000000 implements MigrationInterface 
     );
     if (!u) return;
     const uid = u.id_usuario;
-    await queryRunner.query(
-      `DELETE FROM sys_usuario_rol WHERE id_usuario = ${uid}`,
-    );
-    await queryRunner.query(
-      `DELETE FROM sys_usuario_empresa WHERE id_usuario = ${uid}`,
-    );
-    await queryRunner.query(
-      `DELETE FROM sys_usuario_app WHERE id_usuario = ${uid}`,
-    );
-    await queryRunner.query(
-      `DELETE FROM sys_usuarios WHERE id_usuario = ${uid}`,
-    );
+    await queryRunner.query(`DELETE FROM sys_usuario_rol WHERE id_usuario = ${uid}`);
+    await queryRunner.query(`DELETE FROM sys_usuario_empresa WHERE id_usuario = ${uid}`);
+    await queryRunner.query(`DELETE FROM sys_usuario_app WHERE id_usuario = ${uid}`);
+    await queryRunner.query(`DELETE FROM sys_usuarios WHERE id_usuario = ${uid}`);
   }
 }

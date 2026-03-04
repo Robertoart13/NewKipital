@@ -1,5 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { DomainEventsService } from './domain-events.service';
+
+import type { DomainEventsService } from './domain-events.service';
 
 export interface AuditOutboxPayload {
   modulo: string;
@@ -50,9 +51,7 @@ export class AuditOutboxService {
         occurredAt: new Date(),
       })
       .catch((error: unknown) => {
-        this.logger.warn(
-          `No se pudo publicar evento de auditoria: ${(error as Error).message}`,
-        );
+        this.logger.warn(`No se pudo publicar evento de auditoria: ${(error as Error).message}`);
       });
   }
 }

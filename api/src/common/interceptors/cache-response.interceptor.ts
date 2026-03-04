@@ -1,23 +1,18 @@
-import {
-  CallHandler,
-  ExecutionContext,
-  Injectable,
-  Logger,
-  NestInterceptor,
-} from '@nestjs/common';
-import { Reflector } from '@nestjs/core';
-import { Observable, defer, from, lastValueFrom, tap } from 'rxjs';
-import type { Response } from 'express';
-import { AppCacheService } from '../services/app-cache.service';
+import { Injectable, Logger } from '@nestjs/common';
+import { defer, from, lastValueFrom, tap } from 'rxjs';
+
+import { CACHE_QUERY_ALLOWLIST, CACHE_USER_SCOPED } from '../constants/cache-keys.constants';
 import {
   CACHE_SCOPE_METADATA,
   CACHE_TTL_METADATA,
   DEFAULT_CACHE_TTL_MS,
 } from '../constants/cache.constants';
-import {
-  CACHE_QUERY_ALLOWLIST,
-  CACHE_USER_SCOPED,
-} from '../constants/cache-keys.constants';
+
+import type { AppCacheService } from '../services/app-cache.service';
+import type { CallHandler, ExecutionContext, NestInterceptor } from '@nestjs/common';
+import type { Reflector } from '@nestjs/core';
+import type { Response } from 'express';
+import type { Observable } from 'rxjs';
 
 type AuthUserPayload = {
   userId?: number;
@@ -120,20 +115,14 @@ export class CacheResponseInterceptor implements NestInterceptor {
     return `empresa:${parsed}`;
   }
 
-  private resolveUserScope(
-    scope: string,
-    request?: { user?: AuthUserPayload },
-  ): string {
+  private resolveUserScope(scope: string, request?: { user?: AuthUserPayload }): string {
     if (!CACHE_USER_SCOPED.has(scope)) return 'user:shared';
     const userId = request?.user?.userId;
     if (!userId || Number.isNaN(Number(userId))) return 'user:unknown';
     return `user:${userId}`;
   }
 
-  private normalizeQuery(
-    scope: string,
-    query: Record<string, unknown>,
-  ): Record<string, unknown> {
+  private normalizeQuery(scope: string, query: Record<string, unknown>): Record<string, unknown> {
     const allowlist = CACHE_QUERY_ALLOWLIST[scope];
     if (!allowlist) return {};
     const normalized: Record<string, unknown> = {};

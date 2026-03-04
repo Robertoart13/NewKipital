@@ -1,4 +1,4 @@
-import { MigrationInterface, QueryRunner } from 'typeorm';
+import type { MigrationInterface, QueryRunner } from 'typeorm';
 
 /**
  * Doc 27 — Roles KPITAL + TimeWise y permisos employee.
@@ -24,16 +24,8 @@ export class SeedRolesTimeWiseKpitalYPermisosEmployee1708533200000 implements Mi
       ['employee:edit', 'Editar empleados', 'employee'],
       ['employee:inactivate', 'Inactivar empleados', 'employee'],
       ['employee:reactivate', 'Reactivar empleados', 'employee'],
-      [
-        'employee:assign-kpital-role',
-        'Asignar roles KPITAL al crear empleado',
-        'employee',
-      ],
-      [
-        'employee:assign-timewise-role',
-        'Asignar roles TimeWise al crear empleado',
-        'employee',
-      ],
+      ['employee:assign-kpital-role', 'Asignar roles KPITAL al crear empleado', 'employee'],
+      ['employee:assign-timewise-role', 'Asignar roles TimeWise al crear empleado', 'employee'],
     ];
 
     for (const [codigo, nombre, modulo] of employeePerms) {
@@ -187,33 +179,21 @@ export class SeedRolesTimeWiseKpitalYPermisosEmployee1708533200000 implements Mi
       );
       for (const r of rows) {
         if (await queryRunner.hasTable('sys_usuario_rol')) {
-          await queryRunner.query(
-            `DELETE FROM sys_usuario_rol WHERE id_rol = ${r.id_rol}`,
-          );
+          await queryRunner.query(`DELETE FROM sys_usuario_rol WHERE id_rol = ${r.id_rol}`);
         }
         if (await queryRunner.hasTable('sys_usuario_rol_global')) {
-          await queryRunner.query(
-            `DELETE FROM sys_usuario_rol_global WHERE id_rol = ${r.id_rol}`,
-          );
+          await queryRunner.query(`DELETE FROM sys_usuario_rol_global WHERE id_rol = ${r.id_rol}`);
         }
-        await queryRunner.query(
-          `DELETE FROM sys_rol_permiso WHERE id_rol = ${r.id_rol}`,
-        );
-        await queryRunner.query(
-          `DELETE FROM sys_roles WHERE id_rol = ${r.id_rol}`,
-        );
+        await queryRunner.query(`DELETE FROM sys_rol_permiso WHERE id_rol = ${r.id_rol}`);
+        await queryRunner.query(`DELETE FROM sys_roles WHERE id_rol = ${r.id_rol}`);
       }
     }
     const empPerms = await queryRunner.query(
       `SELECT id_permiso FROM sys_permisos WHERE modulo_permiso = 'employee'`,
     );
     for (const p of empPerms) {
-      await queryRunner.query(
-        `DELETE FROM sys_rol_permiso WHERE id_permiso = ${p.id_permiso}`,
-      );
-      await queryRunner.query(
-        `DELETE FROM sys_permisos WHERE id_permiso = ${p.id_permiso}`,
-      );
+      await queryRunner.query(`DELETE FROM sys_rol_permiso WHERE id_permiso = ${p.id_permiso}`);
+      await queryRunner.query(`DELETE FROM sys_permisos WHERE id_permiso = ${p.id_permiso}`);
     }
   }
 }

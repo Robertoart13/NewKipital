@@ -11,14 +11,16 @@ import {
   ParseBoolPipe,
   UseInterceptors,
 } from '@nestjs/common';
+
+import { CacheScope } from '../../common/decorators/cache-scope.decorator';
+import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { Public } from '../../common/decorators/public.decorator';
 import { RequirePermissions } from '../../common/decorators/require-permissions.decorator';
-import { CurrentUser } from '../../common/decorators/current-user.decorator';
-import { CacheScope } from '../../common/decorators/cache-scope.decorator';
 import { CacheResponseInterceptor } from '../../common/interceptors/cache-response.interceptor';
-import { ClassesService } from './classes.service';
-import { CreateClassDto } from './dto/create-class.dto';
-import { UpdateClassDto } from './dto/update-class.dto';
+
+import type { ClassesService } from './classes.service';
+import type { CreateClassDto } from './dto/create-class.dto';
+import type { UpdateClassDto } from './dto/update-class.dto';
 
 @CacheScope('classes')
 @UseInterceptors(CacheResponseInterceptor)
@@ -46,10 +48,7 @@ export class ClassesController {
     @Query('inactiveOnly', new ParseBoolPipe({ optional: true }))
     inactiveOnly?: boolean,
   ) {
-    return this.service.findAll(
-      includeInactive ?? false,
-      inactiveOnly ?? false,
-    );
+    return this.service.findAll(includeInactive ?? false, inactiveOnly ?? false);
   }
 
   @RequirePermissions('class:view')
@@ -70,19 +69,13 @@ export class ClassesController {
 
   @RequirePermissions('class:inactivate')
   @Patch(':id/inactivate')
-  inactivate(
-    @Param('id', ParseIntPipe) id: number,
-    @CurrentUser() user: { userId: number },
-  ) {
+  inactivate(@Param('id', ParseIntPipe) id: number, @CurrentUser() user: { userId: number }) {
     return this.service.inactivate(id, user.userId);
   }
 
   @RequirePermissions('class:reactivate')
   @Patch(':id/reactivate')
-  reactivate(
-    @Param('id', ParseIntPipe) id: number,
-    @CurrentUser() user: { userId: number },
-  ) {
+  reactivate(@Param('id', ParseIntPipe) id: number, @CurrentUser() user: { userId: number }) {
     return this.service.reactivate(id, user.userId);
   }
 

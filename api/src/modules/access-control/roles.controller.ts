@@ -12,16 +12,18 @@ import {
   ParseBoolPipe,
   UseInterceptors,
 } from '@nestjs/common';
-import { RolesService } from './roles.service';
-import { CreateRoleDto } from './dto/create-role.dto';
-import { AssignRolePermissionDto } from './dto/assign-role-permission.dto';
-import { UpdateRoleDto } from './dto/update-role.dto';
-import { ReplaceRolePermissionsDto } from './dto/replace-role-permissions.dto';
+
+import { CacheScope } from '../../common/decorators/cache-scope.decorator';
+import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { Public } from '../../common/decorators/public.decorator';
 import { RequirePermissions } from '../../common/decorators/require-permissions.decorator';
-import { CurrentUser } from '../../common/decorators/current-user.decorator';
-import { CacheScope } from '../../common/decorators/cache-scope.decorator';
 import { CacheResponseInterceptor } from '../../common/interceptors/cache-response.interceptor';
+
+import type { AssignRolePermissionDto } from './dto/assign-role-permission.dto';
+import type { CreateRoleDto } from './dto/create-role.dto';
+import type { ReplaceRolePermissionsDto } from './dto/replace-role-permissions.dto';
+import type { UpdateRoleDto } from './dto/update-role.dto';
+import type { RolesService } from './roles.service';
 
 @CacheScope('roles')
 @UseInterceptors(CacheResponseInterceptor)
@@ -58,19 +60,13 @@ export class RolesController {
 
   @RequirePermissions('config:roles')
   @Patch(':id/inactivate')
-  inactivate(
-    @Param('id', ParseIntPipe) id: number,
-    @CurrentUser() user: { userId: number },
-  ) {
+  inactivate(@Param('id', ParseIntPipe) id: number, @CurrentUser() user: { userId: number }) {
     return this.service.inactivate(id, user.userId);
   }
 
   @RequirePermissions('config:roles')
   @Patch(':id/reactivate')
-  reactivate(
-    @Param('id', ParseIntPipe) id: number,
-    @CurrentUser() user: { userId: number },
-  ) {
+  reactivate(@Param('id', ParseIntPipe) id: number, @CurrentUser() user: { userId: number }) {
     return this.service.reactivate(id, user.userId);
   }
 
@@ -86,10 +82,7 @@ export class RolesController {
 
   @RequirePermissions('config:permissions')
   @Post(':id/permissions')
-  assignPermission(
-    @Param('id', ParseIntPipe) idRol: number,
-    @Body() dto: AssignRolePermissionDto,
-  ) {
+  assignPermission(@Param('id', ParseIntPipe) idRol: number, @Body() dto: AssignRolePermissionDto) {
     return this.service.assignPermission({ ...dto, idRol });
   }
 
@@ -115,10 +108,6 @@ export class RolesController {
     @Body() dto: ReplaceRolePermissionsDto,
     @CurrentUser() user: { userId: number },
   ) {
-    return this.service.replacePermissionsByCodes(
-      id,
-      dto.permissions,
-      user.userId,
-    );
+    return this.service.replacePermissionsByCodes(id, dto.permissions, user.userId);
   }
 }

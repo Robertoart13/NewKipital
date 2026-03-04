@@ -1,4 +1,5 @@
-﻿import {
+﻿import { Type } from 'class-transformer';
+import {
   ArrayMinSize,
   IsArray,
   IsInt,
@@ -8,7 +9,6 @@
   Min,
   ValidateNested,
 } from 'class-validator';
-import { Type } from 'class-transformer';
 
 export class UpsertVacationDateDto {
   @IsString()

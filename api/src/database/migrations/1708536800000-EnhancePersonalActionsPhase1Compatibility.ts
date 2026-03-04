@@ -1,4 +1,6 @@
-import { MigrationInterface, QueryRunner, TableIndex } from 'typeorm';
+import { TableIndex } from 'typeorm';
+
+import type { MigrationInterface, QueryRunner } from 'typeorm';
 
 /**
  * Fase 1 - Acciones de Personal + Planilla (compatibilidad incremental).
@@ -9,9 +11,7 @@ import { MigrationInterface, QueryRunner, TableIndex } from 'typeorm';
  * - Agrega metadata operativa/auditoria y permisos hr_action:*.
  * - Activa blindaje anti-delete en DB.
  */
-export class EnhancePersonalActionsPhase1Compatibility1708536800000
-  implements MigrationInterface
-{
+export class EnhancePersonalActionsPhase1Compatibility1708536800000 implements MigrationInterface {
   public async up(queryRunner: QueryRunner): Promise<void> {
     const hasTable = await queryRunner.hasTable('acc_acciones_personal');
     if (!hasTable) {
@@ -23,9 +23,7 @@ export class EnhancePersonalActionsPhase1Compatibility1708536800000
     const addColumnIfMissing = async (name: string, ddl: string) => {
       const has = await queryRunner.hasColumn('acc_acciones_personal', name);
       if (!has) {
-        await queryRunner.query(
-          `ALTER TABLE acc_acciones_personal ADD COLUMN ${ddl}`,
-        );
+        await queryRunner.query(`ALTER TABLE acc_acciones_personal ADD COLUMN ${ddl}`);
       }
     };
 
@@ -85,9 +83,7 @@ export class EnhancePersonalActionsPhase1Compatibility1708536800000
     `);
 
     const table = await queryRunner.getTable('acc_acciones_personal');
-    const hasLookupIndex = table?.indices.some(
-      (idx) => idx.name === 'IDX_accion_lookup_v2',
-    );
+    const hasLookupIndex = table?.indices.some((idx) => idx.name === 'IDX_accion_lookup_v2');
     if (!hasLookupIndex) {
       await queryRunner.createIndex(
         'acc_acciones_personal',
@@ -111,9 +107,7 @@ export class EnhancePersonalActionsPhase1Compatibility1708536800000
       );
     }
 
-    const hasGroupIndex = table?.indices.some(
-      (idx) => idx.name === 'IDX_accion_group_v2',
-    );
+    const hasGroupIndex = table?.indices.some((idx) => idx.name === 'IDX_accion_group_v2');
     if (!hasGroupIndex) {
       await queryRunner.createIndex(
         'acc_acciones_personal',
@@ -124,9 +118,7 @@ export class EnhancePersonalActionsPhase1Compatibility1708536800000
       );
     }
 
-    const hasConsumedIndex = table?.indices.some(
-      (idx) => idx.name === 'IDX_accion_consumed',
-    );
+    const hasConsumedIndex = table?.indices.some((idx) => idx.name === 'IDX_accion_consumed');
     if (!hasConsumedIndex) {
       await queryRunner.createIndex(
         'acc_acciones_personal',
@@ -137,9 +129,7 @@ export class EnhancePersonalActionsPhase1Compatibility1708536800000
       );
     }
 
-    await queryRunner.query(
-      'DROP TRIGGER IF EXISTS TRG_acc_acciones_personal_no_delete',
-    );
+    await queryRunner.query('DROP TRIGGER IF EXISTS TRG_acc_acciones_personal_no_delete');
     await queryRunner.query(`
       CREATE TRIGGER TRG_acc_acciones_personal_no_delete
       BEFORE DELETE ON acc_acciones_personal
@@ -225,9 +215,7 @@ export class EnhancePersonalActionsPhase1Compatibility1708536800000
   }
 
   public async down(queryRunner: QueryRunner): Promise<void> {
-    await queryRunner.query(
-      'DROP TRIGGER IF EXISTS TRG_acc_acciones_personal_no_delete',
-    );
+    await queryRunner.query('DROP TRIGGER IF EXISTS TRG_acc_acciones_personal_no_delete');
 
     await queryRunner.query(`
       DELETE rp
@@ -266,9 +254,7 @@ export class EnhancePersonalActionsPhase1Compatibility1708536800000
     const dropColumnIfExists = async (columnName: string) => {
       const has = await queryRunner.hasColumn('acc_acciones_personal', columnName);
       if (has) {
-        await queryRunner.query(
-          `ALTER TABLE acc_acciones_personal DROP COLUMN \`${columnName}\``,
-        );
+        await queryRunner.query(`ALTER TABLE acc_acciones_personal DROP COLUMN \`${columnName}\``);
       }
     };
 
@@ -286,4 +272,3 @@ export class EnhancePersonalActionsPhase1Compatibility1708536800000
     await dropColumnIfExists('group_id_accion');
   }
 }
-

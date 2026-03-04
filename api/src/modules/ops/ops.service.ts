@@ -1,12 +1,14 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
-import { Employee } from '../employees/entities/employee.entity';
-import { EmployeeIdentityQueue } from '../employees/entities/employee-identity-queue.entity';
+
 import { EmployeeEncryptQueue } from '../employees/entities/employee-encrypt-queue.entity';
-import { EmployeeDataAutomationWorkerService } from '../employees/services/employee-data-automation-worker.service';
-import { EmployeeVacationService } from '../employees/services/employee-vacation.service';
-import { ListQueueJobsDto, QueueType } from './dto/list-queue-jobs.dto';
+import { EmployeeIdentityQueue } from '../employees/entities/employee-identity-queue.entity';
+import { Employee } from '../employees/entities/employee.entity';
+
+import type { ListQueueJobsDto, QueueType } from './dto/list-queue-jobs.dto';
+import type { EmployeeDataAutomationWorkerService } from '../employees/services/employee-data-automation-worker.service';
+import type { EmployeeVacationService } from '../employees/services/employee-vacation.service';
+import type { Repository } from 'typeorm';
 
 type QueueRow = {
   id_queue: number;
@@ -110,32 +112,21 @@ export class OpsService {
       plaintextDetected: Number(plaintextDetected?.cnt ?? 0),
       oldestPendingAgeMinutes,
       throughputJobsPerMin5: Number(
-        (
-          (Number(done5Identity?.cnt ?? 0) + Number(done5Encrypt?.cnt ?? 0)) /
-          5
-        ).toFixed(2),
+        ((Number(done5Identity?.cnt ?? 0) + Number(done5Encrypt?.cnt ?? 0)) / 5).toFixed(2),
       ),
       throughputJobsPerMin15: Number(
-        (
-          (Number(done15Identity?.cnt ?? 0) + Number(done15Encrypt?.cnt ?? 0)) /
-          15
-        ).toFixed(2),
+        ((Number(done15Identity?.cnt ?? 0) + Number(done15Encrypt?.cnt ?? 0)) / 15).toFixed(2),
       ),
-      errorsLast15m:
-        Number(errors15Identity?.cnt ?? 0) + Number(errors15Encrypt?.cnt ?? 0),
-      stuckProcessing:
-        Number(stuckIdentity?.cnt ?? 0) + Number(stuckEncrypt?.cnt ?? 0),
+      errorsLast15m: Number(errors15Identity?.cnt ?? 0) + Number(errors15Encrypt?.cnt ?? 0),
+      stuckProcessing: Number(stuckIdentity?.cnt ?? 0) + Number(stuckEncrypt?.cnt ?? 0),
       lastUpdatedAt: new Date().toISOString(),
     };
   }
 
   async listQueue(queue: QueueType, filters: ListQueueJobsDto) {
     const table =
-      queue === 'identity'
-        ? 'sys_empleado_identity_queue'
-        : 'sys_empleado_encrypt_queue';
-    const idField =
-      queue === 'identity' ? 'id_identity_queue' : 'id_encrypt_queue';
+      queue === 'identity' ? 'sys_empleado_identity_queue' : 'sys_empleado_encrypt_queue';
+    const idField = queue === 'identity' ? 'id_identity_queue' : 'id_encrypt_queue';
     const includeDone = filters.includeDone === 1;
     const page = Math.max(1, filters.page ?? 1);
     const maxPageSize = includeDone ? 100 : 200;
@@ -209,11 +200,7 @@ export class OpsService {
         ${idField} DESC
       LIMIT ? OFFSET ?
     `;
-    const rows = await this.identityQueueRepo.query(query, [
-      ...params,
-      pageSize,
-      offset,
-    ]);
+    const rows = await this.identityQueueRepo.query(query, [...params, pageSize, offset]);
     const [countRow] = await this.identityQueueRepo.query(
       `SELECT COUNT(*) AS total FROM ${table} ${whereClause}`,
       params,
@@ -258,9 +245,7 @@ export class OpsService {
       pendingReadyEncrypt: Number(encryptReady?.cnt ?? 0),
       stuckIdentity: Number(stuckIdentity?.cnt ?? 0),
       stuckEncrypt: Number(stuckEncrypt?.cnt ?? 0),
-      healthy:
-        Number(stuckIdentity?.cnt ?? 0) === 0 &&
-        Number(stuckEncrypt?.cnt ?? 0) === 0,
+      healthy: Number(stuckIdentity?.cnt ?? 0) === 0 && Number(stuckEncrypt?.cnt ?? 0) === 0,
     };
   }
 
@@ -274,11 +259,8 @@ export class OpsService {
 
   async requeue(queue: QueueType, idQueue: number) {
     const table =
-      queue === 'identity'
-        ? 'sys_empleado_identity_queue'
-        : 'sys_empleado_encrypt_queue';
-    const idField =
-      queue === 'identity' ? 'id_identity_queue' : 'id_encrypt_queue';
+      queue === 'identity' ? 'sys_empleado_identity_queue' : 'sys_empleado_encrypt_queue';
+    const idField = queue === 'identity' ? 'id_identity_queue' : 'id_encrypt_queue';
     await this.identityQueueRepo.query(
       `
         UPDATE ${table}
@@ -342,9 +324,7 @@ export class OpsService {
     return Number.isFinite(lockedTime) && lockedTime < Date.now() - 10 * 60_000;
   }
 
-  private async getOldestPendingAgeMinutes(
-    oldestPending: string,
-  ): Promise<number> {
+  private async getOldestPendingAgeMinutes(oldestPending: string): Promise<number> {
     const [row] = await this.identityQueueRepo.query(
       `SELECT TIMESTAMPDIFF(MINUTE, ?, NOW()) AS age`,
       [oldestPending],

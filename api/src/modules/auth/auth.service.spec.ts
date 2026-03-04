@@ -1,27 +1,31 @@
-import { Test, TestingModule } from '@nestjs/testing';
-import { JwtService } from '@nestjs/jwt';
-import { ConfigService } from '@nestjs/config';
 import { UnauthorizedException, ForbiddenException } from '@nestjs/common';
-import { Repository } from 'typeorm';
+import { ConfigService } from '@nestjs/config';
+import { JwtService } from '@nestjs/jwt';
+import { Test } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import * as bcrypt from 'bcrypt';
-import { AuthService } from './auth.service';
-import { UsersService } from './users.service';
-import { User } from './entities/user.entity';
-import { UserApp } from '../access-control/entities/user-app.entity';
+
 import { App } from '../access-control/entities/app.entity';
-import { UserCompany } from '../access-control/entities/user-company.entity';
-import { Company } from '../companies/entities/company.entity';
-import { UserRole } from '../access-control/entities/user-role.entity';
-import { UserRoleGlobal } from '../access-control/entities/user-role-global.entity';
 import { UserRoleExclusion } from '../access-control/entities/user-role-exclusion.entity';
 import { RolePermission } from '../access-control/entities/role-permission.entity';
 import { Permission } from '../access-control/entities/permission.entity';
+import { UserApp } from '../access-control/entities/user-app.entity';
+import { UserCompany } from '../access-control/entities/user-company.entity';
 import { UserPermissionOverride } from '../access-control/entities/user-permission-override.entity';
 import { UserPermissionGlobalDeny } from '../access-control/entities/user-permission-global-deny.entity';
-import { RefreshSession } from './entities/refresh-session.entity';
+import { UserRoleGlobal } from '../access-control/entities/user-role-global.entity';
+import { UserRole } from '../access-control/entities/user-role.entity';
 import { AuthzVersionService } from '../authz/authz-version.service';
 import { PermissionsCacheService } from '../authz/permissions-cache.service';
+import { Company } from '../companies/entities/company.entity';
+
+import { AuthService } from './auth.service';
+import { RefreshSession } from './entities/refresh-session.entity';
+import { UsersService } from './users.service';
+
+import type { User } from './entities/user.entity';
+import type { TestingModule } from '@nestjs/testing';
+import type { Repository } from 'typeorm';
 
 jest.mock('bcrypt', () => ({
   ...jest.requireActual('bcrypt'),
@@ -206,25 +210,20 @@ describe('AuthService', () => {
       expect(result).toHaveProperty('refreshToken');
       expect(result).toHaveProperty('csrfToken');
       expect(result).toHaveProperty('session');
-      expect(usersService.registerSuccessfulLogin).toHaveBeenCalledWith(
-        mockUser.id,
-        '127.0.0.1',
-      );
+      expect(usersService.registerSuccessfulLogin).toHaveBeenCalledWith(mockUser.id, '127.0.0.1');
     });
 
     it('should throw UnauthorizedException when user not found', async () => {
       // Arrange
-      usersService.validateForLogin.mockRejectedValue(
-        new Error('User not found'),
-      );
+      usersService.validateForLogin.mockRejectedValue(new Error('User not found'));
 
       // Act & Assert
-      await expect(
-        service.login('invalid@example.com', 'password'),
-      ).rejects.toThrow(UnauthorizedException);
-      await expect(
-        service.login('invalid@example.com', 'password'),
-      ).rejects.toThrow('Credenciales invalidas');
+      await expect(service.login('invalid@example.com', 'password')).rejects.toThrow(
+        UnauthorizedException,
+      );
+      await expect(service.login('invalid@example.com', 'password')).rejects.toThrow(
+        'Credenciales invalidas',
+      );
     });
 
     it('should throw UnauthorizedException when password is invalid', async () => {
@@ -233,12 +232,10 @@ describe('AuthService', () => {
       mockedBcrypt.compare.mockResolvedValue(false as never);
 
       // Act & Assert
-      await expect(
-        service.login('test@example.com', 'wrongpassword'),
-      ).rejects.toThrow(UnauthorizedException);
-      expect(usersService.registerFailedAttempt).toHaveBeenCalledWith(
-        mockUser.id,
+      await expect(service.login('test@example.com', 'wrongpassword')).rejects.toThrow(
+        UnauthorizedException,
       );
+      expect(usersService.registerFailedAttempt).toHaveBeenCalledWith(mockUser.id);
     });
 
     it('should throw UnauthorizedException when user has no password hash', async () => {
@@ -247,12 +244,12 @@ describe('AuthService', () => {
       usersService.validateForLogin.mockResolvedValue(userWithoutPassword);
 
       // Act & Assert
-      await expect(
-        service.login('test@example.com', 'password'),
-      ).rejects.toThrow(UnauthorizedException);
-      await expect(
-        service.login('test@example.com', 'password'),
-      ).rejects.toThrow('Credenciales invalidas');
+      await expect(service.login('test@example.com', 'password')).rejects.toThrow(
+        UnauthorizedException,
+      );
+      await expect(service.login('test@example.com', 'password')).rejects.toThrow(
+        'Credenciales invalidas',
+      );
     });
   });
 
@@ -358,9 +355,7 @@ describe('AuthService', () => {
       // Arrange
       const mockApp = { id: 1, codigo: 'kpital', estado: 1 };
       const mockUserCompany = { idUsuario: 1, idEmpresa: 1, estado: 1 };
-      const mockUserRoles = [
-        { idUsuario: 1, idRol: 1, idEmpresa: 1, idApp: 1, estado: 1 },
-      ];
+      const mockUserRoles = [{ idUsuario: 1, idRol: 1, idEmpresa: 1, idApp: 1, estado: 1 }];
       const mockRolePerms = [{ idRol: 1, idPermiso: 1 }];
       const mockPermissions = [{ id: 1, codigo: 'employee:view', estado: 1 }];
 
@@ -370,9 +365,7 @@ describe('AuthService', () => {
       userRoleGlobalRepo.find.mockResolvedValue([]);
       rolePermRepo.find.mockResolvedValue(mockRolePerms as any);
       permRepo.find.mockResolvedValue(mockPermissions as any);
-      permRepo.manager.find.mockResolvedValue([
-        { id: 1, codigo: 'EMPLOYEE_VIEWER' },
-      ] as any);
+      permRepo.manager.find.mockResolvedValue([{ id: 1, codigo: 'EMPLOYEE_VIEWER' }] as any);
 
       const mockQueryBuilder = {
         innerJoin: jest.fn().mockReturnThis(),
@@ -381,9 +374,7 @@ describe('AuthService', () => {
         andWhere: jest.fn().mockReturnThis(),
         getRawMany: jest.fn().mockResolvedValue([]),
       };
-      (userAppRepo.createQueryBuilder as jest.Mock).mockReturnValue(
-        mockQueryBuilder,
-      );
+      (userAppRepo.createQueryBuilder as jest.Mock).mockReturnValue(mockQueryBuilder);
 
       // Act
       const result = await service.resolvePermissions(1, 1, 'kpital');
@@ -422,11 +413,7 @@ describe('AuthService', () => {
       configService.get.mockReturnValue('30d');
 
       // Act
-      const result = await service.refreshSession(
-        'refresh-token',
-        '127.0.0.1',
-        'test-agent',
-      );
+      const result = await service.refreshSession('refresh-token', '127.0.0.1', 'test-agent');
 
       // Assert
       expect(result).toHaveProperty('accessToken');
@@ -442,9 +429,7 @@ describe('AuthService', () => {
       });
 
       // Act & Assert
-      await expect(service.refreshSession('invalid-token')).rejects.toThrow(
-        UnauthorizedException,
-      );
+      await expect(service.refreshSession('invalid-token')).rejects.toThrow(UnauthorizedException);
     });
 
     it('should throw UnauthorizedException when stored session not found', async () => {
@@ -460,9 +445,7 @@ describe('AuthService', () => {
       refreshSessionRepo.findOne.mockResolvedValue(null);
 
       // Act & Assert
-      await expect(service.refreshSession('refresh-token')).rejects.toThrow(
-        UnauthorizedException,
-      );
+      await expect(service.refreshSession('refresh-token')).rejects.toThrow(UnauthorizedException);
       await expect(service.refreshSession('refresh-token')).rejects.toThrow(
         'Refresh token invalido o revocado',
       );
@@ -490,10 +473,7 @@ describe('AuthService', () => {
       // Assert
       expect(result).toHaveProperty('accessToken');
       expect(result).toHaveProperty('session');
-      expect(usersService.registerSuccessfulLogin).toHaveBeenCalledWith(
-        mockUser.id,
-        '127.0.0.1',
-      );
+      expect(usersService.registerSuccessfulLogin).toHaveBeenCalledWith(mockUser.id, '127.0.0.1');
     });
 
     it('should throw ForbiddenException when Microsoft account not found', async () => {
@@ -545,9 +525,7 @@ describe('AuthService', () => {
       });
 
       // Act & Assert
-      await expect(
-        service.revokeRefreshToken('invalid-token'),
-      ).resolves.not.toThrow();
+      await expect(service.revokeRefreshToken('invalid-token')).resolves.not.toThrow();
     });
   });
 });

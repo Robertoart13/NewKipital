@@ -1,34 +1,51 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { PayrollController } from './payroll.controller';
-import { PayrollService } from './payroll.service';
+
+import { UserCompany } from '../access-control/entities/user-company.entity';
+import { EmployeesModule } from '../employees/employees.module';
+import { EmployeeAguinaldoProvision } from '../employees/entities/employee-aguinaldo-provision.entity';
+import { Employee } from '../employees/entities/employee.entity';
+import { IntegrationModule } from '../integration/integration.module';
+import { PersonalAction } from '../personal-actions/entities/personal-action.entity';
+import { PersonalActionsModule } from '../personal-actions/personal-actions.module';
+
+import { EmployeeTransfer } from './entities/employee-transfer.entity';
 import { PayPeriod } from './entities/pay-period.entity';
 import { PayrollCalendar } from './entities/payroll-calendar.entity';
 import { PayrollEmployeeSnapshot } from './entities/payroll-employee-snapshot.entity';
 import { PayrollInputSnapshot } from './entities/payroll-input-snapshot.entity';
 import { PayrollResult } from './entities/payroll-result.entity';
-import { IntegrationModule } from '../integration/integration.module';
-import { UserCompany } from '../access-control/entities/user-company.entity';
-import { EmployeesModule } from '../employees/employees.module';
-import { PersonalAction } from '../personal-actions/entities/personal-action.entity';
-import { PersonalActionsModule } from '../personal-actions/personal-actions.module';
+import { PayrollPlanillaSnapshotJson } from './entities/payroll-planilla-snapshot.entity';
+import { PayrollSocialCharge } from './entities/payroll-social-charge.entity';
+import { PayrollEmployeeVerification } from './entities/payroll-employee-verification.entity';
+
+import { IntercompanyTransferController } from './intercompany-transfer.controller';
+import { IntercompanyTransferService } from './intercompany-transfer.service';
+import { PayrollController } from './payroll.controller';
+import { PayrollService } from './payroll.service';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([
       PayPeriod,
       PayrollCalendar,
+      Employee,
       UserCompany,
       PayrollEmployeeSnapshot,
       PayrollInputSnapshot,
       PayrollResult,
+      PayrollPlanillaSnapshotJson,
+      PayrollSocialCharge,
+      PayrollEmployeeVerification,
       PersonalAction,
+      EmployeeTransfer,
+      EmployeeAguinaldoProvision,
     ]),
     IntegrationModule,
     EmployeesModule,
     PersonalActionsModule,
   ],
-  controllers: [PayrollController],
-  providers: [PayrollService],
+  controllers: [PayrollController, IntercompanyTransferController],
+  providers: [PayrollService, IntercompanyTransferService],
 })
 export class PayrollModule {}

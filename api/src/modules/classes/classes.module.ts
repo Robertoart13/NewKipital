@@ -1,9 +1,11 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { OrgClass } from './entities/class.entity';
+
+import { IntegrationModule } from '../integration/integration.module';
+
 import { ClassesController } from './classes.controller';
 import { ClassesService } from './classes.service';
-import { IntegrationModule } from '../integration/integration.module';
+import { OrgClass } from './entities/class.entity';
 
 @Module({
   imports: [TypeOrmModule.forFeature([OrgClass]), IntegrationModule],

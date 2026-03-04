@@ -1,9 +1,6 @@
-import {
-  MigrationInterface,
-  QueryRunner,
-  TableColumn,
-  TableIndex,
-} from 'typeorm';
+import { TableColumn, TableIndex } from 'typeorm';
+
+import type { MigrationInterface, QueryRunner } from 'typeorm';
 
 /**
  * Directiva 15 — Enhance sys_usuarios con columnas enterprise.
@@ -189,10 +186,7 @@ export class EnhanceSysUsuarios1708531400000 implements MigrationInterface {
     await queryRunner.dropColumn('sys_usuarios', 'locked_until_usuario');
     await queryRunner.dropColumn('sys_usuarios', 'failed_attempts_usuario');
     await queryRunner.dropColumn('sys_usuarios', 'motivo_inactivacion_usuario');
-    await queryRunner.dropColumn(
-      'sys_usuarios',
-      'requires_password_reset_usuario',
-    );
+    await queryRunner.dropColumn('sys_usuarios', 'requires_password_reset_usuario');
     await queryRunner.dropColumn('sys_usuarios', 'password_updated_at_usuario');
     await queryRunner.dropColumn('sys_usuarios', 'username_usuario');
   }

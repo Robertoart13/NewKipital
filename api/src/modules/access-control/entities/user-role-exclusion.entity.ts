@@ -13,11 +13,7 @@ import {
  * Solo aplica a roles que vienen de sys_usuario_rol_global.
  */
 @Entity('sys_usuario_rol_exclusion')
-@Index(
-  'UQ_usuario_rol_exclusion',
-  ['idUsuario', 'idEmpresa', 'idApp', 'idRol'],
-  { unique: true },
-)
+@Index('UQ_usuario_rol_exclusion', ['idUsuario', 'idEmpresa', 'idApp', 'idRol'], { unique: true })
 export class UserRoleExclusion {
   @PrimaryGeneratedColumn({ name: 'id_usuario_rol_exclusion' })
   id: number;

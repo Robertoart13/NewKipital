@@ -1,4 +1,6 @@
-import { MigrationInterface, QueryRunner, Table, TableIndex } from 'typeorm';
+import { Table, TableIndex } from 'typeorm';
+
+import type { MigrationInterface, QueryRunner } from 'typeorm';
 
 export class EncryptEmployeeDataAndAutomationQueue1708533800000 implements MigrationInterface {
   public async up(queryRunner: QueryRunner): Promise<void> {
@@ -29,9 +31,7 @@ export class EncryptEmployeeDataAndAutomationQueue1708533800000 implements Migra
     `);
   }
 
-  private async addEmployeeEncryptionColumns(
-    queryRunner: QueryRunner,
-  ): Promise<void> {
+  private async addEmployeeEncryptionColumns(queryRunner: QueryRunner): Promise<void> {
     const table = 'sys_empleados';
 
     if (!(await queryRunner.hasColumn(table, 'cedula_hash_empleado'))) {
@@ -49,9 +49,7 @@ export class EncryptEmployeeDataAndAutomationQueue1708533800000 implements Migra
         `ALTER TABLE ${table} ADD COLUMN datos_encriptados_empleado tinyint(1) NOT NULL DEFAULT 0 AFTER modificado_por_empleado`,
       );
     }
-    if (
-      !(await queryRunner.hasColumn(table, 'version_encriptacion_empleado'))
-    ) {
+    if (!(await queryRunner.hasColumn(table, 'version_encriptacion_empleado'))) {
       await queryRunner.query(
         `ALTER TABLE ${table} ADD COLUMN version_encriptacion_empleado varchar(10) NULL AFTER datos_encriptados_empleado`,
       );
@@ -66,11 +64,7 @@ export class EncryptEmployeeDataAndAutomationQueue1708533800000 implements Migra
       `ALTER TABLE ${table} MODIFY COLUMN salario_base_empleado varchar(255) NULL`,
     );
 
-    await this.dropIndexIfExists(
-      queryRunner,
-      table,
-      'UQ_b8312d7395b91ea2d3929404109',
-    );
+    await this.dropIndexIfExists(queryRunner, table, 'UQ_b8312d7395b91ea2d3929404109');
     await this.dropIndexIfExists(queryRunner, table, 'IDX_empleado_cedula');
     await this.dropIndexIfExists(queryRunner, table, 'IDX_empleado_email');
 
@@ -199,26 +193,17 @@ export class EncryptEmployeeDataAndAutomationQueue1708533800000 implements Migra
       `ALTER TABLE ${tableName} MODIFY COLUMN monto_provisionado varchar(255) NOT NULL`,
     );
 
-    if (
-      !(await queryRunner.hasColumn(tableName, 'datos_encriptados_provision'))
-    ) {
+    if (!(await queryRunner.hasColumn(tableName, 'datos_encriptados_provision'))) {
       await queryRunner.query(
         `ALTER TABLE ${tableName} ADD COLUMN datos_encriptados_provision tinyint(1) NOT NULL DEFAULT 0`,
       );
     }
-    if (
-      !(await queryRunner.hasColumn(
-        tableName,
-        'version_encriptacion_provision',
-      ))
-    ) {
+    if (!(await queryRunner.hasColumn(tableName, 'version_encriptacion_provision'))) {
       await queryRunner.query(
         `ALTER TABLE ${tableName} ADD COLUMN version_encriptacion_provision varchar(10) NULL`,
       );
     }
-    if (
-      !(await queryRunner.hasColumn(tableName, 'fecha_encriptacion_provision'))
-    ) {
+    if (!(await queryRunner.hasColumn(tableName, 'fecha_encriptacion_provision'))) {
       await queryRunner.query(
         `ALTER TABLE ${tableName} ADD COLUMN fecha_encriptacion_provision datetime NULL`,
       );
@@ -351,9 +336,7 @@ export class EncryptEmployeeDataAndAutomationQueue1708533800000 implements Migra
     }
   }
 
-  private async seedSensitivePermission(
-    queryRunner: QueryRunner,
-  ): Promise<void> {
+  private async seedSensitivePermission(queryRunner: QueryRunner): Promise<void> {
     const now = new Date().toISOString().slice(0, 19).replace('T', ' ');
     await queryRunner.query(`
       INSERT INTO sys_permisos (

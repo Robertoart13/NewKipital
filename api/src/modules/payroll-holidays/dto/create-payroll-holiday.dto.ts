@@ -28,4 +28,3 @@ export class CreatePayrollHolidayDto {
   @MaxLength(2000)
   descripcion?: string;
 }
-

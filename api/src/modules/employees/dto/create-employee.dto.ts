@@ -1,3 +1,4 @@
+import { Type } from 'class-transformer';
 import {
   IsString,
   IsEmail,
@@ -14,7 +15,7 @@ import {
   IsArray,
   ValidateNested,
 } from 'class-validator';
-import { Type } from 'class-transformer';
+
 import {
   GeneroEmpleado,
   EstadoCivilEmpleado,
@@ -22,6 +23,7 @@ import {
   JornadaEmpleado,
   MonedaSalarioEmpleado,
 } from '../entities/employee.entity';
+
 import { CreateEmployeeAguinaldoProvisionDto } from './create-employee-aguinaldo-provision.dto';
 
 /**

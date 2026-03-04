@@ -1,0 +1,23 @@
+# build outputs
+dist
+build
+out
+
+# deps
+node_modules
+
+# coverage / reports (GENERATED)
+coverage
+.nyc_output
+
+# logs
+*.log
+
+# env / secrets
+.env
+.env.*
+
+# lockfiles (opcional)
+package-lock.json
+pnpm-lock.yaml
+yarn.lock

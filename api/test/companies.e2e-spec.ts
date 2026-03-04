@@ -1,7 +1,11 @@
-import { Test, TestingModule } from '@nestjs/testing';
-import { INestApplication, ValidationPipe } from '@nestjs/common';
+import { ValidationPipe } from '@nestjs/common';
+import { Test } from '@nestjs/testing';
 import request from 'supertest';
+
 import { AppModule } from '../src/app.module';
+
+import type { INestApplication } from '@nestjs/common';
+import type { TestingModule } from '@nestjs/testing';
 
 describe('CompaniesController (e2e)', () => {
   let app: INestApplication;
@@ -14,18 +18,14 @@ describe('CompaniesController (e2e)', () => {
     }).compile();
 
     app = moduleFixture.createNestApplication();
-    app.useGlobalPipes(
-      new ValidationPipe({ whitelist: true, transform: true }),
-    );
+    app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
     await app.init();
 
     // Login to get access token
-    const loginResponse = await request(app.getHttpServer())
-      .post('/auth/login')
-      .send({
-        email: 'ana.garcia@roccacr.com',
-        password: 'Demo2026!',
-      });
+    const loginResponse = await request(app.getHttpServer()).post('/auth/login').send({
+      email: 'ana.garcia@roccacr.com',
+      password: 'Demo2026!',
+    });
 
     accessToken = loginResponse.body.accessToken;
   });
@@ -135,9 +135,7 @@ describe('CompaniesController (e2e)', () => {
         })
         .expect(409)
         .then((response) => {
-          expect(response.body.message).toContain(
-            'Ya existe una empresa con esa cedula',
-          );
+          expect(response.body.message).toContain('Ya existe una empresa con esa cedula');
         });
     });
 
@@ -169,9 +167,7 @@ describe('CompaniesController (e2e)', () => {
         })
         .expect(409)
         .then((response) => {
-          expect(response.body.message).toContain(
-            'Ya existe una empresa con ese prefijo',
-          );
+          expect(response.body.message).toContain('Ya existe una empresa con ese prefijo');
         });
     });
 
@@ -226,9 +222,7 @@ describe('CompaniesController (e2e)', () => {
     });
 
     it('should reject request without authentication', () => {
-      return request(app.getHttpServer())
-        .get(`/companies/${testCompanyId}`)
-        .expect(401);
+      return request(app.getHttpServer()).get(`/companies/${testCompanyId}`).expect(401);
     });
 
     it('should reject request for company without access', () => {
@@ -250,10 +244,7 @@ describe('CompaniesController (e2e)', () => {
         })
         .expect(200)
         .then((response) => {
-          expect(response.body).toHaveProperty(
-            'nombre',
-            'Updated Company Name',
-          );
+          expect(response.body).toHaveProperty('nombre', 'Updated Company Name');
           expect(response.body).toHaveProperty('telefono', '88889999');
         });
     });
@@ -361,9 +352,7 @@ describe('CompaniesController (e2e)', () => {
     });
 
     it('should reject request without authentication', () => {
-      return request(app.getHttpServer())
-        .get(`/companies/${testCompanyId}/logo`)
-        .expect(401);
+      return request(app.getHttpServer()).get(`/companies/${testCompanyId}/logo`).expect(401);
     });
 
     it('should return default logo when company has no custom logo', () => {

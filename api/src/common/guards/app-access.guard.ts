@@ -1,12 +1,10 @@
-import {
-  Injectable,
-  CanActivate,
-  ExecutionContext,
-  ForbiddenException,
-} from '@nestjs/common';
-import { Reflector } from '@nestjs/core';
+import { Injectable, ForbiddenException } from '@nestjs/common';
+
 import { REQUIRE_APP_KEY } from '../decorators/require-app.decorator';
+
 import type { PlatformApp } from '../constants/apps';
+import type { CanActivate, ExecutionContext } from '@nestjs/common';
+import type { Reflector } from '@nestjs/core';
 
 /**
  * Guard que valida que el usuario tenga acceso a la app requerida.
@@ -21,9 +19,10 @@ export class AppAccessGuard implements CanActivate {
   constructor(private reflector: Reflector) {}
 
   canActivate(context: ExecutionContext): boolean {
-    const requiredApp = this.reflector.getAllAndOverride<
-      PlatformApp | undefined
-    >(REQUIRE_APP_KEY, [context.getHandler(), context.getClass()]);
+    const requiredApp = this.reflector.getAllAndOverride<PlatformApp | undefined>(REQUIRE_APP_KEY, [
+      context.getHandler(),
+      context.getClass(),
+    ]);
 
     if (!requiredApp) return true;
 
@@ -35,9 +34,7 @@ export class AppAccessGuard implements CanActivate {
     }
 
     if (!user.enabledApps.includes(requiredApp)) {
-      throw new ForbiddenException(
-        `No tiene acceso a la aplicación ${requiredApp}`,
-      );
+      throw new ForbiddenException(`No tiene acceso a la aplicación ${requiredApp}`);
     }
 
     return true;

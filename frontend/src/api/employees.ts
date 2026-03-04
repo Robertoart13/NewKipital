@@ -39,6 +39,8 @@ export interface PayPeriodRef {
 export interface EmployeeListItem {
   id: number;
   idEmpresa: number;
+  idPeriodoPago?: number | null;
+  monedaSalario?: string | null;
   codigo: string;
   cedula: string;
   nombre: string;

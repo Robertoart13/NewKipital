@@ -1,4 +1,6 @@
-import { Injectable, OnModuleDestroy } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
+
+import type { OnModuleDestroy } from '@nestjs/common';
 import type { Response } from 'express';
 
 export interface AuthzRealtimeEventPayload {
@@ -55,9 +57,7 @@ export class AuthzRealtimeService implements OnModuleDestroy {
 
   notifyUsers(userIds: number[], payload: AuthzRealtimeEventPayload): void {
     if (userIds.length === 0) return;
-    const targetIds = [...new Set(userIds)].filter(
-      (id) => Number.isInteger(id) && id > 0,
-    );
+    const targetIds = [...new Set(userIds)].filter((id) => Number.isInteger(id) && id > 0);
     if (targetIds.length === 0) return;
 
     for (const userId of targetIds) {
@@ -109,11 +109,7 @@ export class AuthzRealtimeService implements OnModuleDestroy {
     }
   }
 
-  private writeEvent(
-    response: Response,
-    eventName: string,
-    payload: unknown,
-  ): void {
+  private writeEvent(response: Response, eventName: string, payload: unknown): void {
     if (response.writableEnded) return;
     response.write(`event: ${eventName}\n`);
     response.write(`data: ${JSON.stringify(payload)}\n\n`);

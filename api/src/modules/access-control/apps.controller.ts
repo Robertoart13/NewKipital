@@ -8,11 +8,13 @@ import {
   ParseIntPipe,
   UseInterceptors,
 } from '@nestjs/common';
-import { AppsService } from './apps.service';
-import { CreateAppDto } from './dto/create-app.dto';
-import { RequirePermissions } from '../../common/decorators/require-permissions.decorator';
+
 import { CacheScope } from '../../common/decorators/cache-scope.decorator';
+import { RequirePermissions } from '../../common/decorators/require-permissions.decorator';
 import { CacheResponseInterceptor } from '../../common/interceptors/cache-response.interceptor';
+
+import type { AppsService } from './apps.service';
+import type { CreateAppDto } from './dto/create-app.dto';
 
 @CacheScope('apps')
 @UseInterceptors(CacheResponseInterceptor)

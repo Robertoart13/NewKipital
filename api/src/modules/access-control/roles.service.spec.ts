@@ -1,21 +1,22 @@
-﻿import { Test, TestingModule } from '@nestjs/testing';
+﻿import { BadRequestException, ConflictException, NotFoundException } from '@nestjs/common';
+import { Test } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import {
-  BadRequestException,
-  ConflictException,
-  NotFoundException,
-} from '@nestjs/common';
-import { Repository } from 'typeorm';
-import { RolesService } from './roles.service';
-import { Role } from './entities/role.entity';
+
+import { AuthzRealtimeService } from '../authz/authz-realtime.service';
+import { AuthzVersionService } from '../authz/authz-version.service';
+import { AuditOutboxService } from '../integration/audit-outbox.service';
+
 import { App } from './entities/app.entity';
 import { Permission } from './entities/permission.entity';
+import { Role } from './entities/role.entity';
+import type { TestingModule } from '@nestjs/testing';
+
+import type { Repository } from 'typeorm';
+
+import { RolesService } from './roles.service';
 import { RolePermission } from './entities/role-permission.entity';
 import { UserRole } from './entities/user-role.entity';
 import { UserRoleGlobal } from './entities/user-role-global.entity';
-import { AuditOutboxService } from '../integration/audit-outbox.service';
-import { AuthzVersionService } from '../authz/authz-version.service';
-import { AuthzRealtimeService } from '../authz/authz-realtime.service';
 
 describe('RolesService', () => {
   let service: RolesService;
@@ -108,10 +109,7 @@ describe('RolesService', () => {
       nombre: 'Role1',
     } as any);
 
-    const result = await service.create(
-      { codigo: 'R1', nombre: 'Role1', appCode: 'kpital' },
-      5,
-    );
+    const result = await service.create({ codigo: 'R1', nombre: 'Role1', appCode: 'kpital' }, 5);
 
     expect(result.id).toBe(1);
   });
@@ -137,16 +135,14 @@ describe('RolesService', () => {
     roleRepo.findOne.mockResolvedValue({ id: 1 } as any);
     permissionRepo.findOne.mockResolvedValue(null);
 
-    await expect(
-      service.assignPermission({ idRol: 1, idPermiso: 99 }),
-    ).rejects.toThrow(NotFoundException);
+    await expect(service.assignPermission({ idRol: 1, idPermiso: 99 })).rejects.toThrow(
+      NotFoundException,
+    );
   });
 
   it('removePermission rejects missing relation', async () => {
     rpRepo.findOne.mockResolvedValue(null);
-    await expect(service.removePermission(1, 10)).rejects.toThrow(
-      NotFoundException,
-    );
+    await expect(service.removePermission(1, 10)).rejects.toThrow(NotFoundException);
   });
 
   it('replacePermissionsByCodes invalidates and notifies only affected users', async () => {
@@ -155,19 +151,11 @@ describe('RolesService', () => {
       nombre: 'Role',
       codigo: 'ROLE',
     } as any);
-    permissionRepo.find.mockResolvedValue([
-      { id: 2, codigo: 'employee:view', estado: 1 } as any,
-    ]);
+    permissionRepo.find.mockResolvedValue([{ id: 2, codigo: 'employee:view', estado: 1 } as any]);
     rpRepo.find.mockResolvedValue([] as any);
     rpRepo.save.mockResolvedValue([] as any);
-    userRoleRepo.find.mockResolvedValue([
-      { idUsuario: 10 } as any,
-      { idUsuario: 11 } as any,
-    ]);
-    userRoleGlobalRepo.find.mockResolvedValue([
-      { idUsuario: 11 } as any,
-      { idUsuario: 12 } as any,
-    ]);
+    userRoleRepo.find.mockResolvedValue([{ idUsuario: 10 } as any, { idUsuario: 11 } as any]);
+    userRoleGlobalRepo.find.mockResolvedValue([{ idUsuario: 11 } as any, { idUsuario: 12 } as any]);
 
     await service.replacePermissionsByCodes(7, ['employee:view'], 99);
 

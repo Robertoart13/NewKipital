@@ -1,4 +1,5 @@
 import { HttpException, HttpStatus } from '@nestjs/common';
+
 import { AuthRateLimitService } from './auth-rate-limit.service';
 
 describe('AuthRateLimitService', () => {
@@ -10,16 +11,12 @@ describe('AuthRateLimitService', () => {
   });
 
   it('should allow first request within limit', async () => {
-    await expect(
-      service.consume('ip:1.2.3.4', 5, 60_000),
-    ).resolves.not.toThrow();
+    await expect(service.consume('ip:1.2.3.4', 5, 60_000)).resolves.not.toThrow();
   });
 
   it('should allow multiple requests below limit', async () => {
     for (let i = 0; i < 4; i++) {
-      await expect(
-        service.consume('ip:test-below', 5, 60_000),
-      ).resolves.not.toThrow();
+      await expect(service.consume('ip:test-below', 5, 60_000)).resolves.not.toThrow();
     }
   });
 
@@ -28,16 +25,12 @@ describe('AuthRateLimitService', () => {
       await service.consume('ip:block', 5, 60_000);
     }
 
-    await expect(
-      service.consume('ip:block', 5, 60_000),
-    ).rejects.toThrow(HttpException);
+    await expect(service.consume('ip:block', 5, 60_000)).rejects.toThrow(HttpException);
 
     try {
       await service.consume('ip:block', 5, 60_000);
     } catch (e) {
-      expect((e as HttpException).getStatus()).toBe(
-        HttpStatus.TOO_MANY_REQUESTS,
-      );
+      expect((e as HttpException).getStatus()).toBe(HttpStatus.TOO_MANY_REQUESTS);
     }
   });
 
@@ -45,9 +38,7 @@ describe('AuthRateLimitService', () => {
     for (let i = 0; i < 5; i++) {
       await service.consume('key-a-indep', 5, 60_000);
     }
-    await expect(
-      service.consume('key-b-indep', 5, 60_000),
-    ).resolves.not.toThrow();
+    await expect(service.consume('key-b-indep', 5, 60_000)).resolves.not.toThrow();
   });
 
   it('falls back to RateLimiterMemory when redisClient is null', async () => {
@@ -55,9 +46,7 @@ describe('AuthRateLimitService', () => {
     await expect(memService.consume('mem:1', 3, 60_000)).resolves.not.toThrow();
     await expect(memService.consume('mem:1', 3, 60_000)).resolves.not.toThrow();
     await expect(memService.consume('mem:1', 3, 60_000)).resolves.not.toThrow();
-    await expect(memService.consume('mem:1', 3, 60_000)).rejects.toThrow(
-      HttpException,
-    );
+    await expect(memService.consume('mem:1', 3, 60_000)).rejects.toThrow(HttpException);
   });
 
   it('reuses the same limiter instance for identical limit+window', async () => {

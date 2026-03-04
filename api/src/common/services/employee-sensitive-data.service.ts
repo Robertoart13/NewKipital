@@ -1,12 +1,8 @@
+import { createCipheriv, createDecipheriv, createHash, createHmac, randomBytes } from 'crypto';
+
 import { Injectable } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
-import {
-  createCipheriv,
-  createDecipheriv,
-  createHash,
-  createHmac,
-  randomBytes,
-} from 'crypto';
+
+import type { ConfigService } from '@nestjs/config';
 
 const ENCRYPTION_PREFIX = 'enc:v1';
 const DEFAULT_KID = 'default';
@@ -19,13 +15,9 @@ export class EmployeeSensitiveDataService {
   private readonly hashKey: string;
 
   constructor(private readonly configService: ConfigService) {
-    const rawKey = this.configService
-      .get<string>('EMPLOYEE_ENCRYPTION_KEY', '')
-      .trim();
+    const rawKey = this.configService.get<string>('EMPLOYEE_ENCRYPTION_KEY', '').trim();
     if (!rawKey) {
-      const fallback = createHash('sha256')
-        .update('kpital-dev-employee-encryption-key')
-        .digest();
+      const fallback = createHash('sha256').update('kpital-dev-employee-encryption-key').digest();
       this.key = fallback;
     } else {
       this.key = this.normalizeKey(rawKey);
@@ -43,10 +35,7 @@ export class EmployeeSensitiveDataService {
 
     const iv = randomBytes(GCM_IV_LENGTH);
     const cipher = createCipheriv('aes-256-gcm', this.key, iv);
-    const encrypted = Buffer.concat([
-      cipher.update(normalized, 'utf8'),
-      cipher.final(),
-    ]);
+    const encrypted = Buffer.concat([cipher.update(normalized, 'utf8'), cipher.final()]);
     const tag = cipher.getAuthTag();
 
     return [
@@ -67,11 +56,7 @@ export class EmployeeSensitiveDataService {
 
     const [, , , ivPart, tagPart, payloadPart] = parts;
     try {
-      const decipher = createDecipheriv(
-        'aes-256-gcm',
-        this.key,
-        Buffer.from(ivPart, 'base64url'),
-      );
+      const decipher = createDecipheriv('aes-256-gcm', this.key, Buffer.from(ivPart, 'base64url'));
       decipher.setAuthTag(Buffer.from(tagPart, 'base64url'));
       const plain = Buffer.concat([
         decipher.update(Buffer.from(payloadPart, 'base64url')),

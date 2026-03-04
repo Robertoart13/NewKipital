@@ -1,3 +1,4 @@
+import { Type } from 'class-transformer';
 import {
   IsIn,
   IsInt,
@@ -8,8 +9,8 @@ import {
   Min,
   ValidateNested,
 } from 'class-validator';
-import { Type } from 'class-transformer';
-import { MetodoCalculoAumentoLinea } from '../entities/increase-line.entity';
+
+import type { MetodoCalculoAumentoLinea } from '../entities/increase-line.entity';
 
 export class UpsertIncreaseLineDto {
   @IsInt()

@@ -1,3 +1,4 @@
+import { Type } from 'class-transformer';
 import {
   IsArray,
   IsBoolean,
@@ -13,7 +14,7 @@ import {
   Min,
   ValidateNested,
 } from 'class-validator';
-import { Type } from 'class-transformer';
+
 import { TipoLicenciaLinea } from '../entities/license-line.entity';
 
 export class UpsertLicenseLineDto {
@@ -71,4 +72,3 @@ export class UpsertLicenseDto {
   @IsNotEmpty()
   lines: UpsertLicenseLineDto[];
 }
-

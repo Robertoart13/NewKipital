@@ -1,3 +1,4 @@
+import { Type } from 'class-transformer';
 import {
   ArrayMinSize,
   IsArray,
@@ -9,7 +10,6 @@ import {
   Min,
   ValidateNested,
 } from 'class-validator';
-import { Type } from 'class-transformer';
 
 export class UpsertRetentionLineDto {
   @IsInt()
@@ -56,4 +56,3 @@ export class UpsertRetentionDto {
   @Type(() => UpsertRetentionLineDto)
   lines: UpsertRetentionLineDto[];
 }
-

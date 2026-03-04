@@ -1,3 +1,4 @@
+import { Type } from 'class-transformer';
 import {
   IsArray,
   IsBoolean,
@@ -12,7 +13,7 @@ import {
   Min,
   ValidateNested,
 } from 'class-validator';
-import { Type } from 'class-transformer';
+
 import { TipoJornadaHoraExtraLinea } from '../entities/overtime-line.entity';
 
 export class UpsertOvertimeLineDto {

@@ -15,4 +15,3 @@ export const PERSONAL_ACTION_INVALIDATION_REASON = {
 
 export type PersonalActionInvalidationReasonCode =
   (typeof PERSONAL_ACTION_INVALIDATION_REASON)[keyof typeof PERSONAL_ACTION_INVALIDATION_REASON];
-

@@ -1,26 +1,32 @@
-import { Test, TestingModule } from '@nestjs/testing';
-import { getRepositoryToken } from '@nestjs/typeorm';
 import { BadRequestException } from '@nestjs/common';
-import { DataSource, Repository } from 'typeorm';
 import { EventEmitter2 } from '@nestjs/event-emitter';
-import { PayrollService } from './payroll.service';
-import {
-  PayrollCalendar,
-  EstadoCalendarioNomina,
-} from './entities/payroll-calendar.entity';
+import { Test } from '@nestjs/testing';
+import { getRepositoryToken } from '@nestjs/typeorm';
+import { DataSource } from 'typeorm';
+
 import { UserCompany } from '../access-control/entities/user-company.entity';
-import { DomainEventsService } from '../integration/domain-events.service';
-import { AuditOutboxService } from '../integration/audit-outbox.service';
+
+import { PayrollPlanillaSnapshotJson } from './entities/payroll-planilla-snapshot.entity';
+import { PayrollSocialCharge } from './entities/payroll-social-charge.entity';
+import { EmployeeAguinaldoProvision } from '../employees/entities/employee-aguinaldo-provision.entity';
 import { EmployeeVacationService } from '../employees/services/employee-vacation.service';
-import { PayrollEmployeeSnapshot } from './entities/payroll-employee-snapshot.entity';
-import { PayrollInputSnapshot } from './entities/payroll-input-snapshot.entity';
-import { PayrollResult } from './entities/payroll-result.entity';
+import { AuditOutboxService } from '../integration/audit-outbox.service';
+import { DomainEventsService } from '../integration/domain-events.service';
 import {
   PersonalAction,
   PersonalActionEstado,
   PERSONAL_ACTION_APPROVED_STATES,
 } from '../personal-actions/entities/personal-action.entity';
 import { PersonalActionAutoInvalidationService } from '../personal-actions/personal-action-auto-invalidation.service';
+
+import { PayrollCalendar, EstadoCalendarioNomina } from './entities/payroll-calendar.entity';
+import { PayrollEmployeeSnapshot } from './entities/payroll-employee-snapshot.entity';
+import { PayrollInputSnapshot } from './entities/payroll-input-snapshot.entity';
+import { PayrollResult } from './entities/payroll-result.entity';
+import { PayrollService } from './payroll.service';
+
+import type { TestingModule } from '@nestjs/testing';
+import type { Repository } from 'typeorm';
 
 describe('Payroll DoD Scenarios', () => {
   let service: PayrollService;
@@ -52,6 +58,9 @@ describe('Payroll DoD Scenarios', () => {
             andWhere: jest.fn().mockReturnThis(),
             execute: jest.fn().mockResolvedValue({ affected: 1 }),
           })),
+          find: jest.fn().mockResolvedValue([]),
+          save: jest.fn().mockResolvedValue([]),
+          create: jest.fn((entity) => entity),
         };
         return cb(manager);
       }),
@@ -75,6 +84,18 @@ describe('Payroll DoD Scenarios', () => {
         },
         {
           provide: getRepositoryToken(PayrollResult),
+          useValue: { count: jest.fn().mockResolvedValue(1) },
+        },
+        {
+          provide: getRepositoryToken(PayrollPlanillaSnapshotJson),
+          useValue: { count: jest.fn().mockResolvedValue(1) },
+        },
+        {
+          provide: getRepositoryToken(PayrollSocialCharge),
+          useValue: { find: jest.fn().mockResolvedValue([]) },
+        },
+        {
+          provide: getRepositoryToken(EmployeeAguinaldoProvision),
           useValue: { count: jest.fn().mockResolvedValue(1) },
         },
         {
@@ -145,6 +166,9 @@ describe('Payroll DoD Scenarios', () => {
           andWhere: jest.fn().mockReturnThis(),
           execute: jest.fn().mockResolvedValue({ affected: 1 }),
         })),
+        find: jest.fn().mockResolvedValue([]),
+        save: jest.fn().mockResolvedValue([]),
+        create: jest.fn((entity) => entity),
       };
       return cb(manager);
     });
@@ -192,9 +216,9 @@ describe('Payroll DoD Scenarios', () => {
       idEmpresa: 1,
       estado: EstadoCalendarioNomina.APLICADA,
     } as any);
-    await expect(
-      service.update(300, { nombrePlanilla: 'No permitido' } as any, 1),
-    ).rejects.toThrow(BadRequestException);
+    await expect(service.update(300, { nombrePlanilla: 'No permitido' } as any, 1)).rejects.toThrow(
+      BadRequestException,
+    );
 
     // Parte B: apply ejecuta ruta de consumo ligada
     const verified = {

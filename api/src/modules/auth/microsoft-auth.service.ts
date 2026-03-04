@@ -1,3 +1,5 @@
+import { createPublicKey, createVerify } from 'crypto';
+
 import {
   Injectable,
   Logger,
@@ -5,8 +7,8 @@ import {
   ForbiddenException,
   InternalServerErrorException,
 } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
-import { createPublicKey, createVerify } from 'crypto';
+
+import type { ConfigService } from '@nestjs/config';
 
 interface MicrosoftTokenResponse {
   token_type?: string;
@@ -64,10 +66,7 @@ export interface ValidatedMicrosoftIdentity {
 @Injectable()
 export class MicrosoftAuthService {
   private readonly logger = new Logger(MicrosoftAuthService.name);
-  private readonly jwksCache = new Map<
-    string,
-    { expiresAt: number; keys: MicrosoftJwk[] }
-  >();
+  private readonly jwksCache = new Map<string, { expiresAt: number; keys: MicrosoftJwk[] }>();
 
   constructor(private readonly config: ConfigService) {}
 
@@ -77,14 +76,12 @@ export class MicrosoftAuthService {
     redirectUri: string,
   ): Promise<ValidatedMicrosoftIdentity> {
     const clientId =
-      this.config.get<string>('MICROSOFT_CLIENT_ID') ??
-      this.config.get<string>('MSAL_CLIENT_ID');
+      this.config.get<string>('MICROSOFT_CLIENT_ID') ?? this.config.get<string>('MSAL_CLIENT_ID');
     const clientSecret =
       this.config.get<string>('MICROSOFT_CLIENT_SECRET') ??
       this.config.get<string>('MSAL_CLIENT_SECRET');
     const tenantId =
-      this.config.get<string>('MICROSOFT_TENANT_ID') ??
-      this.resolveTenantIdFromAuthority();
+      this.config.get<string>('MICROSOFT_TENANT_ID') ?? this.resolveTenantIdFromAuthority();
 
     if (!clientId || !tenantId) {
       throw new InternalServerErrorException(
@@ -121,22 +118,14 @@ export class MicrosoftAuthService {
       this.logger.warn(
         `Microsoft token exchange rejected: ${tokenPayload.error ?? 'unknown_error'}`,
       );
-      throw new UnauthorizedException(
-        'No se pudo validar el login de Microsoft',
-      );
+      throw new UnauthorizedException('No se pudo validar el login de Microsoft');
     }
 
-    const claims = await this.verifyMicrosoftIdToken(
-      tokenPayload.id_token,
-      clientId,
-      tenantId,
-    );
+    const claims = await this.verifyMicrosoftIdToken(tokenPayload.id_token, clientId, tenantId);
 
     const login = claims.preferred_username ?? claims.upn ?? claims.email;
     if (!login) {
-      throw new UnauthorizedException(
-        'Token Microsoft invalido: login no presente',
-      );
+      throw new UnauthorizedException('Token Microsoft invalido: login no presente');
     }
 
     const parsedDomain = this.extractDomain(login);
@@ -156,8 +145,7 @@ export class MicrosoftAuthService {
     expectedAudience: string,
     expectedTenantId: string,
   ): Promise<MicrosoftIdTokenClaims> {
-    const [encodedHeader, encodedPayload, encodedSignature] =
-      idToken.split('.');
+    const [encodedHeader, encodedPayload, encodedSignature] = idToken.split('.');
     if (!encodedHeader || !encodedPayload || !encodedSignature) {
       throw new UnauthorizedException('Token Microsoft malformado');
     }
@@ -166,9 +154,7 @@ export class MicrosoftAuthService {
     const claims = this.parseBase64Json<MicrosoftIdTokenClaims>(encodedPayload);
 
     if (header.alg !== 'RS256') {
-      throw new UnauthorizedException(
-        'Algoritmo de token Microsoft no permitido',
-      );
+      throw new UnauthorizedException('Algoritmo de token Microsoft no permitido');
     }
 
     if (!header.kid) {
@@ -203,9 +189,7 @@ export class MicrosoftAuthService {
     const jwks = await this.getJwks(expectedTenantId);
     const jwk = jwks.find((k) => k.kid === header.kid && k.kty === 'RSA');
     if (!jwk) {
-      throw new UnauthorizedException(
-        'No se encontro llave publica de Microsoft para el token',
-      );
+      throw new UnauthorizedException('No se encontro llave publica de Microsoft para el token');
     }
 
     const verifier = createVerify('RSA-SHA256');
@@ -277,8 +261,7 @@ export class MicrosoftAuthService {
   }
 
   private parseBase64Json<T>(base64UrlValue: string): T {
-    const decoded =
-      this.base64UrlDecodeToBuffer(base64UrlValue).toString('utf8');
+    const decoded = this.base64UrlDecodeToBuffer(base64UrlValue).toString('utf8');
     try {
       return JSON.parse(decoded) as T;
     } catch {

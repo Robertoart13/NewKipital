@@ -6,6 +6,7 @@ import {
   CreateDateColumn,
   UpdateDateColumn,
 } from 'typeorm';
+
 import { UserStatus } from '../constants/user-status.enum';
 
 /**

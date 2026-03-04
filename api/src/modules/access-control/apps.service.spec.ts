@@ -1,9 +1,12 @@
-﻿import { Test, TestingModule } from '@nestjs/testing';
+﻿import { ConflictException, NotFoundException } from '@nestjs/common';
+import { Test } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { ConflictException, NotFoundException } from '@nestjs/common';
-import { Repository } from 'typeorm';
+
 import { AppsService } from './apps.service';
 import { App } from './entities/app.entity';
+
+import type { TestingModule } from '@nestjs/testing';
+import type { Repository } from 'typeorm';
 
 describe('AppsService', () => {
   let service: AppsService;
@@ -18,10 +21,7 @@ describe('AppsService', () => {
     };
 
     const module: TestingModule = await Test.createTestingModule({
-      providers: [
-        AppsService,
-        { provide: getRepositoryToken(App), useValue: repoMock },
-      ],
+      providers: [AppsService, { provide: getRepositoryToken(App), useValue: repoMock }],
     }).compile();
 
     service = module.get(AppsService);
@@ -46,9 +46,9 @@ describe('AppsService', () => {
 
   it('throws conflict on duplicate codigo', async () => {
     repo.findOne.mockResolvedValue({ id: 2, codigo: 'kpital' } as any);
-    await expect(
-      service.create({ codigo: 'kpital', nombre: 'KPITAL' } as any),
-    ).rejects.toThrow(ConflictException);
+    await expect(service.create({ codigo: 'kpital', nombre: 'KPITAL' } as any)).rejects.toThrow(
+      ConflictException,
+    );
   });
 
   it('throws not found on findOne missing', async () => {

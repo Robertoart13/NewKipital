@@ -1,14 +1,8 @@
-import {
-  MigrationInterface,
-  QueryRunner,
-  Table,
-  TableForeignKey,
-  TableIndex,
-} from 'typeorm';
+import { Table, TableForeignKey, TableIndex } from 'typeorm';
 
-export class CreateLicenseLinesTable1708537300000
-  implements MigrationInterface
-{
+import type { MigrationInterface, QueryRunner } from 'typeorm';
+
+export class CreateLicenseLinesTable1708537300000 implements MigrationInterface {
   public async up(queryRunner: QueryRunner): Promise<void> {
     const exists = await queryRunner.hasTable('acc_licencias_lineas');
     if (!exists) {

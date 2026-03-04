@@ -131,6 +131,18 @@ Al intentar inactivar un empleado:
 
 ---
 
+## Completado / Actualizado (sesion 2026-03-04)
+
+1. **Bloqueo por empleado verificado en planilla**
+   - Si el empleado esta verificado en una planilla, no se permite crear/editar acciones que apunten a esa planilla.
+   - Para permitir cambios, primero se debe desmarcar la verificacion.
+
+2. **Calculo legal en planilla**
+   - Se calcula CCSS por empresa desde `nom_cargas_sociales`.
+   - Se calcula impuesto de renta con tramos CR y creditos por hijo/conyuge (quincenal solo segunda quincena).
+
+---
+
 ## Completado / Actualizado (sesión 2026-02-24)
 
 ### Módulo Empleados – Edición y UX
@@ -210,7 +222,7 @@ Al intentar inactivar un empleado:
 
 ### Estado
 
-- Pendiente
+- En progreso (backend base completo; saldo vacaciones pendiente)
 
 ### Prioridad
 
@@ -230,16 +242,29 @@ Al trasladar un empleado de empresa origen a empresa destino:
 4. La provision futura de vacaciones debe quedar asociada a la empresa destino.
 5. El saldo historico en empresa origen queda registrado y no se modifica luego del traslado.
 
+### Politica acordada (2026-03-04)
+
+1. **Bloqueo obligatorio** si no existen periodos/planillas en empresa destino.
+2. Traslado **solo al inicio de periodo** (no se permite mitad de periodo).
+3. **Acciones pendientes bloqueantes**: se definen por politica (ej. licencias/incapacidades/aumentos pendientes).
+4. Acciones recurrentes de ley (CCSS/IVM) **no bloquean**.
+5. Politica por estado (acordada):
+   - **Se trasladan:** DRAFT, PENDING_SUPERVISOR, PENDING_RRHH, APPROVED.
+   - **No se trasladan:** CONSUMED, INVALIDATED, CANCELLED, EXPIRED, REJECTED.
+6. Si un rango cruza traslado: **recalcular por calendario destino** (solo futuros).
+7. **Simulacion previa obligatoria** antes de ejecutar el traslado.
+8. Auditoria: registrar traslado con origen/destino, fecha efectiva, usuario y resumen tecnico (acciones movidas/invalidas/recalculadas).
+
 ### Alcance tecnico esperado
 
 Backend:
 
 1. Nuevo flujo transaccional de traslado masivo de empleados entre empresas.
-2. Lectura de saldo actual desde `sys_empleado_vacaciones_ledger` (ultimo `saldo_resultante_vacaciones`).
-3. En empresa origen: registrar ajuste negativo (tipo `ADJUSTMENT` o `REVERSAL`).
-4. En empresa destino: registrar ajuste positivo (tipo `ADJUSTMENT` o `INITIAL`).
-5. Ambos movimientos enlazados por `source_type_vacaciones = 'TRANSFER'` y `source_id_vacaciones` comun.
-6. Garantizar trazabilidad: saldo anterior y saldo posterior registrados en ledger.
+2. Lectura de saldo actual desde `sys_empleado_vacaciones_ledger` (ultimo `saldo_resultante_vacaciones`). **Pendiente**
+3. En empresa origen: registrar ajuste negativo (tipo `ADJUSTMENT` o `REVERSAL`). **Pendiente**
+4. En empresa destino: registrar ajuste positivo (tipo `ADJUSTMENT` o `INITIAL`). **Pendiente**
+5. Ambos movimientos enlazados por `source_type_vacaciones = 'TRANSFER'` y `source_id_vacaciones` comun. **Pendiente**
+6. Garantizar trazabilidad: saldo anterior y saldo posterior registrados en ledger. **Pendiente**
 
 Frontend:
 
@@ -258,6 +283,23 @@ Auditoria:
 1. El empleado queda asignado a la empresa destino.
 2. El saldo disponible de vacaciones se conserva (mismo total, nueva cuenta).
 3. La transferencia queda registrada en ledger con referencia comun.
+
+### Implementacion base completada (2026-03-04)
+
+1. **API de simulacion y ejecucion** (permiso `payroll:intercompany-transfer`):
+   - `POST /api/payroll/intercompany-transfer/simulate`
+   - `POST /api/payroll/intercompany-transfer/execute`
+2. **Entidad y tabla de auditoria** `sys_empleado_transferencias` creada y migrada.
+3. **Reglas aplicadas**:
+   - Bloqueo si no existe periodo destino o si fecha efectiva no es inicio de periodo.
+   - Bloqueo si planilla origen en estados ABIERTA/EN_PROCESO/VERIFICADA para la fecha efectiva.
+   - Solo se trasladan acciones en estados DRAFT/PENDING_SUPERVISOR/PENDING_RRHH/APPROVED.
+   - Acciones CONSUMED/INVALIDATED/CANCELLED/EXPIRED/REJECTED no se trasladan.
+   - Acciones por rango que cruzan fecha se **recalcula** en destino; si ya estaban asociadas a planilla, se bloquea.
+4. **Ajuste de datos**:
+   - `acc_acciones_personal` actualiza `id_empresa` y `id_calendario_nomina`.
+   - Tablas de lineas actualizan `id_empresa` y `id_calendario_nomina` por fecha.
+5. **Tests**: suite completa en verde (31/31), incluyendo intercompany transfer.
 
 - Estructura incremental aplicada en `acc_acciones_personal`.
 - Indices v2 aplicados.

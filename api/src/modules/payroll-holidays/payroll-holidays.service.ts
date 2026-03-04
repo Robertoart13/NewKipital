@@ -1,10 +1,12 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+
 import { PayrollHoliday } from './entities/payroll-holiday.entity';
-import { CreatePayrollHolidayDto } from './dto/create-payroll-holiday.dto';
-import { UpdatePayrollHolidayDto } from './dto/update-payroll-holiday.dto';
-import { AuditOutboxService } from '../integration/audit-outbox.service';
+
+import type { CreatePayrollHolidayDto } from './dto/create-payroll-holiday.dto';
+import type { UpdatePayrollHolidayDto } from './dto/update-payroll-holiday.dto';
+import type { AuditOutboxService } from '../integration/audit-outbox.service';
+import type { Repository } from 'typeorm';
 
 @Injectable()
 export class PayrollHolidaysService {
@@ -15,7 +17,8 @@ export class PayrollHolidaysService {
   ) {}
 
   async findAll(): Promise<PayrollHoliday[]> {
-    return this.repo.createQueryBuilder('h')
+    return this.repo
+      .createQueryBuilder('h')
       .orderBy('h.fechaInicio', 'ASC')
       .addOrderBy('h.nombre', 'ASC')
       .getMany();
@@ -51,7 +54,11 @@ export class PayrollHolidaysService {
     return saved;
   }
 
-  async update(id: number, dto: UpdatePayrollHolidayDto, actorUserId: number): Promise<PayrollHoliday> {
+  async update(
+    id: number,
+    dto: UpdatePayrollHolidayDto,
+    actorUserId: number,
+  ): Promise<PayrollHoliday> {
     const found = await this.findOne(id);
     const payloadBefore = this.buildAuditPayload(found);
     const nextInicio = dto.fechaInicio ?? found.fechaInicio;
@@ -101,7 +108,9 @@ export class PayrollHolidaysService {
       throw new BadRequestException('Las fechas del feriado son invalidas.');
     }
     if (end < start) {
-      throw new BadRequestException('La fecha fin del feriado no puede ser menor que la fecha inicio.');
+      throw new BadRequestException(
+        'La fecha fin del feriado no puede ser menor que la fecha inicio.',
+      );
     }
   }
 
@@ -115,4 +124,3 @@ export class PayrollHolidaysService {
     };
   }
 }
-

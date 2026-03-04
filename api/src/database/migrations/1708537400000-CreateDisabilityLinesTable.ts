@@ -1,10 +1,6 @@
-import {
-  MigrationInterface,
-  QueryRunner,
-  Table,
-  TableForeignKey,
-  TableIndex,
-} from 'typeorm';
+import { Table, TableForeignKey, TableIndex } from 'typeorm';
+
+import type { MigrationInterface, QueryRunner } from 'typeorm';
 
 const TIPO_INCAPACIDAD_VALUES = [
   'enfermedad_comun_ccss',
@@ -23,9 +19,7 @@ const TIPO_INCAPACIDAD_VALUES = [
   'incapacidad_prolongada_ins',
 ];
 
-export class CreateDisabilityLinesTable1708537400000
-  implements MigrationInterface
-{
+export class CreateDisabilityLinesTable1708537400000 implements MigrationInterface {
   public async up(queryRunner: QueryRunner): Promise<void> {
     const exists = await queryRunner.hasTable('acc_incapacidades_lineas');
     if (!exists) {

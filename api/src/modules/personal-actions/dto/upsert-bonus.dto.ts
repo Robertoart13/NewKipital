@@ -1,3 +1,4 @@
+import { Type } from 'class-transformer';
 import {
   IsArray,
   IsBoolean,
@@ -12,7 +13,7 @@ import {
   Min,
   ValidateNested,
 } from 'class-validator';
-import { Type } from 'class-transformer';
+
 import { TipoBonificacionLinea } from '../entities/bonus-line.entity';
 
 export class UpsertBonusLineDto {
@@ -70,4 +71,3 @@ export class UpsertBonusDto {
   @IsNotEmpty()
   lines: UpsertBonusLineDto[];
 }
-

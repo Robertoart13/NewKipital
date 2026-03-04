@@ -1,10 +1,6 @@
-import {
-  MigrationInterface,
-  QueryRunner,
-  Table,
-  TableForeignKey,
-  TableIndex,
-} from 'typeorm';
+import { Table, TableForeignKey, TableIndex } from 'typeorm';
+
+import type { MigrationInterface, QueryRunner } from 'typeorm';
 
 export class CreateErpCuentasContablesAndPermissions1708535800000 implements MigrationInterface {
   public async up(queryRunner: QueryRunner): Promise<void> {
@@ -59,9 +55,7 @@ export class CreateErpCuentasContablesAndPermissions1708535800000 implements Mig
       );
     }
 
-    const hasTiposAccion = await queryRunner.hasTable(
-      'nom_tipos_accion_personal',
-    );
+    const hasTiposAccion = await queryRunner.hasTable('nom_tipos_accion_personal');
     if (!hasTiposAccion) {
       await queryRunner.createTable(
         new Table({
@@ -387,9 +381,7 @@ export class CreateErpCuentasContablesAndPermissions1708535800000 implements Mig
       await queryRunner.dropTable('erp_cuentas_contables', true);
     }
 
-    const hasTiposAccion = await queryRunner.hasTable(
-      'nom_tipos_accion_personal',
-    );
+    const hasTiposAccion = await queryRunner.hasTable('nom_tipos_accion_personal');
     if (hasTiposAccion) {
       await queryRunner.dropTable('nom_tipos_accion_personal', true);
     }

@@ -9,41 +9,36 @@ import { RolesController } from './access-control/roles.controller';
 import { RolesService } from './access-control/roles.service';
 import { UserAssignmentController } from './access-control/user-assignment.controller';
 import { UserAssignmentService } from './access-control/user-assignment.service';
-
-import { PayrollModule } from './payroll/payroll.module';
-import { PayrollController } from './payroll/payroll.controller';
-import { PayrollService } from './payroll/payroll.service';
-
-import { PersonalActionsModule } from './personal-actions/personal-actions.module';
-import { PersonalActionsController } from './personal-actions/personal-actions.controller';
-import { PersonalActionsService } from './personal-actions/personal-actions.service';
-
-import { NotificationsModule } from './notifications/notifications.module';
+import { AccountingAccountsModule } from './accounting-accounts/accounting-accounts.module';
+import { ClassesController } from './classes/classes.controller';
+import { ClassesModule } from './classes/classes.module';
+import { AuditOutboxService } from './integration/audit-outbox.service';
+import { DomainEventsService } from './integration/domain-events.service';
+import { IntegrationModule } from './integration/integration.module';
 import { NotificationsController } from './notifications/notifications.controller';
+import { NotificationsModule } from './notifications/notifications.module';
+import { PayrollController } from './payroll/payroll.controller';
+import { PayrollModule } from './payroll/payroll.module';
+import { PayrollService } from './payroll/payroll.service';
+import { PersonalActionsController } from './personal-actions/personal-actions.controller';
+import { PersonalActionsModule } from './personal-actions/personal-actions.module';
+import { PersonalActionsService } from './personal-actions/personal-actions.service';
 import { NotificationsService } from './notifications/notifications.service';
 import { NotificationsGateway } from './notifications/notifications.gateway';
-
 import { OpsModule } from './ops/ops.module';
 import { OpsController } from './ops/ops.controller';
 import { OpsService } from './ops/ops.service';
-
-import { IntegrationModule } from './integration/integration.module';
-import { DomainEventsService } from './integration/domain-events.service';
-import { AuditOutboxService } from './integration/audit-outbox.service';
 import { AuditWorkerService } from './integration/audit-worker.service';
-import { ClassesModule } from './classes/classes.module';
-import { ClassesController } from './classes/classes.controller';
 import { ClassesService } from './classes/classes.service';
-import { ProjectsModule } from './projects/projects.module';
+import { PositionsController } from './positions/positions.controller';
+import { PositionsModule } from './positions/positions.module';
+import { PositionsService } from './positions/positions.service';
 import { ProjectsController } from './projects/projects.controller';
+import { ProjectsModule } from './projects/projects.module';
 import { ProjectsService } from './projects/projects.service';
 import { DepartmentsModule } from './departments/departments.module';
 import { DepartmentsController } from './departments/departments.controller';
 import { DepartmentsService } from './departments/departments.service';
-import { PositionsModule } from './positions/positions.module';
-import { PositionsController } from './positions/positions.controller';
-import { PositionsService } from './positions/positions.service';
-import { AccountingAccountsModule } from './accounting-accounts/accounting-accounts.module';
 import { AccountingAccountsController } from './accounting-accounts/accounting-accounts.controller';
 import { AccountingAccountsService } from './accounting-accounts/accounting-accounts.service';
 import { PayrollArticlesModule } from './payroll-articles/payroll-articles.module';

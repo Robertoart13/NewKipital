@@ -1,12 +1,7 @@
-import {
-  ArgumentsHost,
-  Catch,
-  ExceptionFilter,
-  HttpException,
-  HttpStatus,
-  Logger,
-} from '@nestjs/common';
+import { Catch, HttpException, HttpStatus, Logger } from '@nestjs/common';
 import { QueryFailedError } from 'typeorm';
+
+import type { ArgumentsHost, ExceptionFilter } from '@nestjs/common';
 import type { Request, Response } from 'express';
 
 @Catch()
@@ -31,7 +26,14 @@ export class GlobalExceptionFilter implements ExceptionFilter {
       ) {
         if (status === HttpStatus.BAD_REQUEST) {
           this.logger.warn(
-            '[' + request.method + '] ' + requestPath + ' -> ' + status + ': ' + JSON.stringify(exceptionResponse),
+            '[' +
+              request.method +
+              '] ' +
+              requestPath +
+              ' -> ' +
+              status +
+              ': ' +
+              JSON.stringify(exceptionResponse),
           );
         }
         response.status(status).json(exceptionResponse);
@@ -41,8 +43,7 @@ export class GlobalExceptionFilter implements ExceptionFilter {
       const message =
         typeof exceptionResponse === 'string'
           ? exceptionResponse
-          : ((exceptionResponse as Record<string, unknown>).message ??
-            exception.message);
+          : ((exceptionResponse as Record<string, unknown>).message ?? exception.message);
 
       if (status === HttpStatus.BAD_REQUEST) {
         this.logger.warn(
@@ -50,9 +51,7 @@ export class GlobalExceptionFilter implements ExceptionFilter {
         );
       }
       if (status >= 500) {
-        this.logger.error(
-          `[${request.method}] ${requestPath} → ${status}: ${String(message)}`,
-        );
+        this.logger.error(`[${request.method}] ${requestPath} → ${status}: ${String(message)}`);
       }
 
       response.status(status).json({
@@ -66,10 +65,7 @@ export class GlobalExceptionFilter implements ExceptionFilter {
     }
 
     if (this.isTransientDatabaseConnectionError(exception)) {
-      this.logger.error(
-        'Fallo temporal de conexion con base de datos',
-        exception as Error,
-      );
+      this.logger.error('Fallo temporal de conexion con base de datos', exception as Error);
       response.status(HttpStatus.SERVICE_UNAVAILABLE).json({
         success: false,
         data: null,
@@ -137,13 +133,9 @@ export class GlobalExceptionFilter implements ExceptionFilter {
     }
 
     if (error instanceof Error) {
-      return /ECONNRESET|PROTOCOL_CONNECTION_LOST|ETIMEDOUT|ECONNREFUSED|EPIPE/.test(
-        error.message,
-      );
+      return /ECONNRESET|PROTOCOL_CONNECTION_LOST|ETIMEDOUT|ECONNREFUSED|EPIPE/.test(error.message);
     }
 
     return false;
   }
 }
-
-

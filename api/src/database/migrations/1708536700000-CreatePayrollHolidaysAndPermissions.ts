@@ -1,4 +1,6 @@
-import { MigrationInterface, QueryRunner, Table, TableIndex } from 'typeorm';
+import { Table, TableIndex } from 'typeorm';
+
+import type { MigrationInterface, QueryRunner } from 'typeorm';
 
 export class CreatePayrollHolidaysAndPermissions1708536700000 implements MigrationInterface {
   public async up(queryRunner: QueryRunner): Promise<void> {
@@ -20,7 +22,11 @@ export class CreatePayrollHolidaysAndPermissions1708536700000 implements Migrati
             { name: 'fecha_inicio_feriado_planilla', type: 'date', isNullable: false },
             { name: 'fecha_fin_feriado_planilla', type: 'date', isNullable: false },
             { name: 'descripcion_feriado_planilla', type: 'text', isNullable: true },
-            { name: 'fecha_creacion_feriado_planilla', type: 'timestamp', default: 'CURRENT_TIMESTAMP' },
+            {
+              name: 'fecha_creacion_feriado_planilla',
+              type: 'timestamp',
+              default: 'CURRENT_TIMESTAMP',
+            },
             {
               name: 'fecha_modificacion_feriado_planilla',
               type: 'timestamp',
@@ -33,11 +39,17 @@ export class CreatePayrollHolidaysAndPermissions1708536700000 implements Migrati
 
       await queryRunner.createIndex(
         'nom_feriados_planilla',
-        new TableIndex({ name: 'IDX_feriado_fecha_inicio', columnNames: ['fecha_inicio_feriado_planilla'] }),
+        new TableIndex({
+          name: 'IDX_feriado_fecha_inicio',
+          columnNames: ['fecha_inicio_feriado_planilla'],
+        }),
       );
       await queryRunner.createIndex(
         'nom_feriados_planilla',
-        new TableIndex({ name: 'IDX_feriado_fecha_fin', columnNames: ['fecha_fin_feriado_planilla'] }),
+        new TableIndex({
+          name: 'IDX_feriado_fecha_fin',
+          columnNames: ['fecha_fin_feriado_planilla'],
+        }),
       );
       await queryRunner.createIndex(
         'nom_feriados_planilla',
@@ -146,4 +158,3 @@ export class CreatePayrollHolidaysAndPermissions1708536700000 implements Migrati
     }
   }
 }
-

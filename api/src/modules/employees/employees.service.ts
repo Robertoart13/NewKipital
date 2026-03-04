@@ -6,32 +6,35 @@
   BadRequestException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { DataSource, Repository, In, IsNull } from 'typeorm';
-import { EventEmitter2 } from '@nestjs/event-emitter';
-import { Employee, MonedaSalarioEmpleado } from './entities/employee.entity';
-import {
-  EmployeeAguinaldoProvision,
-  EstadoProvisionAguinaldoEmpleado,
-} from './entities/employee-aguinaldo-provision.entity';
+import { In, IsNull } from 'typeorm';
+
+import { DOMAIN_EVENTS } from '../../common/events/event-names';
+import { EmployeeSensitiveDataService } from '../../common/services/employee-sensitive-data.service';
 import { UserCompany } from '../access-control/entities/user-company.entity';
 import { User } from '../auth/entities/user.entity';
-import { CreateEmployeeDto } from './dto/create-employee.dto';
-import { UpdateEmployeeDto } from './dto/update-employee.dto';
-import { EmployeeCreationWorkflow } from '../../workflows/employees/employee-creation.workflow';
-import { DOMAIN_EVENTS } from '../../common/events/event-names';
-import { AuthService } from '../auth/auth.service';
-import { EmployeeSensitiveDataService } from '../../common/services/employee-sensitive-data.service';
-import { EmployeeVacationService } from './services/employee-vacation.service';
 import {
   PERSONAL_ACTION_APPROVED_STATES,
   PERSONAL_ACTION_PENDING_STATES,
   PersonalAction,
 } from '../personal-actions/entities/personal-action.entity';
+
+import { EmployeeAguinaldoProvision } from './entities/employee-aguinaldo-provision.entity';
+import { Employee } from './entities/employee.entity';
+
+import type { CreateEmployeeDto } from './dto/create-employee.dto';
+import type { UpdateEmployeeDto } from './dto/update-employee.dto';
+import type { EmployeeCreationWorkflow } from '../../workflows/employees/employee-creation.workflow';
+import type { AuthService } from '../auth/auth.service';
+import type { EmployeeVacationService } from './services/employee-vacation.service';
+
 import {
   EstadoCalendarioNomina,
   PayrollCalendar,
 } from '../payroll/entities/payroll-calendar.entity';
-import { AuditOutboxService } from '../integration/audit-outbox.service';
+
+import type { AuditOutboxService } from '../integration/audit-outbox.service';
+import type { EventEmitter2 } from '@nestjs/event-emitter';
+import type { DataSource, Repository } from 'typeorm';
 
 /** Estados de planilla que bloquean inactivar empleado (DOC-34 UC-01). */
 const PLANILLA_ESTADOS_BLOQUEANTES = [
@@ -135,9 +138,7 @@ export class EmployeesService {
     if (cedulaHash) {
       const existingCedula = await this.repo.findOne({ where: { cedulaHash } });
       if (existingCedula) {
-        throw new ConflictException(
-          `Ya existe un empleado con cédula '${dto.cedula}'`,
-        );
+        throw new ConflictException(`Ya existe un empleado con cédula '${dto.cedula}'`);
       }
     }
 
@@ -146,9 +147,7 @@ export class EmployeesService {
     if (emailHash) {
       const existingEmail = await this.repo.findOne({ where: { emailHash } });
       if (existingEmail) {
-        throw new ConflictException(
-          `Ya existe un empleado con email '${dto.email}'`,
-        );
+        throw new ConflictException(`Ya existe un empleado con email '${dto.email}'`);
       }
     }
 
@@ -167,17 +166,11 @@ export class EmployeesService {
 
     if (dto.crearAccesoTimewise && dto.idRolTimewise && creatorId != null) {
       const [resolvedTimewise, resolvedKpital] = await Promise.all([
-        this.authService.resolvePermissions(
-          creatorId,
-          dto.idEmpresa,
-          'timewise',
-        ),
+        this.authService.resolvePermissions(creatorId, dto.idEmpresa, 'timewise'),
         this.authService.resolvePermissions(creatorId, dto.idEmpresa, 'kpital'),
       ]);
       const hasAssign =
-        resolvedTimewise.permissions.includes(
-          'employee:assign-timewise-role',
-        ) ||
+        resolvedTimewise.permissions.includes('employee:assign-timewise-role') ||
         resolvedKpital.permissions.includes('employee:assign-timewise-role');
       if (!hasAssign) {
         throw new ForbiddenException(
@@ -202,9 +195,7 @@ export class EmployeesService {
       if (raw == null || raw === '') continue;
       const value = Number(raw);
       if (Number.isNaN(value) || value < 0 || !Number.isInteger(value)) {
-        throw new BadRequestException(
-          `${item.label} debe ser un entero de 0 o mayor.`,
-        );
+        throw new BadRequestException(`${item.label} debe ser un entero de 0 o mayor.`);
       }
     }
   }
@@ -216,9 +207,7 @@ export class EmployeesService {
     }
     const day = fechaIngreso.getDate();
     if (day < 1 || day > 28) {
-      throw new BadRequestException(
-        'Fecha de ingreso debe estar entre el día 1 y 28 del mes.',
-      );
+      throw new BadRequestException('Fecha de ingreso debe estar entre el día 1 y 28 del mes.');
     }
   }
 
@@ -241,9 +230,7 @@ export class EmployeesService {
 
       const fechaInicio = new Date(provision.fechaInicioLaboral);
       if (Number.isNaN(fechaInicio.getTime())) {
-        throw new BadRequestException(
-          `Fecha inicio laboral invÃ¡lida en la fila ${index + 1}.`,
-        );
+        throw new BadRequestException(`Fecha inicio laboral invÃ¡lida en la fila ${index + 1}.`);
       }
       fechaInicio.setHours(0, 0, 0, 0);
       if (fechaInicio > today) {
@@ -255,9 +242,7 @@ export class EmployeesService {
       if (provision.fechaFinLaboral) {
         const fechaFin = new Date(provision.fechaFinLaboral);
         if (Number.isNaN(fechaFin.getTime())) {
-          throw new BadRequestException(
-            `Fecha fin laboral invÃ¡lida en la fila ${index + 1}.`,
-          );
+          throw new BadRequestException(`Fecha fin laboral invÃ¡lida en la fila ${index + 1}.`);
         }
         fechaFin.setHours(0, 0, 0, 0);
         if (fechaFin > today) {
@@ -307,11 +292,7 @@ export class EmployeesService {
       .where('1=1');
 
     const requestedCompanyIds = opts.companyIds?.length
-      ? Array.from(
-          new Set(
-            opts.companyIds.filter((id) => Number.isInteger(id) && id > 0),
-          ),
-        )
+      ? Array.from(new Set(opts.companyIds.filter((id) => Number.isInteger(id) && id > 0)))
       : [];
     let scopeCompanyIds: number[] = [];
     if (requestedCompanyIds.length > 0) {
@@ -367,15 +348,9 @@ export class EmployeesService {
       .take(pageSize)
       .getManyAndCount();
 
-    const permissionByCompany = await this.resolveSensitivePermissionMap(
-      userId,
-      scopeCompanyIds,
-    );
+    const permissionByCompany = await this.resolveSensitivePermissionMap(userId, scopeCompanyIds);
     const normalized = data.map((employee) =>
-      this.toReadableEmployee(
-        employee,
-        permissionByCompany.get(employee.idEmpresa) === true,
-      ),
+      this.toReadableEmployee(employee, permissionByCompany.get(employee.idEmpresa) === true),
     );
 
     return { data: normalized, total, page, pageSize };
@@ -391,50 +366,33 @@ export class EmployeesService {
     }
     if (userId != null) {
       await this.assertUserCompanyAccess(userId, emp.idEmpresa);
-      const canSeeSensitive = await this.hasSensitivePermission(
-        userId,
-        emp.idEmpresa,
-      );
+      const canSeeSensitive = await this.hasSensitivePermission(userId, emp.idEmpresa);
       return this.toReadableEmployee(emp, canSeeSensitive);
     }
     return emp;
   }
 
-  async update(
-    id: number,
-    dto: UpdateEmployeeDto,
-    modifierId?: number,
-  ): Promise<Employee> {
+  async update(id: number, dto: UpdateEmployeeDto, modifierId?: number): Promise<Employee> {
     const emp = await this.findOne(id, modifierId);
     if (!modifierId) {
-      throw new ForbiddenException(
-        'Usuario no autenticado para editar empleado.',
-      );
+      throw new ForbiddenException('Usuario no autenticado para editar empleado.');
     }
 
     const normalizedEmail = dto.email ? dto.email.toLowerCase().trim() : null;
-    const emailHash = normalizedEmail
-      ? this.sensitiveDataService.hashEmail(normalizedEmail)
-      : null;
+    const emailHash = normalizedEmail ? this.sensitiveDataService.hashEmail(normalizedEmail) : null;
 
     if (emailHash) {
       const conflict = await this.repo.findOne({ where: { emailHash } });
       if (conflict && conflict.id !== id) {
-        throw new ConflictException(
-          `Ya existe un empleado con email '${dto.email}'`,
-        );
+        throw new ConflictException(`Ya existe un empleado con email '${dto.email}'`);
       }
     }
 
-    const cedulaHash = dto.cedula
-      ? this.sensitiveDataService.hashCedula(dto.cedula)
-      : null;
+    const cedulaHash = dto.cedula ? this.sensitiveDataService.hashCedula(dto.cedula) : null;
     if (cedulaHash) {
       const conflict = await this.repo.findOne({ where: { cedulaHash } });
       if (conflict && conflict.id !== id) {
-        throw new ConflictException(
-          `Ya existe un empleado con cédula '${dto.cedula}'`,
-        );
+        throw new ConflictException(`Ya existe un empleado con cédula '${dto.cedula}'`);
       }
     }
 
@@ -463,31 +421,21 @@ export class EmployeesService {
       }
 
       if (dto.nombre)
-        current.nombre =
-          this.sensitiveDataService.encrypt(dto.nombre) ?? current.nombre;
+        current.nombre = this.sensitiveDataService.encrypt(dto.nombre) ?? current.nombre;
       if (dto.apellido1)
-        current.apellido1 =
-          this.sensitiveDataService.encrypt(dto.apellido1) ?? current.apellido1;
+        current.apellido1 = this.sensitiveDataService.encrypt(dto.apellido1) ?? current.apellido1;
       if (dto.apellido2 !== undefined)
-        current.apellido2 = this.sensitiveDataService.encrypt(
-          dto.apellido2 ?? null,
-        );
+        current.apellido2 = this.sensitiveDataService.encrypt(dto.apellido2 ?? null);
       if (dto.cedula) {
-        current.cedula =
-          this.sensitiveDataService.encrypt(dto.cedula) ?? current.cedula;
+        current.cedula = this.sensitiveDataService.encrypt(dto.cedula) ?? current.cedula;
         current.cedulaHash = cedulaHash;
       }
       if (dto.telefono !== undefined)
-        current.telefono = this.sensitiveDataService.encrypt(
-          dto.telefono ?? null,
-        );
+        current.telefono = this.sensitiveDataService.encrypt(dto.telefono ?? null);
       if (dto.direccion !== undefined)
-        current.direccion = this.sensitiveDataService.encrypt(
-          dto.direccion ?? null,
-        );
+        current.direccion = this.sensitiveDataService.encrypt(dto.direccion ?? null);
       if (normalizedEmail) {
-        current.email =
-          this.sensitiveDataService.encrypt(normalizedEmail) ?? current.email;
+        current.email = this.sensitiveDataService.encrypt(normalizedEmail) ?? current.email;
         current.emailHash = emailHash;
       }
       if (dto.salarioBase !== undefined) {
@@ -497,19 +445,12 @@ export class EmployeesService {
             : this.sensitiveDataService.encrypt(String(dto.salarioBase));
       }
       if (dto.numeroCcss !== undefined)
-        current.numeroCcss = this.sensitiveDataService.encrypt(
-          dto.numeroCcss ?? null,
-        );
+        current.numeroCcss = this.sensitiveDataService.encrypt(dto.numeroCcss ?? null);
       if (dto.cuentaBanco !== undefined)
-        current.cuentaBanco = this.sensitiveDataService.encrypt(
-          dto.cuentaBanco ?? null,
-        );
-      if (dto.fechaSalida)
-        current.fechaSalida = this.parseDateOnlyForDb(dto.fechaSalida);
+        current.cuentaBanco = this.sensitiveDataService.encrypt(dto.cuentaBanco ?? null);
+      if (dto.fechaSalida) current.fechaSalida = this.parseDateOnlyForDb(dto.fechaSalida);
       if (dto.motivoSalida !== undefined)
-        current.motivoSalida = this.sensitiveDataService.encrypt(
-          dto.motivoSalida ?? null,
-        );
+        current.motivoSalida = this.sensitiveDataService.encrypt(dto.motivoSalida ?? null);
       if (dto.fechaIngreso !== undefined) {
         const isMaster = await this.isMasterUser(modifierId, current.idEmpresa);
         if (!isMaster) {
@@ -523,20 +464,14 @@ export class EmployeesService {
 
       if (dto.genero !== undefined) current.genero = dto.genero;
       if (dto.estadoCivil !== undefined) current.estadoCivil = dto.estadoCivil;
-      if (dto.cantidadHijos !== undefined)
-        current.cantidadHijos = dto.cantidadHijos;
-      if (dto.idDepartamento !== undefined)
-        current.idDepartamento = dto.idDepartamento;
+      if (dto.cantidadHijos !== undefined) current.cantidadHijos = dto.cantidadHijos;
+      if (dto.idDepartamento !== undefined) current.idDepartamento = dto.idDepartamento;
       if (dto.idPuesto !== undefined) current.idPuesto = dto.idPuesto;
-      if (dto.idSupervisor !== undefined)
-        current.idSupervisor = dto.idSupervisor;
-      if (dto.tipoContrato !== undefined)
-        current.tipoContrato = dto.tipoContrato;
+      if (dto.idSupervisor !== undefined) current.idSupervisor = dto.idSupervisor;
+      if (dto.tipoContrato !== undefined) current.tipoContrato = dto.tipoContrato;
       if (dto.jornada !== undefined) current.jornada = dto.jornada;
-      if (dto.idPeriodoPago !== undefined)
-        current.idPeriodoPago = dto.idPeriodoPago;
-      if (dto.monedaSalario !== undefined)
-        current.monedaSalario = dto.monedaSalario;
+      if (dto.idPeriodoPago !== undefined) current.idPeriodoPago = dto.idPeriodoPago;
+      if (dto.monedaSalario !== undefined) current.monedaSalario = dto.monedaSalario;
       if (dto.vacacionesAcumuladas !== undefined) {
         throw new BadRequestException(
           'Vacaciones acumuladas iniciales no es editable. Use ajustes con permiso especial.',
@@ -551,8 +486,7 @@ export class EmployeesService {
 
       current.modificadoPor = modifierId;
       current.datosEncriptados = 1;
-      current.versionEncriptacion =
-        EmployeeSensitiveDataService.getEncryptedVersion();
+      current.versionEncriptacion = EmployeeSensitiveDataService.getEncryptedVersion();
       current.fechaEncriptacion = new Date();
 
       const saved = await manager.save(Employee, current);
@@ -574,11 +508,7 @@ export class EmployeesService {
       });
 
       if (dto.fechaIngreso !== undefined) {
-        await this.vacationService.syncAccountAnchorOnJoinDateChange(
-          manager,
-          saved,
-          modifierId,
-        );
+        await this.vacationService.syncAccountAnchorOnJoinDateChange(manager, saved, modifierId);
       }
 
       if (normalizedEmail && normalizedEmail !== oldEmail && saved.idUsuario) {
@@ -716,14 +646,11 @@ export class EmployeesService {
     const emp = await this.findOne(id, modifierId);
     const payloadBefore = this.buildAuditPayloadFromEncrypted(emp);
     emp.estado = 0;
-    emp.fechaSalida = fechaSalida
-      ? this.parseDateOnlyForDb(fechaSalida)
-      : new Date();
+    emp.fechaSalida = fechaSalida ? this.parseDateOnlyForDb(fechaSalida) : new Date();
     emp.motivoSalida = this.sensitiveDataService.encrypt(motivo ?? null);
     emp.modificadoPor = modifierId;
     emp.datosEncriptados = 1;
-    emp.versionEncriptacion =
-      EmployeeSensitiveDataService.getEncryptedVersion();
+    emp.versionEncriptacion = EmployeeSensitiveDataService.getEncryptedVersion();
     emp.fechaEncriptacion = new Date();
     const saved = await this.repo.save(emp);
     this.auditOutbox.publish({
@@ -781,10 +708,8 @@ export class EmployeesService {
     );
 
     return (rows ?? []).map((row: Record<string, unknown>) => {
-      const payloadBefore =
-        (row.payloadBefore as Record<string, unknown> | null) ?? null;
-      const payloadAfter =
-        (row.payloadAfter as Record<string, unknown> | null) ?? null;
+      const payloadBefore = (row.payloadBefore as Record<string, unknown> | null) ?? null;
+      const payloadAfter = (row.payloadAfter as Record<string, unknown> | null) ?? null;
       return {
         id: String(row.id ?? ''),
         modulo: String(row.modulo ?? ''),
@@ -795,9 +720,7 @@ export class EmployeesService {
         actorNombre: row.actorNombre ? String(row.actorNombre) : null,
         actorEmail: row.actorEmail ? String(row.actorEmail) : null,
         descripcion: String(row.descripcion ?? ''),
-        fechaCreacion: row.fechaCreacion
-          ? new Date(String(row.fechaCreacion)).toISOString()
-          : null,
+        fechaCreacion: row.fechaCreacion ? new Date(String(row.fechaCreacion)).toISOString() : null,
         metadata: (row.metadata as Record<string, unknown> | null) ?? null,
         cambios: this.buildAuditChanges(payloadBefore, payloadAfter),
       };
@@ -822,11 +745,7 @@ export class EmployeesService {
     const companyIds = await this.getUserCompanyIds(userId);
     if (!companyIds.length) return [];
 
-    const supervisorRoleCodes = [
-      'SUPERVISOR_TIMEWISE',
-      'SUPERVISOR_GLOBAL_TIMEWISE',
-      'MASTER',
-    ];
+    const supervisorRoleCodes = ['SUPERVISOR_TIMEWISE', 'SUPERVISOR_GLOBAL_TIMEWISE', 'MASTER'];
 
     const employees = await this.repo
       .createQueryBuilder('e')
@@ -835,19 +754,10 @@ export class EmployeesService {
         'ur',
         'ur.id_usuario = e.id_usuario AND ur.estado_usuario_rol = 1',
       )
-      .innerJoin(
-        'sys_roles',
-        'r',
-        'r.id_rol = ur.id_rol AND r.codigo_rol IN (:...codes)',
-        {
-          codes: supervisorRoleCodes,
-        },
-      )
-      .innerJoin(
-        'sys_apps',
-        'a',
-        "a.id_app = ur.id_app AND a.codigo_app = 'timewise'",
-      )
+      .innerJoin('sys_roles', 'r', 'r.id_rol = ur.id_rol AND r.codigo_rol IN (:...codes)', {
+        codes: supervisorRoleCodes,
+      })
+      .innerJoin('sys_apps', 'a', "a.id_app = ur.id_app AND a.codigo_app = 'timewise'")
       .where('e.id_usuario IS NOT NULL')
       .andWhere('e.id_empresa IN (:...companyIds)', { companyIds })
       .andWhere('e.estado = 1')
@@ -863,19 +773,10 @@ export class EmployeesService {
         'g',
         'g.id_usuario = e.id_usuario AND g.estado_usuario_rol_global = 1',
       )
-      .innerJoin(
-        'sys_roles',
-        'r',
-        'r.id_rol = g.id_rol AND r.codigo_rol IN (:...codes)',
-        {
-          codes: supervisorRoleCodes,
-        },
-      )
-      .leftJoin(
-        'sys_apps',
-        'a',
-        "a.id_app = g.id_app AND a.codigo_app = 'timewise'",
-      )
+      .innerJoin('sys_roles', 'r', 'r.id_rol = g.id_rol AND r.codigo_rol IN (:...codes)', {
+        codes: supervisorRoleCodes,
+      })
+      .leftJoin('sys_apps', 'a', "a.id_app = g.id_app AND a.codigo_app = 'timewise'")
       .where('e.id_usuario IS NOT NULL')
       .andWhere('e.id_empresa IN (:...companyIds)', { companyIds })
       .andWhere('e.estado = 1')
@@ -892,10 +793,7 @@ export class EmployeesService {
       }
     }
 
-    const sensitiveMap = await this.resolveSensitivePermissionMap(
-      userId,
-      companyIds,
-    );
+    const sensitiveMap = await this.resolveSensitivePermissionMap(userId, companyIds);
     return employees.map((e) => {
       const canSeeSensitive = sensitiveMap.get(e.idEmpresa) ?? false;
       const readable = this.toReadableEmployee(e, canSeeSensitive);
@@ -907,10 +805,7 @@ export class EmployeesService {
     });
   }
 
-  private async assertUserCompanyAccess(
-    userId: number,
-    idEmpresa: number,
-  ): Promise<void> {
+  private async assertUserCompanyAccess(userId: number, idEmpresa: number): Promise<void> {
     const hasAccess = await this.userCompanyRepo.findOne({
       where: { idUsuario: userId, idEmpresa, estado: 1 },
     });
@@ -921,10 +816,7 @@ export class EmployeesService {
     }
   }
 
-  private toReadableEmployee(
-    employee: Employee,
-    canSeeSensitive: boolean,
-  ): Employee {
+  private toReadableEmployee(employee: Employee, canSeeSensitive: boolean): Employee {
     if (!canSeeSensitive) {
       employee.nombre = null as unknown as string;
       employee.apellido1 = null as unknown as string;
@@ -943,38 +835,25 @@ export class EmployeesService {
     }
 
     employee.nombre = this.sensitiveDataService.decrypt(employee.nombre) ?? '';
-    employee.apellido1 =
-      this.sensitiveDataService.decrypt(employee.apellido1) ?? '';
+    employee.apellido1 = this.sensitiveDataService.decrypt(employee.apellido1) ?? '';
     employee.apellido2 = this.sensitiveDataService.decrypt(employee.apellido2);
     employee.cedula = this.sensitiveDataService.decrypt(employee.cedula) ?? '';
     employee.email = this.sensitiveDataService.decrypt(employee.email) ?? '';
     employee.telefono = this.sensitiveDataService.decrypt(employee.telefono);
     employee.direccion = this.sensitiveDataService.decrypt(employee.direccion);
-    employee.salarioBase = this.sensitiveDataService.decrypt(
-      employee.salarioBase,
-    );
-    employee.numeroCcss = this.sensitiveDataService.decrypt(
-      employee.numeroCcss,
-    );
-    employee.cuentaBanco = this.sensitiveDataService.decrypt(
-      employee.cuentaBanco,
-    );
+    employee.salarioBase = this.sensitiveDataService.decrypt(employee.salarioBase);
+    employee.numeroCcss = this.sensitiveDataService.decrypt(employee.numeroCcss);
+    employee.cuentaBanco = this.sensitiveDataService.decrypt(employee.cuentaBanco);
     employee.vacacionesAcumuladas = this.sensitiveDataService.decrypt(
       employee.vacacionesAcumuladas,
     );
-    employee.cesantiaAcumulada = this.sensitiveDataService.decrypt(
-      employee.cesantiaAcumulada,
-    );
-    employee.motivoSalida = this.sensitiveDataService.decrypt(
-      employee.motivoSalida,
-    );
+    employee.cesantiaAcumulada = this.sensitiveDataService.decrypt(employee.cesantiaAcumulada);
+    employee.motivoSalida = this.sensitiveDataService.decrypt(employee.motivoSalida);
 
     return employee;
   }
 
-  private buildAuditPayloadFromEncrypted(
-    employee: Employee,
-  ): Record<string, unknown> {
+  private buildAuditPayloadFromEncrypted(employee: Employee): Record<string, unknown> {
     const readable = this.toReadableEmployee({ ...employee }, true);
     return {
       nombre: readable.nombre ?? null,
@@ -988,14 +867,10 @@ export class EmployeesService {
       idPuesto: readable.idPuesto ?? null,
       idSupervisor: readable.idSupervisor ?? null,
       fechaIngreso: readable.fechaIngreso
-        ? new Date(readable.fechaIngreso as unknown as string)
-            .toISOString()
-            .slice(0, 10)
+        ? new Date(readable.fechaIngreso as unknown as string).toISOString().slice(0, 10)
         : null,
       fechaSalida: readable.fechaSalida
-        ? new Date(readable.fechaSalida as unknown as string)
-            .toISOString()
-            .slice(0, 10)
+        ? new Date(readable.fechaSalida as unknown as string).toISOString().slice(0, 10)
         : null,
       motivoSalida: readable.motivoSalida ?? null,
       tipoContrato: readable.tipoContrato ?? null,
@@ -1024,12 +899,8 @@ export class EmployeesService {
     payloadAfter: Record<string, unknown> | null,
   ): Array<{ campo: string; antes: string; despues: string }> {
     if (!payloadBefore || !payloadAfter) return [];
-    const keys = new Set<string>([
-      ...Object.keys(payloadBefore),
-      ...Object.keys(payloadAfter),
-    ]);
-    const changes: Array<{ campo: string; antes: string; despues: string }> =
-      [];
+    const keys = new Set<string>([...Object.keys(payloadBefore), ...Object.keys(payloadAfter)]);
+    const changes: Array<{ campo: string; antes: string; despues: string }> = [];
     for (const key of keys) {
       if (!(key in this.auditFieldLabels)) continue;
       const beforeValue = this.normalizeAuditValue(payloadBefore[key]);
@@ -1044,15 +915,8 @@ export class EmployeesService {
     return changes;
   }
 
-  private async hasSensitivePermission(
-    userId: number,
-    companyId: number,
-  ): Promise<boolean> {
-    const resolved = await this.authService.resolvePermissions(
-      userId,
-      companyId,
-      'kpital',
-    );
+  private async hasSensitivePermission(userId: number, companyId: number): Promise<boolean> {
+    const resolved = await this.authService.resolvePermissions(userId, companyId, 'kpital');
     return resolved.permissions.includes('employee:view-sensitive');
   }
 
@@ -1067,10 +931,7 @@ export class EmployeesService {
     return map;
   }
 
-  private async isMasterUser(
-    userId: number,
-    companyId: number,
-  ): Promise<boolean> {
+  private async isMasterUser(userId: number, companyId: number): Promise<boolean> {
     const [timewise, kpital] = await Promise.all([
       this.authService.resolvePermissions(userId, companyId, 'timewise'),
       this.authService.resolvePermissions(userId, companyId, 'kpital'),

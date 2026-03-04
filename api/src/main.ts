@@ -1,24 +1,21 @@
-import { NestFactory } from '@nestjs/core';
-import {
-  BadRequestException,
-  ValidationError,
-  ValidationPipe,
-} from '@nestjs/common';
+import { BadRequestException, ValidationPipe } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { NestFactory } from '@nestjs/core';
 import cookieParser from 'cookie-parser';
 import helmet from 'helmet';
+
 import { AppModule } from './app.module';
 import { GlobalExceptionFilter } from './common/filters/http-exception.filter';
 import { LoggingInterceptor } from './common/interceptors/logging.interceptor';
+
+import type { ValidationError } from '@nestjs/common';
 
 function flattenValidationErrors(errors: ValidationError[]): string[] {
   const result: string[] = [];
 
   for (const error of errors) {
     if (error.constraints) {
-      result.push(
-        ...Object.values(error.constraints).map(translateValidationMessage),
-      );
+      result.push(...Object.values(error.constraints).map(translateValidationMessage));
     }
     if (error.children?.length) {
       result.push(...flattenValidationErrors(error.children));
@@ -38,10 +35,7 @@ function translateValidationMessage(message: string): string {
       'debe ser un numero valido',
     )
     .replace('must be an email', 'debe ser un correo electronico valido')
-    .replace(
-      'must be a valid ISO 8601 date string',
-      'debe ser una fecha valida',
-    )
+    .replace('must be a valid ISO 8601 date string', 'debe ser una fecha valida')
     .replace('should not be empty', 'no debe estar vacio')
     .replace('must be shorter than or equal to', 'debe tener como maximo')
     .replace('must be longer than or equal to', 'debe tener como minimo')

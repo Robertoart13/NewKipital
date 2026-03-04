@@ -1,26 +1,24 @@
-import {
-  Injectable,
-  Logger,
-  OnModuleDestroy,
-  OnModuleInit,
-} from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
-import { Employee } from '../entities/employee.entity';
+
+import { EmployeeSensitiveDataService } from '../../../common/services/employee-sensitive-data.service';
+import { App } from '../../access-control/entities/app.entity';
+import { Role } from '../../access-control/entities/role.entity';
+import { UserApp } from '../../access-control/entities/user-app.entity';
+import { UserCompany } from '../../access-control/entities/user-company.entity';
+import { User } from '../../auth/entities/user.entity';
 import { EmployeeAguinaldoProvision } from '../entities/employee-aguinaldo-provision.entity';
 import {
   EmployeeIdentityQueue,
   EmployeeQueueStatus,
 } from '../entities/employee-identity-queue.entity';
+import { Employee } from '../entities/employee.entity';
 import { EmployeeEncryptQueue } from '../entities/employee-encrypt-queue.entity';
-import { User } from '../../auth/entities/user.entity';
-import { UserCompany } from '../../access-control/entities/user-company.entity';
-import { UserApp } from '../../access-control/entities/user-app.entity';
 import { UserRole } from '../../access-control/entities/user-role.entity';
-import { App } from '../../access-control/entities/app.entity';
-import { Role } from '../../access-control/entities/role.entity';
-import { EmployeeSensitiveDataService } from '../../../common/services/employee-sensitive-data.service';
-import { EmployeeVacationService } from './employee-vacation.service';
+
+import type { EmployeeVacationService } from './employee-vacation.service';
+import type { OnModuleDestroy, OnModuleInit } from '@nestjs/common';
+import type { Repository } from 'typeorm';
 
 class QueueTerminalError extends Error {
   constructor(
@@ -36,12 +34,8 @@ class QueueTerminalError extends Error {
 }
 
 @Injectable()
-export class EmployeeDataAutomationWorkerService
-  implements OnModuleInit, OnModuleDestroy
-{
-  private readonly logger = new Logger(
-    EmployeeDataAutomationWorkerService.name,
-  );
+export class EmployeeDataAutomationWorkerService implements OnModuleInit, OnModuleDestroy {
+  private readonly logger = new Logger(EmployeeDataAutomationWorkerService.name);
   private timer: NodeJS.Timeout | null = null;
   private running = false;
   private readonly workerId = `employee-worker-${process.pid}`;
@@ -79,9 +73,7 @@ export class EmployeeDataAutomationWorkerService
       return;
     }
     const intervalMs = 5000;
-    this.logger.log(
-      `Worker started id=${this.workerId} intervalMs=${intervalMs}`,
-    );
+    this.logger.log(`Worker started id=${this.workerId} intervalMs=${intervalMs}`);
     this.timer = setInterval(() => {
       void this.tick();
     }, intervalMs);
@@ -260,10 +252,7 @@ export class EmployeeDataAutomationWorkerService
         where: { id: job.idEmpleado },
       });
       if (!employee) {
-        throw new QueueTerminalError(
-          'Empleado no existe',
-          EmployeeQueueStatus.ERROR_FATAL,
-        );
+        throw new QueueTerminalError('Empleado no existe', EmployeeQueueStatus.ERROR_FATAL);
       }
       if (employee.estado !== 1) {
         await this.markDone(this.identityQueueRepo, job.id);
@@ -403,9 +392,7 @@ export class EmployeeDataAutomationWorkerService
       await this.employeeRepo.save(employee);
 
       await this.markDone(this.identityQueueRepo, job.id);
-      this.logger.log(
-        `Identity job DONE queueId=${job.id} employeeId=${job.idEmpleado}`,
-      );
+      this.logger.log(`Identity job DONE queueId=${job.id} employeeId=${job.idEmpleado}`);
     } catch (error) {
       await this.failIdentityJob(job, error);
     }
@@ -425,10 +412,7 @@ export class EmployeeDataAutomationWorkerService
         where: { id: job.idEmpleado },
       });
       if (!employee) {
-        throw new QueueTerminalError(
-          'Empleado no existe',
-          EmployeeQueueStatus.ERROR_FATAL,
-        );
+        throw new QueueTerminalError('Empleado no existe', EmployeeQueueStatus.ERROR_FATAL);
       }
 
       this.encryptEmployeeRecord(employee);
@@ -445,9 +429,7 @@ export class EmployeeDataAutomationWorkerService
       }
 
       await this.markDone(this.encryptQueueRepo, job.id);
-      this.logger.log(
-        `Encrypt job DONE queueId=${job.id} employeeId=${job.idEmpleado}`,
-      );
+      this.logger.log(`Encrypt job DONE queueId=${job.id} employeeId=${job.idEmpleado}`);
     } catch (error) {
       await this.failEncryptJob(job, error);
     }
@@ -455,8 +437,7 @@ export class EmployeeDataAutomationWorkerService
 
   private encryptEmployeeRecord(employee: Employee): void {
     employee.nombre = this.encryptField(employee.nombre) ?? employee.nombre;
-    employee.apellido1 =
-      this.encryptField(employee.apellido1) ?? employee.apellido1;
+    employee.apellido1 = this.encryptField(employee.apellido1) ?? employee.apellido1;
     employee.apellido2 = this.encryptField(employee.apellido2);
     employee.cedula = this.encryptField(employee.cedula) ?? employee.cedula;
     employee.email = this.encryptField(employee.email) ?? employee.email;
@@ -465,9 +446,7 @@ export class EmployeeDataAutomationWorkerService
     employee.salarioBase = this.encryptField(employee.salarioBase);
     employee.numeroCcss = this.encryptField(employee.numeroCcss);
     employee.cuentaBanco = this.encryptField(employee.cuentaBanco);
-    employee.vacacionesAcumuladas = this.encryptField(
-      employee.vacacionesAcumuladas,
-    );
+    employee.vacacionesAcumuladas = this.encryptField(employee.vacacionesAcumuladas);
     employee.cesantiaAcumulada = this.encryptField(employee.cesantiaAcumulada);
     employee.motivoSalida = this.encryptField(employee.motivoSalida);
 
@@ -476,19 +455,16 @@ export class EmployeeDataAutomationWorkerService
     employee.cedulaHash = this.sensitiveDataService.hashCedula(cedulaPlain);
     employee.emailHash = this.sensitiveDataService.hashEmail(emailPlain);
     employee.datosEncriptados = 1;
-    employee.versionEncriptacion =
-      EmployeeSensitiveDataService.getEncryptedVersion();
+    employee.versionEncriptacion = EmployeeSensitiveDataService.getEncryptedVersion();
     employee.fechaEncriptacion = new Date();
   }
 
   private encryptProvisionRecord(provision: EmployeeAguinaldoProvision): void {
     provision.montoProvisionado =
-      this.encryptField(provision.montoProvisionado) ??
-      provision.montoProvisionado;
+      this.encryptField(provision.montoProvisionado) ?? provision.montoProvisionado;
     provision.registroEmpresa = this.encryptField(provision.registroEmpresa);
     provision.datosEncriptados = 1;
-    provision.versionEncriptacion =
-      EmployeeSensitiveDataService.getEncryptedVersion();
+    provision.versionEncriptacion = EmployeeSensitiveDataService.getEncryptedVersion();
     provision.fechaEncriptacion = new Date();
   }
 
@@ -511,17 +487,11 @@ export class EmployeeDataAutomationWorkerService
     });
   }
 
-  private async failIdentityJob(
-    job: EmployeeIdentityQueue,
-    error: unknown,
-  ): Promise<void> {
+  private async failIdentityJob(job: EmployeeIdentityQueue, error: unknown): Promise<void> {
     await this.failJob(this.identityQueueRepo, job, error);
   }
 
-  private async failEncryptJob(
-    job: EmployeeEncryptQueue,
-    error: unknown,
-  ): Promise<void> {
+  private async failEncryptJob(job: EmployeeEncryptQueue, error: unknown): Promise<void> {
     await this.failJob(this.encryptQueueRepo, job, error);
   }
 

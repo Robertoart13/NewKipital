@@ -1,6 +1,9 @@
-﻿import { ExecutionContext, ForbiddenException } from '@nestjs/common';
-import { Reflector } from '@nestjs/core';
+﻿import { ForbiddenException } from '@nestjs/common';
+
 import { CsrfGuard } from './csrf.guard';
+
+import type { ExecutionContext } from '@nestjs/common';
+import type { Reflector } from '@nestjs/core';
 
 describe('CsrfGuard', () => {
   let guard: CsrfGuard;
@@ -52,11 +55,7 @@ describe('CsrfGuard', () => {
 
   it('should throw ForbiddenException when CSRF tokens mismatch', () => {
     reflector.getAllAndOverride.mockReturnValue(false);
-    const ctx = createContext(
-      'POST',
-      { platform_csrf_token: 'abc' },
-      { 'x-csrf-token': 'xyz' },
-    );
+    const ctx = createContext('POST', { platform_csrf_token: 'abc' }, { 'x-csrf-token': 'xyz' });
     expect(() => guard.canActivate(ctx)).toThrow(ForbiddenException);
   });
 
@@ -74,15 +73,11 @@ describe('CsrfGuard', () => {
 
   it('should throw on PUT without tokens', () => {
     reflector.getAllAndOverride.mockReturnValue(false);
-    expect(() => guard.canActivate(createContext('PUT'))).toThrow(
-      ForbiddenException,
-    );
+    expect(() => guard.canActivate(createContext('PUT'))).toThrow(ForbiddenException);
   });
 
   it('should throw on PATCH without tokens', () => {
     reflector.getAllAndOverride.mockReturnValue(false);
-    expect(() => guard.canActivate(createContext('PATCH'))).toThrow(
-      ForbiddenException,
-    );
+    expect(() => guard.canActivate(createContext('PATCH'))).toThrow(ForbiddenException);
   });
 });

@@ -1,17 +1,10 @@
-import {
-  HttpException,
-  HttpStatus,
-  Inject,
-  Injectable,
-  Optional,
-} from '@nestjs/common';
-import type Redis from 'ioredis';
-import {
-  RateLimiterAbstract,
-  RateLimiterMemory,
-  RateLimiterRedis,
-} from 'rate-limiter-flexible';
+import { HttpException, HttpStatus, Inject, Injectable, Optional } from '@nestjs/common';
+import { RateLimiterMemory, RateLimiterRedis } from 'rate-limiter-flexible';
+
 import { REDIS_CLIENT } from '../../config/redis.config';
+
+import type Redis from 'ioredis';
+import type { RateLimiterAbstract } from 'rate-limiter-flexible';
 
 /**
  * Servicio de rate limiting para endpoints de autenticación.

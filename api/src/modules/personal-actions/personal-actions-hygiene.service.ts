@@ -1,13 +1,15 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { Cron } from '@nestjs/schedule';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+
 import {
   PersonalAction,
   PersonalActionEstado,
   PERSONAL_ACTION_APPROVED_STATES,
 } from './entities/personal-action.entity';
-import { PersonalActionAutoInvalidationService } from './personal-action-auto-invalidation.service';
+
+import type { PersonalActionAutoInvalidationService } from './personal-action-auto-invalidation.service';
+import type { Repository } from 'typeorm';
 
 @Injectable()
 export class PersonalActionsHygieneService {
