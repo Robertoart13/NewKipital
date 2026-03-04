@@ -1,5 +1,6 @@
-import { Navigate, Outlet, useLocation } from 'react-router-dom';
 import { Spin, Flex, Result } from 'antd';
+import { Navigate, Outlet, useLocation } from 'react-router-dom';
+
 import { useAppSelector } from '../store/hooks';
 
 /**

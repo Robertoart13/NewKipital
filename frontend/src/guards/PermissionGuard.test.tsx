@@ -1,5 +1,5 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 // ─── Mocks livianos (evitan imports pesados de antd + Redux + router en jsdom) ─
 
@@ -30,6 +30,7 @@ vi.mock('react-router-dom', () => ({
 
 // ─── Imports reales DESPUÉS de los mocks ─────────────────────────────────────
 import { useAppSelector } from '../store/hooks';
+
 import { PermissionGuard } from './PermissionGuard';
 
 // ─── Helper ──────────────────────────────────────────────────────────────────
@@ -46,9 +47,7 @@ function setup(isAuthenticated: boolean, loaded: boolean, permissions: string[])
 }
 
 function renderGuard(permission: string, children = <div>Contenido protegido</div>) {
-  return render(
-    <PermissionGuard requiredPermission={permission}>{children}</PermissionGuard>,
-  );
+  return render(<PermissionGuard requiredPermission={permission}>{children}</PermissionGuard>);
 }
 
 // ─── Tests ───────────────────────────────────────────────────────────────────

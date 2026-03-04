@@ -1,11 +1,12 @@
-import type { Middleware } from '@reduxjs/toolkit';
-import { logout } from '../slices/authSlice';
-import { setActiveCompany, clearActiveCompany } from '../slices/activeCompanySlice';
-import { setActiveApp } from '../slices/activeAppSlice';
-import { setPermissions, clearPermissions } from '../slices/permissionsSlice';
-import { queryClient } from '../../queries/queryClient';
 import { fetchPermissionsForApp, fetchPermissionsForCompany } from '../../api/permissions';
+import { queryClient } from '../../queries/queryClient';
+import { setActiveApp } from '../slices/activeAppSlice';
+import { setActiveCompany, clearActiveCompany } from '../slices/activeCompanySlice';
+import { logout } from '../slices/authSlice';
+import { setPermissions, clearPermissions } from '../slices/permissionsSlice';
+
 import type { RootState } from '../store';
+import type { Middleware } from '@reduxjs/toolkit';
 
 /**
  * Middleware: escucha acciones críticas y orquesta reacciones.
@@ -37,11 +38,13 @@ export const companyChangeListener: Middleware = (store) => (next) => (action) =
     if (company === null) {
       fetchPermissionsForApp(appCode)
         .then(({ permissions, roles }) => {
-          store.dispatch(setPermissions({
-            permissions,
-            roles,
-            appId: appCode,
-          }));
+          store.dispatch(
+            setPermissions({
+              permissions,
+              roles,
+              appId: appCode,
+            }),
+          );
         })
         .catch(() => {
           // Mantener permisos actuales ante errores transitorios
@@ -49,12 +52,14 @@ export const companyChangeListener: Middleware = (store) => (next) => (action) =
     } else {
       fetchPermissionsForCompany(company.id, appCode)
         .then(({ permissions, roles }) => {
-          store.dispatch(setPermissions({
-            permissions,
-            roles,
-            appId: appCode,
-            companyId: company.id,
-          }));
+          store.dispatch(
+            setPermissions({
+              permissions,
+              roles,
+              appId: appCode,
+              companyId: company.id,
+            }),
+          );
         })
         .catch(() => {
           // Mantener permisos actuales ante errores transitorios
@@ -75,12 +80,14 @@ export const companyChangeListener: Middleware = (store) => (next) => (action) =
     if (company?.id) {
       fetchPermissionsForCompany(company.id, appCode)
         .then(({ permissions, roles }) => {
-          store.dispatch(setPermissions({
-            permissions,
-            roles,
-            appId: appCode,
-            companyId: company.id,
-          }));
+          store.dispatch(
+            setPermissions({
+              permissions,
+              roles,
+              appId: appCode,
+              companyId: company.id,
+            }),
+          );
         })
         .catch(() => {
           // Mantener permisos actuales ante errores transitorios
@@ -88,11 +95,13 @@ export const companyChangeListener: Middleware = (store) => (next) => (action) =
     } else {
       fetchPermissionsForApp(appCode)
         .then(({ permissions, roles }) => {
-          store.dispatch(setPermissions({
-            permissions,
-            roles,
-            appId: appCode,
-          }));
+          store.dispatch(
+            setPermissions({
+              permissions,
+              roles,
+              appId: appCode,
+            }),
+          );
         })
         .catch(() => {
           // Mantener permisos actuales ante errores transitorios

@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it } from 'vitest';
+
 import {
   getStoredCompanyId,
   getStoredActiveApp,
@@ -19,10 +20,18 @@ function createFunctionalStorage(): Storage {
   const store: Record<string, string> = {};
   return {
     getItem: (key: string) => store[key] ?? null,
-    setItem: (key: string, value: string) => { store[key] = value; },
-    removeItem: (key: string) => { delete store[key]; },
-    clear: () => { for (const k of Object.keys(store)) delete store[k]; },
-    get length() { return Object.keys(store).length; },
+    setItem: (key: string, value: string) => {
+      store[key] = value;
+    },
+    removeItem: (key: string) => {
+      delete store[key];
+    },
+    clear: () => {
+      for (const k of Object.keys(store)) delete store[k];
+    },
+    get length() {
+      return Object.keys(store).length;
+    },
     key: (index: number) => Object.keys(store)[index] ?? null,
   };
 }
@@ -107,4 +116,3 @@ describe('storage utils', () => {
     expect(getMicrosoftAvatar()).toBeNull();
   });
 });
-

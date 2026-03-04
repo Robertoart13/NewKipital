@@ -3,7 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 
 import { DomainEventEntity } from './entities/domain-event.entity';
 
-import type { Repository } from 'typeorm';
+import { Repository } from 'typeorm';
 
 interface RecordDomainEventInput {
   aggregateType: string;

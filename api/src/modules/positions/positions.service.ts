@@ -3,10 +3,10 @@ import { InjectRepository } from '@nestjs/typeorm';
 
 import { Position } from '../employees/entities/position.entity';
 
-import type { AuditOutboxService } from '../integration/audit-outbox.service';
+import { AuditOutboxService } from '../integration/audit-outbox.service';
 import type { CreatePositionDto } from './dto/create-position.dto';
 import type { UpdatePositionDto } from './dto/update-position.dto';
-import type { Repository } from 'typeorm';
+import { Repository } from 'typeorm';
 
 @Injectable()
 export class PositionsService {

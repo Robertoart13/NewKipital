@@ -3,8 +3,8 @@ import { Body, Controller, Get, Param, ParseIntPipe, Post, Query } from '@nestjs
 import { RequirePermissions } from '../../common/decorators/require-permissions.decorator';
 
 import type { ListQueueJobsDto, RequeueJobDto } from './dto/list-queue-jobs.dto';
-import type { OpsService } from './ops.service';
-import type { AppCacheService } from '../../common/services/app-cache.service';
+import { OpsService } from './ops.service';
+import { AppCacheService } from '../../common/services/app-cache.service';
 
 @Controller('ops/queues')
 export class OpsController {

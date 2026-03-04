@@ -35,11 +35,11 @@ import type { ReplaceUserPermissionOverridesDto } from './dto/replace-user-permi
 import type { ReplaceUserRoleExclusionsDto } from './dto/replace-user-role-exclusions.dto';
 import type { UpdatePermissionDto } from './dto/update-permission.dto';
 import type { UpdateRoleDto } from './dto/update-role.dto';
-import type { PermissionsService } from './permissions.service';
-import type { RolesService } from './roles.service';
-import type { UserAssignmentService } from './user-assignment.service';
-import type { NotificationsService } from '../notifications/notifications.service';
-import type { Repository } from 'typeorm';
+import { PermissionsService } from './permissions.service';
+import { RolesService } from './roles.service';
+import { UserAssignmentService } from './user-assignment.service';
+import { NotificationsService } from '../notifications/notifications.service';
+import { Repository } from 'typeorm';
 
 /**
  * Endpoints enterprise de administracion bajo prefijo /config.

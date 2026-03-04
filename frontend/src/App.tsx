@@ -1,10 +1,11 @@
-import { Spin, Flex } from 'antd';
 import { SafetyCertificateOutlined } from '@ant-design/icons';
-import { AppRouter } from './router/AppRouter';
-import { useSessionRestore } from './hooks/useSessionRestore';
+import { Spin, Flex } from 'antd';
+
 import { usePermissionsRealtimeSync } from './hooks/usePermissionsRealtimeSync';
-import { useAppSelector } from './store/hooks';
+import { useSessionRestore } from './hooks/useSessionRestore';
 import { isMicrosoftOAuthCallbackInProgress } from './lib/microsoftAuth';
+import { AppRouter } from './router/AppRouter';
+import { useAppSelector } from './store/hooks';
 
 /**
  * Componente raíz.

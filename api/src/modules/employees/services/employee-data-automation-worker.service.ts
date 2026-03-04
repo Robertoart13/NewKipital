@@ -16,9 +16,9 @@ import {
 } from '../entities/employee-identity-queue.entity';
 import { Employee } from '../entities/employee.entity';
 
-import type { EmployeeVacationService } from './employee-vacation.service';
-import type { OnModuleDestroy, OnModuleInit } from '@nestjs/common';
-import type { Repository } from 'typeorm';
+import { EmployeeVacationService } from './employee-vacation.service';
+import { OnModuleDestroy, OnModuleInit } from '@nestjs/common';
+import { Repository } from 'typeorm';
 
 class QueueTerminalError extends Error {
   constructor(

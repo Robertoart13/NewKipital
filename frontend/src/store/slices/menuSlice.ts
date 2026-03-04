@@ -1,4 +1,5 @@
 import { createSlice } from '@reduxjs/toolkit';
+
 import type { Permission } from './permissionsSlice';
 
 /**
@@ -165,8 +166,18 @@ const initialMenuConfig: MenuItem[] = [
           },
         ],
       },
-      { id: 'articulos-nomina', label: 'Artículos de Nomina', path: '/payroll-params/articulos', requiredPermission: 'payroll-article:view' },
-      { id: 'movimientos-nomina', label: 'Movimientos de Nomina', path: '/payroll-params/movimientos', requiredPermission: 'payroll-movement:view' },
+      {
+        id: 'articulos-nomina',
+        label: 'Artículos de Nomina',
+        path: '/payroll-params/articulos',
+        requiredPermission: 'payroll-article:view',
+      },
+      {
+        id: 'movimientos-nomina',
+        label: 'Movimientos de Nomina',
+        path: '/payroll-params/movimientos',
+        requiredPermission: 'payroll-movement:view',
+      },
     ],
   },
   {
@@ -220,14 +231,54 @@ const initialMenuConfig: MenuItem[] = [
         path: '#',
         isGroup: true,
         children: [
-          { id: 'reglas-distribucion', label: 'Reglas de Distribución', path: '/configuration/reglas-distribucion', requiredPermission: 'config:reglas-distribucion' },
-          { id: 'empresas', label: 'Empresas', path: '/configuration/empresas', requiredPermission: 'company:view' },
-          { id: 'empleados', label: 'Empleados', path: '/employees', requiredPermission: 'employee:view' },
-          { id: 'clases', label: 'Clases', path: '/configuration/clases', requiredPermission: 'class:view' },
-          { id: 'proyectos', label: 'Proyectos', path: '/configuration/proyectos', requiredPermission: 'project:view' },
-          { id: 'cuentas-contables', label: 'Cuentas Contables', path: '/configuration/cuentas-contables', requiredPermission: 'accounting-account:view' },
-          { id: 'departamentos', label: 'Departamentos', path: '/configuration/departamentos', requiredPermission: 'department:view' },
-          { id: 'puestos', label: 'Puestos', path: '/configuration/puestos', requiredPermission: 'position:view' },
+          {
+            id: 'reglas-distribucion',
+            label: 'Reglas de Distribución',
+            path: '/configuration/reglas-distribucion',
+            requiredPermission: 'config:reglas-distribucion',
+          },
+          {
+            id: 'empresas',
+            label: 'Empresas',
+            path: '/configuration/empresas',
+            requiredPermission: 'company:view',
+          },
+          {
+            id: 'empleados',
+            label: 'Empleados',
+            path: '/employees',
+            requiredPermission: 'employee:view',
+          },
+          {
+            id: 'clases',
+            label: 'Clases',
+            path: '/configuration/clases',
+            requiredPermission: 'class:view',
+          },
+          {
+            id: 'proyectos',
+            label: 'Proyectos',
+            path: '/configuration/proyectos',
+            requiredPermission: 'project:view',
+          },
+          {
+            id: 'cuentas-contables',
+            label: 'Cuentas Contables',
+            path: '/configuration/cuentas-contables',
+            requiredPermission: 'accounting-account:view',
+          },
+          {
+            id: 'departamentos',
+            label: 'Departamentos',
+            path: '/configuration/departamentos',
+            requiredPermission: 'department:view',
+          },
+          {
+            id: 'puestos',
+            label: 'Puestos',
+            path: '/configuration/puestos',
+            requiredPermission: 'position:view',
+          },
         ],
       },
     ],
@@ -239,7 +290,6 @@ const initialMenuConfig: MenuItem[] = [
     requiredPermission: 'automation:monitor',
   },
 ];
-
 
 const menuSlice = createSlice({
   name: 'menu',
@@ -253,6 +303,3 @@ const menuSlice = createSlice({
 
 export const { setMenuConfig } = menuSlice.actions;
 export default menuSlice.reducer;
-
-
-

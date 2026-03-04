@@ -1,9 +1,11 @@
-import { Provider } from 'react-redux';
 import { QueryClientProvider } from '@tanstack/react-query';
-import { store } from '../store';
-import { queryClient } from '../queries/queryClient';
-import { ThemeProvider } from '../contexts/ThemeContext';
+import { Provider } from 'react-redux';
+
 import { LocaleProvider } from '../contexts/LocaleContext';
+import { ThemeProvider } from '../contexts/ThemeContext';
+import { queryClient } from '../queries/queryClient';
+import { store } from '../store';
+
 import { AntDConfigProvider } from './AntDConfigProvider';
 
 interface ProvidersProps {

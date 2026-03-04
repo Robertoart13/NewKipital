@@ -1,4 +1,5 @@
 import { httpFetch } from '../interceptors/httpInterceptor';
+
 import type { PayrollListItem } from './payroll';
 
 export interface PersonalActionListItem {
@@ -501,7 +502,7 @@ export interface PersonalActionAuditTrailItem {
 
 async function extractApiErrorMessage(res: Response, fallback: string): Promise<string> {
   try {
-    const body = await res.json() as { message?: string | string[] };
+    const body = (await res.json()) as { message?: string | string[] };
     if (Array.isArray(body?.message)) return body.message.join('. ');
     if (typeof body?.message === 'string' && body.message.trim()) return body.message;
   } catch {
@@ -524,7 +525,8 @@ export async function fetchPersonalActions(
     qs.append('estado', String(estado));
   }
   const res = await httpFetch(`/personal-actions?${qs}`);
-  if (!res.ok) throw new Error(await extractApiErrorMessage(res, 'Error al cargar acciones de personal'));
+  if (!res.ok)
+    throw new Error(await extractApiErrorMessage(res, 'Error al cargar acciones de personal'));
   return res.json();
 }
 
@@ -540,13 +542,16 @@ export async function fetchPersonalAction(id: number): Promise<PersonalActionLis
 /**
  * POST /personal-actions - Crear accion.
  */
-export async function createPersonalAction(payload: CreatePersonalActionPayload): Promise<PersonalActionListItem> {
+export async function createPersonalAction(
+  payload: CreatePersonalActionPayload,
+): Promise<PersonalActionListItem> {
   const res = await httpFetch('/personal-actions', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload),
   });
-  if (!res.ok) throw new Error(await extractApiErrorMessage(res, 'Error al crear accion de personal'));
+  if (!res.ok)
+    throw new Error(await extractApiErrorMessage(res, 'Error al crear accion de personal'));
   return res.json();
 }
 
@@ -559,20 +564,25 @@ export async function approvePersonalAction(id: number): Promise<PersonalActionL
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({}),
   });
-  if (!res.ok) throw new Error(await extractApiErrorMessage(res, 'Error al aprobar accion de personal'));
+  if (!res.ok)
+    throw new Error(await extractApiErrorMessage(res, 'Error al aprobar accion de personal'));
   return res.json();
 }
 
 /**
  * PATCH /personal-actions/:id/reject - Rechazar accion pendiente.
  */
-export async function rejectPersonalAction(id: number, motivo?: string): Promise<PersonalActionListItem> {
+export async function rejectPersonalAction(
+  id: number,
+  motivo?: string,
+): Promise<PersonalActionListItem> {
   const res = await httpFetch(`/personal-actions/${id}/reject`, {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ motivo: motivo ?? '' }),
   });
-  if (!res.ok) throw new Error(await extractApiErrorMessage(res, 'Error al rechazar accion de personal'));
+  if (!res.ok)
+    throw new Error(await extractApiErrorMessage(res, 'Error al rechazar accion de personal'));
   return res.json();
 }
 
@@ -589,7 +599,8 @@ export async function fetchAbsenceMovementsCatalog(
     idTipoAccionPersonal: String(idTipoAccionPersonal),
   });
   const res = await httpFetch(`/personal-actions/absence-movements?${qs.toString()}`);
-  if (!res.ok) throw new Error(await extractApiErrorMessage(res, 'Error al cargar movimientos de ausencias'));
+  if (!res.ok)
+    throw new Error(await extractApiErrorMessage(res, 'Error al cargar movimientos de ausencias'));
   return res.json();
 }
 
@@ -602,7 +613,8 @@ export async function fetchAbsenceEmployeesCatalog(
 ): Promise<AbsenceEmployeeCatalogItem[]> {
   const qs = new URLSearchParams({ idEmpresa: String(companyId) });
   const res = await httpFetch(`/personal-actions/absence-employees?${qs.toString()}`);
-  if (!res.ok) throw new Error(await extractApiErrorMessage(res, 'Error al cargar empleados de ausencias'));
+  if (!res.ok)
+    throw new Error(await extractApiErrorMessage(res, 'Error al cargar empleados de ausencias'));
   return res.json();
 }
 
@@ -619,7 +631,10 @@ export async function fetchAbsencePayrollsCatalog(
     idEmpleado: String(employeeId),
   });
   const res = await httpFetch(`/personal-actions/absence-payrolls?${qs.toString()}`);
-  if (!res.ok) throw new Error(await extractApiErrorMessage(res, 'Error al cargar planillas elegibles de ausencias'));
+  if (!res.ok)
+    throw new Error(
+      await extractApiErrorMessage(res, 'Error al cargar planillas elegibles de ausencias'),
+    );
   return res.json();
 }
 
@@ -627,14 +642,10 @@ export async function fetchAbsencePayrollsCatalog(
  * GET /personal-actions/ausencias/:id
  * Detalle completo de ausencia para edicion (incluye lineas).
  */
-export async function fetchAbsenceDetail(
-  id: number,
-): Promise<AbsenceDetailItem> {
+export async function fetchAbsenceDetail(id: number): Promise<AbsenceDetailItem> {
   const res = await httpFetch(`/personal-actions/ausencias/${id}`);
   if (!res.ok) {
-    throw new Error(
-      await extractApiErrorMessage(res, 'Error al cargar detalle de ausencia'),
-    );
+    throw new Error(await extractApiErrorMessage(res, 'Error al cargar detalle de ausencia'));
   }
   return res.json();
 }
@@ -652,9 +663,7 @@ export async function createAbsence(
     body: JSON.stringify(payload),
   });
   if (!res.ok) {
-    throw new Error(
-      await extractApiErrorMessage(res, 'Error al crear la ausencia'),
-    );
+    throw new Error(await extractApiErrorMessage(res, 'Error al crear la ausencia'));
   }
   return res.json();
 }
@@ -673,9 +682,7 @@ export async function updateAbsence(
     body: JSON.stringify(payload),
   });
   if (!res.ok) {
-    throw new Error(
-      await extractApiErrorMessage(res, 'Error al actualizar la ausencia'),
-    );
+    throw new Error(await extractApiErrorMessage(res, 'Error al actualizar la ausencia'));
   }
   return res.json();
 }
@@ -694,9 +701,7 @@ export async function advanceAbsenceState(
     body: JSON.stringify({ idEmpresa }),
   });
   if (!res.ok) {
-    throw new Error(
-      await extractApiErrorMessage(res, 'Error al avanzar estado de la ausencia'),
-    );
+    throw new Error(await extractApiErrorMessage(res, 'Error al avanzar estado de la ausencia'));
   }
   return res.json();
 }
@@ -716,9 +721,7 @@ export async function invalidateAbsence(
     body: JSON.stringify({ idEmpresa, motivo: motivo ?? '' }),
   });
   if (!res.ok) {
-    throw new Error(
-      await extractApiErrorMessage(res, 'Error al invalidar la ausencia'),
-    );
+    throw new Error(await extractApiErrorMessage(res, 'Error al invalidar la ausencia'));
   }
   return res.json();
 }
@@ -734,9 +737,7 @@ export async function fetchAbsenceAuditTrail(
   const qs = new URLSearchParams({ limit: String(limit) });
   const res = await httpFetch(`/personal-actions/ausencias/${id}/audit-trail?${qs}`);
   if (!res.ok) {
-    throw new Error(
-      await extractApiErrorMessage(res, 'Error al cargar bitacora de ausencia'),
-    );
+    throw new Error(await extractApiErrorMessage(res, 'Error al cargar bitacora de ausencia'));
   }
   return res.json();
 }
@@ -745,14 +746,10 @@ export async function fetchAbsenceAuditTrail(
  * GET /personal-actions/licencias/:id
  * Detalle completo de licencia para edicion (incluye lineas).
  */
-export async function fetchLicenseDetail(
-  id: number,
-): Promise<LicenseDetailItem> {
+export async function fetchLicenseDetail(id: number): Promise<LicenseDetailItem> {
   const res = await httpFetch(`/personal-actions/licencias/${id}`);
   if (!res.ok) {
-    throw new Error(
-      await extractApiErrorMessage(res, 'Error al cargar detalle de licencia'),
-    );
+    throw new Error(await extractApiErrorMessage(res, 'Error al cargar detalle de licencia'));
   }
   return res.json();
 }
@@ -770,9 +767,7 @@ export async function createLicense(
     body: JSON.stringify(payload),
   });
   if (!res.ok) {
-    throw new Error(
-      await extractApiErrorMessage(res, 'Error al crear la licencia'),
-    );
+    throw new Error(await extractApiErrorMessage(res, 'Error al crear la licencia'));
   }
   return res.json();
 }
@@ -791,9 +786,7 @@ export async function updateLicense(
     body: JSON.stringify(payload),
   });
   if (!res.ok) {
-    throw new Error(
-      await extractApiErrorMessage(res, 'Error al actualizar la licencia'),
-    );
+    throw new Error(await extractApiErrorMessage(res, 'Error al actualizar la licencia'));
   }
   return res.json();
 }
@@ -802,18 +795,14 @@ export async function updateLicense(
  * PATCH /personal-actions/licencias/:id/advance
  * Avanza la licencia al siguiente estado operativo.
  */
-export async function advanceLicenseState(
-  id: number,
-): Promise<PersonalActionListItem> {
+export async function advanceLicenseState(id: number): Promise<PersonalActionListItem> {
   const res = await httpFetch(`/personal-actions/licencias/${id}/advance`, {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({}),
   });
   if (!res.ok) {
-    throw new Error(
-      await extractApiErrorMessage(res, 'Error al avanzar estado de la licencia'),
-    );
+    throw new Error(await extractApiErrorMessage(res, 'Error al avanzar estado de la licencia'));
   }
   return res.json();
 }
@@ -832,9 +821,7 @@ export async function invalidateLicense(
     body: JSON.stringify({ motivo: motivo ?? '' }),
   });
   if (!res.ok) {
-    throw new Error(
-      await extractApiErrorMessage(res, 'Error al invalidar la licencia'),
-    );
+    throw new Error(await extractApiErrorMessage(res, 'Error al invalidar la licencia'));
   }
   return res.json();
 }
@@ -850,9 +837,7 @@ export async function fetchLicenseAuditTrail(
   const qs = new URLSearchParams({ limit: String(limit) });
   const res = await httpFetch(`/personal-actions/licencias/${id}/audit-trail?${qs}`);
   if (!res.ok) {
-    throw new Error(
-      await extractApiErrorMessage(res, 'Error al cargar bitacora de licencia'),
-    );
+    throw new Error(await extractApiErrorMessage(res, 'Error al cargar bitacora de licencia'));
   }
   return res.json();
 }
@@ -861,14 +846,10 @@ export async function fetchLicenseAuditTrail(
  * GET /personal-actions/incapacidades/:id
  * Detalle completo de incapacidad para edicion (incluye lineas).
  */
-export async function fetchDisabilityDetail(
-  id: number,
-): Promise<DisabilityDetailItem> {
+export async function fetchDisabilityDetail(id: number): Promise<DisabilityDetailItem> {
   const res = await httpFetch(`/personal-actions/incapacidades/${id}`);
   if (!res.ok) {
-    throw new Error(
-      await extractApiErrorMessage(res, 'Error al cargar detalle de incapacidad'),
-    );
+    throw new Error(await extractApiErrorMessage(res, 'Error al cargar detalle de incapacidad'));
   }
   return res.json();
 }
@@ -886,9 +867,7 @@ export async function createDisability(
     body: JSON.stringify(payload),
   });
   if (!res.ok) {
-    throw new Error(
-      await extractApiErrorMessage(res, 'Error al crear la incapacidad'),
-    );
+    throw new Error(await extractApiErrorMessage(res, 'Error al crear la incapacidad'));
   }
   return res.json();
 }
@@ -907,9 +886,7 @@ export async function updateDisability(
     body: JSON.stringify(payload),
   });
   if (!res.ok) {
-    throw new Error(
-      await extractApiErrorMessage(res, 'Error al actualizar la incapacidad'),
-    );
+    throw new Error(await extractApiErrorMessage(res, 'Error al actualizar la incapacidad'));
   }
   return res.json();
 }
@@ -918,18 +895,14 @@ export async function updateDisability(
  * PATCH /personal-actions/incapacidades/:id/advance
  * Avanza la incapacidad al siguiente estado operativo.
  */
-export async function advanceDisabilityState(
-  id: number,
-): Promise<PersonalActionListItem> {
+export async function advanceDisabilityState(id: number): Promise<PersonalActionListItem> {
   const res = await httpFetch(`/personal-actions/incapacidades/${id}/advance`, {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({}),
   });
   if (!res.ok) {
-    throw new Error(
-      await extractApiErrorMessage(res, 'Error al avanzar estado de la incapacidad'),
-    );
+    throw new Error(await extractApiErrorMessage(res, 'Error al avanzar estado de la incapacidad'));
   }
   return res.json();
 }
@@ -948,9 +921,7 @@ export async function invalidateDisability(
     body: JSON.stringify({ motivo: motivo ?? '' }),
   });
   if (!res.ok) {
-    throw new Error(
-      await extractApiErrorMessage(res, 'Error al invalidar la incapacidad'),
-    );
+    throw new Error(await extractApiErrorMessage(res, 'Error al invalidar la incapacidad'));
   }
   return res.json();
 }
@@ -966,9 +937,7 @@ export async function fetchDisabilityAuditTrail(
   const qs = new URLSearchParams({ limit: String(limit) });
   const res = await httpFetch(`/personal-actions/incapacidades/${id}/audit-trail?${qs}`);
   if (!res.ok) {
-    throw new Error(
-      await extractApiErrorMessage(res, 'Error al cargar bitacora de incapacidad'),
-    );
+    throw new Error(await extractApiErrorMessage(res, 'Error al cargar bitacora de incapacidad'));
   }
   return res.json();
 }
@@ -977,14 +946,10 @@ export async function fetchDisabilityAuditTrail(
  * GET /personal-actions/bonificaciones/:id
  * Detalle completo de bonificacion para edicion (incluye lineas).
  */
-export async function fetchBonusDetail(
-  id: number,
-): Promise<BonusDetailItem> {
+export async function fetchBonusDetail(id: number): Promise<BonusDetailItem> {
   const res = await httpFetch(`/personal-actions/bonificaciones/${id}`);
   if (!res.ok) {
-    throw new Error(
-      await extractApiErrorMessage(res, 'Error al cargar detalle de bonificacion'),
-    );
+    throw new Error(await extractApiErrorMessage(res, 'Error al cargar detalle de bonificacion'));
   }
   return res.json();
 }
@@ -1002,9 +967,7 @@ export async function createBonus(
     body: JSON.stringify(payload),
   });
   if (!res.ok) {
-    throw new Error(
-      await extractApiErrorMessage(res, 'Error al crear la bonificacion'),
-    );
+    throw new Error(await extractApiErrorMessage(res, 'Error al crear la bonificacion'));
   }
   return res.json();
 }
@@ -1023,9 +986,7 @@ export async function updateBonus(
     body: JSON.stringify(payload),
   });
   if (!res.ok) {
-    throw new Error(
-      await extractApiErrorMessage(res, 'Error al actualizar la bonificacion'),
-    );
+    throw new Error(await extractApiErrorMessage(res, 'Error al actualizar la bonificacion'));
   }
   return res.json();
 }
@@ -1034,9 +995,7 @@ export async function updateBonus(
  * PATCH /personal-actions/bonificaciones/:id/advance
  * Avanza la bonificacion al siguiente estado operativo.
  */
-export async function advanceBonusState(
-  id: number,
-): Promise<PersonalActionListItem> {
+export async function advanceBonusState(id: number): Promise<PersonalActionListItem> {
   const res = await httpFetch(`/personal-actions/bonificaciones/${id}/advance`, {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
@@ -1064,9 +1023,7 @@ export async function invalidateBonus(
     body: JSON.stringify({ motivo: motivo ?? '' }),
   });
   if (!res.ok) {
-    throw new Error(
-      await extractApiErrorMessage(res, 'Error al invalidar la bonificacion'),
-    );
+    throw new Error(await extractApiErrorMessage(res, 'Error al invalidar la bonificacion'));
   }
   return res.json();
 }
@@ -1082,9 +1039,7 @@ export async function fetchBonusAuditTrail(
   const qs = new URLSearchParams({ limit: String(limit) });
   const res = await httpFetch(`/personal-actions/bonificaciones/${id}/audit-trail?${qs}`);
   if (!res.ok) {
-    throw new Error(
-      await extractApiErrorMessage(res, 'Error al cargar bitacora de bonificacion'),
-    );
+    throw new Error(await extractApiErrorMessage(res, 'Error al cargar bitacora de bonificacion'));
   }
   return res.json();
 }
@@ -1093,14 +1048,10 @@ export async function fetchBonusAuditTrail(
  * GET /personal-actions/horas-extras/:id
  * Detalle completo de horas extra para edicion (incluye lineas).
  */
-export async function fetchOvertimeDetail(
-  id: number,
-): Promise<OvertimeDetailItem> {
+export async function fetchOvertimeDetail(id: number): Promise<OvertimeDetailItem> {
   const res = await httpFetch(`/personal-actions/horas-extras/${id}`);
   if (!res.ok) {
-    throw new Error(
-      await extractApiErrorMessage(res, 'Error al cargar detalle de horas extra'),
-    );
+    throw new Error(await extractApiErrorMessage(res, 'Error al cargar detalle de horas extra'));
   }
   return res.json();
 }
@@ -1118,9 +1069,7 @@ export async function createOvertime(
     body: JSON.stringify(payload),
   });
   if (!res.ok) {
-    throw new Error(
-      await extractApiErrorMessage(res, 'Error al crear horas extra'),
-    );
+    throw new Error(await extractApiErrorMessage(res, 'Error al crear horas extra'));
   }
   return res.json();
 }
@@ -1139,9 +1088,7 @@ export async function updateOvertime(
     body: JSON.stringify(payload),
   });
   if (!res.ok) {
-    throw new Error(
-      await extractApiErrorMessage(res, 'Error al actualizar horas extra'),
-    );
+    throw new Error(await extractApiErrorMessage(res, 'Error al actualizar horas extra'));
   }
   return res.json();
 }
@@ -1150,18 +1097,14 @@ export async function updateOvertime(
  * PATCH /personal-actions/horas-extras/:id/advance
  * Avanza la accion de horas extra al siguiente estado operativo.
  */
-export async function advanceOvertimeState(
-  id: number,
-): Promise<PersonalActionListItem> {
+export async function advanceOvertimeState(id: number): Promise<PersonalActionListItem> {
   const res = await httpFetch(`/personal-actions/horas-extras/${id}/advance`, {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({}),
   });
   if (!res.ok) {
-    throw new Error(
-      await extractApiErrorMessage(res, 'Error al avanzar estado de horas extra'),
-    );
+    throw new Error(await extractApiErrorMessage(res, 'Error al avanzar estado de horas extra'));
   }
   return res.json();
 }
@@ -1180,9 +1123,7 @@ export async function invalidateOvertime(
     body: JSON.stringify({ motivo: motivo ?? '' }),
   });
   if (!res.ok) {
-    throw new Error(
-      await extractApiErrorMessage(res, 'Error al invalidar horas extra'),
-    );
+    throw new Error(await extractApiErrorMessage(res, 'Error al invalidar horas extra'));
   }
   return res.json();
 }
@@ -1198,9 +1139,7 @@ export async function fetchOvertimeAuditTrail(
   const qs = new URLSearchParams({ limit: String(limit) });
   const res = await httpFetch(`/personal-actions/horas-extras/${id}/audit-trail?${qs}`);
   if (!res.ok) {
-    throw new Error(
-      await extractApiErrorMessage(res, 'Error al cargar bitacora de horas extra'),
-    );
+    throw new Error(await extractApiErrorMessage(res, 'Error al cargar bitacora de horas extra'));
   }
   return res.json();
 }
@@ -1209,14 +1148,10 @@ export async function fetchOvertimeAuditTrail(
  * GET /personal-actions/retenciones/:id
  * Detalle completo de retencion para edicion (incluye lineas).
  */
-export async function fetchRetentionDetail(
-  id: number,
-): Promise<RetentionDetailItem> {
+export async function fetchRetentionDetail(id: number): Promise<RetentionDetailItem> {
   const res = await httpFetch(`/personal-actions/retenciones/${id}`);
   if (!res.ok) {
-    throw new Error(
-      await extractApiErrorMessage(res, 'Error al cargar detalle de retencion'),
-    );
+    throw new Error(await extractApiErrorMessage(res, 'Error al cargar detalle de retencion'));
   }
   return res.json();
 }
@@ -1234,9 +1169,7 @@ export async function createRetention(
     body: JSON.stringify(payload),
   });
   if (!res.ok) {
-    throw new Error(
-      await extractApiErrorMessage(res, 'Error al crear retencion'),
-    );
+    throw new Error(await extractApiErrorMessage(res, 'Error al crear retencion'));
   }
   return res.json();
 }
@@ -1255,9 +1188,7 @@ export async function updateRetention(
     body: JSON.stringify(payload),
   });
   if (!res.ok) {
-    throw new Error(
-      await extractApiErrorMessage(res, 'Error al actualizar retencion'),
-    );
+    throw new Error(await extractApiErrorMessage(res, 'Error al actualizar retencion'));
   }
   return res.json();
 }
@@ -1266,18 +1197,14 @@ export async function updateRetention(
  * PATCH /personal-actions/retenciones/:id/advance
  * Avanza la accion de retencion al siguiente estado operativo.
  */
-export async function advanceRetentionState(
-  id: number,
-): Promise<PersonalActionListItem> {
+export async function advanceRetentionState(id: number): Promise<PersonalActionListItem> {
   const res = await httpFetch(`/personal-actions/retenciones/${id}/advance`, {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({}),
   });
   if (!res.ok) {
-    throw new Error(
-      await extractApiErrorMessage(res, 'Error al avanzar estado de retencion'),
-    );
+    throw new Error(await extractApiErrorMessage(res, 'Error al avanzar estado de retencion'));
   }
   return res.json();
 }
@@ -1296,9 +1223,7 @@ export async function invalidateRetention(
     body: JSON.stringify({ motivo: motivo ?? '' }),
   });
   if (!res.ok) {
-    throw new Error(
-      await extractApiErrorMessage(res, 'Error al invalidar retencion'),
-    );
+    throw new Error(await extractApiErrorMessage(res, 'Error al invalidar retencion'));
   }
   return res.json();
 }
@@ -1314,9 +1239,7 @@ export async function fetchRetentionAuditTrail(
   const qs = new URLSearchParams({ limit: String(limit) });
   const res = await httpFetch(`/personal-actions/retenciones/${id}/audit-trail?${qs}`);
   if (!res.ok) {
-    throw new Error(
-      await extractApiErrorMessage(res, 'Error al cargar bitacora de retencion'),
-    );
+    throw new Error(await extractApiErrorMessage(res, 'Error al cargar bitacora de retencion'));
   }
   return res.json();
 }
@@ -1325,14 +1248,10 @@ export async function fetchRetentionAuditTrail(
  * GET /personal-actions/descuentos/:id
  * Detalle completo de descuento para edicion (incluye lineas).
  */
-export async function fetchDiscountDetail(
-  id: number,
-): Promise<DiscountDetailItem> {
+export async function fetchDiscountDetail(id: number): Promise<DiscountDetailItem> {
   const res = await httpFetch(`/personal-actions/descuentos/${id}`);
   if (!res.ok) {
-    throw new Error(
-      await extractApiErrorMessage(res, 'Error al cargar detalle de descuento'),
-    );
+    throw new Error(await extractApiErrorMessage(res, 'Error al cargar detalle de descuento'));
   }
   return res.json();
 }
@@ -1350,9 +1269,7 @@ export async function createDiscount(
     body: JSON.stringify(payload),
   });
   if (!res.ok) {
-    throw new Error(
-      await extractApiErrorMessage(res, 'Error al crear descuento'),
-    );
+    throw new Error(await extractApiErrorMessage(res, 'Error al crear descuento'));
   }
   return res.json();
 }
@@ -1371,9 +1288,7 @@ export async function updateDiscount(
     body: JSON.stringify(payload),
   });
   if (!res.ok) {
-    throw new Error(
-      await extractApiErrorMessage(res, 'Error al actualizar descuento'),
-    );
+    throw new Error(await extractApiErrorMessage(res, 'Error al actualizar descuento'));
   }
   return res.json();
 }
@@ -1382,18 +1297,14 @@ export async function updateDiscount(
  * PATCH /personal-actions/descuentos/:id/advance
  * Avanza la accion de descuento al siguiente estado operativo.
  */
-export async function advanceDiscountState(
-  id: number,
-): Promise<PersonalActionListItem> {
+export async function advanceDiscountState(id: number): Promise<PersonalActionListItem> {
   const res = await httpFetch(`/personal-actions/descuentos/${id}/advance`, {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({}),
   });
   if (!res.ok) {
-    throw new Error(
-      await extractApiErrorMessage(res, 'Error al avanzar estado de descuento'),
-    );
+    throw new Error(await extractApiErrorMessage(res, 'Error al avanzar estado de descuento'));
   }
   return res.json();
 }
@@ -1412,9 +1323,7 @@ export async function invalidateDiscount(
     body: JSON.stringify({ motivo: motivo ?? '' }),
   });
   if (!res.ok) {
-    throw new Error(
-      await extractApiErrorMessage(res, 'Error al invalidar descuento'),
-    );
+    throw new Error(await extractApiErrorMessage(res, 'Error al invalidar descuento'));
   }
   return res.json();
 }
@@ -1430,9 +1339,7 @@ export async function fetchDiscountAuditTrail(
   const qs = new URLSearchParams({ limit: String(limit) });
   const res = await httpFetch(`/personal-actions/descuentos/${id}/audit-trail?${qs}`);
   if (!res.ok) {
-    throw new Error(
-      await extractApiErrorMessage(res, 'Error al cargar bitacora de descuento'),
-    );
+    throw new Error(await extractApiErrorMessage(res, 'Error al cargar bitacora de descuento'));
   }
   return res.json();
 }
@@ -1441,14 +1348,10 @@ export async function fetchDiscountAuditTrail(
  * GET /personal-actions/vacaciones/:id
  * Detalle completo de vacaciones para edicion (incluye fechas).
  */
-export async function fetchVacationDetail(
-  id: number,
-): Promise<VacationDetailItem> {
+export async function fetchVacationDetail(id: number): Promise<VacationDetailItem> {
   const res = await httpFetch(`/personal-actions/vacaciones/${id}`);
   if (!res.ok) {
-    throw new Error(
-      await extractApiErrorMessage(res, 'Error al cargar detalle de vacaciones'),
-    );
+    throw new Error(await extractApiErrorMessage(res, 'Error al cargar detalle de vacaciones'));
   }
   return res.json();
 }
@@ -1467,9 +1370,7 @@ export async function fetchVacationAvailability(
   });
   const res = await httpFetch(`/personal-actions/vacaciones/availability?${qs}`);
   if (!res.ok) {
-    throw new Error(
-      await extractApiErrorMessage(res, 'Error al cargar saldo de vacaciones'),
-    );
+    throw new Error(await extractApiErrorMessage(res, 'Error al cargar saldo de vacaciones'));
   }
   return res.json();
 }
@@ -1482,9 +1383,7 @@ export async function fetchVacationHolidays(idEmpresa?: number): Promise<Vacatio
   const qs = idEmpresa ? `?idEmpresa=${idEmpresa}` : '';
   const res = await httpFetch(`/personal-actions/vacaciones/holidays${qs}`);
   if (!res.ok) {
-    throw new Error(
-      await extractApiErrorMessage(res, 'Error al cargar feriados de planilla'),
-    );
+    throw new Error(await extractApiErrorMessage(res, 'Error al cargar feriados de planilla'));
   }
   return res.json();
 }
@@ -1500,9 +1399,7 @@ export async function fetchIncreaseAuditTrail(
   const qs = new URLSearchParams({ limit: String(limit) });
   const res = await httpFetch(`/personal-actions/aumentos/${id}/audit-trail?${qs}`);
   if (!res.ok) {
-    throw new Error(
-      await extractApiErrorMessage(res, 'Error al cargar bitacora de aumento'),
-    );
+    throw new Error(await extractApiErrorMessage(res, 'Error al cargar bitacora de aumento'));
   }
   return res.json();
 }
@@ -1521,9 +1418,7 @@ export async function invalidateIncrease(
     body: JSON.stringify({ motivo: motivo ?? '' }),
   });
   if (!res.ok) {
-    throw new Error(
-      await extractApiErrorMessage(res, 'Error al invalidar aumento'),
-    );
+    throw new Error(await extractApiErrorMessage(res, 'Error al invalidar aumento'));
   }
   return res.json();
 }
@@ -1531,18 +1426,14 @@ export async function invalidateIncrease(
  * PATCH /personal-actions/aumentos/:id/advance
  * Avanza el aumento al siguiente estado operativo.
  */
-export async function advanceIncreaseState(
-  id: number,
-): Promise<PersonalActionListItem> {
+export async function advanceIncreaseState(id: number): Promise<PersonalActionListItem> {
   const res = await httpFetch(`/personal-actions/aumentos/${id}/advance`, {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({}),
   });
   if (!res.ok) {
-    throw new Error(
-      await extractApiErrorMessage(res, 'Error al avanzar estado de aumento'),
-    );
+    throw new Error(await extractApiErrorMessage(res, 'Error al avanzar estado de aumento'));
   }
   return res.json();
 }
@@ -1560,9 +1451,7 @@ export async function updateIncrease(
     body: JSON.stringify(payload),
   });
   if (!res.ok) {
-    throw new Error(
-      await extractApiErrorMessage(res, 'Error al actualizar aumento'),
-    );
+    throw new Error(await extractApiErrorMessage(res, 'Error al actualizar aumento'));
   }
   return res.json();
 }
@@ -1579,9 +1468,7 @@ export async function createIncrease(
     body: JSON.stringify(payload),
   });
   if (!res.ok) {
-    throw new Error(
-      await extractApiErrorMessage(res, 'Error al crear aumento'),
-    );
+    throw new Error(await extractApiErrorMessage(res, 'Error al crear aumento'));
   }
   return res.json();
 }
@@ -1589,14 +1476,10 @@ export async function createIncrease(
  * GET /personal-actions/aumentos/:id
  * Detalle completo de aumento para edicion.
  */
-export async function fetchIncreaseDetail(
-  id: number,
-): Promise<IncreaseDetailItem> {
+export async function fetchIncreaseDetail(id: number): Promise<IncreaseDetailItem> {
   const res = await httpFetch(`/personal-actions/aumentos/${id}`);
   if (!res.ok) {
-    throw new Error(
-      await extractApiErrorMessage(res, 'Error al cargar detalle de aumento'),
-    );
+    throw new Error(await extractApiErrorMessage(res, 'Error al cargar detalle de aumento'));
   }
   return res.json();
 }
@@ -1618,9 +1501,7 @@ export async function fetchVacationBookedDates(
   }
   const res = await httpFetch(`/personal-actions/vacaciones/booked-dates?${qs.toString()}`);
   if (!res.ok) {
-    throw new Error(
-      await extractApiErrorMessage(res, 'Error al cargar fechas reservadas'),
-    );
+    throw new Error(await extractApiErrorMessage(res, 'Error al cargar fechas reservadas'));
   }
   return res.json();
 }
@@ -1638,9 +1519,7 @@ export async function createVacation(
     body: JSON.stringify(payload),
   });
   if (!res.ok) {
-    throw new Error(
-      await extractApiErrorMessage(res, 'Error al crear vacaciones'),
-    );
+    throw new Error(await extractApiErrorMessage(res, 'Error al crear vacaciones'));
   }
   return res.json();
 }
@@ -1659,9 +1538,7 @@ export async function updateVacation(
     body: JSON.stringify(payload),
   });
   if (!res.ok) {
-    throw new Error(
-      await extractApiErrorMessage(res, 'Error al actualizar vacaciones'),
-    );
+    throw new Error(await extractApiErrorMessage(res, 'Error al actualizar vacaciones'));
   }
   return res.json();
 }
@@ -1670,18 +1547,14 @@ export async function updateVacation(
  * PATCH /personal-actions/vacaciones/:id/advance
  * Avanza la accion de vacaciones al siguiente estado operativo.
  */
-export async function advanceVacationState(
-  id: number,
-): Promise<PersonalActionListItem> {
+export async function advanceVacationState(id: number): Promise<PersonalActionListItem> {
   const res = await httpFetch(`/personal-actions/vacaciones/${id}/advance`, {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({}),
   });
   if (!res.ok) {
-    throw new Error(
-      await extractApiErrorMessage(res, 'Error al avanzar estado de vacaciones'),
-    );
+    throw new Error(await extractApiErrorMessage(res, 'Error al avanzar estado de vacaciones'));
   }
   return res.json();
 }
@@ -1700,9 +1573,7 @@ export async function invalidateVacation(
     body: JSON.stringify({ motivo: motivo ?? '' }),
   });
   if (!res.ok) {
-    throw new Error(
-      await extractApiErrorMessage(res, 'Error al invalidar vacaciones'),
-    );
+    throw new Error(await extractApiErrorMessage(res, 'Error al invalidar vacaciones'));
   }
   return res.json();
 }
@@ -1718,9 +1589,7 @@ export async function fetchVacationAuditTrail(
   const qs = new URLSearchParams({ limit: String(limit) });
   const res = await httpFetch(`/personal-actions/vacaciones/${id}/audit-trail?${qs}`);
   if (!res.ok) {
-    throw new Error(
-      await extractApiErrorMessage(res, 'Error al cargar bitacora de vacaciones'),
-    );
+    throw new Error(await extractApiErrorMessage(res, 'Error al cargar bitacora de vacaciones'));
   }
   return res.json();
 }

@@ -9,6 +9,7 @@ vi.mock('../config/api', () => ({
 }));
 
 import { httpFetch } from '../interceptors/httpInterceptor';
+
 import {
   commitCompanyLogo,
   createCompany,
@@ -69,8 +70,21 @@ describe('companies api', () => {
   it('uploadCompanyLogoTemp and commitCompanyLogo should return backend payloads', async () => {
     const file = new File(['x'], 'logo.png', { type: 'image/png' });
     mockHttpFetch
-      .mockResolvedValueOnce(okJson({ tempFileName: 'tmp.png', tempPath: '/tmp/tmp.png', size: 12, mimeType: 'image/png' }))
-      .mockResolvedValueOnce(okJson({ logoFileName: 'logo.png', logoPath: '/logos/logo.png', logoUrl: '/logos/logo.png' }));
+      .mockResolvedValueOnce(
+        okJson({
+          tempFileName: 'tmp.png',
+          tempPath: '/tmp/tmp.png',
+          size: 12,
+          mimeType: 'image/png',
+        }),
+      )
+      .mockResolvedValueOnce(
+        okJson({
+          logoFileName: 'logo.png',
+          logoPath: '/logos/logo.png',
+          logoUrl: '/logos/logo.png',
+        }),
+      );
 
     const temp = await uploadCompanyLogoTemp(file);
     const committed = await commitCompanyLogo(2, temp.tempFileName);

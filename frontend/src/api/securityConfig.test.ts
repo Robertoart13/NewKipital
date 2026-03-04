@@ -5,7 +5,17 @@ vi.mock('../interceptors/httpInterceptor', () => ({
 }));
 
 import { httpFetch } from '../interceptors/httpInterceptor';
-import { fetchPermissionsCatalogMode, fetchConfigPermissions, createConfigPermission, fetchRoles, fetchUsers, fetchApps, fetchUserAuditTrail, createRole } from './securityConfig';
+
+import {
+  fetchPermissionsCatalogMode,
+  fetchConfigPermissions,
+  createConfigPermission,
+  fetchRoles,
+  fetchUsers,
+  fetchApps,
+  fetchUserAuditTrail,
+  createRole,
+} from './securityConfig';
 
 const mockHttpFetch = vi.mocked(httpFetch);
 
@@ -30,9 +40,14 @@ describe('securityConfig api', () => {
   });
 
   it('createConfigPermission sends POST', async () => {
-    mockHttpFetch.mockResolvedValue(okJson({ id: 1, codigo: 'test', nombre: 'Test', modulo: 'test' }));
+    mockHttpFetch.mockResolvedValue(
+      okJson({ id: 1, codigo: 'test', nombre: 'Test', modulo: 'test' }),
+    );
     await createConfigPermission({ codigo: 'test', nombre: 'Test', modulo: 'test' });
-    expect(mockHttpFetch).toHaveBeenCalledWith('/config/permissions', expect.objectContaining({ method: 'POST' }));
+    expect(mockHttpFetch).toHaveBeenCalledWith(
+      '/config/permissions',
+      expect.objectContaining({ method: 'POST' }),
+    );
   });
 
   it('fetchRoles includes includeInactive param', async () => {
@@ -59,7 +74,10 @@ describe('securityConfig api', () => {
   it('createRole sends POST with appCode', async () => {
     mockHttpFetch.mockResolvedValue(okJson({ id: 1 }));
     await createRole({ codigo: 'TEST', nombre: 'Test', appCode: 'kpital' });
-    expect(mockHttpFetch).toHaveBeenCalledWith('/config/roles', expect.objectContaining({ method: 'POST' }));
+    expect(mockHttpFetch).toHaveBeenCalledWith(
+      '/config/roles',
+      expect.objectContaining({ method: 'POST' }),
+    );
   });
 
   it('fetchUserAuditTrail uses limit param', async () => {
@@ -70,12 +88,18 @@ describe('securityConfig api', () => {
   });
 
   it('throws on error response with backend message', async () => {
-    mockHttpFetch.mockResolvedValue({ ok: false, json: vi.fn().mockResolvedValue({ message: 'Forbidden' }) } as any);
+    mockHttpFetch.mockResolvedValue({
+      ok: false,
+      json: vi.fn().mockResolvedValue({ message: 'Forbidden' }),
+    } as any);
     await expect(fetchApps()).rejects.toThrow('Forbidden');
   });
 
   it('throws with array message concatenated', async () => {
-    mockHttpFetch.mockResolvedValue({ ok: false, json: vi.fn().mockResolvedValue({ message: ['Error 1', 'Error 2'] }) } as any);
+    mockHttpFetch.mockResolvedValue({
+      ok: false,
+      json: vi.fn().mockResolvedValue({ message: ['Error 1', 'Error 2'] }),
+    } as any);
     await expect(fetchRoles()).rejects.toThrow('Error 1, Error 2');
   });
 });

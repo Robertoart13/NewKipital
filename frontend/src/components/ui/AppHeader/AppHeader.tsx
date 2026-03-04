@@ -1,8 +1,9 @@
 import { Layout } from 'antd';
-import { Logo } from './Logo';
-import { HeaderActions } from './HeaderActions';
-import { MainMenu } from './MainMenu';
+
 import styles from './AppHeader.module.css';
+import { HeaderActions } from './HeaderActions';
+import { Logo } from './Logo';
+import { MainMenu } from './MainMenu';
 
 const { Header } = Layout;
 
@@ -25,11 +26,7 @@ interface AppHeaderProps {
  * Nivel 1: Logo + nombre | Notificaciones + Avatar
  * Nivel 2: Menú horizontal con iconos y dropdowns
  */
-export function AppHeader({
-  menuItems,
-  iconMap,
-  userName = 'Usuario',
-}: AppHeaderProps) {
+export function AppHeader({ menuItems, iconMap, userName = 'Usuario' }: AppHeaderProps) {
   return (
     <Header className={styles.header} style={{ padding: 0, height: 'auto', lineHeight: 'normal' }}>
       <div className={styles.level1}>

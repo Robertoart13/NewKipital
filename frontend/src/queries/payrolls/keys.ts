@@ -8,6 +8,5 @@ export const payrollKeys = {
   list: (companyId: string, period?: string) =>
     [...payrollKeys.lists(), companyId, period ?? ''] as const,
   details: () => [...payrollKeys.all, 'detail'] as const,
-  detail: (companyId: string, id: string) =>
-    [...payrollKeys.details(), companyId, id] as const,
+  detail: (companyId: string, id: string) => [...payrollKeys.details(), companyId, id] as const,
 };

@@ -2,7 +2,7 @@ import { createCipheriv, createDecipheriv, createHash, createHmac, randomBytes }
 
 import { Injectable } from '@nestjs/common';
 
-import type { ConfigService } from '@nestjs/config';
+import { ConfigService } from '@nestjs/config';
 
 const ENCRYPTION_PREFIX = 'enc:v1';
 const DEFAULT_KID = 'default';

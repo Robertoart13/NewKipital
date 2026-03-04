@@ -16,8 +16,8 @@ import { PayrollArticle } from './entities/payroll-article.entity';
 
 import type { CreatePayrollArticleDto } from './dto/create-payroll-article.dto';
 import type { UpdatePayrollArticleDto } from './dto/update-payroll-article.dto';
-import type { AuditOutboxService } from '../integration/audit-outbox.service';
-import type { Repository } from 'typeorm';
+import { AuditOutboxService } from '../integration/audit-outbox.service';
+import { Repository } from 'typeorm';
 
 type AllowedAccountMapping = {
   id: number;

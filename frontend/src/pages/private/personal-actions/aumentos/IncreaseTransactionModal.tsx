@@ -1,4 +1,15 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import {
+  BankOutlined,
+  CalendarOutlined,
+  CloseOutlined,
+  ClockCircleOutlined,
+  DollarCircleOutlined,
+  IdcardOutlined,
+  MailOutlined,
+  QuestionCircleOutlined,
+  SearchOutlined,
+  UserOutlined,
+} from '@ant-design/icons';
 import {
   Alert,
   App as AntdApp,
@@ -24,32 +35,23 @@ import {
   Tooltip,
   Typography,
 } from 'antd';
-import type { ColumnsType } from 'antd/es/table';
-import {
-  BankOutlined,
-  CalendarOutlined,
-  CloseOutlined,
-  ClockCircleOutlined,
-  DollarCircleOutlined,
-  IdcardOutlined,
-  MailOutlined,
-  QuestionCircleOutlined,
-  SearchOutlined,
-  UserOutlined,
-} from '@ant-design/icons';
 import dayjs, { type Dayjs } from 'dayjs';
-import type { PayrollListItem } from '../../../../api/payroll';
+import { useEffect, useMemo, useRef, useState } from 'react';
+
+import { fetchAbsencePayrollsCatalog } from '../../../../api/personalActions';
+import { useMoneyFieldFormatter } from '../../../../hooks/useMoneyFieldFormatter';
+import { formatDateTime12h } from '../../../../lib/formatDate';
+import { EMPLOYEE_MONEY_MAX_DIGITS } from '../../../../lib/moneyInputSanitizer';
+import sharedStyles from '../../configuration/UsersManagementPage.module.css';
+
 import type { CatalogPayPeriod } from '../../../../api/catalogs';
+import type { PayrollListItem } from '../../../../api/payroll';
 import type {
   AbsenceMovementCatalogItem,
   IncreaseCalculationMethod,
   PersonalActionAuditTrailItem,
 } from '../../../../api/personalActions';
-import { fetchAbsencePayrollsCatalog } from '../../../../api/personalActions';
-import sharedStyles from '../../configuration/UsersManagementPage.module.css';
-import { EMPLOYEE_MONEY_MAX_DIGITS } from '../../../../lib/moneyInputSanitizer';
-import { useMoneyFieldFormatter } from '../../../../hooks/useMoneyFieldFormatter';
-import { formatDateTime12h } from '../../../../lib/formatDate';
+import type { ColumnsType } from 'antd/es/table';
 
 export interface IncreaseTransactionLine {
   payrollId?: number;
@@ -141,24 +143,41 @@ function round2(value: number): number {
   return Number(value.toFixed(2));
 }
 
-function calculateSalaryByPeriod(salaryBase: number, payPeriodId?: number | null, jornada?: string | null): number {
+function calculateSalaryByPeriod(
+  salaryBase: number,
+  payPeriodId?: number | null,
+  jornada?: string | null,
+): number {
   const id = Number(payPeriodId);
   const isByHours = (jornada ?? '').trim().toLowerCase() === 'por horas';
   if (isByHours && (id === 8 || id === 11)) return 0;
   switch (id) {
-    case 8: return salaryBase / 4;
-    case 9: return salaryBase / 2;
-    case 10: return salaryBase;
-    case 11: return salaryBase / 2;
-    case 12: return salaryBase / 30;
-    case 13: return salaryBase * 3;
-    case 14: return salaryBase * 6;
-    case 15: return salaryBase * 12;
-    default: return salaryBase;
+    case 8:
+      return salaryBase / 4;
+    case 9:
+      return salaryBase / 2;
+    case 10:
+      return salaryBase;
+    case 11:
+      return salaryBase / 2;
+    case 12:
+      return salaryBase / 30;
+    case 13:
+      return salaryBase * 3;
+    case 14:
+      return salaryBase * 6;
+    case 15:
+      return salaryBase * 12;
+    default:
+      return salaryBase;
   }
 }
 
-function calculateHourValue(salaryBase: number, payPeriodId?: number | null, jornada?: string | null): number {
+function calculateHourValue(
+  salaryBase: number,
+  payPeriodId?: number | null,
+  jornada?: string | null,
+): number {
   const id = Number(payPeriodId);
   const isByHours = (jornada ?? '').trim().toLowerCase() === 'por horas';
   if (isByHours && (id === 8 || id === 11)) return salaryBase;
@@ -170,15 +189,24 @@ function calculatePeriodHours(payPeriodId?: number | null, jornada?: string | nu
   const isByHours = (jornada ?? '').trim().toLowerCase() === 'por horas';
   if (isByHours && (id === 8 || id === 11)) return 0;
   switch (id) {
-    case 8: return 48;
-    case 9: return 96;
-    case 10: return 192;
-    case 11: return 96;
-    case 12: return 10;
-    case 13: return 576;
-    case 14: return 1152;
-    case 15: return 2304;
-    default: return 192;
+    case 8:
+      return 48;
+    case 9:
+      return 96;
+    case 10:
+      return 192;
+    case 11:
+      return 96;
+    case 12:
+      return 10;
+    case 13:
+      return 576;
+    case 14:
+      return 1152;
+    case 15:
+      return 2304;
+    default:
+      return 192;
   }
 }
 
@@ -232,9 +260,7 @@ export function IncreaseTransactionModal({
         ...buildEmptyLine(),
         ...initialDraft.line,
         montoInput:
-          initialDraft.line.monto == null
-            ? ''
-            : String(Math.trunc(initialDraft.line.monto)),
+          initialDraft.line.monto == null ? '' : String(Math.trunc(initialDraft.line.monto)),
       });
       return;
     }
@@ -301,20 +327,23 @@ export function IncreaseTransactionModal({
 
   const selectedEmployee = useMemo(() => {
     if (!selectedCompanyId || !selectedEmployeeId) return null;
-    return employees.find(
-      (employee) => employee.idEmpresa === selectedCompanyId && employee.id === selectedEmployeeId,
-    ) ?? null;
+    return (
+      employees.find(
+        (employee) =>
+          employee.idEmpresa === selectedCompanyId && employee.id === selectedEmployeeId,
+      ) ?? null
+    );
   }, [employees, selectedCompanyId, selectedEmployeeId]);
 
   const selectedPayPeriod = useMemo(() => {
     if (!selectedEmployee?.idPeriodoPago) return null;
-    return payPeriods.find((period) => period.id === Number(selectedEmployee.idPeriodoPago)) ?? null;
+    return (
+      payPeriods.find((period) => period.id === Number(selectedEmployee.idPeriodoPago)) ?? null
+    );
   }, [payPeriods, selectedEmployee?.idPeriodoPago]);
 
   const employeeCurrency = (selectedEmployee?.monedaSalario ?? 'CRC').toUpperCase();
-  const salarioActual = Number(
-    selectedEmployee?.salarioBase ?? line.salarioActual ?? 0,
-  );
+  const salarioActual = Number(selectedEmployee?.salarioBase ?? line.salarioActual ?? 0);
   const salaryDisplay = canViewEmployeeSensitive
     ? formatMoney(salarioActual, employeeCurrency)
     : '***';
@@ -341,71 +370,84 @@ export function IncreaseTransactionModal({
     (!!selectedCompanyId && !!selectedEmployeeId && loadingPayrolls) ||
     (activeTab === 'bitacora' && loadingAuditTrail);
 
-  const auditColumns: ColumnsType<PersonalActionAuditTrailItem> = useMemo(() => [
-    {
-      title: 'Fecha y hora',
-      dataIndex: 'fechaCreacion',
-      key: 'fechaCreacion',
-      width: 170,
-      render: (value: string | null) => formatDateTime12h(value),
-    },
-    {
-      title: 'Quien lo hizo',
-      key: 'actor',
-      width: 220,
-      render: (_, row) => {
-        const actorLabel = row.actorNombre?.trim() || row.actorEmail?.trim() || (row.actorUserId ? `Usuario ID ${row.actorUserId}` : 'Sistema');
-        return (
-          <div>
-            <div style={{ fontWeight: 600, color: '#3d4f5c' }}>{actorLabel}</div>
-            {row.actorEmail ? <div style={{ color: '#8c8c8c', fontSize: 12 }}>{row.actorEmail}</div> : null}
-          </div>
-        );
+  const auditColumns: ColumnsType<PersonalActionAuditTrailItem> = useMemo(
+    () => [
+      {
+        title: 'Fecha y hora',
+        dataIndex: 'fechaCreacion',
+        key: 'fechaCreacion',
+        width: 170,
+        render: (value: string | null) => formatDateTime12h(value),
       },
-    },
-    {
-      title: 'Accion',
-      key: 'accion',
-      width: 170,
-      render: (_, row) => (
-        <Flex gap={6} wrap="wrap">
-          <Tag className={sharedStyles.tagInactivo}>{row.modulo}</Tag>
-          <Tag className={sharedStyles.tagActivo}>{row.accion}</Tag>
-        </Flex>
-      ),
-    },
-    {
-      title: 'Detalle',
-      dataIndex: 'descripcion',
-      key: 'descripcion',
-      render: (value: string, row) => {
-        const changes = row.cambios ?? [];
-        const tooltipContent = (
-          <div style={{ maxWidth: 560, maxHeight: 360, overflowY: 'auto' }}>
-            <div style={{ fontWeight: 600, marginBottom: 8 }}>{value}</div>
-            {changes.length > 0 ? (
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
-                {changes.map((change, index) => (
-                  <div key={`${row.id}-${change.campo}-${index}`} style={{ fontSize: 12, lineHeight: 1.4 }}>
-                    <div><strong>{change.campo}</strong></div>
-                    <div>Antes: {change.antes}</div>
-                    <div>Despues: {change.despues}</div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div style={{ fontSize: 12 }}>Sin detalle de campos para esta accion.</div>
-            )}
-          </div>
-        );
-        return (
-          <Tooltip title={tooltipContent}>
-            <div className={sharedStyles.auditDetailCell}>{value}</div>
-          </Tooltip>
-        );
+      {
+        title: 'Quien lo hizo',
+        key: 'actor',
+        width: 220,
+        render: (_, row) => {
+          const actorLabel =
+            row.actorNombre?.trim() ||
+            row.actorEmail?.trim() ||
+            (row.actorUserId ? `Usuario ID ${row.actorUserId}` : 'Sistema');
+          return (
+            <div>
+              <div style={{ fontWeight: 600, color: '#3d4f5c' }}>{actorLabel}</div>
+              {row.actorEmail ? (
+                <div style={{ color: '#8c8c8c', fontSize: 12 }}>{row.actorEmail}</div>
+              ) : null}
+            </div>
+          );
+        },
       },
-    },
-  ], []);
+      {
+        title: 'Accion',
+        key: 'accion',
+        width: 170,
+        render: (_, row) => (
+          <Flex gap={6} wrap="wrap">
+            <Tag className={sharedStyles.tagInactivo}>{row.modulo}</Tag>
+            <Tag className={sharedStyles.tagActivo}>{row.accion}</Tag>
+          </Flex>
+        ),
+      },
+      {
+        title: 'Detalle',
+        dataIndex: 'descripcion',
+        key: 'descripcion',
+        render: (value: string, row) => {
+          const changes = row.cambios ?? [];
+          const tooltipContent = (
+            <div style={{ maxWidth: 560, maxHeight: 360, overflowY: 'auto' }}>
+              <div style={{ fontWeight: 600, marginBottom: 8 }}>{value}</div>
+              {changes.length > 0 ? (
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+                  {changes.map((change, index) => (
+                    <div
+                      key={`${row.id}-${change.campo}-${index}`}
+                      style={{ fontSize: 12, lineHeight: 1.4 }}
+                    >
+                      <div>
+                        <strong>{change.campo}</strong>
+                      </div>
+                      <div>Antes: {change.antes}</div>
+                      <div>Despues: {change.despues}</div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div style={{ fontSize: 12 }}>Sin detalle de campos para esta accion.</div>
+              )}
+            </div>
+          );
+          return (
+            <Tooltip title={tooltipContent}>
+              <div className={sharedStyles.auditDetailCell}>{value}</div>
+            </Tooltip>
+          );
+        },
+      },
+    ],
+    [],
+  );
 
   useEffect(() => {
     if (!selectedEmployeeId) return;
@@ -424,9 +466,7 @@ export function IncreaseTransactionModal({
       );
     }
     if (selectedEmployee?.monedaSalario) {
-      list = list.filter(
-        (payroll) => (payroll.moneda ?? '').toUpperCase() === employeeCurrency,
-      );
+      list = list.filter((payroll) => (payroll.moneda ?? '').toUpperCase() === employeeCurrency);
     }
     return list;
   }, [eligiblePayrolls, selectedCompanyId, selectedEmployee, employeeCurrency]);
@@ -493,12 +533,9 @@ export function IncreaseTransactionModal({
     }));
   };
 
-  const porcentajeDisplay = metodoCalculo === 'MONTO'
-    ? calculated.porcentaje
-    : line.porcentaje;
-  const montoDisplayValue = metodoCalculo === 'PORCENTAJE'
-    ? String(Math.round(calculated.monto))
-    : line.montoInput;
+  const porcentajeDisplay = metodoCalculo === 'MONTO' ? calculated.porcentaje : line.porcentaje;
+  const montoDisplayValue =
+    metodoCalculo === 'PORCENTAJE' ? String(Math.round(calculated.monto)) : line.montoInput;
 
   const handleSubmit = async () => {
     try {
@@ -516,9 +553,7 @@ export function IncreaseTransactionModal({
         return;
       }
 
-      const salarioTexto = canViewEmployeeSensitive
-        ? round2(salarioActual).toFixed(2)
-        : '***';
+      const salarioTexto = canViewEmployeeSensitive ? round2(salarioActual).toFixed(2) : '***';
       const formula =
         metodoCalculo === 'PORCENTAJE'
           ? `Nuevo salario = ${salarioTexto} + (${salarioTexto} x ${round2(calculated.porcentaje).toFixed(2)}%) = ${round2(calculated.nuevoSalario).toFixed(2)}`
@@ -566,8 +601,13 @@ export function IncreaseTransactionModal({
           padding: 16,
         },
       }}
-      title={(
-        <Flex justify="space-between" align="center" wrap="nowrap" style={{ width: '100%', gap: 16 }}>
+      title={
+        <Flex
+          justify="space-between"
+          align="center"
+          wrap="nowrap"
+          style={{ width: '100%', gap: 16 }}
+        >
           <div className={sharedStyles.companyModalHeader}>
             <div className={sharedStyles.companyModalHeaderIcon}>
               <CalendarOutlined />
@@ -582,9 +622,19 @@ export function IncreaseTransactionModal({
             className={sharedStyles.companyModalCloseBtn}
           />
         </Flex>
-      )}
+      }
     >
-      <div style={{ position: 'relative', display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0, minWidth: 0, overflow: 'hidden' }}>
+      <div
+        style={{
+          position: 'relative',
+          display: 'flex',
+          flexDirection: 'column',
+          flex: 1,
+          minHeight: 0,
+          minWidth: 0,
+          overflow: 'hidden',
+        }}
+      >
         {showGlobalPreload ? (
           <div
             style={{
@@ -601,13 +651,27 @@ export function IncreaseTransactionModal({
             <Spin size="large" description="Cargando informacion..." />
           </div>
         ) : null}
-        <Form form={form} layout="vertical" className={sharedStyles.companyFormContent} style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0, minWidth: 0, overflow: 'hidden' }}>
+        <Form
+          form={form}
+          layout="vertical"
+          className={sharedStyles.companyFormContent}
+          style={{
+            display: 'flex',
+            flexDirection: 'column',
+            flex: 1,
+            minHeight: 0,
+            minWidth: 0,
+            overflow: 'hidden',
+          }}
+        >
           <div style={{ flexShrink: 0 }}>
             {readOnly ? (
               <Alert
                 type="warning"
                 showIcon
-                title={readOnlyMessage ?? 'Este aumento esta en modo solo lectura por su estado actual.'}
+                title={
+                  readOnlyMessage ?? 'Este aumento esta en modo solo lectura por su estado actual.'
+                }
                 className={`${sharedStyles.infoBanner} ${sharedStyles.warningType}`}
                 style={{ marginBottom: 12 }}
               />
@@ -629,15 +693,17 @@ export function IncreaseTransactionModal({
                     ),
                   },
                   ...(showAudit
-                    ? [{
-                        key: 'bitacora',
-                        label: (
-                          <span>
-                            <SearchOutlined style={{ marginRight: 8, fontSize: 16 }} />
-                            Bitacora
-                          </span>
-                        ),
-                      }]
+                    ? [
+                        {
+                          key: 'bitacora',
+                          label: (
+                            <span>
+                              <SearchOutlined style={{ marginRight: 8, fontSize: 16 }} />
+                              Bitacora
+                            </span>
+                          ),
+                        },
+                      ]
                     : []),
                 ]}
               />
@@ -645,7 +711,11 @@ export function IncreaseTransactionModal({
 
             {mode !== 'edit' || activeTab === 'info' ? (
               <Row gutter={16} wrap style={{ flex: 1, minHeight: 0, alignItems: 'stretch' }}>
-                <Col xs={24} lg={8} style={{ display: 'flex', flexDirection: 'column', minHeight: 0 }}>
+                <Col
+                  xs={24}
+                  lg={8}
+                  style={{ display: 'flex', flexDirection: 'column', minHeight: 0 }}
+                >
                   {selectedEmployee ? (
                     <Collapse
                       defaultActiveKey={[]}
@@ -665,12 +735,17 @@ export function IncreaseTransactionModal({
                                   </div>
                                   <div className={sharedStyles.employeeAccordionId}>
                                     Empleado ID: {selectedEmployee.codigo || '--'}
-                                    {canViewEmployeeSensitive && selectedEmployee.cedula ? ` - ${selectedEmployee.cedula}` : ''}
-                                    {canViewEmployeeSensitive && selectedEmployee.telefono ? ` - ${selectedEmployee.telefono}` : ''}
+                                    {canViewEmployeeSensitive && selectedEmployee.cedula
+                                      ? ` - ${selectedEmployee.cedula}`
+                                      : ''}
+                                    {canViewEmployeeSensitive && selectedEmployee.telefono
+                                      ? ` - ${selectedEmployee.telefono}`
+                                      : ''}
                                   </div>
                                   <div className={sharedStyles.employeeAccordionCompany}>
                                     <BankOutlined />
-                                    {companies.find((c) => Number(c.id) === selectedCompanyId)?.nombre ?? '--'}
+                                    {companies.find((c) => Number(c.id) === selectedCompanyId)
+                                      ?.nombre ?? '--'}
                                   </div>
                                 </div>
                               </div>
@@ -680,72 +755,123 @@ export function IncreaseTransactionModal({
                             <div className={sharedStyles.employeeAccordionContent}>
                               <div className={sharedStyles.employeeAccordionGrid}>
                                 <div className={sharedStyles.employeeAccordionItem}>
-                                  <IdcardOutlined className={sharedStyles.employeeAccordionItemIcon} />
+                                  <IdcardOutlined
+                                    className={sharedStyles.employeeAccordionItemIcon}
+                                  />
                                   <div>
-                                    <div className={sharedStyles.employeeAccordionItemLabel}>Cédula</div>
+                                    <div className={sharedStyles.employeeAccordionItemLabel}>
+                                      Cédula
+                                    </div>
                                     <div className={sharedStyles.employeeAccordionItemValue}>
-                                      {canViewEmployeeSensitive ? (selectedEmployee.cedula ?? '--') : sensitiveMaskedValue}
+                                      {canViewEmployeeSensitive
+                                        ? (selectedEmployee.cedula ?? '--')
+                                        : sensitiveMaskedValue}
                                     </div>
                                   </div>
                                 </div>
                                 <div className={sharedStyles.employeeAccordionItem}>
-                                  <MailOutlined className={sharedStyles.employeeAccordionItemIcon} />
+                                  <MailOutlined
+                                    className={sharedStyles.employeeAccordionItemIcon}
+                                  />
                                   <div>
-                                    <div className={sharedStyles.employeeAccordionItemLabel}>Email</div>
+                                    <div className={sharedStyles.employeeAccordionItemLabel}>
+                                      Email
+                                    </div>
                                     <div className={sharedStyles.employeeAccordionItemValue}>
-                                      {canViewEmployeeSensitive ? (selectedEmployee.email ?? '--') : sensitiveMaskedValue}
+                                      {canViewEmployeeSensitive
+                                        ? (selectedEmployee.email ?? '--')
+                                        : sensitiveMaskedValue}
                                     </div>
                                   </div>
                                 </div>
                                 <div className={sharedStyles.employeeAccordionItem}>
-                                  <CalendarOutlined className={sharedStyles.employeeAccordionItemIcon} />
+                                  <CalendarOutlined
+                                    className={sharedStyles.employeeAccordionItemIcon}
+                                  />
                                   <div>
-                                    <div className={sharedStyles.employeeAccordionItemLabel}>Período</div>
-                                    <div className={sharedStyles.employeeAccordionItemValue}>{selectedPayPeriod?.nombre ?? '--'}</div>
+                                    <div className={sharedStyles.employeeAccordionItemLabel}>
+                                      Período
+                                    </div>
+                                    <div className={sharedStyles.employeeAccordionItemValue}>
+                                      {selectedPayPeriod?.nombre ?? '--'}
+                                    </div>
                                   </div>
                                 </div>
                                 <div className={sharedStyles.employeeAccordionItem}>
-                                  <ClockCircleOutlined className={sharedStyles.employeeAccordionItemIcon} />
+                                  <ClockCircleOutlined
+                                    className={sharedStyles.employeeAccordionItemIcon}
+                                  />
                                   <div>
-                                    <div className={sharedStyles.employeeAccordionItemLabel}>Jornada</div>
-                                    <div className={sharedStyles.employeeAccordionItemValue}>{selectedEmployee.jornada ?? '--'}</div>
+                                    <div className={sharedStyles.employeeAccordionItemLabel}>
+                                      Jornada
+                                    </div>
+                                    <div className={sharedStyles.employeeAccordionItemValue}>
+                                      {selectedEmployee.jornada ?? '--'}
+                                    </div>
                                   </div>
                                 </div>
                               </div>
                               <hr className={sharedStyles.employeeAccordionGridHr} />
                               <div className={sharedStyles.employeeAccordionGrid}>
                                 <div className={sharedStyles.employeeAccordionItem}>
-                                  <DollarCircleOutlined className={sharedStyles.employeeAccordionItemIcon} />
+                                  <DollarCircleOutlined
+                                    className={sharedStyles.employeeAccordionItemIcon}
+                                  />
                                   <div>
-                                    <div className={sharedStyles.employeeAccordionItemLabel}>Salario Base</div>
+                                    <div className={sharedStyles.employeeAccordionItemLabel}>
+                                      Salario Base
+                                    </div>
                                     <div className={sharedStyles.employeeAccordionItemValue}>
-                                      {canViewEmployeeSensitive ? formatMoney(selectedEmployee.salarioBase, employeeCurrency) : sensitiveMaskedValue}
+                                      {canViewEmployeeSensitive
+                                        ? formatMoney(
+                                            selectedEmployee.salarioBase,
+                                            employeeCurrency,
+                                          )
+                                        : sensitiveMaskedValue}
                                     </div>
                                   </div>
                                 </div>
                                 <div className={sharedStyles.employeeAccordionItem}>
-                                  <DollarCircleOutlined className={sharedStyles.employeeAccordionItemIcon} />
+                                  <DollarCircleOutlined
+                                    className={sharedStyles.employeeAccordionItemIcon}
+                                  />
                                   <div>
-                                    <div className={sharedStyles.employeeAccordionItemLabel}>Salario {selectedPayPeriod?.nombre ?? 'Período'}</div>
+                                    <div className={sharedStyles.employeeAccordionItemLabel}>
+                                      Salario {selectedPayPeriod?.nombre ?? 'Período'}
+                                    </div>
                                     <div className={sharedStyles.employeeAccordionItemValue}>
-                                      {canViewEmployeeSensitive ? formatMoney(salaryByPeriod, employeeCurrency) : sensitiveMaskedValue}
+                                      {canViewEmployeeSensitive
+                                        ? formatMoney(salaryByPeriod, employeeCurrency)
+                                        : sensitiveMaskedValue}
                                     </div>
                                   </div>
                                 </div>
                                 <div className={sharedStyles.employeeAccordionItem}>
-                                  <DollarCircleOutlined className={sharedStyles.employeeAccordionItemIcon} />
+                                  <DollarCircleOutlined
+                                    className={sharedStyles.employeeAccordionItemIcon}
+                                  />
                                   <div>
-                                    <div className={sharedStyles.employeeAccordionItemLabel}>Valor por Hora</div>
+                                    <div className={sharedStyles.employeeAccordionItemLabel}>
+                                      Valor por Hora
+                                    </div>
                                     <div className={sharedStyles.employeeAccordionItemValue}>
-                                      {canViewEmployeeSensitive ? `${formatMoney(hourValue, employeeCurrency)}/hora` : sensitiveMaskedValue}
+                                      {canViewEmployeeSensitive
+                                        ? `${formatMoney(hourValue, employeeCurrency)}/hora`
+                                        : sensitiveMaskedValue}
                                     </div>
                                   </div>
                                 </div>
                                 <div className={sharedStyles.employeeAccordionItem}>
-                                  <ClockCircleOutlined className={sharedStyles.employeeAccordionItemIcon} />
+                                  <ClockCircleOutlined
+                                    className={sharedStyles.employeeAccordionItemIcon}
+                                  />
                                   <div>
-                                    <div className={sharedStyles.employeeAccordionItemLabel}>Horas del Período</div>
-                                    <div className={sharedStyles.employeeAccordionItemValue}>{`${periodHours} horas`}</div>
+                                    <div className={sharedStyles.employeeAccordionItemLabel}>
+                                      Horas del Período
+                                    </div>
+                                    <div
+                                      className={sharedStyles.employeeAccordionItemValue}
+                                    >{`${periodHours} horas`}</div>
                                   </div>
                                 </div>
                               </div>
@@ -756,7 +882,11 @@ export function IncreaseTransactionModal({
                     />
                   ) : null}
 
-                  <Card size="small" className={sharedStyles.cardDefault} style={{ border: '1px solid #e8ecf0', borderRadius: 8 }}>
+                  <Card
+                    size="small"
+                    className={sharedStyles.cardDefault}
+                    style={{ border: '1px solid #e8ecf0', borderRadius: 8 }}
+                  >
                     <Flex gap={10} wrap="wrap" style={{ flexDirection: 'column' }}>
                       <Form.Item
                         style={{ marginBottom: 12 }}
@@ -792,13 +922,22 @@ export function IncreaseTransactionModal({
                             notFoundContent={employeesLoading ? <Spin size="small" /> : null}
                             options={employeesByCompany.map((employee) => ({
                               value: employee.id,
-                              label: `${employee.codigo} - ${employee.nombre} ${employee.apellido1} ${employee.apellido2 ?? ''}`.trim(),
+                              label:
+                                `${employee.codigo} - ${employee.nombre} ${employee.apellido1} ${employee.apellido2 ?? ''}`.trim(),
                             }))}
                           />
                         </Form.Item>
                       ) : null}
-                      <Form.Item style={{ marginBottom: 12 }} name="observacion" label="Motivo de Aumento">
-                        <Input.TextArea rows={2} placeholder="Detalle del motivo" disabled={readOnly} />
+                      <Form.Item
+                        style={{ marginBottom: 12 }}
+                        name="observacion"
+                        label="Motivo de Aumento"
+                      >
+                        <Input.TextArea
+                          rows={2}
+                          placeholder="Detalle del motivo"
+                          disabled={readOnly}
+                        />
                       </Form.Item>
                       <Form.Item style={{ marginBottom: 12 }} label="Periodo de Planilla">
                         <Select
@@ -806,7 +945,9 @@ export function IncreaseTransactionModal({
                           disabled={readOnly || !selectedEmployeeId}
                           loading={loadingPayrolls}
                           value={line.payrollId}
-                          onChange={(value) => setLine((prev) => ({ ...prev, payrollId: Number(value) }))}
+                          onChange={(value) =>
+                            setLine((prev) => ({ ...prev, payrollId: Number(value) }))
+                          }
                           options={payrollsByCompany.map((payroll) => ({
                             value: payroll.id,
                             label: payroll.nombrePlanilla ?? `Planilla #${payroll.id}`,
@@ -819,7 +960,9 @@ export function IncreaseTransactionModal({
                           loading={movementsLoading}
                           disabled={readOnly || movementsLoading || !selectedCompanyId}
                           value={line.movimientoId}
-                          onChange={(value) => setLine((prev) => ({ ...prev, movimientoId: Number(value) }))}
+                          onChange={(value) =>
+                            setLine((prev) => ({ ...prev, movimientoId: Number(value) }))
+                          }
                           options={filteredMovements.map((movement) => ({
                             value: movement.id,
                             label: movement.nombre,
@@ -839,27 +982,63 @@ export function IncreaseTransactionModal({
                   </Card>
                 </Col>
 
-                <Col xs={24} lg={16} style={{ display: 'flex', flexDirection: 'column', minHeight: 0, overflow: 'auto' }}>
-                  <Card size="small" className={sharedStyles.cardDefault} style={{ border: '1px solid #e8ecf0', borderRadius: 8 }}>
-                    <div className={sharedStyles.filterLabel} style={{ marginBottom: 8, fontWeight: 600 }}>Método de Cálculo del Aumento</div>
-                    <Typography.Text type="secondary" style={{ display: 'block', marginBottom: 16 }}>
+                <Col
+                  xs={24}
+                  lg={16}
+                  style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    minHeight: 0,
+                    overflow: 'auto',
+                  }}
+                >
+                  <Card
+                    size="small"
+                    className={sharedStyles.cardDefault}
+                    style={{ border: '1px solid #e8ecf0', borderRadius: 8 }}
+                  >
+                    <div
+                      className={sharedStyles.filterLabel}
+                      style={{ marginBottom: 8, fontWeight: 600 }}
+                    >
+                      Método de Cálculo del Aumento
+                    </div>
+                    <Typography.Text
+                      type="secondary"
+                      style={{ display: 'block', marginBottom: 16 }}
+                    >
                       {metodoCalculo === 'PORCENTAJE'
                         ? 'El aumento se calculará por porcentaje'
                         : 'El aumento se calculará por monto'}
                     </Typography.Text>
                     <Flex align="center" gap={12} wrap="wrap" style={{ marginBottom: 20 }}>
                       <Typography.Text>Por Porcentaje</Typography.Text>
-                      <Switch checked={metodoCalculo === 'MONTO'} onChange={handleMethodChange} disabled={readOnly} />
+                      <Switch
+                        checked={metodoCalculo === 'MONTO'}
+                        onChange={handleMethodChange}
+                        disabled={readOnly}
+                      />
                       <Typography.Text>Por Monto</Typography.Text>
                     </Flex>
 
                     <div style={{ marginBottom: 20 }}>
-                      <div style={{ fontSize: 12, color: 'rgba(0,0,0,0.45)', marginBottom: 4 }}>Salario Actual (Referencia)</div>
+                      <div style={{ fontSize: 12, color: 'rgba(0,0,0,0.45)', marginBottom: 4 }}>
+                        Salario Actual (Referencia)
+                      </div>
                       <Input disabled value={salaryDisplay} style={{ maxWidth: 240 }} />
                     </div>
 
                     <Divider style={{ margin: '16px 0' }} />
-                    <div style={{ fontSize: 12, color: 'rgba(0,0,0,0.45)', marginBottom: 12, fontWeight: 500 }}>Datos del cálculo</div>
+                    <div
+                      style={{
+                        fontSize: 12,
+                        color: 'rgba(0,0,0,0.45)',
+                        marginBottom: 12,
+                        fontWeight: 500,
+                      }}
+                    >
+                      Datos del cálculo
+                    </div>
                     <Row gutter={[16, 16]}>
                       <Col xs={24} sm={12} md={8}>
                         <Form.Item label="Monto del Aumento" style={{ marginBottom: 0 }}>
@@ -876,7 +1055,8 @@ export function IncreaseTransactionModal({
                               setLine((prev) => ({
                                 ...prev,
                                 montoInput: onlyDigits,
-                                monto: onlyDigits.length > 0 ? (moneyField.parse(onlyDigits) ?? 0) : 0,
+                                monto:
+                                  onlyDigits.length > 0 ? (moneyField.parse(onlyDigits) ?? 0) : 0,
                               }));
                             }}
                           />
@@ -891,38 +1071,89 @@ export function IncreaseTransactionModal({
                             placeholder="Ej. 10"
                             disabled={readOnly || metodoCalculo === 'MONTO'}
                             value={porcentajeDisplay === 0 ? undefined : porcentajeDisplay}
-                            onChange={(value) => setLine((prev) => ({ ...prev, porcentaje: Number(value ?? 0) }))}
+                            onChange={(value) =>
+                              setLine((prev) => ({ ...prev, porcentaje: Number(value ?? 0) }))
+                            }
                             addonAfter="%"
                           />
                         </Form.Item>
                       </Col>
                       <Col xs={24} sm={12} md={8}>
                         <Form.Item label="Nuevo Salario" style={{ marginBottom: 0 }}>
-                          <Input disabled value={formatMoney(calculated.nuevoSalario, employeeCurrency)} />
+                          <Input
+                            disabled
+                            value={formatMoney(calculated.nuevoSalario, employeeCurrency)}
+                          />
                         </Form.Item>
                       </Col>
                     </Row>
 
                     <Divider style={{ margin: '20px 0' }} />
-                    <div style={{ fontSize: 13, fontWeight: 600, color: '#262626', marginBottom: 16 }}>Resumen</div>
+                    <div
+                      style={{ fontSize: 13, fontWeight: 600, color: '#262626', marginBottom: 16 }}
+                    >
+                      Resumen
+                    </div>
 
                     <Row gutter={[20, 16]}>
                       <Col xs={24} sm={8}>
-                        <div style={{ padding: '12px 16px', border: '1px solid #f0f0f0', borderRadius: 8, backgroundColor: '#fafafa' }}>
-                          <Typography.Text type="secondary" style={{ fontSize: 12, display: 'block', marginBottom: 6 }}>Salario Actual</Typography.Text>
-                          <Typography.Text strong style={{ fontSize: 15 }}>{salaryDisplay}</Typography.Text>
+                        <div
+                          style={{
+                            padding: '12px 16px',
+                            border: '1px solid #f0f0f0',
+                            borderRadius: 8,
+                            backgroundColor: '#fafafa',
+                          }}
+                        >
+                          <Typography.Text
+                            type="secondary"
+                            style={{ fontSize: 12, display: 'block', marginBottom: 6 }}
+                          >
+                            Salario Actual
+                          </Typography.Text>
+                          <Typography.Text strong style={{ fontSize: 15 }}>
+                            {salaryDisplay}
+                          </Typography.Text>
                         </div>
                       </Col>
                       <Col xs={24} sm={8}>
-                        <div style={{ padding: '12px 16px', border: '1px solid #f0f0f0', borderRadius: 8, backgroundColor: '#fafafa' }}>
-                          <Typography.Text type="secondary" style={{ fontSize: 12, display: 'block', marginBottom: 6 }}>Aumento Aplicado</Typography.Text>
-                          <Typography.Text strong style={{ fontSize: 15, color: '#389e0d' }}>+{formatMoney(calculated.monto, employeeCurrency)}</Typography.Text>
+                        <div
+                          style={{
+                            padding: '12px 16px',
+                            border: '1px solid #f0f0f0',
+                            borderRadius: 8,
+                            backgroundColor: '#fafafa',
+                          }}
+                        >
+                          <Typography.Text
+                            type="secondary"
+                            style={{ fontSize: 12, display: 'block', marginBottom: 6 }}
+                          >
+                            Aumento Aplicado
+                          </Typography.Text>
+                          <Typography.Text strong style={{ fontSize: 15, color: '#389e0d' }}>
+                            +{formatMoney(calculated.monto, employeeCurrency)}
+                          </Typography.Text>
                         </div>
                       </Col>
                       <Col xs={24} sm={8}>
-                        <div style={{ padding: '12px 16px', border: '1px solid #f0f0f0', borderRadius: 8, backgroundColor: '#fafafa' }}>
-                          <Typography.Text type="secondary" style={{ fontSize: 12, display: 'block', marginBottom: 6 }}>Equivalente</Typography.Text>
-                          <Typography.Text strong style={{ fontSize: 15 }}>{round2(calculated.porcentaje).toFixed(2)}%</Typography.Text>
+                        <div
+                          style={{
+                            padding: '12px 16px',
+                            border: '1px solid #f0f0f0',
+                            borderRadius: 8,
+                            backgroundColor: '#fafafa',
+                          }}
+                        >
+                          <Typography.Text
+                            type="secondary"
+                            style={{ fontSize: 12, display: 'block', marginBottom: 6 }}
+                          >
+                            Equivalente
+                          </Typography.Text>
+                          <Typography.Text strong style={{ fontSize: 15 }}>
+                            {round2(calculated.porcentaje).toFixed(2)}%
+                          </Typography.Text>
                         </div>
                       </Col>
                     </Row>
@@ -931,22 +1162,47 @@ export function IncreaseTransactionModal({
 
                     <Row gutter={[20, 16]}>
                       <Col xs={24} md={12}>
-                        <div style={{ padding: '12px 16px', border: '1px solid #e6f7ff', borderRadius: 8, backgroundColor: '#f6ffed' }}>
-                          <Typography.Text type="secondary" style={{ fontSize: 12, display: 'block', marginBottom: 6 }}>Nuevo Salario</Typography.Text>
-                          <Typography.Text strong style={{ fontSize: 16, color: '#1677ff' }}>{formatMoney(calculated.nuevoSalario, employeeCurrency)}</Typography.Text>
+                        <div
+                          style={{
+                            padding: '12px 16px',
+                            border: '1px solid #e6f7ff',
+                            borderRadius: 8,
+                            backgroundColor: '#f6ffed',
+                          }}
+                        >
+                          <Typography.Text
+                            type="secondary"
+                            style={{ fontSize: 12, display: 'block', marginBottom: 6 }}
+                          >
+                            Nuevo Salario
+                          </Typography.Text>
+                          <Typography.Text strong style={{ fontSize: 16, color: '#1677ff' }}>
+                            {formatMoney(calculated.nuevoSalario, employeeCurrency)}
+                          </Typography.Text>
                         </div>
                       </Col>
                       <Col xs={24} md={12}>
-                        <div style={{ padding: '12px 16px', border: '1px solid #f0f0f0', borderRadius: 8, backgroundColor: '#fafafa' }}>
+                        <div
+                          style={{
+                            padding: '12px 16px',
+                            border: '1px solid #f0f0f0',
+                            borderRadius: 8,
+                            backgroundColor: '#fafafa',
+                          }}
+                        >
                           <div style={{ marginBottom: 8 }}>
                             <Flex align="center" gap={6}>
-                              <Typography.Text type="secondary" style={{ fontSize: 12 }}>Fórmula</Typography.Text>
+                              <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+                                Fórmula
+                              </Typography.Text>
                               <Tooltip title="La fórmula se recalcula automáticamente">
                                 <QuestionCircleOutlined style={{ fontSize: 12 }} />
                               </Tooltip>
                             </Flex>
                           </div>
-                          <Typography.Paragraph style={{ marginBottom: 0, fontSize: 13, lineHeight: 1.5 }}>
+                          <Typography.Paragraph
+                            style={{ marginBottom: 0, fontSize: 13, lineHeight: 1.5 }}
+                          >
                             {metodoCalculo === 'PORCENTAJE'
                               ? `Nuevo salario = ${canViewEmployeeSensitive ? round2(salarioActual).toFixed(2) : '***'} + (${canViewEmployeeSensitive ? round2(salarioActual).toFixed(2) : '***'} x ${round2(calculated.porcentaje).toFixed(2)}%) = ${round2(calculated.nuevoSalario).toFixed(2)}`
                               : `Nuevo salario = ${canViewEmployeeSensitive ? round2(salarioActual).toFixed(2) : '***'} + ${round2(calculated.monto).toFixed(2)} = ${round2(calculated.nuevoSalario).toFixed(2)}`}

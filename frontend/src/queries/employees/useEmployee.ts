@@ -1,6 +1,8 @@
 import { useQuery } from '@tanstack/react-query';
-import { employeeKeys } from './keys';
+
 import { fetchEmployee } from '../../api/employees';
+
+import { employeeKeys } from './keys';
 
 /**
  * Hook para detalle de empleado con relaciones (departamento, puesto, periodoPago, supervisor).

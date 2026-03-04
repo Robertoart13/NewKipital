@@ -20,7 +20,7 @@ import { CacheResponseInterceptor } from '../../common/interceptors/cache-respon
 
 import type { CreatePositionDto } from './dto/create-position.dto';
 import type { UpdatePositionDto } from './dto/update-position.dto';
-import type { PositionsService } from './positions.service';
+import { PositionsService } from './positions.service';
 
 @CacheScope('positions')
 @UseInterceptors(CacheResponseInterceptor)

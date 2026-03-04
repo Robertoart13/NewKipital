@@ -58,7 +58,11 @@
       "Bash(git checkout origin/main -- api/src/app.module.ts api/src/modules/payroll-holidays/ api/src/modules/modules.smoke.spec.ts api/src/database/migrations/1708536700000-CreatePayrollHolidaysAndPermissions.ts frontend/src/api/payrollHolidays.ts frontend/src/pages/private/payroll-management/PayrollCalendarPage.module.css frontend/src/pages/private/payroll-management/PayrollCalendarPage.tsx frontend/src/pages/private/payroll-management/PayrollHolidaysPage.tsx frontend/src/pages/private/index.ts frontend/src/router/AppRouter.tsx frontend/src/store/selectors/permissions.selectors.ts frontend/src/store/slices/menuSlice.ts frontend/index.html docs/)",
       "Bash(git add -A)",
       "Bash(npm audit --prefix api)",
-      "Bash(npm audit --prefix frontend)"
+      "Bash(npm audit --prefix frontend)",
+      "mcp__filesystem__read_multiple_files",
+      "Bash(powershell.exe -Command:*)",
+      "Bash(powershell.exe:*)",
+      "Bash(node:*)"
     ]
   }
 }

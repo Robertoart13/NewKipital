@@ -1,6 +1,6 @@
 import { TableColumn, TableIndex } from 'typeorm';
 
-import type { MigrationInterface, QueryRunner } from 'typeorm';
+import { MigrationInterface, QueryRunner } from 'typeorm';
 
 /**
  * Directiva 15 — Enhance sys_usuarios con columnas enterprise.

@@ -1,5 +1,19 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Link } from 'react-router-dom';
+import {
+  ArrowLeftOutlined,
+  BankOutlined,
+  LoadingOutlined,
+  CloseOutlined,
+  CloudUploadOutlined,
+  DownOutlined,
+  EnvironmentOutlined,
+  FilterOutlined,
+  PlusOutlined,
+  QuestionCircleOutlined,
+  SearchOutlined,
+  SortAscendingOutlined,
+  SortDescendingOutlined,
+  UpOutlined,
+} from '@ant-design/icons';
 import {
   App as AntdApp,
   Avatar,
@@ -24,26 +38,9 @@ import {
   Tooltip,
   Upload,
 } from 'antd';
-import type { ColumnsType } from 'antd/es/table';
-import type { UploadProps } from 'antd';
-import {
-  ArrowLeftOutlined,
-  BankOutlined,
-  LoadingOutlined,
-  CloseOutlined,
-  CloudUploadOutlined,
-  DownOutlined,
-  EnvironmentOutlined,
-  FilterOutlined,
-  PlusOutlined,
-  QuestionCircleOutlined,
-  SearchOutlined,
-  SortAscendingOutlined,
-  SortDescendingOutlined,
-  UpOutlined,
-} from '@ant-design/icons';
-import { formatDateTime12h } from '../../../lib/formatDate';
-import { textRules, emailRules, optionalNoSqlInjection } from '../../../lib/formValidation';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Link } from 'react-router-dom';
+
 import {
   commitCompanyLogo,
   createCompany,
@@ -59,6 +56,10 @@ import {
   type CompanyAuditTrailItem,
   type CompanyPayload,
 } from '../../../api/companies';
+import { fetchPermissionsForApp, fetchPermissionsForCompany } from '../../../api/permissions';
+import { formatDateTime12h } from '../../../lib/formatDate';
+import { textRules, emailRules, optionalNoSqlInjection } from '../../../lib/formValidation';
+import { useAppDispatch, useAppSelector } from '../../../store/hooks';
 import {
   canCreateCompany,
   canEditCompany,
@@ -67,10 +68,12 @@ import {
   canViewCompanyAudit,
   canViewCompanies,
 } from '../../../store/selectors/permissions.selectors';
-import { useAppDispatch, useAppSelector } from '../../../store/hooks';
 import { setPermissions } from '../../../store/slices/permissionsSlice';
-import { fetchPermissionsForApp, fetchPermissionsForCompany } from '../../../api/permissions';
+
 import styles from './UsersManagementPage.module.css';
+
+import type { UploadProps } from 'antd';
+import type { ColumnsType } from 'antd/es/table';
 
 interface CompanyFormValues {
   nombre: string;
@@ -109,7 +112,10 @@ function CompanyLogoNameCell({ company }: { company: CompanyListItem }) {
         className={styles.userCellAvatar}
         src={!imgError ? logoUrl : undefined}
         icon={<BankOutlined />}
-        onError={() => { setImgError(true); return false; }}
+        onError={() => {
+          setImgError(true);
+          return false;
+        }}
         alt=""
       />
       <div>
@@ -180,12 +186,14 @@ export function CompaniesManagementPage() {
       if (company?.id) {
         fetchPermissionsForCompany(String(company.id), app)
           .then(({ permissions, roles }) => {
-            dispatch(setPermissions({
-              permissions,
-              roles,
-              appId: app,
-              companyId: String(company.id),
-            }));
+            dispatch(
+              setPermissions({
+                permissions,
+                roles,
+                appId: app,
+                companyId: String(company.id),
+              }),
+            );
           })
           .catch(() => {});
       } else {
@@ -247,12 +255,7 @@ export function CompaniesManagementPage() {
   const canUploadLogo = canEditCompanyPerm;
   const canSubmitCompany = useMemo(() => {
     const values = formValues ?? {};
-    const required = [
-      values.nombre,
-      values.nombreLegal,
-      values.cedula,
-      values.prefijo,
-    ];
+    const required = [values.nombre, values.nombreLegal, values.cedula, values.prefijo];
     return required.every((value) => typeof value === 'string' && value.trim().length > 0);
   }, [formValues]);
 
@@ -262,11 +265,14 @@ export function CompaniesManagementPage() {
     logoObjectUrlRef.current = null;
   }, []);
 
-  const setPreviewFromObjectUrl = useCallback((url: string) => {
-    clearLogoObjectUrl();
-    logoObjectUrlRef.current = url;
-    setLogoPreviewUrl(url);
-  }, [clearLogoObjectUrl]);
+  const setPreviewFromObjectUrl = useCallback(
+    (url: string) => {
+      clearLogoObjectUrl();
+      logoObjectUrlRef.current = url;
+      setLogoPreviewUrl(url);
+    },
+    [clearLogoObjectUrl],
+  );
 
   const loadCompanies = useCallback(async () => {
     setLoading(true);
@@ -285,32 +291,38 @@ export function CompaniesManagementPage() {
     void loadCompanies();
   }, [loadCompanies]);
 
-  const matchesGlobalSearch = useCallback((company: CompanyListItem) => {
-    const term = search.trim().toLowerCase();
-    if (!term) return true;
-    return (
-      (company.nombre ?? '').toLowerCase().includes(term)
-      || (company.nombreLegal ?? '').toLowerCase().includes(term)
-      || (company.cedula ?? '').toLowerCase().includes(term)
-      || (company.idExterno ?? '').toLowerCase().includes(term)
-      || (company.email ?? '').toLowerCase().includes(term)
-      || (company.prefijo ?? '').toLowerCase().includes(term)
-    );
-  }, [search]);
+  const matchesGlobalSearch = useCallback(
+    (company: CompanyListItem) => {
+      const term = search.trim().toLowerCase();
+      if (!term) return true;
+      return (
+        (company.nombre ?? '').toLowerCase().includes(term) ||
+        (company.nombreLegal ?? '').toLowerCase().includes(term) ||
+        (company.cedula ?? '').toLowerCase().includes(term) ||
+        (company.idExterno ?? '').toLowerCase().includes(term) ||
+        (company.email ?? '').toLowerCase().includes(term) ||
+        (company.prefijo ?? '').toLowerCase().includes(term)
+      );
+    },
+    [search],
+  );
 
-  const dataFilteredByPaneSelections = useCallback((excludePane?: PaneKey) => {
-    return companies.filter((company) => {
-      if (!matchesGlobalSearch(company)) return false;
-      for (const pane of paneConfig) {
-        if (pane.key === excludePane) continue;
-        const selected = paneSelections[pane.key];
-        if (selected.length === 0) continue;
-        const value = getPaneValue(company, pane.key);
-        if (!selected.includes(value)) return false;
-      }
-      return true;
-    });
-  }, [companies, matchesGlobalSearch, paneSelections]);
+  const dataFilteredByPaneSelections = useCallback(
+    (excludePane?: PaneKey) => {
+      return companies.filter((company) => {
+        if (!matchesGlobalSearch(company)) return false;
+        for (const pane of paneConfig) {
+          if (pane.key === excludePane) continue;
+          const selected = paneSelections[pane.key];
+          if (selected.length === 0) continue;
+          const value = getPaneValue(company, pane.key);
+          if (!selected.includes(value)) return false;
+        }
+        return true;
+      });
+    },
+    [companies, matchesGlobalSearch, paneSelections],
+  );
 
   const paneOptions = useMemo(() => {
     const result: Record<PaneKey, PaneOption[]> = {
@@ -339,13 +351,40 @@ export function CompaniesManagementPage() {
     return result;
   }, [dataFilteredByPaneSelections, paneSearch]);
 
-  const filteredCompanies = useMemo(() => dataFilteredByPaneSelections(), [dataFilteredByPaneSelections]);
+  const filteredCompanies = useMemo(
+    () => dataFilteredByPaneSelections(),
+    [dataFilteredByPaneSelections],
+  );
 
   const clearAllFilters = () => {
     setSearch('');
-    setPaneSearch({ prefijo: '', nombre: '', cedula: '', idExterno: '', telefono: '', email: '', estado: '' });
-    setPaneSelections({ prefijo: [], nombre: [], cedula: [], idExterno: [], telefono: [], email: [], estado: [] });
-    setPaneOpen({ prefijo: false, nombre: false, cedula: false, idExterno: false, telefono: false, email: false, estado: false });
+    setPaneSearch({
+      prefijo: '',
+      nombre: '',
+      cedula: '',
+      idExterno: '',
+      telefono: '',
+      email: '',
+      estado: '',
+    });
+    setPaneSelections({
+      prefijo: [],
+      nombre: [],
+      cedula: [],
+      idExterno: [],
+      telefono: [],
+      email: [],
+      estado: [],
+    });
+    setPaneOpen({
+      prefijo: false,
+      nombre: false,
+      cedula: false,
+      idExterno: false,
+      telefono: false,
+      email: false,
+      estado: false,
+    });
   };
 
   const clearPaneSelection = (key: PaneKey) => {
@@ -354,11 +393,27 @@ export function CompaniesManagementPage() {
   };
 
   const openAllPanes = () => {
-    setPaneOpen({ prefijo: true, nombre: true, cedula: true, idExterno: true, telefono: true, email: true, estado: true });
+    setPaneOpen({
+      prefijo: true,
+      nombre: true,
+      cedula: true,
+      idExterno: true,
+      telefono: true,
+      email: true,
+      estado: true,
+    });
   };
 
   const collapseAllPanes = () => {
-    setPaneOpen({ prefijo: false, nombre: false, cedula: false, idExterno: false, telefono: false, email: false, estado: false });
+    setPaneOpen({
+      prefijo: false,
+      nombre: false,
+      cedula: false,
+      idExterno: false,
+      telefono: false,
+      email: false,
+      estado: false,
+    });
   };
 
   const logoUploadProps: UploadProps = {
@@ -412,20 +467,23 @@ export function CompaniesManagementPage() {
     setOpenModal(true);
   };
 
-  const applyCompanyToForm = useCallback((company: CompanyListItem) => {
-    form.setFieldsValue({
-      nombre: company.nombre ?? '',
-      nombreLegal: company.nombreLegal ?? '',
-      cedula: company.cedula ?? '',
-      actividadEconomica: company.actividadEconomica ?? '',
-      prefijo: company.prefijo ?? '',
-      idExterno: company.idExterno ?? '',
-      direccionExacta: company.direccionExacta ?? '',
-      telefono: company.telefono ?? '',
-      email: company.email ?? '',
-      codigoPostal: company.codigoPostal ?? '',
-    });
-  }, [form]);
+  const applyCompanyToForm = useCallback(
+    (company: CompanyListItem) => {
+      form.setFieldsValue({
+        nombre: company.nombre ?? '',
+        nombreLegal: company.nombreLegal ?? '',
+        cedula: company.cedula ?? '',
+        actividadEconomica: company.actividadEconomica ?? '',
+        prefijo: company.prefijo ?? '',
+        idExterno: company.idExterno ?? '',
+        direccionExacta: company.direccionExacta ?? '',
+        telefono: company.telefono ?? '',
+        email: company.email ?? '',
+        codigoPostal: company.codigoPostal ?? '',
+      });
+    },
+    [form],
+  );
 
   useEffect(() => {
     if (!openModal) return;
@@ -590,10 +648,9 @@ export function CompaniesManagementPage() {
       await loadCompanies();
     } catch (error) {
       const err = error as Error & { response?: { planillas?: { id: number }[] } };
-      const detail =
-        err.response?.planillas?.length
-          ? ` Planillas activas: ${err.response.planillas.map((p) => `#${p.id}`).join(', ')}.`
-          : '';
+      const detail = err.response?.planillas?.length
+        ? ` Planillas activas: ${err.response.planillas.map((p) => `#${p.id}`).join(', ')}.`
+        : '';
       message.error({
         content: (err instanceof Error ? err.message : 'Error al inactivar empresa') + detail,
         duration: 8,
@@ -695,11 +752,16 @@ export function CompaniesManagementPage() {
       key: 'actor',
       width: 210,
       render: (_, row) => {
-        const actorLabel = row.actorNombre?.trim() || row.actorEmail?.trim() || (row.actorUserId ? `Usuario ID ${row.actorUserId}` : 'Sistema');
+        const actorLabel =
+          row.actorNombre?.trim() ||
+          row.actorEmail?.trim() ||
+          (row.actorUserId ? `Usuario ID ${row.actorUserId}` : 'Sistema');
         return (
           <div>
             <div style={{ fontWeight: 600, color: '#3d4f5c' }}>{actorLabel}</div>
-            {row.actorEmail && <div style={{ color: '#8c8c8c', fontSize: 12 }}>{row.actorEmail}</div>}
+            {row.actorEmail && (
+              <div style={{ color: '#8c8c8c', fontSize: 12 }}>{row.actorEmail}</div>
+            )}
           </div>
         );
       },
@@ -727,8 +789,13 @@ export function CompaniesManagementPage() {
             {changes.length > 0 ? (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                 {changes.map((change, index) => (
-                  <div key={`${row.id}-${change.campo}-${index}`} style={{ fontSize: 12, lineHeight: 1.4 }}>
-                    <div><strong>{change.campo}</strong></div>
+                  <div
+                    key={`${row.id}-${change.campo}-${index}`}
+                    style={{ fontSize: 12, lineHeight: 1.4 }}
+                  >
+                    <div>
+                      <strong>{change.campo}</strong>
+                    </div>
                     <div>Antes: {change.antes}</div>
                     <div>Despues: {change.despues}</div>
                   </div>
@@ -795,7 +862,13 @@ export function CompaniesManagementPage() {
 
       <Card className={styles.mainCard}>
         <div className={styles.mainCardBody}>
-          <Flex align="center" justify="space-between" wrap="wrap" gap={12} className={styles.registrosHeader}>
+          <Flex
+            align="center"
+            justify="space-between"
+            wrap="wrap"
+            gap={12}
+            className={styles.registrosHeader}
+          >
             <Flex align="center" gap={12} wrap="wrap">
               <Flex align="center" gap={8}>
                 <FilterOutlined className={styles.registrosFilterIcon} />
@@ -823,7 +896,13 @@ export function CompaniesManagementPage() {
             className={styles.filtersCollapse}
           >
             <Collapse.Panel header="Filtros" key="filtros">
-              <Flex justify="space-between" align="center" wrap="wrap" gap={12} style={{ marginBottom: 16 }}>
+              <Flex
+                justify="space-between"
+                align="center"
+                wrap="wrap"
+                gap={12}
+                style={{ marginBottom: 16 }}
+              >
                 <Input
                   placeholder="Search"
                   prefix={<SearchOutlined />}
@@ -834,9 +913,15 @@ export function CompaniesManagementPage() {
                   style={{ maxWidth: 240 }}
                 />
                 <Flex gap={8}>
-                  <Button size="small" onClick={collapseAllPanes}>Collapse All</Button>
-                  <Button size="small" onClick={openAllPanes}>Show All</Button>
-                  <Button size="small" onClick={clearAllFilters}>Limpiar Todo</Button>
+                  <Button size="small" onClick={collapseAllPanes}>
+                    Collapse All
+                  </Button>
+                  <Button size="small" onClick={openAllPanes}>
+                    Show All
+                  </Button>
+                  <Button size="small" onClick={clearAllFilters}>
+                    Limpiar Todo
+                  </Button>
                 </Flex>
               </Flex>
               <Row gutter={[12, 12]}>
@@ -846,7 +931,9 @@ export function CompaniesManagementPage() {
                       <Flex gap={6} align="center" wrap="wrap">
                         <Input
                           value={paneSearch[pane.key]}
-                          onChange={(e) => setPaneSearch((prev) => ({ ...prev, [pane.key]: e.target.value }))}
+                          onChange={(e) =>
+                            setPaneSearch((prev) => ({ ...prev, [pane.key]: e.target.value }))
+                          }
                           placeholder={pane.title}
                           prefix={<SearchOutlined style={{ fontSize: 12, color: '#8c8c8c' }} />}
                           suffix={
@@ -865,13 +952,19 @@ export function CompaniesManagementPage() {
                           onClick={() => setPaneOpen((prev) => ({ ...prev, [pane.key]: true }))}
                           title="Abrir opciones"
                         />
-                        <Button size="middle" onClick={() => clearPaneSelection(pane.key)} title="Limpiar">
+                        <Button
+                          size="middle"
+                          onClick={() => clearPaneSelection(pane.key)}
+                          title="Limpiar"
+                        >
                           x
                         </Button>
                         <Button
                           size="middle"
                           icon={paneOpen[pane.key] ? <UpOutlined /> : <DownOutlined />}
-                          onClick={() => setPaneOpen((prev) => ({ ...prev, [pane.key]: !prev[pane.key] }))}
+                          onClick={() =>
+                            setPaneOpen((prev) => ({ ...prev, [pane.key]: !prev[pane.key] }))
+                          }
                           title={paneOpen[pane.key] ? 'Colapsar' : 'Expandir'}
                         />
                       </Flex>
@@ -879,14 +972,22 @@ export function CompaniesManagementPage() {
                         <div className={styles.paneOptionsBox}>
                           <Checkbox.Group
                             value={paneSelections[pane.key]}
-                            onChange={(values) => setPaneSelections((prev) => ({ ...prev, [pane.key]: values as string[] }))}
+                            onChange={(values) =>
+                              setPaneSelections((prev) => ({
+                                ...prev,
+                                [pane.key]: values as string[],
+                              }))
+                            }
                             style={{ display: 'flex', flexDirection: 'column', gap: 8 }}
                           >
                             {paneOptions[pane.key].map((option) => (
                               <Checkbox key={`${pane.key}:${option.value}`} value={option.value}>
                                 <Space>
                                   <span>{option.value}</span>
-                                  <Badge count={option.count} style={{ backgroundColor: '#5a6c7d' }} />
+                                  <Badge
+                                    count={option.count}
+                                    style={{ backgroundColor: '#5a6c7d' }}
+                                  />
                                 </Space>
                               </Checkbox>
                             ))}
@@ -912,7 +1013,8 @@ export function CompaniesManagementPage() {
             pagination={{
               pageSize,
               showSizeChanger: false,
-              showTotal: (total, range) => `Mostrando ${range[0]} a ${range[1]} de ${total} registros`,
+              showTotal: (total, range) =>
+                `Mostrando ${range[0]} a ${range[1]} de ${total} registros`,
             }}
             onRow={(record) => ({
               onClick: () => canEditCompanyPerm && openEditModal(record),
@@ -941,8 +1043,13 @@ export function CompaniesManagementPage() {
           header: { marginBottom: 0, padding: 0 },
           body: { padding: 24 },
         }}
-        title={(
-          <Flex justify="space-between" align="center" wrap="nowrap" style={{ width: '100%', gap: 16 }}>
+        title={
+          <Flex
+            justify="space-between"
+            align="center"
+            wrap="nowrap"
+            style={{ width: '100%', gap: 16 }}
+          >
             <div className={styles.companyModalHeader}>
               <div className={styles.companyModalHeaderIcon}>
                 <BankOutlined />
@@ -951,14 +1058,26 @@ export function CompaniesManagementPage() {
             </div>
             <Flex align="center" gap={12} className={styles.companyModalHeaderRight}>
               <div className={styles.companyModalEstadoPaper}>
-                <span style={{ fontWeight: 500, fontSize: 14, color: editingCompany?.estado === 0 ? '#64748b' : '#20638d' }}>
-                  {editingCompany ? (editingCompany.estado === 1 ? 'Activo' : 'Inactivo') : 'Activo'}
+                <span
+                  style={{
+                    fontWeight: 500,
+                    fontSize: 14,
+                    color: editingCompany?.estado === 0 ? '#64748b' : '#20638d',
+                  }}
+                >
+                  {editingCompany
+                    ? editingCompany.estado === 1
+                      ? 'Activo'
+                      : 'Inactivo'
+                    : 'Activo'}
                 </span>
                 <Switch
                   checked={editingCompany ? editingCompany.estado === 1 : true}
                   disabled={
                     !editingCompany ||
-                    (editingCompany.estado === 1 ? !canInactivateCompanyPerm : !canReactivateCompanyPerm)
+                    (editingCompany.estado === 1
+                      ? !canInactivateCompanyPerm
+                      : !canReactivateCompanyPerm)
                   }
                   onChange={(checked) => {
                     if (!editingCompany) return;
@@ -1009,7 +1128,7 @@ export function CompaniesManagementPage() {
               />
             </Flex>
           </Flex>
-        )}
+        }
       >
         <Form<CompanyFormValues>
           layout="vertical"
@@ -1036,9 +1155,20 @@ export function CompaniesManagementPage() {
                     <div className={styles.logoUploadArea}>
                       <Row gutter={16} align="middle" style={{ width: '100%' }}>
                         <Col flex="0 0 90px">
-                          <div className={styles.logoUploadPlaceholder} style={{ flexDirection: 'column', gap: 4 }}>
+                          <div
+                            className={styles.logoUploadPlaceholder}
+                            style={{ flexDirection: 'column', gap: 4 }}
+                          >
                             {logoLoading && editingCompany ? (
-                              <Spin size="default" indicator={<LoadingOutlined style={{ fontSize: 28, color: '#1f2937' }} spin />} />
+                              <Spin
+                                size="default"
+                                indicator={
+                                  <LoadingOutlined
+                                    style={{ fontSize: 28, color: '#1f2937' }}
+                                    spin
+                                  />
+                                }
+                              />
                             ) : (
                               <img
                                 src={logoPreviewUrl || DEFAULT_COMPANY_LOGO}
@@ -1057,7 +1187,9 @@ export function CompaniesManagementPage() {
                         <Col flex="1">
                           <div className={styles.logoUploadInfo}>
                             <p className={styles.logoUploadTitle}>Logo de la Empresa</p>
-                            <p className={styles.logoUploadDesc}>Formato de imagen (PNG, JPG, SVG) - Maximo 5MB</p>
+                            <p className={styles.logoUploadDesc}>
+                              Formato de imagen (PNG, JPG, SVG) - Maximo 5MB
+                            </p>
                             <Space style={{ marginTop: 8 }}>
                               {canUploadLogo ? (
                                 <Upload {...logoUploadProps}>
@@ -1094,32 +1226,56 @@ export function CompaniesManagementPage() {
                     </div>
                     <Row gutter={[12, 12]} className={styles.companyFormGrid}>
                       <Col span={12}>
-                        <Form.Item name="nombre" label="Nombre Empresa *" rules={textRules({ required: true, max: 200 })}>
+                        <Form.Item
+                          name="nombre"
+                          label="Nombre Empresa *"
+                          rules={textRules({ required: true, max: 200 })}
+                        >
                           <Input maxLength={200} />
                         </Form.Item>
                       </Col>
                       <Col span={12}>
-                        <Form.Item name="nombreLegal" label="Nombre Legal Empresa *" rules={textRules({ required: true, max: 300 })}>
+                        <Form.Item
+                          name="nombreLegal"
+                          label="Nombre Legal Empresa *"
+                          rules={textRules({ required: true, max: 300 })}
+                        >
                           <Input maxLength={300} />
                         </Form.Item>
                       </Col>
                       <Col span={8}>
-                        <Form.Item name="cedula" label="Cedula Empresa *" rules={textRules({ required: true, max: 50 })}>
+                        <Form.Item
+                          name="cedula"
+                          label="Cedula Empresa *"
+                          rules={textRules({ required: true, max: 50 })}
+                        >
                           <Input maxLength={50} />
                         </Form.Item>
                       </Col>
                       <Col span={8}>
-                        <Form.Item name="actividadEconomica" label="Actividad Economica Empresa" rules={[{ validator: optionalNoSqlInjection }]}>
+                        <Form.Item
+                          name="actividadEconomica"
+                          label="Actividad Economica Empresa"
+                          rules={[{ validator: optionalNoSqlInjection }]}
+                        >
                           <Input maxLength={300} />
                         </Form.Item>
                       </Col>
                       <Col span={8}>
-                        <Form.Item name="prefijo" label="Prefijo Empresa *" rules={textRules({ required: true, max: 10 })}>
+                        <Form.Item
+                          name="prefijo"
+                          label="Prefijo Empresa *"
+                          rules={textRules({ required: true, max: 10 })}
+                        >
                           <Input maxLength={10} />
                         </Form.Item>
                       </Col>
                       <Col span={8}>
-                        <Form.Item name="idExterno" label="ID Externo Empresa" rules={[{ validator: optionalNoSqlInjection }]}>
+                        <Form.Item
+                          name="idExterno"
+                          label="ID Externo Empresa"
+                          rules={[{ validator: optionalNoSqlInjection }]}
+                        >
                           <Input maxLength={100} placeholder="0" />
                         </Form.Item>
                       </Col>
@@ -1129,7 +1285,11 @@ export function CompaniesManagementPage() {
                         </Form.Item>
                       </Col>
                       <Col span={8}>
-                        <Form.Item name="telefono" label="Telefono Empresa" rules={[{ validator: optionalNoSqlInjection }]}>
+                        <Form.Item
+                          name="telefono"
+                          label="Telefono Empresa"
+                          rules={[{ validator: optionalNoSqlInjection }]}
+                        >
                           <Input maxLength={30} />
                         </Form.Item>
                       </Col>
@@ -1148,12 +1308,20 @@ export function CompaniesManagementPage() {
                 children: (
                   <Row gutter={[12, 12]} className={styles.companyFormGrid}>
                     <Col span={16}>
-                      <Form.Item name="direccionExacta" label="Direccion Exacta" rules={[{ validator: optionalNoSqlInjection }]}>
+                      <Form.Item
+                        name="direccionExacta"
+                        label="Direccion Exacta"
+                        rules={[{ validator: optionalNoSqlInjection }]}
+                      >
                         <Input.TextArea rows={4} />
                       </Form.Item>
                     </Col>
                     <Col span={8}>
-                      <Form.Item name="codigoPostal" label="Codigo Postal" rules={[{ validator: optionalNoSqlInjection }]}>
+                      <Form.Item
+                        name="codigoPostal"
+                        label="Codigo Postal"
+                        rules={[{ validator: optionalNoSqlInjection }]}
+                      >
                         <Input maxLength={20} />
                       </Form.Item>
                     </Col>
@@ -1161,37 +1329,42 @@ export function CompaniesManagementPage() {
                 ),
               },
               ...(editingCompany && canViewCompanyAuditPerm
-                ? [{
-                    key: 'bitacora',
-                    label: (
-                      <span>
-                        <SearchOutlined style={{ marginRight: 8, fontSize: 16 }} />
-                        Bitacora
-                      </span>
-                    ),
-                    children: (
-                      <div style={{ paddingTop: 8 }}>
-                        <p className={styles.sectionTitle}>Historial de cambios de la empresa</p>
-                        <p className={styles.sectionDescription}>
-                          Muestra quien hizo el cambio, cuando lo hizo y el detalle registrado en bitacora.
-                        </p>
-                        <Table<CompanyAuditTrailItem>
-                          rowKey="id"
-                          size="small"
-                          loading={loadingCompanyAuditTrail}
-                          columns={companyAuditColumns}
-                          dataSource={companyAuditTrail}
-                          className={`${styles.configTable} ${styles.auditTableCompact}`}
-                          pagination={{
-                            pageSize: 8,
-                            showSizeChanger: true,
-                            showTotal: (total) => `${total} registro(s)`,
-                          }}
-                          locale={{ emptyText: 'No hay registros de bitacora para esta empresa.' }}
-                        />
-                      </div>
-                    ),
-                  }]
+                ? [
+                    {
+                      key: 'bitacora',
+                      label: (
+                        <span>
+                          <SearchOutlined style={{ marginRight: 8, fontSize: 16 }} />
+                          Bitacora
+                        </span>
+                      ),
+                      children: (
+                        <div style={{ paddingTop: 8 }}>
+                          <p className={styles.sectionTitle}>Historial de cambios de la empresa</p>
+                          <p className={styles.sectionDescription}>
+                            Muestra quien hizo el cambio, cuando lo hizo y el detalle registrado en
+                            bitacora.
+                          </p>
+                          <Table<CompanyAuditTrailItem>
+                            rowKey="id"
+                            size="small"
+                            loading={loadingCompanyAuditTrail}
+                            columns={companyAuditColumns}
+                            dataSource={companyAuditTrail}
+                            className={`${styles.configTable} ${styles.auditTableCompact}`}
+                            pagination={{
+                              pageSize: 8,
+                              showSizeChanger: true,
+                              showTotal: (total) => `${total} registro(s)`,
+                            }}
+                            locale={{
+                              emptyText: 'No hay registros de bitacora para esta empresa.',
+                            }}
+                          />
+                        </div>
+                      ),
+                    },
+                  ]
                 : []),
             ]}
           />
@@ -1204,8 +1377,7 @@ export function CompaniesManagementPage() {
               className={styles.companyModalBtnSubmit}
               loading={saving}
               disabled={
-                !canSubmitCompany ||
-                (editingCompany ? !canEditCompanyPerm : !canCreateCompanyPerm)
+                !canSubmitCompany || (editingCompany ? !canEditCompanyPerm : !canCreateCompanyPerm)
               }
               onClick={() => void submitCompany()}
               icon={editingCompany ? undefined : <PlusOutlined />}
@@ -1218,5 +1390,3 @@ export function CompaniesManagementPage() {
     </div>
   );
 }
-
-

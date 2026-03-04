@@ -21,11 +21,7 @@ export function LocaleProvider({ children, defaultLocale = 'es' }: LocaleProvide
     setLocaleState(newLocale);
   }, []);
 
-  return (
-    <LocaleContext.Provider value={{ locale, setLocale }}>
-      {children}
-    </LocaleContext.Provider>
-  );
+  return <LocaleContext.Provider value={{ locale, setLocale }}>{children}</LocaleContext.Provider>;
 }
 
 export function useLocale() {

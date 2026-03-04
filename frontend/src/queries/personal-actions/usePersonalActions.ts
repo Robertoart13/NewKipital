@@ -1,6 +1,8 @@
 import { useQuery } from '@tanstack/react-query';
-import { personalActionKeys } from './keys';
+
 import { fetchPersonalActions } from '../../api/personalActions';
+
+import { personalActionKeys } from './keys';
 
 interface UsePersonalActionsParams {
   companyId: string;

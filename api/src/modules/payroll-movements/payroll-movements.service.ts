@@ -14,10 +14,10 @@ import { OrgProject } from '../projects/entities/project.entity';
 
 import { PayrollMovement } from './entities/payroll-movement.entity';
 
-import type { AuditOutboxService } from '../integration/audit-outbox.service';
+import { AuditOutboxService } from '../integration/audit-outbox.service';
 import type { CreatePayrollMovementDto } from './dto/create-payroll-movement.dto';
 import type { UpdatePayrollMovementDto } from './dto/update-payroll-movement.dto';
-import type { Repository } from 'typeorm';
+import { Repository } from 'typeorm';
 
 @Injectable()
 export class PayrollMovementsService {

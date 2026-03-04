@@ -1,6 +1,6 @@
 import { TableColumn, TableIndex } from 'typeorm';
 
-import type { MigrationInterface, QueryRunner } from 'typeorm';
+import { MigrationInterface, QueryRunner } from 'typeorm';
 
 /**
  * Agrega identidad Microsoft Entra ID a sys_usuarios.

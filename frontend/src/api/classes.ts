@@ -56,20 +56,23 @@ export async function createClass(payload: ClassPayload): Promise<ClassListItem>
     body: JSON.stringify(payload),
   });
   if (!res.ok) {
-    const error = await res.json().catch(() => null) as { message?: string | string[] } | null;
+    const error = (await res.json().catch(() => null)) as { message?: string | string[] } | null;
     const msg = Array.isArray(error?.message) ? error.message.join(', ') : error?.message;
     throw new Error(msg || 'Error al crear clase');
   }
   return res.json();
 }
 
-export async function updateClass(id: number, payload: Partial<ClassPayload>): Promise<ClassListItem> {
+export async function updateClass(
+  id: number,
+  payload: Partial<ClassPayload>,
+): Promise<ClassListItem> {
   const res = await httpFetch(`/classes/${id}`, {
     method: 'PUT',
     body: JSON.stringify(payload),
   });
   if (!res.ok) {
-    const error = await res.json().catch(() => null) as { message?: string | string[] } | null;
+    const error = (await res.json().catch(() => null)) as { message?: string | string[] } | null;
     const msg = Array.isArray(error?.message) ? error.message.join(', ') : error?.message;
     throw new Error(msg || 'Error al actualizar clase');
   }
@@ -88,11 +91,14 @@ export async function reactivateClass(id: number): Promise<ClassListItem> {
   return res.json();
 }
 
-export async function fetchClassAuditTrail(id: number, limit = 200): Promise<ClassAuditTrailItem[]> {
+export async function fetchClassAuditTrail(
+  id: number,
+  limit = 200,
+): Promise<ClassAuditTrailItem[]> {
   const qs = new URLSearchParams({ limit: String(limit) });
   const res = await httpFetch(`/classes/${id}/audit-trail?${qs}`);
   if (!res.ok) {
-    const error = await res.json().catch(() => null) as { message?: string | string[] } | null;
+    const error = (await res.json().catch(() => null)) as { message?: string | string[] } | null;
     const msg = Array.isArray(error?.message) ? error.message.join(', ') : error?.message;
     throw new Error(msg || 'Error al cargar bitacora de clases');
   }

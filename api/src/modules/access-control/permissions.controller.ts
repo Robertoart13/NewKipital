@@ -19,7 +19,7 @@ import { CacheResponseInterceptor } from '../../common/interceptors/cache-respon
 
 import type { CreatePermissionDto } from './dto/create-permission.dto';
 import type { UpdatePermissionDto } from './dto/update-permission.dto';
-import type { PermissionsService } from './permissions.service';
+import { PermissionsService } from './permissions.service';
 
 @CacheScope('permissions')
 @UseInterceptors(CacheResponseInterceptor)

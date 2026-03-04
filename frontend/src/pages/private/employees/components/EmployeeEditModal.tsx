@@ -1,6 +1,3 @@
-import { useEffect, useMemo, useCallback, useState } from 'react';
-import { App as AntdApp, Modal, Form, Input, Select, DatePicker, InputNumber, Switch, Tabs, Button, Flex, Row, Col, Spin, Table, Tag, Tooltip } from 'antd';
-import type { ColumnsType } from 'antd/es/table';
 import {
   UserOutlined,
   EditOutlined,
@@ -13,22 +10,44 @@ import {
   QuestionCircleOutlined,
   SearchOutlined,
 } from '@ant-design/icons';
-import dayjs from 'dayjs';
-import { useAppSelector } from '../../../../store/hooks';
 import {
-  canEditEmployee,
-  canInactivateEmployee,
-  canReactivateEmployee,
-  canViewEmployeeAudit,
-} from '../../../../store/selectors/permissions.selectors';
+  App as AntdApp,
+  Modal,
+  Form,
+  Input,
+  Select,
+  DatePicker,
+  InputNumber,
+  Switch,
+  Tabs,
+  Button,
+  Flex,
+  Row,
+  Col,
+  Spin,
+  Table,
+  Tag,
+  Tooltip,
+} from 'antd';
+import dayjs from 'dayjs';
+import { useEffect, useMemo, useCallback, useState } from 'react';
+
+import { fetchEmployeeAuditTrail } from '../../../../api/employees';
+import { useMoneyFieldFormatter } from '../../../../hooks/useMoneyFieldFormatter';
+import { getCurrencySymbol, isMoneyOverMax } from '../../../../lib/currencyFormat';
+import { formatDateTime12h } from '../../../../lib/formatDate';
+import { textRules, emailRules, optionalNoSqlInjection } from '../../../../lib/formValidation';
+import {
+  EMPLOYEE_MONEY_MAX_DIGITS,
+  sanitizeMoneyDigits,
+} from '../../../../lib/moneyInputSanitizer';
+import { useDepartments } from '../../../../queries/catalogs/useDepartments';
 import { useEmployee } from '../../../../queries/employees/useEmployee';
 import { useUpdateEmployee } from '../../../../queries/employees/useUpdateEmployee';
 import { useInactivateEmployee } from '../../../../queries/employees/useInactivateEmployee';
 import { useReactivateEmployee } from '../../../../queries/employees/useReactivateEmployee';
 import type { UpdateEmployeePayload } from '../../../../api/employees';
 import type { EmployeeDetail, EmployeeAuditTrailItem } from '../../../../api/employees';
-import { fetchEmployeeAuditTrail } from '../../../../api/employees';
-import { useDepartments } from '../../../../queries/catalogs/useDepartments';
 import { usePositions } from '../../../../queries/catalogs/usePositions';
 import { usePayPeriods } from '../../../../queries/catalogs/usePayPeriods';
 import { useSupervisors } from '../../../../queries/employees/useSupervisors';
@@ -40,17 +59,15 @@ import {
   MONEDA_OPTIONS,
 } from '../constants/employee-enums';
 import styles from '../../configuration/UsersManagementPage.module.css';
-import { textRules, emailRules, optionalNoSqlInjection } from '../../../../lib/formValidation';
+import { useAppSelector } from '../../../../store/hooks';
 import {
-  getCurrencySymbol,
-  isMoneyOverMax,
-} from '../../../../lib/currencyFormat';
-import { formatDateTime12h } from '../../../../lib/formatDate';
-import {
-  EMPLOYEE_MONEY_MAX_DIGITS,
-  sanitizeMoneyDigits,
-} from '../../../../lib/moneyInputSanitizer';
-import { useMoneyFieldFormatter } from '../../../../hooks/useMoneyFieldFormatter';
+  canEditEmployee,
+  canInactivateEmployee,
+  canReactivateEmployee,
+  canViewEmployeeAudit,
+} from '../../../../store/selectors/permissions.selectors';
+
+import type { ColumnsType } from 'antd/es/table';
 
 interface EmployeeEditModalProps {
   employeeId: number | undefined;
@@ -61,9 +78,15 @@ interface EmployeeEditModalProps {
 
 /** Solo campos que devuelve la API del empleado (sin inventar fecha nacimiento, código postal, etc.) */
 function mapEmployeeToFormValues(emp: EmployeeDetail) {
-  const vacaciones = emp.vacacionesAcumuladas != null ? parseInt(emp.vacacionesAcumuladas, 10) : undefined;
+  const vacaciones =
+    emp.vacacionesAcumuladas != null ? parseInt(emp.vacacionesAcumuladas, 10) : undefined;
   const cesantia = emp.cesantiaAcumulada != null ? parseFloat(emp.cesantiaAcumulada) : undefined;
-  const salario = emp.salarioBase != null ? (typeof emp.salarioBase === 'string' ? parseFloat(emp.salarioBase) : emp.salarioBase) : undefined;
+  const salario =
+    emp.salarioBase != null
+      ? typeof emp.salarioBase === 'string'
+        ? parseFloat(emp.salarioBase)
+        : emp.salarioBase
+      : undefined;
   return {
     nombre: emp.nombre ?? '',
     apellido1: emp.apellido1 ?? '',
@@ -93,14 +116,17 @@ function mapEmployeeToFormValues(emp: EmployeeDetail) {
     cuentaBanco: emp.cuentaBanco ?? undefined,
     vacacionesAcumuladas: Number.isFinite(vacaciones) ? vacaciones : 0,
     cesantiaAcumulada:
-      Number.isFinite(cesantia) && cesantia != null
-        ? sanitizeMoneyDigits(cesantia)
-        : '0',
+      Number.isFinite(cesantia) && cesantia != null ? sanitizeMoneyDigits(cesantia) : '0',
     activo: emp.estado === 1,
   };
 }
 
-export function EmployeeEditModal({ employeeId, open, onClose, onSuccess }: EmployeeEditModalProps) {
+export function EmployeeEditModal({
+  employeeId,
+  open,
+  onClose,
+  onSuccess,
+}: EmployeeEditModalProps) {
   const { modal, message } = AntdApp.useApp();
   const [form] = Form.useForm();
   const formValues = Form.useWatch([], form);
@@ -110,7 +136,9 @@ export function EmployeeEditModal({ employeeId, open, onClose, onSuccess }: Empl
   const canReactivate = useAppSelector(canReactivateEmployee);
   const canViewAudit = useAppSelector(canViewEmployeeAudit);
 
-  const { data: employee, isLoading: loadingEmployee } = useEmployee(open && employeeId != null ? employeeId! : null);
+  const { data: employee, isLoading: loadingEmployee } = useEmployee(
+    open && employeeId != null ? employeeId! : null,
+  );
   const updateMutation = useUpdateEmployee();
   const inactivateMutation = useInactivateEmployee();
   const reactivateMutation = useReactivateEmployee();
@@ -119,9 +147,18 @@ export function EmployeeEditModal({ employeeId, open, onClose, onSuccess }: Empl
   const { data: positions = [] } = usePositions();
   const { data: payPeriods = [] } = usePayPeriods();
   const activeCompanyIds = useMemo(() => new Set(companies.map((c) => c.id)), [companies]);
-  const activeDepartmentIds = useMemo(() => new Set(departments.map((d: { id: number }) => d.id)), [departments]);
-  const activePositionIds = useMemo(() => new Set(positions.map((p: { id: number }) => p.id)), [positions]);
-  const activePayPeriodIds = useMemo(() => new Set(payPeriods.map((p: { id: number }) => p.id)), [payPeriods]);
+  const activeDepartmentIds = useMemo(
+    () => new Set(departments.map((d: { id: number }) => d.id)),
+    [departments],
+  );
+  const activePositionIds = useMemo(
+    () => new Set(positions.map((p: { id: number }) => p.id)),
+    [positions],
+  );
+  const activePayPeriodIds = useMemo(
+    () => new Set(payPeriods.map((p: { id: number }) => p.id)),
+    [payPeriods],
+  );
 
   const [activeTabKey, setActiveTabKey] = useState('personal');
   const [auditTrail, setAuditTrail] = useState<EmployeeAuditTrailItem[]>([]);
@@ -130,7 +167,8 @@ export function EmployeeEditModal({ employeeId, open, onClose, onSuccess }: Empl
 
   const activo = Form.useWatch('activo', form) ?? true;
   const canToggleActivo = (activo && canInactivate) || (!activo && canReactivate);
-  const monedaSalarioSeleccionada = (Form.useWatch('monedaSalario', form) as string | undefined) ?? 'CRC';
+  const monedaSalarioSeleccionada =
+    (Form.useWatch('monedaSalario', form) as string | undefined) ?? 'CRC';
   const currencySymbol = getCurrencySymbol(monedaSalarioSeleccionada);
   const moneyField = useMoneyFieldFormatter(EMPLOYEE_MONEY_MAX_DIGITS);
   const { data: supervisors = [] } = useSupervisors();
@@ -178,25 +216,28 @@ export function EmployeeEditModal({ employeeId, open, onClose, onSuccess }: Empl
     }
   }, [open, employeeId]);
 
-  const loadAuditTrail = useCallback(async (id: number) => {
-    if (!canViewAudit) {
-      setAuditTrail([]);
-      setLoadingAuditTrail(false);
-      setAuditLoadedForId(id);
-      return;
-    }
-    setLoadingAuditTrail(true);
-    try {
-      const rows = await fetchEmployeeAuditTrail(id, 200);
-      setAuditTrail(rows ?? []);
-    } catch (error) {
-      setAuditTrail([]);
-      message.error(error instanceof Error ? error.message : 'Error al cargar bitacora');
-    } finally {
-      setLoadingAuditTrail(false);
-      setAuditLoadedForId(id);
-    }
-  }, [canViewAudit, message]);
+  const loadAuditTrail = useCallback(
+    async (id: number) => {
+      if (!canViewAudit) {
+        setAuditTrail([]);
+        setLoadingAuditTrail(false);
+        setAuditLoadedForId(id);
+        return;
+      }
+      setLoadingAuditTrail(true);
+      try {
+        const rows = await fetchEmployeeAuditTrail(id, 200);
+        setAuditTrail(rows ?? []);
+      } catch (error) {
+        setAuditTrail([]);
+        message.error(error instanceof Error ? error.message : 'Error al cargar bitacora');
+      } finally {
+        setLoadingAuditTrail(false);
+        setAuditLoadedForId(id);
+      }
+    },
+    [canViewAudit, message],
+  );
 
   // Carga diferida de bitácora al abrir el tab Bitácora
   useEffect(() => {
@@ -267,7 +308,8 @@ export function EmployeeEditModal({ employeeId, open, onClose, onSuccess }: Empl
       monedaSalario: values.monedaSalario || undefined,
       numeroCcss: values.numeroCcss?.trim() || undefined,
       cuentaBanco: values.cuentaBanco || undefined,
-      vacacionesAcumuladas: values.vacacionesAcumuladas != null ? String(values.vacacionesAcumuladas) : undefined,
+      vacacionesAcumuladas:
+        values.vacacionesAcumuladas != null ? String(values.vacacionesAcumuladas) : undefined,
       cesantiaAcumulada:
         moneyField.parse(values.cesantiaAcumulada) != null
           ? String(moneyField.parse(values.cesantiaAcumulada))
@@ -286,72 +328,85 @@ export function EmployeeEditModal({ employeeId, open, onClose, onSuccess }: Empl
     );
   };
 
-  const auditColumns: ColumnsType<EmployeeAuditTrailItem> = useMemo(() => [
-    {
-      title: 'Fecha y hora',
-      dataIndex: 'fechaCreacion',
-      key: 'fechaCreacion',
-      width: 160,
-      render: (value: string | null) => formatDateTime12h(value),
-    },
-    {
-      title: 'Quien lo hizo',
-      key: 'actor',
-      width: 210,
-      render: (_, row) => {
-        const actorLabel = row.actorNombre?.trim() || row.actorEmail?.trim() || (row.actorUserId ? `Usuario ID ${row.actorUserId}` : 'Sistema');
-        return (
-          <div>
-            <div style={{ fontWeight: 600, color: '#3d4f5c' }}>{actorLabel}</div>
-            {row.actorEmail && <div style={{ color: '#8c8c8c', fontSize: 12 }}>{row.actorEmail}</div>}
-          </div>
-        );
+  const auditColumns: ColumnsType<EmployeeAuditTrailItem> = useMemo(
+    () => [
+      {
+        title: 'Fecha y hora',
+        dataIndex: 'fechaCreacion',
+        key: 'fechaCreacion',
+        width: 160,
+        render: (value: string | null) => formatDateTime12h(value),
       },
-    },
-    {
-      title: 'Accion',
-      key: 'accion',
-      width: 170,
-      render: (_, row) => (
-        <Flex gap={6} wrap="wrap">
-          <Tag className={styles.tagInactivo}>{row.modulo}</Tag>
-          <Tag className={styles.tagActivo}>{row.accion}</Tag>
-        </Flex>
-      ),
-    },
-    {
-      title: 'Detalle',
-      dataIndex: 'descripcion',
-      key: 'descripcion',
-      render: (value: string, row) => {
-        const changes = row.cambios ?? [];
-        const tooltipContent = (
-          <div style={{ maxWidth: 520 }}>
-            <div style={{ fontWeight: 600, marginBottom: 8 }}>{value}</div>
-            {changes.length > 0 ? (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                {changes.map((change, index) => (
-                  <div key={`${row.id}-${change.campo}-${index}`} style={{ fontSize: 12, lineHeight: 1.4 }}>
-                    <div><strong>{change.campo}</strong></div>
-                    <div>Antes: {change.antes}</div>
-                    <div>Despues: {change.despues}</div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div style={{ fontSize: 12 }}>Sin detalle de campos para esta accion.</div>
-            )}
-          </div>
-        );
+      {
+        title: 'Quien lo hizo',
+        key: 'actor',
+        width: 210,
+        render: (_, row) => {
+          const actorLabel =
+            row.actorNombre?.trim() ||
+            row.actorEmail?.trim() ||
+            (row.actorUserId ? `Usuario ID ${row.actorUserId}` : 'Sistema');
+          return (
+            <div>
+              <div style={{ fontWeight: 600, color: '#3d4f5c' }}>{actorLabel}</div>
+              {row.actorEmail && (
+                <div style={{ color: '#8c8c8c', fontSize: 12 }}>{row.actorEmail}</div>
+              )}
+            </div>
+          );
+        },
+      },
+      {
+        title: 'Accion',
+        key: 'accion',
+        width: 170,
+        render: (_, row) => (
+          <Flex gap={6} wrap="wrap">
+            <Tag className={styles.tagInactivo}>{row.modulo}</Tag>
+            <Tag className={styles.tagActivo}>{row.accion}</Tag>
+          </Flex>
+        ),
+      },
+      {
+        title: 'Detalle',
+        dataIndex: 'descripcion',
+        key: 'descripcion',
+        render: (value: string, row) => {
+          const changes = row.cambios ?? [];
+          const tooltipContent = (
+            <div style={{ maxWidth: 520 }}>
+              <div style={{ fontWeight: 600, marginBottom: 8 }}>{value}</div>
+              {changes.length > 0 ? (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                  {changes.map((change, index) => (
+                    <div
+                      key={`${row.id}-${change.campo}-${index}`}
+                      style={{ fontSize: 12, lineHeight: 1.4 }}
+                    >
+                      <div>
+                        <strong>{change.campo}</strong>
+                      </div>
+                      <div>Antes: {change.antes}</div>
+                      <div>Despues: {change.despues}</div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div style={{ fontSize: 12 }}>Sin detalle de campos para esta accion.</div>
+              )}
+            </div>
+          );
 
-        return (
-          <Tooltip title={tooltipContent}>
-            <div className={styles.auditDetailCell}>{value}</div>
-          </Tooltip>
-        );
+          return (
+            <Tooltip title={tooltipContent}>
+              <div className={styles.auditDetailCell}>{value}</div>
+            </Tooltip>
+          );
+        },
       },
-    },
-  ], []);
+    ],
+    [],
+  );
 
   const tabItems = [
     {
@@ -365,12 +420,20 @@ export function EmployeeEditModal({ employeeId, open, onClose, onSuccess }: Empl
       children: (
         <Row gutter={[12, 12]} className={styles.companyFormGrid}>
           <Col span={12}>
-            <Form.Item name="nombre" label="Nombre *" rules={textRules({ required: true, max: 100 })}>
+            <Form.Item
+              name="nombre"
+              label="Nombre *"
+              rules={textRules({ required: true, max: 100 })}
+            >
               <Input maxLength={100} />
             </Form.Item>
           </Col>
           <Col span={12}>
-            <Form.Item name="apellido1" label="Apellido *" rules={textRules({ required: true, max: 100 })}>
+            <Form.Item
+              name="apellido1"
+              label="Apellido *"
+              rules={textRules({ required: true, max: 100 })}
+            >
               <Input maxLength={100} />
             </Form.Item>
           </Col>
@@ -380,18 +443,30 @@ export function EmployeeEditModal({ employeeId, open, onClose, onSuccess }: Empl
             </Form.Item>
           </Col>
           <Col span={8}>
-            <Form.Item name="cedula" label="Cédula *" rules={textRules({ required: true, max: 30 })}>
+            <Form.Item
+              name="cedula"
+              label="Cédula *"
+              rules={textRules({ required: true, max: 30 })}
+            >
               <Input maxLength={30} />
             </Form.Item>
           </Col>
           <Col span={8}>
             <Form.Item name="genero" label="Género">
-              <Select allowClear placeholder="Seleccionar" options={GENERO_OPTIONS.map((o) => ({ value: o.value, label: o.label }))} />
+              <Select
+                allowClear
+                placeholder="Seleccionar"
+                options={GENERO_OPTIONS.map((o) => ({ value: o.value, label: o.label }))}
+              />
             </Form.Item>
           </Col>
           <Col span={8}>
             <Form.Item name="estadoCivil" label="Estado Civil">
-              <Select allowClear placeholder="Seleccionar" options={ESTADO_CIVIL_OPTIONS.map((o) => ({ value: o.value, label: o.label }))} />
+              <Select
+                allowClear
+                placeholder="Seleccionar"
+                options={ESTADO_CIVIL_OPTIONS.map((o) => ({ value: o.value, label: o.label }))}
+              />
             </Form.Item>
           </Col>
           <Col span={8}>
@@ -413,7 +488,11 @@ export function EmployeeEditModal({ employeeId, open, onClose, onSuccess }: Empl
       children: (
         <Row gutter={[12, 12]} className={styles.companyFormGrid}>
           <Col span={12}>
-            <Form.Item name="telefono" label="Teléfono" rules={[{ validator: optionalNoSqlInjection }]}>
+            <Form.Item
+              name="telefono"
+              label="Teléfono"
+              rules={[{ validator: optionalNoSqlInjection }]}
+            >
               <Input maxLength={30} placeholder="00000000" />
             </Form.Item>
           </Col>
@@ -423,7 +502,11 @@ export function EmployeeEditModal({ employeeId, open, onClose, onSuccess }: Empl
             </Form.Item>
           </Col>
           <Col span={24}>
-            <Form.Item name="direccion" label="Dirección" rules={[{ validator: optionalNoSqlInjection }]}>
+            <Form.Item
+              name="direccion"
+              label="Dirección"
+              rules={[{ validator: optionalNoSqlInjection }]}
+            >
               <Input placeholder="No especifica" />
             </Form.Item>
           </Col>
@@ -482,14 +565,22 @@ export function EmployeeEditModal({ employeeId, open, onClose, onSuccess }: Empl
                 </Form.Item>
                 <Form.Item label="Departamento actual">
                   <Flex align="center" gap={8}>
-                    <Input value={employee.departamento?.nombre ?? `Departamento #${employee.idDepartamento}`} disabled />
+                    <Input
+                      value={
+                        employee.departamento?.nombre ?? `Departamento #${employee.idDepartamento}`
+                      }
+                      disabled
+                    />
                     <Tag className={styles.tagInactivo}>Inactivo</Tag>
                   </Flex>
                 </Form.Item>
                 <Form.Item name="idDepartamentoCambio" label="Cambiar a departamento activo">
                   <Select
                     placeholder="Seleccionar"
-                    options={departments.map((d: { id: number; nombre: string }) => ({ value: d.id, label: d.nombre }))}
+                    options={departments.map((d: { id: number; nombre: string }) => ({
+                      value: d.id,
+                      label: d.nombre,
+                    }))}
                   />
                 </Form.Item>
               </>
@@ -497,7 +588,10 @@ export function EmployeeEditModal({ employeeId, open, onClose, onSuccess }: Empl
               <Form.Item name="idDepartamento" label="Departamento *" rules={[{ required: true }]}>
                 <Select
                   placeholder="Seleccionar"
-                  options={departments.map((d: { id: number; nombre: string }) => ({ value: d.id, label: d.nombre }))}
+                  options={departments.map((d: { id: number; nombre: string }) => ({
+                    value: d.id,
+                    label: d.nombre,
+                  }))}
                 />
               </Form.Item>
             )}
@@ -510,14 +604,20 @@ export function EmployeeEditModal({ employeeId, open, onClose, onSuccess }: Empl
                 </Form.Item>
                 <Form.Item label="Puesto actual">
                   <Flex align="center" gap={8}>
-                    <Input value={employee.puesto?.nombre ?? `Puesto #${employee.idPuesto}`} disabled />
+                    <Input
+                      value={employee.puesto?.nombre ?? `Puesto #${employee.idPuesto}`}
+                      disabled
+                    />
                     <Tag className={styles.tagInactivo}>Inactivo</Tag>
                   </Flex>
                 </Form.Item>
                 <Form.Item name="idPuestoCambio" label="Cambiar a puesto activo">
                   <Select
                     placeholder="Seleccionar"
-                    options={positions.map((p: { id: number; nombre: string }) => ({ value: p.id, label: p.nombre }))}
+                    options={positions.map((p: { id: number; nombre: string }) => ({
+                      value: p.id,
+                      label: p.nombre,
+                    }))}
                   />
                 </Form.Item>
               </>
@@ -525,7 +625,10 @@ export function EmployeeEditModal({ employeeId, open, onClose, onSuccess }: Empl
               <Form.Item name="idPuesto" label="Puesto *" rules={[{ required: true }]}>
                 <Select
                   placeholder="Seleccionar"
-                  options={positions.map((p: { id: number; nombre: string }) => ({ value: p.id, label: p.nombre }))}
+                  options={positions.map((p: { id: number; nombre: string }) => ({
+                    value: p.id,
+                    label: p.nombre,
+                  }))}
                 />
               </Form.Item>
             )}
@@ -536,12 +639,21 @@ export function EmployeeEditModal({ employeeId, open, onClose, onSuccess }: Empl
               label="Fecha de Ingreso *"
               extra="No editable en actualización"
             >
-              <DatePicker placeholder="dd/mm/aaaa" format="DD/MM/YYYY" style={{ width: '100%' }} disabled />
+              <DatePicker
+                placeholder="dd/mm/aaaa"
+                format="DD/MM/YYYY"
+                style={{ width: '100%' }}
+                disabled
+              />
             </Form.Item>
           </Col>
           <Col span={8}>
             <Form.Item name="tipoContrato" label="Tipo de Contrato">
-              <Select allowClear placeholder="Seleccionar" options={TIPO_CONTRATO_OPTIONS.map((o) => ({ value: o.value, label: o.label }))} />
+              <Select
+                allowClear
+                placeholder="Seleccionar"
+                options={TIPO_CONTRATO_OPTIONS.map((o) => ({ value: o.value, label: o.label }))}
+              />
             </Form.Item>
           </Col>
           <Col span={8}>
@@ -552,29 +664,46 @@ export function EmployeeEditModal({ employeeId, open, onClose, onSuccess }: Empl
                 </Form.Item>
                 <Form.Item label="Periodo de Pago actual">
                   <Flex align="center" gap={8}>
-                    <Input value={employee.periodoPago?.nombre ?? `Periodo #${employee.idPeriodoPago}`} disabled />
+                    <Input
+                      value={employee.periodoPago?.nombre ?? `Periodo #${employee.idPeriodoPago}`}
+                      disabled
+                    />
                     <Tag className={styles.tagInactivo}>Inactivo</Tag>
                   </Flex>
                 </Form.Item>
                 <Form.Item name="idPeriodoPagoCambio" label="Cambiar a periodo activo">
                   <Select
                     placeholder="Seleccionar"
-                    options={payPeriods.map((p: { id: number; nombre: string }) => ({ value: p.id, label: p.nombre }))}
+                    options={payPeriods.map((p: { id: number; nombre: string }) => ({
+                      value: p.id,
+                      label: p.nombre,
+                    }))}
                   />
                 </Form.Item>
               </>
             ) : (
-              <Form.Item name="idPeriodoPago" label="Periodo de Pago *" rules={[{ required: true }]}> 
+              <Form.Item
+                name="idPeriodoPago"
+                label="Periodo de Pago *"
+                rules={[{ required: true }]}
+              >
                 <Select
                   placeholder="Seleccionar"
-                  options={payPeriods.map((p: { id: number; nombre: string }) => ({ value: p.id, label: p.nombre }))}
+                  options={payPeriods.map((p: { id: number; nombre: string }) => ({
+                    value: p.id,
+                    label: p.nombre,
+                  }))}
                 />
               </Form.Item>
             )}
           </Col>
           <Col span={8}>
             <Form.Item name="jornada" label="Tipo de Jornada">
-              <Select allowClear placeholder="Seleccionar" options={JORNADA_OPTIONS.map((o) => ({ value: o.value, label: o.label }))} />
+              <Select
+                allowClear
+                placeholder="Seleccionar"
+                options={JORNADA_OPTIONS.map((o) => ({ value: o.value, label: o.label }))}
+              />
             </Form.Item>
           </Col>
           <Col span={24}>
@@ -610,7 +739,8 @@ export function EmployeeEditModal({ employeeId, open, onClose, onSuccess }: Empl
                   validator: (_, v) => {
                     const n = moneyField.parse(v);
                     if (n == null) return Promise.resolve();
-                    if (isNaN(n) || n <= 0) return Promise.reject(new Error('El salario debe ser mayor a cero'));
+                    if (isNaN(n) || n <= 0)
+                      return Promise.reject(new Error('El salario debe ser mayor a cero'));
                     if (isMoneyOverMax(n)) return Promise.reject(new Error('Monto demasiado alto'));
                     return Promise.resolve();
                   },
@@ -642,7 +772,9 @@ export function EmployeeEditModal({ employeeId, open, onClose, onSuccess }: Empl
                   validator: (_, v) => {
                     const s = (v ?? '').toString().trim();
                     if (!s) return Promise.resolve();
-                    return s.length >= 4 && s.length <= 30 ? Promise.resolve() : Promise.reject(new Error('4 a 30 caracteres'));
+                    return s.length >= 4 && s.length <= 30
+                      ? Promise.resolve()
+                      : Promise.reject(new Error('4 a 30 caracteres'));
                   },
                 },
               ]}
@@ -651,7 +783,11 @@ export function EmployeeEditModal({ employeeId, open, onClose, onSuccess }: Empl
             </Form.Item>
           </Col>
           <Col span={12}>
-            <Form.Item name="cuentaBanco" label="Cuenta bancaria" rules={[{ validator: optionalNoSqlInjection }]}>
+            <Form.Item
+              name="cuentaBanco"
+              label="Cuenta bancaria"
+              rules={[{ validator: optionalNoSqlInjection }]}
+            >
               <Input placeholder="CRC-" maxLength={50} />
             </Form.Item>
           </Col>
@@ -670,20 +806,27 @@ export function EmployeeEditModal({ employeeId, open, onClose, onSuccess }: Empl
         <>
           <Row gutter={[12, 12]} className={styles.companyFormGrid}>
             <Col span={24}>
-              <Form.Item name="idSupervisor" label="Supervisor" extra="Empleados con rol Supervisor, Supervisor Global o Master en TimeWise (según empresa del empleado).">
+              <Form.Item
+                name="idSupervisor"
+                label="Supervisor"
+                extra="Empleados con rol Supervisor, Supervisor Global o Master en TimeWise (según empresa del empleado)."
+              >
                 <Select
                   allowClear
                   placeholder="Seleccionar"
-                  options={supervisors.map((s: { id: number; nombre: string; apellido1: string }) => ({
-                    value: s.id,
-                    label: `${s.nombre} ${s.apellido1}`.trim(),
-                  }))}
+                  options={supervisors.map(
+                    (s: { id: number; nombre: string; apellido1: string }) => ({
+                      value: s.id,
+                      label: `${s.nombre} ${s.apellido1}`.trim(),
+                    }),
+                  )}
                 />
               </Form.Item>
             </Col>
           </Row>
           <p style={{ color: '#64748b', fontSize: '13px' }}>
-            La gestión de acceso al sistema (TimeWise / KPITAL) y roles se realiza desde la sección de usuarios o desde la creación del empleado.
+            La gestión de acceso al sistema (TimeWise / KPITAL) y roles se realiza desde la sección
+            de usuarios o desde la creación del empleado.
           </p>
         </>
       ),
@@ -708,7 +851,11 @@ export function EmployeeEditModal({ employeeId, open, onClose, onSuccess }: Empl
                     validator: (_, value) => {
                       if (value == null || value === '') return Promise.resolve();
                       const numericValue = Number(value);
-                      if (Number.isNaN(numericValue) || numericValue < 0 || !Number.isInteger(numericValue)) {
+                      if (
+                        Number.isNaN(numericValue) ||
+                        numericValue < 0 ||
+                        !Number.isInteger(numericValue)
+                      ) {
                         return Promise.reject(new Error('Debe ser un número entero de 0 o mayor'));
                       }
                       return Promise.resolve();
@@ -762,7 +909,8 @@ export function EmployeeEditModal({ employeeId, open, onClose, onSuccess }: Empl
             </Col>
           </Row>
           <p className={styles.sectionDescription} style={{ marginTop: 16 }}>
-            La provisión de aguinaldo por empresa se gestiona en la creación del empleado. Para cambios posteriores contacte al administrador.
+            La provisión de aguinaldo por empresa se gestiona en la creación del empleado. Para
+            cambios posteriores contacte al administrador.
           </p>
         </div>
       ),
@@ -821,7 +969,12 @@ export function EmployeeEditModal({ employeeId, open, onClose, onSuccess }: Empl
         body: { padding: 24, maxHeight: '70vh', overflowY: 'auto' },
       }}
       title={
-        <Flex justify="space-between" align="center" wrap="nowrap" style={{ width: '100%', gap: 16 }}>
+        <Flex
+          justify="space-between"
+          align="center"
+          wrap="nowrap"
+          style={{ width: '100%', gap: 16 }}
+        >
           <div className={styles.companyModalHeader}>
             <div className={styles.companyModalHeaderIcon}>
               <EditOutlined />
@@ -830,7 +983,9 @@ export function EmployeeEditModal({ employeeId, open, onClose, onSuccess }: Empl
           </div>
           <Flex align="center" gap={12} className={styles.companyModalHeaderRight}>
             <div className={styles.companyModalEstadoPaper}>
-              <span style={{ fontWeight: 500, fontSize: 14, color: activo ? '#20638d' : '#64748b' }}>
+              <span
+                style={{ fontWeight: 500, fontSize: 14, color: activo ? '#20638d' : '#64748b' }}
+              >
                 {activo ? 'Activo' : 'Inactivo'}
               </span>
               <Switch
@@ -851,7 +1006,14 @@ export function EmployeeEditModal({ employeeId, open, onClose, onSuccess }: Empl
       }
     >
       {loading ? (
-        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: 320 }}>
+        <div
+          style={{
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+            minHeight: 320,
+          }}
+        >
           <Spin size="large" description="Cargando empleado..." />
         </div>
       ) : showForm ? (

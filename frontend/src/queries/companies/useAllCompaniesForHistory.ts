@@ -1,6 +1,8 @@
 import { useQuery } from '@tanstack/react-query';
-import { companyKeys } from './keys';
+
 import { fetchAllCompaniesForHistory } from '../../api/companies';
+
+import { companyKeys } from './keys';
 
 export function useAllCompaniesForHistory() {
   return useQuery({

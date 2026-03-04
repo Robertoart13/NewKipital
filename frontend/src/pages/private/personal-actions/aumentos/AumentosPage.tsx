@@ -1,5 +1,14 @@
-import { useCallback, useEffect, useMemo, useState, type MouseEvent } from 'react';
-import { Link } from 'react-router-dom';
+import {
+  AppstoreOutlined,
+  ArrowLeftOutlined,
+  DownOutlined,
+  EditOutlined,
+  FilterOutlined,
+  PlusOutlined,
+  ReloadOutlined,
+  SearchOutlined,
+  UpOutlined,
+} from '@ant-design/icons';
 import {
   App as AntdApp,
   Badge,
@@ -17,21 +26,11 @@ import {
   Tag,
   Tooltip,
 } from 'antd';
-import type { ColumnsType } from 'antd/es/table';
-import {
-  AppstoreOutlined,
-  ArrowLeftOutlined,
-  DownOutlined,
-  EditOutlined,
-  FilterOutlined,
-  PlusOutlined,
-  ReloadOutlined,
-  SearchOutlined,
-  UpOutlined,
-} from '@ant-design/icons';
 import dayjs from 'dayjs';
-import { useAppSelector } from '../../../../store/hooks';
-import { hasPermission } from '../../../../store/selectors/permissions.selectors';
+import { useCallback, useEffect, useMemo, useState, type MouseEvent } from 'react';
+import { Link } from 'react-router-dom';
+
+import { fetchPayPeriods, type CatalogPayPeriod } from '../../../../api/catalogs';
 import {
   fetchIncreaseAuditTrail,
   advanceIncreaseState,
@@ -48,13 +47,17 @@ import {
   type PersonalActionAuditTrailItem,
   type PersonalActionListItem,
 } from '../../../../api/personalActions';
-import { fetchPayPeriods, type CatalogPayPeriod } from '../../../../api/catalogs';
+import { useAppSelector } from '../../../../store/hooks';
+import { hasPermission } from '../../../../store/selectors/permissions.selectors';
 import styles from '../../configuration/UsersManagementPage.module.css';
+
 import {
   IncreaseTransactionModal,
   type IncreaseFormDraft,
   type IncreaseTransactionLine,
 } from './IncreaseTransactionModal';
+
+import type { ColumnsType } from 'antd/es/table';
 
 const ESTADO_LABEL: Record<number, { text: string; tagClass: string }> = {
   1: { text: 'Borrador', tagClass: styles.tagEstadoDefault },
@@ -146,9 +149,12 @@ function getPaneValue(
   companies: Array<{ id: number; nombre: string }>,
 ): string {
   if (key === 'empresa') {
-    return companies.find((c) => Number(c.id) === row.idEmpresa)?.nombre ?? `Empresa #${row.idEmpresa}`;
+    return (
+      companies.find((c) => Number(c.id) === row.idEmpresa)?.nombre ?? `Empresa #${row.idEmpresa}`
+    );
   }
-  if (key === 'empleado') return (row.employeeLabel ?? `Empleado #${row.idEmpleado}`).trim() || '--';
+  if (key === 'empleado')
+    return (row.employeeLabel ?? `Empleado #${row.idEmpleado}`).trim() || '--';
   if (key === 'periodoPago') return (row.periodoPagoResumen ?? '').trim() || '--';
   if (key === 'movimiento') return (row.movimientoResumen ?? '').trim() || '--';
   if (key === 'estado') return ESTADO_LABEL[row.estado]?.text ?? `Estado ${row.estado}`;
@@ -156,7 +162,10 @@ function getPaneValue(
 }
 
 function getEstadoTag(estado: number) {
-  const meta = ESTADO_LABEL[estado] ?? { text: `Estado ${estado}`, tagClass: styles.tagEstadoDefault };
+  const meta = ESTADO_LABEL[estado] ?? {
+    text: `Estado ${estado}`,
+    tagClass: styles.tagEstadoDefault,
+  };
   const help = ESTADO_HELP[estado] ?? 'Estado operativo de la accion.';
   return (
     <Tooltip title={help}>
@@ -187,21 +196,21 @@ function formatMoney(amount: number | null | undefined, currency = 'CRC') {
 function createDraftFromIncreaseDetail(detail: IncreaseDetailItem): IncreaseFormDraft {
   const line: IncreaseTransactionLine = detail.line
     ? {
-      payrollId: detail.line.payrollId,
-      fechaEfecto: detail.line.fechaEfecto ? dayjs(detail.line.fechaEfecto) : undefined,
-      movimientoId: detail.line.movimientoId,
-      metodoCalculo: detail.line.metodoCalculo,
-      monto: detail.line.monto,
-      montoInput: detail.line.monto != null ? String(Math.trunc(detail.line.monto)) : '',
-      porcentaje: detail.line.porcentaje,
-      salarioActual: detail.line.salarioActual,
-      nuevoSalario: detail.line.nuevoSalario,
-      formula: detail.line.formula ?? '',
-      payrollLabel: detail.line.payrollLabel ?? undefined,
-      payrollEstado: detail.line.payrollEstado ?? undefined,
-      movimientoLabel: detail.line.movimientoLabel ?? undefined,
-      movimientoInactivo: detail.line.movimientoInactivo === true,
-    }
+        payrollId: detail.line.payrollId,
+        fechaEfecto: detail.line.fechaEfecto ? dayjs(detail.line.fechaEfecto) : undefined,
+        movimientoId: detail.line.movimientoId,
+        metodoCalculo: detail.line.metodoCalculo,
+        monto: detail.line.monto,
+        montoInput: detail.line.monto != null ? String(Math.trunc(detail.line.monto)) : '',
+        porcentaje: detail.line.porcentaje,
+        salarioActual: detail.line.salarioActual,
+        nuevoSalario: detail.line.nuevoSalario,
+        formula: detail.line.formula ?? '',
+        payrollLabel: detail.line.payrollLabel ?? undefined,
+        payrollEstado: detail.line.payrollEstado ?? undefined,
+        movimientoLabel: detail.line.movimientoLabel ?? undefined,
+        movimientoInactivo: detail.line.movimientoInactivo === true,
+      }
     : { metodoCalculo: 'PORCENTAJE', montoInput: '' };
 
   return {
@@ -219,12 +228,14 @@ export function AumentosPage() {
   const canCreate = useAppSelector((state) => hasPermission(state, 'hr-action-aumentos:create'));
   const canEdit = useAppSelector((state) => hasPermission(state, 'hr-action-aumentos:edit'));
   const canCancel = useAppSelector((state) => hasPermission(state, 'hr-action-aumentos:cancel'));
-  const canView = useAppSelector((state) =>
-    hasPermission(state, 'hr-action-aumentos:view') ||
-    hasPermission(state, 'hr_action:view'),
+  const canView = useAppSelector(
+    (state) =>
+      hasPermission(state, 'hr-action-aumentos:view') || hasPermission(state, 'hr_action:view'),
   );
   const canApprove = useAppSelector((state) => hasPermission(state, 'hr-action-aumentos:approve'));
-  const canViewEmployeeSensitive = useAppSelector((state) => hasPermission(state, 'employee:view-sensitive'));
+  const canViewEmployeeSensitive = useAppSelector((state) =>
+    hasPermission(state, 'employee:view-sensitive'),
+  );
 
   const defaultCompanyId = useMemo(() => {
     const active = Number(activeCompany?.id);
@@ -290,15 +301,33 @@ export function AumentosPage() {
     setCompanyId(defaultCompanyId);
     setPaneSearch({ empresa: '', empleado: '', periodoPago: '', movimiento: '', estado: '' });
     setPaneSelections({ empresa: [], empleado: [], periodoPago: [], movimiento: [], estado: [] });
-    setPaneOpen({ empresa: false, empleado: false, periodoPago: false, movimiento: false, estado: false });
+    setPaneOpen({
+      empresa: false,
+      empleado: false,
+      periodoPago: false,
+      movimiento: false,
+      estado: false,
+    });
   };
 
   const openAllPanes = () => {
-    setPaneOpen({ empresa: true, empleado: true, periodoPago: true, movimiento: true, estado: true });
+    setPaneOpen({
+      empresa: true,
+      empleado: true,
+      periodoPago: true,
+      movimiento: true,
+      estado: true,
+    });
   };
 
   const collapseAllPanes = () => {
-    setPaneOpen({ empresa: false, empleado: false, periodoPago: false, movimiento: false, estado: false });
+    setPaneOpen({
+      empresa: false,
+      empleado: false,
+      periodoPago: false,
+      movimiento: false,
+      estado: false,
+    });
   };
 
   const loadRows = useCallback(async () => {
@@ -354,7 +383,8 @@ export function AumentosPage() {
   const rowsWithEmployee = useMemo(() => {
     const map = new Map<number, string>();
     employees.forEach((employee) => {
-      const label = `${employee.codigo} - ${employee.nombre} ${employee.apellido1} ${employee.apellido2 ?? ''}`.trim();
+      const label =
+        `${employee.codigo} - ${employee.nombre} ${employee.apellido1} ${employee.apellido2 ?? ''}`.trim();
       map.set(employee.id, label);
     });
     return rows.map((row) => ({ ...row, employeeLabel: map.get(row.idEmpleado) }));
@@ -365,7 +395,8 @@ export function AumentosPage() {
       const term = search.trim().toLowerCase();
       if (!term) return true;
       const companyName = companies.find((c) => Number(c.id) === row.idEmpresa)?.nombre ?? '';
-      const text = `${row.id} ${row.idEmpleado} ${row.employeeLabel ?? ''} ${row.descripcion ?? ''} ${companyName} ${row.periodoPagoResumen ?? ''} ${row.movimientoResumen ?? ''}`.toLowerCase();
+      const text =
+        `${row.id} ${row.idEmpleado} ${row.employeeLabel ?? ''} ${row.descripcion ?? ''} ${companyName} ${row.periodoPagoResumen ?? ''} ${row.movimientoResumen ?? ''}`.toLowerCase();
       return text.includes(term);
     },
     [companies, search],
@@ -413,7 +444,10 @@ export function AumentosPage() {
     return result;
   }, [companies, dataFilteredByPaneSelections, paneSearch]);
 
-  const rowsFiltered = useMemo(() => dataFilteredByPaneSelections(), [dataFilteredByPaneSelections]);
+  const rowsFiltered = useMemo(
+    () => dataFilteredByPaneSelections(),
+    [dataFilteredByPaneSelections],
+  );
 
   const openCreateModal = () => {
     setMode('create');
@@ -438,7 +472,8 @@ export function AumentosPage() {
       message.destroy(key);
     } catch (error) {
       message.error({
-        content: error instanceof Error ? error.message : 'No se pudo cargar el detalle de aumento.',
+        content:
+          error instanceof Error ? error.message : 'No se pudo cargar el detalle de aumento.',
         key,
       });
     }
@@ -458,143 +493,154 @@ export function AumentosPage() {
     }
   };
 
-  const columns: ColumnsType<IncreaseUiRow> = useMemo(() => [
-    {
-      title: 'EMPRESA',
-      key: 'empresa',
-      width: 240,
-      render: (_, row) => companies.find((c) => Number(c.id) === row.idEmpresa)?.nombre ?? `Empresa #${row.idEmpresa}`,
-    },
-    {
-      title: 'EMPLEADO',
-      key: 'empleado',
-      width: 260,
-      render: (_, row) => summarizeCell(row.employeeLabel ?? `Empleado #${row.idEmpleado}`),
-    },
-    {
-      title: 'PERIODO DE PAGO',
-      dataIndex: 'periodoPagoResumen',
-      key: 'periodoPagoResumen',
-      width: 200,
-      render: (value) => summarizeCell(value),
-    },
-    {
-      title: 'MOVIMIENTO',
-      dataIndex: 'movimientoResumen',
-      key: 'movimientoResumen',
-      width: 200,
-      render: (value) => summarizeCell(value),
-    },
-    {
-      title: 'MONTO',
-      dataIndex: 'monto',
-      key: 'monto',
-      width: 140,
-      render: (value, row) => formatMoney(value, row.moneda ?? 'CRC'),
-    },
-    {
-      title: 'ESTADO',
-      dataIndex: 'estado',
-      key: 'estado',
-      width: 180,
-      render: (value) => getEstadoTag(Number(value)),
-    },
-    {
-      title: 'ACCIONES',
-      key: 'acciones',
-      width: 260,
-      render: (_, row) => {
-        const canInvalidate = canCancel && isIncreaseEditableState(row.estado);
-        const nextAction = NEXT_STATE_ACTION_CONFIG[row.estado];
-        const canAdvance = nextAction
-          ? (nextAction.requiredPermission === 'approve' ? canApprove : canEdit)
-          : false;
+  const columns: ColumnsType<IncreaseUiRow> = useMemo(
+    () => [
+      {
+        title: 'EMPRESA',
+        key: 'empresa',
+        width: 240,
+        render: (_, row) =>
+          companies.find((c) => Number(c.id) === row.idEmpresa)?.nombre ??
+          `Empresa #${row.idEmpresa}`,
+      },
+      {
+        title: 'EMPLEADO',
+        key: 'empleado',
+        width: 260,
+        render: (_, row) => summarizeCell(row.employeeLabel ?? `Empleado #${row.idEmpleado}`),
+      },
+      {
+        title: 'PERIODO DE PAGO',
+        dataIndex: 'periodoPagoResumen',
+        key: 'periodoPagoResumen',
+        width: 200,
+        render: (value) => summarizeCell(value),
+      },
+      {
+        title: 'MOVIMIENTO',
+        dataIndex: 'movimientoResumen',
+        key: 'movimientoResumen',
+        width: 200,
+        render: (value) => summarizeCell(value),
+      },
+      {
+        title: 'MONTO',
+        dataIndex: 'monto',
+        key: 'monto',
+        width: 140,
+        render: (value, row) => formatMoney(value, row.moneda ?? 'CRC'),
+      },
+      {
+        title: 'ESTADO',
+        dataIndex: 'estado',
+        key: 'estado',
+        width: 180,
+        render: (value) => getEstadoTag(Number(value)),
+      },
+      {
+        title: 'ACCIONES',
+        key: 'acciones',
+        width: 260,
+        render: (_, row) => {
+          const canInvalidate = canCancel && isIncreaseEditableState(row.estado);
+          const nextAction = NEXT_STATE_ACTION_CONFIG[row.estado];
+          const canAdvance = nextAction
+            ? nextAction.requiredPermission === 'approve'
+              ? canApprove
+              : canEdit
+            : false;
 
-        const onInvalidate = (e: MouseEvent<HTMLElement>) => {
-          e.stopPropagation();
-          modal.confirm({
-            title: 'Invalidar aumento',
-            content: 'Esta acción quedará invalidada. ¿Desea continuar?',
-            okText: 'Invalidar',
-            cancelText: 'Cancelar',
-            onOk: async () => {
-              const key = `Increase-invalidate-${row.id}`;
-              message.loading({ content: 'Invalidando aumento...', key, duration: 0 });
-              try {
-                await invalidateIncrease(row.id);
-                message.success({ content: 'Aumento invalidado correctamente.', key });
-                await loadRows();
-              } catch (error) {
-                message.error({
-                  content: error instanceof Error ? error.message : 'No se pudo invalidar el aumento.',
-                  key,
-                });
-              }
-            },
-          });
-        };
+          const onInvalidate = (e: MouseEvent<HTMLElement>) => {
+            e.stopPropagation();
+            modal.confirm({
+              title: 'Invalidar aumento',
+              content: 'Esta acción quedará invalidada. ¿Desea continuar?',
+              okText: 'Invalidar',
+              cancelText: 'Cancelar',
+              onOk: async () => {
+                const key = `Increase-invalidate-${row.id}`;
+                message.loading({ content: 'Invalidando aumento...', key, duration: 0 });
+                try {
+                  await invalidateIncrease(row.id);
+                  message.success({ content: 'Aumento invalidado correctamente.', key });
+                  await loadRows();
+                } catch (error) {
+                  message.error({
+                    content:
+                      error instanceof Error ? error.message : 'No se pudo invalidar el aumento.',
+                    key,
+                  });
+                }
+              },
+            });
+          };
 
-        const nextBtn = nextAction ? (
-          <Tooltip title={!canAdvance ? nextAction.deniedText : undefined}>
-            <Button
-              type="primary"
-              size="small"
-              disabled={!canAdvance}
-              onClick={(e) => {
-                e.stopPropagation();
-                modal.confirm({
-                  title: nextAction.label,
-                  content: nextAction.confirmText,
-                  okText: 'Confirmar',
-                  cancelText: 'Cancelar',
-                  onOk: async () => {
-                    const key = `Increase-advance-${row.id}`;
-                    message.loading({ content: 'Actualizando estado...', key, duration: 0 });
-                    try {
-                      await advanceIncreaseState(row.id);
-                      message.success({ content: nextAction.successText, key });
-                      await loadRows();
-                    } catch (error) {
-                      message.error({
-                        content: error instanceof Error ? error.message : 'No se pudo avanzar el aumento.',
-                        key,
-                      });
-                    }
-                  },
-                });
-              }}
-            >
-              {nextAction.label}
-            </Button>
-          </Tooltip>
-        ) : null;
-
-        return (
-          <Flex gap={8} align="center" wrap="nowrap" className={styles.actionsCell}>
-            {nextBtn ? <span className={styles.actionsCellFirst}>{nextBtn}</span> : null}
-            <span className={!nextBtn ? styles.actionsCellFirst : undefined}>
+          const nextBtn = nextAction ? (
+            <Tooltip title={!canAdvance ? nextAction.deniedText : undefined}>
               <Button
-                icon={<EditOutlined />}
+                type="primary"
                 size="small"
-                disabled={!canView}
+                disabled={!canAdvance}
                 onClick={(e) => {
                   e.stopPropagation();
-                  void openEditModal(row);
+                  modal.confirm({
+                    title: nextAction.label,
+                    content: nextAction.confirmText,
+                    okText: 'Confirmar',
+                    cancelText: 'Cancelar',
+                    onOk: async () => {
+                      const key = `Increase-advance-${row.id}`;
+                      message.loading({ content: 'Actualizando estado...', key, duration: 0 });
+                      try {
+                        await advanceIncreaseState(row.id);
+                        message.success({ content: nextAction.successText, key });
+                        await loadRows();
+                      } catch (error) {
+                        message.error({
+                          content:
+                            error instanceof Error
+                              ? error.message
+                              : 'No se pudo avanzar el aumento.',
+                          key,
+                        });
+                      }
+                    },
+                  });
                 }}
               >
-                {isIncreaseEditableState(row.estado) ? 'Editar' : 'Ver'}
+                {nextAction.label}
               </Button>
-            </span>
-            {canInvalidate ? (
-              <Button danger size="small" onClick={onInvalidate}>
-                Invalidar
-              </Button>
-            ) : null}
-          </Flex>
-        );
+            </Tooltip>
+          ) : null;
+
+          return (
+            <Flex gap={8} align="center" wrap="nowrap" className={styles.actionsCell}>
+              {nextBtn ? <span className={styles.actionsCellFirst}>{nextBtn}</span> : null}
+              <span className={!nextBtn ? styles.actionsCellFirst : undefined}>
+                <Button
+                  icon={<EditOutlined />}
+                  size="small"
+                  disabled={!canView}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    void openEditModal(row);
+                  }}
+                >
+                  {isIncreaseEditableState(row.estado) ? 'Editar' : 'Ver'}
+                </Button>
+              </span>
+              {canInvalidate ? (
+                <Button danger size="small" onClick={onInvalidate}>
+                  Invalidar
+                </Button>
+              ) : null}
+            </Flex>
+          );
+        },
       },
-    },
-  ], [canApprove, canCancel, canEdit, canView, companies, loadRows, message, modal, openEditModal]);
+    ],
+    [canApprove, canCancel, canEdit, canView, companies, loadRows, message, modal, openEditModal],
+  );
 
   const modalTitle = mode === 'create' ? 'Crear aumento' : 'Editar aumento';
 
@@ -607,7 +653,9 @@ export function AumentosPage() {
           </Link>
           <div className={styles.pageTitleBlock}>
             <h1 className={styles.pageTitle}>Aumentos</h1>
-            <p className={styles.pageSubtitle}>Gestione aumentos salariales por empresa con una sola acción</p>
+            <p className={styles.pageSubtitle}>
+              Gestione aumentos salariales por empresa con una sola acción
+            </p>
           </div>
         </div>
       </div>
@@ -639,7 +687,13 @@ export function AumentosPage() {
 
       <Card className={styles.mainCard} style={{ marginBottom: 0 }}>
         <div className={styles.mainCardBody}>
-          <Flex align="center" justify="space-between" wrap="wrap" gap={12} className={styles.registrosHeader}>
+          <Flex
+            align="center"
+            justify="space-between"
+            wrap="wrap"
+            gap={12}
+            className={styles.registrosHeader}
+          >
             <Flex align="center" gap={12} wrap="wrap">
               <Flex align="center" gap={8}>
                 <FilterOutlined className={styles.registrosFilterIcon} />
@@ -670,16 +724,25 @@ export function AumentosPage() {
                 style={{ minWidth: 200 }}
                 placeholder="Estados"
                 value={selectedEstados}
-                options={Object.entries(ESTADO_LABEL).map(([value, meta]) => ({ value: Number(value), label: meta.text }))}
-                onChange={(values) => setSelectedEstados((values ?? []).map((item) => Number(item)))}
+                options={Object.entries(ESTADO_LABEL).map(([value, meta]) => ({
+                  value: Number(value),
+                  label: meta.text,
+                }))}
+                onChange={(values) =>
+                  setSelectedEstados((values ?? []).map((item) => Number(item)))
+                }
               />
-              <Button icon={<ReloadOutlined />} onClick={() => void loadRows()}>Refrescar</Button>
+              <Button icon={<ReloadOutlined />} onClick={() => void loadRows()}>
+                Refrescar
+              </Button>
             </Flex>
           </Flex>
 
           <Collapse
             activeKey={filtersExpanded ? ['filtros'] : []}
-            onChange={(keys) => setFiltersExpanded((Array.isArray(keys) ? keys : [keys]).includes('filtros'))}
+            onChange={(keys) =>
+              setFiltersExpanded((Array.isArray(keys) ? keys : [keys]).includes('filtros'))
+            }
             className={styles.filtersCollapse}
             items={[
               {
@@ -687,7 +750,13 @@ export function AumentosPage() {
                 label: 'Filtros',
                 children: (
                   <>
-                    <Flex justify="space-between" align="center" wrap="wrap" gap={12} style={{ marginBottom: 16 }}>
+                    <Flex
+                      justify="space-between"
+                      align="center"
+                      wrap="wrap"
+                      gap={12}
+                      style={{ marginBottom: 16 }}
+                    >
                       <Input
                         placeholder="Search"
                         prefix={<SearchOutlined />}
@@ -698,9 +767,15 @@ export function AumentosPage() {
                         style={{ maxWidth: 240 }}
                       />
                       <Flex gap={8}>
-                        <Button size="small" onClick={collapseAllPanes}>Collapse All</Button>
-                        <Button size="small" onClick={openAllPanes}>Show All</Button>
-                        <Button size="small" onClick={clearAllFilters}>Limpiar Todo</Button>
+                        <Button size="small" onClick={collapseAllPanes}>
+                          Collapse All
+                        </Button>
+                        <Button size="small" onClick={openAllPanes}>
+                          Show All
+                        </Button>
+                        <Button size="small" onClick={clearAllFilters}>
+                          Limpiar Todo
+                        </Button>
                       </Flex>
                     </Flex>
                     <Row gutter={[12, 12]}>
@@ -710,9 +785,13 @@ export function AumentosPage() {
                             <Flex gap={6} align="center" wrap="wrap">
                               <Input
                                 value={paneSearch[pane.key]}
-                                onChange={(e) => setPaneSearch((prev) => ({ ...prev, [pane.key]: e.target.value }))}
+                                onChange={(e) =>
+                                  setPaneSearch((prev) => ({ ...prev, [pane.key]: e.target.value }))
+                                }
                                 placeholder={pane.title}
-                                prefix={<SearchOutlined style={{ fontSize: 12, color: '#8c8c8c' }} />}
+                                prefix={
+                                  <SearchOutlined style={{ fontSize: 12, color: '#8c8c8c' }} />
+                                }
                                 size="middle"
                                 className={styles.filterInput}
                                 style={{ flex: 1, minWidth: 120 }}
@@ -720,16 +799,24 @@ export function AumentosPage() {
                               <Button
                                 size="middle"
                                 icon={<SearchOutlined />}
-                                onClick={() => setPaneOpen((prev) => ({ ...prev, [pane.key]: true }))}
+                                onClick={() =>
+                                  setPaneOpen((prev) => ({ ...prev, [pane.key]: true }))
+                                }
                                 title="Abrir opciones"
                               />
-                              <Button size="middle" onClick={() => clearPaneSelection(pane.key)} title="Limpiar">
+                              <Button
+                                size="middle"
+                                onClick={() => clearPaneSelection(pane.key)}
+                                title="Limpiar"
+                              >
                                 x
                               </Button>
                               <Button
                                 size="middle"
                                 icon={paneOpen[pane.key] ? <UpOutlined /> : <DownOutlined />}
-                                onClick={() => setPaneOpen((prev) => ({ ...prev, [pane.key]: !prev[pane.key] }))}
+                                onClick={() =>
+                                  setPaneOpen((prev) => ({ ...prev, [pane.key]: !prev[pane.key] }))
+                                }
                                 title={paneOpen[pane.key] ? 'Colapsar' : 'Expandir'}
                               />
                             </Flex>
@@ -737,20 +824,33 @@ export function AumentosPage() {
                               <div className={styles.paneOptionsBox}>
                                 <Checkbox.Group
                                   value={paneSelections[pane.key]}
-                                  onChange={(values) => setPaneSelections((prev) => ({ ...prev, [pane.key]: values as string[] }))}
+                                  onChange={(values) =>
+                                    setPaneSelections((prev) => ({
+                                      ...prev,
+                                      [pane.key]: values as string[],
+                                    }))
+                                  }
                                   style={{ display: 'flex', flexDirection: 'column', gap: 8 }}
                                 >
                                   {paneOptions[pane.key].map((option) => (
-                                    <Checkbox key={`${pane.key}:${option.value}`} value={option.value}>
+                                    <Checkbox
+                                      key={`${pane.key}:${option.value}`}
+                                      value={option.value}
+                                    >
                                       <Space>
                                         <span>{option.value}</span>
-                                        <Badge count={option.count} style={{ backgroundColor: '#5a6c7d' }} />
+                                        <Badge
+                                          count={option.count}
+                                          style={{ backgroundColor: '#5a6c7d' }}
+                                        />
                                       </Space>
                                     </Checkbox>
                                   ))}
                                 </Checkbox.Group>
                                 {paneOptions[pane.key].length === 0 && (
-                                  <span className={styles.emptyHint}>Sin valores para este filtro</span>
+                                  <span className={styles.emptyHint}>
+                                    Sin valores para este filtro
+                                  </span>
                                 )}
                               </div>
                             )}
@@ -773,7 +873,8 @@ export function AumentosPage() {
             pagination={{
               pageSize,
               showSizeChanger: false,
-              showTotal: (total, [start, end]) => `Mostrando ${start} a ${end} de ${total} registros`,
+              showTotal: (total, [start, end]) =>
+                `Mostrando ${start} a ${end} de ${total} registros`,
             }}
             onRow={(record) => ({
               onClick: () => {
@@ -863,7 +964,10 @@ export function AumentosPage() {
               });
             }
             message.success({
-              content: mode === 'edit' ? 'Aumento actualizado correctamente.' : 'Aumento creado correctamente.',
+              content:
+                mode === 'edit'
+                  ? 'Aumento actualizado correctamente.'
+                  : 'Aumento creado correctamente.',
               key: loadingKey,
             });
             setOpenModal(false);

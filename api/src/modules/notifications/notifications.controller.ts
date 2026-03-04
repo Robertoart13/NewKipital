@@ -6,8 +6,8 @@ import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { CacheResponseInterceptor } from '../../common/interceptors/cache-response.interceptor';
 import { App } from '../access-control/entities/app.entity';
 
-import type { NotificationsService } from './notifications.service';
-import type { Repository } from 'typeorm';
+import { NotificationsService } from './notifications.service';
+import { Repository } from 'typeorm';
 
 @CacheScope('notifications')
 @UseInterceptors(CacheResponseInterceptor)

@@ -1,5 +1,20 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
+import {
+  AppstoreOutlined,
+  ArrowLeftOutlined,
+  CheckCircleOutlined,
+  DownOutlined,
+  FilterOutlined,
+  HistoryOutlined,
+  PauseCircleOutlined,
+  PlayCircleOutlined,
+  PlusOutlined,
+  QuestionCircleOutlined,
+  ReloadOutlined,
+  SearchOutlined,
+  SortAscendingOutlined,
+  SortDescendingOutlined,
+  UpOutlined,
+} from '@ant-design/icons';
 import {
   App as AntdApp,
   Alert,
@@ -26,34 +41,11 @@ import {
   Tooltip,
   Typography,
 } from 'antd';
-import type { ColumnsType } from 'antd/es/table';
-import {
-  AppstoreOutlined,
-  ArrowLeftOutlined,
-  CheckCircleOutlined,
-  DownOutlined,
-  FilterOutlined,
-  HistoryOutlined,
-  PauseCircleOutlined,
-  PlayCircleOutlined,
-  PlusOutlined,
-  QuestionCircleOutlined,
-  ReloadOutlined,
-  SearchOutlined,
-  SortAscendingOutlined,
-  SortDescendingOutlined,
-  UpOutlined,
-} from '@ant-design/icons';
-import { useAppSelector } from '../../../store/hooks';
-import {
-  canApplyPayroll,
-  canCancelPayroll,
-  canCreatePayroll,
-  canEditPayroll,
-  canProcessPayroll,
-  canVerifyPayroll,
-  canViewPayroll,
-} from '../../../store/selectors/permissions.selectors';
+import dayjs, { type Dayjs } from 'dayjs';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { Link } from 'react-router-dom';
+
+import { fetchPayPeriods, type CatalogPayPeriod } from '../../../api/catalogs';
 import {
   applyPayroll,
   createPayroll,
@@ -67,10 +59,20 @@ import {
   updatePayroll,
   verifyPayroll,
 } from '../../../api/payroll';
-import { fetchPayPeriods, type CatalogPayPeriod } from '../../../api/catalogs';
 import { formatDateTime12h } from '../../../lib/formatDate';
+import { useAppSelector } from '../../../store/hooks';
+import {
+  canApplyPayroll,
+  canCancelPayroll,
+  canCreatePayroll,
+  canEditPayroll,
+  canProcessPayroll,
+  canVerifyPayroll,
+  canViewPayroll,
+} from '../../../store/selectors/permissions.selectors';
 import styles from '../configuration/UsersManagementPage.module.css';
-import dayjs, { type Dayjs } from 'dayjs';
+
+import type { ColumnsType } from 'antd/es/table';
 
 const { Text } = Typography;
 
@@ -127,7 +129,10 @@ function getRowPaneValue(
   companies: Array<{ id: number | string; nombre: string }>,
 ): string {
   if (key === 'empresa') {
-    return companies.find((company) => Number(company.id) === row.idEmpresa)?.nombre ?? `Empresa #${row.idEmpresa}`;
+    return (
+      companies.find((company) => Number(company.id) === row.idEmpresa)?.nombre ??
+      `Empresa #${row.idEmpresa}`
+    );
   }
   if (key === 'nombre') return row.nombrePlanilla?.trim() || '--';
   if (key === 'tipo') return row.tipoPlanilla?.trim() || '--';
@@ -262,7 +267,9 @@ export function PayrollManagementPage() {
   const [createOpen, setCreateOpen] = useState(false);
   const [editingPayrollId, setEditingPayrollId] = useState<number | null>(null);
   const [periodOptions, setPeriodOptions] = useState<CatalogPayPeriod[]>([]);
-  const [activeCreateTab, setActiveCreateTab] = useState<'principal' | 'fechas' | 'bitacora'>('principal');
+  const [activeCreateTab, setActiveCreateTab] = useState<'principal' | 'fechas' | 'bitacora'>(
+    'principal',
+  );
   const createCompanyId = Form.useWatch('idEmpresa', form);
   const createPeriodId = Form.useWatch('idPeriodoPago', form);
   const createPeriodEnd = Form.useWatch('periodoFin', form);
@@ -278,8 +285,10 @@ export function PayrollManagementPage() {
   const getEditRestrictionReason = useCallback((row: PayrollListItem): string | null => {
     if (row.estado === 0) return 'No se puede editar una planilla inactiva.';
     if (row.estado === 2) return 'No se puede editar una planilla en proceso.';
-    if (row.estado === 3) return 'No se puede editar una planilla verificada. Primero debe reabrirse.';
-    if (row.estado === 4 || row.estado === 5) return 'No se puede editar una planilla aplicada o contabilizada.';
+    if (row.estado === 3)
+      return 'No se puede editar una planilla verificada. Primero debe reabrirse.';
+    if (row.estado === 4 || row.estado === 5)
+      return 'No se puede editar una planilla aplicada o contabilizada.';
     return null;
   }, []);
 
@@ -359,18 +368,33 @@ export function PayrollManagementPage() {
     if (!createOpen || editingPayrollId != null) return;
     const company = companies.find((item) => Number(item.id) === Number(createCompanyId));
     const period = periodOptions.find((item) => item.id === Number(createPeriodId));
-    const currency = String(createCurrency ?? '').trim().toUpperCase();
+    const currency = String(createCurrency ?? '')
+      .trim()
+      .toUpperCase();
     const dateText = formatDdMmYyyy(createPeriodEnd);
     const endDate = toDate(createPeriodEnd);
-    const prefix = String(company?.codigo ?? '').trim().toUpperCase();
+    const prefix = String(company?.codigo ?? '')
+      .trim()
+      .toUpperCase();
     const frequency = period && endDate ? getFrequencyCode(period.nombre, endDate) : '';
 
-    const generatedName = prefix && frequency && dateText && currency
-      ? `${prefix} - ${frequency} - ${dateText} - ${currency}`
-      : '';
+    const generatedName =
+      prefix && frequency && dateText && currency
+        ? `${prefix} - ${frequency} - ${dateText} - ${currency}`
+        : '';
 
     form.setFieldValue('nombrePlanilla', generatedName);
-  }, [companies, createCompanyId, createCurrency, createOpen, createPeriodEnd, createPeriodId, editingPayrollId, form, periodOptions]);
+  }, [
+    companies,
+    createCompanyId,
+    createCurrency,
+    createOpen,
+    createPeriodEnd,
+    createPeriodId,
+    editingPayrollId,
+    form,
+    periodOptions,
+  ]);
 
   useEffect(() => {
     if (!createOpen || activeCreateTab !== 'bitacora' || !editingPayrollId) return;
@@ -384,33 +408,39 @@ export function PayrollManagementPage() {
       .finally(() => setLoadingAuditTrail(false));
   }, [activeCreateTab, createOpen, editingPayrollId, message]);
 
-  const matchesGlobalSearch = useCallback((row: PayrollListItem) => {
-    const term = search.trim().toLowerCase();
-    if (!term) return true;
-    const stateText = STATE_LABEL[row.estado]?.text ?? '';
-    return (
-      (row.nombrePlanilla ?? '').toLowerCase().includes(term)
-      || (row.tipoPlanilla ?? '').toLowerCase().includes(term)
-      || (row.moneda ?? '').toLowerCase().includes(term)
-      || stateText.toLowerCase().includes(term)
-      || row.fechaInicioPeriodo.toLowerCase().includes(term)
-      || row.fechaFinPeriodo.toLowerCase().includes(term)
-    );
-  }, [search]);
+  const matchesGlobalSearch = useCallback(
+    (row: PayrollListItem) => {
+      const term = search.trim().toLowerCase();
+      if (!term) return true;
+      const stateText = STATE_LABEL[row.estado]?.text ?? '';
+      return (
+        (row.nombrePlanilla ?? '').toLowerCase().includes(term) ||
+        (row.tipoPlanilla ?? '').toLowerCase().includes(term) ||
+        (row.moneda ?? '').toLowerCase().includes(term) ||
+        stateText.toLowerCase().includes(term) ||
+        row.fechaInicioPeriodo.toLowerCase().includes(term) ||
+        row.fechaFinPeriodo.toLowerCase().includes(term)
+      );
+    },
+    [search],
+  );
 
-  const dataFilteredByPaneSelections = useCallback((excludePane?: PaneKey) => {
-    return rows.filter((row) => {
-      if (!matchesGlobalSearch(row)) return false;
-      for (const pane of PANE_CONFIG) {
-        if (pane.key === excludePane) continue;
-        const selected = paneSelections[pane.key];
-        if (selected.length === 0) continue;
-        const value = getRowPaneValue(row, pane.key, companies);
-        if (!selected.includes(value)) return false;
-      }
-      return true;
-    });
-  }, [companies, matchesGlobalSearch, paneSelections, rows]);
+  const dataFilteredByPaneSelections = useCallback(
+    (excludePane?: PaneKey) => {
+      return rows.filter((row) => {
+        if (!matchesGlobalSearch(row)) return false;
+        for (const pane of PANE_CONFIG) {
+          if (pane.key === excludePane) continue;
+          const selected = paneSelections[pane.key];
+          if (selected.length === 0) continue;
+          const value = getRowPaneValue(row, pane.key, companies);
+          if (!selected.includes(value)) return false;
+        }
+        return true;
+      });
+    },
+    [companies, matchesGlobalSearch, paneSelections, rows],
+  );
 
   const paneOptions = useMemo(() => {
     const optionsMap: Record<PaneKey, PaneOption[]> = {
@@ -440,7 +470,10 @@ export function PayrollManagementPage() {
     return optionsMap;
   }, [companies, dataFilteredByPaneSelections, paneSearch]);
 
-  const filteredRows = useMemo(() => dataFilteredByPaneSelections(), [dataFilteredByPaneSelections]);
+  const filteredRows = useMemo(
+    () => dataFilteredByPaneSelections(),
+    [dataFilteredByPaneSelections],
+  );
 
   const clearPaneSelection = (key: PaneKey) => {
     setPaneSelections((current) => ({ ...current, [key]: [] }));
@@ -486,10 +519,16 @@ export function PayrollManagementPage() {
     const values = await form.validateFields();
     setSavingCreate(true);
     try {
-      const periodoInicio = formatDateValue(values.periodoInicio ?? form.getFieldValue('periodoInicio'));
+      const periodoInicio = formatDateValue(
+        values.periodoInicio ?? form.getFieldValue('periodoInicio'),
+      );
       const periodoFin = formatDateValue(values.periodoFin ?? form.getFieldValue('periodoFin'));
-      const fechaInicioPago = formatDateValue(values.fechaInicioPago ?? form.getFieldValue('fechaInicioPago'));
-      const fechaFinPago = formatDateValue(values.fechaFinPago ?? form.getFieldValue('fechaFinPago'));
+      const fechaInicioPago = formatDateValue(
+        values.fechaInicioPago ?? form.getFieldValue('fechaInicioPago'),
+      );
+      const fechaFinPago = formatDateValue(
+        values.fechaFinPago ?? form.getFieldValue('fechaFinPago'),
+      );
 
       if (!periodoInicio || !periodoFin || !fechaInicioPago || !fechaFinPago) {
         setActiveCreateTab('fechas');
@@ -571,11 +610,15 @@ export function PayrollManagementPage() {
         fechaCorte: detail.fechaCorte ? dayjs(detail.fechaCorte) : undefined,
         fechaInicioPago: detail.fechaInicioPago ? dayjs(detail.fechaInicioPago) : undefined,
         fechaFinPago: detail.fechaFinPago ? dayjs(detail.fechaFinPago) : undefined,
-        fechaPagoProgramada: detail.fechaPagoProgramada ? dayjs(detail.fechaPagoProgramada) : undefined,
+        fechaPagoProgramada: detail.fechaPagoProgramada
+          ? dayjs(detail.fechaPagoProgramada)
+          : undefined,
         moneda: (detail.moneda as 'CRC' | 'USD') ?? 'CRC',
       });
     } catch (error) {
-      message.error(error instanceof Error ? error.message : 'No se pudo abrir la planilla para edicion');
+      message.error(
+        error instanceof Error ? error.message : 'No se pudo abrir la planilla para edicion',
+      );
     } finally {
       setLoadingDetail(false);
     }
@@ -598,7 +641,9 @@ export function PayrollManagementPage() {
     const currentGeneratedName = String(form.getFieldValue('nombrePlanilla') ?? '').trim();
     if (!currentGeneratedName) {
       setActiveCreateTab('principal');
-      message.error('Complete empresa, periodo de pago, fecha fin y moneda para generar el nombre de la planilla.');
+      message.error(
+        'Complete empresa, periodo de pago, fecha fin y moneda para generar el nombre de la planilla.',
+      );
       return;
     }
 
@@ -625,7 +670,11 @@ export function PayrollManagementPage() {
     await submitCreate();
   };
 
-  const runAction = async (id: number, operation: () => Promise<unknown>, successMessage: string) => {
+  const runAction = async (
+    id: number,
+    operation: () => Promise<unknown>,
+    successMessage: string,
+  ) => {
     setProcessingId(id);
     try {
       await operation();
@@ -667,141 +716,146 @@ export function PayrollManagementPage() {
     await runAction(row.id, operation, successMessage);
   };
 
-  const columns = useMemo<ColumnsType<PayrollListItem>>(() => [
-    {
-      title: 'EMPRESA',
-      dataIndex: 'idEmpresa',
-      width: 220,
-      render: (idEmpresa: number) => companies.find((company) => company.id === idEmpresa)?.nombre ?? `Empresa #${idEmpresa}`,
-    },
-    {
-      title: 'NOMBRE',
-      dataIndex: 'nombrePlanilla',
-      width: 240,
-      render: (value: string | null | undefined) => value || '--',
-    },
-    {
-      title: 'TIPO PLANILLA',
-      dataIndex: 'tipoPlanilla',
-      width: 190,
-      render: (value: string | null | undefined) => value || '--',
-    },
-    {
-      title: 'MONEDA',
-      dataIndex: 'moneda',
-      width: 120,
-      render: (value: string | null | undefined) => value || '--',
-    },
-    {
-      title: 'PERIODO',
-      width: 220,
-      render: (_, row) => `${row.fechaInicioPeriodo} - ${row.fechaFinPeriodo}`,
-    },
-    {
-      title: 'ESTADO',
-      dataIndex: 'estado',
-      width: 130,
-      render: (value: number) => {
-        const info = STATE_LABEL[value] ?? { text: `Estado ${value}`, color: 'default' };
-        return <Tag color={info.color}>{info.text}</Tag>;
+  const columns = useMemo<ColumnsType<PayrollListItem>>(
+    () => [
+      {
+        title: 'EMPRESA',
+        dataIndex: 'idEmpresa',
+        width: 220,
+        render: (idEmpresa: number) =>
+          companies.find((company) => company.id === idEmpresa)?.nombre ?? `Empresa #${idEmpresa}`,
       },
-    },
-    {
-      title: 'ULTIMA MODIFICACION',
-      width: 220,
-      render: (_, row) => formatDateTime12h(row.fechaAplicacion ?? row.fechaPagoProgramada ?? null),
-    },
-    {
-      title: 'ACCIONES',
-      width: 330,
-      render: (_, row) => (
-        <Space wrap>
-          {canProcess && row.estado === 1 ? (
-            <Tooltip title="Ejecuta el proceso de cálculo y genera snapshots de la planilla.">
-              <Button
-                size="small"
-                icon={<PlayCircleOutlined />}
-                loading={processingId === row.id}
-                onClick={(event) => {
-                  event.stopPropagation();
-                  void confirmAndRunAction(
-                    row,
-                    'Confirmar proceso de planilla',
-                    'Esta accion procesara la planilla y generara snapshots. ¿Desea continuar?',
-                    'Procesar',
-                    () => processPayroll(row.id),
-                    'Planilla procesada',
-                  );
-                }}
+      {
+        title: 'NOMBRE',
+        dataIndex: 'nombrePlanilla',
+        width: 240,
+        render: (value: string | null | undefined) => value || '--',
+      },
+      {
+        title: 'TIPO PLANILLA',
+        dataIndex: 'tipoPlanilla',
+        width: 190,
+        render: (value: string | null | undefined) => value || '--',
+      },
+      {
+        title: 'MONEDA',
+        dataIndex: 'moneda',
+        width: 120,
+        render: (value: string | null | undefined) => value || '--',
+      },
+      {
+        title: 'PERIODO',
+        width: 220,
+        render: (_, row) => `${row.fechaInicioPeriodo} - ${row.fechaFinPeriodo}`,
+      },
+      {
+        title: 'ESTADO',
+        dataIndex: 'estado',
+        width: 130,
+        render: (value: number) => {
+          const info = STATE_LABEL[value] ?? { text: `Estado ${value}`, color: 'default' };
+          return <Tag color={info.color}>{info.text}</Tag>;
+        },
+      },
+      {
+        title: 'ULTIMA MODIFICACION',
+        width: 220,
+        render: (_, row) =>
+          formatDateTime12h(row.fechaAplicacion ?? row.fechaPagoProgramada ?? null),
+      },
+      {
+        title: 'ACCIONES',
+        width: 330,
+        render: (_, row) => (
+          <Space wrap>
+            {canProcess && row.estado === 1 ? (
+              <Tooltip title="Ejecuta el proceso de cálculo y genera snapshots de la planilla.">
+                <Button
+                  size="small"
+                  icon={<PlayCircleOutlined />}
+                  loading={processingId === row.id}
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    void confirmAndRunAction(
+                      row,
+                      'Confirmar proceso de planilla',
+                      'Esta accion procesara la planilla y generara snapshots. ¿Desea continuar?',
+                      'Procesar',
+                      () => processPayroll(row.id),
+                      'Planilla procesada',
+                    );
+                  }}
+                >
+                  Procesar
+                </Button>
+              </Tooltip>
+            ) : null}
+            {canVerify && row.estado === 2 ? (
+              <Tooltip title="Confirma que los resultados procesados son correctos antes de aplicar.">
+                <Button
+                  size="small"
+                  icon={<CheckCircleOutlined />}
+                  loading={processingId === row.id}
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    void runAction(row.id, () => verifyPayroll(row.id), 'Planilla verificada');
+                  }}
+                >
+                  Verificar
+                </Button>
+              </Tooltip>
+            ) : null}
+            {canApply && row.estado === 3 ? (
+              <Tooltip
+                title={
+                  row.requiresRecalculation === 1
+                    ? 'Existen nuevas acciones aprobadas que requieren recalcular la planilla antes de aplicar.'
+                    : 'Aplica la planilla y bloquea sus resultados para operación final.'
+                }
               >
-                Procesar
-              </Button>
-            </Tooltip>
-          ) : null}
-          {canVerify && row.estado === 2 ? (
-            <Tooltip title="Confirma que los resultados procesados son correctos antes de aplicar.">
-              <Button
-                size="small"
-                icon={<CheckCircleOutlined />}
-                loading={processingId === row.id}
-                onClick={(event) => {
-                  event.stopPropagation();
-                  void runAction(row.id, () => verifyPayroll(row.id), 'Planilla verificada');
-                }}
-              >
-                Verificar
-              </Button>
-            </Tooltip>
-          ) : null}
-          {canApply && row.estado === 3 ? (
-            <Tooltip
-              title={
-                row.requiresRecalculation === 1
-                  ? 'Existen nuevas acciones aprobadas que requieren recalcular la planilla antes de aplicar.'
-                  : 'Aplica la planilla y bloquea sus resultados para operación final.'
-              }
-            >
-              <Button
-                size="small"
-                type="primary"
-                loading={processingId === row.id}
-                disabled={row.requiresRecalculation === 1}
-                onClick={(event) => {
-                  event.stopPropagation();
-                  void runAction(row.id, () => applyPayroll(row.id), 'Planilla aplicada');
-                }}
-              >
-                Aplicar
-              </Button>
-            </Tooltip>
-          ) : null}
-          {canCancel && row.estado !== 0 && row.estado !== 4 ? (
-            <Tooltip title="Inactiva la planilla para que no continúe en el flujo operativo.">
-              <Button
-                size="small"
-                danger
-                icon={<PauseCircleOutlined />}
-                loading={processingId === row.id}
-                onClick={(event) => {
-                  event.stopPropagation();
-                  void confirmAndRunAction(
-                    row,
-                    'Confirmar inactivacion de planilla',
-                    'La planilla quedara inactiva y saldra del flujo operativo. ¿Desea continuar?',
-                    'Inactivar',
-                    () => inactivatePayroll(row.id),
-                    'Planilla inactivada',
-                  );
-                }}
-              >
-                Inactivar
-              </Button>
-            </Tooltip>
-          ) : null}
-        </Space>
-      ),
-    },
-  ], [canApply, canCancel, canProcess, canVerify, companies, processingId]);
+                <Button
+                  size="small"
+                  type="primary"
+                  loading={processingId === row.id}
+                  disabled={row.requiresRecalculation === 1}
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    void runAction(row.id, () => applyPayroll(row.id), 'Planilla aplicada');
+                  }}
+                >
+                  Aplicar
+                </Button>
+              </Tooltip>
+            ) : null}
+            {canCancel && row.estado !== 0 && row.estado !== 4 ? (
+              <Tooltip title="Inactiva la planilla para que no continúe en el flujo operativo.">
+                <Button
+                  size="small"
+                  danger
+                  icon={<PauseCircleOutlined />}
+                  loading={processingId === row.id}
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    void confirmAndRunAction(
+                      row,
+                      'Confirmar inactivacion de planilla',
+                      'La planilla quedara inactiva y saldra del flujo operativo. ¿Desea continuar?',
+                      'Inactivar',
+                      () => inactivatePayroll(row.id),
+                      'Planilla inactivada',
+                    );
+                  }}
+                >
+                  Inactivar
+                </Button>
+              </Tooltip>
+            ) : null}
+          </Space>
+        ),
+      },
+    ],
+    [canApply, canCancel, canProcess, canVerify, companies, processingId],
+  );
 
   const auditColumns = useMemo<ColumnsType<PayrollAuditTrailItem>>(
     () => [
@@ -817,11 +871,16 @@ export function PayrollManagementPage() {
         key: 'actor',
         width: 210,
         render: (_: unknown, row) => {
-          const actorLabel = row.actorNombre?.trim() || row.actorEmail?.trim() || (row.actorUserId ? `Usuario ID ${row.actorUserId}` : 'Sistema');
+          const actorLabel =
+            row.actorNombre?.trim() ||
+            row.actorEmail?.trim() ||
+            (row.actorUserId ? `Usuario ID ${row.actorUserId}` : 'Sistema');
           return (
             <div>
               <div style={{ fontWeight: 600, color: '#3d4f5c' }}>{actorLabel}</div>
-              {row.actorEmail && <div style={{ color: '#8c8c8c', fontSize: 12 }}>{row.actorEmail}</div>}
+              {row.actorEmail && (
+                <div style={{ color: '#8c8c8c', fontSize: 12 }}>{row.actorEmail}</div>
+              )}
             </div>
           );
         },
@@ -833,7 +892,11 @@ export function PayrollManagementPage() {
         render: (_: unknown, row) => (
           <span style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
             <Tag className={styles.tagInactivo}>{row.modulo}</Tag>
-            <Tag className={styles.tagActivo}>{String(row.accion ?? '').split('.').pop() || row.accion}</Tag>
+            <Tag className={styles.tagActivo}>
+              {String(row.accion ?? '')
+                .split('.')
+                .pop() || row.accion}
+            </Tag>
           </span>
         ),
       },
@@ -848,8 +911,13 @@ export function PayrollManagementPage() {
               {(row.cambios ?? []).length > 0 ? (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                   {(row.cambios ?? []).map((change, index) => (
-                    <div key={`${row.id}-${change.campo}-${index}`} style={{ fontSize: 12, lineHeight: 1.4 }}>
-                      <div><strong>{change.campo}</strong></div>
+                    <div
+                      key={`${row.id}-${change.campo}-${index}`}
+                      style={{ fontSize: 12, lineHeight: 1.4 }}
+                    >
+                      <div>
+                        <strong>{change.campo}</strong>
+                      </div>
                       <div>Antes: {change.antes}</div>
                       <div>Despues: {change.despues}</div>
                     </div>
@@ -890,7 +958,9 @@ export function PayrollManagementPage() {
           </Link>
           <div className={styles.pageTitleBlock}>
             <h1 className={styles.pageTitle}>Listado de Planillas</h1>
-            <p className={styles.pageSubtitle}>Visualice y gestione aperturas de planilla por empresa</p>
+            <p className={styles.pageSubtitle}>
+              Visualice y gestione aperturas de planilla por empresa
+            </p>
           </div>
         </div>
       </div>
@@ -904,7 +974,9 @@ export function PayrollManagementPage() {
               </div>
               <div>
                 <h2 className={styles.gestionTitle}>Gestion de Planillas</h2>
-                <p className={styles.gestionDesc}>Aperture, procese, verifique y aplique corridas de planilla por empresa</p>
+                <p className={styles.gestionDesc}>
+                  Aperture, procese, verifique y aplique corridas de planilla por empresa
+                </p>
               </div>
             </Flex>
             {canCreate ? (
@@ -923,7 +995,13 @@ export function PayrollManagementPage() {
 
       <Card className={styles.mainCard}>
         <div className={styles.mainCardBody}>
-          <Flex align="center" justify="space-between" wrap="wrap" gap={12} className={styles.registrosHeader}>
+          <Flex
+            align="center"
+            justify="space-between"
+            wrap="wrap"
+            gap={12}
+            className={styles.registrosHeader}
+          >
             <Flex align="center" gap={8} wrap="wrap">
               <FilterOutlined className={styles.registrosFilterIcon} />
               <h3 className={styles.registrosTitle}>Registros de Planillas</h3>
@@ -965,14 +1043,22 @@ export function PayrollManagementPage() {
           <Collapse
             className={styles.filtersCollapse}
             activeKey={filtersExpanded ? ['filtros'] : []}
-            onChange={(keys) => setFiltersExpanded((Array.isArray(keys) ? keys : [keys]).includes('filtros'))}
+            onChange={(keys) =>
+              setFiltersExpanded((Array.isArray(keys) ? keys : [keys]).includes('filtros'))
+            }
             items={[
               {
                 key: 'filtros',
                 label: 'Filtros',
                 children: (
                   <>
-                    <Flex justify="space-between" align="center" wrap="wrap" gap={12} style={{ marginBottom: 16 }}>
+                    <Flex
+                      justify="space-between"
+                      align="center"
+                      wrap="wrap"
+                      gap={12}
+                      style={{ marginBottom: 16 }}
+                    >
                       <Input
                         placeholder="Search"
                         prefix={<SearchOutlined />}
@@ -983,9 +1069,15 @@ export function PayrollManagementPage() {
                         style={{ maxWidth: 240 }}
                       />
                       <Flex gap={8}>
-                        <Button size="small" onClick={collapseAllPanes}>Collapse All</Button>
-                        <Button size="small" onClick={openAllPanes}>Show All</Button>
-                        <Button size="small" onClick={clearAllFilters}>Limpiar Todo</Button>
+                        <Button size="small" onClick={collapseAllPanes}>
+                          Collapse All
+                        </Button>
+                        <Button size="small" onClick={openAllPanes}>
+                          Show All
+                        </Button>
+                        <Button size="small" onClick={clearAllFilters}>
+                          Limpiar Todo
+                        </Button>
                       </Flex>
                     </Flex>
                     <Row gutter={[12, 12]}>
@@ -995,15 +1087,26 @@ export function PayrollManagementPage() {
                             <Flex gap={6} align="center" wrap="wrap">
                               <Input
                                 value={paneSearch[pane.key]}
-                                onChange={(event) => setPaneSearch((prev) => ({ ...prev, [pane.key]: event.target.value }))}
+                                onChange={(event) =>
+                                  setPaneSearch((prev) => ({
+                                    ...prev,
+                                    [pane.key]: event.target.value,
+                                  }))
+                                }
                                 placeholder={pane.title}
-                                prefix={<SearchOutlined style={{ fontSize: 12, color: '#8c8c8c' }} />}
-                                suffix={(
+                                prefix={
+                                  <SearchOutlined style={{ fontSize: 12, color: '#8c8c8c' }} />
+                                }
+                                suffix={
                                   <Flex gap={2}>
-                                    <SortAscendingOutlined style={{ fontSize: 10, color: '#8c8c8c' }} />
-                                    <SortDescendingOutlined style={{ fontSize: 10, color: '#8c8c8c' }} />
+                                    <SortAscendingOutlined
+                                      style={{ fontSize: 10, color: '#8c8c8c' }}
+                                    />
+                                    <SortDescendingOutlined
+                                      style={{ fontSize: 10, color: '#8c8c8c' }}
+                                    />
                                   </Flex>
-                                )}
+                                }
                                 size="middle"
                                 className={styles.filterInput}
                                 style={{ flex: 1, minWidth: 120 }}
@@ -1011,16 +1114,24 @@ export function PayrollManagementPage() {
                               <Button
                                 size="middle"
                                 icon={<SearchOutlined />}
-                                onClick={() => setPaneOpen((prev) => ({ ...prev, [pane.key]: true }))}
+                                onClick={() =>
+                                  setPaneOpen((prev) => ({ ...prev, [pane.key]: true }))
+                                }
                                 title="Abrir opciones"
                               />
-                              <Button size="middle" onClick={() => clearPaneSelection(pane.key)} title="Limpiar">
+                              <Button
+                                size="middle"
+                                onClick={() => clearPaneSelection(pane.key)}
+                                title="Limpiar"
+                              >
                                 x
                               </Button>
                               <Button
                                 size="middle"
                                 icon={paneOpen[pane.key] ? <UpOutlined /> : <DownOutlined />}
-                                onClick={() => setPaneOpen((prev) => ({ ...prev, [pane.key]: !prev[pane.key] }))}
+                                onClick={() =>
+                                  setPaneOpen((prev) => ({ ...prev, [pane.key]: !prev[pane.key] }))
+                                }
                                 title={paneOpen[pane.key] ? 'Colapsar' : 'Expandir'}
                               />
                             </Flex>
@@ -1028,20 +1139,33 @@ export function PayrollManagementPage() {
                               <div className={styles.paneOptionsBox}>
                                 <Checkbox.Group
                                   value={paneSelections[pane.key]}
-                                  onChange={(values) => setPaneSelections((prev) => ({ ...prev, [pane.key]: values as string[] }))}
+                                  onChange={(values) =>
+                                    setPaneSelections((prev) => ({
+                                      ...prev,
+                                      [pane.key]: values as string[],
+                                    }))
+                                  }
                                   style={{ display: 'flex', flexDirection: 'column', gap: 8 }}
                                 >
                                   {paneOptions[pane.key].map((option) => (
-                                    <Checkbox key={`${pane.key}:${option.value}`} value={option.value}>
+                                    <Checkbox
+                                      key={`${pane.key}:${option.value}`}
+                                      value={option.value}
+                                    >
                                       <Space>
                                         <span>{option.value}</span>
-                                        <Badge count={option.count} style={{ backgroundColor: '#5a6c7d' }} />
+                                        <Badge
+                                          count={option.count}
+                                          style={{ backgroundColor: '#5a6c7d' }}
+                                        />
                                       </Space>
                                     </Checkbox>
                                   ))}
                                 </Checkbox.Group>
                                 {paneOptions[pane.key].length === 0 && (
-                                  <span className={styles.emptyHint}>Sin valores para este filtro</span>
+                                  <span className={styles.emptyHint}>
+                                    Sin valores para este filtro
+                                  </span>
                                 )}
                               </div>
                             )}
@@ -1064,7 +1188,8 @@ export function PayrollManagementPage() {
             pagination={{
               pageSize,
               showSizeChanger: false,
-              showTotal: (total, [start, end]) => `Mostrando ${start} a ${end} de ${total} registros`,
+              showTotal: (total, [start, end]) =>
+                `Mostrando ${start} a ${end} de ${total} registros`,
             }}
             onRow={(record) => ({
               onClick: () => {
@@ -1091,8 +1216,13 @@ export function PayrollManagementPage() {
         footer={null}
         width={860}
         destroyOnHidden
-        title={(
-          <Flex justify="space-between" align="center" wrap="nowrap" style={{ width: '100%', gap: 16 }}>
+        title={
+          <Flex
+            justify="space-between"
+            align="center"
+            wrap="nowrap"
+            style={{ width: '100%', gap: 16 }}
+          >
             <div className={styles.companyModalHeader}>
               <div className={styles.companyModalHeaderIcon}>
                 <AppstoreOutlined />
@@ -1114,380 +1244,441 @@ export function PayrollManagementPage() {
               className={styles.companyModalCloseBtn}
             />
           </Flex>
-        )}
+        }
       >
         <Spin spinning={loadingDetail}>
-        <Form
-          form={form}
-          disabled={isReadOnlyModal}
-          layout="vertical"
-          onFinish={onCreate}
-          onFinishFailed={(info) => {
-            const firstField = String(info.errorFields?.[0]?.name?.[0] ?? '');
-            const firstFieldPath = info.errorFields?.[0]?.name;
-            if (
-              ['periodoInicio', 'periodoFin', 'fechaCorte', 'fechaInicioPago', 'fechaFinPago', 'fechaPagoProgramada']
-                .includes(firstField)
-            ) {
-              setActiveCreateTab('fechas');
-            } else {
-              setActiveCreateTab('principal');
-            }
-            message.error('Complete los campos requeridos para continuar.');
-            if (firstFieldPath && firstFieldPath.length > 0) {
-              setTimeout(() => {
-                form.scrollToField(firstFieldPath, { block: 'center' });
-              }, 0);
-            }
-          }}
-          scrollToFirstError={{ block: 'center' }}
-          className={styles.companyFormContent}
-        >
-          {isReadOnlyModal ? (
-            <Alert
-              type="warning"
-              showIcon
-              style={{ marginBottom: 8 }}
-              message={modalReadOnlyReason}
-            />
-          ) : null}
+          <Form
+            form={form}
+            disabled={isReadOnlyModal}
+            layout="vertical"
+            onFinish={onCreate}
+            onFinishFailed={(info) => {
+              const firstField = String(info.errorFields?.[0]?.name?.[0] ?? '');
+              const firstFieldPath = info.errorFields?.[0]?.name;
+              if (
+                [
+                  'periodoInicio',
+                  'periodoFin',
+                  'fechaCorte',
+                  'fechaInicioPago',
+                  'fechaFinPago',
+                  'fechaPagoProgramada',
+                ].includes(firstField)
+              ) {
+                setActiveCreateTab('fechas');
+              } else {
+                setActiveCreateTab('principal');
+              }
+              message.error('Complete los campos requeridos para continuar.');
+              if (firstFieldPath && firstFieldPath.length > 0) {
+                setTimeout(() => {
+                  form.scrollToField(firstFieldPath, { block: 'center' });
+                }, 0);
+              }
+            }}
+            scrollToFirstError={{ block: 'center' }}
+            className={styles.companyFormContent}
+          >
+            {isReadOnlyModal ? (
+              <Alert
+                type="warning"
+                showIcon
+                style={{ marginBottom: 8 }}
+                message={modalReadOnlyReason}
+              />
+            ) : null}
 
-          <Flex justify="flex-end" style={{ marginBottom: 8 }}>
-            <div
-              style={{
-                minWidth: 260,
-                maxWidth: '100%',
-                border: '1px solid #d8e1e8',
-                borderRadius: 8,
-                background: '#f8fafc',
-                padding: '6px 10px',
-              }}
-            >
-              <div style={{ fontSize: 11, color: '#6b7a85', marginBottom: 2 }}>Nombre planilla generado</div>
-              <div style={{ fontSize: 12, fontWeight: 600, color: '#3d4f5c' }}>
-                {generatedPayrollName?.trim() || editNamePreview || 'Pendiente de completar datos'}
+            <Flex justify="flex-end" style={{ marginBottom: 8 }}>
+              <div
+                style={{
+                  minWidth: 260,
+                  maxWidth: '100%',
+                  border: '1px solid #d8e1e8',
+                  borderRadius: 8,
+                  background: '#f8fafc',
+                  padding: '6px 10px',
+                }}
+              >
+                <div style={{ fontSize: 11, color: '#6b7a85', marginBottom: 2 }}>
+                  Nombre planilla generado
+                </div>
+                <div style={{ fontSize: 12, fontWeight: 600, color: '#3d4f5c' }}>
+                  {generatedPayrollName?.trim() ||
+                    editNamePreview ||
+                    'Pendiente de completar datos'}
+                </div>
               </div>
-            </div>
-          </Flex>
+            </Flex>
 
-          <Tabs
-            activeKey={activeCreateTab}
-            onChange={(key) => setActiveCreateTab(key as 'principal' | 'fechas' | 'bitacora')}
-            className={`${styles.tabsWrapper} ${styles.companyModalTabs}`}
-            items={[
-              {
-                key: 'principal',
-                forceRender: true,
-                label: (
-                  <span>
-                    <AppstoreOutlined style={{ marginRight: 8, fontSize: 16 }} />
-                    Informacion Principal
-                  </span>
-                ),
-                children: (
-                  <Row gutter={[12, 12]} className={styles.companyFormGrid}>
-                    <Col span={12}>
-                      <Form.Item name="idEmpresa" label="Empresa *" rules={[{ required: true }]}>
-                        <Select
-                          showSearch
-                          optionFilterProp="label"
-                          filterOption={(input, option) =>
-                            String(option?.label ?? '').toLowerCase().includes(input.toLowerCase())
-                          }
-                          disabled={editingPayrollId != null}
-                          options={companies.map((company) => ({ label: company.nombre, value: company.id }))}
-                        />
-                      </Form.Item>
-                    </Col>
-                    <Col span={12}>
-                      <Form.Item name="nombrePlanilla" label="Nombre Planilla">
-                        <Input
-                          maxLength={150}
-                          disabled
-                          placeholder="Se genera automaticamente segun empresa, periodo, fecha fin y moneda"
-                        />
-                      </Form.Item>
-                    </Col>
-                    <Col span={12}>
-                      <Form.Item name="idPeriodoPago" label="Periodo de Pago *" rules={[{ required: true }]}>
-                        <Select
-                          showSearch
-                          optionFilterProp="label"
-                          filterOption={(input, option) =>
-                            String(option?.label ?? '').toLowerCase().includes(input.toLowerCase())
-                          }
-                          options={periodOptions.map((period) => ({
-                            label: `${period.nombre} (${period.dias} dias)`,
-                            value: period.id,
-                          }))}
-                        />
-                      </Form.Item>
-                    </Col>
-                    <Col span={12}>
-                      <Form.Item name="tipoPlanilla" label="Tipo Planilla *" rules={[{ required: true }]}>
-                        <Select
-                          showSearch
-                          optionFilterProp="label"
-                          filterOption={(input, option) =>
-                            String(option?.label ?? '').toLowerCase().includes(input.toLowerCase())
-                          }
-                          options={[
-                            { label: 'Regular', value: 'Regular' },
-                            { label: 'Aguinaldo', value: 'Aguinaldo' },
-                            { label: 'Liquidacion', value: 'Liquidacion' },
-                            { label: 'Extraordinaria', value: 'Extraordinaria' },
-                          ]}
-                        />
-                      </Form.Item>
-                    </Col>
-                    <Col span={12}>
-                      <Form.Item name="moneda" label="Moneda *" rules={[{ required: true }]}>
-                        <Select
-                          showSearch
-                          optionFilterProp="label"
-                          filterOption={(input, option) =>
-                            String(option?.label ?? '').toLowerCase().includes(input.toLowerCase())
-                          }
-                          options={[{ label: 'CRC', value: 'CRC' }, { label: 'USD', value: 'USD' }]}
-                        />
-                      </Form.Item>
-                    </Col>
-                  </Row>
-                ),
-              },
-              {
-                key: 'fechas',
-                forceRender: true,
-                label: (
-                  <span>
-                    <HistoryOutlined style={{ marginRight: 8, fontSize: 16 }} />
-                    Periodo y Fechas de Pago
-                  </span>
-                ),
-                children: (
-                  <Row gutter={[12, 12]} className={styles.companyFormGrid}>
-                    <Col span={24}>
-                      <Divider titlePlacement="left" style={{ margin: '8px 0 4px' }}>
-                        Periodo de Nomina
-                      </Divider>
-                    </Col>
-                    <Col span={12}>
-                      <Form.Item
-                        name="periodoInicio"
-                        label="Inicio Periodo *"
-                        rules={[
-                          { required: true, message: 'Inicio Periodo es requerido' },
-                          ({ getFieldValue }) => ({
-                            validator(_, value: Dayjs | undefined) {
-                              const start = toDayjs(value);
-                              const end = toDayjs(getFieldValue('periodoFin'));
-                              if (!start || !end) return Promise.resolve();
-                              if (start.isAfter(end, 'day')) {
-                                return Promise.reject(new Error('Inicio Periodo no puede ser mayor que Fin Periodo'));
-                              }
-                              return Promise.resolve();
-                            },
-                          }),
-                        ]}
-                      >
-                        <DatePicker format="YYYY-MM-DD" style={{ width: '100%' }} />
-                      </Form.Item>
-                    </Col>
-                    <Col span={12}>
-                      <Form.Item
-                        name="periodoFin"
-                        label="Fin Periodo *"
-                        dependencies={['periodoInicio']}
-                        rules={[
-                          { required: true, message: 'Fin Periodo es requerido' },
-                          ({ getFieldValue }) => ({
-                            validator(_, value: Dayjs | undefined) {
-                              const end = toDayjs(value);
-                              const start = toDayjs(getFieldValue('periodoInicio'));
-                              if (!start || !end) return Promise.resolve();
-                              if (end.isBefore(start, 'day')) {
-                                return Promise.reject(new Error('Fin Periodo no puede ser menor que Inicio Periodo'));
-                              }
-                              return Promise.resolve();
-                            },
-                          }),
-                        ]}
-                      >
-                        <DatePicker format="YYYY-MM-DD" style={{ width: '100%' }} />
-                      </Form.Item>
-                    </Col>
-                    <Col span={12}>
-                      <Form.Item
-                        name="fechaCorte"
-                        label="Fecha Corte"
-                        dependencies={['periodoInicio', 'periodoFin']}
-                        rules={[
-                          ({ getFieldValue }) => ({
-                            validator(_, value: Dayjs | undefined) {
-                              if (!value) return Promise.resolve();
-                              const corte = toDayjs(value);
-                              const start = toDayjs(getFieldValue('periodoInicio'));
-                              const end = toDayjs(getFieldValue('periodoFin'));
-                              if (!corte || !start || !end) return Promise.resolve();
-                              if (corte.isBefore(start, 'day') || corte.isAfter(end, 'day')) {
-                                return Promise.reject(new Error('Fecha Corte debe estar dentro del Periodo de Nomina'));
-                              }
-                              return Promise.resolve();
-                            },
-                          }),
-                        ]}
-                      >
-                        <DatePicker format="YYYY-MM-DD" style={{ width: '100%' }} />
-                      </Form.Item>
-                    </Col>
-                    <Col span={24}>
-                      <Divider titlePlacement="left" style={{ margin: '8px 0 4px' }}>
-                        Ventana de Pago
-                      </Divider>
-                    </Col>
-                    <Col span={12}>
-                      <Form.Item
-                        name="fechaInicioPago"
-                        label="Inicio Pago *"
-                        rules={[
-                          { required: true, message: 'Inicio Pago es requerido' },
-                          ({ getFieldValue }) => ({
-                            validator(_, value: Dayjs | undefined) {
-                              const start = toDayjs(value);
-                              const end = toDayjs(getFieldValue('fechaFinPago'));
-                              if (!start || !end) return Promise.resolve();
-                              if (start.isAfter(end, 'day')) {
-                                return Promise.reject(new Error('Inicio Pago no puede ser mayor que Fin Pago'));
-                              }
-                              return Promise.resolve();
-                            },
-                          }),
-                        ]}
-                      >
-                        <DatePicker format="YYYY-MM-DD" style={{ width: '100%' }} />
-                      </Form.Item>
-                    </Col>
-                    <Col span={12}>
-                      <Form.Item
-                        name="fechaFinPago"
-                        label="Fin Pago *"
-                        dependencies={['fechaInicioPago']}
-                        rules={[
-                          { required: true, message: 'Fin Pago es requerido' },
-                          ({ getFieldValue }) => ({
-                            validator(_, value: Dayjs | undefined) {
-                              const end = toDayjs(value);
-                              const start = toDayjs(getFieldValue('fechaInicioPago'));
-                              if (!start || !end) return Promise.resolve();
-                              if (end.isBefore(start, 'day')) {
-                                return Promise.reject(new Error('Fin Pago no puede ser menor que Inicio Pago'));
-                              }
-                              return Promise.resolve();
-                            },
-                          }),
-                        ]}
-                      >
-                        <DatePicker format="YYYY-MM-DD" style={{ width: '100%' }} />
-                      </Form.Item>
-                    </Col>
-                    <Col span={12}>
-                      <Form.Item
-                        name="fechaPagoProgramada"
-                        label="Fecha Pago Programada"
-                        dependencies={['fechaInicioPago', 'fechaFinPago', 'fechaCorte']}
-                        rules={[
-                          ({ getFieldValue }) => ({
-                            validator(_, value: Dayjs | undefined) {
-                              if (!value) return Promise.resolve();
-                              const programada = toDayjs(value);
-                              const start = toDayjs(getFieldValue('fechaInicioPago'));
-                              const end = toDayjs(getFieldValue('fechaFinPago'));
-                              const corte = toDayjs(getFieldValue('fechaCorte'));
-                              if (!programada || !start || !end) return Promise.resolve();
-                              if (programada.isBefore(start, 'day') || programada.isAfter(end, 'day')) {
-                                return Promise.reject(new Error('Fecha Pago Programada debe estar dentro de la Ventana de Pago'));
-                              }
-                              if (corte && programada.isBefore(corte, 'day')) {
-                                return Promise.reject(new Error('Fecha Pago Programada no puede ser menor que Fecha Corte'));
-                              }
-                              return Promise.resolve();
-                            },
-                          }),
-                        ]}
-                      >
-                        <DatePicker format="YYYY-MM-DD" style={{ width: '100%' }} />
-                      </Form.Item>
-                    </Col>
-                  </Row>
-                ),
-              },
-              ...(editingPayrollId
-                ? [{
-                  key: 'bitacora',
+            <Tabs
+              activeKey={activeCreateTab}
+              onChange={(key) => setActiveCreateTab(key as 'principal' | 'fechas' | 'bitacora')}
+              className={`${styles.tabsWrapper} ${styles.companyModalTabs}`}
+              items={[
+                {
+                  key: 'principal',
+                  forceRender: true,
                   label: (
                     <span>
-                      <HistoryOutlined style={{ marginRight: 8, fontSize: 16 }} />
-                      Bitacora
+                      <AppstoreOutlined style={{ marginRight: 8, fontSize: 16 }} />
+                      Informacion Principal
                     </span>
                   ),
                   children: (
-                    <Spin spinning={loadingAuditTrail}>
-                      <div style={{ paddingTop: 8 }}>
-                        <p className={styles.sectionTitle}>Historial de cambios de la planilla</p>
-                        <p className={styles.sectionDescription}>
-                          Muestra quien hizo el cambio, cuando lo hizo y el detalle registrado.
-                        </p>
-                        <Table
-                          columns={auditColumns}
-                          dataSource={auditTrail}
-                          rowKey="id"
-                          size="small"
-                          loading={loadingAuditTrail}
-                          className={`${styles.configTable} ${styles.auditTableCompact}`}
-                          pagination={{
-                            pageSize: 8,
-                            showSizeChanger: true,
-                            showTotal: (total) => `${total} registro(s)`,
-                          }}
-                          locale={{ emptyText: 'No hay registros de bitacora para esta planilla.' }}
-                        />
-                      </div>
-                    </Spin>
+                    <Row gutter={[12, 12]} className={styles.companyFormGrid}>
+                      <Col span={12}>
+                        <Form.Item name="idEmpresa" label="Empresa *" rules={[{ required: true }]}>
+                          <Select
+                            showSearch
+                            optionFilterProp="label"
+                            filterOption={(input, option) =>
+                              String(option?.label ?? '')
+                                .toLowerCase()
+                                .includes(input.toLowerCase())
+                            }
+                            disabled={editingPayrollId != null}
+                            options={companies.map((company) => ({
+                              label: company.nombre,
+                              value: company.id,
+                            }))}
+                          />
+                        </Form.Item>
+                      </Col>
+                      <Col span={12}>
+                        <Form.Item name="nombrePlanilla" label="Nombre Planilla">
+                          <Input
+                            maxLength={150}
+                            disabled
+                            placeholder="Se genera automaticamente segun empresa, periodo, fecha fin y moneda"
+                          />
+                        </Form.Item>
+                      </Col>
+                      <Col span={12}>
+                        <Form.Item
+                          name="idPeriodoPago"
+                          label="Periodo de Pago *"
+                          rules={[{ required: true }]}
+                        >
+                          <Select
+                            showSearch
+                            optionFilterProp="label"
+                            filterOption={(input, option) =>
+                              String(option?.label ?? '')
+                                .toLowerCase()
+                                .includes(input.toLowerCase())
+                            }
+                            options={periodOptions.map((period) => ({
+                              label: `${period.nombre} (${period.dias} dias)`,
+                              value: period.id,
+                            }))}
+                          />
+                        </Form.Item>
+                      </Col>
+                      <Col span={12}>
+                        <Form.Item
+                          name="tipoPlanilla"
+                          label="Tipo Planilla *"
+                          rules={[{ required: true }]}
+                        >
+                          <Select
+                            showSearch
+                            optionFilterProp="label"
+                            filterOption={(input, option) =>
+                              String(option?.label ?? '')
+                                .toLowerCase()
+                                .includes(input.toLowerCase())
+                            }
+                            options={[
+                              { label: 'Regular', value: 'Regular' },
+                              { label: 'Aguinaldo', value: 'Aguinaldo' },
+                              { label: 'Liquidacion', value: 'Liquidacion' },
+                              { label: 'Extraordinaria', value: 'Extraordinaria' },
+                            ]}
+                          />
+                        </Form.Item>
+                      </Col>
+                      <Col span={12}>
+                        <Form.Item name="moneda" label="Moneda *" rules={[{ required: true }]}>
+                          <Select
+                            showSearch
+                            optionFilterProp="label"
+                            filterOption={(input, option) =>
+                              String(option?.label ?? '')
+                                .toLowerCase()
+                                .includes(input.toLowerCase())
+                            }
+                            options={[
+                              { label: 'CRC', value: 'CRC' },
+                              { label: 'USD', value: 'USD' },
+                            ]}
+                          />
+                        </Form.Item>
+                      </Col>
+                    </Row>
                   ),
-                }]
-                : []),
-            ]}
-          />
+                },
+                {
+                  key: 'fechas',
+                  forceRender: true,
+                  label: (
+                    <span>
+                      <HistoryOutlined style={{ marginRight: 8, fontSize: 16 }} />
+                      Periodo y Fechas de Pago
+                    </span>
+                  ),
+                  children: (
+                    <Row gutter={[12, 12]} className={styles.companyFormGrid}>
+                      <Col span={24}>
+                        <Divider titlePlacement="left" style={{ margin: '8px 0 4px' }}>
+                          Periodo de Nomina
+                        </Divider>
+                      </Col>
+                      <Col span={12}>
+                        <Form.Item
+                          name="periodoInicio"
+                          label="Inicio Periodo *"
+                          rules={[
+                            { required: true, message: 'Inicio Periodo es requerido' },
+                            ({ getFieldValue }) => ({
+                              validator(_, value: Dayjs | undefined) {
+                                const start = toDayjs(value);
+                                const end = toDayjs(getFieldValue('periodoFin'));
+                                if (!start || !end) return Promise.resolve();
+                                if (start.isAfter(end, 'day')) {
+                                  return Promise.reject(
+                                    new Error('Inicio Periodo no puede ser mayor que Fin Periodo'),
+                                  );
+                                }
+                                return Promise.resolve();
+                              },
+                            }),
+                          ]}
+                        >
+                          <DatePicker format="YYYY-MM-DD" style={{ width: '100%' }} />
+                        </Form.Item>
+                      </Col>
+                      <Col span={12}>
+                        <Form.Item
+                          name="periodoFin"
+                          label="Fin Periodo *"
+                          dependencies={['periodoInicio']}
+                          rules={[
+                            { required: true, message: 'Fin Periodo es requerido' },
+                            ({ getFieldValue }) => ({
+                              validator(_, value: Dayjs | undefined) {
+                                const end = toDayjs(value);
+                                const start = toDayjs(getFieldValue('periodoInicio'));
+                                if (!start || !end) return Promise.resolve();
+                                if (end.isBefore(start, 'day')) {
+                                  return Promise.reject(
+                                    new Error('Fin Periodo no puede ser menor que Inicio Periodo'),
+                                  );
+                                }
+                                return Promise.resolve();
+                              },
+                            }),
+                          ]}
+                        >
+                          <DatePicker format="YYYY-MM-DD" style={{ width: '100%' }} />
+                        </Form.Item>
+                      </Col>
+                      <Col span={12}>
+                        <Form.Item
+                          name="fechaCorte"
+                          label="Fecha Corte"
+                          dependencies={['periodoInicio', 'periodoFin']}
+                          rules={[
+                            ({ getFieldValue }) => ({
+                              validator(_, value: Dayjs | undefined) {
+                                if (!value) return Promise.resolve();
+                                const corte = toDayjs(value);
+                                const start = toDayjs(getFieldValue('periodoInicio'));
+                                const end = toDayjs(getFieldValue('periodoFin'));
+                                if (!corte || !start || !end) return Promise.resolve();
+                                if (corte.isBefore(start, 'day') || corte.isAfter(end, 'day')) {
+                                  return Promise.reject(
+                                    new Error(
+                                      'Fecha Corte debe estar dentro del Periodo de Nomina',
+                                    ),
+                                  );
+                                }
+                                return Promise.resolve();
+                              },
+                            }),
+                          ]}
+                        >
+                          <DatePicker format="YYYY-MM-DD" style={{ width: '100%' }} />
+                        </Form.Item>
+                      </Col>
+                      <Col span={24}>
+                        <Divider titlePlacement="left" style={{ margin: '8px 0 4px' }}>
+                          Ventana de Pago
+                        </Divider>
+                      </Col>
+                      <Col span={12}>
+                        <Form.Item
+                          name="fechaInicioPago"
+                          label="Inicio Pago *"
+                          rules={[
+                            { required: true, message: 'Inicio Pago es requerido' },
+                            ({ getFieldValue }) => ({
+                              validator(_, value: Dayjs | undefined) {
+                                const start = toDayjs(value);
+                                const end = toDayjs(getFieldValue('fechaFinPago'));
+                                if (!start || !end) return Promise.resolve();
+                                if (start.isAfter(end, 'day')) {
+                                  return Promise.reject(
+                                    new Error('Inicio Pago no puede ser mayor que Fin Pago'),
+                                  );
+                                }
+                                return Promise.resolve();
+                              },
+                            }),
+                          ]}
+                        >
+                          <DatePicker format="YYYY-MM-DD" style={{ width: '100%' }} />
+                        </Form.Item>
+                      </Col>
+                      <Col span={12}>
+                        <Form.Item
+                          name="fechaFinPago"
+                          label="Fin Pago *"
+                          dependencies={['fechaInicioPago']}
+                          rules={[
+                            { required: true, message: 'Fin Pago es requerido' },
+                            ({ getFieldValue }) => ({
+                              validator(_, value: Dayjs | undefined) {
+                                const end = toDayjs(value);
+                                const start = toDayjs(getFieldValue('fechaInicioPago'));
+                                if (!start || !end) return Promise.resolve();
+                                if (end.isBefore(start, 'day')) {
+                                  return Promise.reject(
+                                    new Error('Fin Pago no puede ser menor que Inicio Pago'),
+                                  );
+                                }
+                                return Promise.resolve();
+                              },
+                            }),
+                          ]}
+                        >
+                          <DatePicker format="YYYY-MM-DD" style={{ width: '100%' }} />
+                        </Form.Item>
+                      </Col>
+                      <Col span={12}>
+                        <Form.Item
+                          name="fechaPagoProgramada"
+                          label="Fecha Pago Programada"
+                          dependencies={['fechaInicioPago', 'fechaFinPago', 'fechaCorte']}
+                          rules={[
+                            ({ getFieldValue }) => ({
+                              validator(_, value: Dayjs | undefined) {
+                                if (!value) return Promise.resolve();
+                                const programada = toDayjs(value);
+                                const start = toDayjs(getFieldValue('fechaInicioPago'));
+                                const end = toDayjs(getFieldValue('fechaFinPago'));
+                                const corte = toDayjs(getFieldValue('fechaCorte'));
+                                if (!programada || !start || !end) return Promise.resolve();
+                                if (
+                                  programada.isBefore(start, 'day') ||
+                                  programada.isAfter(end, 'day')
+                                ) {
+                                  return Promise.reject(
+                                    new Error(
+                                      'Fecha Pago Programada debe estar dentro de la Ventana de Pago',
+                                    ),
+                                  );
+                                }
+                                if (corte && programada.isBefore(corte, 'day')) {
+                                  return Promise.reject(
+                                    new Error(
+                                      'Fecha Pago Programada no puede ser menor que Fecha Corte',
+                                    ),
+                                  );
+                                }
+                                return Promise.resolve();
+                              },
+                            }),
+                          ]}
+                        >
+                          <DatePicker format="YYYY-MM-DD" style={{ width: '100%' }} />
+                        </Form.Item>
+                      </Col>
+                    </Row>
+                  ),
+                },
+                ...(editingPayrollId
+                  ? [
+                      {
+                        key: 'bitacora',
+                        label: (
+                          <span>
+                            <HistoryOutlined style={{ marginRight: 8, fontSize: 16 }} />
+                            Bitacora
+                          </span>
+                        ),
+                        children: (
+                          <Spin spinning={loadingAuditTrail}>
+                            <div style={{ paddingTop: 8 }}>
+                              <p className={styles.sectionTitle}>
+                                Historial de cambios de la planilla
+                              </p>
+                              <p className={styles.sectionDescription}>
+                                Muestra quien hizo el cambio, cuando lo hizo y el detalle
+                                registrado.
+                              </p>
+                              <Table
+                                columns={auditColumns}
+                                dataSource={auditTrail}
+                                rowKey="id"
+                                size="small"
+                                loading={loadingAuditTrail}
+                                className={`${styles.configTable} ${styles.auditTableCompact}`}
+                                pagination={{
+                                  pageSize: 8,
+                                  showSizeChanger: true,
+                                  showTotal: (total) => `${total} registro(s)`,
+                                }}
+                                locale={{
+                                  emptyText: 'No hay registros de bitacora para esta planilla.',
+                                }}
+                              />
+                            </div>
+                          </Spin>
+                        ),
+                      },
+                    ]
+                  : []),
+              ]}
+            />
 
-          <div className={styles.companyModalFooter}>
-            <Button
-              onClick={() => {
-                setCreateOpen(false);
-                setEditingPayrollId(null);
-                setAuditTrail([]);
-                setLoadingDetail(false);
-                setEditNamePreview('');
-                setModalReadOnlyReason(null);
-              }}
-              className={styles.companyModalBtnCancel}
-            >
-              Cancelar
-            </Button>
-            <Button
-              type="primary"
-              htmlType="submit"
-              loading={savingCreate}
-              disabled={isReadOnlyModal || (editingPayrollId ? !canEdit : !canCreate)}
-              icon={editingPayrollId ? <CheckCircleOutlined /> : <PlusOutlined />}
-              className={styles.companyModalBtnSubmit}
-            >
-              {editingPayrollId ? 'Guardar cambios' : 'Crear Planilla'}
-            </Button>
-          </div>
-        </Form>
+            <div className={styles.companyModalFooter}>
+              <Button
+                onClick={() => {
+                  setCreateOpen(false);
+                  setEditingPayrollId(null);
+                  setAuditTrail([]);
+                  setLoadingDetail(false);
+                  setEditNamePreview('');
+                  setModalReadOnlyReason(null);
+                }}
+                className={styles.companyModalBtnCancel}
+              >
+                Cancelar
+              </Button>
+              <Button
+                type="primary"
+                htmlType="submit"
+                loading={savingCreate}
+                disabled={isReadOnlyModal || (editingPayrollId ? !canEdit : !canCreate)}
+                icon={editingPayrollId ? <CheckCircleOutlined /> : <PlusOutlined />}
+                className={styles.companyModalBtnSubmit}
+              >
+                {editingPayrollId ? 'Guardar cambios' : 'Crear Planilla'}
+              </Button>
+            </div>
+          </Form>
         </Spin>
       </Modal>
-
     </div>
   );
 }

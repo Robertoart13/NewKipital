@@ -1,6 +1,6 @@
 import { TableColumn } from 'typeorm';
 
-import type { MigrationInterface, QueryRunner } from 'typeorm';
+import { MigrationInterface, QueryRunner } from 'typeorm';
 
 export class AddPersonalActionInvalidationMetadata1708537100000 implements MigrationInterface {
   public async up(queryRunner: QueryRunner): Promise<void> {

@@ -1,7 +1,8 @@
-import { useEffect, useRef } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { App as AntdApp } from 'antd';
+import { useEffect, useRef } from 'react';
 import { io } from 'socket.io-client';
+
 import { API_URL } from '../config/api';
 import { notificationKeys } from '../queries/notifications/keys';
 

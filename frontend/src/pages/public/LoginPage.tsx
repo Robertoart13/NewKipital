@@ -1,18 +1,15 @@
-import { useEffect, useRef, useState } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
-import { Card, Form, Input, Button, Typography, Divider } from 'antd';
 import {
   ExclamationCircleFilled,
   CloseOutlined,
   MailOutlined,
   LockOutlined,
 } from '@ant-design/icons';
-import { useAppDispatch } from '../../store/hooks';
-import { setCredentials } from '../../store/slices/authSlice';
-import type { PlatformApp, User, UserCompanyInfo } from '../../store/slices/authSlice';
-import { setActiveApp } from '../../store/slices/activeAppSlice';
-import { setActiveCompany } from '../../store/slices/activeCompanySlice';
-import { setPermissions } from '../../store/slices/permissionsSlice';
+import { Card, Form, Input, Button, Typography, Divider } from 'antd';
+import { useEffect, useRef, useState } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
+
+import { fetchPermissionsForApp } from '../../api/permissions';
+import { httpFetch } from '../../interceptors/httpInterceptor';
 import {
   STORAGE_KEYS,
   getStoredActiveApp,
@@ -22,8 +19,13 @@ import {
   setMicrosoftAvatar,
   getMicrosoftAvatar,
 } from '../../lib/storage';
-import { httpFetch } from '../../interceptors/httpInterceptor';
-import { fetchPermissionsForApp } from '../../api/permissions';
+import { useAppDispatch } from '../../store/hooks';
+import { setActiveApp } from '../../store/slices/activeAppSlice';
+import { setActiveCompany } from '../../store/slices/activeCompanySlice';
+import { setCredentials } from '../../store/slices/authSlice';
+import { setPermissions } from '../../store/slices/permissionsSlice';
+
+import type { PlatformApp, User, UserCompanyInfo } from '../../store/slices/authSlice';
 
 const { Title, Link } = Typography;
 
@@ -168,20 +170,26 @@ export function LoginPage() {
 
   const from = (location.state as { from?: string })?.from ?? '/dashboard';
 
-  const microsoftClientId = (import.meta.env.VITE_MSAL_CLIENT_ID as string | undefined)
-    ?? (import.meta.env.VITE_MICROSOFT_CLIENT_ID as string | undefined);
-  const microsoftAuthority = (import.meta.env.VITE_MSAL_AUTHORITY as string | undefined)
-    ?? ((import.meta.env.VITE_MICROSOFT_TENANT_ID as string | undefined)
+  const microsoftClientId =
+    (import.meta.env.VITE_MSAL_CLIENT_ID as string | undefined) ??
+    (import.meta.env.VITE_MICROSOFT_CLIENT_ID as string | undefined);
+  const microsoftAuthority =
+    (import.meta.env.VITE_MSAL_AUTHORITY as string | undefined) ??
+    ((import.meta.env.VITE_MICROSOFT_TENANT_ID as string | undefined)
       ? `https://login.microsoftonline.com/${import.meta.env.VITE_MICROSOFT_TENANT_ID as string}`
       : undefined);
-  const microsoftScopes = (import.meta.env.VITE_MICROSOFT_SCOPES as string | undefined)
-    ?? 'openid profile email User.Read';
-  const microsoftRedirectUri = (import.meta.env.VITE_MSAL_REDIRECT_URI_PRODUCCION as string | undefined)
-    ?? `${window.location.origin}/auth/login`;
+  const microsoftScopes =
+    (import.meta.env.VITE_MICROSOFT_SCOPES as string | undefined) ??
+    'openid profile email User.Read';
+  const microsoftRedirectUri =
+    (import.meta.env.VITE_MSAL_REDIRECT_URI_PRODUCCION as string | undefined) ??
+    `${window.location.origin}/auth/login`;
 
   const base64UrlEncode = (bytes: Uint8Array): string => {
     let binary = '';
-    bytes.forEach((b) => { binary += String.fromCharCode(b); });
+    bytes.forEach((b) => {
+      binary += String.fromCharCode(b);
+    });
     return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
   };
 
@@ -189,7 +197,9 @@ export function LoginPage() {
     const charset = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~';
     const random = new Uint8Array(length);
     crypto.getRandomValues(random);
-    return Array.from(random).map((v) => charset[v % charset.length]).join('');
+    return Array.from(random)
+      .map((v) => charset[v % charset.length])
+      .join('');
   };
 
   const createCodeChallenge = async (verifier: string): Promise<string> => {
@@ -284,9 +294,13 @@ export function LoginPage() {
         body: tokenBody.toString(),
       });
 
-      const tokenPayload = await tokenResponse.json() as MicrosoftTokenExchangeResponse;
+      const tokenPayload = (await tokenResponse.json()) as MicrosoftTokenExchangeResponse;
       if (!tokenResponse.ok || !tokenPayload.id_token) {
-        throw new Error(tokenPayload.error_description || tokenPayload.error || 'No se pudo validar el login de Microsoft');
+        throw new Error(
+          tokenPayload.error_description ||
+            tokenPayload.error ||
+            'No se pudo validar el login de Microsoft',
+        );
       }
 
       if (tokenPayload.access_token) {
@@ -315,7 +329,7 @@ export function LoginPage() {
       });
 
       if (!response.ok) {
-        const body = await response.json().catch(() => null) as ApiErrorPayload | null;
+        const body = (await response.json().catch(() => null)) as ApiErrorPayload | null;
         const message = Array.isArray(body?.message) ? body.message.join(', ') : body?.message;
         throw new Error(message || 'No se pudo validar usuario Microsoft en backend.');
       }
@@ -338,15 +352,17 @@ export function LoginPage() {
             ),
             companyIds: body.data.usuario.companyIds ?? [],
           }
-        : body?.user ?? null;
+        : (body?.user ?? null);
 
-      const normalizedCompanies: UserCompanyInfo[] = (body?.data?.usuario?.companies ?? body?.companies ?? []).map(
-        (company: { id: number; nombre: string; codigo?: string | null }) => ({
-          id: company.id,
-          nombre: company.nombre,
-          codigo: company.codigo ?? null,
-        }),
-      );
+      const normalizedCompanies: UserCompanyInfo[] = (
+        body?.data?.usuario?.companies ??
+        body?.companies ??
+        []
+      ).map((company: { id: number; nombre: string; codigo?: string | null }) => ({
+        id: company.id,
+        nombre: company.nombre,
+        codigo: company.codigo ?? null,
+      }));
 
       if (!normalizedUser || !Array.isArray(normalizedCompanies)) {
         throw new Error('Respuesta de autenticacion Microsoft invalida.');
@@ -384,7 +400,9 @@ export function LoginPage() {
       clearMicrosoftAvatar();
       await finalizeSession(user, companies);
     } catch (err) {
-      setError((err as Error).message || 'Credenciales invalidas. Verifique su correo y contrasena.');
+      setError(
+        (err as Error).message || 'Credenciales invalidas. Verifique su correo y contrasena.',
+      );
     } finally {
       setLoading(false);
     }
@@ -440,7 +458,9 @@ export function LoginPage() {
       clearMicrosoftOauthFlowState();
       clearMicrosoftSession();
       clearMicrosoftAvatar();
-      setError('No se recibio respuesta del popup de Microsoft. El usuario cancelo o el flujo no finalizo.');
+      setError(
+        'No se recibio respuesta del popup de Microsoft. El usuario cancelo o el flujo no finalizo.',
+      );
     }, 120000);
   };
 
@@ -484,7 +504,10 @@ export function LoginPage() {
       if (event.origin !== window.location.origin) return;
       if (!event.data || typeof event.data !== 'object') return;
 
-      if (event.data.type === MICROSOFT_POPUP_EVENT || event.data.type === MICROSOFT_POPUP_ERROR_EVENT) {
+      if (
+        event.data.type === MICROSOFT_POPUP_EVENT ||
+        event.data.type === MICROSOFT_POPUP_ERROR_EVENT
+      ) {
         completeMicrosoftLogin(event.data.payload as MicrosoftPopupPayload);
       }
     };
@@ -496,8 +519,8 @@ export function LoginPage() {
       try {
         const bridgeMessage = JSON.parse(event.newValue) as MicrosoftPopupBridgeMessage;
         if (
-          bridgeMessage.type === MICROSOFT_POPUP_EVENT
-          || bridgeMessage.type === MICROSOFT_POPUP_ERROR_EVENT
+          bridgeMessage.type === MICROSOFT_POPUP_EVENT ||
+          bridgeMessage.type === MICROSOFT_POPUP_ERROR_EVENT
         ) {
           void completeMicrosoftLogin(bridgeMessage.payload);
           clearMicrosoftPopupBridge();
@@ -535,7 +558,13 @@ export function LoginPage() {
         <img
           src="/assets/images/global/LogoLarge.png"
           alt="KPITAL 360"
-          style={{ height: 72, marginBottom: 16, display: 'block', marginLeft: 'auto', marginRight: 'auto' }}
+          style={{
+            height: 72,
+            marginBottom: 16,
+            display: 'block',
+            marginLeft: 'auto',
+            marginRight: 'auto',
+          }}
         />
         <Title level={4} style={{ margin: 0, fontWeight: 600, color: '#262626' }}>
           Inicie sesion con su correo Corporativo
@@ -593,9 +622,7 @@ export function LoginPage() {
         </Form.Item>
 
         <div style={{ marginBottom: 20 }}>
-          <Link style={{ color: '#20638d', fontSize: 13 }}>
-            ¿Has olvidado tu contraseña?
-          </Link>
+          <Link style={{ color: '#20638d', fontSize: 13 }}>¿Has olvidado tu contraseña?</Link>
         </div>
 
         <Form.Item style={{ marginBottom: 0 }}>

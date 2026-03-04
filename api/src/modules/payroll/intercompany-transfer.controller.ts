@@ -5,7 +5,7 @@ import { RequirePermissions } from '../../common/decorators/require-permissions.
 
 import type { ExecuteIntercompanyTransferDto } from './dto/execute-intercompany-transfer.dto';
 import type { SimulateIntercompanyTransferDto } from './dto/simulate-intercompany-transfer.dto';
-import type { IntercompanyTransferService } from './intercompany-transfer.service';
+import { IntercompanyTransferService } from './intercompany-transfer.service';
 
 @Controller('payroll/intercompany-transfer')
 export class IntercompanyTransferController {

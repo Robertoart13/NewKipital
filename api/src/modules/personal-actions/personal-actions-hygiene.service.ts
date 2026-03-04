@@ -8,8 +8,8 @@ import {
   PERSONAL_ACTION_APPROVED_STATES,
 } from './entities/personal-action.entity';
 
-import type { PersonalActionAutoInvalidationService } from './personal-action-auto-invalidation.service';
-import type { Repository } from 'typeorm';
+import { PersonalActionAutoInvalidationService } from './personal-action-auto-invalidation.service';
+import { Repository } from 'typeorm';
 
 @Injectable()
 export class PersonalActionsHygieneService {

@@ -1,17 +1,18 @@
 import { useEffect } from 'react';
-import { useAppDispatch, useAppSelector } from '../store/hooks';
-import { setCredentials, setSessionLoaded } from '../store/slices/authSlice';
-import { setActiveApp } from '../store/slices/activeAppSlice';
-import { setActiveCompany } from '../store/slices/activeCompanySlice';
-import { setPermissions } from '../store/slices/permissionsSlice';
+
+import { httpFetch } from '../interceptors/httpInterceptor';
+import { isMicrosoftOAuthCallbackInProgress } from '../lib/microsoftAuth';
 import {
   STORAGE_KEYS,
   getStoredActiveApp,
   consumeSkipRestore,
   getMicrosoftAvatar,
 } from '../lib/storage';
-import { httpFetch } from '../interceptors/httpInterceptor';
-import { isMicrosoftOAuthCallbackInProgress } from '../lib/microsoftAuth';
+import { useAppDispatch, useAppSelector } from '../store/hooks';
+import { setActiveApp } from '../store/slices/activeAppSlice';
+import { setActiveCompany } from '../store/slices/activeCompanySlice';
+import { setCredentials, setSessionLoaded } from '../store/slices/authSlice';
+import { setPermissions } from '../store/slices/permissionsSlice';
 
 /**
  * Al cargar la app, intenta restaurar la sesión desde la cookie httpOnly.
@@ -52,13 +53,15 @@ export function useSessionRestore() {
           return;
         }
 
-        dispatch(setCredentials({
-          user: {
-            ...data.user,
-            avatarUrl: data.user?.avatarUrl ?? getMicrosoftAvatar(),
-          },
-          companies: data.companies ?? [],
-        }));
+        dispatch(
+          setCredentials({
+            user: {
+              ...data.user,
+              avatarUrl: data.user?.avatarUrl ?? getMicrosoftAvatar(),
+            },
+            companies: data.companies ?? [],
+          }),
+        );
 
         if (storedApp === 'kpital' || storedApp === 'timewise') {
           dispatch(setActiveApp(storedApp));
@@ -70,11 +73,13 @@ export function useSessionRestore() {
         dispatch(setActiveCompany(null));
         localStorage.removeItem(STORAGE_KEYS.COMPANY_ID);
 
-        dispatch(setPermissions({
-          permissions: Array.isArray(data.permissions) ? data.permissions : [],
-          roles: Array.isArray(data.roles) ? data.roles : [],
-          appId: storedApp === 'kpital' || storedApp === 'timewise' ? storedApp : 'kpital',
-        }));
+        dispatch(
+          setPermissions({
+            permissions: Array.isArray(data.permissions) ? data.permissions : [],
+            roles: Array.isArray(data.roles) ? data.roles : [],
+            appId: storedApp === 'kpital' || storedApp === 'timewise' ? storedApp : 'kpital',
+          }),
+        );
       } catch {
         dispatch(setSessionLoaded());
       }

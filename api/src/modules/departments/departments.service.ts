@@ -3,10 +3,10 @@ import { InjectRepository } from '@nestjs/typeorm';
 
 import { Department } from '../employees/entities/department.entity';
 
-import type { AuditOutboxService } from '../integration/audit-outbox.service';
+import { AuditOutboxService } from '../integration/audit-outbox.service';
 import type { CreateDepartmentDto } from './dto/create-department.dto';
 import type { UpdateDepartmentDto } from './dto/update-department.dto';
-import type { Repository } from 'typeorm';
+import { Repository } from 'typeorm';
 
 @Injectable()
 export class DepartmentsService {

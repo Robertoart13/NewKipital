@@ -1,6 +1,6 @@
 import { Table, TableColumn, TableIndex } from 'typeorm';
 
-import type { MigrationInterface, QueryRunner } from 'typeorm';
+import { MigrationInterface, QueryRunner } from 'typeorm';
 
 export class AddSecurityAndOutboxTables1708532200000 implements MigrationInterface {
   public async up(queryRunner: QueryRunner): Promise<void> {

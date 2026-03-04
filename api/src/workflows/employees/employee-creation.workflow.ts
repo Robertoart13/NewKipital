@@ -20,10 +20,11 @@ import {
 } from '../../modules/employees/entities/employee-vacation-ledger.entity';
 import { Employee, MonedaSalarioEmpleado } from '../../modules/employees/entities/employee.entity';
 
+import { EventEmitter2 } from '@nestjs/event-emitter'; // eslint-disable-line @typescript-eslint/consistent-type-imports
+import { DataSource } from 'typeorm'; // eslint-disable-line @typescript-eslint/consistent-type-imports
+
 import type { CreateEmployeeDto } from '../../modules/employees/dto/create-employee.dto';
-import type { WorkflowResult } from '../common/workflow.interface';
-import type { EventEmitter2 } from '@nestjs/event-emitter';
-import type { DataSource } from 'typeorm';
+import { WorkflowResult } from '../common/workflow.interface';
 
 export interface EmployeeCreationResult {
   employee: Employee;

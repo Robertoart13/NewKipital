@@ -1,10 +1,11 @@
 import { App as AntdApp, ConfigProvider } from 'antd';
-import esES from 'antd/locale/es_ES';
-import enUS from 'antd/locale/en_US';
 import { theme } from 'antd';
-import { useTheme } from '../contexts/ThemeContext';
-import { useLocale } from '../contexts/LocaleContext';
+import enUS from 'antd/locale/en_US';
+import esES from 'antd/locale/es_ES';
+
 import { lightTheme } from '../config/theme';
+import { useLocale } from '../contexts/LocaleContext';
+import { useTheme } from '../contexts/ThemeContext';
 
 const { darkAlgorithm } = theme;
 

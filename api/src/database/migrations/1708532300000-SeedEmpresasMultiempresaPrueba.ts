@@ -1,4 +1,4 @@
-import type { MigrationInterface, QueryRunner } from 'typeorm';
+import { MigrationInterface, QueryRunner } from 'typeorm';
 
 /**
  * Seed: 4 empresas adicionales + asignar 2 (EB, EG) al usuario admin.

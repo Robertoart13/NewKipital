@@ -1,5 +1,5 @@
-import { httpFetch } from '../interceptors/httpInterceptor';
 import { API_URL } from '../config/api';
+import { httpFetch } from '../interceptors/httpInterceptor';
 
 export interface CompanyListItem {
   id: number;
@@ -103,7 +103,7 @@ export async function createCompany(payload: CompanyPayload): Promise<CompanyLis
     body: JSON.stringify(payload),
   });
   if (!res.ok) {
-    const error = await res.json().catch(() => null) as { message?: string | string[] } | null;
+    const error = (await res.json().catch(() => null)) as { message?: string | string[] } | null;
     const msg = Array.isArray(error?.message) ? error?.message.join(', ') : error?.message;
     throw new Error(msg || 'Error al crear empresa');
   }
@@ -113,13 +113,16 @@ export async function createCompany(payload: CompanyPayload): Promise<CompanyLis
 /**
  * PUT /companies/:id - Edita empresa.
  */
-export async function updateCompany(id: number, payload: Partial<CompanyPayload>): Promise<CompanyListItem> {
+export async function updateCompany(
+  id: number,
+  payload: Partial<CompanyPayload>,
+): Promise<CompanyListItem> {
   const res = await httpFetch(`/companies/${id}`, {
     method: 'PUT',
     body: JSON.stringify(payload),
   });
   if (!res.ok) {
-    const error = await res.json().catch(() => null) as { message?: string | string[] } | null;
+    const error = (await res.json().catch(() => null)) as { message?: string | string[] } | null;
     const msg = Array.isArray(error?.message) ? error?.message.join(', ') : error?.message;
     throw new Error(msg || 'Error al actualizar empresa');
   }
@@ -134,7 +137,9 @@ export async function inactivateCompany(id: number): Promise<CompanyListItem> {
   if (!res.ok) {
     const body = await res.json().catch(() => ({}));
     const msg = body.message ?? 'Error al inactivar empresa';
-    const e = new Error(msg) as Error & { response?: { code?: string; planillas?: { id: number }[] } };
+    const e = new Error(msg) as Error & {
+      response?: { code?: string; planillas?: { id: number }[] };
+    };
     e.response = body;
     throw e;
   }
@@ -163,20 +168,23 @@ export async function uploadCompanyLogoTemp(file: File): Promise<CompanyLogoTemp
     body: formData,
   });
   if (!res.ok) {
-    const error = await res.json().catch(() => null) as { message?: string | string[] } | null;
+    const error = (await res.json().catch(() => null)) as { message?: string | string[] } | null;
     const msg = Array.isArray(error?.message) ? error.message.join(', ') : error?.message;
     throw new Error(msg || 'Error al subir logo temporal');
   }
   return res.json();
 }
 
-export async function commitCompanyLogo(companyId: number, tempFileName: string): Promise<CompanyLogoCommitPayload> {
+export async function commitCompanyLogo(
+  companyId: number,
+  tempFileName: string,
+): Promise<CompanyLogoCommitPayload> {
   const res = await httpFetch(`/companies/${companyId}/logo/commit`, {
     method: 'POST',
     body: JSON.stringify({ tempFileName }),
   });
   if (!res.ok) {
-    const error = await res.json().catch(() => null) as { message?: string | string[] } | null;
+    const error = (await res.json().catch(() => null)) as { message?: string | string[] } | null;
     const msg = Array.isArray(error?.message) ? error.message.join(', ') : error?.message;
     throw new Error(msg || 'Error al confirmar logo');
   }
@@ -192,11 +200,14 @@ export async function fetchCompanyLogoBlobUrl(companyId: number): Promise<string
   return URL.createObjectURL(blob);
 }
 
-export async function fetchCompanyAuditTrail(companyId: number, limit = 200): Promise<CompanyAuditTrailItem[]> {
+export async function fetchCompanyAuditTrail(
+  companyId: number,
+  limit = 200,
+): Promise<CompanyAuditTrailItem[]> {
   const qs = new URLSearchParams({ limit: String(limit) });
   const res = await httpFetch(`/companies/${companyId}/audit-trail?${qs}`);
   if (!res.ok) {
-    const error = await res.json().catch(() => null) as { message?: string | string[] } | null;
+    const error = (await res.json().catch(() => null)) as { message?: string | string[] } | null;
     const msg = Array.isArray(error?.message) ? error.message.join(', ') : error?.message;
     throw new Error(msg || 'Error al cargar bitacora de empresa');
   }

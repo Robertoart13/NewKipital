@@ -1,6 +1,7 @@
 import { createSelector } from '@reduxjs/toolkit';
-import type { RootState } from '../store';
+
 import type { PlatformApp } from '../slices/authSlice';
+import type { RootState } from '../store';
 
 const selectEnabledApps = (state: RootState) => state.auth.user?.enabledApps ?? [];
 const selectActiveApp = (state: RootState) => state.activeApp.app;
@@ -16,7 +17,4 @@ export const hasAccessToApp = (state: RootState, app: PlatformApp) =>
   (state.auth.user?.enabledApps ?? []).includes(app);
 
 /** Apps disponibles para el usuario actual */
-export const getAvailableApps = createSelector(
-  [selectEnabledApps],
-  (apps) => apps,
-);
+export const getAvailableApps = createSelector([selectEnabledApps], (apps) => apps);

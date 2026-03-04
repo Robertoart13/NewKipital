@@ -1,6 +1,7 @@
-import { useMemo } from 'react';
 import { Menu } from 'antd';
+import { useMemo } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
+
 import type { MenuProps } from 'antd';
 
 export interface MenuItemConfig {
@@ -67,9 +68,7 @@ export function MainMenu({ items, iconMap, className }: MainMenuProps) {
   const menuItems = useMemo(() => buildMenuItems(items, false), [items, iconMap]);
 
   const flattenItems = (list: MenuItemConfig[]): MenuItemConfig[] =>
-    list.flatMap((i) =>
-      i.children?.length ? [i, ...flattenItems(i.children)] : [i]
-    );
+    list.flatMap((i) => (i.children?.length ? [i, ...flattenItems(i.children)] : [i]));
 
   const selectedKey = useMemo(() => {
     const match = flattenItems(items).find((m) => location.pathname === m.path);

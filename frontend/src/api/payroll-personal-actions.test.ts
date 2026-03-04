@@ -5,6 +5,7 @@ vi.mock('../interceptors/httpInterceptor', () => ({
 }));
 
 import { httpFetch } from '../interceptors/httpInterceptor';
+
 import { fetchPayroll, fetchPayrolls } from './payroll';
 import {
   advanceAbsenceState,
@@ -44,7 +45,9 @@ describe('payroll and personal actions api', () => {
 
     await fetchPayrolls('5', true, '2026-01-01', '2026-03-01');
 
-    expect(mockHttpFetch).toHaveBeenCalledWith('/payroll?idEmpresa=5&includeInactive=true&fechaDesde=2026-01-01&fechaHasta=2026-03-01');
+    expect(mockHttpFetch).toHaveBeenCalledWith(
+      '/payroll?idEmpresa=5&includeInactive=true&fechaDesde=2026-01-01&fechaHasta=2026-03-01',
+    );
   });
 
   it('fetchPayroll should throw when backend response is not ok', async () => {
@@ -193,9 +196,7 @@ describe('payroll and personal actions api', () => {
       json: vi.fn().mockRejectedValue(new Error('invalid json')),
     } as any);
 
-    await expect(fetchAbsenceDetail(77)).rejects.toThrow(
-      'Error al cargar detalle de ausencia',
-    );
+    await expect(fetchAbsenceDetail(77)).rejects.toThrow('Error al cargar detalle de ausencia');
   });
 
   it('retention endpoints should call expected routes', async () => {
@@ -222,10 +223,7 @@ describe('payroll and personal actions api', () => {
     await advanceRetentionState(99);
     await invalidateRetention(99, 'qa');
 
-    expect(mockHttpFetch).toHaveBeenNthCalledWith(
-      1,
-      '/personal-actions/retenciones/99',
-    );
+    expect(mockHttpFetch).toHaveBeenNthCalledWith(1, '/personal-actions/retenciones/99');
     expect(mockHttpFetch).toHaveBeenNthCalledWith(
       2,
       '/personal-actions/retenciones',
@@ -269,10 +267,7 @@ describe('payroll and personal actions api', () => {
     await advanceIncreaseState(77);
     await invalidateIncrease(77, 'qa');
 
-    expect(mockHttpFetch).toHaveBeenNthCalledWith(
-      1,
-      '/personal-actions/aumentos/77',
-    );
+    expect(mockHttpFetch).toHaveBeenNthCalledWith(1, '/personal-actions/aumentos/77');
     expect(mockHttpFetch).toHaveBeenNthCalledWith(
       2,
       '/personal-actions/aumentos',
@@ -314,10 +309,7 @@ describe('payroll and personal actions api', () => {
     await advanceDiscountState(88);
     await invalidateDiscount(88, 'qa');
 
-    expect(mockHttpFetch).toHaveBeenNthCalledWith(
-      1,
-      '/personal-actions/descuentos/88',
-    );
+    expect(mockHttpFetch).toHaveBeenNthCalledWith(1, '/personal-actions/descuentos/88');
     expect(mockHttpFetch).toHaveBeenNthCalledWith(
       2,
       '/personal-actions/descuentos',

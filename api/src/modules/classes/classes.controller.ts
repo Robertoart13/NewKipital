@@ -18,7 +18,7 @@ import { Public } from '../../common/decorators/public.decorator';
 import { RequirePermissions } from '../../common/decorators/require-permissions.decorator';
 import { CacheResponseInterceptor } from '../../common/interceptors/cache-response.interceptor';
 
-import type { ClassesService } from './classes.service';
+import { ClassesService } from './classes.service';
 import type { CreateClassDto } from './dto/create-class.dto';
 import type { UpdateClassDto } from './dto/update-class.dto';
 

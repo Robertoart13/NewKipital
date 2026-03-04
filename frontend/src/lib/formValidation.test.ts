@@ -1,4 +1,5 @@
 import { describe, it, expect } from 'vitest';
+
 import {
   hasSqlInjectionAttempt,
   noSqlInjection,
@@ -250,7 +251,9 @@ describe('formValidation', () => {
       const rules = emailRules(true);
       const validator = rules.find((r) => 'validator' in r);
 
-      await expect(validator!.validator(undefined, '  test@example.com  ')).resolves.toBeUndefined();
+      await expect(
+        validator!.validator(undefined, '  test@example.com  '),
+      ).resolves.toBeUndefined();
     });
   });
 

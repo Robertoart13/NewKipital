@@ -1,13 +1,15 @@
+import { BankOutlined, LogoutOutlined } from '@ant-design/icons';
+import { Card, List, Typography, Space, Button, Spin, Flex } from 'antd';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Card, List, Typography, Space, Button, Spin, Flex } from 'antd';
-import { BankOutlined, LogoutOutlined } from '@ant-design/icons';
+
+import { fetchPermissionsForCompany } from '../api/permissions';
+import { performLogout } from '../lib/auth';
+import { STORAGE_KEYS } from '../lib/storage';
 import { useAppDispatch, useAppSelector } from '../store/hooks';
 import { setActiveCompany } from '../store/slices/activeCompanySlice';
 import { setPermissions } from '../store/slices/permissionsSlice';
-import { STORAGE_KEYS } from '../lib/storage';
-import { performLogout } from '../lib/auth';
-import { fetchPermissionsForCompany } from '../api/permissions';
+
 import type { UserCompanyInfo } from '../store/slices/authSlice';
 
 const { Title, Text } = Typography;
@@ -29,20 +31,24 @@ export function CompanySelectionPage() {
     const cid = String(company.id);
 
     localStorage.setItem(STORAGE_KEYS.COMPANY_ID, cid);
-    dispatch(setActiveCompany({
-      id: cid,
-      name: company.nombre,
-      code: company.codigo ?? undefined,
-    }));
+    dispatch(
+      setActiveCompany({
+        id: cid,
+        name: company.nombre,
+        code: company.codigo ?? undefined,
+      }),
+    );
 
     try {
       const { permissions, roles } = await fetchPermissionsForCompany(cid, activeApp);
-      dispatch(setPermissions({
-        permissions,
-        roles,
-        appId: activeApp,
-        companyId: cid,
-      }));
+      dispatch(
+        setPermissions({
+          permissions,
+          roles,
+          appId: activeApp,
+          companyId: cid,
+        }),
+      );
     } catch {
       // Si falla, el PrivateGuard manejara la falta de permisos
     }
@@ -79,7 +85,9 @@ export function CompanySelectionPage() {
           style={{ height: 48, margin: '0 auto' }}
         />
         <div>
-          <Title level={4} style={{ margin: 0, color: '#262626' }}>Seleccionar Empresa</Title>
+          <Title level={4} style={{ margin: 0, color: '#262626' }}>
+            Seleccionar Empresa
+          </Title>
           <Text type="secondary">Elija la empresa con la que vas a trabajar</Text>
         </div>
       </Space>
@@ -114,5 +122,3 @@ export function CompanySelectionPage() {
     </Card>
   );
 }
-
-

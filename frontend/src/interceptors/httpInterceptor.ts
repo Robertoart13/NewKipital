@@ -1,6 +1,6 @@
-import { store } from '../store/store';
-import { performLogout } from '../lib/auth';
 import { API_URL } from '../config/api';
+import { performLogout } from '../lib/auth';
+import { store } from '../store/store';
 
 const REQUEST_TIMEOUT_MS = 15000;
 const REFRESH_TIMEOUT_MS = 10000;
@@ -11,10 +11,7 @@ const REFRESH_TIMEOUT_MS = 10000;
  * NO usa Authorization header — el JWT viaja en la cookie.
  * Cualquier response 401 → logout automático + redirige a /auth/login.
  */
-export async function httpFetch(
-  path: string,
-  options: RequestInit = {},
-): Promise<Response> {
+export async function httpFetch(path: string, options: RequestInit = {}): Promise<Response> {
   const url = path.startsWith('http') ? path : `${API_URL}${path}`;
 
   const headers = new Headers(options.headers);
@@ -32,21 +29,29 @@ export async function httpFetch(
     }
   }
 
-  let response = await fetchWithTimeout(url, {
-    ...options,
-    headers,
-    credentials: 'include',
-  }, REQUEST_TIMEOUT_MS);
+  let response = await fetchWithTimeout(
+    url,
+    {
+      ...options,
+      headers,
+      credentials: 'include',
+    },
+    REQUEST_TIMEOUT_MS,
+  );
 
   const isRefreshCall = url.includes('/auth/refresh');
   if (response.status === 401 && !isRefreshCall) {
     const refreshed = await tryRefreshSession();
     if (refreshed) {
-      response = await fetchWithTimeout(url, {
-        ...options,
-        headers,
-        credentials: 'include',
-      }, REQUEST_TIMEOUT_MS);
+      response = await fetchWithTimeout(
+        url,
+        {
+          ...options,
+          headers,
+          credentials: 'include',
+        },
+        REQUEST_TIMEOUT_MS,
+      );
     }
   }
 
@@ -75,11 +80,15 @@ async function tryRefreshSession(): Promise<boolean> {
   const csrfToken = getCookieValue('platform_csrf_token');
 
   try {
-    const response = await fetchWithTimeout(`${API_URL}/auth/refresh`, {
-      method: 'POST',
-      credentials: 'include',
-      headers: csrfToken ? { 'x-csrf-token': csrfToken } : undefined,
-    }, REFRESH_TIMEOUT_MS);
+    const response = await fetchWithTimeout(
+      `${API_URL}/auth/refresh`,
+      {
+        method: 'POST',
+        credentials: 'include',
+        headers: csrfToken ? { 'x-csrf-token': csrfToken } : undefined,
+      },
+      REFRESH_TIMEOUT_MS,
+    );
 
     return response.ok;
   } catch {

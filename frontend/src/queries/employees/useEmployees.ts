@@ -1,6 +1,9 @@
 import { useQuery } from '@tanstack/react-query';
-import { employeeKeys } from './keys';
+
 import { fetchEmployees } from '../../api/employees';
+
+import { employeeKeys } from './keys';
+
 import type { EmployeeFilters } from '../../api/employees';
 
 interface UseEmployeesParams {

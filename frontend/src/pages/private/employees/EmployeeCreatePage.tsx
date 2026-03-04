@@ -1,14 +1,16 @@
-import { useEffect } from 'react';
-import dayjs from 'dayjs';
 import { Card, Form, Button } from 'antd';
+import dayjs from 'dayjs';
+import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAppSelector } from '../../../store/hooks';
+
+import { useDepartments } from '../../../queries/catalogs/useDepartments';
+import { usePayPeriods } from '../../../queries/catalogs/usePayPeriods';
+import { usePositions } from '../../../queries/catalogs/usePositions';
 import { useCreateEmployee } from '../../../queries/employees/useCreateEmployee';
 import { useSupervisors } from '../../../queries/employees/useSupervisors';
-import { useDepartments } from '../../../queries/catalogs/useDepartments';
-import { usePositions } from '../../../queries/catalogs/usePositions';
-import { usePayPeriods } from '../../../queries/catalogs/usePayPeriods';
 import { useRolesByApp } from '../../../queries/roles/useRolesByApp';
+import { useAppSelector } from '../../../store/hooks';
+
 import { EmployeeForm } from './components/EmployeeForm';
 
 export function EmployeeCreatePage() {
@@ -58,9 +60,7 @@ export function EmployeeCreatePage() {
       idSupervisor: values.idSupervisor || undefined,
       idRolTimewise: values.idRolTimewise || undefined,
       idRolKpital: values.idRolKpital || undefined,
-      fechaIngreso: values.fechaIngreso
-        ? dayjs(values.fechaIngreso).format('YYYY-MM-DD')
-        : '',
+      fechaIngreso: values.fechaIngreso ? dayjs(values.fechaIngreso).format('YYYY-MM-DD') : '',
       tipoContrato: values.tipoContrato || undefined,
       jornada: values.jornada || undefined,
       idPeriodoPago: values.idPeriodoPago || undefined,
@@ -74,7 +74,9 @@ export function EmployeeCreatePage() {
     };
 
     if (crearAcceso && !payload.passwordInicial) {
-      form.setFields([{ name: 'passwordInicial', errors: ['Requerido cuando se crea acceso digital'] }]);
+      form.setFields([
+        { name: 'passwordInicial', errors: ['Requerido cuando se crea acceso digital'] },
+      ]);
       return;
     }
 

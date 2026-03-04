@@ -8,7 +8,7 @@ import { AppModule } from './app.module';
 import { GlobalExceptionFilter } from './common/filters/http-exception.filter';
 import { LoggingInterceptor } from './common/interceptors/logging.interceptor';
 
-import type { ValidationError } from '@nestjs/common';
+import { ValidationError } from '@nestjs/common';
 
 function flattenValidationErrors(errors: ValidationError[]): string[] {
   const result: string[] = [];

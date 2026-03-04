@@ -1,5 +1,17 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
+import {
+  AppstoreOutlined,
+  ArrowLeftOutlined,
+  CloseOutlined,
+  DownOutlined,
+  EditOutlined,
+  FilterOutlined,
+  PlusOutlined,
+  QuestionCircleOutlined,
+  SearchOutlined,
+  SortAscendingOutlined,
+  SortDescendingOutlined,
+  UpOutlined,
+} from '@ant-design/icons';
 import {
   App as AntdApp,
   Badge,
@@ -22,32 +34,9 @@ import {
   Tag,
   Tooltip,
 } from 'antd';
-import type { ColumnsType } from 'antd/es/table';
-import {
-  AppstoreOutlined,
-  ArrowLeftOutlined,
-  CloseOutlined,
-  DownOutlined,
-  EditOutlined,
-  FilterOutlined,
-  PlusOutlined,
-  QuestionCircleOutlined,
-  SearchOutlined,
-  SortAscendingOutlined,
-  SortDescendingOutlined,
-  UpOutlined,
-} from '@ant-design/icons';
-import {
-  canCreateClass,
-  canEditClass,
-  canInactivateClass,
-  canReactivateClass,
-  canViewClasses,
-  canViewClassAudit,
-} from '../../../store/selectors/permissions.selectors';
-import { useAppSelector } from '../../../store/hooks';
-import { formatDateTime12h } from '../../../lib/formatDate';
-import { optionalNoSqlInjection, textRules } from '../../../lib/formValidation';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { Link } from 'react-router-dom';
+
 import {
   createClass,
   fetchClass,
@@ -60,7 +49,21 @@ import {
   type ClassListItem,
   type ClassPayload,
 } from '../../../api/classes';
+import { formatDateTime12h } from '../../../lib/formatDate';
+import { optionalNoSqlInjection, textRules } from '../../../lib/formValidation';
+import { useAppSelector } from '../../../store/hooks';
+import {
+  canCreateClass,
+  canEditClass,
+  canInactivateClass,
+  canReactivateClass,
+  canViewClasses,
+  canViewClassAudit,
+} from '../../../store/selectors/permissions.selectors';
+
 import styles from './UsersManagementPage.module.css';
+
+import type { ColumnsType } from 'antd/es/table';
 
 interface ClassFormValues {
   nombre: string;
@@ -165,30 +168,36 @@ export function ClassesManagementPage() {
     void loadRows();
   }, [loadRows]);
 
-  const matchesGlobalSearch = useCallback((row: ClassListItem) => {
-    const term = search.trim().toLowerCase();
-    if (!term) return true;
-    return (
-      (row.nombre ?? '').toLowerCase().includes(term)
-      || (row.codigo ?? '').toLowerCase().includes(term)
-      || (row.idExterno ?? '').toLowerCase().includes(term)
-      || (row.descripcion ?? '').toLowerCase().includes(term)
-    );
-  }, [search]);
+  const matchesGlobalSearch = useCallback(
+    (row: ClassListItem) => {
+      const term = search.trim().toLowerCase();
+      if (!term) return true;
+      return (
+        (row.nombre ?? '').toLowerCase().includes(term) ||
+        (row.codigo ?? '').toLowerCase().includes(term) ||
+        (row.idExterno ?? '').toLowerCase().includes(term) ||
+        (row.descripcion ?? '').toLowerCase().includes(term)
+      );
+    },
+    [search],
+  );
 
-  const dataFilteredByPaneSelections = useCallback((excludePane?: PaneKey) => {
-    return rows.filter((row) => {
-      if (!matchesGlobalSearch(row)) return false;
-      for (const pane of paneConfig) {
-        if (pane.key === excludePane) continue;
-        const selected = paneSelections[pane.key];
-        if (selected.length === 0) continue;
-        const value = getPaneValue(row, pane.key);
-        if (!selected.includes(value)) return false;
-      }
-      return true;
-    });
-  }, [matchesGlobalSearch, paneSelections, rows]);
+  const dataFilteredByPaneSelections = useCallback(
+    (excludePane?: PaneKey) => {
+      return rows.filter((row) => {
+        if (!matchesGlobalSearch(row)) return false;
+        for (const pane of paneConfig) {
+          if (pane.key === excludePane) continue;
+          const selected = paneSelections[pane.key];
+          if (selected.length === 0) continue;
+          const value = getPaneValue(row, pane.key);
+          if (!selected.includes(value)) return false;
+        }
+        return true;
+      });
+    },
+    [matchesGlobalSearch, paneSelections, rows],
+  );
 
   const paneOptions = useMemo(() => {
     const result: Record<PaneKey, PaneOption[]> = {
@@ -217,7 +226,10 @@ export function ClassesManagementPage() {
     return result;
   }, [dataFilteredByPaneSelections, paneSearch]);
 
-  const filteredRows = useMemo(() => dataFilteredByPaneSelections(), [dataFilteredByPaneSelections]);
+  const filteredRows = useMemo(
+    () => dataFilteredByPaneSelections(),
+    [dataFilteredByPaneSelections],
+  );
 
   const clearAllFilters = () => {
     setSearch('');
@@ -261,27 +273,33 @@ export function ClassesManagementPage() {
     form.resetFields();
   };
 
-  const applyClassToForm = useCallback((row: ClassListItem) => {
-    form.setFieldsValue({
-      nombre: row.nombre ?? '',
-      descripcion: row.descripcion ?? '',
-      codigo: row.codigo ?? '',
-      idExterno: row.idExterno ?? '',
-    });
-  }, [form]);
+  const applyClassToForm = useCallback(
+    (row: ClassListItem) => {
+      form.setFieldsValue({
+        nombre: row.nombre ?? '',
+        descripcion: row.descripcion ?? '',
+        codigo: row.codigo ?? '',
+        idExterno: row.idExterno ?? '',
+      });
+    },
+    [form],
+  );
 
-  const loadClassDetail = useCallback(async (id: number) => {
-    setLoadingDetail(true);
-    try {
-      const detail = await fetchClass(id);
-      setEditing(detail);
-      applyClassToForm(detail);
-    } catch {
-      // Keep current form values if detail fetch fails
-    } finally {
-      setLoadingDetail(false);
-    }
-  }, [applyClassToForm]);
+  const loadClassDetail = useCallback(
+    async (id: number) => {
+      setLoadingDetail(true);
+      try {
+        const detail = await fetchClass(id);
+        setEditing(detail);
+        applyClassToForm(detail);
+      } catch {
+        // Keep current form values if detail fetch fails
+      } finally {
+        setLoadingDetail(false);
+      }
+    },
+    [applyClassToForm],
+  );
 
   useEffect(() => {
     if (!openModal || !editingId) return;
@@ -289,23 +307,26 @@ export function ClassesManagementPage() {
     void loadClassDetail(editingId);
   }, [openModal, editingId, loadClassDetail, applyClassToForm]);
 
-  const loadClassAuditTrail = useCallback(async (id: number) => {
-    if (!canViewAudit) {
-      setAuditTrail([]);
-      setLoadingAuditTrail(false);
-      return;
-    }
-    setLoadingAuditTrail(true);
-    try {
-      const rows = await fetchClassAuditTrail(id, 200);
-      setAuditTrail(rows ?? []);
-    } catch (error) {
-      setAuditTrail([]);
-      message.error(error instanceof Error ? error.message : 'Error al cargar bitacora');
-    } finally {
-      setLoadingAuditTrail(false);
-    }
-  }, [canViewAudit, message]);
+  const loadClassAuditTrail = useCallback(
+    async (id: number) => {
+      if (!canViewAudit) {
+        setAuditTrail([]);
+        setLoadingAuditTrail(false);
+        return;
+      }
+      setLoadingAuditTrail(true);
+      try {
+        const rows = await fetchClassAuditTrail(id, 200);
+        setAuditTrail(rows ?? []);
+      } catch (error) {
+        setAuditTrail([]);
+        message.error(error instanceof Error ? error.message : 'Error al cargar bitacora');
+      } finally {
+        setLoadingAuditTrail(false);
+      }
+    },
+    [canViewAudit, message],
+  );
 
   useEffect(() => {
     if (!openModal || !editingId) return;
@@ -449,11 +470,16 @@ export function ClassesManagementPage() {
       key: 'actor',
       width: 210,
       render: (_, row) => {
-        const actorLabel = row.actorNombre?.trim() || row.actorEmail?.trim() || (row.actorUserId ? `Usuario ID ${row.actorUserId}` : 'Sistema');
+        const actorLabel =
+          row.actorNombre?.trim() ||
+          row.actorEmail?.trim() ||
+          (row.actorUserId ? `Usuario ID ${row.actorUserId}` : 'Sistema');
         return (
           <div>
             <div style={{ fontWeight: 600, color: '#3d4f5c' }}>{actorLabel}</div>
-            {row.actorEmail && <div style={{ color: '#8c8c8c', fontSize: 12 }}>{row.actorEmail}</div>}
+            {row.actorEmail && (
+              <div style={{ color: '#8c8c8c', fontSize: 12 }}>{row.actorEmail}</div>
+            )}
           </div>
         );
       },
@@ -481,8 +507,13 @@ export function ClassesManagementPage() {
             {changes.length > 0 ? (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                 {changes.map((change, index) => (
-                  <div key={`${row.id}-${change.campo}-${index}`} style={{ fontSize: 12, lineHeight: 1.4 }}>
-                    <div><strong>{change.campo}</strong></div>
+                  <div
+                    key={`${row.id}-${change.campo}-${index}`}
+                    style={{ fontSize: 12, lineHeight: 1.4 }}
+                  >
+                    <div>
+                      <strong>{change.campo}</strong>
+                    </div>
                     <div>Antes: {change.antes}</div>
                     <div>Despues: {change.despues}</div>
                   </div>
@@ -557,7 +588,13 @@ export function ClassesManagementPage() {
 
       <Card className={styles.mainCard}>
         <div className={styles.mainCardBody}>
-          <Flex align="center" justify="space-between" wrap="wrap" gap={12} className={styles.registrosHeader}>
+          <Flex
+            align="center"
+            justify="space-between"
+            wrap="wrap"
+            gap={12}
+            className={styles.registrosHeader}
+          >
             <Flex align="center" gap={12} wrap="wrap">
               <Flex align="center" gap={8}>
                 <FilterOutlined className={styles.registrosFilterIcon} />
@@ -585,7 +622,13 @@ export function ClassesManagementPage() {
             className={styles.filtersCollapse}
           >
             <Collapse.Panel header="Filtros" key="filtros">
-              <Flex justify="space-between" align="center" wrap="wrap" gap={12} style={{ marginBottom: 16 }}>
+              <Flex
+                justify="space-between"
+                align="center"
+                wrap="wrap"
+                gap={12}
+                style={{ marginBottom: 16 }}
+              >
                 <Input
                   placeholder="Search"
                   prefix={<SearchOutlined />}
@@ -596,9 +639,15 @@ export function ClassesManagementPage() {
                   style={{ maxWidth: 240 }}
                 />
                 <Flex gap={8}>
-                  <Button size="small" onClick={collapseAllPanes}>Collapse All</Button>
-                  <Button size="small" onClick={openAllPanes}>Show All</Button>
-                  <Button size="small" onClick={clearAllFilters}>Limpiar Todo</Button>
+                  <Button size="small" onClick={collapseAllPanes}>
+                    Collapse All
+                  </Button>
+                  <Button size="small" onClick={openAllPanes}>
+                    Show All
+                  </Button>
+                  <Button size="small" onClick={clearAllFilters}>
+                    Limpiar Todo
+                  </Button>
                 </Flex>
               </Flex>
               <Row gutter={[12, 12]}>
@@ -608,15 +657,17 @@ export function ClassesManagementPage() {
                       <Flex gap={6} align="center" wrap="wrap">
                         <Input
                           value={paneSearch[pane.key]}
-                          onChange={(e) => setPaneSearch((prev) => ({ ...prev, [pane.key]: e.target.value }))}
+                          onChange={(e) =>
+                            setPaneSearch((prev) => ({ ...prev, [pane.key]: e.target.value }))
+                          }
                           placeholder={pane.title}
                           prefix={<SearchOutlined style={{ fontSize: 12, color: '#8c8c8c' }} />}
-                          suffix={(
+                          suffix={
                             <Flex gap={2}>
                               <SortAscendingOutlined style={{ fontSize: 10, color: '#8c8c8c' }} />
                               <SortDescendingOutlined style={{ fontSize: 10, color: '#8c8c8c' }} />
                             </Flex>
-                          )}
+                          }
                           size="middle"
                           className={styles.filterInput}
                           style={{ flex: 1, minWidth: 120 }}
@@ -627,13 +678,19 @@ export function ClassesManagementPage() {
                           onClick={() => setPaneOpen((prev) => ({ ...prev, [pane.key]: true }))}
                           title="Abrir opciones"
                         />
-                        <Button size="middle" onClick={() => clearPaneSelection(pane.key)} title="Limpiar">
+                        <Button
+                          size="middle"
+                          onClick={() => clearPaneSelection(pane.key)}
+                          title="Limpiar"
+                        >
                           x
                         </Button>
                         <Button
                           size="middle"
                           icon={paneOpen[pane.key] ? <UpOutlined /> : <DownOutlined />}
-                          onClick={() => setPaneOpen((prev) => ({ ...prev, [pane.key]: !prev[pane.key] }))}
+                          onClick={() =>
+                            setPaneOpen((prev) => ({ ...prev, [pane.key]: !prev[pane.key] }))
+                          }
                           title={paneOpen[pane.key] ? 'Colapsar' : 'Expandir'}
                         />
                       </Flex>
@@ -641,14 +698,22 @@ export function ClassesManagementPage() {
                         <div className={styles.paneOptionsBox}>
                           <Checkbox.Group
                             value={paneSelections[pane.key]}
-                            onChange={(values) => setPaneSelections((prev) => ({ ...prev, [pane.key]: values as string[] }))}
+                            onChange={(values) =>
+                              setPaneSelections((prev) => ({
+                                ...prev,
+                                [pane.key]: values as string[],
+                              }))
+                            }
                             style={{ display: 'flex', flexDirection: 'column', gap: 8 }}
                           >
                             {paneOptions[pane.key].map((option) => (
                               <Checkbox key={`${pane.key}:${option.value}`} value={option.value}>
                                 <Space>
                                   <span>{option.value}</span>
-                                  <Badge count={option.count} style={{ backgroundColor: '#5a6c7d' }} />
+                                  <Badge
+                                    count={option.count}
+                                    style={{ backgroundColor: '#5a6c7d' }}
+                                  />
                                 </Space>
                               </Checkbox>
                             ))}
@@ -674,7 +739,8 @@ export function ClassesManagementPage() {
             pagination={{
               pageSize,
               showSizeChanger: false,
-              showTotal: (total, range) => `Mostrando ${range[0]} a ${range[1]} de ${total} registros`,
+              showTotal: (total, range) =>
+                `Mostrando ${range[0]} a ${range[1]} de ${total} registros`,
             }}
             onRow={(record) => ({
               onClick: () => openEditModal(record),
@@ -692,8 +758,13 @@ export function ClassesManagementPage() {
         footer={null}
         width={860}
         destroyOnHidden
-        title={(
-          <Flex justify="space-between" align="center" wrap="nowrap" style={{ width: '100%', gap: 16 }}>
+        title={
+          <Flex
+            justify="space-between"
+            align="center"
+            wrap="nowrap"
+            style={{ width: '100%', gap: 16 }}
+          >
             <div className={styles.companyModalHeader}>
               <div className={styles.companyModalHeaderIcon}>
                 <AppstoreOutlined />
@@ -703,7 +774,13 @@ export function ClassesManagementPage() {
             <Flex align="center" gap={12} className={styles.companyModalHeaderRight}>
               {editing ? (
                 <div className={styles.companyModalEstadoPaper}>
-                  <span style={{ fontWeight: 500, fontSize: 14, color: editing.esInactivo === 1 ? '#64748b' : '#20638d' }}>
+                  <span
+                    style={{
+                      fontWeight: 500,
+                      fontSize: 14,
+                      color: editing.esInactivo === 1 ? '#64748b' : '#20638d',
+                    }}
+                  >
                     {editing.esInactivo === 1 ? 'Inactivo' : 'Activo'}
                   </span>
                   <Switch
@@ -746,9 +823,14 @@ export function ClassesManagementPage() {
               />
             </Flex>
           </Flex>
-        )}
+        }
       >
-        <Form<ClassFormValues> layout="vertical" form={form} preserve={false} className={styles.companyFormContent}>
+        <Form<ClassFormValues>
+          layout="vertical"
+          form={form}
+          preserve={false}
+          className={styles.companyFormContent}
+        >
           <Tabs
             activeKey={activeTab}
             onChange={setActiveTab}
@@ -765,54 +847,73 @@ export function ClassesManagementPage() {
                 children: (
                   <Spin spinning={loadingDetail}>
                     <div className={styles.companyFormGrid}>
-                    <Form.Item name="nombre" label="Nombre Clase *" rules={textRules({ required: true, max: 255 })}>
-                      <Input maxLength={255} />
-                    </Form.Item>
-                    <Form.Item name="codigo" label="Codigo Clase *" rules={textRules({ required: true, max: 50 })}>
-                      <Input maxLength={50} />
-                    </Form.Item>
-                    <Form.Item name="idExterno" label="ID Externo Clase" rules={[{ validator: optionalNoSqlInjection }]}>
-                      <Input maxLength={45} />
-                    </Form.Item>
-                    <Form.Item name="descripcion" label="Descripcion Clase" rules={[{ validator: optionalNoSqlInjection }]}>
-                      <Input.TextArea rows={4} />
-                    </Form.Item>
+                      <Form.Item
+                        name="nombre"
+                        label="Nombre Clase *"
+                        rules={textRules({ required: true, max: 255 })}
+                      >
+                        <Input maxLength={255} />
+                      </Form.Item>
+                      <Form.Item
+                        name="codigo"
+                        label="Codigo Clase *"
+                        rules={textRules({ required: true, max: 50 })}
+                      >
+                        <Input maxLength={50} />
+                      </Form.Item>
+                      <Form.Item
+                        name="idExterno"
+                        label="ID Externo Clase"
+                        rules={[{ validator: optionalNoSqlInjection }]}
+                      >
+                        <Input maxLength={45} />
+                      </Form.Item>
+                      <Form.Item
+                        name="descripcion"
+                        label="Descripcion Clase"
+                        rules={[{ validator: optionalNoSqlInjection }]}
+                      >
+                        <Input.TextArea rows={4} />
+                      </Form.Item>
                     </div>
                   </Spin>
                 ),
               },
               ...(editing && canViewAudit
-                ? [{
-                    key: 'bitacora',
-                    label: (
-                      <span>
-                        <SearchOutlined style={{ marginRight: 8, fontSize: 16 }} />
-                        Bitacora
-                      </span>
-                    ),
-                    children: (
-                      <div style={{ paddingTop: 8 }}>
-                        <p className={styles.sectionTitle}>Historial de cambios de la clase</p>
-                        <p className={styles.sectionDescription}>
-                          Muestra quien hizo el cambio, cuando lo hizo y el detalle registrado en bitacora.
-                        </p>
-                        <Table<ClassAuditTrailItem>
-                          rowKey="id"
-                          size="small"
-                          loading={loadingAuditTrail}
-                          columns={auditColumns}
-                          dataSource={auditTrail}
-                          className={`${styles.configTable} ${styles.auditTableCompact}`}
-                          pagination={{
-                            pageSize: 8,
-                            showSizeChanger: true,
-                            showTotal: (total) => `${total} registro(s)`,
-                          }}
-                          locale={{ emptyText: 'No hay registros de bitacora para esta clase.' }}
-                        />
-                      </div>
-                    ),
-                  }]
+                ? [
+                    {
+                      key: 'bitacora',
+                      label: (
+                        <span>
+                          <SearchOutlined style={{ marginRight: 8, fontSize: 16 }} />
+                          Bitacora
+                        </span>
+                      ),
+                      children: (
+                        <div style={{ paddingTop: 8 }}>
+                          <p className={styles.sectionTitle}>Historial de cambios de la clase</p>
+                          <p className={styles.sectionDescription}>
+                            Muestra quien hizo el cambio, cuando lo hizo y el detalle registrado en
+                            bitacora.
+                          </p>
+                          <Table<ClassAuditTrailItem>
+                            rowKey="id"
+                            size="small"
+                            loading={loadingAuditTrail}
+                            columns={auditColumns}
+                            dataSource={auditTrail}
+                            className={`${styles.configTable} ${styles.auditTableCompact}`}
+                            pagination={{
+                              pageSize: 8,
+                              showSizeChanger: true,
+                              showTotal: (total) => `${total} registro(s)`,
+                            }}
+                            locale={{ emptyText: 'No hay registros de bitacora para esta clase.' }}
+                          />
+                        </div>
+                      ),
+                    },
+                  ]
                 : []),
             ]}
           />

@@ -1,7 +1,9 @@
-import type { AppDispatch } from '../store/store';
-import { logout } from '../store/slices/authSlice';
-import { clearStorage, setSkipRestore } from './storage';
 import { API_URL } from '../config/api';
+import { logout } from '../store/slices/authSlice';
+
+import { clearStorage, setSkipRestore } from './storage';
+
+import type { AppDispatch } from '../store/store';
 
 /**
  * Logout orquestado — UN solo punto de ejecución.

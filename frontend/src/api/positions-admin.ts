@@ -52,20 +52,23 @@ export async function createPosition(payload: PositionPayload): Promise<Position
     body: JSON.stringify(payload),
   });
   if (!res.ok) {
-    const error = await res.json().catch(() => null) as { message?: string | string[] } | null;
+    const error = (await res.json().catch(() => null)) as { message?: string | string[] } | null;
     const msg = Array.isArray(error?.message) ? error.message.join(', ') : error?.message;
     throw new Error(msg || 'Error al crear puesto');
   }
   return res.json();
 }
 
-export async function updatePosition(id: number, payload: Partial<PositionPayload>): Promise<PositionListItem> {
+export async function updatePosition(
+  id: number,
+  payload: Partial<PositionPayload>,
+): Promise<PositionListItem> {
   const res = await httpFetch(`/positions/${id}`, {
     method: 'PUT',
     body: JSON.stringify(payload),
   });
   if (!res.ok) {
-    const error = await res.json().catch(() => null) as { message?: string | string[] } | null;
+    const error = (await res.json().catch(() => null)) as { message?: string | string[] } | null;
     const msg = Array.isArray(error?.message) ? error.message.join(', ') : error?.message;
     throw new Error(msg || 'Error al actualizar puesto');
   }
@@ -84,11 +87,14 @@ export async function reactivatePosition(id: number): Promise<PositionListItem> 
   return res.json();
 }
 
-export async function fetchPositionAuditTrail(id: number, limit = 200): Promise<PositionAuditTrailItem[]> {
+export async function fetchPositionAuditTrail(
+  id: number,
+  limit = 200,
+): Promise<PositionAuditTrailItem[]> {
   const qs = new URLSearchParams({ limit: String(limit) });
   const res = await httpFetch(`/positions/${id}/audit-trail?${qs}`);
   if (!res.ok) {
-    const error = await res.json().catch(() => null) as { message?: string | string[] } | null;
+    const error = (await res.json().catch(() => null)) as { message?: string | string[] } | null;
     const msg = Array.isArray(error?.message) ? error.message.join(', ') : error?.message;
     throw new Error(msg || 'Error al cargar bitacora de puestos');
   }

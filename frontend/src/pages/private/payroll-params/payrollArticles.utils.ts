@@ -1,5 +1,5 @@
-import type { AccountingAccountOption, PayrollArticleListItem } from '../../../api/payrollArticles';
 import type { PaneKey } from './payrollArticles.types';
+import type { AccountingAccountOption, PayrollArticleListItem } from '../../../api/payrollArticles';
 
 /**
  * @param account - Cuenta contable a formatear.
@@ -35,11 +35,16 @@ export function getPaneValue(
     return company?.nombre ?? `Empresa #${row.idEmpresa}`;
   }
   if (key === 'nombre') return row.nombre ?? '';
-  if (key === 'tipoArticulo') return tipoArticuloMap.get(row.idTipoArticuloNomina) ?? `Tipo #${row.idTipoArticuloNomina}`;
-  if (key === 'tipoAccion') return tipoAccionMap.get(row.idTipoAccionPersonal) ?? `Accion #${row.idTipoAccionPersonal}`;
-  if (key === 'cuentaPrincipal') return accountLabelMap.get(row.idCuentaGasto) ?? `Cuenta #${row.idCuentaGasto}`;
+  if (key === 'tipoArticulo')
+    return tipoArticuloMap.get(row.idTipoArticuloNomina) ?? `Tipo #${row.idTipoArticuloNomina}`;
+  if (key === 'tipoAccion')
+    return tipoAccionMap.get(row.idTipoAccionPersonal) ?? `Accion #${row.idTipoAccionPersonal}`;
+  if (key === 'cuentaPrincipal')
+    return accountLabelMap.get(row.idCuentaGasto) ?? `Cuenta #${row.idCuentaGasto}`;
   if (key === 'cuentaPasivo') {
-    return row.idCuentaPasivo ? (accountLabelMap.get(row.idCuentaPasivo) ?? `Cuenta #${row.idCuentaPasivo}`) : '(vacio)';
+    return row.idCuentaPasivo
+      ? (accountLabelMap.get(row.idCuentaPasivo) ?? `Cuenta #${row.idCuentaPasivo}`)
+      : '(vacio)';
   }
   return row.esInactivo === 1 ? 'Inactivo' : 'Activo';
 }

@@ -180,7 +180,9 @@ export interface EmployeeAuditTrailItem {
  * GET /employees/supervisors - Lista empleados elegibles como supervisores (rol Supervisor, Supervisor Global o Master en TimeWise).
  * Incluye todas las empresas a las que el usuario tiene acceso (un supervisor de otra subsidiaria puede asumir el rol).
  */
-export async function fetchSupervisors(): Promise<{ id: number; nombre: string; apellido1: string }[]> {
+export async function fetchSupervisors(): Promise<
+  { id: number; nombre: string; apellido1: string }[]
+> {
   const res = await httpFetch('/employees/supervisors');
   if (!res.ok) return [];
   return res.json();
@@ -269,7 +271,9 @@ export async function inactivateEmployee(id: number, motivo?: string): Promise<E
   if (!res.ok) {
     const body = await res.json().catch(() => ({}));
     const msg = body.message || 'Error al inactivar empleado';
-    const e = new Error(msg) as Error & { response?: { code?: string; planillas?: unknown[]; acciones?: unknown[] } };
+    const e = new Error(msg) as Error & {
+      response?: { code?: string; planillas?: unknown[]; acciones?: unknown[] };
+    };
     e.response = body;
     throw e;
   }
@@ -312,7 +316,10 @@ export async function reactivateEmployee(id: number): Promise<EmployeeDetail> {
 /**
  * GET /employees/:id/audit-trail - Historial de cambios del empleado.
  */
-export async function fetchEmployeeAuditTrail(id: number, limit = 200): Promise<EmployeeAuditTrailItem[]> {
+export async function fetchEmployeeAuditTrail(
+  id: number,
+  limit = 200,
+): Promise<EmployeeAuditTrailItem[]> {
   const params = new URLSearchParams();
   params.set('limit', String(limit));
   const res = await httpFetch(`/employees/${id}/audit-trail?${params.toString()}`);

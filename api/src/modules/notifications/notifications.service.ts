@@ -7,8 +7,8 @@ import { NotificationUser, type NotificationUserEstado } from './entities/notifi
 import { Notification } from './entities/notification.entity';
 
 import type { DispatchNotificationDto } from './dto/dispatch-notification.dto';
-import type { NotificationsGateway } from './notifications.gateway';
-import type { Repository } from 'typeorm';
+import { NotificationsGateway } from './notifications.gateway';
+import { Repository } from 'typeorm';
 
 export interface NotificationListItem {
   id: number;

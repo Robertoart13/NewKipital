@@ -1,6 +1,15 @@
-import { useMemo, useState } from 'react';
+import {
+  ArrowLeftOutlined,
+  DownOutlined,
+  FilterOutlined,
+  PlusOutlined,
+  SearchOutlined,
+  SortAscendingOutlined,
+  SortDescendingOutlined,
+  TeamOutlined,
+  UpOutlined,
+} from '@ant-design/icons';
 import { useQueryClient } from '@tanstack/react-query';
-import { Link, useNavigate } from 'react-router-dom';
 import {
   Badge,
   Button,
@@ -18,28 +27,32 @@ import {
   Table,
   Tag,
 } from 'antd';
-import type { ColumnsType } from 'antd/es/table';
-import {
-  ArrowLeftOutlined,
-  DownOutlined,
-  FilterOutlined,
-  PlusOutlined,
-  SearchOutlined,
-  SortAscendingOutlined,
-  SortDescendingOutlined,
-  TeamOutlined,
-  UpOutlined,
-} from '@ant-design/icons';
+import { useMemo, useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+
+import { employeeKeys } from '../../../queries/employees/keys';
+import { useEmployees } from '../../../queries/employees/useEmployees';
 import { useAppSelector } from '../../../store/hooks';
 import { canCreateEmployee, canEditEmployee } from '../../../store/selectors/permissions.selectors';
-import { useEmployees } from '../../../queries/employees/useEmployees';
-import { employeeKeys } from '../../../queries/employees/keys';
-import { EmployeeCreateModal } from './components/EmployeeCreateModal';
-import { EmployeeEditModal } from './components/EmployeeEditModal';
-import type { EmployeeFilters as EmployeeFiltersType, EmployeeListItem } from '../../../api/employees';
 import styles from '../configuration/UsersManagementPage.module.css';
 
-type PaneKey = 'codigo' | 'empresa' | 'nombreCompleto' | 'cedula' | 'correo' | 'telefono' | 'estado';
+import { EmployeeCreateModal } from './components/EmployeeCreateModal';
+import { EmployeeEditModal } from './components/EmployeeEditModal';
+
+import type {
+  EmployeeFilters as EmployeeFiltersType,
+  EmployeeListItem,
+} from '../../../api/employees';
+import type { ColumnsType } from 'antd/es/table';
+
+type PaneKey =
+  | 'codigo'
+  | 'empresa'
+  | 'nombreCompleto'
+  | 'cedula'
+  | 'correo'
+  | 'telefono'
+  | 'estado';
 
 interface PaneConfig {
   key: PaneKey;
@@ -73,7 +86,8 @@ function getPaneValue(
   companyNameById: Map<number, string>,
 ): string {
   if (key === 'codigo') return employee.codigo ?? '';
-  if (key === 'empresa') return companyNameById.get(employee.idEmpresa) ?? `Empresa #${employee.idEmpresa}`;
+  if (key === 'empresa')
+    return companyNameById.get(employee.idEmpresa) ?? `Empresa #${employee.idEmpresa}`;
   if (key === 'nombreCompleto') return buildFullName(employee);
   if (key === 'cedula') return employee.cedula ?? '';
   if (key === 'correo') return employee.email ?? '';
@@ -152,7 +166,7 @@ export function EmployeesListPage() {
   }, [companies]);
 
   const paginated = shouldFetchEmployees
-    ? data ?? { data: [], total: 0, page: 1, pageSize }
+    ? (data ?? { data: [], total: 0, page: 1, pageSize })
     : { data: [], total: 0, page: 1, pageSize };
 
   const matchesGlobalSearch = (employee: EmployeeListItem): boolean => {
@@ -161,12 +175,12 @@ export function EmployeesListPage() {
     const fullName = buildFullName(employee).toLowerCase();
     const companyName = (companyNameById.get(employee.idEmpresa) ?? '').toLowerCase();
     return (
-      (employee.codigo ?? '').toLowerCase().includes(term)
-      || (employee.cedula ?? '').toLowerCase().includes(term)
-      || (employee.email ?? '').toLowerCase().includes(term)
-      || (employee.telefono ?? '').toLowerCase().includes(term)
-      || fullName.includes(term)
-      || companyName.includes(term)
+      (employee.codigo ?? '').toLowerCase().includes(term) ||
+      (employee.cedula ?? '').toLowerCase().includes(term) ||
+      (employee.email ?? '').toLowerCase().includes(term) ||
+      (employee.telefono ?? '').toLowerCase().includes(term) ||
+      fullName.includes(term) ||
+      companyName.includes(term)
     );
   };
 
@@ -227,7 +241,8 @@ export function EmployeesListPage() {
       title: 'Empresa',
       key: 'empresa',
       width: 220,
-      render: (_, employee) => companyNameById.get(employee.idEmpresa) ?? `Empresa #${employee.idEmpresa}`,
+      render: (_, employee) =>
+        companyNameById.get(employee.idEmpresa) ?? `Empresa #${employee.idEmpresa}`,
     },
     {
       title: 'Nombre completo',
@@ -259,9 +274,11 @@ export function EmployeesListPage() {
       key: 'estado',
       width: 120,
       render: (estado: number) =>
-        estado === 1
-          ? <Tag className={styles.tagActivo}>Activo</Tag>
-          : <Tag className={styles.tagInactivo}>Inactivo</Tag>,
+        estado === 1 ? (
+          <Tag className={styles.tagActivo}>Activo</Tag>
+        ) : (
+          <Tag className={styles.tagInactivo}>Inactivo</Tag>
+        ),
     },
   ];
 
@@ -352,7 +369,9 @@ export function EmployeesListPage() {
           </Link>
           <div className={styles.pageTitleBlock}>
             <h1 className={styles.pageTitle}>Listado de Empleados</h1>
-            <p className={styles.pageSubtitle}>Visualice y gestione todos los empleados registrados en el sistema de recursos humanos</p>
+            <p className={styles.pageSubtitle}>
+              Visualice y gestione todos los empleados registrados en el sistema de recursos humanos
+            </p>
           </div>
         </div>
       </div>
@@ -366,7 +385,9 @@ export function EmployeesListPage() {
               </div>
               <div>
                 <p className={styles.gestionTitle}>Gestion de Empleados</p>
-                <p className={styles.gestionDesc}>Administre y consulte todos los empleados registrados en el sistema</p>
+                <p className={styles.gestionDesc}>
+                  Administre y consulte todos los empleados registrados en el sistema
+                </p>
               </div>
             </Flex>
             {canCreate && (
@@ -385,7 +406,13 @@ export function EmployeesListPage() {
 
       <Card className={styles.mainCard}>
         <div className={styles.mainCardBody}>
-          <Flex justify="space-between" align="center" className={styles.registrosHeader} wrap="wrap" gap={12}>
+          <Flex
+            justify="space-between"
+            align="center"
+            className={styles.registrosHeader}
+            wrap="wrap"
+            gap={12}
+          >
             <Flex align="center" gap={8}>
               <FilterOutlined className={styles.registrosFilterIcon} />
               <h3 className={styles.registrosTitle}>Registros de Empleados</h3>
@@ -446,7 +473,13 @@ export function EmployeesListPage() {
                 label: 'Filtros',
                 children: (
                   <>
-                    <Flex justify="space-between" align="center" wrap="wrap" gap={12} style={{ marginBottom: 16 }}>
+                    <Flex
+                      justify="space-between"
+                      align="center"
+                      wrap="wrap"
+                      gap={12}
+                      style={{ marginBottom: 16 }}
+                    >
                       <Input
                         placeholder="Search"
                         prefix={<SearchOutlined />}
@@ -461,9 +494,15 @@ export function EmployeesListPage() {
                         style={{ maxWidth: 240 }}
                       />
                       <Flex gap={8}>
-                        <Button size="small" onClick={collapseAllPanes}>Collapse All</Button>
-                        <Button size="small" onClick={openAllPanes}>Show All</Button>
-                        <Button size="small" onClick={clearAllFilters}>Limpiar Todo</Button>
+                        <Button size="small" onClick={collapseAllPanes}>
+                          Collapse All
+                        </Button>
+                        <Button size="small" onClick={openAllPanes}>
+                          Show All
+                        </Button>
+                        <Button size="small" onClick={clearAllFilters}>
+                          Limpiar Todo
+                        </Button>
                       </Flex>
                     </Flex>
 
@@ -474,15 +513,26 @@ export function EmployeesListPage() {
                             <Flex gap={6} align="center" wrap="wrap">
                               <Input
                                 value={paneSearch[pane.key]}
-                                onChange={(event) => setPaneSearch((prev) => ({ ...prev, [pane.key]: event.target.value }))}
+                                onChange={(event) =>
+                                  setPaneSearch((prev) => ({
+                                    ...prev,
+                                    [pane.key]: event.target.value,
+                                  }))
+                                }
                                 placeholder={pane.title}
-                                prefix={<SearchOutlined style={{ fontSize: 12, color: '#8c8c8c' }} />}
-                                suffix={(
+                                prefix={
+                                  <SearchOutlined style={{ fontSize: 12, color: '#8c8c8c' }} />
+                                }
+                                suffix={
                                   <Flex gap={2}>
-                                    <SortAscendingOutlined style={{ fontSize: 10, color: '#8c8c8c' }} />
-                                    <SortDescendingOutlined style={{ fontSize: 10, color: '#8c8c8c' }} />
+                                    <SortAscendingOutlined
+                                      style={{ fontSize: 10, color: '#8c8c8c' }}
+                                    />
+                                    <SortDescendingOutlined
+                                      style={{ fontSize: 10, color: '#8c8c8c' }}
+                                    />
                                   </Flex>
-                                )}
+                                }
                                 size="middle"
                                 className={styles.filterInput}
                                 style={{ flex: 1, minWidth: 120 }}
@@ -490,16 +540,24 @@ export function EmployeesListPage() {
                               <Button
                                 size="middle"
                                 icon={<SearchOutlined />}
-                                onClick={() => setPaneOpen((prev) => ({ ...prev, [pane.key]: true }))}
+                                onClick={() =>
+                                  setPaneOpen((prev) => ({ ...prev, [pane.key]: true }))
+                                }
                                 title="Abrir opciones"
                               />
-                              <Button size="middle" onClick={() => clearPaneSelection(pane.key)} title="Limpiar">
+                              <Button
+                                size="middle"
+                                onClick={() => clearPaneSelection(pane.key)}
+                                title="Limpiar"
+                              >
                                 x
                               </Button>
                               <Button
                                 size="middle"
                                 icon={paneOpen[pane.key] ? <UpOutlined /> : <DownOutlined />}
-                                onClick={() => setPaneOpen((prev) => ({ ...prev, [pane.key]: !prev[pane.key] }))}
+                                onClick={() =>
+                                  setPaneOpen((prev) => ({ ...prev, [pane.key]: !prev[pane.key] }))
+                                }
                                 title={paneOpen[pane.key] ? 'Colapsar' : 'Expandir'}
                               />
                             </Flex>
@@ -507,20 +565,33 @@ export function EmployeesListPage() {
                               <div className={styles.paneOptionsBox}>
                                 <Checkbox.Group
                                   value={paneSelections[pane.key]}
-                                  onChange={(values) => setPaneSelections((prev) => ({ ...prev, [pane.key]: values as string[] }))}
+                                  onChange={(values) =>
+                                    setPaneSelections((prev) => ({
+                                      ...prev,
+                                      [pane.key]: values as string[],
+                                    }))
+                                  }
                                   style={{ display: 'flex', flexDirection: 'column', gap: 8 }}
                                 >
                                   {paneOptions[pane.key].map((option) => (
-                                    <Checkbox key={`${pane.key}:${option.value}`} value={option.value}>
+                                    <Checkbox
+                                      key={`${pane.key}:${option.value}`}
+                                      value={option.value}
+                                    >
                                       <Space>
                                         <span>{option.value}</span>
-                                        <Badge count={option.count} style={{ backgroundColor: '#5a6c7d' }} />
+                                        <Badge
+                                          count={option.count}
+                                          style={{ backgroundColor: '#5a6c7d' }}
+                                        />
                                       </Space>
                                     </Checkbox>
                                   ))}
                                 </Checkbox.Group>
                                 {paneOptions[pane.key].length === 0 && (
-                                  <span className={styles.emptyHint}>Sin valores para este filtro</span>
+                                  <span className={styles.emptyHint}>
+                                    Sin valores para este filtro
+                                  </span>
                                 )}
                               </div>
                             )}
@@ -539,60 +610,61 @@ export function EmployeesListPage() {
               <Button onClick={() => refetch()}>Reintentar</Button>
             </Empty>
           ) : (
-              <Table<EmployeeListItem>
-                rowKey="id"
-                loading={isLoading}
-                columns={columns}
-                dataSource={filteredEmployees}
-                className={`${styles.configTable} ${styles.companiesTable}`}
-                locale={{
-                  emptyText: 'No hay empleados registrados',
-                }}
-                pagination={{
-                  current: paginated.page,
-                  pageSize: paginated.pageSize,
-                  total: paginated.total,
-                  showSizeChanger: false,
-                  onChange: (page, size) => {
-                    setFilters((current) => ({ ...current, page, pageSize: size }));
-                  },
-                  showTotal: (total, range) => `Mostrando ${range[0]} a ${range[1]} de ${total} registros`,
-                }}
-                onRow={(record) => ({
-                    onClick: () => {
-                      if (canEdit) {
-                        setEditingEmployeeId(record.id);
-                        setEditModalOpen(true);
-                        return;
-                      }
-                      navigate(`/employees/${record.id}`);
-                    },
-                  style: { cursor: 'pointer' },
-                })}
-              />
-            )}
-          </div>
-        </Card>
+            <Table<EmployeeListItem>
+              rowKey="id"
+              loading={isLoading}
+              columns={columns}
+              dataSource={filteredEmployees}
+              className={`${styles.configTable} ${styles.companiesTable}`}
+              locale={{
+                emptyText: 'No hay empleados registrados',
+              }}
+              pagination={{
+                current: paginated.page,
+                pageSize: paginated.pageSize,
+                total: paginated.total,
+                showSizeChanger: false,
+                onChange: (page, size) => {
+                  setFilters((current) => ({ ...current, page, pageSize: size }));
+                },
+                showTotal: (total, range) =>
+                  `Mostrando ${range[0]} a ${range[1]} de ${total} registros`,
+              }}
+              onRow={(record) => ({
+                onClick: () => {
+                  if (canEdit) {
+                    setEditingEmployeeId(record.id);
+                    setEditModalOpen(true);
+                    return;
+                  }
+                  navigate(`/employees/${record.id}`);
+                },
+                style: { cursor: 'pointer' },
+              })}
+            />
+          )}
+        </div>
+      </Card>
 
-        <EmployeeCreateModal
-          open={createModalOpen}
-          onClose={() => setCreateModalOpen(false)}
-          onSuccess={() => {
-            queryClient.invalidateQueries({ queryKey: employeeKeys.all(companyKey) });
-          }}
-        />
+      <EmployeeCreateModal
+        open={createModalOpen}
+        onClose={() => setCreateModalOpen(false)}
+        onSuccess={() => {
+          queryClient.invalidateQueries({ queryKey: employeeKeys.all(companyKey) });
+        }}
+      />
 
-        <EmployeeEditModal
-          employeeId={editingEmployeeId ?? undefined}
-          open={editModalOpen}
-          onClose={() => {
-            setEditModalOpen(false);
-            setEditingEmployeeId(null);
-          }}
-          onSuccess={() => {
-            queryClient.invalidateQueries({ queryKey: employeeKeys.all(companyKey) });
-          }}
-        />
-      </div>
+      <EmployeeEditModal
+        employeeId={editingEmployeeId ?? undefined}
+        open={editModalOpen}
+        onClose={() => {
+          setEditModalOpen(false);
+          setEditingEmployeeId(null);
+        }}
+        onSuccess={() => {
+          queryClient.invalidateQueries({ queryKey: employeeKeys.all(companyKey) });
+        }}
+      />
+    </div>
   );
 }

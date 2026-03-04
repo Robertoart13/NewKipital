@@ -1,7 +1,9 @@
 import { Result } from 'antd';
 import { Navigate, useLocation } from 'react-router-dom';
+
 import { useAppSelector } from '../store/hooks';
 import { hasPermission } from '../store/selectors/permissions.selectors';
+
 import type { Permission } from '../store/slices/permissionsSlice';
 
 interface PermissionGuardProps {

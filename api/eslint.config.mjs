@@ -74,11 +74,10 @@ export default tseslint.config(
       'import/first': 'warn',
       'import/newline-after-import': 'warn',
 
-      // Type imports consistentes (no requiere type-check)
-      '@typescript-eslint/consistent-type-imports': [
-        'warn',
-        { prefer: 'type-imports', fixStyle: 'separate-type-imports' },
-      ],
+      // DESHABILITADO: NestJS usa emitDecoratorMetadata para DI en runtime.
+      // Si se fuerza 'import type', TypeScript borra los metadatos del constructor
+      // y NestJS no puede resolver las dependencias (UnknownDependenciesException).
+      '@typescript-eslint/consistent-type-imports': 'off',
 
       // Prettier
       'prettier/prettier': ['error', { endOfLine: 'lf' }],

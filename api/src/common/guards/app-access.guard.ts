@@ -3,8 +3,8 @@ import { Injectable, ForbiddenException } from '@nestjs/common';
 import { REQUIRE_APP_KEY } from '../decorators/require-app.decorator';
 
 import type { PlatformApp } from '../constants/apps';
-import type { CanActivate, ExecutionContext } from '@nestjs/common';
-import type { Reflector } from '@nestjs/core';
+import { CanActivate, ExecutionContext } from '@nestjs/common';
+import { Reflector } from '@nestjs/core';
 
 /**
  * Guard que valida que el usuario tenga acceso a la app requerida.

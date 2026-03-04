@@ -4,9 +4,9 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { AuditActionEntity } from './entities/audit-action.entity';
 import { DomainEventEntity } from './entities/domain-event.entity';
 
-import type { OnModuleDestroy, OnModuleInit } from '@nestjs/common';
-import type { ConfigService } from '@nestjs/config';
-import type { Repository } from 'typeorm';
+import { OnModuleDestroy, OnModuleInit } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
+import { Repository } from 'typeorm';
 
 interface AuditEventPayload {
   modulo: string;

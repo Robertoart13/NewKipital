@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { getVisibleMenuItems } from './menu.selectors';
+
 import menuReducer from '../slices/menuSlice';
+
+import { getVisibleMenuItems } from './menu.selectors';
 
 function buildState(permissions: string[]) {
   return {

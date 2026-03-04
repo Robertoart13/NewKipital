@@ -1,5 +1,5 @@
-import { describe, it, expect, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
+import { describe, it, expect, vi } from 'vitest';
 
 // ─── Lightweight antd mock ─────────────────────────────────────────────────
 // Avoids loading the full antd bundle (~100 MB) in this worker.
@@ -19,18 +19,27 @@ vi.mock('antd', () => ({
     pagination?: { showTotal?: (total: number) => React.ReactNode } | false;
   }) => {
     const total = dataSource?.length ?? 0;
-    const showTotal = pagination !== false ? (pagination as { showTotal?: (n: number) => React.ReactNode })?.showTotal : undefined;
+    const showTotal =
+      pagination !== false
+        ? (pagination as { showTotal?: (n: number) => React.ReactNode })?.showTotal
+        : undefined;
     return (
       <div className={['ant-table', className].filter(Boolean).join(' ')}>
         {loading && <div className="ant-spin" />}
         <table>
           <thead>
-            <tr>{columns?.map((c) => <th key={c.key}>{c.title}</th>)}</tr>
+            <tr>
+              {columns?.map((c) => (
+                <th key={c.key}>{c.title}</th>
+              ))}
+            </tr>
           </thead>
           <tbody>
             {dataSource?.map((row) => (
               <tr key={String(row.key)}>
-                {columns?.map((c) => <td key={c.key}>{String(row[c.dataIndex] ?? '')}</td>)}
+                {columns?.map((c) => (
+                  <td key={c.key}>{String(row[c.dataIndex] ?? '')}</td>
+                ))}
               </tr>
             ))}
           </tbody>
@@ -90,9 +99,7 @@ describe('KpTable', () => {
   });
 
   it('accepts and passes loading prop', () => {
-    const { container } = render(
-      <KpTable<Row> columns={columns} dataSource={[]} loading={true} />,
-    );
+    const { container } = render(<KpTable<Row> columns={columns} dataSource={[]} loading={true} />);
     expect(container.querySelector('.ant-spin')).toBeInTheDocument();
   });
 });

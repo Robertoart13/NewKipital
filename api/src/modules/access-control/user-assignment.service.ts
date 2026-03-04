@@ -23,10 +23,10 @@ import { UserRole } from './entities/user-role.entity';
 import type { AssignUserAppDto } from './dto/assign-user-app.dto';
 import type { AssignUserCompanyDto } from './dto/assign-user-company.dto';
 import type { AssignUserRoleDto } from './dto/assign-user-role.dto';
-import type { AuthzRealtimeService } from '../authz/authz-realtime.service';
-import type { AuthzVersionService } from '../authz/authz-version.service';
-import type { AuditOutboxService } from '../integration/audit-outbox.service';
-import type { Repository } from 'typeorm';
+import { AuthzRealtimeService } from '../authz/authz-realtime.service';
+import { AuthzVersionService } from '../authz/authz-version.service';
+import { AuditOutboxService } from '../integration/audit-outbox.service';
+import { Repository } from 'typeorm';
 
 @Injectable()
 export class UserAssignmentService {

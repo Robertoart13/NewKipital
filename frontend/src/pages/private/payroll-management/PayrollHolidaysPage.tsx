@@ -1,5 +1,15 @@
-import { useEffect, useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
+import {
+  AppstoreOutlined,
+  ArrowLeftOutlined,
+  CalendarOutlined,
+  DeleteOutlined,
+  EditOutlined,
+  FilterOutlined,
+  PlusOutlined,
+  QuestionCircleOutlined,
+  ReloadOutlined,
+  SearchOutlined,
+} from '@ant-design/icons';
 import {
   App as AntdApp,
   Button,
@@ -18,26 +28,10 @@ import {
   Tooltip,
   Typography,
 } from 'antd';
-import type { ColumnsType } from 'antd/es/table';
 import dayjs from 'dayjs';
-import {
-  AppstoreOutlined,
-  ArrowLeftOutlined,
-  CalendarOutlined,
-  DeleteOutlined,
-  EditOutlined,
-  FilterOutlined,
-  PlusOutlined,
-  QuestionCircleOutlined,
-  ReloadOutlined,
-  SearchOutlined,
-} from '@ant-design/icons';
-import { useAppSelector } from '../../../store/hooks';
-import {
-  canCreatePayrollHolidays,
-  canDeletePayrollHolidays,
-  canEditPayrollHolidays,
-} from '../../../store/selectors/permissions.selectors';
+import { useEffect, useMemo, useState } from 'react';
+import { Link } from 'react-router-dom';
+
 import {
   createPayrollHoliday,
   deletePayrollHoliday,
@@ -47,7 +41,15 @@ import {
   type PayrollHolidayPayload,
   updatePayrollHoliday,
 } from '../../../api/payrollHolidays';
+import { useAppSelector } from '../../../store/hooks';
+import {
+  canCreatePayrollHolidays,
+  canDeletePayrollHolidays,
+  canEditPayrollHolidays,
+} from '../../../store/selectors/permissions.selectors';
 import styles from '../configuration/UsersManagementPage.module.css';
+
+import type { ColumnsType } from 'antd/es/table';
 
 const { Text } = Typography;
 
@@ -165,81 +167,86 @@ export function PayrollHolidaysPage() {
     form.resetFields();
   };
 
-  const columns: ColumnsType<PayrollHolidayItem> = useMemo(() => [
-    { title: 'Nombre', dataIndex: 'nombre', key: 'nombre' },
-    {
-      title: 'Tipo de feriado',
-      key: 'tipo',
-      render: (_, row) => <Tag>{payrollHolidayTypeLabel(row.tipo)}</Tag>,
-    },
-    { title: 'Fecha inicio', dataIndex: 'fechaInicio', key: 'fechaInicio' },
-    { title: 'Fecha fin', dataIndex: 'fechaFin', key: 'fechaFin' },
-    {
-      title: 'Descripcion',
-      key: 'descripcion',
-      render: (_, row) => row.descripcion?.trim() || '--',
-    },
-    {
-      title: 'Acciones',
-      key: 'acciones',
-      render: (_, row) => (
-        <Space>
-          <Tooltip title="Editar informacion del feriado seleccionado">
-            <Button
-              icon={<EditOutlined />}
-              size="small"
-              disabled={!canEdit}
-              onClick={(event) => {
-                event.stopPropagation();
-                openEditModal(row);
-              }}
-            >
-              Editar
-            </Button>
-          </Tooltip>
-          <Tooltip title="Eliminar este feriado del catalogo">
-            <Button
-              icon={<DeleteOutlined />}
-              size="small"
-              danger
-              disabled={!canDelete}
-              onClick={(event) => {
-                event.stopPropagation();
-                void (async () => {
-                  const confirmed = await new Promise<boolean>((resolve) => {
-                    modal.confirm({
-                      title: 'Confirmar eliminacion de feriado',
-                      content: `Se eliminara el feriado "${row.nombre}". Esta accion no se puede deshacer.`,
-                      icon: <QuestionCircleOutlined style={{ color: '#5a6c7d', fontSize: 40 }} />,
-                      okText: 'Eliminar',
-                      cancelText: 'Cancelar',
-                      centered: true,
-                      width: 420,
-                      rootClassName: styles.companyConfirmModal,
-                      okButtonProps: { className: styles.companyConfirmOk, danger: true },
-                      cancelButtonProps: { className: styles.companyConfirmCancel },
-                      onOk: () => resolve(true),
-                      onCancel: () => resolve(false),
+  const columns: ColumnsType<PayrollHolidayItem> = useMemo(
+    () => [
+      { title: 'Nombre', dataIndex: 'nombre', key: 'nombre' },
+      {
+        title: 'Tipo de feriado',
+        key: 'tipo',
+        render: (_, row) => <Tag>{payrollHolidayTypeLabel(row.tipo)}</Tag>,
+      },
+      { title: 'Fecha inicio', dataIndex: 'fechaInicio', key: 'fechaInicio' },
+      { title: 'Fecha fin', dataIndex: 'fechaFin', key: 'fechaFin' },
+      {
+        title: 'Descripcion',
+        key: 'descripcion',
+        render: (_, row) => row.descripcion?.trim() || '--',
+      },
+      {
+        title: 'Acciones',
+        key: 'acciones',
+        render: (_, row) => (
+          <Space>
+            <Tooltip title="Editar informacion del feriado seleccionado">
+              <Button
+                icon={<EditOutlined />}
+                size="small"
+                disabled={!canEdit}
+                onClick={(event) => {
+                  event.stopPropagation();
+                  openEditModal(row);
+                }}
+              >
+                Editar
+              </Button>
+            </Tooltip>
+            <Tooltip title="Eliminar este feriado del catalogo">
+              <Button
+                icon={<DeleteOutlined />}
+                size="small"
+                danger
+                disabled={!canDelete}
+                onClick={(event) => {
+                  event.stopPropagation();
+                  void (async () => {
+                    const confirmed = await new Promise<boolean>((resolve) => {
+                      modal.confirm({
+                        title: 'Confirmar eliminacion de feriado',
+                        content: `Se eliminara el feriado "${row.nombre}". Esta accion no se puede deshacer.`,
+                        icon: <QuestionCircleOutlined style={{ color: '#5a6c7d', fontSize: 40 }} />,
+                        okText: 'Eliminar',
+                        cancelText: 'Cancelar',
+                        centered: true,
+                        width: 420,
+                        rootClassName: styles.companyConfirmModal,
+                        okButtonProps: { className: styles.companyConfirmOk, danger: true },
+                        cancelButtonProps: { className: styles.companyConfirmCancel },
+                        onOk: () => resolve(true),
+                        onCancel: () => resolve(false),
+                      });
                     });
-                  });
-                  if (!confirmed) return;
-                  try {
-                    await deletePayrollHoliday(row.id);
-                    message.success('Feriado eliminado correctamente.');
-                    await loadRows();
-                  } catch (error) {
-                    message.error(error instanceof Error ? error.message : 'No se pudo eliminar el feriado.');
-                  }
-                })();
-              }}
-            >
-              Eliminar
-            </Button>
-          </Tooltip>
-        </Space>
-      ),
-    },
-  ], [canDelete, canEdit, message, modal]);
+                    if (!confirmed) return;
+                    try {
+                      await deletePayrollHoliday(row.id);
+                      message.success('Feriado eliminado correctamente.');
+                      await loadRows();
+                    } catch (error) {
+                      message.error(
+                        error instanceof Error ? error.message : 'No se pudo eliminar el feriado.',
+                      );
+                    }
+                  })();
+                }}
+              >
+                Eliminar
+              </Button>
+            </Tooltip>
+          </Space>
+        ),
+      },
+    ],
+    [canDelete, canEdit, message, modal],
+  );
 
   const onSubmit = async () => {
     try {
@@ -279,7 +286,9 @@ export function PayrollHolidaysPage() {
           </Link>
           <div className={styles.pageTitleBlock}>
             <h1 className={styles.pageTitle}>Listado de Feriados</h1>
-            <p className={styles.pageSubtitle}>Visualice y gestione los feriados para control de planilla</p>
+            <p className={styles.pageSubtitle}>
+              Visualice y gestione los feriados para control de planilla
+            </p>
           </div>
         </div>
       </div>
@@ -293,7 +302,9 @@ export function PayrollHolidaysPage() {
               </div>
               <div>
                 <h2 className={styles.gestionTitle}>Gestion de Feriados</h2>
-                <p className={styles.gestionDesc}>Configure feriados por tipo para aplicacion en procesos de planilla</p>
+                <p className={styles.gestionDesc}>
+                  Configure feriados por tipo para aplicacion en procesos de planilla
+                </p>
               </div>
             </Flex>
             <Button
@@ -311,7 +322,13 @@ export function PayrollHolidaysPage() {
 
       <Card className={styles.mainCard}>
         <div className={styles.mainCardBody}>
-          <Flex align="center" justify="space-between" wrap="wrap" gap={12} className={styles.registrosHeader}>
+          <Flex
+            align="center"
+            justify="space-between"
+            wrap="wrap"
+            gap={12}
+            className={styles.registrosHeader}
+          >
             <Flex align="center" gap={8} wrap="wrap">
               <FilterOutlined className={styles.registrosFilterIcon} />
               <h3 className={styles.registrosTitle}>Registros de Feriados</h3>
@@ -333,7 +350,9 @@ export function PayrollHolidaysPage() {
           <Collapse
             className={styles.filtersCollapse}
             activeKey={filtersExpanded ? ['filtros'] : []}
-            onChange={(keys) => setFiltersExpanded((Array.isArray(keys) ? keys : [keys]).includes('filtros'))}
+            onChange={(keys) =>
+              setFiltersExpanded((Array.isArray(keys) ? keys : [keys]).includes('filtros'))
+            }
             items={[
               {
                 key: 'filtros',
@@ -346,7 +365,9 @@ export function PayrollHolidaysPage() {
                         placeholder="Nombre o descripcion..."
                         prefix={<SearchOutlined />}
                         value={filters.search}
-                        onChange={(event) => setFilters((prev) => ({ ...prev, search: event.target.value }))}
+                        onChange={(event) =>
+                          setFilters((prev) => ({ ...prev, search: event.target.value }))
+                        }
                         allowClear
                         className={styles.filterInput}
                       />
@@ -363,7 +384,9 @@ export function PayrollHolidaysPage() {
                         showSearch
                         optionFilterProp="label"
                         filterOption={(input, option) =>
-                          String(option?.label ?? '').toLowerCase().includes(input.toLowerCase())
+                          String(option?.label ?? '')
+                            .toLowerCase()
+                            .includes(input.toLowerCase())
                         }
                       />
                     </div>
@@ -413,7 +436,8 @@ export function PayrollHolidaysPage() {
             pagination={{
               pageSize,
               showSizeChanger: false,
-              showTotal: (total, [start, end]) => `Mostrando ${start} a ${end} de ${total} registros`,
+              showTotal: (total, [start, end]) =>
+                `Mostrando ${start} a ${end} de ${total} registros`,
             }}
             onRow={(record) => ({
               onClick: () => openEditModal(record),
@@ -431,8 +455,13 @@ export function PayrollHolidaysPage() {
         footer={null}
         width={760}
         destroyOnHidden
-        title={(
-          <Flex justify="space-between" align="center" wrap="nowrap" style={{ width: '100%', gap: 16 }}>
+        title={
+          <Flex
+            justify="space-between"
+            align="center"
+            wrap="nowrap"
+            style={{ width: '100%', gap: 16 }}
+          >
             <div className={styles.companyModalHeader}>
               <div className={styles.companyModalHeaderIcon}>
                 <AppstoreOutlined />
@@ -447,9 +476,15 @@ export function PayrollHolidaysPage() {
               className={styles.companyModalCloseBtn}
             />
           </Flex>
-        )}
+        }
       >
-        <Form form={form} layout="vertical" initialValues={{ descripcion: '--' }} onFinish={onSubmit} className={styles.companyFormContent}>
+        <Form
+          form={form}
+          layout="vertical"
+          initialValues={{ descripcion: '--' }}
+          onFinish={onSubmit}
+          className={styles.companyFormContent}
+        >
           <div className={styles.companyFormGrid}>
             <Divider titlePlacement="left" style={{ margin: '8px 0 12px' }}>
               Informacion Principal
@@ -474,7 +509,9 @@ export function PayrollHolidaysPage() {
                   showSearch
                   optionFilterProp="label"
                   filterOption={(input, option) =>
-                    String(option?.label ?? '').toLowerCase().includes(input.toLowerCase())
+                    String(option?.label ?? '')
+                      .toLowerCase()
+                      .includes(input.toLowerCase())
                   }
                   placeholder="Seleccione tipo de feriado"
                 />
@@ -500,7 +537,9 @@ export function PayrollHolidaysPage() {
                       if (!value) return Promise.resolve();
                       const start = getFieldValue('fechaInicio');
                       if (!start || !value.isBefore(start, 'day')) return Promise.resolve();
-                      return Promise.reject(new Error('La fecha fin no puede ser menor que la fecha inicio'));
+                      return Promise.reject(
+                        new Error('La fecha fin no puede ser menor que la fecha inicio'),
+                      );
                     },
                   }),
                 ]}

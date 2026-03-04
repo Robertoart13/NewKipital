@@ -5,8 +5,8 @@ import { PayrollHoliday } from './entities/payroll-holiday.entity';
 
 import type { CreatePayrollHolidayDto } from './dto/create-payroll-holiday.dto';
 import type { UpdatePayrollHolidayDto } from './dto/update-payroll-holiday.dto';
-import type { AuditOutboxService } from '../integration/audit-outbox.service';
-import type { Repository } from 'typeorm';
+import { AuditOutboxService } from '../integration/audit-outbox.service';
+import { Repository } from 'typeorm';
 
 @Injectable()
 export class PayrollHolidaysService {

@@ -5,8 +5,8 @@ import { OrgClass } from './entities/class.entity';
 
 import type { CreateClassDto } from './dto/create-class.dto';
 import type { UpdateClassDto } from './dto/update-class.dto';
-import type { AuditOutboxService } from '../integration/audit-outbox.service';
-import type { Repository } from 'typeorm';
+import { AuditOutboxService } from '../integration/audit-outbox.service';
+import { Repository } from 'typeorm';
 
 @Injectable()
 export class ClassesService {

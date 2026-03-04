@@ -8,12 +8,12 @@ import { InjectRepository } from '@nestjs/typeorm';
 
 import { Permission } from './entities/permission.entity';
 
-import type { AuditOutboxService } from '../integration/audit-outbox.service';
+import { AuditOutboxService } from '../integration/audit-outbox.service';
 import type { CreatePermissionDto } from './dto/create-permission.dto';
 import type { UpdatePermissionDto } from './dto/update-permission.dto';
-import type { AuthzVersionService } from '../authz/authz-version.service';
-import type { ConfigService } from '@nestjs/config';
-import type { Repository } from 'typeorm';
+import { AuthzVersionService } from '../authz/authz-version.service';
+import { ConfigService } from '@nestjs/config';
+import { Repository } from 'typeorm';
 
 export type PermissionCatalogMode = 'migration' | 'ui';
 

@@ -1,6 +1,7 @@
 import { createSelector } from '@reduxjs/toolkit';
-import type { RootState } from '../store';
+
 import type { MenuItem } from '../slices/menuSlice';
+import type { RootState } from '../store';
 
 const selectMenuConfig = (state: RootState) => state.menu.config;
 const selectPermissions = (state: RootState) => state.permissions.permissions;
@@ -46,5 +47,5 @@ const filterMenuByPermissions = (items: MenuItem[], permissions: string[]): Menu
  */
 export const getVisibleMenuItems = createSelector(
   [selectMenuConfig, selectPermissions],
-  (config, permissions) => filterMenuByPermissions(config, permissions)
+  (config, permissions) => filterMenuByPermissions(config, permissions),
 );

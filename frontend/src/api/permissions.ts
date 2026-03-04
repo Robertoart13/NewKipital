@@ -1,5 +1,6 @@
-import type { Permission } from '../store/slices/permissionsSlice';
 import { httpFetch } from '../interceptors/httpInterceptor';
+
+import type { Permission } from '../store/slices/permissionsSlice';
 
 export interface SystemPermission {
   id: number;

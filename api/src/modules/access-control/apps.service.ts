@@ -4,7 +4,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { App } from './entities/app.entity';
 
 import type { CreateAppDto } from './dto/create-app.dto';
-import type { Repository } from 'typeorm';
+import { Repository } from 'typeorm';
 
 @Injectable()
 export class AppsService {

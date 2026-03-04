@@ -1,4 +1,5 @@
 import { useCallback } from 'react';
+
 import {
   EMPLOYEE_MONEY_MAX_DIGITS,
   formatGroupedIntegerDisplay,
@@ -18,10 +19,7 @@ export function useMoneyFieldFormatter(maxDigits = EMPLOYEE_MONEY_MAX_DIGITS) {
     [maxDigits],
   );
 
-  const parse = useCallback(
-    (value: unknown) => parseSanitizedMoney(value, maxDigits),
-    [maxDigits],
-  );
+  const parse = useCallback((value: unknown) => parseSanitizedMoney(value, maxDigits), [maxDigits]);
 
   const formatDisplay = useCallback(
     (value: unknown) => formatGroupedIntegerDisplay(value, maxDigits),
@@ -29,8 +27,7 @@ export function useMoneyFieldFormatter(maxDigits = EMPLOYEE_MONEY_MAX_DIGITS) {
   );
 
   const getFormValueFromEvent = useCallback(
-    (event?: { target?: { value?: unknown } }) =>
-      sanitize(event?.target?.value),
+    (event?: { target?: { value?: unknown } }) => sanitize(event?.target?.value),
     [sanitize],
   );
 
@@ -49,4 +46,3 @@ export function useMoneyFieldFormatter(maxDigits = EMPLOYEE_MONEY_MAX_DIGITS) {
     getFormValueProps,
   };
 }
-

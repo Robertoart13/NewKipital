@@ -4,7 +4,12 @@ export const PAYROLL_ARTICLE_TYPE_META: Record<number, PayrollArticleTypeMeta> =
   1: { primaryLabel: 'Cuenta Gasto', allowsPasivo: false, idsReferencia: [18, 19, 17] },
   2: { primaryLabel: 'Cuenta Pasivo', allowsPasivo: false, idsReferencia: [12, 13, 14] },
   9: { primaryLabel: 'Cuenta Costo', allowsPasivo: false, idsReferencia: [18, 19, 12] },
-  10: { primaryLabel: 'Cuenta Gasto', secondaryLabel: 'Cuenta Pasivo (opcional)', allowsPasivo: true, idsReferencia: [18, 19, 13] },
+  10: {
+    primaryLabel: 'Cuenta Gasto',
+    secondaryLabel: 'Cuenta Pasivo (opcional)',
+    allowsPasivo: true,
+    idsReferencia: [18, 19, 13],
+  },
 };
 
 export const PANE_CONFIG: PaneConfig[] = [

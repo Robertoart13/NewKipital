@@ -1,8 +1,10 @@
-import { Flex, Select, Switch, Table } from 'antd';
-import type { ColumnsType } from 'antd/es/table';
 import { FilterOutlined } from '@ant-design/icons';
+import { Flex, Select, Switch, Table } from 'antd';
+
 import styles from '../../configuration/UsersManagementPage.module.css';
+
 import type { PayrollArticleListItem } from '../../../../api/payrollArticles';
+import type { ColumnsType } from 'antd/es/table';
 import type { ReactNode } from 'react';
 
 interface PayrollArticlesTableProps {
@@ -46,7 +48,13 @@ export function PayrollArticlesTable(props: PayrollArticlesTableProps) {
 
   return (
     <div className={styles.mainCardBody}>
-      <Flex align="center" justify="space-between" wrap="wrap" gap={12} className={styles.registrosHeader}>
+      <Flex
+        align="center"
+        justify="space-between"
+        wrap="wrap"
+        gap={12}
+        className={styles.registrosHeader}
+      >
         <Flex align="center" gap={12} wrap="wrap">
           <Flex align="center" gap={8}>
             <FilterOutlined className={styles.registrosFilterIcon} />

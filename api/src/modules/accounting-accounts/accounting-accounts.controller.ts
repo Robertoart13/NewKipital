@@ -18,7 +18,7 @@ import { Public } from '../../common/decorators/public.decorator';
 import { RequirePermissions } from '../../common/decorators/require-permissions.decorator';
 import { CacheResponseInterceptor } from '../../common/interceptors/cache-response.interceptor';
 
-import type { AccountingAccountsService } from './accounting-accounts.service';
+import { AccountingAccountsService } from './accounting-accounts.service';
 import type { CreateAccountingAccountDto } from './dto/create-accounting-account.dto';
 import type { UpdateAccountingAccountDto } from './dto/update-accounting-account.dto';
 

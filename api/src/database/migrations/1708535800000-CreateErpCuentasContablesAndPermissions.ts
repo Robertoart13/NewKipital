@@ -1,6 +1,6 @@
 import { Table, TableForeignKey, TableIndex } from 'typeorm';
 
-import type { MigrationInterface, QueryRunner } from 'typeorm';
+import { MigrationInterface, QueryRunner } from 'typeorm';
 
 export class CreateErpCuentasContablesAndPermissions1708535800000 implements MigrationInterface {
   public async up(queryRunner: QueryRunner): Promise<void> {

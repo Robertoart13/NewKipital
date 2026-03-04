@@ -3,9 +3,9 @@ import { Injectable, ForbiddenException, UnauthorizedException } from '@nestjs/c
 import { ALLOW_WITHOUT_COMPANY_KEY } from '../decorators/allow-without-company.decorator';
 import { REQUIRE_PERMISSIONS_KEY } from '../decorators/require-permissions.decorator';
 
-import type { AuthService } from '../../modules/auth/auth.service';
-import type { CanActivate, ExecutionContext } from '@nestjs/common';
-import type { Reflector } from '@nestjs/core';
+import { AuthService } from '../../modules/auth/auth.service';
+import { CanActivate, ExecutionContext } from '@nestjs/common';
+import { Reflector } from '@nestjs/core';
 
 type RequestWithUser = {
   user?: {

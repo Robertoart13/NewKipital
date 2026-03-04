@@ -1,4 +1,5 @@
 import { createSlice } from '@reduxjs/toolkit';
+
 import type { PlatformApp } from './authSlice';
 
 export interface ActiveAppState {

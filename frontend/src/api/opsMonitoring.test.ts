@@ -5,7 +5,14 @@ vi.mock('../interceptors/httpInterceptor', () => ({
 }));
 
 import { httpFetch } from '../interceptors/httpInterceptor';
-import { fetchQueuesSummary, fetchIdentityQueue, rescanQueues, releaseStuckQueues, requeueJob } from './opsMonitoring';
+
+import {
+  fetchQueuesSummary,
+  fetchIdentityQueue,
+  rescanQueues,
+  releaseStuckQueues,
+  requeueJob,
+} from './opsMonitoring';
 
 const mockHttpFetch = vi.mocked(httpFetch);
 
@@ -45,7 +52,10 @@ describe('opsMonitoring api', () => {
   it('requeueJob sends POST with queue type', async () => {
     mockHttpFetch.mockResolvedValue(okJson(null));
     await requeueJob('identity', 5);
-    expect(mockHttpFetch).toHaveBeenCalledWith('/ops/queues/requeue/5', expect.objectContaining({ method: 'POST' }));
+    expect(mockHttpFetch).toHaveBeenCalledWith(
+      '/ops/queues/requeue/5',
+      expect.objectContaining({ method: 'POST' }),
+    );
   });
 
   it('fetchQueuesSummary throws on error response', async () => {

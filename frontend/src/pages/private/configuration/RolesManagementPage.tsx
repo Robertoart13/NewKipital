@@ -1,5 +1,12 @@
-import { useEffect, useMemo, useState } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import {
+  AppstoreOutlined,
+  ArrowLeftOutlined,
+  CaretDownOutlined,
+  CaretRightOutlined,
+  EllipsisOutlined,
+  InfoCircleOutlined,
+  PlusOutlined,
+} from '@ant-design/icons';
 import {
   App as AntdApp,
   Button,
@@ -15,16 +22,9 @@ import {
   Tooltip,
   Typography,
 } from 'antd';
-import type { ColumnsType } from 'antd/es/table';
-import {
-  AppstoreOutlined,
-  ArrowLeftOutlined,
-  CaretDownOutlined,
-  CaretRightOutlined,
-  EllipsisOutlined,
-  InfoCircleOutlined,
-  PlusOutlined,
-} from '@ant-design/icons';
+import { useEffect, useMemo, useState } from 'react';
+import { Link, useLocation } from 'react-router-dom';
+
 import {
   createRole,
   fetchPermissionsForRoles,
@@ -34,9 +34,16 @@ import {
   type SystemPermission,
   type SystemRole,
 } from '../../../api/securityConfig';
-import { canViewConfigRoles, canViewConfigUsers, canViewConfigPermissions } from '../../../store/selectors/permissions.selectors';
 import { useAppSelector } from '../../../store/hooks';
+import {
+  canViewConfigRoles,
+  canViewConfigUsers,
+  canViewConfigPermissions,
+} from '../../../store/selectors/permissions.selectors';
+
 import styles from './UsersManagementPage.module.css';
+
+import type { ColumnsType } from 'antd/es/table';
 
 const { Text } = Typography;
 
@@ -171,7 +178,6 @@ export function RolesManagementPage() {
     void loadData();
   }, [selectedApp]);
 
-
   const modulesWithPermissions = useMemo(() => {
     const grouped = new Map<string, SystemPermission[]>();
     for (const permission of permissions) {
@@ -181,7 +187,11 @@ export function RolesManagementPage() {
     }
     return Array.from(grouped.entries()).map(([moduleName, perms]) => ({
       moduleName,
-      app: KPITAL_MODULES.includes(moduleName) ? 'kpital' as const : TIMEWISE_MODULES.includes(moduleName) ? 'timewise' as const : 'kpital' as const,
+      app: KPITAL_MODULES.includes(moduleName)
+        ? ('kpital' as const)
+        : TIMEWISE_MODULES.includes(moduleName)
+          ? ('timewise' as const)
+          : ('kpital' as const),
       permissions: perms.sort((a, b) => a.codigo.localeCompare(b.codigo)),
     }));
   }, [permissions]);
@@ -272,7 +282,10 @@ export function RolesManagementPage() {
   const permissionCodesByModule = useMemo(() => {
     const map = new Map<string, string[]>();
     for (const group of modulesWithPermissions) {
-      map.set(group.moduleName, group.permissions.map((p) => p.codigo));
+      map.set(
+        group.moduleName,
+        group.permissions.map((p) => p.codigo),
+      );
     }
     return map;
   }, [modulesWithPermissions]);
@@ -366,20 +379,25 @@ export function RolesManagementPage() {
             }}
           >
             <div style={{ textAlign: 'center' }}>
-              <Text type="secondary" style={{ fontSize: 10, letterSpacing: '0.5px', display: 'block', color: '#6b7a85' }}>
+              <Text
+                type="secondary"
+                style={{ fontSize: 10, letterSpacing: '0.5px', display: 'block', color: '#6b7a85' }}
+              >
                 ROL
               </Text>
-              <Text strong style={{ fontSize: 13, color: '#3d4f5c' }}>{role.nombre}</Text>
+              <Text strong style={{ fontSize: 13, color: '#3d4f5c' }}>
+                {role.nombre}
+              </Text>
             </div>
-          <Dropdown menu={{ items: roleMenuItems(role) }} trigger={['click']}>
-            <Button
-              type="text"
-              size="small"
-              icon={<EllipsisOutlined style={{ fontSize: 14, color: '#6b7a85' }} />}
-              onClick={(e) => e.stopPropagation()}
-            />
-          </Dropdown>
-        </div>
+            <Dropdown menu={{ items: roleMenuItems(role) }} trigger={['click']}>
+              <Button
+                type="text"
+                size="small"
+                icon={<EllipsisOutlined style={{ fontSize: 14, color: '#6b7a85' }} />}
+                onClick={(e) => e.stopPropagation()}
+              />
+            </Dropdown>
+          </div>
         </Tooltip>
       ),
       key: `role-${role.id}`,
@@ -460,13 +478,17 @@ export function RolesManagementPage() {
             const count = permissionCodesByModule.get(row.moduleName ?? '')?.length ?? 0;
             return (
               <Space size={8} style={{ paddingLeft: 12 }}>
-                <Text strong style={{ fontSize: 13 }}>{row.label}</Text>
-                <Text type="secondary" style={{ fontSize: 12, fontWeight: 400 }}>{count}</Text>
+                <Text strong style={{ fontSize: 13 }}>
+                  {row.label}
+                </Text>
+                <Text type="secondary" style={{ fontSize: 12, fontWeight: 400 }}>
+                  {count}
+                </Text>
               </Space>
             );
           }
-            return (
-              <Space size={8} style={{ paddingLeft: 24 }}>
+          return (
+            <Space size={8} style={{ paddingLeft: 24 }}>
               <Text style={{ fontSize: 13, color: '#3d4f5c' }}>{row.label}</Text>
               <Tooltip title={row.descripcion || row.codigo || 'Sin descripción'}>
                 <InfoCircleOutlined style={{ color: '#6b7a85', fontSize: 13, cursor: 'help' }} />
@@ -498,13 +520,28 @@ export function RolesManagementPage() {
           </div>
           <div className={styles.pageTabs}>
             {canViewConfigRolesPerm && (
-              <Link to="/configuration/roles" className={`${styles.pageTab} ${activeTab === 'roles' ? styles.pageTabActive : ''}`}>Roles</Link>
+              <Link
+                to="/configuration/roles"
+                className={`${styles.pageTab} ${activeTab === 'roles' ? styles.pageTabActive : ''}`}
+              >
+                Roles
+              </Link>
             )}
             {canViewConfigUsersPerm && (
-              <Link to="/configuration/users" className={`${styles.pageTab} ${activeTab === 'users' ? styles.pageTabActive : ''}`}>Usuarios</Link>
+              <Link
+                to="/configuration/users"
+                className={`${styles.pageTab} ${activeTab === 'users' ? styles.pageTabActive : ''}`}
+              >
+                Usuarios
+              </Link>
             )}
             {canViewConfigPermissionsPerm && (
-              <Link to="/configuration/permissions" className={`${styles.pageTab} ${activeTab === 'permissions' ? styles.pageTabActive : ''}`}>Permisos</Link>
+              <Link
+                to="/configuration/permissions"
+                className={`${styles.pageTab} ${activeTab === 'permissions' ? styles.pageTabActive : ''}`}
+              >
+                Permisos
+              </Link>
             )}
           </div>
         </div>
@@ -520,7 +557,8 @@ export function RolesManagementPage() {
               <div>
                 <h2 className={styles.gestionTitle}>Gestion de Roles</h2>
                 <p className={styles.gestionDesc}>
-                  Defina qué permisos tiene cada rol en KPITAL 360 y TimeWise para administrar el acceso al sistema.
+                  Defina qué permisos tiene cada rol en KPITAL 360 y TimeWise para administrar el
+                  acceso al sistema.
                 </p>
               </div>
             </div>
@@ -564,7 +602,11 @@ export function RolesManagementPage() {
               />
             </div>
             <Space size={12}>
-              <Button icon={<PlusOutlined />} onClick={openAddRoleModal} className={styles.btnSecondary}>
+              <Button
+                icon={<PlusOutlined />}
+                onClick={openAddRoleModal}
+                className={styles.btnSecondary}
+              >
                 Agregar rol
               </Button>
               <Button
@@ -579,46 +621,46 @@ export function RolesManagementPage() {
             </Space>
           </div>
 
-        <Table<MatrixRow>
-          className={styles.configTable}
-          rowKey="key"
-          loading={loading}
-          columns={columns}
-          dataSource={tableData}
-          pagination={false}
-          locale={{
-            emptyText:
-              selectedApp === 'kpital'
-                ? 'No hay permisos de KPITAL configurados.'
-                : 'No hay permisos de TimeWise configurados.',
-          }}
-          expandable={{
-            defaultExpandAllRows: true,
-            childrenColumnName: 'children',
-            expandIcon: ({ expanded, onExpand, record }) =>
-              (record.type === 'app' || record.type === 'module') ? (
-                <span
-                  onClick={(e) => onExpand(record, e)}
-                  style={{ marginRight: 8, cursor: 'pointer', color: '#6b7a85' }}
-                >
-                  {expanded ? <CaretDownOutlined /> : <CaretRightOutlined />}
-                </span>
-              ) : (
-                <span style={{ width: 22, display: 'inline-block' }} />
-              ),
-          }}
-          size="middle"
-          scroll={{ x: 'max-content', y: 520 }}
-          onRow={(record) => ({
-            style:
-              record.type === 'app'
-                ? { backgroundColor: '#f2f4f6', fontWeight: 600 }
-                : record.type === 'module'
-                  ? { backgroundColor: '#f8f9fa' }
-                  : { backgroundColor: '#fff' },
-          })}
-          style={{ fontSize: 13 }}
-        />
+          <Table<MatrixRow>
+            className={styles.configTable}
+            rowKey="key"
+            loading={loading}
+            columns={columns}
+            dataSource={tableData}
+            pagination={false}
+            locale={{
+              emptyText:
+                selectedApp === 'kpital'
+                  ? 'No hay permisos de KPITAL configurados.'
+                  : 'No hay permisos de TimeWise configurados.',
+            }}
+            expandable={{
+              defaultExpandAllRows: true,
+              childrenColumnName: 'children',
+              expandIcon: ({ expanded, onExpand, record }) =>
+                record.type === 'app' || record.type === 'module' ? (
+                  <span
+                    onClick={(e) => onExpand(record, e)}
+                    style={{ marginRight: 8, cursor: 'pointer', color: '#6b7a85' }}
+                  >
+                    {expanded ? <CaretDownOutlined /> : <CaretRightOutlined />}
+                  </span>
+                ) : (
+                  <span style={{ width: 22, display: 'inline-block' }} />
+                ),
+            }}
+            size="middle"
+            scroll={{ x: 'max-content', y: 520 }}
+            onRow={(record) => ({
+              style:
+                record.type === 'app'
+                  ? { backgroundColor: '#f2f4f6', fontWeight: 600 }
+                  : record.type === 'module'
+                    ? { backgroundColor: '#f8f9fa' }
+                    : { backgroundColor: '#fff' },
+            })}
+            style={{ fontSize: 13 }}
+          />
         </div>
       </Card>
 

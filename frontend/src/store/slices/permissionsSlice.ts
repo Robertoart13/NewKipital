@@ -1,4 +1,5 @@
 import { createSlice } from '@reduxjs/toolkit';
+
 import type { PlatformApp } from './authSlice';
 
 export type Permission = string;
@@ -28,14 +29,17 @@ const permissionsSlice = createSlice({
   name: 'permissions',
   initialState,
   reducers: {
-    setPermissions: (state, action: {
-      payload: {
-        permissions: Permission[];
-        roles: string[];
-        appId?: PlatformApp;
-        companyId?: string;
-      }
-    }) => {
+    setPermissions: (
+      state,
+      action: {
+        payload: {
+          permissions: Permission[];
+          roles: string[];
+          appId?: PlatformApp;
+          companyId?: string;
+        };
+      },
+    ) => {
       state.permissions = action.payload.permissions;
       state.roles = action.payload.roles;
       if (action.payload.appId) state.appId = action.payload.appId;

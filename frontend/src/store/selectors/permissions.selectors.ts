@@ -1,5 +1,5 @@
-import type { RootState } from '../store';
 import type { Permission } from '../slices/permissionsSlice';
+import type { RootState } from '../store';
 
 const selectPermissions = (state: RootState) => state.permissions.permissions;
 
@@ -88,12 +88,10 @@ export const canReactivateCompany = (state: RootState) =>
 export const canViewCompanyAudit = (state: RootState) =>
   selectPermissions(state).includes('config:companies:audit');
 
-export const canViewClasses = (state: RootState) =>
-  selectPermissions(state).includes('class:view');
+export const canViewClasses = (state: RootState) => selectPermissions(state).includes('class:view');
 export const canCreateClass = (state: RootState) =>
   selectPermissions(state).includes('class:create');
-export const canEditClass = (state: RootState) =>
-  selectPermissions(state).includes('class:edit');
+export const canEditClass = (state: RootState) => selectPermissions(state).includes('class:edit');
 export const canInactivateClass = (state: RootState) =>
   selectPermissions(state).includes('class:inactivate');
 export const canReactivateClass = (state: RootState) =>

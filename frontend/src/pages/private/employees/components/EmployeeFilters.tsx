@@ -1,5 +1,6 @@
 import { Input, Select, Space } from 'antd';
 import { useCallback, useEffect, useState } from 'react';
+
 import type { EmployeeFilters as EmployeeFiltersType } from '../../../../api/employees';
 
 interface EmployeeFiltersProps {
@@ -8,11 +9,7 @@ interface EmployeeFiltersProps {
   departments?: { id: number; nombre: string }[];
 }
 
-export function EmployeeFilters({
-  filters,
-  onChange,
-  departments = [],
-}: EmployeeFiltersProps) {
+export function EmployeeFilters({ filters, onChange, departments = [] }: EmployeeFiltersProps) {
   const [searchLocal, setSearchLocal] = useState(filters.search ?? '');
 
   useEffect(() => {
@@ -20,7 +17,7 @@ export function EmployeeFilters({
       onChange({ ...filters, search: searchLocal || undefined, page: 1 });
     }, 400);
     return () => clearTimeout(t);
-  // eslint-disable-next-line react-hooks/exhaustive-deps -- solo ejecutar cuando cambia searchLocal
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- solo ejecutar cuando cambia searchLocal
   }, [searchLocal]);
 
   const handleSearchChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
@@ -34,7 +31,10 @@ export function EmployeeFilters({
         allowClear
         value={searchLocal}
         onChange={handleSearchChange}
-        onSearch={(v) => { setSearchLocal(v); onChange({ ...filters, search: v || undefined, page: 1 }); }}
+        onSearch={(v) => {
+          setSearchLocal(v);
+          onChange({ ...filters, search: v || undefined, page: 1 });
+        }}
         style={{ minWidth: 260 }}
       />
       <Select
@@ -54,7 +54,7 @@ export function EmployeeFilters({
           onChange({
             ...filters,
             includeInactive: v === 'all',
-            estado: v === 'all' ? undefined : (typeof v === 'number' ? v : undefined),
+            estado: v === 'all' ? undefined : typeof v === 'number' ? v : undefined,
             page: 1,
           })
         }

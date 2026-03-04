@@ -1,14 +1,17 @@
-import { useState } from 'react';
-import { Avatar, Space, Tooltip, Button, Dropdown } from 'antd';
 import { SwapOutlined, UserOutlined, LogoutOutlined } from '@ant-design/icons';
-import { NotificationBell } from './NotificationBell';
+import { Avatar, Space, Tooltip, Button, Dropdown } from 'antd';
+import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { useAppSelector, useAppDispatch } from '../../../store/hooks';
-import { setActiveApp } from '../../../store/slices/activeAppSlice';
+
 import { performLogout } from '../../../lib/auth';
 import { STORAGE_KEYS, getMicrosoftAccessToken } from '../../../lib/storage';
-import type { PlatformApp } from '../../../store/slices/authSlice';
+import { useAppSelector, useAppDispatch } from '../../../store/hooks';
+import { setActiveApp } from '../../../store/slices/activeAppSlice';
+
+import { NotificationBell } from './NotificationBell';
 import styles from './ProfileDropdown.module.css';
+
+import type { PlatformApp } from '../../../store/slices/authSlice';
 
 interface HeaderActionsProps {
   userName?: string;
@@ -31,9 +34,7 @@ function formatRoleLabel(roles: string[]): string {
   return first ? (ROLE_LABELS[first] ?? first) : 'Usuario';
 }
 
-export function HeaderActions({
-  userName = 'Usuario',
-}: HeaderActionsProps) {
+export function HeaderActions({ userName = 'Usuario' }: HeaderActionsProps) {
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
   const activeApp = useAppSelector((s) => s.activeApp.app);
@@ -133,15 +134,16 @@ export function HeaderActions({
         popupRender={() => dropdownContent}
         placement="bottomRight"
       >
-        <button
-          type="button"
-          className={styles.avatarTrigger}
-          aria-label="Abrir perfil de usuario"
-        >
+        <button type="button" className={styles.avatarTrigger} aria-label="Abrir perfil de usuario">
           <Avatar
             size="default"
             src={resolvedAvatarSrc}
-            style={{ backgroundColor: '#d9d9d9', color: '#595959', fontSize: 12, cursor: 'pointer' }}
+            style={{
+              backgroundColor: '#d9d9d9',
+              color: '#595959',
+              fontSize: 12,
+              cursor: 'pointer',
+            }}
           >
             {initials}
           </Avatar>
@@ -150,4 +152,3 @@ export function HeaderActions({
     </Space>
   );
 }
-

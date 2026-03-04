@@ -1,4 +1,5 @@
 import { describe, it, expect } from 'vitest';
+
 import {
   getCurrencySymbol,
   formatCurrencyInput,
@@ -111,11 +112,11 @@ describe('currencyFormat', () => {
     });
 
     it('should parse number with decimal point', () => {
-      expect(parseCurrencyInput('1000.50')).toBe(1000.50);
+      expect(parseCurrencyInput('1000.50')).toBe(1000.5);
     });
 
     it('should parse number with comma as decimal separator', () => {
-      expect(parseCurrencyInput('1000,50')).toBe(1000.50);
+      expect(parseCurrencyInput('1000,50')).toBe(1000.5);
     });
 
     it('should parse formatted currency string with CRC', () => {
@@ -147,7 +148,7 @@ describe('currencyFormat', () => {
     });
 
     it('should handle negative numbers', () => {
-      expect(parseCurrencyInput('-500.50')).toBe(-500.50);
+      expect(parseCurrencyInput('-500.50')).toBe(-500.5);
     });
 
     it('should handle strings with only symbols', () => {
@@ -157,11 +158,11 @@ describe('currencyFormat', () => {
 
     it('should parse decimal numbers correctly', () => {
       expect(parseCurrencyInput('0.01')).toBe(0.01);
-      expect(parseCurrencyInput('.50')).toBe(0.50);
+      expect(parseCurrencyInput('.50')).toBe(0.5);
     });
 
     it('should handle mixed separators', () => {
-      expect(parseCurrencyInput('1.000,50')).toBe(1000.50);
+      expect(parseCurrencyInput('1.000,50')).toBe(1000.5);
     });
 
     it('should parse very large numbers', () => {

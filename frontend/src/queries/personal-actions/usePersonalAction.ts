@@ -1,6 +1,8 @@
 import { useQuery } from '@tanstack/react-query';
-import { personalActionKeys } from './keys';
+
 import { fetchPersonalAction } from '../../api/personalActions';
+
+import { personalActionKeys } from './keys';
 
 /**
  * Hook para detalle de una acción de personal.

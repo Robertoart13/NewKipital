@@ -1,28 +1,30 @@
-import { useState } from 'react';
-import { Card, Breadcrumb, Descriptions, Button, Form } from 'antd';
-import { Link, useParams } from 'react-router-dom';
 import { EditOutlined } from '@ant-design/icons';
+import { Card, Breadcrumb, Descriptions, Button, Form } from 'antd';
 import dayjs from 'dayjs';
-import { useAppSelector } from '../../../store/hooks';
-import {
-  canEditEmployee,
-  canInactivateEmployee,
-  canReactivateEmployee,
-} from '../../../store/selectors/permissions.selectors';
-import { useEmployee } from '../../../queries/employees/useEmployee';
+import { useState } from 'react';
+import { Link, useParams } from 'react-router-dom';
+
+import { useDepartments } from '../../../queries/catalogs/useDepartments';
+import { usePayPeriods } from '../../../queries/catalogs/usePayPeriods';
+import { usePositions } from '../../../queries/catalogs/usePositions';
 import {
   useUpdateEmployee,
   useInactivateEmployee,
   useLiquidateEmployee,
   useReactivateEmployee,
 } from '../../../queries/employees';
-import { useDepartments } from '../../../queries/catalogs/useDepartments';
-import { usePositions } from '../../../queries/catalogs/usePositions';
-import { usePayPeriods } from '../../../queries/catalogs/usePayPeriods';
+import { useEmployee } from '../../../queries/employees/useEmployee';
 import { useSupervisors } from '../../../queries/employees/useSupervisors';
-import { EmployeeStatusBadge } from './components/EmployeeStatusBadge';
-import { EmployeeForm } from './components/EmployeeForm';
+import { useAppSelector } from '../../../store/hooks';
+import {
+  canEditEmployee,
+  canInactivateEmployee,
+  canReactivateEmployee,
+} from '../../../store/selectors/permissions.selectors';
+
 import { EmployeeActions } from './components/EmployeeActions';
+import { EmployeeForm } from './components/EmployeeForm';
+import { EmployeeStatusBadge } from './components/EmployeeStatusBadge';
 
 export function EmployeeDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -186,9 +188,7 @@ export function EmployeeDetailPage() {
               {employee.periodoPago?.nombre ?? '—'}
             </Descriptions.Item>
             <Descriptions.Item label="Fecha Ingreso">
-              {employee.fechaIngreso
-                ? dayjs(employee.fechaIngreso).format('DD/MM/YYYY')
-                : '—'}
+              {employee.fechaIngreso ? dayjs(employee.fechaIngreso).format('DD/MM/YYYY') : '—'}
             </Descriptions.Item>
             <Descriptions.Item label="Acceso Digital">
               {employee.idUsuario ? 'Sí' : 'No'}

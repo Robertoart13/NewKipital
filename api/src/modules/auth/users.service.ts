@@ -19,8 +19,8 @@ import { User } from './entities/user.entity';
 
 import type { CreateUserDto } from './dto/create-user.dto';
 import type { UpdateUserDto } from './dto/update-user.dto';
-import type { AuditOutboxService } from '../integration/audit-outbox.service';
-import type { Repository } from 'typeorm';
+import { AuditOutboxService } from '../integration/audit-outbox.service';
+import { Repository } from 'typeorm';
 
 const TIMEWISE_SUPERVISOR_ROLES = ['SUPERVISOR_TIMEWISE', 'SUPERVISOR_GLOBAL_TIMEWISE'];
 

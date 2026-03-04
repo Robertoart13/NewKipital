@@ -1,5 +1,10 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
+import {
+  ArrowLeftOutlined,
+  CheckCircleOutlined,
+  CloseCircleOutlined,
+  ReloadOutlined,
+  SwapOutlined,
+} from '@ant-design/icons';
 import {
   App as AntdApp,
   Alert,
@@ -19,26 +24,23 @@ import {
   Tooltip,
   Typography,
 } from 'antd';
-import type { ColumnsType } from 'antd/es/table';
-import {
-  ArrowLeftOutlined,
-  CheckCircleOutlined,
-  CloseCircleOutlined,
-  ReloadOutlined,
-  SwapOutlined,
-} from '@ant-design/icons';
 import dayjs, { type Dayjs } from 'dayjs';
-import { useAppSelector } from '../../../store/hooks';
-import { canIntercompanyTransfer } from '../../../store/selectors/permissions.selectors';
-import { fetchEmployees, type EmployeeListItem } from '../../../api/employees';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { Link } from 'react-router-dom';
+
 import { fetchPayPeriods, type CatalogPayPeriod } from '../../../api/catalogs';
+import { fetchEmployees, type EmployeeListItem } from '../../../api/employees';
 import {
   executeIntercompanyTransfer,
   simulateIntercompanyTransfer,
   type IntercompanyTransferSimulationResult,
 } from '../../../api/payroll';
 import { formatCurrencyInput } from '../../../lib/currencyFormat';
+import { useAppSelector } from '../../../store/hooks';
+import { canIntercompanyTransfer } from '../../../store/selectors/permissions.selectors';
 import styles from '../configuration/UsersManagementPage.module.css';
+
+import type { ColumnsType } from 'antd/es/table';
 
 const { Text } = Typography;
 
@@ -46,8 +48,9 @@ type SimulationMap = Record<number, IntercompanyTransferSimulationResult | undef
 type DestinationMap = Record<number, number | undefined>;
 
 function buildEmployeeName(employee: EmployeeListItem): string {
-  const parts = [employee.nombre, employee.apellido1, employee.apellido2]
-    .filter((item) => typeof item === 'string' && item.trim().length > 0);
+  const parts = [employee.nombre, employee.apellido1, employee.apellido2].filter(
+    (item) => typeof item === 'string' && item.trim().length > 0,
+  );
   if (parts.length === 0) return `Empleado #${employee.id}`;
   return parts.join(' ');
 }
@@ -93,7 +96,11 @@ export function IntercompanyTransferPage() {
   );
 
   const periodOptions = useMemo(
-    () => periods.map((period) => ({ label: `${period.nombre} (${period.dias} dias)`, value: period.id })),
+    () =>
+      periods.map((period) => ({
+        label: `${period.nombre} (${period.dias} dias)`,
+        value: period.id,
+      })),
     [periods],
   );
 
@@ -222,10 +229,12 @@ export function IntercompanyTransferPage() {
     employeeIds: number[];
   }> => {
     if (applyAll) {
-      return [{
-        destinationId: Number(globalDestinationId),
-        employeeIds: [...selectedRowKeys],
-      }];
+      return [
+        {
+          destinationId: Number(globalDestinationId),
+          employeeIds: [...selectedRowKeys],
+        },
+      ];
     }
 
     const grouped = new Map<number, number[]>();
@@ -364,7 +373,9 @@ export function IntercompanyTransferPage() {
       width: 220,
       render: (_, record) => {
         if (applyAll) {
-          const label = destinationCompanyOptions.find((c) => Number(c.value) === Number(globalDestinationId))?.label;
+          const label = destinationCompanyOptions.find(
+            (c) => Number(c.value) === Number(globalDestinationId),
+          )?.label;
           return <Tag color="blue">{label ?? 'Sin destino'}</Tag>;
         }
         return (
@@ -414,8 +425,13 @@ export function IntercompanyTransferPage() {
         if (simulation.eligible && simulation.aguinaldoProvision) {
           return (
             <div style={{ fontSize: 12 }}>
-              <div>Total bruto: {formatCurrencyInput(simulation.aguinaldoProvision.totalBruto, 'CRC')}</div>
-              <div>Provision aguinaldo: {formatCurrencyInput(simulation.aguinaldoProvision.montoProvisionado, 'CRC')}</div>
+              <div>
+                Total bruto: {formatCurrencyInput(simulation.aguinaldoProvision.totalBruto, 'CRC')}
+              </div>
+              <div>
+                Provision aguinaldo:{' '}
+                {formatCurrencyInput(simulation.aguinaldoProvision.montoProvisionado, 'CRC')}
+              </div>
             </div>
           );
         }
@@ -443,7 +459,8 @@ export function IntercompanyTransferPage() {
           <div className={styles.pageTitleBlock}>
             <h1 className={styles.pageTitle}>Traslado interempresas</h1>
             <p className={styles.pageSubtitle}>
-              Simule y ejecute traslados entre empresas con validaciones de planilla y acciones de personal
+              Simule y ejecute traslados entre empresas con validaciones de planilla y acciones de
+              personal
             </p>
           </div>
         </div>
@@ -489,7 +506,11 @@ export function IntercompanyTransferPage() {
           >
             <Row gutter={[12, 12]}>
               <Col xs={24} md={12} xl={8}>
-                <Form.Item name="periodId" label="Tipo de Periodo de Pago *" rules={[{ required: true }]}>
+                <Form.Item
+                  name="periodId"
+                  label="Tipo de Periodo de Pago *"
+                  rules={[{ required: true }]}
+                >
                   <Select
                     loading={loadingPeriods}
                     placeholder="Seleccione periodo"
@@ -497,13 +518,19 @@ export function IntercompanyTransferPage() {
                     showSearch
                     optionFilterProp="label"
                     filterOption={(input, option) =>
-                      String(option?.label ?? '').toLowerCase().includes(input.toLowerCase())
+                      String(option?.label ?? '')
+                        .toLowerCase()
+                        .includes(input.toLowerCase())
                     }
                   />
                 </Form.Item>
               </Col>
               <Col xs={24} md={12} xl={8}>
-                <Form.Item name="originCompanyId" label="Empresa Origen *" rules={[{ required: true }]}>
+                <Form.Item
+                  name="originCompanyId"
+                  label="Empresa Origen *"
+                  rules={[{ required: true }]}
+                >
                   <Select
                     placeholder="Seleccione empresa origen"
                     options={companies.map((company) => ({
@@ -513,13 +540,19 @@ export function IntercompanyTransferPage() {
                     showSearch
                     optionFilterProp="label"
                     filterOption={(input, option) =>
-                      String(option?.label ?? '').toLowerCase().includes(input.toLowerCase())
+                      String(option?.label ?? '')
+                        .toLowerCase()
+                        .includes(input.toLowerCase())
                     }
                   />
                 </Form.Item>
               </Col>
               <Col xs={24} md={12} xl={8}>
-                <Form.Item name="effectiveDate" label="Fecha efectiva *" rules={[{ required: true }]}>
+                <Form.Item
+                  name="effectiveDate"
+                  label="Fecha efectiva *"
+                  rules={[{ required: true }]}
+                >
                   <DatePicker style={{ width: '100%' }} format="YYYY-MM-DD" />
                 </Form.Item>
               </Col>
@@ -553,7 +586,9 @@ export function IntercompanyTransferPage() {
                       showSearch
                       optionFilterProp="label"
                       filterOption={(input, option) =>
-                        String(option?.label ?? '').toLowerCase().includes(input.toLowerCase())
+                        String(option?.label ?? '')
+                          .toLowerCase()
+                          .includes(input.toLowerCase())
                       }
                     />
                   </Form.Item>

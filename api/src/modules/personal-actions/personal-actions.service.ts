@@ -50,11 +50,12 @@ import type { UpsertLicenseDto } from './dto/upsert-license.dto';
 import type { UpsertOvertimeDto } from './dto/upsert-overtime.dto';
 import type { UpsertRetentionDto } from './dto/upsert-retention.dto';
 import type { UpsertVacationDto } from './dto/upsert-vacation.dto';
-import type { EmployeeSensitiveDataService } from '../../common/services/employee-sensitive-data.service';
-import type { EmployeesService } from '../employees/employees.service';
-import type { AuditOutboxService } from '../integration/audit-outbox.service';
-import type { EventEmitter2 } from '@nestjs/event-emitter';
-import type { DataSource, Repository } from 'typeorm';
+import { EventEmitter2 } from '@nestjs/event-emitter'; // eslint-disable-line @typescript-eslint/consistent-type-imports
+import { DataSource, Repository } from 'typeorm'; // eslint-disable-line @typescript-eslint/consistent-type-imports
+
+import { EmployeeSensitiveDataService } from '../../common/services/employee-sensitive-data.service';
+import { EmployeesService } from '../employees/employees.service';
+import { AuditOutboxService } from '../integration/audit-outbox.service';
 
 @Injectable()
 export class PersonalActionsService {

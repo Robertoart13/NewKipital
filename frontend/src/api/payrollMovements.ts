@@ -101,13 +101,15 @@ export async function fetchPayrollMovement(id: number): Promise<PayrollMovementL
   return res.json();
 }
 
-export async function createPayrollMovement(payload: PayrollMovementPayload): Promise<PayrollMovementListItem> {
+export async function createPayrollMovement(
+  payload: PayrollMovementPayload,
+): Promise<PayrollMovementListItem> {
   const res = await httpFetch('/payroll-movements', {
     method: 'POST',
     body: JSON.stringify(payload),
   });
   if (!res.ok) {
-    const error = await res.json().catch(() => null) as { message?: string | string[] } | null;
+    const error = (await res.json().catch(() => null)) as { message?: string | string[] } | null;
     const msg = Array.isArray(error?.message) ? error.message.join(', ') : error?.message;
     throw new Error(msg || 'Error al crear movimiento de nomina');
   }
@@ -123,7 +125,7 @@ export async function updatePayrollMovement(
     body: JSON.stringify(payload),
   });
   if (!res.ok) {
-    const error = await res.json().catch(() => null) as { message?: string | string[] } | null;
+    const error = (await res.json().catch(() => null)) as { message?: string | string[] } | null;
     const msg = Array.isArray(error?.message) ? error.message.join(', ') : error?.message;
     throw new Error(msg || 'Error al actualizar movimiento de nomina');
   }
@@ -201,10 +203,9 @@ export async function fetchPayrollMovementAuditTrail(
   const qs = new URLSearchParams({ limit: String(limit) });
   const res = await httpFetch(`/payroll-movements/${id}/audit-trail?${qs}`);
   if (!res.ok) {
-    const error = await res.json().catch(() => null) as { message?: string | string[] } | null;
+    const error = (await res.json().catch(() => null)) as { message?: string | string[] } | null;
     const msg = Array.isArray(error?.message) ? error.message.join(', ') : error?.message;
     throw new Error(msg || 'Error al cargar bitacora de movimientos de nomina');
   }
   return res.json();
 }
-

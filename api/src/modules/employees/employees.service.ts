@@ -25,14 +25,15 @@ import {
 import { EmployeeAguinaldoProvision } from './entities/employee-aguinaldo-provision.entity';
 import { Employee } from './entities/employee.entity';
 
+import { EventEmitter2 } from '@nestjs/event-emitter'; // eslint-disable-line @typescript-eslint/consistent-type-imports
+import { DataSource, Repository } from 'typeorm'; // eslint-disable-line @typescript-eslint/consistent-type-imports
+
 import type { CreateEmployeeDto } from './dto/create-employee.dto';
 import type { UpdateEmployeeDto } from './dto/update-employee.dto';
-import type { EmployeeCreationWorkflow } from '../../workflows/employees/employee-creation.workflow';
-import type { AuthService } from '../auth/auth.service';
-import type { EmployeeVacationService } from './services/employee-vacation.service';
-import type { AuditOutboxService } from '../integration/audit-outbox.service';
-import type { EventEmitter2 } from '@nestjs/event-emitter';
-import type { DataSource, Repository } from 'typeorm';
+import { EmployeeCreationWorkflow } from '../../workflows/employees/employee-creation.workflow';
+import { AuthService } from '../auth/auth.service';
+import { EmployeeVacationService } from './services/employee-vacation.service';
+import { AuditOutboxService } from '../integration/audit-outbox.service';
 
 /** Estados de planilla que bloquean inactivar empleado (DOC-34 UC-01). */
 const PLANILLA_ESTADOS_BLOQUEANTES = [

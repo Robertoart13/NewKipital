@@ -14,8 +14,8 @@ import { PersonalActionType } from './entities/personal-action-type.entity';
 
 import type { CreateAccountingAccountDto } from './dto/create-accounting-account.dto';
 import type { UpdateAccountingAccountDto } from './dto/update-accounting-account.dto';
-import type { AuditOutboxService } from '../integration/audit-outbox.service';
-import type { Repository } from 'typeorm';
+import { AuditOutboxService } from '../integration/audit-outbox.service';
+import { Repository } from 'typeorm';
 
 @Injectable()
 export class AccountingAccountsService {

@@ -8,7 +8,7 @@ import {
 } from './constants/personal-action-invalidation.constants';
 import { PersonalAction, PersonalActionEstado } from './entities/personal-action.entity';
 
-import type { EntityManager, Repository } from 'typeorm';
+import { EntityManager, Repository } from 'typeorm';
 
 interface AutoInvalidationOptions {
   manager?: EntityManager;

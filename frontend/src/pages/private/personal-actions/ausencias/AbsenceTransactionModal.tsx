@@ -1,4 +1,19 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import {
+  CalendarOutlined,
+  CloseOutlined,
+  DeleteOutlined,
+  PlusOutlined,
+  QuestionCircleOutlined,
+  SearchOutlined,
+} from '@ant-design/icons';
+import {
+  BankOutlined,
+  ClockCircleOutlined,
+  DollarCircleOutlined,
+  IdcardOutlined,
+  MailOutlined,
+  UserOutlined,
+} from '@ant-design/icons';
 import {
   Alert,
   App as AntdApp,
@@ -23,30 +38,22 @@ import {
   Tabs,
   Tooltip,
 } from 'antd';
-import { CalendarOutlined, CloseOutlined, DeleteOutlined, PlusOutlined, QuestionCircleOutlined, SearchOutlined } from '@ant-design/icons';
-import {
-  BankOutlined,
-  ClockCircleOutlined,
-  DollarCircleOutlined,
-  IdcardOutlined,
-  MailOutlined,
-  UserOutlined,
-} from '@ant-design/icons';
 import dayjs, { type Dayjs } from 'dayjs';
-import type { ColumnsType } from 'antd/es/table';
-import type { PayrollListItem } from '../../../../api/payroll';
-import type { PayrollMovementListItem } from '../../../../api/payrollMovements';
-import type { CatalogPayPeriod } from '../../../../api/catalogs';
-import type { PersonalActionAuditTrailItem } from '../../../../api/personalActions';
+import { useEffect, useMemo, useRef, useState } from 'react';
+
 import { fetchAbsencePayrollsCatalog } from '../../../../api/personalActions';
-import sharedStyles from '../../configuration/UsersManagementPage.module.css';
-import { formatDateTime12h } from '../../../../lib/formatDate';
-import {
-  EMPLOYEE_MONEY_MAX_DIGITS,
-} from '../../../../lib/moneyInputSanitizer';
 import { useMoneyFieldFormatter } from '../../../../hooks/useMoneyFieldFormatter';
 import { useTransactionLines } from '../../../../hooks/useTransactionLines';
+import { formatDateTime12h } from '../../../../lib/formatDate';
+import { EMPLOYEE_MONEY_MAX_DIGITS } from '../../../../lib/moneyInputSanitizer';
+import sharedStyles from '../../configuration/UsersManagementPage.module.css';
 import { isCoreTransactionLineComplete } from '../shared/coreTransactionLine';
+
+import type { CatalogPayPeriod } from '../../../../api/catalogs';
+import type { PayrollListItem } from '../../../../api/payroll';
+import type { PayrollMovementListItem } from '../../../../api/payrollMovements';
+import type { PersonalActionAuditTrailItem } from '../../../../api/personalActions';
+import type { ColumnsType } from 'antd/es/table';
 
 export type AbsenceType = 'JUSTIFICADA' | 'NO_JUSTIFICADA';
 
@@ -153,7 +160,11 @@ function toNumber(value: number | string | null | undefined): number {
   return Number.isFinite(parsed) ? parsed : 0;
 }
 
-function calculateSalaryByPeriod(salaryBase: number, payPeriodId?: number | null, jornada?: string | null): number {
+function calculateSalaryByPeriod(
+  salaryBase: number,
+  payPeriodId?: number | null,
+  jornada?: string | null,
+): number {
   const id = Number(payPeriodId);
   const isByHours = (jornada ?? '').trim().toLowerCase() === 'por horas';
   if (isByHours && (id === 8 || id === 11)) return 0;
@@ -180,7 +191,11 @@ function calculateSalaryByPeriod(salaryBase: number, payPeriodId?: number | null
   }
 }
 
-function calculateHourValue(salaryBase: number, payPeriodId?: number | null, jornada?: string | null): number {
+function calculateHourValue(
+  salaryBase: number,
+  payPeriodId?: number | null,
+  jornada?: string | null,
+): number {
   const id = Number(payPeriodId);
   const isByHours = (jornada ?? '').trim().toLowerCase() === 'por horas';
   if (isByHours && (id === 8 || id === 11)) return salaryBase;
@@ -264,21 +279,14 @@ export function AbsenceTransactionModal({
   const [form] = Form.useForm<HeaderValues>();
   const isLineComplete = (line: AbsenceTransactionLine): boolean =>
     isCoreTransactionLineComplete(line);
-  const {
-    lines,
-    setLines,
-    activeLineKeys,
-    setActiveLineKeys,
-    updateLine,
-    addLine,
-    removeLine,
-  } = useTransactionLines<AbsenceTransactionLine>({
-    buildEmptyLine,
-    isLineComplete,
-    onIncompleteLine: () => {
-      message.warning('Complete la linea actual antes de agregar una nueva.');
-    },
-  });
+  const { lines, setLines, activeLineKeys, setActiveLineKeys, updateLine, addLine, removeLine } =
+    useTransactionLines<AbsenceTransactionLine>({
+      buildEmptyLine,
+      isLineComplete,
+      onIncompleteLine: () => {
+        message.warning('Complete la linea actual antes de agregar una nueva.');
+      },
+    });
   const [employeePayrollConfig, setEmployeePayrollConfig] = useState<{
     idPeriodoPago?: number;
     moneda?: string;
@@ -303,14 +311,12 @@ export function AbsenceTransactionModal({
         idEmpleado: initialDraft.idEmpleado,
         observacion: initialDraft.observacion,
       });
-      const draftLines = (initialDraft.lines.length > 0 ? initialDraft.lines : [buildEmptyLine()])
-        .map((line) => ({
-          ...line,
-          montoInput:
-            line.monto == null
-              ? ''
-              : String(normalizeIntegerAmount(line.monto)),
-        }));
+      const draftLines = (
+        initialDraft.lines.length > 0 ? initialDraft.lines : [buildEmptyLine()]
+      ).map((line) => ({
+        ...line,
+        montoInput: line.monto == null ? '' : String(normalizeIntegerAmount(line.monto)),
+      }));
       setLines(draftLines);
       setActiveLineKeys(mode === 'edit' ? [] : draftLines.map((l) => l.key));
       return;
@@ -409,14 +415,19 @@ export function AbsenceTransactionModal({
 
   const selectedEmployee = useMemo(() => {
     if (!selectedCompanyId || !selectedEmployeeId) return null;
-    return employees.find(
-      (employee) => employee.idEmpresa === selectedCompanyId && employee.id === selectedEmployeeId,
-    ) ?? null;
+    return (
+      employees.find(
+        (employee) =>
+          employee.idEmpresa === selectedCompanyId && employee.id === selectedEmployeeId,
+      ) ?? null
+    );
   }, [employees, selectedCompanyId, selectedEmployeeId]);
 
   const selectedPayPeriod = useMemo(() => {
     if (!selectedEmployee?.idPeriodoPago) return null;
-    return payPeriods.find((period) => period.id === Number(selectedEmployee.idPeriodoPago)) ?? null;
+    return (
+      payPeriods.find((period) => period.id === Number(selectedEmployee.idPeriodoPago)) ?? null
+    );
   }, [payPeriods, selectedEmployee?.idPeriodoPago]);
 
   // El calculo siempre usa el salario real; el permiso sensible solo controla visibilidad en UI.
@@ -590,7 +601,10 @@ export function AbsenceTransactionModal({
     };
 
     modal.confirm({
-      title: mode === 'create' ? 'Confirmar creación de ausencia' : 'Confirmar actualización de ausencia',
+      title:
+        mode === 'create'
+          ? 'Confirmar creación de ausencia'
+          : 'Confirmar actualización de ausencia',
       content:
         mode === 'create'
           ? '¿Está seguro de crear esta ausencia con las líneas capturadas?'
@@ -623,71 +637,84 @@ export function AbsenceTransactionModal({
     (!!selectedCompanyId && !!selectedEmployeeId && loadingPayrolls) ||
     (activeTab === 'bitacora' && loadingAuditTrail);
 
-  const auditColumns: ColumnsType<PersonalActionAuditTrailItem> = useMemo(() => [
-    {
-      title: 'Fecha y hora',
-      dataIndex: 'fechaCreacion',
-      key: 'fechaCreacion',
-      width: 170,
-      render: (value: string | null) => formatDateTime12h(value),
-    },
-    {
-      title: 'Quien lo hizo',
-      key: 'actor',
-      width: 220,
-      render: (_, row) => {
-        const actorLabel = row.actorNombre?.trim() || row.actorEmail?.trim() || (row.actorUserId ? `Usuario ID ${row.actorUserId}` : 'Sistema');
-        return (
-          <div>
-            <div style={{ fontWeight: 600, color: '#3d4f5c' }}>{actorLabel}</div>
-            {row.actorEmail ? <div style={{ color: '#8c8c8c', fontSize: 12 }}>{row.actorEmail}</div> : null}
-          </div>
-        );
+  const auditColumns: ColumnsType<PersonalActionAuditTrailItem> = useMemo(
+    () => [
+      {
+        title: 'Fecha y hora',
+        dataIndex: 'fechaCreacion',
+        key: 'fechaCreacion',
+        width: 170,
+        render: (value: string | null) => formatDateTime12h(value),
       },
-    },
-    {
-      title: 'Accion',
-      key: 'accion',
-      width: 170,
-      render: (_, row) => (
-        <Flex gap={6} wrap="wrap">
-          <Tag className={sharedStyles.tagInactivo}>{row.modulo}</Tag>
-          <Tag className={sharedStyles.tagActivo}>{row.accion}</Tag>
-        </Flex>
-      ),
-    },
-    {
-      title: 'Detalle',
-      dataIndex: 'descripcion',
-      key: 'descripcion',
-      render: (value: string, row) => {
-        const changes = row.cambios ?? [];
-        const tooltipContent = (
-          <div style={{ maxWidth: 560, maxHeight: 360, overflowY: 'auto' }}>
-            <div style={{ fontWeight: 600, marginBottom: 8 }}>{value}</div>
-            {changes.length > 0 ? (
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
-                {changes.map((change, index) => (
-                  <div key={`${row.id}-${change.campo}-${index}`} style={{ fontSize: 12, lineHeight: 1.4 }}>
-                    <div><strong>{change.campo}</strong></div>
-                    <div>Antes: {change.antes}</div>
-                    <div>Despues: {change.despues}</div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div style={{ fontSize: 12 }}>Sin detalle de campos para esta accion.</div>
-            )}
-          </div>
-        );
-        return (
-          <Tooltip title={tooltipContent}>
-            <div className={sharedStyles.auditDetailCell}>{value}</div>
-          </Tooltip>
-        );
+      {
+        title: 'Quien lo hizo',
+        key: 'actor',
+        width: 220,
+        render: (_, row) => {
+          const actorLabel =
+            row.actorNombre?.trim() ||
+            row.actorEmail?.trim() ||
+            (row.actorUserId ? `Usuario ID ${row.actorUserId}` : 'Sistema');
+          return (
+            <div>
+              <div style={{ fontWeight: 600, color: '#3d4f5c' }}>{actorLabel}</div>
+              {row.actorEmail ? (
+                <div style={{ color: '#8c8c8c', fontSize: 12 }}>{row.actorEmail}</div>
+              ) : null}
+            </div>
+          );
+        },
       },
-    },
-  ], []);
+      {
+        title: 'Accion',
+        key: 'accion',
+        width: 170,
+        render: (_, row) => (
+          <Flex gap={6} wrap="wrap">
+            <Tag className={sharedStyles.tagInactivo}>{row.modulo}</Tag>
+            <Tag className={sharedStyles.tagActivo}>{row.accion}</Tag>
+          </Flex>
+        ),
+      },
+      {
+        title: 'Detalle',
+        dataIndex: 'descripcion',
+        key: 'descripcion',
+        render: (value: string, row) => {
+          const changes = row.cambios ?? [];
+          const tooltipContent = (
+            <div style={{ maxWidth: 560, maxHeight: 360, overflowY: 'auto' }}>
+              <div style={{ fontWeight: 600, marginBottom: 8 }}>{value}</div>
+              {changes.length > 0 ? (
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+                  {changes.map((change, index) => (
+                    <div
+                      key={`${row.id}-${change.campo}-${index}`}
+                      style={{ fontSize: 12, lineHeight: 1.4 }}
+                    >
+                      <div>
+                        <strong>{change.campo}</strong>
+                      </div>
+                      <div>Antes: {change.antes}</div>
+                      <div>Despues: {change.despues}</div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div style={{ fontSize: 12 }}>Sin detalle de campos para esta accion.</div>
+              )}
+            </div>
+          );
+          return (
+            <Tooltip title={tooltipContent}>
+              <div className={sharedStyles.auditDetailCell}>{value}</div>
+            </Tooltip>
+          );
+        },
+      },
+    ],
+    [],
+  );
 
   return (
     <Modal
@@ -710,8 +737,13 @@ export function AbsenceTransactionModal({
           padding: 16,
         },
       }}
-      title={(
-        <Flex justify="space-between" align="center" wrap="nowrap" style={{ width: '100%', gap: 16 }}>
+      title={
+        <Flex
+          justify="space-between"
+          align="center"
+          wrap="nowrap"
+          style={{ width: '100%', gap: 16 }}
+        >
           <div className={sharedStyles.companyModalHeader}>
             <div className={sharedStyles.companyModalHeaderIcon}>
               <CalendarOutlined />
@@ -726,9 +758,19 @@ export function AbsenceTransactionModal({
             className={sharedStyles.companyModalCloseBtn}
           />
         </Flex>
-      )}
+      }
     >
-      <div style={{ position: 'relative', display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0, minWidth: 0, overflow: 'hidden' }}>
+      <div
+        style={{
+          position: 'relative',
+          display: 'flex',
+          flexDirection: 'column',
+          flex: 1,
+          minHeight: 0,
+          minWidth: 0,
+          overflow: 'hidden',
+        }}
+      >
         {showGlobalPreload ? (
           <div
             style={{
@@ -745,13 +787,27 @@ export function AbsenceTransactionModal({
             <Spin size="large" description="Cargando informacion..." />
           </div>
         ) : null}
-        <Form form={form} layout="vertical" className={sharedStyles.companyFormContent} style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0, minWidth: 0, overflow: 'hidden' }}>
+        <Form
+          form={form}
+          layout="vertical"
+          className={sharedStyles.companyFormContent}
+          style={{
+            display: 'flex',
+            flexDirection: 'column',
+            flex: 1,
+            minHeight: 0,
+            minWidth: 0,
+            overflow: 'hidden',
+          }}
+        >
           <div style={{ flexShrink: 0 }}>
             {readOnly ? (
               <Alert
                 type="warning"
                 showIcon
-                title={readOnlyMessage ?? 'Esta ausencia esta en modo solo lectura por su estado actual.'}
+                title={
+                  readOnlyMessage ?? 'Esta ausencia esta en modo solo lectura por su estado actual.'
+                }
                 className={`${sharedStyles.infoBanner} ${sharedStyles.warningType}`}
                 style={{ marginBottom: 12 }}
               />
@@ -774,24 +830,28 @@ export function AbsenceTransactionModal({
                   },
                   ...(showAudit
                     ? [
-                      {
-                        key: 'bitacora',
-                        label: (
-                          <span>
-                            <SearchOutlined style={{ marginRight: 8, fontSize: 16 }} />
-                            Bitacora
-                          </span>
-                        ),
-                      },
-                    ]
+                        {
+                          key: 'bitacora',
+                          label: (
+                            <span>
+                              <SearchOutlined style={{ marginRight: 8, fontSize: 16 }} />
+                              Bitacora
+                            </span>
+                          ),
+                        },
+                      ]
                     : []),
                 ]}
               />
             ) : null}
 
-            {(mode !== 'edit' || activeTab === 'info') ? (
+            {mode !== 'edit' || activeTab === 'info' ? (
               <Row gutter={16} wrap style={{ flex: 1, minHeight: 0, alignItems: 'stretch' }}>
-                <Col xs={24} lg={8} style={{ display: 'flex', flexDirection: 'column', minHeight: 0 }}>
+                <Col
+                  xs={24}
+                  lg={8}
+                  style={{ display: 'flex', flexDirection: 'column', minHeight: 0 }}
+                >
                   {selectedEmployee ? (
                     <Collapse
                       defaultActiveKey={['empleado']}
@@ -811,12 +871,17 @@ export function AbsenceTransactionModal({
                                   </div>
                                   <div className={sharedStyles.employeeAccordionId}>
                                     Empleado ID: {selectedEmployee.codigo || '--'}
-                                    {canViewEmployeeSensitive && selectedEmployee.cedula ? ` - ${selectedEmployee.cedula}` : ''}
-                                    {canViewEmployeeSensitive && selectedEmployee.telefono ? ` - ${selectedEmployee.telefono}` : ''}
+                                    {canViewEmployeeSensitive && selectedEmployee.cedula
+                                      ? ` - ${selectedEmployee.cedula}`
+                                      : ''}
+                                    {canViewEmployeeSensitive && selectedEmployee.telefono
+                                      ? ` - ${selectedEmployee.telefono}`
+                                      : ''}
                                   </div>
                                   <div className={sharedStyles.employeeAccordionCompany}>
                                     <BankOutlined />
-                                    {companies.find((c) => Number(c.id) === selectedCompanyId)?.nombre ?? '--'}
+                                    {companies.find((c) => Number(c.id) === selectedCompanyId)
+                                      ?.nombre ?? '--'}
                                   </div>
                                 </div>
                               </div>
@@ -826,72 +891,123 @@ export function AbsenceTransactionModal({
                             <div className={sharedStyles.employeeAccordionContent}>
                               <div className={sharedStyles.employeeAccordionGrid}>
                                 <div className={sharedStyles.employeeAccordionItem}>
-                                  <IdcardOutlined className={sharedStyles.employeeAccordionItemIcon} />
+                                  <IdcardOutlined
+                                    className={sharedStyles.employeeAccordionItemIcon}
+                                  />
                                   <div>
-                                    <div className={sharedStyles.employeeAccordionItemLabel}>Cédula</div>
+                                    <div className={sharedStyles.employeeAccordionItemLabel}>
+                                      Cédula
+                                    </div>
                                     <div className={sharedStyles.employeeAccordionItemValue}>
-                                      {canViewEmployeeSensitive ? (selectedEmployee.cedula ?? '--') : sensitiveMaskedValue}
+                                      {canViewEmployeeSensitive
+                                        ? (selectedEmployee.cedula ?? '--')
+                                        : sensitiveMaskedValue}
                                     </div>
                                   </div>
                                 </div>
                                 <div className={sharedStyles.employeeAccordionItem}>
-                                  <MailOutlined className={sharedStyles.employeeAccordionItemIcon} />
+                                  <MailOutlined
+                                    className={sharedStyles.employeeAccordionItemIcon}
+                                  />
                                   <div>
-                                    <div className={sharedStyles.employeeAccordionItemLabel}>Email</div>
+                                    <div className={sharedStyles.employeeAccordionItemLabel}>
+                                      Email
+                                    </div>
                                     <div className={sharedStyles.employeeAccordionItemValue}>
-                                      {canViewEmployeeSensitive ? (selectedEmployee.email ?? '--') : sensitiveMaskedValue}
+                                      {canViewEmployeeSensitive
+                                        ? (selectedEmployee.email ?? '--')
+                                        : sensitiveMaskedValue}
                                     </div>
                                   </div>
                                 </div>
                                 <div className={sharedStyles.employeeAccordionItem}>
-                                  <CalendarOutlined className={sharedStyles.employeeAccordionItemIcon} />
+                                  <CalendarOutlined
+                                    className={sharedStyles.employeeAccordionItemIcon}
+                                  />
                                   <div>
-                                    <div className={sharedStyles.employeeAccordionItemLabel}>Período</div>
-                                    <div className={sharedStyles.employeeAccordionItemValue}>{selectedPayPeriod?.nombre ?? '--'}</div>
+                                    <div className={sharedStyles.employeeAccordionItemLabel}>
+                                      Período
+                                    </div>
+                                    <div className={sharedStyles.employeeAccordionItemValue}>
+                                      {selectedPayPeriod?.nombre ?? '--'}
+                                    </div>
                                   </div>
                                 </div>
                                 <div className={sharedStyles.employeeAccordionItem}>
-                                  <ClockCircleOutlined className={sharedStyles.employeeAccordionItemIcon} />
+                                  <ClockCircleOutlined
+                                    className={sharedStyles.employeeAccordionItemIcon}
+                                  />
                                   <div>
-                                    <div className={sharedStyles.employeeAccordionItemLabel}>Jornada</div>
-                                    <div className={sharedStyles.employeeAccordionItemValue}>{selectedEmployee.jornada ?? '--'}</div>
+                                    <div className={sharedStyles.employeeAccordionItemLabel}>
+                                      Jornada
+                                    </div>
+                                    <div className={sharedStyles.employeeAccordionItemValue}>
+                                      {selectedEmployee.jornada ?? '--'}
+                                    </div>
                                   </div>
                                 </div>
                               </div>
                               <hr className={sharedStyles.employeeAccordionGridHr} />
                               <div className={sharedStyles.employeeAccordionGrid}>
                                 <div className={sharedStyles.employeeAccordionItem}>
-                                  <DollarCircleOutlined className={sharedStyles.employeeAccordionItemIcon} />
+                                  <DollarCircleOutlined
+                                    className={sharedStyles.employeeAccordionItemIcon}
+                                  />
                                   <div>
-                                    <div className={sharedStyles.employeeAccordionItemLabel}>Salario Base</div>
+                                    <div className={sharedStyles.employeeAccordionItemLabel}>
+                                      Salario Base
+                                    </div>
                                     <div className={sharedStyles.employeeAccordionItemValue}>
-                                      {canViewEmployeeSensitive ? formatMoney(selectedEmployee.salarioBase, employeeCurrency) : sensitiveMaskedValue}
+                                      {canViewEmployeeSensitive
+                                        ? formatMoney(
+                                            selectedEmployee.salarioBase,
+                                            employeeCurrency,
+                                          )
+                                        : sensitiveMaskedValue}
                                     </div>
                                   </div>
                                 </div>
                                 <div className={sharedStyles.employeeAccordionItem}>
-                                  <DollarCircleOutlined className={sharedStyles.employeeAccordionItemIcon} />
+                                  <DollarCircleOutlined
+                                    className={sharedStyles.employeeAccordionItemIcon}
+                                  />
                                   <div>
-                                    <div className={sharedStyles.employeeAccordionItemLabel}>Salario {selectedPayPeriod?.nombre ?? 'Período'}</div>
+                                    <div className={sharedStyles.employeeAccordionItemLabel}>
+                                      Salario {selectedPayPeriod?.nombre ?? 'Período'}
+                                    </div>
                                     <div className={sharedStyles.employeeAccordionItemValue}>
-                                      {canViewEmployeeSensitive ? formatMoney(salaryByPeriod, employeeCurrency) : sensitiveMaskedValue}
+                                      {canViewEmployeeSensitive
+                                        ? formatMoney(salaryByPeriod, employeeCurrency)
+                                        : sensitiveMaskedValue}
                                     </div>
                                   </div>
                                 </div>
                                 <div className={sharedStyles.employeeAccordionItem}>
-                                  <DollarCircleOutlined className={sharedStyles.employeeAccordionItemIcon} />
+                                  <DollarCircleOutlined
+                                    className={sharedStyles.employeeAccordionItemIcon}
+                                  />
                                   <div>
-                                    <div className={sharedStyles.employeeAccordionItemLabel}>Valor por Hora</div>
+                                    <div className={sharedStyles.employeeAccordionItemLabel}>
+                                      Valor por Hora
+                                    </div>
                                     <div className={sharedStyles.employeeAccordionItemValue}>
-                                      {canViewEmployeeSensitive ? `${formatMoney(hourValue, employeeCurrency)}/hora` : sensitiveMaskedValue}
+                                      {canViewEmployeeSensitive
+                                        ? `${formatMoney(hourValue, employeeCurrency)}/hora`
+                                        : sensitiveMaskedValue}
                                     </div>
                                   </div>
                                 </div>
                                 <div className={sharedStyles.employeeAccordionItem}>
-                                  <ClockCircleOutlined className={sharedStyles.employeeAccordionItemIcon} />
+                                  <ClockCircleOutlined
+                                    className={sharedStyles.employeeAccordionItemIcon}
+                                  />
                                   <div>
-                                    <div className={sharedStyles.employeeAccordionItemLabel}>Horas del Período</div>
-                                    <div className={sharedStyles.employeeAccordionItemValue}>{`${periodHours} horas`}</div>
+                                    <div className={sharedStyles.employeeAccordionItemLabel}>
+                                      Horas del Período
+                                    </div>
+                                    <div
+                                      className={sharedStyles.employeeAccordionItemValue}
+                                    >{`${periodHours} horas`}</div>
                                   </div>
                                 </div>
                               </div>
@@ -902,7 +1018,10 @@ export function AbsenceTransactionModal({
                     />
                   ) : null}
 
-                  <Card size="small" style={{ marginBottom: 12, border: '1px solid #e8ecf0', borderRadius: 8 }}>
+                  <Card
+                    size="small"
+                    style={{ marginBottom: 12, border: '1px solid #e8ecf0', borderRadius: 8 }}
+                  >
                     <Flex gap={10} wrap="wrap">
                       <Form.Item
                         style={{ flex: '1 1 300px', marginBottom: 0 }}
@@ -939,8 +1058,14 @@ export function AbsenceTransactionModal({
                             options={employeesByCompany.map((employee) => ({
                               value: employee.id,
                               label: (() => {
-                                const fullName = `${[employee.apellido1, employee.apellido2, employee.nombre]
-                                  .filter((part) => typeof part === 'string' && part.trim().length > 0)
+                                const fullName = `${[
+                                  employee.apellido1,
+                                  employee.apellido2,
+                                  employee.nombre,
+                                ]
+                                  .filter(
+                                    (part) => typeof part === 'string' && part.trim().length > 0,
+                                  )
                                   .join(' ')}`.trim();
                                 if (fullName) {
                                   return canViewEmployeeSensitive && employee.codigo
@@ -955,12 +1080,25 @@ export function AbsenceTransactionModal({
                       ) : null}
                     </Flex>
 
-                    <Form.Item name="observacion" label="Observacion" style={{ marginTop: 8, marginBottom: 0 }}>
-                      <Input.TextArea rows={1} autoSize={{ minRows: 1, maxRows: 3 }} maxLength={500} disabled={readOnly} />
+                    <Form.Item
+                      name="observacion"
+                      label="Observacion"
+                      style={{ marginTop: 8, marginBottom: 0 }}
+                    >
+                      <Input.TextArea
+                        rows={1}
+                        autoSize={{ minRows: 1, maxRows: 3 }}
+                        maxLength={500}
+                        disabled={readOnly}
+                      />
                     </Form.Item>
                   </Card>
                 </Col>
-                <Col xs={24} lg={16} style={{ display: 'flex', flexDirection: 'column', minHeight: 0 }}>
+                <Col
+                  xs={24}
+                  lg={16}
+                  style={{ display: 'flex', flexDirection: 'column', minHeight: 0 }}
+                >
                   {selectedCompanyId && selectedEmployeeId ? (
                     <Card
                       size="small"
@@ -995,7 +1133,9 @@ export function AbsenceTransactionModal({
                                 setActiveLineKeys(next.length > 0 ? [next[next.length - 1]] : []);
                               }}
                               items={lines.map((line, index) => {
-                                const selectedMovement = filteredMovements.find((movement) => movement.id === line.movimientoId);
+                                const selectedMovement = filteredMovements.find(
+                                  (movement) => movement.id === line.movimientoId,
+                                );
                                 const payrollOptions = payrollsByCompany.map((payroll) => ({
                                   value: payroll.id,
                                   label: `${payroll.nombrePlanilla ?? `Planilla #${payroll.id}`} (${getPayrollEstadoLabel(payroll.estado)})`,
@@ -1015,11 +1155,14 @@ export function AbsenceTransactionModal({
                                 const movementOptions = filteredMovements.map((movement) => ({
                                   value: movement.id,
                                   label: `${movement.nombre} (${movement.esMontoFijo === 1 ? 'Monto' : '%'})${movement.esInactivo === 1 ? ' (Inactivo)' : ''}`,
-                                  disabled: movement.esInactivo === 1 && movement.id !== line.movimientoId,
+                                  disabled:
+                                    movement.esInactivo === 1 && movement.id !== line.movimientoId,
                                 }));
                                 if (
                                   line.movimientoId &&
-                                  !movementOptions.some((option) => option.value === line.movimientoId)
+                                  !movementOptions.some(
+                                    (option) => option.value === line.movimientoId,
+                                  )
                                 ) {
                                   movementOptions.push({
                                     value: line.movimientoId,
@@ -1030,8 +1173,14 @@ export function AbsenceTransactionModal({
                                 return {
                                   key: line.key,
                                   label: (
-                                    <Flex justify="space-between" align="center" style={{ width: '100%', paddingRight: 8 }}>
-                                      <span style={{ fontWeight: 600, color: '#3d4f5c' }}>Línea # {index + 1}</span>
+                                    <Flex
+                                      justify="space-between"
+                                      align="center"
+                                      style={{ width: '100%', paddingRight: 8 }}
+                                    >
+                                      <span style={{ fontWeight: 600, color: '#3d4f5c' }}>
+                                        Línea # {index + 1}
+                                      </span>
                                       <Button
                                         danger
                                         size="small"
@@ -1048,23 +1197,36 @@ export function AbsenceTransactionModal({
                                   ),
                                   children: (
                                     <div ref={index === lines.length - 1 ? lastLineRef : undefined}>
-                                      <Space orientation="vertical" size={16} style={{ width: '100%' }}>
+                                      <Space
+                                        orientation="vertical"
+                                        size={16}
+                                        style={{ width: '100%' }}
+                                      >
                                         <Row gutter={[16, 12]}>
                                           <Col xs={24} md={12} lg={8}>
-                                            <div className={sharedStyles.filterLabel}>1. Periodo de pago (Planilla)</div>
+                                            <div className={sharedStyles.filterLabel}>
+                                              1. Periodo de pago (Planilla)
+                                            </div>
                                             <Select
                                               style={{ width: '100%' }}
                                               showSearch
                                               optionFilterProp="label"
                                               loading={loadingPayrolls}
-                                              notFoundContent={loadingPayrolls ? <Spin size="small" /> : null}
+                                              notFoundContent={
+                                                loadingPayrolls ? <Spin size="small" /> : null
+                                              }
                                               value={line.payrollId}
                                               placeholder="Seleccione planilla"
                                               options={payrollOptions}
-                                              onChange={(value) => handlePayrollChange(line.key, value)}
+                                              onChange={(value) =>
+                                                handlePayrollChange(line.key, value)
+                                              }
                                               disabled={readOnly}
                                             />
-                                            {line.payrollId && !payrollsByCompany.some((item) => item.id === line.payrollId) ? (
+                                            {line.payrollId &&
+                                            !payrollsByCompany.some(
+                                              (item) => item.id === line.payrollId,
+                                            ) ? (
                                               <Alert
                                                 type="warning"
                                                 showIcon
@@ -1077,53 +1239,98 @@ export function AbsenceTransactionModal({
                                               <Alert
                                                 type={loadingPayrolls ? 'info' : 'error'}
                                                 showIcon
-                                                title={loadingPayrolls
-                                                  ? 'Cargando planillas elegibles...'
-                                                  : 'No hay planillas que coincidan con empresa, periodo de pago y moneda del empleado.'}
+                                                title={
+                                                  loadingPayrolls
+                                                    ? 'Cargando planillas elegibles...'
+                                                    : 'No hay planillas que coincidan con empresa, periodo de pago y moneda del empleado.'
+                                                }
                                                 className={`${sharedStyles.infoBanner} ${sharedStyles.dangerType}`}
                                                 style={{ marginTop: 10 }}
                                               />
                                             ) : null}
                                           </Col>
                                           <Col xs={24} md={12} lg={8}>
-                                            <div className={sharedStyles.filterLabel}>2. Movimiento</div>
-                                            <Tooltip title={!line.payrollId ? 'Seleccione primero el periodo de pago' : undefined}>
+                                            <div className={sharedStyles.filterLabel}>
+                                              2. Movimiento
+                                            </div>
+                                            <Tooltip
+                                              title={
+                                                !line.payrollId
+                                                  ? 'Seleccione primero el periodo de pago'
+                                                  : undefined
+                                              }
+                                            >
                                               <Select
                                                 style={{ width: '100%' }}
                                                 showSearch
                                                 optionFilterProp="label"
                                                 loading={movementsLoading}
-                                                notFoundContent={movementsLoading ? <Spin size="small" /> : null}
+                                                notFoundContent={
+                                                  movementsLoading ? <Spin size="small" /> : null
+                                                }
                                                 disabled={readOnly || !line.payrollId}
-                                                placeholder={!line.payrollId ? 'Seleccione planilla primero' : 'Seleccione movimiento'}
+                                                placeholder={
+                                                  !line.payrollId
+                                                    ? 'Seleccione planilla primero'
+                                                    : 'Seleccione movimiento'
+                                                }
                                                 value={line.movimientoId}
-                                                onChange={(value) => handleMovimientoChange(line.key, value)}
+                                                onChange={(value) =>
+                                                  handleMovimientoChange(line.key, value)
+                                                }
                                                 options={movementOptions}
                                               />
                                             </Tooltip>
                                             {selectedMovement?.esInactivo === 1 ? (
-                                              <Tag color="orange" style={{ marginTop: 6 }}>Inactivo</Tag>
+                                              <Tag color="orange" style={{ marginTop: 6 }}>
+                                                Inactivo
+                                              </Tag>
                                             ) : null}
                                           </Col>
                                           <Col xs={24} md={12} lg={8}>
-                                            <div className={sharedStyles.filterLabel}>3. Tipo de Ausencia</div>
-                                            <Tooltip title={!line.movimientoId ? 'Seleccione primero el movimiento' : undefined}>
+                                            <div className={sharedStyles.filterLabel}>
+                                              3. Tipo de Ausencia
+                                            </div>
+                                            <Tooltip
+                                              title={
+                                                !line.movimientoId
+                                                  ? 'Seleccione primero el movimiento'
+                                                  : undefined
+                                              }
+                                            >
                                               <Select
                                                 style={{ width: '100%' }}
                                                 disabled={readOnly || !line.movimientoId}
-                                                placeholder={!line.movimientoId ? 'Seleccione movimiento primero' : 'Seleccione tipo'}
+                                                placeholder={
+                                                  !line.movimientoId
+                                                    ? 'Seleccione movimiento primero'
+                                                    : 'Seleccione tipo'
+                                                }
                                                 value={line.tipoAusencia}
-                                                onChange={(value) => handleTipoAusenciaChange(line.key, value)}
+                                                onChange={(value) =>
+                                                  handleTipoAusenciaChange(line.key, value)
+                                                }
                                                 options={[
                                                   { value: 'JUSTIFICADA', label: 'Justificada' },
-                                                  { value: 'NO_JUSTIFICADA', label: 'No justificada' },
+                                                  {
+                                                    value: 'NO_JUSTIFICADA',
+                                                    label: 'No justificada',
+                                                  },
                                                 ]}
                                               />
                                             </Tooltip>
                                           </Col>
                                           <Col xs={24} md={12} lg={8}>
-                                            <div className={sharedStyles.filterLabel}>4. Cantidad</div>
-                                            <Tooltip title={!line.movimientoId ? 'Seleccione primero el movimiento' : undefined}>
+                                            <div className={sharedStyles.filterLabel}>
+                                              4. Cantidad
+                                            </div>
+                                            <Tooltip
+                                              title={
+                                                !line.movimientoId
+                                                  ? 'Seleccione primero el movimiento'
+                                                  : undefined
+                                              }
+                                            >
                                               <InputNumber
                                                 min={1}
                                                 precision={0}
@@ -1132,7 +1339,9 @@ export function AbsenceTransactionModal({
                                                 disabled={readOnly || !line.movimientoId}
                                                 placeholder={!line.movimientoId ? '-' : undefined}
                                                 value={line.cantidad}
-                                                onChange={(value) => handleCantidadChange(line.key, value ?? undefined)}
+                                                onChange={(value) =>
+                                                  handleCantidadChange(line.key, value ?? undefined)
+                                                }
                                               />
                                             </Tooltip>
                                           </Col>
@@ -1140,7 +1349,13 @@ export function AbsenceTransactionModal({
                                             <div className={sharedStyles.filterLabel}>
                                               {`5. Monto (${employeePayrollConfig?.moneda ?? 'MONEDA'})`}
                                             </div>
-                                            <Tooltip title={!line.movimientoId ? 'Seleccione primero el movimiento' : undefined}>
+                                            <Tooltip
+                                              title={
+                                                !line.movimientoId
+                                                  ? 'Seleccione primero el movimiento'
+                                                  : undefined
+                                              }
+                                            >
                                               <Input
                                                 style={{ width: '100%' }}
                                                 placeholder={!line.movimientoId ? '-' : undefined}
@@ -1153,21 +1368,32 @@ export function AbsenceTransactionModal({
                                                   const onlyDigits = moneyField.sanitize(raw);
                                                   updateLine(line.key, {
                                                     montoInput: onlyDigits,
-                                                    monto: onlyDigits.length > 0
-                                                      ? (moneyField.parse(onlyDigits) ?? 0)
-                                                      : undefined,
+                                                    monto:
+                                                      onlyDigits.length > 0
+                                                        ? (moneyField.parse(onlyDigits) ?? 0)
+                                                        : undefined,
                                                   });
                                                 }}
                                               />
                                             </Tooltip>
                                           </Col>
                                           <Col xs={24} md={12} lg={8}>
-                                            <div className={sharedStyles.filterLabel}>6. Remuneracion</div>
-                                            <Tooltip title={!line.movimientoId ? 'Seleccione primero el movimiento' : undefined}>
+                                            <div className={sharedStyles.filterLabel}>
+                                              6. Remuneracion
+                                            </div>
+                                            <Tooltip
+                                              title={
+                                                !line.movimientoId
+                                                  ? 'Seleccione primero el movimiento'
+                                                  : undefined
+                                              }
+                                            >
                                               <div style={{ paddingTop: 4 }}>
                                                 <Switch
                                                   checked={line.remuneracion}
-                                                  onChange={(value) => updateLine(line.key, { remuneracion: value })}
+                                                  onChange={(value) =>
+                                                    updateLine(line.key, { remuneracion: value })
+                                                  }
                                                   checkedChildren="Si"
                                                   unCheckedChildren="No"
                                                   disabled={readOnly || !line.movimientoId}
@@ -1177,10 +1403,21 @@ export function AbsenceTransactionModal({
                                           </Col>
                                         </Row>
 
-                                        <div style={{ borderTop: '1px solid #e8ecf0', paddingTop: 16, marginTop: 4 }}>
+                                        <div
+                                          style={{
+                                            borderTop: '1px solid #e8ecf0',
+                                            paddingTop: 16,
+                                            marginTop: 4,
+                                          }}
+                                        >
                                           <Row gutter={[16, 12]}>
                                             <Col xs={24} md={8}>
-                                              <div className={sharedStyles.filterLabel} style={{ color: '#94a3b8' }}>Fecha Efecto</div>
+                                              <div
+                                                className={sharedStyles.filterLabel}
+                                                style={{ color: '#94a3b8' }}
+                                              >
+                                                Fecha Efecto
+                                              </div>
                                               <DatePicker
                                                 style={{ width: '100%' }}
                                                 value={line.fechaEfecto}
@@ -1189,7 +1426,12 @@ export function AbsenceTransactionModal({
                                               />
                                             </Col>
                                             <Col xs={24} md={16}>
-                                              <div className={sharedStyles.filterLabel} style={{ color: '#94a3b8' }}>Fórmula</div>
+                                              <div
+                                                className={sharedStyles.filterLabel}
+                                                style={{ color: '#94a3b8' }}
+                                              >
+                                                Fórmula
+                                              </div>
                                               <Input
                                                 value={line.formula}
                                                 disabled
@@ -1206,8 +1448,21 @@ export function AbsenceTransactionModal({
                               })}
                             />
                           </div>
-                          <Flex justify="center" style={{ marginTop: 16, paddingTop: 16, borderTop: '1px solid #e8ecf0', flexShrink: 0 }}>
-                            <Button type="dashed" icon={<PlusOutlined />} onClick={handleAddLine} disabled={readOnly}>
+                          <Flex
+                            justify="center"
+                            style={{
+                              marginTop: 16,
+                              paddingTop: 16,
+                              borderTop: '1px solid #e8ecf0',
+                              flexShrink: 0,
+                            }}
+                          >
+                            <Button
+                              type="dashed"
+                              icon={<PlusOutlined />}
+                              onClick={handleAddLine}
+                              disabled={readOnly}
+                            >
                               Agregar línea de transacción
                             </Button>
                           </Flex>
@@ -1267,5 +1522,3 @@ export function AbsenceTransactionModal({
     </Modal>
   );
 }
-
-

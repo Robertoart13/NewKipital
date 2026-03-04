@@ -1,6 +1,7 @@
 import { Navigate, Outlet } from 'react-router-dom';
-import { useAppSelector } from '../store/hooks';
+
 import { isMicrosoftOAuthCallbackInProgress } from '../lib/microsoftAuth';
+import { useAppSelector } from '../store/hooks';
 
 /**
  * Guard para rutas públicas (login, forgot-password).

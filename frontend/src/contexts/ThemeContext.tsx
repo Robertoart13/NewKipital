@@ -21,11 +21,7 @@ export function ThemeProvider({ children, defaultTheme = 'light' }: ThemeProvide
     setTheme((prev) => (prev === 'light' ? 'dark' : 'light'));
   }, []);
 
-  return (
-    <ThemeContext.Provider value={{ theme, toggleTheme }}>
-      {children}
-    </ThemeContext.Provider>
-  );
+  return <ThemeContext.Provider value={{ theme, toggleTheme }}>{children}</ThemeContext.Provider>;
 }
 
 export function useTheme() {

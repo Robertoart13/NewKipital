@@ -1,6 +1,6 @@
 import * as bcrypt from 'bcrypt';
 
-import type { MigrationInterface, QueryRunner } from 'typeorm';
+import { MigrationInterface, QueryRunner } from 'typeorm';
 
 /**
  * Seed: Empresa adicional + Usuario de ejemplo para probar gestión multi-empresa.

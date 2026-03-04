@@ -1,6 +1,8 @@
 import { useQuery } from '@tanstack/react-query';
-import { companyKeys } from './keys';
+
 import { fetchCompanies } from '../../api/companies';
+
+import { companyKeys } from './keys';
 
 /**
  * Hook para listar empresas disponibles.

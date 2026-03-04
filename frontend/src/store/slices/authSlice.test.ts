@@ -1,4 +1,5 @@
 import { describe, it, expect } from 'vitest';
+
 import authReducer, {
   setCredentials,
   setUserAvatar,
@@ -229,7 +230,10 @@ describe('authSlice', () => {
   describe('Complex Scenarios', () => {
     it('should handle login -> update avatar -> logout flow', () => {
       // Login
-      let state = authReducer(initialState, setCredentials({ user: mockUser, companies: mockCompanies }));
+      let state = authReducer(
+        initialState,
+        setCredentials({ user: mockUser, companies: mockCompanies }),
+      );
       expect(state.isAuthenticated).toBe(true);
 
       // Update avatar
@@ -266,9 +270,7 @@ describe('authSlice', () => {
     });
 
     it('should handle switching companies', () => {
-      const initialCompanies: UserCompanyInfo[] = [
-        { id: 1, nombre: 'Company A', codigo: 'CA' },
-      ];
+      const initialCompanies: UserCompanyInfo[] = [{ id: 1, nombre: 'Company A', codigo: 'CA' }];
 
       // Login with Company A
       let state = authReducer(

@@ -1,5 +1,12 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
+import {
+  AppstoreOutlined,
+  ArrowLeftOutlined,
+  CheckOutlined,
+  CloseOutlined,
+  FilterOutlined,
+  PlusOutlined,
+  ReloadOutlined,
+} from '@ant-design/icons';
 import {
   App as AntdApp,
   Button,
@@ -17,21 +24,12 @@ import {
   Tag,
   Typography,
 } from 'antd';
-import type { ColumnsType } from 'antd/es/table';
 import dayjs, { type Dayjs } from 'dayjs';
-import {
-  AppstoreOutlined,
-  ArrowLeftOutlined,
-  CheckOutlined,
-  CloseOutlined,
-  FilterOutlined,
-  PlusOutlined,
-  ReloadOutlined,
-} from '@ant-design/icons';
-import { useAppSelector } from '../../../store/hooks';
-import {
-  hasPermission,
-} from '../../../store/selectors/permissions.selectors';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { Link } from 'react-router-dom';
+
+import { fetchEmployees, type EmployeeListItem } from '../../../api/employees';
+import { fetchPayrolls, type PayrollListItem } from '../../../api/payroll';
 import {
   approvePersonalAction,
   createPersonalAction,
@@ -39,9 +37,11 @@ import {
   rejectPersonalAction,
   type PersonalActionListItem,
 } from '../../../api/personalActions';
-import { fetchEmployees, type EmployeeListItem } from '../../../api/employees';
-import { fetchPayrolls, type PayrollListItem } from '../../../api/payroll';
+import { useAppSelector } from '../../../store/hooks';
+import { hasPermission } from '../../../store/selectors/permissions.selectors';
 import styles from '../configuration/UsersManagementPage.module.css';
+
+import type { ColumnsType } from 'antd/es/table';
 
 const { Text } = Typography;
 
@@ -162,7 +162,9 @@ export function PersonalActionsPage({
         fetchPayrolls(String(companyId), true),
       ]);
       setEmployees(employeeResp.data);
-      setPayrollHelpers(payrollResp.filter((payroll) => payroll.estado === 1 || payroll.estado === 2));
+      setPayrollHelpers(
+        payrollResp.filter((payroll) => payroll.estado === 1 || payroll.estado === 2),
+      );
     } catch {
       setEmployees([]);
       setPayrollHelpers([]);
@@ -191,7 +193,9 @@ export function PersonalActionsPage({
   const filteredRows = useMemo(() => {
     const term = search.trim().toLowerCase();
     const baseRows = fixedTipoAccion
-      ? rows.filter((row) => row.tipoAccion.trim().toLowerCase() === fixedTipoAccion.trim().toLowerCase())
+      ? rows.filter(
+          (row) => row.tipoAccion.trim().toLowerCase() === fixedTipoAccion.trim().toLowerCase(),
+        )
       : rows;
     if (!term) return baseRows;
     return baseRows.filter((row) => {
@@ -217,7 +221,8 @@ export function PersonalActionsPage({
         dataIndex: 'fechaEfecto',
         key: 'fechaEfecto',
         width: 130,
-        render: (value: string | null | undefined) => (value ? dayjs(value).format('YYYY-MM-DD') : '--'),
+        render: (value: string | null | undefined) =>
+          value ? dayjs(value).format('YYYY-MM-DD') : '--',
       },
       {
         title: 'Monto',
@@ -225,7 +230,12 @@ export function PersonalActionsPage({
         key: 'monto',
         width: 120,
         render: (value: number | null | undefined) =>
-          value != null ? Number(value).toLocaleString('es-CR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '--',
+          value != null
+            ? Number(value).toLocaleString('es-CR', {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2,
+              })
+            : '--',
       },
       {
         title: 'Descripcion',
@@ -255,7 +265,9 @@ export function PersonalActionsPage({
                       message.success('Accion aprobada correctamente.');
                       await loadRows();
                     } catch (error) {
-                      message.error(error instanceof Error ? error.message : 'No se pudo aprobar la accion.');
+                      message.error(
+                        error instanceof Error ? error.message : 'No se pudo aprobar la accion.',
+                      );
                     }
                   },
                 });
@@ -280,7 +292,9 @@ export function PersonalActionsPage({
                       message.success('Accion rechazada correctamente.');
                       await loadRows();
                     } catch (error) {
-                      message.error(error instanceof Error ? error.message : 'No se pudo rechazar la accion.');
+                      message.error(
+                        error instanceof Error ? error.message : 'No se pudo rechazar la accion.',
+                      );
                     }
                   },
                 });
@@ -301,7 +315,10 @@ export function PersonalActionsPage({
       return;
     }
     form.resetFields();
-    form.setFieldsValue({ descripcion: '--', ...(fixedTipoAccion ? { tipoAccion: fixedTipoAccion } : {}) });
+    form.setFieldsValue({
+      descripcion: '--',
+      ...(fixedTipoAccion ? { tipoAccion: fixedTipoAccion } : {}),
+    });
     setCreateOpen(true);
   };
 
@@ -358,7 +375,9 @@ export function PersonalActionsPage({
               </div>
               <div>
                 <h2 className={styles.gestionTitle}>Bandeja de Acciones</h2>
-                <p className={styles.gestionDesc}>Listado, aprobacion y rechazo de acciones segun el flujo de RRHH y Supervisor</p>
+                <p className={styles.gestionDesc}>
+                  Listado, aprobacion y rechazo de acciones segun el flujo de RRHH y Supervisor
+                </p>
               </div>
             </Flex>
             <Button
@@ -376,7 +395,13 @@ export function PersonalActionsPage({
 
       <Card className={styles.mainCard}>
         <div className={styles.mainCardBody}>
-          <Flex align="center" justify="space-between" wrap="wrap" gap={12} className={styles.registrosHeader}>
+          <Flex
+            align="center"
+            justify="space-between"
+            wrap="wrap"
+            gap={12}
+            className={styles.registrosHeader}
+          >
             <Flex align="center" gap={8} wrap="wrap">
               <FilterOutlined className={styles.registrosFilterIcon} />
               <h3 className={styles.registrosTitle}>Registros de Acciones</h3>
@@ -390,7 +415,9 @@ export function PersonalActionsPage({
           <Collapse
             className={styles.filtersCollapse}
             activeKey={filtersOpen ? ['filtros'] : []}
-            onChange={(keys) => setFiltersOpen((Array.isArray(keys) ? keys : [keys]).includes('filtros'))}
+            onChange={(keys) =>
+              setFiltersOpen((Array.isArray(keys) ? keys : [keys]).includes('filtros'))
+            }
             items={[
               {
                 key: 'filtros',
@@ -450,7 +477,8 @@ export function PersonalActionsPage({
             pagination={{
               pageSize: 10,
               showSizeChanger: false,
-              showTotal: (total, [start, end]) => `Mostrando ${start} a ${end} de ${total} registros`,
+              showTotal: (total, [start, end]) =>
+                `Mostrando ${start} a ${end} de ${total} registros`,
             }}
           />
         </div>
@@ -470,7 +498,9 @@ export function PersonalActionsPage({
           <Flex gap={12} wrap="wrap">
             <Form.Item label="Empresa" style={{ flex: '1 1 260px' }}>
               <Input
-                value={companies.find((company) => Number(company.id) === companyId)?.nombre ?? '--'}
+                value={
+                  companies.find((company) => Number(company.id) === companyId)?.nombre ?? '--'
+                }
                 disabled
               />
             </Form.Item>
@@ -539,9 +569,13 @@ export function PersonalActionsPage({
           {selectedHelper && (
             <Card size="small" style={{ background: '#f8fafc', borderColor: '#dbe5ef' }}>
               <Text strong>Referencia de planilla seleccionada</Text>
-              <div>Periodo: {selectedHelper.fechaInicioPeriodo} a {selectedHelper.fechaFinPeriodo}</div>
+              <div>
+                Periodo: {selectedHelper.fechaInicioPeriodo} a {selectedHelper.fechaFinPeriodo}
+              </div>
               <div>Moneda: {selectedHelper.moneda ?? 'CRC'}</div>
-              <div>Nota: se usa solo como apoyo visual, no enlaza la accion directamente al run.</div>
+              <div>
+                Nota: se usa solo como apoyo visual, no enlaza la accion directamente al run.
+              </div>
             </Card>
           )}
         </Form>

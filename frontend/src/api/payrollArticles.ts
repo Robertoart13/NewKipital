@@ -88,26 +88,31 @@ export async function fetchPayrollArticle(id: number): Promise<PayrollArticleLis
   return res.json();
 }
 
-export async function createPayrollArticle(payload: PayrollArticlePayload): Promise<PayrollArticleListItem> {
+export async function createPayrollArticle(
+  payload: PayrollArticlePayload,
+): Promise<PayrollArticleListItem> {
   const res = await httpFetch('/payroll-articles', {
     method: 'POST',
     body: JSON.stringify(payload),
   });
   if (!res.ok) {
-    const error = await res.json().catch(() => null) as { message?: string | string[] } | null;
+    const error = (await res.json().catch(() => null)) as { message?: string | string[] } | null;
     const msg = Array.isArray(error?.message) ? error.message.join(', ') : error?.message;
     throw new Error(msg || 'Error al crear articulo de nomina');
   }
   return res.json();
 }
 
-export async function updatePayrollArticle(id: number, payload: Partial<PayrollArticlePayload>): Promise<PayrollArticleListItem> {
+export async function updatePayrollArticle(
+  id: number,
+  payload: Partial<PayrollArticlePayload>,
+): Promise<PayrollArticleListItem> {
   const res = await httpFetch(`/payroll-articles/${id}`, {
     method: 'PUT',
     body: JSON.stringify(payload),
   });
   if (!res.ok) {
-    const error = await res.json().catch(() => null) as { message?: string | string[] } | null;
+    const error = (await res.json().catch(() => null)) as { message?: string | string[] } | null;
     const msg = Array.isArray(error?.message) ? error.message.join(', ') : error?.message;
     throw new Error(msg || 'Error al actualizar articulo de nomina');
   }
@@ -155,11 +160,14 @@ export async function fetchPayrollArticleAccounts(
   return res.json();
 }
 
-export async function fetchPayrollArticleAuditTrail(id: number, limit = 200): Promise<PayrollArticleAuditTrailItem[]> {
+export async function fetchPayrollArticleAuditTrail(
+  id: number,
+  limit = 200,
+): Promise<PayrollArticleAuditTrailItem[]> {
   const qs = new URLSearchParams({ limit: String(limit) });
   const res = await httpFetch(`/payroll-articles/${id}/audit-trail?${qs}`);
   if (!res.ok) {
-    const error = await res.json().catch(() => null) as { message?: string | string[] } | null;
+    const error = (await res.json().catch(() => null)) as { message?: string | string[] } | null;
     const msg = Array.isArray(error?.message) ? error.message.join(', ') : error?.message;
     throw new Error(msg || 'Error al cargar bitacora de articulos de nomina');
   }

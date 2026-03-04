@@ -1,5 +1,17 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
+import {
+  AppstoreOutlined,
+  ArrowLeftOutlined,
+  CloseOutlined,
+  DownOutlined,
+  EditOutlined,
+  FilterOutlined,
+  PlusOutlined,
+  QuestionCircleOutlined,
+  SearchOutlined,
+  SortAscendingOutlined,
+  SortDescendingOutlined,
+  UpOutlined,
+} from '@ant-design/icons';
 import {
   App as AntdApp,
   Badge,
@@ -22,32 +34,9 @@ import {
   Tag,
   Tooltip,
 } from 'antd';
-import type { ColumnsType } from 'antd/es/table';
-import {
-  AppstoreOutlined,
-  ArrowLeftOutlined,
-  CloseOutlined,
-  DownOutlined,
-  EditOutlined,
-  FilterOutlined,
-  PlusOutlined,
-  QuestionCircleOutlined,
-  SearchOutlined,
-  SortAscendingOutlined,
-  SortDescendingOutlined,
-  UpOutlined,
-} from '@ant-design/icons';
-import {
-  canCreateDepartment,
-  canEditDepartment,
-  canInactivateDepartment,
-  canReactivateDepartment,
-  canViewDepartments,
-  canViewDepartmentAudit,
-} from '../../../store/selectors/permissions.selectors';
-import { useAppSelector } from '../../../store/hooks';
-import { formatDateTime12h } from '../../../lib/formatDate';
-import { optionalNoSqlInjection, textRules } from '../../../lib/formValidation';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { Link } from 'react-router-dom';
+
 import {
   createDepartment,
   fetchDepartment,
@@ -60,7 +49,21 @@ import {
   type DepartmentListItem,
   type DepartmentPayload,
 } from '../../../api/departments-admin';
+import { formatDateTime12h } from '../../../lib/formatDate';
+import { optionalNoSqlInjection, textRules } from '../../../lib/formValidation';
+import { useAppSelector } from '../../../store/hooks';
+import {
+  canCreateDepartment,
+  canEditDepartment,
+  canInactivateDepartment,
+  canReactivateDepartment,
+  canViewDepartments,
+  canViewDepartmentAudit,
+} from '../../../store/selectors/permissions.selectors';
+
 import styles from './UsersManagementPage.module.css';
+
+import type { ColumnsType } from 'antd/es/table';
 
 interface DepartmentFormValues {
   nombre: string;
@@ -155,28 +158,34 @@ export function DepartmentsManagementPage() {
     void loadRows();
   }, [loadRows]);
 
-  const matchesGlobalSearch = useCallback((row: DepartmentListItem) => {
-    const term = search.trim().toLowerCase();
-    if (!term) return true;
-    return (
-      (row.nombre ?? '').toLowerCase().includes(term)
-      || (row.idExterno ?? '').toLowerCase().includes(term)
-    );
-  }, [search]);
+  const matchesGlobalSearch = useCallback(
+    (row: DepartmentListItem) => {
+      const term = search.trim().toLowerCase();
+      if (!term) return true;
+      return (
+        (row.nombre ?? '').toLowerCase().includes(term) ||
+        (row.idExterno ?? '').toLowerCase().includes(term)
+      );
+    },
+    [search],
+  );
 
-  const dataFilteredByPaneSelections = useCallback((excludePane?: PaneKey) => {
-    return rows.filter((row) => {
-      if (!matchesGlobalSearch(row)) return false;
-      for (const pane of paneConfig) {
-        if (pane.key === excludePane) continue;
-        const selected = paneSelections[pane.key];
-        if (selected.length === 0) continue;
-        const value = getPaneValue(row, pane.key);
-        if (!selected.includes(value)) return false;
-      }
-      return true;
-    });
-  }, [matchesGlobalSearch, paneSelections, rows]);
+  const dataFilteredByPaneSelections = useCallback(
+    (excludePane?: PaneKey) => {
+      return rows.filter((row) => {
+        if (!matchesGlobalSearch(row)) return false;
+        for (const pane of paneConfig) {
+          if (pane.key === excludePane) continue;
+          const selected = paneSelections[pane.key];
+          if (selected.length === 0) continue;
+          const value = getPaneValue(row, pane.key);
+          if (!selected.includes(value)) return false;
+        }
+        return true;
+      });
+    },
+    [matchesGlobalSearch, paneSelections, rows],
+  );
 
   const paneOptions = useMemo(() => {
     const result: Record<PaneKey, PaneOption[]> = {
@@ -204,7 +213,10 @@ export function DepartmentsManagementPage() {
     return result;
   }, [dataFilteredByPaneSelections, paneSearch]);
 
-  const filteredRows = useMemo(() => dataFilteredByPaneSelections(), [dataFilteredByPaneSelections]);
+  const filteredRows = useMemo(
+    () => dataFilteredByPaneSelections(),
+    [dataFilteredByPaneSelections],
+  );
 
   const clearAllFilters = () => {
     setSearch('');
@@ -248,22 +260,28 @@ export function DepartmentsManagementPage() {
     form.resetFields();
   };
 
-  const applyDepartmentToForm = useCallback((row: DepartmentListItem) => {
-    form.setFieldsValue({
-      nombre: row.nombre ?? '',
-      idExterno: row.idExterno ?? '',
-    });
-  }, [form]);
+  const applyDepartmentToForm = useCallback(
+    (row: DepartmentListItem) => {
+      form.setFieldsValue({
+        nombre: row.nombre ?? '',
+        idExterno: row.idExterno ?? '',
+      });
+    },
+    [form],
+  );
 
-  const loadDepartmentDetail = useCallback(async (id: number) => {
-    try {
-      const detail = await fetchDepartment(id);
-      setEditing(detail);
-      applyDepartmentToForm(detail);
-    } catch {
-      // Keep current form values if detail fetch fails
-    }
-  }, [applyDepartmentToForm]);
+  const loadDepartmentDetail = useCallback(
+    async (id: number) => {
+      try {
+        const detail = await fetchDepartment(id);
+        setEditing(detail);
+        applyDepartmentToForm(detail);
+      } catch {
+        // Keep current form values if detail fetch fails
+      }
+    },
+    [applyDepartmentToForm],
+  );
 
   useEffect(() => {
     if (!openModal || !editingId) return;
@@ -271,23 +289,26 @@ export function DepartmentsManagementPage() {
     void loadDepartmentDetail(editingId);
   }, [openModal, editingId, loadDepartmentDetail, applyDepartmentToForm]);
 
-  const loadDepartmentAuditTrail = useCallback(async (id: number) => {
-    if (!canViewAudit) {
-      setAuditTrail([]);
-      setLoadingAuditTrail(false);
-      return;
-    }
-    setLoadingAuditTrail(true);
-    try {
-      const rows = await fetchDepartmentAuditTrail(id, 200);
-      setAuditTrail(rows ?? []);
-    } catch (error) {
-      setAuditTrail([]);
-      message.error(error instanceof Error ? error.message : 'Error al cargar bitacora');
-    } finally {
-      setLoadingAuditTrail(false);
-    }
-  }, [canViewAudit, message]);
+  const loadDepartmentAuditTrail = useCallback(
+    async (id: number) => {
+      if (!canViewAudit) {
+        setAuditTrail([]);
+        setLoadingAuditTrail(false);
+        return;
+      }
+      setLoadingAuditTrail(true);
+      try {
+        const rows = await fetchDepartmentAuditTrail(id, 200);
+        setAuditTrail(rows ?? []);
+      } catch (error) {
+        setAuditTrail([]);
+        message.error(error instanceof Error ? error.message : 'Error al cargar bitacora');
+      } finally {
+        setLoadingAuditTrail(false);
+      }
+    },
+    [canViewAudit, message],
+  );
 
   useEffect(() => {
     if (!openModal || !editingId) return;
@@ -309,7 +330,9 @@ export function DepartmentsManagementPage() {
 
       const confirmed = await new Promise<boolean>((resolve) => {
         modal.confirm({
-          title: editing ? 'Confirmar edicion de departamento' : 'Confirmar creacion de departamento',
+          title: editing
+            ? 'Confirmar edicion de departamento'
+            : 'Confirmar creacion de departamento',
           content: editing ? 'Se guardaran los cambios.' : 'Se creara el nuevo departamento.',
           icon: <QuestionCircleOutlined style={{ color: '#5a6c7d', fontSize: 40 }} />,
           okText: editing ? 'Guardar cambios' : 'Crear',
@@ -419,11 +442,16 @@ export function DepartmentsManagementPage() {
       key: 'actor',
       width: 210,
       render: (_, row) => {
-        const actorLabel = row.actorNombre?.trim() || row.actorEmail?.trim() || (row.actorUserId ? `Usuario ID ${row.actorUserId}` : 'Sistema');
+        const actorLabel =
+          row.actorNombre?.trim() ||
+          row.actorEmail?.trim() ||
+          (row.actorUserId ? `Usuario ID ${row.actorUserId}` : 'Sistema');
         return (
           <div>
             <div style={{ fontWeight: 600, color: '#3d4f5c' }}>{actorLabel}</div>
-            {row.actorEmail && <div style={{ color: '#8c8c8c', fontSize: 12 }}>{row.actorEmail}</div>}
+            {row.actorEmail && (
+              <div style={{ color: '#8c8c8c', fontSize: 12 }}>{row.actorEmail}</div>
+            )}
           </div>
         );
       },
@@ -451,8 +479,13 @@ export function DepartmentsManagementPage() {
             {changes.length > 0 ? (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                 {changes.map((change, index) => (
-                  <div key={`${row.id}-${change.campo}-${index}`} style={{ fontSize: 12, lineHeight: 1.4 }}>
-                    <div><strong>{change.campo}</strong></div>
+                  <div
+                    key={`${row.id}-${change.campo}-${index}`}
+                    style={{ fontSize: 12, lineHeight: 1.4 }}
+                  >
+                    <div>
+                      <strong>{change.campo}</strong>
+                    </div>
                     <div>Antes: {change.antes}</div>
                     <div>Despues: {change.despues}</div>
                   </div>
@@ -491,7 +524,8 @@ export function DepartmentsManagementPage() {
           <div className={styles.pageTitleBlock}>
             <h1 className={styles.pageTitle}>Listado de Departamentos</h1>
             <p className={styles.pageSubtitle}>
-              Visualice y gestione todos los departamentos registrados en el sistema de recursos humanos
+              Visualice y gestione todos los departamentos registrados en el sistema de recursos
+              humanos
             </p>
           </div>
         </div>
@@ -527,7 +561,13 @@ export function DepartmentsManagementPage() {
 
       <Card className={styles.mainCard}>
         <div className={styles.mainCardBody}>
-          <Flex align="center" justify="space-between" wrap="wrap" gap={12} className={styles.registrosHeader}>
+          <Flex
+            align="center"
+            justify="space-between"
+            wrap="wrap"
+            gap={12}
+            className={styles.registrosHeader}
+          >
             <Flex align="center" gap={12} wrap="wrap">
               <Flex align="center" gap={8}>
                 <FilterOutlined className={styles.registrosFilterIcon} />
@@ -555,7 +595,13 @@ export function DepartmentsManagementPage() {
             className={styles.filtersCollapse}
           >
             <Collapse.Panel header="Filtros" key="filtros">
-              <Flex justify="space-between" align="center" wrap="wrap" gap={12} style={{ marginBottom: 16 }}>
+              <Flex
+                justify="space-between"
+                align="center"
+                wrap="wrap"
+                gap={12}
+                style={{ marginBottom: 16 }}
+              >
                 <Input
                   placeholder="Search"
                   prefix={<SearchOutlined />}
@@ -566,9 +612,15 @@ export function DepartmentsManagementPage() {
                   style={{ maxWidth: 240 }}
                 />
                 <Flex gap={8}>
-                  <Button size="small" onClick={collapseAllPanes}>Collapse All</Button>
-                  <Button size="small" onClick={openAllPanes}>Show All</Button>
-                  <Button size="small" onClick={clearAllFilters}>Limpiar Todo</Button>
+                  <Button size="small" onClick={collapseAllPanes}>
+                    Collapse All
+                  </Button>
+                  <Button size="small" onClick={openAllPanes}>
+                    Show All
+                  </Button>
+                  <Button size="small" onClick={clearAllFilters}>
+                    Limpiar Todo
+                  </Button>
                 </Flex>
               </Flex>
               <Row gutter={[12, 12]}>
@@ -578,15 +630,17 @@ export function DepartmentsManagementPage() {
                       <Flex gap={6} align="center" wrap="wrap">
                         <Input
                           value={paneSearch[pane.key]}
-                          onChange={(e) => setPaneSearch((prev) => ({ ...prev, [pane.key]: e.target.value }))}
+                          onChange={(e) =>
+                            setPaneSearch((prev) => ({ ...prev, [pane.key]: e.target.value }))
+                          }
                           placeholder={pane.title}
                           prefix={<SearchOutlined style={{ fontSize: 12, color: '#8c8c8c' }} />}
-                          suffix={(
+                          suffix={
                             <Flex gap={2}>
                               <SortAscendingOutlined style={{ fontSize: 10, color: '#8c8c8c' }} />
                               <SortDescendingOutlined style={{ fontSize: 10, color: '#8c8c8c' }} />
                             </Flex>
-                          )}
+                          }
                           size="middle"
                           className={styles.filterInput}
                           style={{ flex: 1, minWidth: 120 }}
@@ -597,13 +651,19 @@ export function DepartmentsManagementPage() {
                           onClick={() => setPaneOpen((prev) => ({ ...prev, [pane.key]: true }))}
                           title="Abrir opciones"
                         />
-                        <Button size="middle" onClick={() => clearPaneSelection(pane.key)} title="Limpiar">
+                        <Button
+                          size="middle"
+                          onClick={() => clearPaneSelection(pane.key)}
+                          title="Limpiar"
+                        >
                           x
                         </Button>
                         <Button
                           size="middle"
                           icon={paneOpen[pane.key] ? <UpOutlined /> : <DownOutlined />}
-                          onClick={() => setPaneOpen((prev) => ({ ...prev, [pane.key]: !prev[pane.key] }))}
+                          onClick={() =>
+                            setPaneOpen((prev) => ({ ...prev, [pane.key]: !prev[pane.key] }))
+                          }
                           title={paneOpen[pane.key] ? 'Colapsar' : 'Expandir'}
                         />
                       </Flex>
@@ -611,14 +671,22 @@ export function DepartmentsManagementPage() {
                         <div className={styles.paneOptionsBox}>
                           <Checkbox.Group
                             value={paneSelections[pane.key]}
-                            onChange={(values) => setPaneSelections((prev) => ({ ...prev, [pane.key]: values as string[] }))}
+                            onChange={(values) =>
+                              setPaneSelections((prev) => ({
+                                ...prev,
+                                [pane.key]: values as string[],
+                              }))
+                            }
                             style={{ display: 'flex', flexDirection: 'column', gap: 8 }}
                           >
                             {paneOptions[pane.key].map((option) => (
                               <Checkbox key={`${pane.key}:${option.value}`} value={option.value}>
                                 <Space>
                                   <span>{option.value}</span>
-                                  <Badge count={option.count} style={{ backgroundColor: '#5a6c7d' }} />
+                                  <Badge
+                                    count={option.count}
+                                    style={{ backgroundColor: '#5a6c7d' }}
+                                  />
                                 </Space>
                               </Checkbox>
                             ))}
@@ -644,7 +712,8 @@ export function DepartmentsManagementPage() {
             pagination={{
               pageSize,
               showSizeChanger: false,
-              showTotal: (total, range) => `Mostrando ${range[0]} a ${range[1]} de ${total} registros`,
+              showTotal: (total, range) =>
+                `Mostrando ${range[0]} a ${range[1]} de ${total} registros`,
             }}
             onRow={(record) => ({
               onClick: () => openEditModal(record),
@@ -662,8 +731,13 @@ export function DepartmentsManagementPage() {
         footer={null}
         width={860}
         destroyOnHidden
-        title={(
-          <Flex justify="space-between" align="center" wrap="nowrap" style={{ width: '100%', gap: 16 }}>
+        title={
+          <Flex
+            justify="space-between"
+            align="center"
+            wrap="nowrap"
+            style={{ width: '100%', gap: 16 }}
+          >
             <div className={styles.companyModalHeader}>
               <div className={styles.companyModalHeaderIcon}>
                 <AppstoreOutlined />
@@ -673,7 +747,13 @@ export function DepartmentsManagementPage() {
             <Flex align="center" gap={12} className={styles.companyModalHeaderRight}>
               {editing ? (
                 <div className={styles.companyModalEstadoPaper}>
-                  <span style={{ fontWeight: 500, fontSize: 14, color: editing.estado === 0 ? '#64748b' : '#20638d' }}>
+                  <span
+                    style={{
+                      fontWeight: 500,
+                      fontSize: 14,
+                      color: editing.estado === 0 ? '#64748b' : '#20638d',
+                    }}
+                  >
                     {editing.estado === 0 ? 'Inactivo' : 'Activo'}
                   </span>
                   <Switch
@@ -716,9 +796,14 @@ export function DepartmentsManagementPage() {
               />
             </Flex>
           </Flex>
-        )}
+        }
       >
-        <Form<DepartmentFormValues> layout="vertical" form={form} preserve={false} className={styles.companyFormContent}>
+        <Form<DepartmentFormValues>
+          layout="vertical"
+          form={form}
+          preserve={false}
+          className={styles.companyFormContent}
+        >
           <Tabs
             activeKey={activeTab}
             onChange={setActiveTab}
@@ -734,47 +819,62 @@ export function DepartmentsManagementPage() {
                 ),
                 children: (
                   <div className={styles.companyFormGrid}>
-                    <Form.Item name="nombre" label="Nombre Departamento *" rules={textRules({ required: true, max: 100 })}>
+                    <Form.Item
+                      name="nombre"
+                      label="Nombre Departamento *"
+                      rules={textRules({ required: true, max: 100 })}
+                    >
                       <Input maxLength={100} />
                     </Form.Item>
-                    <Form.Item name="idExterno" label="ID Externo Departamento" rules={[{ validator: optionalNoSqlInjection }]}>
+                    <Form.Item
+                      name="idExterno"
+                      label="ID Externo Departamento"
+                      rules={[{ validator: optionalNoSqlInjection }]}
+                    >
                       <Input maxLength={45} />
                     </Form.Item>
                   </div>
                 ),
               },
               ...(editing && canViewAudit
-                ? [{
-                    key: 'bitacora',
-                    label: (
-                      <span>
-                        <SearchOutlined style={{ marginRight: 8, fontSize: 16 }} />
-                        Bitacora
-                      </span>
-                    ),
-                    children: (
-                      <div style={{ paddingTop: 8 }}>
-                        <p className={styles.sectionTitle}>Historial de cambios del departamento</p>
-                        <p className={styles.sectionDescription}>
-                          Muestra quien hizo el cambio, cuando lo hizo y el detalle registrado en bitacora.
-                        </p>
-                        <Table<DepartmentAuditTrailItem>
-                          rowKey="id"
-                          size="small"
-                          loading={loadingAuditTrail}
-                          columns={auditColumns}
-                          dataSource={auditTrail}
-                          className={`${styles.configTable} ${styles.auditTableCompact}`}
-                          pagination={{
-                            pageSize: 8,
-                            showSizeChanger: true,
-                            showTotal: (total) => `${total} registro(s)`,
-                          }}
-                          locale={{ emptyText: 'No hay registros de bitacora para este departamento.' }}
-                        />
-                      </div>
-                    ),
-                  }]
+                ? [
+                    {
+                      key: 'bitacora',
+                      label: (
+                        <span>
+                          <SearchOutlined style={{ marginRight: 8, fontSize: 16 }} />
+                          Bitacora
+                        </span>
+                      ),
+                      children: (
+                        <div style={{ paddingTop: 8 }}>
+                          <p className={styles.sectionTitle}>
+                            Historial de cambios del departamento
+                          </p>
+                          <p className={styles.sectionDescription}>
+                            Muestra quien hizo el cambio, cuando lo hizo y el detalle registrado en
+                            bitacora.
+                          </p>
+                          <Table<DepartmentAuditTrailItem>
+                            rowKey="id"
+                            size="small"
+                            loading={loadingAuditTrail}
+                            columns={auditColumns}
+                            dataSource={auditTrail}
+                            className={`${styles.configTable} ${styles.auditTableCompact}`}
+                            pagination={{
+                              pageSize: 8,
+                              showSizeChanger: true,
+                              showTotal: (total) => `${total} registro(s)`,
+                            }}
+                            locale={{
+                              emptyText: 'No hay registros de bitacora para este departamento.',
+                            }}
+                          />
+                        </div>
+                      ),
+                    },
+                  ]
                 : []),
             ]}
           />

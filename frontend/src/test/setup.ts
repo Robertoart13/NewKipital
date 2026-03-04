@@ -1,6 +1,6 @@
-import { expect, afterEach } from 'vitest';
-import { cleanup } from '@testing-library/react';
 import * as matchers from '@testing-library/jest-dom/matchers';
+import { cleanup } from '@testing-library/react';
+import { expect, afterEach } from 'vitest';
 
 // Force garbage collection before each test file if --expose-gc is available.
 // This prevents memory accumulation when many module-heavy files share a worker.

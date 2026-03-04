@@ -14,8 +14,9 @@ import {
 import { EmployeeVacationMonetaryProvision } from '../entities/employee-vacation-monetary-provision.entity';
 import { Employee } from '../entities/employee.entity';
 
-import type { EmployeeSensitiveDataService } from '../../../common/services/employee-sensitive-data.service';
-import type { EntityManager, Repository } from 'typeorm';
+import { EntityManager, Repository } from 'typeorm';
+
+import { EmployeeSensitiveDataService } from '../../../common/services/employee-sensitive-data.service';
 
 const VACATION_ACTION_TYPES = new Set(['vacaciones', 'vacacion', 'vacation']);
 

@@ -1,5 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { AppstoreOutlined, ArrowLeftOutlined } from '@ant-design/icons';
 import {
   App as AntdApp,
   Button,
@@ -15,8 +14,9 @@ import {
   Tag,
   Typography,
 } from 'antd';
-import { AppstoreOutlined, ArrowLeftOutlined } from '@ant-design/icons';
-import type { ColumnsType } from 'antd/es/table';
+import { useEffect, useMemo, useState } from 'react';
+import { Link, useLocation } from 'react-router-dom';
+
 import {
   createConfigPermission,
   fetchConfigPermissions,
@@ -27,10 +27,17 @@ import {
   type PermissionCatalogMode,
   type SystemPermission,
 } from '../../../api/securityConfig';
-import { canViewConfigRoles, canViewConfigUsers, canViewConfigPermissions } from '../../../store/selectors/permissions.selectors';
-import { useAppSelector } from '../../../store/hooks';
 import { formatDateTime12h } from '../../../lib/formatDate';
+import { useAppSelector } from '../../../store/hooks';
+import {
+  canViewConfigRoles,
+  canViewConfigUsers,
+  canViewConfigPermissions,
+} from '../../../store/selectors/permissions.selectors';
+
 import styles from './UsersManagementPage.module.css';
+
+import type { ColumnsType } from 'antd/es/table';
 
 const { Text } = Typography;
 
@@ -160,53 +167,57 @@ export function PermissionsAdminListPage() {
 
   const columns: ColumnsType<SystemPermission> = useMemo(() => {
     const base: ColumnsType<SystemPermission> = [
-    {
-      title: 'Código',
-      dataIndex: 'codigo',
-      key: 'codigo',
-      width: 230,
-      render: (value: string) => <Text code>{value}</Text>,
-    },
-    {
-      title: 'Nombre',
-      dataIndex: 'nombre',
-      key: 'nombre',
-      width: 220,
-    },
-    {
-      title: 'Módulo',
-      dataIndex: 'modulo',
-      key: 'modulo',
-      width: 140,
-      render: (value: string) => <Tag className={styles.tagInactivo}>{value}</Tag>,
-    },
-    {
-      title: 'Estado',
-      dataIndex: 'estado',
-      key: 'estado',
-      width: 120,
-      render: (value: number) =>
-        value === 1 ? <Tag className={styles.tagActivo}>Activo</Tag> : <Tag className={styles.tagInactivo}>Inactivo</Tag>,
-    },
-    {
-      title: 'Auditoria',
-      key: 'auditoria',
-      width: 230,
-      render: (_, item) => (
-        <Space orientation="vertical" size={0}>
-          <Text type="secondary">Creado: {formatDateTime12h(item.fechaCreacion)}</Text>
-          <Text type="secondary">Actualizado: {formatDateTime12h(item.fechaModificacion)}</Text>
-          <Text type="secondary">Usuario: {item.modificadoPor ?? item.creadoPor ?? '-'}</Text>
-        </Space>
-      ),
-    },
-    {
-      title: 'Descripción',
-      dataIndex: 'descripcion',
-      key: 'descripcion',
-      ellipsis: true,
-      render: (value: string | null) => value || 'Sin descripción',
-    },
+      {
+        title: 'Código',
+        dataIndex: 'codigo',
+        key: 'codigo',
+        width: 230,
+        render: (value: string) => <Text code>{value}</Text>,
+      },
+      {
+        title: 'Nombre',
+        dataIndex: 'nombre',
+        key: 'nombre',
+        width: 220,
+      },
+      {
+        title: 'Módulo',
+        dataIndex: 'modulo',
+        key: 'modulo',
+        width: 140,
+        render: (value: string) => <Tag className={styles.tagInactivo}>{value}</Tag>,
+      },
+      {
+        title: 'Estado',
+        dataIndex: 'estado',
+        key: 'estado',
+        width: 120,
+        render: (value: number) =>
+          value === 1 ? (
+            <Tag className={styles.tagActivo}>Activo</Tag>
+          ) : (
+            <Tag className={styles.tagInactivo}>Inactivo</Tag>
+          ),
+      },
+      {
+        title: 'Auditoria',
+        key: 'auditoria',
+        width: 230,
+        render: (_, item) => (
+          <Space orientation="vertical" size={0}>
+            <Text type="secondary">Creado: {formatDateTime12h(item.fechaCreacion)}</Text>
+            <Text type="secondary">Actualizado: {formatDateTime12h(item.fechaModificacion)}</Text>
+            <Text type="secondary">Usuario: {item.modificadoPor ?? item.creadoPor ?? '-'}</Text>
+          </Space>
+        ),
+      },
+      {
+        title: 'Descripción',
+        dataIndex: 'descripcion',
+        key: 'descripcion',
+        ellipsis: true,
+        render: (value: string | null) => value || 'Sin descripción',
+      },
     ];
     if (isEditable) {
       base.push({
@@ -215,7 +226,9 @@ export function PermissionsAdminListPage() {
         width: 180,
         render: (_: unknown, item: SystemPermission) => (
           <Space>
-            <Button size="small" className={styles.btnSecondary} onClick={() => onOpenEdit(item)}>Editar</Button>
+            <Button size="small" className={styles.btnSecondary} onClick={() => onOpenEdit(item)}>
+              Editar
+            </Button>
             <Popconfirm
               title={item.estado === 1 ? 'Inactivar permiso' : 'Reactivar permiso'}
               description={`Código: ${item.codigo}`}
@@ -234,7 +247,11 @@ export function PermissionsAdminListPage() {
   }, [isEditable, saving]);
 
   const location = useLocation();
-  const activeTab = location.pathname.includes('/users') ? 'users' : location.pathname.includes('/permissions') ? 'permissions' : 'roles';
+  const activeTab = location.pathname.includes('/users')
+    ? 'users'
+    : location.pathname.includes('/permissions')
+      ? 'permissions'
+      : 'roles';
 
   return (
     <div className={styles.pageWrapper}>
@@ -249,13 +266,28 @@ export function PermissionsAdminListPage() {
           </div>
           <div className={styles.pageTabs}>
             {canViewConfigRolesPerm && (
-              <Link to="/configuration/roles" className={`${styles.pageTab} ${activeTab === 'roles' ? styles.pageTabActive : ''}`}>Roles</Link>
+              <Link
+                to="/configuration/roles"
+                className={`${styles.pageTab} ${activeTab === 'roles' ? styles.pageTabActive : ''}`}
+              >
+                Roles
+              </Link>
             )}
             {canViewConfigUsersPerm && (
-              <Link to="/configuration/users" className={`${styles.pageTab} ${activeTab === 'users' ? styles.pageTabActive : ''}`}>Usuarios</Link>
+              <Link
+                to="/configuration/users"
+                className={`${styles.pageTab} ${activeTab === 'users' ? styles.pageTabActive : ''}`}
+              >
+                Usuarios
+              </Link>
             )}
             {canViewConfigPermissionsPerm && (
-              <Link to="/configuration/permissions" className={`${styles.pageTab} ${activeTab === 'permissions' ? styles.pageTabActive : ''}`}>Permisos</Link>
+              <Link
+                to="/configuration/permissions"
+                className={`${styles.pageTab} ${activeTab === 'permissions' ? styles.pageTabActive : ''}`}
+              >
+                Permisos
+              </Link>
             )}
           </div>
         </div>
@@ -271,7 +303,8 @@ export function PermissionsAdminListPage() {
               <div>
                 <h2 className={styles.gestionTitle}>Gestion de Permisos</h2>
                 <p className={styles.gestionDesc}>
-                  Administre el catalogo de permisos modulo:accion utilizado por los roles y configuraciones de seguridad.
+                  Administre el catalogo de permisos modulo:accion utilizado por los roles y
+                  configuraciones de seguridad.
                 </p>
               </div>
             </Flex>
@@ -280,7 +313,9 @@ export function PermissionsAdminListPage() {
       </Card>
 
       <div className={styles.infoBanner}>
-        {isEditable ? 'Modo administración por interfaz.' : 'Modo controlado por migración. Catálogo solo lectura.'}
+        {isEditable
+          ? 'Modo administración por interfaz.'
+          : 'Modo controlado por migración. Catálogo solo lectura.'}
       </div>
 
       <Card className={styles.mainCard} styles={{ body: { padding: 0 } }}>
@@ -299,7 +334,9 @@ export function PermissionsAdminListPage() {
               <Text style={{ color: '#4a5a68', fontSize: 14 }}>Incluir inactivos</Text>
               <Switch checked={includeInactive} onChange={setIncludeInactive} />
             </Space>
-            <Button disabled={!isEditable} onClick={onOpenCreate} className={styles.btnSecondary}>Crear permiso</Button>
+            <Button disabled={!isEditable} onClick={onOpenCreate} className={styles.btnSecondary}>
+              Crear permiso
+            </Button>
           </div>
 
           <Table<SystemPermission>
@@ -308,7 +345,11 @@ export function PermissionsAdminListPage() {
             loading={loading}
             columns={columns}
             dataSource={filteredItems}
-            pagination={{ pageSize: 10, showSizeChanger: true, showTotal: (t) => `${t} permiso(s)` }}
+            pagination={{
+              pageSize: 10,
+              showSizeChanger: true,
+              showTotal: (t) => `${t} permiso(s)`,
+            }}
           />
         </div>
       </Card>
@@ -334,11 +375,19 @@ export function PermissionsAdminListPage() {
             <Input placeholder="Ej: employee:create" />
           </Form.Item>
 
-          <Form.Item label="Módulo" name="modulo" rules={[{ required: true, message: 'El módulo es requerido' }]}>
+          <Form.Item
+            label="Módulo"
+            name="modulo"
+            rules={[{ required: true, message: 'El módulo es requerido' }]}
+          >
             <Input placeholder="Ej: employee" />
           </Form.Item>
 
-          <Form.Item label="Nombre" name="nombre" rules={[{ required: true, message: 'El nombre es requerido' }]}>
+          <Form.Item
+            label="Nombre"
+            name="nombre"
+            rules={[{ required: true, message: 'El nombre es requerido' }]}
+          >
             <Input placeholder="Ej: Crear empleado" />
           </Form.Item>
 

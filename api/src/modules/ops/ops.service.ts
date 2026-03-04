@@ -6,9 +6,9 @@ import { EmployeeIdentityQueue } from '../employees/entities/employee-identity-q
 import { Employee } from '../employees/entities/employee.entity';
 
 import type { ListQueueJobsDto, QueueType } from './dto/list-queue-jobs.dto';
-import type { EmployeeDataAutomationWorkerService } from '../employees/services/employee-data-automation-worker.service';
-import type { EmployeeVacationService } from '../employees/services/employee-vacation.service';
-import type { Repository } from 'typeorm';
+import { EmployeeDataAutomationWorkerService } from '../employees/services/employee-data-automation-worker.service';
+import { EmployeeVacationService } from '../employees/services/employee-vacation.service';
+import { Repository } from 'typeorm';
 
 type QueueRow = {
   id_queue: number;

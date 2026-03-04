@@ -1,5 +1,19 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
+import {
+  AppstoreOutlined,
+  ArrowLeftOutlined,
+  CloseOutlined,
+  DownOutlined,
+  EditOutlined,
+  FilterOutlined,
+  PlusOutlined,
+  QuestionCircleOutlined,
+  SearchOutlined,
+  SortAscendingOutlined,
+  SortDescendingOutlined,
+  HistoryOutlined,
+  DollarOutlined,
+  UpOutlined,
+} from '@ant-design/icons';
 import {
   App as AntdApp,
   Badge,
@@ -22,34 +36,9 @@ import {
   Tag,
   Tooltip,
 } from 'antd';
-import type { ColumnsType } from 'antd/es/table';
-import {
-  AppstoreOutlined,
-  ArrowLeftOutlined,
-  CloseOutlined,
-  DownOutlined,
-  EditOutlined,
-  FilterOutlined,
-  PlusOutlined,
-  QuestionCircleOutlined,
-  SearchOutlined,
-  SortAscendingOutlined,
-  SortDescendingOutlined,
-  HistoryOutlined,
-  DollarOutlined,
-  UpOutlined,
-} from '@ant-design/icons';
-import {
-  canCreatePayrollMovement,
-  canEditPayrollMovement,
-  canInactivatePayrollMovement,
-  canReactivatePayrollMovement,
-  canViewPayrollMovementAudit,
-  canViewPayrollMovements,
-} from '../../../store/selectors/permissions.selectors';
-import { useAppSelector } from '../../../store/hooks';
-import { formatDateTime12h } from '../../../lib/formatDate';
-import { noSqlInjection, textRules } from '../../../lib/formValidation';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { Link } from 'react-router-dom';
+
 import {
   createPayrollMovement,
   fetchPayrollMovement,
@@ -70,7 +59,20 @@ import {
   type PayrollMovementPayload,
   type PayrollMovementProjectOption,
 } from '../../../api/payrollMovements';
+import { formatDateTime12h } from '../../../lib/formatDate';
+import { noSqlInjection, textRules } from '../../../lib/formValidation';
+import { useAppSelector } from '../../../store/hooks';
+import {
+  canCreatePayrollMovement,
+  canEditPayrollMovement,
+  canInactivatePayrollMovement,
+  canReactivatePayrollMovement,
+  canViewPayrollMovementAudit,
+  canViewPayrollMovements,
+} from '../../../store/selectors/permissions.selectors';
 import styles from '../configuration/UsersManagementPage.module.css';
+
+import type { ColumnsType } from 'antd/es/table';
 
 interface PayrollMovementFormValues {
   idEmpresa?: number;
@@ -99,7 +101,9 @@ interface PaneOption {
 }
 
 function selectFilterByLabel(input: string, option?: { label?: string | number | null }) {
-  return String(option?.label ?? '').toLowerCase().includes(input.toLowerCase());
+  return String(option?.label ?? '')
+    .toLowerCase()
+    .includes(input.toLowerCase());
 }
 
 const paneConfig: PaneConfig[] = [
@@ -153,11 +157,18 @@ function getPaneValue(
   actionTypeMap: Map<number, PayrollMovementActionTypeOption>,
 ): string {
   if (key === 'empresa') {
-    return companies.find((company) => company.id === row.idEmpresa)?.nombre ?? `Empresa #${row.idEmpresa}`;
+    return (
+      companies.find((company) => company.id === row.idEmpresa)?.nombre ??
+      `Empresa #${row.idEmpresa}`
+    );
   }
   if (key === 'nombre') return row.nombre ?? '';
-  if (key === 'articulo') return articleMap.get(row.idArticuloNomina)?.nombre ?? `Articulo #${row.idArticuloNomina}`;
-  if (key === 'tipoAccion') return actionTypeMap.get(row.idTipoAccionPersonal)?.nombre ?? `Accion #${row.idTipoAccionPersonal}`;
+  if (key === 'articulo')
+    return articleMap.get(row.idArticuloNomina)?.nombre ?? `Articulo #${row.idArticuloNomina}`;
+  if (key === 'tipoAccion')
+    return (
+      actionTypeMap.get(row.idTipoAccionPersonal)?.nombre ?? `Accion #${row.idTipoAccionPersonal}`
+    );
   if (key === 'tipoCalculo') return row.esMontoFijo === 1 ? 'Monto fijo' : 'Porcentaje';
   return row.esInactivo === 1 ? 'Inactivo' : 'Activo';
 }
@@ -183,7 +194,9 @@ export function PayrollMovementsManagementPage() {
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [showInactive, setShowInactive] = useState(false);
-  const [selectedCompanyIds, setSelectedCompanyIds] = useState<number[]>(defaultCompanyId ? [defaultCompanyId] : []);
+  const [selectedCompanyIds, setSelectedCompanyIds] = useState<number[]>(
+    defaultCompanyId ? [defaultCompanyId] : [],
+  );
   const [search, setSearch] = useState('');
   const [filtersExpanded, setFiltersExpanded] = useState(false);
   const [paneSearch, setPaneSearch] = useState<Record<PaneKey, string>>({
@@ -233,29 +246,39 @@ export function PayrollMovementsManagementPage() {
     () => new Map(actionTypeOptions.map((option) => [option.id, option])),
     [actionTypeOptions],
   );
-  const loadRows = useCallback(async (companyIds?: number[]) => {
-    setLoading(true);
-    try {
-      const targetCompanyIds = companyIds && companyIds.length > 0
-        ? companyIds
-        : selectedCompanyIds.length > 0
-          ? selectedCompanyIds
-          : defaultCompanyId
-            ? [defaultCompanyId]
-            : [];
-      if (targetCompanyIds.length === 0) {
+  const loadRows = useCallback(
+    async (companyIds?: number[]) => {
+      setLoading(true);
+      try {
+        const targetCompanyIds =
+          companyIds && companyIds.length > 0
+            ? companyIds
+            : selectedCompanyIds.length > 0
+              ? selectedCompanyIds
+              : defaultCompanyId
+                ? [defaultCompanyId]
+                : [];
+        if (targetCompanyIds.length === 0) {
+          setRows([]);
+          return;
+        }
+        const data = await fetchPayrollMovements(
+          targetCompanyIds[0],
+          showInactive,
+          targetCompanyIds,
+        );
+        setRows(data);
+      } catch (error) {
+        message.error(
+          error instanceof Error ? error.message : 'Error al cargar movimientos de nomina',
+        );
         setRows([]);
-        return;
+      } finally {
+        setLoading(false);
       }
-      const data = await fetchPayrollMovements(targetCompanyIds[0], showInactive, targetCompanyIds);
-      setRows(data);
-    } catch (error) {
-      message.error(error instanceof Error ? error.message : 'Error al cargar movimientos de nomina');
-      setRows([]);
-    } finally {
-      setLoading(false);
-    }
-  }, [defaultCompanyId, message, selectedCompanyIds, showInactive]);
+    },
+    [defaultCompanyId, message, selectedCompanyIds, showInactive],
+  );
 
   const loadBaseCatalogs = useCallback(async () => {
     setLoadingCatalogs(true);
@@ -267,7 +290,9 @@ export function PayrollMovementsManagementPage() {
       setActionTypeOptions(actions);
       setClassOptions(classes);
     } catch (error) {
-      message.error(error instanceof Error ? error.message : 'Error al cargar catalogos de movimientos');
+      message.error(
+        error instanceof Error ? error.message : 'Error al cargar catalogos de movimientos',
+      );
       setActionTypeOptions([]);
       setClassOptions([]);
     } finally {
@@ -275,28 +300,33 @@ export function PayrollMovementsManagementPage() {
     }
   }, [message]);
 
-  const loadCompanyCatalogs = useCallback(async (idEmpresa?: number) => {
-    if (!idEmpresa) {
-      setArticleOptions([]);
-      setProjectOptions([]);
-      return;
-    }
-    setLoadingCompanyCatalogs(true);
-    try {
-      const [articles, projects] = await Promise.all([
-        fetchPayrollMovementArticles(idEmpresa, true),
-        fetchPayrollMovementProjects(idEmpresa, true),
-      ]);
-      setArticleOptions(articles);
-      setProjectOptions(projects);
-    } catch (error) {
-      message.error(error instanceof Error ? error.message : 'Error al cargar articulos/proyectos');
-      setArticleOptions([]);
-      setProjectOptions([]);
-    } finally {
-      setLoadingCompanyCatalogs(false);
-    }
-  }, [message]);
+  const loadCompanyCatalogs = useCallback(
+    async (idEmpresa?: number) => {
+      if (!idEmpresa) {
+        setArticleOptions([]);
+        setProjectOptions([]);
+        return;
+      }
+      setLoadingCompanyCatalogs(true);
+      try {
+        const [articles, projects] = await Promise.all([
+          fetchPayrollMovementArticles(idEmpresa, true),
+          fetchPayrollMovementProjects(idEmpresa, true),
+        ]);
+        setArticleOptions(articles);
+        setProjectOptions(projects);
+      } catch (error) {
+        message.error(
+          error instanceof Error ? error.message : 'Error al cargar articulos/proyectos',
+        );
+        setArticleOptions([]);
+        setProjectOptions([]);
+      } finally {
+        setLoadingCompanyCatalogs(false);
+      }
+    },
+    [message],
+  );
 
   useEffect(() => {
     void loadRows();
@@ -322,21 +352,24 @@ export function PayrollMovementsManagementPage() {
     }
   };
 
-  const applyMovementToForm = useCallback((row: PayrollMovementListItem) => {
-    form.setFieldsValue({
-      idEmpresa: row.idEmpresa,
-      nombre: row.nombre,
-      idArticuloNomina: row.idArticuloNomina,
-      idTipoAccionPersonal: row.idTipoAccionPersonal,
-      idClase: row.idClase,
-      idProyecto: row.idProyecto,
-      descripcion: row.descripcion ?? '--',
-      esMontoFijo: row.esMontoFijo === 1 ? 1 : 0,
-      montoFijo: row.montoFijo ?? '0',
-      porcentaje: row.porcentaje ?? '0',
-      formulaAyuda: row.formulaAyuda ?? '--',
-    });
-  }, [form]);
+  const applyMovementToForm = useCallback(
+    (row: PayrollMovementListItem) => {
+      form.setFieldsValue({
+        idEmpresa: row.idEmpresa,
+        nombre: row.nombre,
+        idArticuloNomina: row.idArticuloNomina,
+        idTipoAccionPersonal: row.idTipoAccionPersonal,
+        idClase: row.idClase,
+        idProyecto: row.idProyecto,
+        descripcion: row.descripcion ?? '--',
+        esMontoFijo: row.esMontoFijo === 1 ? 1 : 0,
+        montoFijo: row.montoFijo ?? '0',
+        porcentaje: row.porcentaje ?? '0',
+        formulaAyuda: row.formulaAyuda ?? '--',
+      });
+    },
+    [form],
+  );
 
   const openEditModal = (row: PayrollMovementListItem) => {
     if (!canEdit) return;
@@ -446,7 +479,9 @@ export function PayrollMovementsManagementPage() {
 
     const confirmed = await new Promise<boolean>((resolve) => {
       modal.confirm({
-        title: editing ? 'Confirmar edicion de movimiento de nomina' : 'Confirmar creacion de movimiento de nomina',
+        title: editing
+          ? 'Confirmar edicion de movimiento de nomina'
+          : 'Confirmar creacion de movimiento de nomina',
         content: editing ? 'Se guardaran los cambios.' : 'Se creara el nuevo movimiento de nomina.',
         icon: <QuestionCircleOutlined style={{ color: '#5a6c7d', fontSize: 40 }} />,
         okText: editing ? 'Guardar cambios' : 'Crear',
@@ -483,33 +518,39 @@ export function PayrollMovementsManagementPage() {
     await loadRows();
   };
 
-  const matchesGlobalSearch = useCallback((row: PayrollMovementListItem) => {
-    const term = search.trim().toLowerCase();
-    if (!term) return true;
-    const companyName = companies.find((company) => company.id === row.idEmpresa)?.nombre ?? '';
-    const articleName = articleMap.get(row.idArticuloNomina)?.nombre ?? '';
-    const actionName = actionTypeMap.get(row.idTipoAccionPersonal)?.nombre ?? '';
-    return (
-      row.nombre.toLowerCase().includes(term)
-      || companyName.toLowerCase().includes(term)
-      || articleName.toLowerCase().includes(term)
-      || actionName.toLowerCase().includes(term)
-    );
-  }, [actionTypeMap, articleMap, companies, rows, search]);
+  const matchesGlobalSearch = useCallback(
+    (row: PayrollMovementListItem) => {
+      const term = search.trim().toLowerCase();
+      if (!term) return true;
+      const companyName = companies.find((company) => company.id === row.idEmpresa)?.nombre ?? '';
+      const articleName = articleMap.get(row.idArticuloNomina)?.nombre ?? '';
+      const actionName = actionTypeMap.get(row.idTipoAccionPersonal)?.nombre ?? '';
+      return (
+        row.nombre.toLowerCase().includes(term) ||
+        companyName.toLowerCase().includes(term) ||
+        articleName.toLowerCase().includes(term) ||
+        actionName.toLowerCase().includes(term)
+      );
+    },
+    [actionTypeMap, articleMap, companies, rows, search],
+  );
 
-  const dataFilteredByPaneSelections = useCallback((excludePane?: PaneKey) => {
-    return rows.filter((row) => {
-      if (!matchesGlobalSearch(row)) return false;
-      for (const pane of paneConfig) {
-        if (pane.key === excludePane) continue;
-        const selected = paneSelections[pane.key];
-        if (selected.length === 0) continue;
-        const value = getPaneValue(row, pane.key, companies, articleMap, actionTypeMap);
-        if (!selected.includes(value)) return false;
-      }
-      return true;
-    });
-  }, [actionTypeMap, articleMap, companies, matchesGlobalSearch, paneSelections, rows]);
+  const dataFilteredByPaneSelections = useCallback(
+    (excludePane?: PaneKey) => {
+      return rows.filter((row) => {
+        if (!matchesGlobalSearch(row)) return false;
+        for (const pane of paneConfig) {
+          if (pane.key === excludePane) continue;
+          const selected = paneSelections[pane.key];
+          if (selected.length === 0) continue;
+          const value = getPaneValue(row, pane.key, companies, articleMap, actionTypeMap);
+          if (!selected.includes(value)) return false;
+        }
+        return true;
+      });
+    },
+    [actionTypeMap, articleMap, companies, matchesGlobalSearch, paneSelections, rows],
+  );
 
   const paneOptions = useMemo(() => {
     const result: Record<PaneKey, PaneOption[]> = {
@@ -538,7 +579,10 @@ export function PayrollMovementsManagementPage() {
     return result;
   }, [actionTypeMap, articleMap, companies, dataFilteredByPaneSelections, paneSearch]);
 
-  const rowsFiltered = useMemo(() => dataFilteredByPaneSelections(), [dataFilteredByPaneSelections]);
+  const rowsFiltered = useMemo(
+    () => dataFilteredByPaneSelections(),
+    [dataFilteredByPaneSelections],
+  );
 
   const clearPaneSelection = (key: PaneKey) => {
     setPaneSelections((prev) => ({ ...prev, [key]: [] }));
@@ -547,76 +591,117 @@ export function PayrollMovementsManagementPage() {
 
   const clearAllFilters = () => {
     setSearch('');
-    setPaneSearch({ empresa: '', nombre: '', articulo: '', tipoAccion: '', tipoCalculo: '', estado: '' });
-    setPaneSelections({ empresa: [], nombre: [], articulo: [], tipoAccion: [], tipoCalculo: [], estado: [] });
-    setPaneOpen({ empresa: false, nombre: false, articulo: false, tipoAccion: false, tipoCalculo: false, estado: false });
+    setPaneSearch({
+      empresa: '',
+      nombre: '',
+      articulo: '',
+      tipoAccion: '',
+      tipoCalculo: '',
+      estado: '',
+    });
+    setPaneSelections({
+      empresa: [],
+      nombre: [],
+      articulo: [],
+      tipoAccion: [],
+      tipoCalculo: [],
+      estado: [],
+    });
+    setPaneOpen({
+      empresa: false,
+      nombre: false,
+      articulo: false,
+      tipoAccion: false,
+      tipoCalculo: false,
+      estado: false,
+    });
   };
 
   const openAllPanes = () => {
-    setPaneOpen({ empresa: true, nombre: true, articulo: true, tipoAccion: true, tipoCalculo: true, estado: true });
+    setPaneOpen({
+      empresa: true,
+      nombre: true,
+      articulo: true,
+      tipoAccion: true,
+      tipoCalculo: true,
+      estado: true,
+    });
   };
 
   const collapseAllPanes = () => {
-    setPaneOpen({ empresa: false, nombre: false, articulo: false, tipoAccion: false, tipoCalculo: false, estado: false });
+    setPaneOpen({
+      empresa: false,
+      nombre: false,
+      articulo: false,
+      tipoAccion: false,
+      tipoCalculo: false,
+      estado: false,
+    });
   };
 
-  const columns = useMemo<ColumnsType<PayrollMovementListItem>>(() => [
-    {
-      title: 'EMPRESA',
-      dataIndex: 'idEmpresa',
-      width: 180,
-      render: (idEmpresa: number) => companies.find((company) => company.id === idEmpresa)?.nombre ?? `Empresa #${idEmpresa}`,
-    },
-    {
-      title: 'NOMBRE',
-      dataIndex: 'nombre',
-      width: 220,
-    },
-    {
-      title: 'ARTICULO',
-      dataIndex: 'idArticuloNomina',
-      width: 220,
-      render: (idArticuloNomina: number) => articleMap.get(idArticuloNomina)?.nombre ?? `Articulo #${idArticuloNomina}`,
-    },
-    {
-      title: 'TIPO ACCION',
-      dataIndex: 'idTipoAccionPersonal',
-      width: 180,
-      render: (idTipoAccionPersonal: number) => actionTypeMap.get(idTipoAccionPersonal)?.nombre ?? `Accion #${idTipoAccionPersonal}`,
-    },
-    {
-      title: 'TIPO CALCULO',
-      dataIndex: 'esMontoFijo',
-      width: 140,
-      render: (esMontoFijo: number) => esMontoFijo === 1 ? 'Monto fijo' : 'Porcentaje',
-    },
-    {
-      title: 'MONTO FIJO',
-      dataIndex: 'montoFijo',
-      width: 140,
-    },
-    {
-      title: 'PORCENTAJE',
-      dataIndex: 'porcentaje',
-      width: 140,
-    },
-    {
-      title: 'ESTADO',
-      dataIndex: 'esInactivo',
-      width: 110,
-      render: (esInactivo: number) => (
-        <Tag className={esInactivo === 1 ? styles.tagInactivo : styles.tagActivo}>
-          {esInactivo === 1 ? 'Inactivo' : 'Activo'}
-        </Tag>
-      ),
-    },
-    {
-      title: 'ULTIMA MODIFICACION',
-      dataIndex: 'fechaModificacion',
-      width: 210,
-      render: (value?: string) => formatDateTime12h(value),
-    },
-  ], [actionTypeMap, articleMap, companies]);
+  const columns = useMemo<ColumnsType<PayrollMovementListItem>>(
+    () => [
+      {
+        title: 'EMPRESA',
+        dataIndex: 'idEmpresa',
+        width: 180,
+        render: (idEmpresa: number) =>
+          companies.find((company) => company.id === idEmpresa)?.nombre ?? `Empresa #${idEmpresa}`,
+      },
+      {
+        title: 'NOMBRE',
+        dataIndex: 'nombre',
+        width: 220,
+      },
+      {
+        title: 'ARTICULO',
+        dataIndex: 'idArticuloNomina',
+        width: 220,
+        render: (idArticuloNomina: number) =>
+          articleMap.get(idArticuloNomina)?.nombre ?? `Articulo #${idArticuloNomina}`,
+      },
+      {
+        title: 'TIPO ACCION',
+        dataIndex: 'idTipoAccionPersonal',
+        width: 180,
+        render: (idTipoAccionPersonal: number) =>
+          actionTypeMap.get(idTipoAccionPersonal)?.nombre ?? `Accion #${idTipoAccionPersonal}`,
+      },
+      {
+        title: 'TIPO CALCULO',
+        dataIndex: 'esMontoFijo',
+        width: 140,
+        render: (esMontoFijo: number) => (esMontoFijo === 1 ? 'Monto fijo' : 'Porcentaje'),
+      },
+      {
+        title: 'MONTO FIJO',
+        dataIndex: 'montoFijo',
+        width: 140,
+      },
+      {
+        title: 'PORCENTAJE',
+        dataIndex: 'porcentaje',
+        width: 140,
+      },
+      {
+        title: 'ESTADO',
+        dataIndex: 'esInactivo',
+        width: 110,
+        render: (esInactivo: number) => (
+          <Tag className={esInactivo === 1 ? styles.tagInactivo : styles.tagActivo}>
+            {esInactivo === 1 ? 'Inactivo' : 'Activo'}
+          </Tag>
+        ),
+      },
+      {
+        title: 'ULTIMA MODIFICACION',
+        dataIndex: 'fechaModificacion',
+        width: 210,
+        render: (value?: string) => formatDateTime12h(value),
+      },
+    ],
+    [actionTypeMap, articleMap, companies],
+  );
 
   const auditColumns = useMemo<ColumnsType<PayrollMovementAuditTrailItem>>(
     () => [
@@ -632,11 +717,16 @@ export function PayrollMovementsManagementPage() {
         key: 'actor',
         width: 210,
         render: (_, row) => {
-          const actorLabel = row.actorNombre?.trim() || row.actorEmail?.trim() || (row.actorUserId ? `Usuario ID ${row.actorUserId}` : 'Sistema');
+          const actorLabel =
+            row.actorNombre?.trim() ||
+            row.actorEmail?.trim() ||
+            (row.actorUserId ? `Usuario ID ${row.actorUserId}` : 'Sistema');
           return (
             <div>
               <div style={{ fontWeight: 600, color: '#3d4f5c' }}>{actorLabel}</div>
-              {row.actorEmail && <div style={{ color: '#8c8c8c', fontSize: 12 }}>{row.actorEmail}</div>}
+              {row.actorEmail && (
+                <div style={{ color: '#8c8c8c', fontSize: 12 }}>{row.actorEmail}</div>
+              )}
             </div>
           );
         },
@@ -664,8 +754,13 @@ export function PayrollMovementsManagementPage() {
               {changes.length > 0 ? (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                   {changes.map((change, index) => (
-                    <div key={`${row.id}-${change.campo}-${index}`} style={{ fontSize: 12, lineHeight: 1.4 }}>
-                      <div><strong>{change.campo}</strong></div>
+                    <div
+                      key={`${row.id}-${change.campo}-${index}`}
+                      style={{ fontSize: 12, lineHeight: 1.4 }}
+                    >
+                      <div>
+                        <strong>{change.campo}</strong>
+                      </div>
                       <div>Antes: {change.antes}</div>
                       <div>Despues: {change.despues}</div>
                     </div>
@@ -717,7 +812,8 @@ export function PayrollMovementsManagementPage() {
               <div>
                 <h2 className={styles.gestionTitle}>Gestion de Movimientos de Nomina</h2>
                 <p className={styles.gestionDesc}>
-                  Administre y consulte todos los movimientos de nomina configurados para las empresas
+                  Administre y consulte todos los movimientos de nomina configurados para las
+                  empresas
                 </p>
               </div>
             </Flex>
@@ -737,7 +833,13 @@ export function PayrollMovementsManagementPage() {
 
       <Card className={styles.mainCard} styles={{ body: { padding: 0 } }}>
         <div className={styles.mainCardBody}>
-          <Flex align="center" justify="space-between" wrap="wrap" gap={12} className={styles.registrosHeader}>
+          <Flex
+            align="center"
+            justify="space-between"
+            wrap="wrap"
+            gap={12}
+            className={styles.registrosHeader}
+          >
             <Flex align="center" gap={12} wrap="wrap">
               <Flex align="center" gap={8}>
                 <FilterOutlined className={styles.registrosFilterIcon} />
@@ -770,11 +872,19 @@ export function PayrollMovementsManagementPage() {
 
           <Collapse
             activeKey={filtersExpanded ? ['filtros'] : []}
-            onChange={(keys) => setFiltersExpanded((Array.isArray(keys) ? keys : [keys]).includes('filtros'))}
+            onChange={(keys) =>
+              setFiltersExpanded((Array.isArray(keys) ? keys : [keys]).includes('filtros'))
+            }
             className={styles.filtersCollapse}
           >
             <Collapse.Panel header="Filtros" key="filtros">
-              <Flex justify="space-between" align="center" wrap="wrap" gap={12} style={{ marginBottom: 16 }}>
+              <Flex
+                justify="space-between"
+                align="center"
+                wrap="wrap"
+                gap={12}
+                style={{ marginBottom: 16 }}
+              >
                 <Input
                   placeholder="Search"
                   prefix={<SearchOutlined />}
@@ -785,9 +895,15 @@ export function PayrollMovementsManagementPage() {
                   style={{ maxWidth: 240 }}
                 />
                 <Flex gap={8}>
-                  <Button size="small" onClick={collapseAllPanes}>Collapse All</Button>
-                  <Button size="small" onClick={openAllPanes}>Show All</Button>
-                  <Button size="small" onClick={clearAllFilters}>Limpiar Todo</Button>
+                  <Button size="small" onClick={collapseAllPanes}>
+                    Collapse All
+                  </Button>
+                  <Button size="small" onClick={openAllPanes}>
+                    Show All
+                  </Button>
+                  <Button size="small" onClick={clearAllFilters}>
+                    Limpiar Todo
+                  </Button>
                 </Flex>
               </Flex>
               <Row gutter={[12, 12]}>
@@ -797,15 +913,17 @@ export function PayrollMovementsManagementPage() {
                       <Flex gap={6} align="center" wrap="wrap">
                         <Input
                           value={paneSearch[pane.key]}
-                          onChange={(event) => setPaneSearch((prev) => ({ ...prev, [pane.key]: event.target.value }))}
+                          onChange={(event) =>
+                            setPaneSearch((prev) => ({ ...prev, [pane.key]: event.target.value }))
+                          }
                           placeholder={pane.title}
                           prefix={<SearchOutlined style={{ fontSize: 12, color: '#8c8c8c' }} />}
-                          suffix={(
+                          suffix={
                             <Flex gap={2}>
                               <SortAscendingOutlined style={{ fontSize: 10, color: '#8c8c8c' }} />
                               <SortDescendingOutlined style={{ fontSize: 10, color: '#8c8c8c' }} />
                             </Flex>
-                          )}
+                          }
                           size="middle"
                           className={styles.filterInput}
                           style={{ flex: 1, minWidth: 120 }}
@@ -816,13 +934,19 @@ export function PayrollMovementsManagementPage() {
                           onClick={() => setPaneOpen((prev) => ({ ...prev, [pane.key]: true }))}
                           title="Abrir opciones"
                         />
-                        <Button size="middle" onClick={() => clearPaneSelection(pane.key)} title="Limpiar">
+                        <Button
+                          size="middle"
+                          onClick={() => clearPaneSelection(pane.key)}
+                          title="Limpiar"
+                        >
                           x
                         </Button>
                         <Button
                           size="middle"
                           icon={paneOpen[pane.key] ? <UpOutlined /> : <DownOutlined />}
-                          onClick={() => setPaneOpen((prev) => ({ ...prev, [pane.key]: !prev[pane.key] }))}
+                          onClick={() =>
+                            setPaneOpen((prev) => ({ ...prev, [pane.key]: !prev[pane.key] }))
+                          }
                           title={paneOpen[pane.key] ? 'Colapsar' : 'Expandir'}
                         />
                       </Flex>
@@ -830,14 +954,22 @@ export function PayrollMovementsManagementPage() {
                         <div className={styles.paneOptionsBox}>
                           <Checkbox.Group
                             value={paneSelections[pane.key]}
-                            onChange={(values) => setPaneSelections((prev) => ({ ...prev, [pane.key]: values as string[] }))}
+                            onChange={(values) =>
+                              setPaneSelections((prev) => ({
+                                ...prev,
+                                [pane.key]: values as string[],
+                              }))
+                            }
                             style={{ display: 'flex', flexDirection: 'column', gap: 8 }}
                           >
                             {paneOptions[pane.key].map((option) => (
                               <Checkbox key={`${pane.key}:${option.value}`} value={option.value}>
                                 <Space>
                                   <span>{option.value}</span>
-                                  <Badge count={option.count} style={{ backgroundColor: '#5a6c7d' }} />
+                                  <Badge
+                                    count={option.count}
+                                    style={{ backgroundColor: '#5a6c7d' }}
+                                  />
                                 </Space>
                               </Checkbox>
                             ))}
@@ -863,7 +995,8 @@ export function PayrollMovementsManagementPage() {
             pagination={{
               pageSize,
               showSizeChanger: false,
-              showTotal: (total, [start, end]) => `Mostrando ${start} a ${end} de ${total} registros`,
+              showTotal: (total, [start, end]) =>
+                `Mostrando ${start} a ${end} de ${total} registros`,
             }}
             onRow={(record) => ({
               onClick: () => openEditModal(record),
@@ -885,8 +1018,13 @@ export function PayrollMovementsManagementPage() {
           header: { marginBottom: 0, padding: 0 },
           body: { padding: 24, maxHeight: '70vh', overflowY: 'auto' },
         }}
-        title={(
-          <Flex justify="space-between" align="center" wrap="nowrap" style={{ width: '100%', gap: 16 }}>
+        title={
+          <Flex
+            justify="space-between"
+            align="center"
+            wrap="nowrap"
+            style={{ width: '100%', gap: 16 }}
+          >
             <div className={styles.companyModalHeader}>
               <div className={styles.companyModalHeaderIcon}>
                 <AppstoreOutlined />
@@ -945,7 +1083,7 @@ export function PayrollMovementsManagementPage() {
               />
             </Flex>
           </Flex>
-        )}
+        }
       >
         <Spin spinning={loadingDetail || loadingCatalogs || loadingCompanyCatalogs}>
           <Form
@@ -954,7 +1092,12 @@ export function PayrollMovementsManagementPage() {
             onFinish={handleSubmit}
             onFinishFailed={(info) => {
               const firstField = info.errorFields?.[0]?.name?.[0];
-              if (firstField && ['esMontoFijo', 'montoFijo', 'porcentaje', 'formulaAyuda'].includes(String(firstField))) {
+              if (
+                firstField &&
+                ['esMontoFijo', 'montoFijo', 'porcentaje', 'formulaAyuda'].includes(
+                  String(firstField),
+                )
+              ) {
                 setActiveTab('calculo');
               } else {
                 setActiveTab('principal');
@@ -990,7 +1133,11 @@ export function PayrollMovementsManagementPage() {
                         </Col>
                       ) : (
                         <Col span={12}>
-                          <Form.Item name="idEmpresa" label="Empresa *" rules={[{ required: true }]}>
+                          <Form.Item
+                            name="idEmpresa"
+                            label="Empresa *"
+                            rules={[{ required: true }]}
+                          >
                             <Select
                               showSearch
                               optionFilterProp="label"
@@ -1005,21 +1152,34 @@ export function PayrollMovementsManagementPage() {
                         </Col>
                       )}
                       <Col span={12}>
-                        <Form.Item name="nombre" label="Nombre Movimiento *" rules={textRules({ required: true, max: 200 })}>
+                        <Form.Item
+                          name="nombre"
+                          label="Nombre Movimiento *"
+                          rules={textRules({ required: true, max: 200 })}
+                        >
                           <Input placeholder="Nombre movimiento" maxLength={200} />
                         </Form.Item>
                       </Col>
                       <Col span={12}>
-                        <Form.Item name="idArticuloNomina" label="Articulo de Nomina *" rules={[{ required: true }]}>
+                        <Form.Item
+                          name="idArticuloNomina"
+                          label="Articulo de Nomina *"
+                          rules={[{ required: true }]}
+                        >
                           <Select
                             showSearch
                             optionFilterProp="label"
                             filterOption={selectFilterByLabel}
-                            placeholder={selectedEmpresa ? 'Seleccionar' : 'Seleccione empresa primero'}
+                            placeholder={
+                              selectedEmpresa ? 'Seleccionar' : 'Seleccione empresa primero'
+                            }
                             disabled={!selectedEmpresa}
                             options={articleOptions.map((article) => ({
                               value: article.id,
-                              label: article.esInactivo === 1 ? `${article.nombre} (Inactivo)` : article.nombre,
+                              label:
+                                article.esInactivo === 1
+                                  ? `${article.nombre} (Inactivo)`
+                                  : article.nombre,
                             }))}
                           />
                         </Form.Item>
@@ -1042,7 +1202,10 @@ export function PayrollMovementsManagementPage() {
                             disabled
                             options={actionTypeOptions.map((actionType) => ({
                               value: actionType.id,
-                              label: actionType.estado === 1 ? actionType.nombre : `${actionType.nombre} (Inactivo)`,
+                              label:
+                                actionType.estado === 1
+                                  ? actionType.nombre
+                                  : `${actionType.nombre} (Inactivo)`,
                             }))}
                           />
                         </Form.Item>
@@ -1057,7 +1220,8 @@ export function PayrollMovementsManagementPage() {
                             placeholder="Seleccionar"
                             options={classOptions.map((item) => ({
                               value: item.id,
-                              label: item.esInactivo === 1 ? `${item.nombre} (Inactivo)` : item.nombre,
+                              label:
+                                item.esInactivo === 1 ? `${item.nombre} (Inactivo)` : item.nombre,
                             }))}
                           />
                         </Form.Item>
@@ -1069,23 +1233,32 @@ export function PayrollMovementsManagementPage() {
                             optionFilterProp="label"
                             filterOption={selectFilterByLabel}
                             allowClear
-                            placeholder={selectedEmpresa ? 'Seleccionar' : 'Seleccione empresa primero'}
+                            placeholder={
+                              selectedEmpresa ? 'Seleccionar' : 'Seleccione empresa primero'
+                            }
                             disabled={!selectedEmpresa}
                             options={projectOptions.map((item) => ({
                               value: item.id,
-                              label: item.esInactivo === 1 ? `${item.nombre} (Inactivo)` : item.nombre,
+                              label:
+                                item.esInactivo === 1 ? `${item.nombre} (Inactivo)` : item.nombre,
                             }))}
                           />
                         </Form.Item>
                       </Col>
                       <Col span={24}>
-                        <Form.Item name="descripcion" label="Descripcion" rules={[{ validator: optionalNoSqlAllowDashDash }]}>
+                        <Form.Item
+                          name="descripcion"
+                          label="Descripcion"
+                          rules={[{ validator: optionalNoSqlAllowDashDash }]}
+                        >
                           <Input.TextArea rows={3} placeholder="Descripcion" maxLength={2000} />
                         </Form.Item>
                       </Col>
                       {selectedArticleObj?.esInactivo === 1 && (
                         <Col span={24}>
-                          <Tag className={styles.tagInactivo}>El articulo seleccionado esta inactivo.</Tag>
+                          <Tag className={styles.tagInactivo}>
+                            El articulo seleccionado esta inactivo.
+                          </Tag>
                         </Col>
                       )}
                     </Row>
@@ -1181,40 +1354,46 @@ export function PayrollMovementsManagementPage() {
                 },
                 ...(canViewAudit && editing
                   ? [
-                    {
-                      key: 'bitacora',
-                      label: (
-                        <span>
-                          <HistoryOutlined style={{ marginRight: 8, fontSize: 16 }} />
-                          Bitacora
-                        </span>
-                      ),
-                      children: (
-                        <Spin spinning={loadingAuditTrail}>
-                          <div style={{ paddingTop: 8 }}>
-                            <p className={styles.sectionTitle}>Historial de cambios del movimiento de nomina</p>
-                            <p className={styles.sectionDescription}>
-                              Muestra quien hizo el cambio, cuando lo hizo y el detalle registrado en bitacora.
-                            </p>
-                            <Table
-                              columns={auditColumns}
-                              dataSource={auditTrail}
-                              rowKey="id"
-                              size="small"
-                              loading={loadingAuditTrail}
-                              className={`${styles.configTable} ${styles.auditTableCompact}`}
-                              pagination={{
-                                pageSize: 8,
-                                showSizeChanger: true,
-                                showTotal: (total) => `${total} registro(s)`,
-                              }}
-                              locale={{ emptyText: 'No hay registros de bitacora para este movimiento de nomina.' }}
-                            />
-                          </div>
-                        </Spin>
-                      ),
-                    },
-                  ]
+                      {
+                        key: 'bitacora',
+                        label: (
+                          <span>
+                            <HistoryOutlined style={{ marginRight: 8, fontSize: 16 }} />
+                            Bitacora
+                          </span>
+                        ),
+                        children: (
+                          <Spin spinning={loadingAuditTrail}>
+                            <div style={{ paddingTop: 8 }}>
+                              <p className={styles.sectionTitle}>
+                                Historial de cambios del movimiento de nomina
+                              </p>
+                              <p className={styles.sectionDescription}>
+                                Muestra quien hizo el cambio, cuando lo hizo y el detalle registrado
+                                en bitacora.
+                              </p>
+                              <Table
+                                columns={auditColumns}
+                                dataSource={auditTrail}
+                                rowKey="id"
+                                size="small"
+                                loading={loadingAuditTrail}
+                                className={`${styles.configTable} ${styles.auditTableCompact}`}
+                                pagination={{
+                                  pageSize: 8,
+                                  showSizeChanger: true,
+                                  showTotal: (total) => `${total} registro(s)`,
+                                }}
+                                locale={{
+                                  emptyText:
+                                    'No hay registros de bitacora para este movimiento de nomina.',
+                                }}
+                              />
+                            </div>
+                          </Spin>
+                        ),
+                      },
+                    ]
                   : []),
               ]}
             />

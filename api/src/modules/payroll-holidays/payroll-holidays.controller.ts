@@ -18,7 +18,7 @@ import { CacheResponseInterceptor } from '../../common/interceptors/cache-respon
 
 import type { CreatePayrollHolidayDto } from './dto/create-payroll-holiday.dto';
 import type { UpdatePayrollHolidayDto } from './dto/update-payroll-holiday.dto';
-import type { PayrollHolidaysService } from './payroll-holidays.service';
+import { PayrollHolidaysService } from './payroll-holidays.service';
 
 @CacheScope('payroll-holidays')
 @UseInterceptors(CacheResponseInterceptor)

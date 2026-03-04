@@ -28,7 +28,7 @@ import type { UpsertOvertimeDto } from './dto/upsert-overtime.dto';
 import type { UpsertRetentionDto } from './dto/upsert-retention.dto';
 import type { UpsertVacationDto } from './dto/upsert-vacation.dto';
 import type { PersonalActionEstado } from './entities/personal-action.entity';
-import type { PersonalActionsService } from './personal-actions.service';
+import { PersonalActionsService } from './personal-actions.service';
 
 @CacheScope('personal-actions')
 @UseInterceptors(CacheResponseInterceptor)

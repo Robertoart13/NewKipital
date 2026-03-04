@@ -23,7 +23,7 @@ import type { AssignRolePermissionDto } from './dto/assign-role-permission.dto';
 import type { CreateRoleDto } from './dto/create-role.dto';
 import type { ReplaceRolePermissionsDto } from './dto/replace-role-permissions.dto';
 import type { UpdateRoleDto } from './dto/update-role.dto';
-import type { RolesService } from './roles.service';
+import { RolesService } from './roles.service';
 
 @CacheScope('roles')
 @UseInterceptors(CacheResponseInterceptor)

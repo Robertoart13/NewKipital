@@ -20,7 +20,7 @@ import { CacheResponseInterceptor } from '../../common/interceptors/cache-respon
 
 import type { CreateUserDto } from './dto/create-user.dto';
 import type { UpdateUserDto } from './dto/update-user.dto';
-import type { UsersService } from './users.service';
+import { UsersService } from './users.service';
 
 @CacheScope('users')
 @UseInterceptors(CacheResponseInterceptor)

@@ -82,26 +82,31 @@ export async function fetchAccountingAccount(id: number): Promise<AccountingAcco
   return res.json();
 }
 
-export async function createAccountingAccount(payload: AccountingAccountPayload): Promise<AccountingAccountListItem> {
+export async function createAccountingAccount(
+  payload: AccountingAccountPayload,
+): Promise<AccountingAccountListItem> {
   const res = await httpFetch('/accounting-accounts', {
     method: 'POST',
     body: JSON.stringify(payload),
   });
   if (!res.ok) {
-    const error = await res.json().catch(() => null) as { message?: string | string[] } | null;
+    const error = (await res.json().catch(() => null)) as { message?: string | string[] } | null;
     const msg = Array.isArray(error?.message) ? error.message.join(', ') : error?.message;
     throw new Error(msg || 'Error al crear cuenta contable');
   }
   return res.json();
 }
 
-export async function updateAccountingAccount(id: number, payload: Partial<AccountingAccountPayload>): Promise<AccountingAccountListItem> {
+export async function updateAccountingAccount(
+  id: number,
+  payload: Partial<AccountingAccountPayload>,
+): Promise<AccountingAccountListItem> {
   const res = await httpFetch(`/accounting-accounts/${id}`, {
     method: 'PUT',
     body: JSON.stringify(payload),
   });
   if (!res.ok) {
-    const error = await res.json().catch(() => null) as { message?: string | string[] } | null;
+    const error = (await res.json().catch(() => null)) as { message?: string | string[] } | null;
     const msg = Array.isArray(error?.message) ? error.message.join(', ') : error?.message;
     throw new Error(msg || 'Error al actualizar cuenta contable');
   }
@@ -120,11 +125,14 @@ export async function reactivateAccountingAccount(id: number): Promise<Accountin
   return res.json();
 }
 
-export async function fetchAccountingAccountAuditTrail(id: number, limit = 200): Promise<AccountingAccountAuditTrailItem[]> {
+export async function fetchAccountingAccountAuditTrail(
+  id: number,
+  limit = 200,
+): Promise<AccountingAccountAuditTrailItem[]> {
   const qs = new URLSearchParams({ limit: String(limit) });
   const res = await httpFetch(`/accounting-accounts/${id}/audit-trail?${qs}`);
   if (!res.ok) {
-    const error = await res.json().catch(() => null) as { message?: string | string[] } | null;
+    const error = (await res.json().catch(() => null)) as { message?: string | string[] } | null;
     const msg = Array.isArray(error?.message) ? error.message.join(', ') : error?.message;
     throw new Error(msg || 'Error al cargar bitacora de cuentas contables');
   }

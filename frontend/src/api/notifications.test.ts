@@ -5,6 +5,7 @@ vi.mock('../interceptors/httpInterceptor', () => ({
 }));
 
 import { httpFetch } from '../interceptors/httpInterceptor';
+
 import {
   fetchNotifications,
   fetchUnreadCount,
@@ -19,7 +20,10 @@ describe('notifications api', () => {
   beforeEach(() => vi.clearAllMocks());
 
   it('fetchNotifications builds query params', async () => {
-    mockHttpFetch.mockResolvedValue({ ok: true, json: vi.fn().mockResolvedValue([{ id: 1 }]) } as any);
+    mockHttpFetch.mockResolvedValue({
+      ok: true,
+      json: vi.fn().mockResolvedValue([{ id: 1 }]),
+    } as any);
     const result = await fetchNotifications({ status: 'unread', appCode: 'kpital', companyId: 2 });
     const url = mockHttpFetch.mock.calls[0][0] as string;
     expect(url).toContain('status=unread');
@@ -43,7 +47,10 @@ describe('notifications api', () => {
   });
 
   it('fetchUnreadCount returns number', async () => {
-    mockHttpFetch.mockResolvedValue({ ok: true, json: vi.fn().mockResolvedValue({ count: 5 }) } as any);
+    mockHttpFetch.mockResolvedValue({
+      ok: true,
+      json: vi.fn().mockResolvedValue({ count: 5 }),
+    } as any);
     expect(await fetchUnreadCount()).toBe(5);
   });
 

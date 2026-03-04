@@ -7,4 +7,3 @@ export function isMicrosoftOAuthCallbackInProgress(): boolean {
   const params = new URLSearchParams(window.location.search);
   return params.has('code') || params.has('error');
 }
-

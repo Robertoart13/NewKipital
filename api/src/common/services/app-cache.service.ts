@@ -1,11 +1,11 @@
 import { createHash } from 'crypto';
 
 import { Inject, Injectable, Logger } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 
 import { REDIS_CLIENT } from '../../config/redis.config';
 import { DEFAULT_CACHE_TTL_MS } from '../constants/cache.constants';
 
-import type { ConfigService } from '@nestjs/config';
 import type Redis from 'ioredis';
 
 type CacheEntry<T> = {
@@ -51,6 +51,7 @@ export class AppCacheService {
   constructor(
     @Inject(REDIS_CLIENT)
     private readonly redisClient: Redis | null,
+    @Inject(ConfigService)
     private readonly config: ConfigService,
   ) {
     this.strictRedis =

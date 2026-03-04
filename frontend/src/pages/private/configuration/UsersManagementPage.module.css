@@ -454,7 +454,10 @@
 }
 
 .employeeFlowTabs :global(.ant-tabs-tab) {
-  transition: color 0.25s ease, transform 0.25s ease, background 0.25s ease;
+  transition:
+    color 0.25s ease,
+    transform 0.25s ease,
+    background 0.25s ease;
   padding: 10px 16px;
   border-radius: 12px;
   background: rgba(90, 108, 125, 0.05);
@@ -590,7 +593,10 @@
   font-size: 14px;
   color: #777777;
   font-weight: 400;
-  transition: color 0.2s, background 0.2s, box-shadow 0.2s;
+  transition:
+    color 0.2s,
+    background 0.2s,
+    box-shadow 0.2s;
 }
 
 .pageTab:hover {
@@ -1420,7 +1426,9 @@
 
 .historicoTableRow {
   display: grid;
-  grid-template-columns: minmax(180px, 1.3fr) minmax(160px, 1fr) minmax(160px, 1fr) minmax(160px, 1fr) minmax(180px, 1.2fr) minmax(130px, 0.9fr) 72px;
+  grid-template-columns:
+    minmax(180px, 1.3fr) minmax(160px, 1fr) minmax(160px, 1fr) minmax(160px, 1fr)
+    minmax(180px, 1.2fr) minmax(130px, 0.9fr) 72px;
   gap: 8px;
   min-width: 1040px;
   padding: 14px 12px;
@@ -1614,7 +1622,9 @@
 .tabsWrapper :global(.ant-tabs-tab:hover .ant-tabs-tab-btn *) {
   color: #777777 !important;
   -webkit-text-fill-color: #777777 !important;
-  transition: color 0.25s ease, -webkit-text-fill-color 0.25s ease;
+  transition:
+    color 0.25s ease,
+    -webkit-text-fill-color 0.25s ease;
 }
 
 .tabsWrapper :global(.ant-tabs-tab:hover .ant-tabs-tab-btn),
@@ -1731,7 +1741,6 @@
   color: #a85c5c !important;
 }
 
-
 .exceptionListBox {
   max-height: 220px;
   overflow-y: auto;
@@ -1820,7 +1829,9 @@
   border-radius: 10px;
   padding: 16px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
-  transition: box-shadow 0.2s ease, border-color 0.2s ease;
+  transition:
+    box-shadow 0.2s ease,
+    border-color 0.2s ease;
 }
 
 .metricCard:hover {

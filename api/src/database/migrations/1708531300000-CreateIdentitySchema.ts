@@ -1,6 +1,6 @@
 import { Table, TableIndex, TableForeignKey } from 'typeorm';
 
-import type { MigrationInterface, QueryRunner } from 'typeorm';
+import { MigrationInterface, QueryRunner } from 'typeorm';
 
 /**
  * Directiva 14 — Core Identity Schema.

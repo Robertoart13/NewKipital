@@ -1,9 +1,11 @@
-import { Table, Dropdown, Button } from 'antd';
-import type { ColumnsType } from 'antd/es/table';
 import { EllipsisOutlined, EyeOutlined, EditOutlined } from '@ant-design/icons';
+import { Table, Dropdown, Button } from 'antd';
 import { Link } from 'react-router-dom';
-import type { EmployeeListItem } from '../../../../api/employees';
+
 import { EmployeeStatusBadge } from './EmployeeStatusBadge';
+
+import type { EmployeeListItem } from '../../../../api/employees';
+import type { ColumnsType } from 'antd/es/table';
 
 interface EmployeesTableProps {
   data: EmployeeListItem[];

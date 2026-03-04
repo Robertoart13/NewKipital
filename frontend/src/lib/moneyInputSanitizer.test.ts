@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+
 import {
   EMPLOYEE_MONEY_MAX_DIGITS,
   formatGroupedIntegerDisplay,

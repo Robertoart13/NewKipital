@@ -1,9 +1,6 @@
 const DEFAULT_MAX_DIGITS = 10;
 
-export function sanitizeMoneyDigits(
-  value: unknown,
-  maxDigits = DEFAULT_MAX_DIGITS,
-): string {
+export function sanitizeMoneyDigits(value: unknown, maxDigits = DEFAULT_MAX_DIGITS): string {
   const raw = String(value ?? '');
   return raw.replace(/\D+/g, '').slice(0, maxDigits);
 }

@@ -1,5 +1,16 @@
-﻿import { useCallback, useEffect, useMemo, useState, type MouseEvent } from 'react';
-import { Link } from 'react-router-dom';
+﻿import {
+  AppstoreOutlined,
+  ArrowLeftOutlined,
+  DownOutlined,
+  EditOutlined,
+  FilterOutlined,
+  PlusOutlined,
+  ReloadOutlined,
+  SearchOutlined,
+  SortAscendingOutlined,
+  SortDescendingOutlined,
+  UpOutlined,
+} from '@ant-design/icons';
 import {
   App as AntdApp,
   Badge,
@@ -17,23 +28,12 @@ import {
   Tag,
   Tooltip,
 } from 'antd';
-import type { ColumnsType } from 'antd/es/table';
-import {
-  AppstoreOutlined,
-  ArrowLeftOutlined,
-  DownOutlined,
-  EditOutlined,
-  FilterOutlined,
-  PlusOutlined,
-  ReloadOutlined,
-  SearchOutlined,
-  SortAscendingOutlined,
-  SortDescendingOutlined,
-  UpOutlined,
-} from '@ant-design/icons';
 import dayjs from 'dayjs';
-import { useAppSelector } from '../../../../store/hooks';
-import { hasPermission } from '../../../../store/selectors/permissions.selectors';
+import { useCallback, useEffect, useMemo, useState, type MouseEvent } from 'react';
+import { Link } from 'react-router-dom';
+
+import { fetchPayPeriods, type CatalogPayPeriod } from '../../../../api/catalogs';
+import { type PayrollMovementListItem } from '../../../../api/payrollMovements';
 import {
   fetchDisabilityAuditTrail,
   advanceDisabilityState,
@@ -48,16 +48,17 @@ import {
   type PersonalActionAuditTrailItem,
   type PersonalActionListItem,
 } from '../../../../api/personalActions';
-import { fetchPayPeriods, type CatalogPayPeriod } from '../../../../api/catalogs';
-import {
-  type PayrollMovementListItem,
-} from '../../../../api/payrollMovements';
+import { useAppSelector } from '../../../../store/hooks';
+import { hasPermission } from '../../../../store/selectors/permissions.selectors';
 import styles from '../../configuration/UsersManagementPage.module.css';
+
 import {
   DisabilityTransactionModal,
   type DisabilityFormDraft,
   type DisabilityTransactionLine,
 } from './IncapacityTransactionModal';
+
+import type { ColumnsType } from 'antd/es/table';
 
 const ESTADO_LABEL: Record<number, { text: string; tagClass: string }> = {
   1: { text: 'Borrador', tagClass: styles.tagEstadoDefault },
@@ -150,18 +151,31 @@ function getPaneValue(
   companies: Array<{ id: number; nombre: string }>,
 ): string {
   if (key === 'empresa') {
-    return companies.find((c) => Number(c.id) === row.idEmpresa)?.nombre ?? `Empresa #${row.idEmpresa}`;
+    return (
+      companies.find((c) => Number(c.id) === row.idEmpresa)?.nombre ?? `Empresa #${row.idEmpresa}`
+    );
   }
-  if (key === 'empleado') return (row.employeeLabel ?? `Empleado #${row.idEmpleado}`).trim() || '--';
+  if (key === 'empleado')
+    return (row.employeeLabel ?? `Empleado #${row.idEmpleado}`).trim() || '--';
   if (key === 'periodoPago') return (row.periodoPagoResumen ?? '').trim() || '--';
   if (key === 'movimiento') return (row.movimientoResumen ?? '').trim() || '--';
-  if (key === 'remuneracion') return row.remuneracionResumen === 'SI' ? 'Si' : row.remuneracionResumen === 'NO' ? 'No' : row.remuneracionResumen === 'MIXTA' ? 'Mixta' : '--';
+  if (key === 'remuneracion')
+    return row.remuneracionResumen === 'SI'
+      ? 'Si'
+      : row.remuneracionResumen === 'NO'
+        ? 'No'
+        : row.remuneracionResumen === 'MIXTA'
+          ? 'Mixta'
+          : '--';
   if (key === 'estado') return ESTADO_LABEL[row.estado]?.text ?? `Estado ${row.estado}`;
   return '--';
 }
 
 function getEstadoTag(estado: number) {
-  const meta = ESTADO_LABEL[estado] ?? { text: `Estado ${estado}`, tagClass: styles.tagEstadoDefault };
+  const meta = ESTADO_LABEL[estado] ?? {
+    text: `Estado ${estado}`,
+    tagClass: styles.tagEstadoDefault,
+  };
   const help = ESTADO_HELP[estado] ?? 'Estado operativo de la accion.';
   return (
     <Tooltip title={help}>
@@ -185,34 +199,36 @@ function createDraftFromDisabilityDetail(detail: DisabilityDetailItem): Disabili
   const lines: DisabilityTransactionLine[] =
     detail.lines?.length > 0
       ? detail.lines.map((line) => ({
-        key: `${line.idLinea}-${line.orden}`,
-        payrollId: line.payrollId,
-        fechaEfecto: line.fechaEfecto ? dayjs(line.fechaEfecto) : undefined,
-        movimientoId: line.movimientoId,
-        tipoIncapacidad: line.tipoIncapacidad,
-        tipoInstitucion: line.tipoInstitucion,
-        cantidad: line.cantidad,
-        monto: line.monto,
-        montoIns: line.montoIns,
-        montoPatrono: line.montoPatrono,
-        subsidioCcss: line.subsidioCcss,
-        totalIncapacidad: line.totalIncapacidad,
-        remuneracion: line.remuneracion,
-        formula: line.formula ?? '',
-        payrollLabel: line.payrollLabel ?? undefined,
-        payrollEstado: line.payrollEstado ?? undefined,
-        movimientoLabel: line.movimientoLabel ?? undefined,
-        movimientoInactivo: line.movimientoInactivo === true,
-      }))
-      : [{
-        key: `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
-        tipoIncapacidad: 'enfermedad_comun_ccss',
-        tipoInstitucion: 'CCSS',
-        remuneracion: true,
-        formula: detail.descripcion ?? '',
-        monto: detail.monto ?? undefined,
-        fechaEfecto: detail.fechaEfecto ? dayjs(detail.fechaEfecto) : undefined,
-      }];
+          key: `${line.idLinea}-${line.orden}`,
+          payrollId: line.payrollId,
+          fechaEfecto: line.fechaEfecto ? dayjs(line.fechaEfecto) : undefined,
+          movimientoId: line.movimientoId,
+          tipoIncapacidad: line.tipoIncapacidad,
+          tipoInstitucion: line.tipoInstitucion,
+          cantidad: line.cantidad,
+          monto: line.monto,
+          montoIns: line.montoIns,
+          montoPatrono: line.montoPatrono,
+          subsidioCcss: line.subsidioCcss,
+          totalIncapacidad: line.totalIncapacidad,
+          remuneracion: line.remuneracion,
+          formula: line.formula ?? '',
+          payrollLabel: line.payrollLabel ?? undefined,
+          payrollEstado: line.payrollEstado ?? undefined,
+          movimientoLabel: line.movimientoLabel ?? undefined,
+          movimientoInactivo: line.movimientoInactivo === true,
+        }))
+      : [
+          {
+            key: `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+            tipoIncapacidad: 'enfermedad_comun_ccss',
+            tipoInstitucion: 'CCSS',
+            remuneracion: true,
+            formula: detail.descripcion ?? '',
+            monto: detail.monto ?? undefined,
+            fechaEfecto: detail.fechaEfecto ? dayjs(detail.fechaEfecto) : undefined,
+          },
+        ];
 
   return {
     idEmpresa: detail.idEmpresa,
@@ -226,15 +242,22 @@ export function IncapacitiesPage() {
   const { message, modal } = AntdApp.useApp();
   const companies = useAppSelector((state) => state.auth.companies);
   const activeCompany = useAppSelector((state) => state.activeCompany.company);
-  const canCreate = useAppSelector((state) => hasPermission(state, 'hr-action-incapacidades:create'));
+  const canCreate = useAppSelector((state) =>
+    hasPermission(state, 'hr-action-incapacidades:create'),
+  );
   const canEdit = useAppSelector((state) => hasPermission(state, 'hr-action-incapacidades:edit'));
-  const canCancel = useAppSelector((state) => hasPermission(state, 'hr-action-incapacidades:cancel'));
-  const canView = useAppSelector((state) =>
-    hasPermission(state, 'hr-action-incapacidades:view') ||
-    hasPermission(state, 'hr_action:view'),
+  const canCancel = useAppSelector((state) =>
+    hasPermission(state, 'hr-action-incapacidades:cancel'),
+  );
+  const canView = useAppSelector(
+    (state) =>
+      hasPermission(state, 'hr-action-incapacidades:view') ||
+      hasPermission(state, 'hr_action:view'),
   );
   const canApprove = useAppSelector((state) => hasPermission(state, 'hr_action:approve'));
-  const canViewEmployeeSensitive = useAppSelector((state) => hasPermission(state, 'employee:view-sensitive'));
+  const canViewEmployeeSensitive = useAppSelector((state) =>
+    hasPermission(state, 'employee:view-sensitive'),
+  );
 
   const defaultCompanyId = useMemo(() => {
     const active = Number(activeCompany?.id);
@@ -262,7 +285,9 @@ export function IncapacitiesPage() {
   >([]);
   const [payPeriods, setPayPeriods] = useState<CatalogPayPeriod[]>([]);
   const [movements, setMovements] = useState<PayrollMovementListItem[]>([]);
-  const [disabilityActionTypeId, setDisabilityActionTypeId] = useState<number | undefined>(undefined);
+  const [disabilityActionTypeId, setDisabilityActionTypeId] = useState<number | undefined>(
+    undefined,
+  );
   const [loading, setLoading] = useState(false);
   const [loadingEmployees, setLoadingEmployees] = useState(false);
   const [loadingMovements, setLoadingMovements] = useState(false);
@@ -313,17 +338,52 @@ export function IncapacitiesPage() {
     setSearch('');
     setSelectedEstados([1, 2, 3]);
     setCompanyId(defaultCompanyId);
-    setPaneSearch({ empresa: '', empleado: '', periodoPago: '', movimiento: '', remuneracion: '', estado: '' });
-    setPaneSelections({ empresa: [], empleado: [], periodoPago: [], movimiento: [], remuneracion: [], estado: [] });
-    setPaneOpen({ empresa: false, empleado: false, periodoPago: false, movimiento: false, remuneracion: false, estado: false });
+    setPaneSearch({
+      empresa: '',
+      empleado: '',
+      periodoPago: '',
+      movimiento: '',
+      remuneracion: '',
+      estado: '',
+    });
+    setPaneSelections({
+      empresa: [],
+      empleado: [],
+      periodoPago: [],
+      movimiento: [],
+      remuneracion: [],
+      estado: [],
+    });
+    setPaneOpen({
+      empresa: false,
+      empleado: false,
+      periodoPago: false,
+      movimiento: false,
+      remuneracion: false,
+      estado: false,
+    });
   };
 
   const openAllPanes = () => {
-    setPaneOpen({ empresa: true, empleado: true, periodoPago: true, movimiento: true, remuneracion: true, estado: true });
+    setPaneOpen({
+      empresa: true,
+      empleado: true,
+      periodoPago: true,
+      movimiento: true,
+      remuneracion: true,
+      estado: true,
+    });
   };
 
   const collapseAllPanes = () => {
-    setPaneOpen({ empresa: false, empleado: false, periodoPago: false, movimiento: false, remuneracion: false, estado: false });
+    setPaneOpen({
+      empresa: false,
+      empleado: false,
+      periodoPago: false,
+      movimiento: false,
+      remuneracion: false,
+      estado: false,
+    });
   };
 
   const loadRows = useCallback(async () => {
@@ -338,58 +398,71 @@ export function IncapacitiesPage() {
         String(companyId),
         selectedEstados.length > 0 ? selectedEstados : undefined,
       );
-      const filtered = data.filter((item) => item.tipoAccion.trim().toLowerCase() === 'incapacidad');
+      const filtered = data.filter(
+        (item) => item.tipoAccion.trim().toLowerCase() === 'incapacidad',
+      );
       setRows(filtered);
     } catch (error) {
-      message.error(error instanceof Error ? error.message : 'No se pudieron cargar las incapacidades.');
+      message.error(
+        error instanceof Error ? error.message : 'No se pudieron cargar las incapacidades.',
+      );
     } finally {
       setLoading(false);
     }
   }, [companyId, message, selectedEstados]);
 
-  const openEditModal = useCallback(async (row: DisabilityUiRow) => {
-    const key = `Disability-edit-load-${row.id}`;
-    setEditingRow(row);
-    setEditingDraft({
-      idEmpresa: row.idEmpresa,
-      idEmpleado: row.idEmpleado,
-      observacion: row.descripcion ?? '',
-      lines: [],
-    });
-    setMode('edit');
-    setLoadingEditDetail(true);
-    setAuditTrail([]);
-    setOpenModal(true);
-    message.loading({ content: 'Cargando detalle de incapacidad...', key, duration: 0 });
-    try {
-      const detail = await fetchDisabilityDetail(row.id);
-      setEditingDraft(createDraftFromDisabilityDetail(detail));
-      message.destroy(key);
-    } catch (error) {
-      message.error({
-        content: error instanceof Error ? error.message : 'No se pudo cargar el detalle de incapacidad.',
-        key,
+  const openEditModal = useCallback(
+    async (row: DisabilityUiRow) => {
+      const key = `Disability-edit-load-${row.id}`;
+      setEditingRow(row);
+      setEditingDraft({
+        idEmpresa: row.idEmpresa,
+        idEmpleado: row.idEmpleado,
+        observacion: row.descripcion ?? '',
+        lines: [],
       });
-      setOpenModal(false);
-      setEditingDraft(undefined);
-      setEditingRow(null);
-    } finally {
-      setLoadingEditDetail(false);
-    }
-  }, [message]);
-
-  const loadDisabilityAuditTrail = useCallback(async (id: number) => {
-    setLoadingAuditTrail(true);
-    try {
-      const rowsAudit = await fetchDisabilityAuditTrail(id, 200);
-      setAuditTrail(rowsAudit ?? []);
-    } catch (error) {
+      setMode('edit');
+      setLoadingEditDetail(true);
       setAuditTrail([]);
-      message.error(error instanceof Error ? error.message : 'Error al cargar bitacora de incapacidad');
-    } finally {
-      setLoadingAuditTrail(false);
-    }
-  }, [message]);
+      setOpenModal(true);
+      message.loading({ content: 'Cargando detalle de incapacidad...', key, duration: 0 });
+      try {
+        const detail = await fetchDisabilityDetail(row.id);
+        setEditingDraft(createDraftFromDisabilityDetail(detail));
+        message.destroy(key);
+      } catch (error) {
+        message.error({
+          content:
+            error instanceof Error ? error.message : 'No se pudo cargar el detalle de incapacidad.',
+          key,
+        });
+        setOpenModal(false);
+        setEditingDraft(undefined);
+        setEditingRow(null);
+      } finally {
+        setLoadingEditDetail(false);
+      }
+    },
+    [message],
+  );
+
+  const loadDisabilityAuditTrail = useCallback(
+    async (id: number) => {
+      setLoadingAuditTrail(true);
+      try {
+        const rowsAudit = await fetchDisabilityAuditTrail(id, 200);
+        setAuditTrail(rowsAudit ?? []);
+      } catch (error) {
+        setAuditTrail([]);
+        message.error(
+          error instanceof Error ? error.message : 'Error al cargar bitacora de incapacidad',
+        );
+      } finally {
+        setLoadingAuditTrail(false);
+      }
+    },
+    [message],
+  );
 
   const loadEditingDisabilityAuditTrail = useCallback(async () => {
     if (!editingRow?.id) return;
@@ -474,7 +547,8 @@ export function IncapacitiesPage() {
       const term = search.trim().toLowerCase();
       if (!term) return true;
       const companyName = companies.find((c) => Number(c.id) === row.idEmpresa)?.nombre ?? '';
-      const text = `${row.id} ${row.idEmpleado} ${row.employeeLabel ?? ''} ${row.descripcion ?? ''} ${companyName} ${row.periodoPagoResumen ?? ''} ${row.movimientoResumen ?? ''}`.toLowerCase();
+      const text =
+        `${row.id} ${row.idEmpleado} ${row.employeeLabel ?? ''} ${row.descripcion ?? ''} ${companyName} ${row.periodoPagoResumen ?? ''} ${row.movimientoResumen ?? ''}`.toLowerCase();
       return text.includes(term);
     },
     [companies, search],
@@ -523,162 +597,179 @@ export function IncapacitiesPage() {
     return result;
   }, [companies, dataFilteredByPaneSelections, paneSearch]);
 
-  const rowsFiltered = useMemo(() => dataFilteredByPaneSelections(), [dataFilteredByPaneSelections]);
+  const rowsFiltered = useMemo(
+    () => dataFilteredByPaneSelections(),
+    [dataFilteredByPaneSelections],
+  );
 
-  const columns: ColumnsType<DisabilityUiRow> = useMemo(() => [
-    {
-      title: 'EMPRESA',
-      key: 'empresa',
-      width: 240,
-      render: (_, row) => companies.find((company) => Number(company.id) === row.idEmpresa)?.nombre ?? `Empresa #${row.idEmpresa}`,
-    },
-    {
-      title: 'EMPLEADO',
-      key: 'empleado',
-      width: 260,
-      render: (_, row) => row.employeeLabel ?? `Empleado #${row.idEmpleado}`,
-    },
-    {
-      title: 'PERIODO DE PAGO',
-      dataIndex: 'periodoPagoResumen',
-      key: 'periodoPagoResumen',
-      width: 320,
-      render: (value) => summarizeCell(value),
-    },
-    {
-      title: 'MOVIMIENTO',
-      dataIndex: 'movimientoResumen',
-      key: 'movimientoResumen',
-      width: 280,
-      render: (value) => summarizeCell(value),
-    },
-    {
-      title: 'REMUNERADA',
-      dataIndex: 'remuneracionResumen',
-      key: 'remuneracionResumen',
-      width: 140,
-      render: (value: DisabilityUiRow['remuneracionResumen']) => {
-        if (value === 'SI') return <Tag color="green">Si</Tag>;
-        if (value === 'NO') return <Tag color="red">No</Tag>;
-        if (value === 'MIXTA') return <Tag color="gold">Mixta</Tag>;
-        return '--';
+  const columns: ColumnsType<DisabilityUiRow> = useMemo(
+    () => [
+      {
+        title: 'EMPRESA',
+        key: 'empresa',
+        width: 240,
+        render: (_, row) =>
+          companies.find((company) => Number(company.id) === row.idEmpresa)?.nombre ??
+          `Empresa #${row.idEmpresa}`,
       },
-    },
-    {
-      title: 'ESTADO',
-      dataIndex: 'estado',
-      key: 'estado',
-      width: 180,
-      render: (value) => getEstadoTag(value),
-    },
-    {
-      title: 'ACCIONES',
-      key: 'acciones',
-      width: 260,
-      render: (_, row) => {
-        const canInvalidate = canCancel && [1, 2, 3].includes(row.estado);
-        const nextAction = NEXT_STATE_ACTION_CONFIG[row.estado];
-        const canAdvance = nextAction
-          ? (nextAction.requiredPermission === 'approve' ? canApprove : canEdit)
-          : false;
+      {
+        title: 'EMPLEADO',
+        key: 'empleado',
+        width: 260,
+        render: (_, row) => row.employeeLabel ?? `Empleado #${row.idEmpleado}`,
+      },
+      {
+        title: 'PERIODO DE PAGO',
+        dataIndex: 'periodoPagoResumen',
+        key: 'periodoPagoResumen',
+        width: 320,
+        render: (value) => summarizeCell(value),
+      },
+      {
+        title: 'MOVIMIENTO',
+        dataIndex: 'movimientoResumen',
+        key: 'movimientoResumen',
+        width: 280,
+        render: (value) => summarizeCell(value),
+      },
+      {
+        title: 'REMUNERADA',
+        dataIndex: 'remuneracionResumen',
+        key: 'remuneracionResumen',
+        width: 140,
+        render: (value: DisabilityUiRow['remuneracionResumen']) => {
+          if (value === 'SI') return <Tag color="green">Si</Tag>;
+          if (value === 'NO') return <Tag color="red">No</Tag>;
+          if (value === 'MIXTA') return <Tag color="gold">Mixta</Tag>;
+          return '--';
+        },
+      },
+      {
+        title: 'ESTADO',
+        dataIndex: 'estado',
+        key: 'estado',
+        width: 180,
+        render: (value) => getEstadoTag(value),
+      },
+      {
+        title: 'ACCIONES',
+        key: 'acciones',
+        width: 260,
+        render: (_, row) => {
+          const canInvalidate = canCancel && [1, 2, 3].includes(row.estado);
+          const nextAction = NEXT_STATE_ACTION_CONFIG[row.estado];
+          const canAdvance = nextAction
+            ? nextAction.requiredPermission === 'approve'
+              ? canApprove
+              : canEdit
+            : false;
 
-        const onInvalidate = (e: MouseEvent<HTMLElement>) => {
-          e.stopPropagation();
-          modal.confirm({
-            title: 'Confirmar invalidacion',
-            content: 'Esta accion se marcara como invalidada y no seguira su flujo operativo. Desea continuar?',
-            okText: 'Si, invalidar',
-            cancelText: 'Cancelar',
-            centered: true,
-            width: 420,
-            rootClassName: styles.companyConfirmModal,
-            okButtonProps: { className: styles.companyConfirmOk, danger: true },
-            cancelButtonProps: { className: styles.companyConfirmCancel },
-            onOk: async () => {
-              const key = `Disability-invalidate-${row.id}`;
-              message.loading({ content: 'Invalidando incapacidad...', key, duration: 0 });
-              try {
-                await invalidateDisability(row.id);
-                message.success({ content: 'incapacidad invalidada correctamente.', key });
-                await loadRows();
-              } catch (error) {
-                message.error({
-                  content: error instanceof Error ? error.message : 'No se pudo invalidar la incapacidad.',
-                  key,
-                });
-              }
-            },
-          });
-        };
+          const onInvalidate = (e: MouseEvent<HTMLElement>) => {
+            e.stopPropagation();
+            modal.confirm({
+              title: 'Confirmar invalidacion',
+              content:
+                'Esta accion se marcara como invalidada y no seguira su flujo operativo. Desea continuar?',
+              okText: 'Si, invalidar',
+              cancelText: 'Cancelar',
+              centered: true,
+              width: 420,
+              rootClassName: styles.companyConfirmModal,
+              okButtonProps: { className: styles.companyConfirmOk, danger: true },
+              cancelButtonProps: { className: styles.companyConfirmCancel },
+              onOk: async () => {
+                const key = `Disability-invalidate-${row.id}`;
+                message.loading({ content: 'Invalidando incapacidad...', key, duration: 0 });
+                try {
+                  await invalidateDisability(row.id);
+                  message.success({ content: 'incapacidad invalidada correctamente.', key });
+                  await loadRows();
+                } catch (error) {
+                  message.error({
+                    content:
+                      error instanceof Error
+                        ? error.message
+                        : 'No se pudo invalidar la incapacidad.',
+                    key,
+                  });
+                }
+              },
+            });
+          };
 
-        const invalidateBtn = (
-          <Button danger size="small" disabled={!canInvalidate} onClick={onInvalidate}>
-            Invalidar
-          </Button>
-        );
-
-        const nextBtn = nextAction ? (
-          <Tooltip title={!canAdvance ? nextAction.deniedText : undefined}>
-            <Button
-              type="primary"
-              size="small"
-              disabled={!canAdvance}
-              onClick={(e) => {
-                e.stopPropagation();
-                modal.confirm({
-                  title: 'Confirmar cambio de estado',
-                  content: nextAction.confirmText,
-                  okText: 'Si, continuar',
-                  cancelText: 'Cancelar',
-                  centered: true,
-                  width: 420,
-                  rootClassName: styles.companyConfirmModal,
-                  okButtonProps: { className: styles.companyConfirmOk },
-                  cancelButtonProps: { className: styles.companyConfirmCancel },
-                  onOk: async () => {
-                    const key = `Disability-advance-${row.id}`;
-                    message.loading({ content: 'Actualizando estado...', key, duration: 0 });
-                    try {
-                      await advanceDisabilityState(row.id);
-                      message.success({ content: nextAction.successText, key });
-                      await loadRows();
-                    } catch (error) {
-                      message.error({
-                        content: error instanceof Error ? error.message : 'No se pudo actualizar el estado.',
-                        key,
-                      });
-                    }
-                  },
-                });
-              }}
-            >
-              {nextAction.label}
+          const invalidateBtn = (
+            <Button danger size="small" disabled={!canInvalidate} onClick={onInvalidate}>
+              Invalidar
             </Button>
-          </Tooltip>
-        ) : null;
+          );
 
-        return (
-          <Flex gap={8} align="center" wrap="nowrap" className={styles.actionsCell}>
-            {nextBtn ? <span className={styles.actionsCellFirst}>{nextBtn}</span> : null}
-            <span className={!nextBtn ? styles.actionsCellFirst : undefined}>
+          const nextBtn = nextAction ? (
+            <Tooltip title={!canAdvance ? nextAction.deniedText : undefined}>
               <Button
-                icon={<EditOutlined />}
+                type="primary"
                 size="small"
-                disabled={!canView}
+                disabled={!canAdvance}
                 onClick={(e) => {
                   e.stopPropagation();
-                  void openEditModal(row);
+                  modal.confirm({
+                    title: 'Confirmar cambio de estado',
+                    content: nextAction.confirmText,
+                    okText: 'Si, continuar',
+                    cancelText: 'Cancelar',
+                    centered: true,
+                    width: 420,
+                    rootClassName: styles.companyConfirmModal,
+                    okButtonProps: { className: styles.companyConfirmOk },
+                    cancelButtonProps: { className: styles.companyConfirmCancel },
+                    onOk: async () => {
+                      const key = `Disability-advance-${row.id}`;
+                      message.loading({ content: 'Actualizando estado...', key, duration: 0 });
+                      try {
+                        await advanceDisabilityState(row.id);
+                        message.success({ content: nextAction.successText, key });
+                        await loadRows();
+                      } catch (error) {
+                        message.error({
+                          content:
+                            error instanceof Error
+                              ? error.message
+                              : 'No se pudo actualizar el estado.',
+                          key,
+                        });
+                      }
+                    },
+                  });
                 }}
               >
-                Editar
+                {nextAction.label}
               </Button>
-            </span>
-            {canInvalidate ? invalidateBtn : null}
-          </Flex>
-        );
+            </Tooltip>
+          ) : null;
+
+          return (
+            <Flex gap={8} align="center" wrap="nowrap" className={styles.actionsCell}>
+              {nextBtn ? <span className={styles.actionsCellFirst}>{nextBtn}</span> : null}
+              <span className={!nextBtn ? styles.actionsCellFirst : undefined}>
+                <Button
+                  icon={<EditOutlined />}
+                  size="small"
+                  disabled={!canView}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    void openEditModal(row);
+                  }}
+                >
+                  Editar
+                </Button>
+              </span>
+              {canInvalidate ? invalidateBtn : null}
+            </Flex>
+          );
+        },
       },
-    },
-  ], [canApprove, canCancel, canEdit, canView, companies, loadRows, message, modal, openEditModal]);
+    ],
+    [canApprove, canCancel, canEdit, canView, companies, loadRows, message, modal, openEditModal],
+  );
 
   const modalTitle = mode === 'create' ? 'Crear incapacidad' : 'Editar incapacidad';
 
@@ -712,7 +803,9 @@ export function IncapacitiesPage() {
           </Link>
           <div className={styles.pageTitleBlock}>
             <h1 className={styles.pageTitle}>incapacidades</h1>
-            <p className={styles.pageSubtitle}>Gestione incapacidades por empresa con lineas de transaccion por periodo</p>
+            <p className={styles.pageSubtitle}>
+              Gestione incapacidades por empresa con lineas de transaccion por periodo
+            </p>
           </div>
         </div>
       </div>
@@ -726,7 +819,9 @@ export function IncapacitiesPage() {
               </div>
               <div>
                 <h2 className={styles.gestionTitle}>Gestion de incapacidades</h2>
-                <p className={styles.gestionDesc}>Encabezado de accion + multiples lineas por planilla</p>
+                <p className={styles.gestionDesc}>
+                  Encabezado de accion + multiples lineas por planilla
+                </p>
               </div>
             </Flex>
             <Button
@@ -750,7 +845,13 @@ export function IncapacitiesPage() {
 
       <Card className={styles.mainCard} style={{ marginBottom: 0 }}>
         <div className={styles.mainCardBody}>
-          <Flex align="center" justify="space-between" wrap="wrap" gap={12} className={styles.registrosHeader}>
+          <Flex
+            align="center"
+            justify="space-between"
+            wrap="wrap"
+            gap={12}
+            className={styles.registrosHeader}
+          >
             <Flex align="center" gap={12} wrap="wrap">
               <Flex align="center" gap={8}>
                 <FilterOutlined className={styles.registrosFilterIcon} />
@@ -781,101 +882,151 @@ export function IncapacitiesPage() {
                 style={{ minWidth: 200 }}
                 placeholder="Estados"
                 value={selectedEstados}
-                options={Object.entries(ESTADO_LABEL).map(([value, meta]) => ({ value: Number(value), label: meta.text }))}
-                onChange={(values) => setSelectedEstados((values ?? []).map((item) => Number(item)))}
+                options={Object.entries(ESTADO_LABEL).map(([value, meta]) => ({
+                  value: Number(value),
+                  label: meta.text,
+                }))}
+                onChange={(values) =>
+                  setSelectedEstados((values ?? []).map((item) => Number(item)))
+                }
               />
-              <Button icon={<ReloadOutlined />} onClick={() => void loadRows()}>Refrescar</Button>
+              <Button icon={<ReloadOutlined />} onClick={() => void loadRows()}>
+                Refrescar
+              </Button>
             </Flex>
           </Flex>
 
           <Collapse
             activeKey={filtersExpanded ? ['filtros'] : []}
-            onChange={(keys) => setFiltersExpanded((Array.isArray(keys) ? keys : [keys]).includes('filtros'))}
+            onChange={(keys) =>
+              setFiltersExpanded((Array.isArray(keys) ? keys : [keys]).includes('filtros'))
+            }
             className={styles.filtersCollapse}
             items={[
               {
                 key: 'filtros',
                 label: 'Filtros',
                 children: (
-              <>
-              <Flex justify="space-between" align="center" wrap="wrap" gap={12} style={{ marginBottom: 16 }}>
-                <Input
-                  placeholder="Search"
-                  prefix={<SearchOutlined />}
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  allowClear
-                  className={styles.searchInput}
-                  style={{ maxWidth: 240 }}
-                />
-                <Flex gap={8}>
-                  <Button size="small" onClick={collapseAllPanes}>Collapse All</Button>
-                  <Button size="small" onClick={openAllPanes}>Show All</Button>
-                  <Button size="small" onClick={clearAllFilters}>Limpiar Todo</Button>
-                </Flex>
-              </Flex>
-              <Row gutter={[12, 12]}>
-                {paneConfig.map((pane) => (
-                  <Col xs={24} md={12} xl={8} key={pane.key}>
-                    <div className={styles.paneCard}>
-                      <Flex gap={6} align="center" wrap="wrap">
-                        <Input
-                          value={paneSearch[pane.key]}
-                          onChange={(e) => setPaneSearch((prev) => ({ ...prev, [pane.key]: e.target.value }))}
-                          placeholder={pane.title}
-                          prefix={<SearchOutlined style={{ fontSize: 12, color: '#8c8c8c' }} />}
-                          suffix={(
-                            <Flex gap={2}>
-                              <SortAscendingOutlined style={{ fontSize: 10, color: '#8c8c8c' }} />
-                              <SortDescendingOutlined style={{ fontSize: 10, color: '#8c8c8c' }} />
-                            </Flex>
-                          )}
-                          size="middle"
-                          className={styles.filterInput}
-                          style={{ flex: 1, minWidth: 120 }}
-                        />
-                        <Button
-                          size="middle"
-                          icon={<SearchOutlined />}
-                          onClick={() => setPaneOpen((prev) => ({ ...prev, [pane.key]: true }))}
-                          title="Abrir opciones"
-                        />
-                        <Button size="middle" onClick={() => clearPaneSelection(pane.key)} title="Limpiar">
-                          x
+                  <>
+                    <Flex
+                      justify="space-between"
+                      align="center"
+                      wrap="wrap"
+                      gap={12}
+                      style={{ marginBottom: 16 }}
+                    >
+                      <Input
+                        placeholder="Search"
+                        prefix={<SearchOutlined />}
+                        value={search}
+                        onChange={(e) => setSearch(e.target.value)}
+                        allowClear
+                        className={styles.searchInput}
+                        style={{ maxWidth: 240 }}
+                      />
+                      <Flex gap={8}>
+                        <Button size="small" onClick={collapseAllPanes}>
+                          Collapse All
                         </Button>
-                        <Button
-                          size="middle"
-                          icon={paneOpen[pane.key] ? <UpOutlined /> : <DownOutlined />}
-                          onClick={() => setPaneOpen((prev) => ({ ...prev, [pane.key]: !prev[pane.key] }))}
-                          title={paneOpen[pane.key] ? 'Colapsar' : 'Expandir'}
-                        />
+                        <Button size="small" onClick={openAllPanes}>
+                          Show All
+                        </Button>
+                        <Button size="small" onClick={clearAllFilters}>
+                          Limpiar Todo
+                        </Button>
                       </Flex>
-                      {paneOpen[pane.key] && (
-                        <div className={styles.paneOptionsBox}>
-                          <Checkbox.Group
-                            value={paneSelections[pane.key]}
-                            onChange={(values) => setPaneSelections((prev) => ({ ...prev, [pane.key]: values as string[] }))}
-                            style={{ display: 'flex', flexDirection: 'column', gap: 8 }}
-                          >
-                            {paneOptions[pane.key].map((option) => (
-                              <Checkbox key={`${pane.key}:${option.value}`} value={option.value}>
-                                <Space>
-                                  <span>{option.value}</span>
-                                  <Badge count={option.count} style={{ backgroundColor: '#5a6c7d' }} />
-                                </Space>
-                              </Checkbox>
-                            ))}
-                          </Checkbox.Group>
-                          {paneOptions[pane.key].length === 0 && (
-                            <span className={styles.emptyHint}>Sin valores para este filtro</span>
-                          )}
-                        </div>
-                      )}
-                    </div>
-                  </Col>
-                ))}
-              </Row>
-              </>
+                    </Flex>
+                    <Row gutter={[12, 12]}>
+                      {paneConfig.map((pane) => (
+                        <Col xs={24} md={12} xl={8} key={pane.key}>
+                          <div className={styles.paneCard}>
+                            <Flex gap={6} align="center" wrap="wrap">
+                              <Input
+                                value={paneSearch[pane.key]}
+                                onChange={(e) =>
+                                  setPaneSearch((prev) => ({ ...prev, [pane.key]: e.target.value }))
+                                }
+                                placeholder={pane.title}
+                                prefix={
+                                  <SearchOutlined style={{ fontSize: 12, color: '#8c8c8c' }} />
+                                }
+                                suffix={
+                                  <Flex gap={2}>
+                                    <SortAscendingOutlined
+                                      style={{ fontSize: 10, color: '#8c8c8c' }}
+                                    />
+                                    <SortDescendingOutlined
+                                      style={{ fontSize: 10, color: '#8c8c8c' }}
+                                    />
+                                  </Flex>
+                                }
+                                size="middle"
+                                className={styles.filterInput}
+                                style={{ flex: 1, minWidth: 120 }}
+                              />
+                              <Button
+                                size="middle"
+                                icon={<SearchOutlined />}
+                                onClick={() =>
+                                  setPaneOpen((prev) => ({ ...prev, [pane.key]: true }))
+                                }
+                                title="Abrir opciones"
+                              />
+                              <Button
+                                size="middle"
+                                onClick={() => clearPaneSelection(pane.key)}
+                                title="Limpiar"
+                              >
+                                x
+                              </Button>
+                              <Button
+                                size="middle"
+                                icon={paneOpen[pane.key] ? <UpOutlined /> : <DownOutlined />}
+                                onClick={() =>
+                                  setPaneOpen((prev) => ({ ...prev, [pane.key]: !prev[pane.key] }))
+                                }
+                                title={paneOpen[pane.key] ? 'Colapsar' : 'Expandir'}
+                              />
+                            </Flex>
+                            {paneOpen[pane.key] && (
+                              <div className={styles.paneOptionsBox}>
+                                <Checkbox.Group
+                                  value={paneSelections[pane.key]}
+                                  onChange={(values) =>
+                                    setPaneSelections((prev) => ({
+                                      ...prev,
+                                      [pane.key]: values as string[],
+                                    }))
+                                  }
+                                  style={{ display: 'flex', flexDirection: 'column', gap: 8 }}
+                                >
+                                  {paneOptions[pane.key].map((option) => (
+                                    <Checkbox
+                                      key={`${pane.key}:${option.value}`}
+                                      value={option.value}
+                                    >
+                                      <Space>
+                                        <span>{option.value}</span>
+                                        <Badge
+                                          count={option.count}
+                                          style={{ backgroundColor: '#5a6c7d' }}
+                                        />
+                                      </Space>
+                                    </Checkbox>
+                                  ))}
+                                </Checkbox.Group>
+                                {paneOptions[pane.key].length === 0 && (
+                                  <span className={styles.emptyHint}>
+                                    Sin valores para este filtro
+                                  </span>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        </Col>
+                      ))}
+                    </Row>
+                  </>
                 ),
               },
             ]}
@@ -890,7 +1041,8 @@ export function IncapacitiesPage() {
             pagination={{
               pageSize,
               showSizeChanger: false,
-              showTotal: (total, [start, end]) => `Mostrando ${start} a ${end} de ${total} registros`,
+              showTotal: (total, [start, end]) =>
+                `Mostrando ${start} a ${end} de ${total} registros`,
             }}
             onRow={(record) => ({
               onClick: () => {
@@ -954,10 +1106,7 @@ export function IncapacitiesPage() {
               await updateDisability(editingRow.id, payload);
             } else {
               const created = await createDisability(payload);
-              totalCreated =
-                Number(created?.totalCreated) > 0
-                  ? Number(created.totalCreated)
-                  : 1;
+              totalCreated = Number(created?.totalCreated) > 0 ? Number(created.totalCreated) : 1;
             }
             message.success({
               content:
@@ -976,9 +1125,7 @@ export function IncapacitiesPage() {
           } catch (error) {
             message.error({
               content:
-                error instanceof Error
-                  ? error.message
-                  : 'No se pudo guardar la incapacidad.',
+                error instanceof Error ? error.message : 'No se pudo guardar la incapacidad.',
               key: loadingKey,
               duration: 5,
             });
@@ -988,5 +1135,3 @@ export function IncapacitiesPage() {
     </div>
   );
 }
-
-

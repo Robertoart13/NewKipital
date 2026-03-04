@@ -2,9 +2,9 @@ import { WebSocketGateway, WebSocketServer } from '@nestjs/websockets';
 
 import { COOKIE_NAME } from '../../config/cookie.config';
 
-import type { ConfigService } from '@nestjs/config';
-import type { JwtService } from '@nestjs/jwt';
-import type { OnGatewayConnection, OnGatewayDisconnect } from '@nestjs/websockets';
+import { ConfigService } from '@nestjs/config';
+import { JwtService } from '@nestjs/jwt';
+import { OnGatewayConnection, OnGatewayDisconnect } from '@nestjs/websockets';
 import type { Server, Socket } from 'socket.io';
 
 const USER_ROOM_PREFIX = 'user:';

@@ -1,4 +1,12 @@
 import {
+  CloseOutlined,
+  EditOutlined,
+  FileTextOutlined,
+  PlusOutlined,
+  QuestionCircleOutlined,
+  SearchOutlined,
+} from '@ant-design/icons';
+import {
   Button,
   Flex,
   Form,
@@ -13,16 +21,11 @@ import {
   Tabs,
   Tag,
 } from 'antd';
-import type { ColumnsType } from 'antd/es/table';
-import {
-  CloseOutlined,
-  EditOutlined,
-  FileTextOutlined,
-  PlusOutlined,
-  QuestionCircleOutlined,
-  SearchOutlined,
-} from '@ant-design/icons';
-import type { FormInstance } from 'antd';
+
+import { optionalNoSqlInjection, textRules } from '../../../../lib/formValidation';
+import styles from '../../configuration/UsersManagementPage.module.css';
+import { formatAccountLabel } from '../payrollArticles.utils';
+
 import type {
   AccountingAccountOption,
   PayrollArticleAuditTrailItem,
@@ -30,10 +33,9 @@ import type {
   PayrollArticleType,
   PersonalActionType,
 } from '../../../../api/payrollArticles';
-import { optionalNoSqlInjection, textRules } from '../../../../lib/formValidation';
-import styles from '../../configuration/UsersManagementPage.module.css';
 import type { PayrollArticleFormValues } from '../payrollArticles.types';
-import { formatAccountLabel } from '../payrollArticles.utils';
+import type { FormInstance } from 'antd';
+import type { ColumnsType } from 'antd/es/table';
 
 interface PayrollArticleModalProps {
   open: boolean;
@@ -76,7 +78,9 @@ interface PayrollArticleModalProps {
 }
 
 function selectFilterByLabel(input: string, option?: { label?: string | number | null }) {
-  return String(option?.label ?? '').toLowerCase().includes(input.toLowerCase());
+  return String(option?.label ?? '')
+    .toLowerCase()
+    .includes(input.toLowerCase());
 }
 
 /**
@@ -127,7 +131,7 @@ export function PayrollArticleModal(props: PayrollArticleModalProps) {
   const editingId = editing?.id ?? null;
   const singleCompany = companies.length === 1 ? companies[0] : null;
   const singleCompanyLabel = singleCompany
-    ? (singleCompany.nombre?.trim() || `Empresa #${singleCompany.id}`)
+    ? singleCompany.nombre?.trim() || `Empresa #${singleCompany.id}`
     : '';
 
   const tabItems = [
@@ -191,19 +195,30 @@ export function PayrollArticleModal(props: PayrollArticleModalProps) {
               </Col>
             )}
             <Col span={12}>
-              <Form.Item name="nombre" label="Nombre Articulo *" rules={textRules({ required: true, max: 200 })}>
+              <Form.Item
+                name="nombre"
+                label="Nombre Articulo *"
+                rules={textRules({ required: true, max: 200 })}
+              >
                 <Input placeholder="Nombre articulo" maxLength={200} />
               </Form.Item>
             </Col>
             <Col span={12}>
-              {editing?.idTipoArticuloNomina && !activeArticleTypeIds.has(editing.idTipoArticuloNomina) ? (
+              {editing?.idTipoArticuloNomina &&
+              !activeArticleTypeIds.has(editing.idTipoArticuloNomina) ? (
                 <>
                   <Form.Item name="idTipoArticuloNomina" hidden>
                     <Input />
                   </Form.Item>
                   <Form.Item label="Tipo articulo actual">
                     <Flex align="center" gap={8}>
-                      <Input value={tipoArticuloMap.get(editing.idTipoArticuloNomina) ?? `Tipo #${editing.idTipoArticuloNomina}`} disabled />
+                      <Input
+                        value={
+                          tipoArticuloMap.get(editing.idTipoArticuloNomina) ??
+                          `Tipo #${editing.idTipoArticuloNomina}`
+                        }
+                        disabled
+                      />
                       <Tag className={styles.tagInactivo}>Inactivo</Tag>
                     </Flex>
                   </Form.Item>
@@ -218,7 +233,11 @@ export function PayrollArticleModal(props: PayrollArticleModalProps) {
                   </Form.Item>
                 </>
               ) : (
-                <Form.Item name="idTipoArticuloNomina" label="Tipo Articulo Nomina *" rules={[{ required: true }]}>
+                <Form.Item
+                  name="idTipoArticuloNomina"
+                  label="Tipo Articulo Nomina *"
+                  rules={[{ required: true }]}
+                >
                   <Select
                     showSearch
                     optionFilterProp="label"
@@ -230,14 +249,21 @@ export function PayrollArticleModal(props: PayrollArticleModalProps) {
               )}
             </Col>
             <Col span={12}>
-              {editing?.idTipoAccionPersonal && !activeActionTypeIds.has(editing.idTipoAccionPersonal) ? (
+              {editing?.idTipoAccionPersonal &&
+              !activeActionTypeIds.has(editing.idTipoAccionPersonal) ? (
                 <>
                   <Form.Item name="idTipoAccionPersonal" hidden>
                     <Input />
                   </Form.Item>
                   <Form.Item label="Tipo accion actual">
                     <Flex align="center" gap={8}>
-                      <Input value={tipoAccionMap.get(editing.idTipoAccionPersonal) ?? `Accion #${editing.idTipoAccionPersonal}`} disabled />
+                      <Input
+                        value={
+                          tipoAccionMap.get(editing.idTipoAccionPersonal) ??
+                          `Accion #${editing.idTipoAccionPersonal}`
+                        }
+                        disabled
+                      />
                       <Tag className={styles.tagInactivo}>Inactivo</Tag>
                     </Flex>
                   </Form.Item>
@@ -252,7 +278,11 @@ export function PayrollArticleModal(props: PayrollArticleModalProps) {
                   </Form.Item>
                 </>
               ) : (
-                <Form.Item name="idTipoAccionPersonal" label="Tipo Accion Personal *" rules={[{ required: true }]}>
+                <Form.Item
+                  name="idTipoAccionPersonal"
+                  label="Tipo Accion Personal *"
+                  rules={[{ required: true }]}
+                >
                   <Select
                     showSearch
                     optionFilterProp="label"
@@ -264,7 +294,8 @@ export function PayrollArticleModal(props: PayrollArticleModalProps) {
               )}
             </Col>
             <Col span={12}>
-              {editing?.idCuentaGasto && (!currentPrimaryAccount || currentPrimaryAccount.esInactivo === 1) ? (
+              {editing?.idCuentaGasto &&
+              (!currentPrimaryAccount || currentPrimaryAccount.esInactivo === 1) ? (
                 <>
                   <Form.Item name="idCuentaGasto" hidden>
                     <Input />
@@ -272,9 +303,12 @@ export function PayrollArticleModal(props: PayrollArticleModalProps) {
                   <Form.Item label={`${primaryLabel} actual`}>
                     <Flex align="center" gap={8}>
                       <Input
-                        value={currentPrimaryAccount
-                          ? (formatAccountLabel(currentPrimaryAccount) || `Cuenta #${editing.idCuentaGasto}`)
-                          : `Cuenta #${editing.idCuentaGasto} (no disponible)`}
+                        value={
+                          currentPrimaryAccount
+                            ? formatAccountLabel(currentPrimaryAccount) ||
+                              `Cuenta #${editing.idCuentaGasto}`
+                            : `Cuenta #${editing.idCuentaGasto} (no disponible)`
+                        }
                         disabled
                       />
                       <Tag className={styles.tagInactivo}>
@@ -282,7 +316,11 @@ export function PayrollArticleModal(props: PayrollArticleModalProps) {
                       </Tag>
                     </Flex>
                   </Form.Item>
-                  <Form.Item name="idCuentaGastoCambio" label={`Cambiar a ${primaryLabel} activa`} rules={[{ required: true }]}>
+                  <Form.Item
+                    name="idCuentaGastoCambio"
+                    label={`Cambiar a ${primaryLabel} activa`}
+                    rules={[{ required: true }]}
+                  >
                     <Select
                       showSearch
                       optionFilterProp="label"
@@ -296,12 +334,20 @@ export function PayrollArticleModal(props: PayrollArticleModalProps) {
                   </Form.Item>
                 </>
               ) : (
-                <Form.Item name="idCuentaGasto" label={`${primaryLabel} *`} rules={[{ required: true }]}>
+                <Form.Item
+                  name="idCuentaGasto"
+                  label={`${primaryLabel} *`}
+                  rules={[{ required: true }]}
+                >
                   <Select
                     showSearch
                     optionFilterProp="label"
                     filterOption={selectFilterByLabel}
-                    placeholder={canLoadAccountOptions ? 'Seleccionar' : 'Seleccione Empresa y Tipo Articulo primero'}
+                    placeholder={
+                      canLoadAccountOptions
+                        ? 'Seleccionar'
+                        : 'Seleccione Empresa y Tipo Articulo primero'
+                    }
                     disabled={!canLoadAccountOptions}
                     options={activeFormAccounts.map((account) => ({
                       value: account.id,
@@ -313,7 +359,8 @@ export function PayrollArticleModal(props: PayrollArticleModalProps) {
             </Col>
             {allowsPasivo && (
               <Col span={12}>
-                {editing?.idCuentaPasivo && (!currentPasivoAccount || currentPasivoAccount.esInactivo === 1) ? (
+                {editing?.idCuentaPasivo &&
+                (!currentPasivoAccount || currentPasivoAccount.esInactivo === 1) ? (
                   <>
                     <Form.Item name="idCuentaPasivo" hidden>
                       <Input />
@@ -321,9 +368,12 @@ export function PayrollArticleModal(props: PayrollArticleModalProps) {
                     <Form.Item label="Cuenta pasivo actual">
                       <Flex align="center" gap={8}>
                         <Input
-                          value={currentPasivoAccount
-                            ? (formatAccountLabel(currentPasivoAccount) || `Cuenta #${editing.idCuentaPasivo}`)
-                            : `Cuenta #${editing.idCuentaPasivo} (no disponible)`}
+                          value={
+                            currentPasivoAccount
+                              ? formatAccountLabel(currentPasivoAccount) ||
+                                `Cuenta #${editing.idCuentaPasivo}`
+                              : `Cuenta #${editing.idCuentaPasivo} (no disponible)`
+                          }
                           disabled
                         />
                         <Tag className={styles.tagInactivo}>
@@ -350,7 +400,11 @@ export function PayrollArticleModal(props: PayrollArticleModalProps) {
                       showSearch
                       optionFilterProp="label"
                       filterOption={selectFilterByLabel}
-                      placeholder={canLoadAccountOptions ? 'Seleccionar' : 'Seleccione Empresa y Tipo Articulo primero'}
+                      placeholder={
+                        canLoadAccountOptions
+                          ? 'Seleccionar'
+                          : 'Seleccione Empresa y Tipo Articulo primero'
+                      }
                       disabled={!canLoadAccountOptions}
                       options={activeFormAccounts.map((account) => ({
                         value: account.id,
@@ -362,7 +416,11 @@ export function PayrollArticleModal(props: PayrollArticleModalProps) {
               </Col>
             )}
             <Col span={24}>
-              <Form.Item name="descripcion" label="Descripcion" rules={[{ validator: optionalNoSqlInjection }]}>
+              <Form.Item
+                name="descripcion"
+                label="Descripcion"
+                rules={[{ validator: optionalNoSqlInjection }]}
+              >
                 <Input.TextArea rows={3} placeholder="Descripcion" maxLength={2000} />
               </Form.Item>
             </Col>
@@ -417,8 +475,13 @@ export function PayrollArticleModal(props: PayrollArticleModalProps) {
       footer={null}
       width={860}
       destroyOnHidden
-      title={(
-        <Flex justify="space-between" align="center" wrap="nowrap" style={{ width: '100%', gap: 16 }}>
+      title={
+        <Flex
+          justify="space-between"
+          align="center"
+          wrap="nowrap"
+          style={{ width: '100%', gap: 16 }}
+        >
           <div className={styles.companyModalHeader}>
             <div className={styles.companyModalHeaderIcon}>
               <FileTextOutlined />
@@ -428,7 +491,13 @@ export function PayrollArticleModal(props: PayrollArticleModalProps) {
           <Flex align="center" gap={12} className={styles.companyModalHeaderRight}>
             {editing ? (
               <div className={styles.companyModalEstadoPaper}>
-                <span style={{ fontWeight: 500, fontSize: 14, color: editing.esInactivo === 1 ? '#64748b' : '#20638d' }}>
+                <span
+                  style={{
+                    fontWeight: 500,
+                    fontSize: 14,
+                    color: editing.esInactivo === 1 ? '#64748b' : '#20638d',
+                  }}
+                >
                   {editing.esInactivo === 1 ? 'Inactivo' : 'Activo'}
                 </span>
                 <Switch
@@ -437,7 +506,9 @@ export function PayrollArticleModal(props: PayrollArticleModalProps) {
                   onChange={(checked) => {
                     if (!editing) return;
                     Modal.confirm({
-                      title: checked ? 'Reactivar articulo de nomina' : 'Inactivar articulo de nomina',
+                      title: checked
+                        ? 'Reactivar articulo de nomina'
+                        : 'Inactivar articulo de nomina',
                       content: checked
                         ? 'El articulo de nomina volvera a estar disponible.'
                         : 'El articulo de nomina quedara inactivo.',
@@ -471,7 +542,7 @@ export function PayrollArticleModal(props: PayrollArticleModalProps) {
             />
           </Flex>
         </Flex>
-      )}
+      }
     >
       <Form
         form={form}

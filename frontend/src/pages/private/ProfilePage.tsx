@@ -1,4 +1,5 @@
 import { Card, Typography } from 'antd';
+
 import { useAppSelector } from '../../store/hooks';
 
 /**
@@ -13,9 +14,15 @@ export function ProfilePage() {
       <Card>
         {user && (
           <div>
-            <p><strong>Nombre:</strong> {user.name}</p>
-            <p><strong>Email:</strong> {user.email}</p>
-            <p><strong>Roles:</strong> {user.roles.join(', ')}</p>
+            <p>
+              <strong>Nombre:</strong> {user.name}
+            </p>
+            <p>
+              <strong>Email:</strong> {user.email}
+            </p>
+            <p>
+              <strong>Roles:</strong> {user.roles.join(', ')}
+            </p>
           </div>
         )}
       </Card>

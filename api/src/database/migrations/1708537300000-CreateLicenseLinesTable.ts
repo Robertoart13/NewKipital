@@ -1,6 +1,6 @@
 import { Table, TableForeignKey, TableIndex } from 'typeorm';
 
-import type { MigrationInterface, QueryRunner } from 'typeorm';
+import { MigrationInterface, QueryRunner } from 'typeorm';
 
 export class CreateLicenseLinesTable1708537300000 implements MigrationInterface {
   public async up(queryRunner: QueryRunner): Promise<void> {

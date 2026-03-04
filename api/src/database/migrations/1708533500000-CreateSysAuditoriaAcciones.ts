@@ -1,6 +1,6 @@
 import { Table, TableIndex } from 'typeorm';
 
-import type { MigrationInterface, QueryRunner } from 'typeorm';
+import { MigrationInterface, QueryRunner } from 'typeorm';
 
 export class CreateSysAuditoriaAcciones1708533500000 implements MigrationInterface {
   name = 'CreateSysAuditoriaAcciones1708533500000';

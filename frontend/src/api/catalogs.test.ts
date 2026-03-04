@@ -5,6 +5,7 @@ vi.mock('../interceptors/httpInterceptor', () => ({
 }));
 
 import { httpFetch } from '../interceptors/httpInterceptor';
+
 import { fetchDepartments, fetchPositions, fetchPayPeriods } from './catalogs';
 
 const mockHttpFetch = vi.mocked(httpFetch);
@@ -13,7 +14,10 @@ describe('catalogs api', () => {
   beforeEach(() => vi.clearAllMocks());
 
   it('fetchDepartments calls /catalogs/departments', async () => {
-    mockHttpFetch.mockResolvedValue({ ok: true, json: vi.fn().mockResolvedValue([{ id: 1, nombre: 'IT' }]) } as any);
+    mockHttpFetch.mockResolvedValue({
+      ok: true,
+      json: vi.fn().mockResolvedValue([{ id: 1, nombre: 'IT' }]),
+    } as any);
     const result = await fetchDepartments();
     expect(mockHttpFetch).toHaveBeenCalledWith('/catalogs/departments');
     expect(result[0].nombre).toBe('IT');
@@ -31,7 +35,10 @@ describe('catalogs api', () => {
   });
 
   it('fetchPayPeriods calls /catalogs/pay-periods', async () => {
-    mockHttpFetch.mockResolvedValue({ ok: true, json: vi.fn().mockResolvedValue([{ id: 1, nombre: 'Quincenal', dias: 15 }]) } as any);
+    mockHttpFetch.mockResolvedValue({
+      ok: true,
+      json: vi.fn().mockResolvedValue([{ id: 1, nombre: 'Quincenal', dias: 15 }]),
+    } as any);
     const result = await fetchPayPeriods();
     expect(result[0].dias).toBe(15);
   });

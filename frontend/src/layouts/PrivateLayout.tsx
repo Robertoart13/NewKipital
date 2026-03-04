@@ -1,4 +1,5 @@
 import { Layout } from 'antd';
+
 import { AppHeader } from '../components/ui/AppHeader';
 import { menuIconMap } from '../config/menuIcons';
 import { useAppSelector } from '../store/hooks';
@@ -21,14 +22,8 @@ export function PrivateLayout({ children }: PrivateLayoutProps) {
 
   return (
     <Layout style={{ minHeight: '100vh' }}>
-      <AppHeader
-        menuItems={menuItems}
-        iconMap={menuIconMap}
-        userName={userName}
-      />
-      <Content style={{ padding: 24, background: '#f5f5f5', overflow: 'auto' }}>
-        {children}
-      </Content>
+      <AppHeader menuItems={menuItems} iconMap={menuIconMap} userName={userName} />
+      <Content style={{ padding: 24, background: '#f5f5f5', overflow: 'auto' }}>{children}</Content>
     </Layout>
   );
 }

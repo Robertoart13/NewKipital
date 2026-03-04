@@ -1,5 +1,16 @@
-import { useCallback, useEffect, useMemo, useState, type MouseEvent } from 'react';
-import { Link } from 'react-router-dom';
+import {
+  AppstoreOutlined,
+  ArrowLeftOutlined,
+  DownOutlined,
+  EditOutlined,
+  FilterOutlined,
+  PlusOutlined,
+  ReloadOutlined,
+  SearchOutlined,
+  SortAscendingOutlined,
+  SortDescendingOutlined,
+  UpOutlined,
+} from '@ant-design/icons';
 import {
   App as AntdApp,
   Badge,
@@ -17,23 +28,12 @@ import {
   Tag,
   Tooltip,
 } from 'antd';
-import type { ColumnsType } from 'antd/es/table';
-import {
-  AppstoreOutlined,
-  ArrowLeftOutlined,
-  DownOutlined,
-  EditOutlined,
-  FilterOutlined,
-  PlusOutlined,
-  ReloadOutlined,
-  SearchOutlined,
-  SortAscendingOutlined,
-  SortDescendingOutlined,
-  UpOutlined,
-} from '@ant-design/icons';
 import dayjs from 'dayjs';
-import { useAppSelector } from '../../../../store/hooks';
-import { hasPermission } from '../../../../store/selectors/permissions.selectors';
+import { useCallback, useEffect, useMemo, useState, type MouseEvent } from 'react';
+import { Link } from 'react-router-dom';
+
+import { fetchPayPeriods, type CatalogPayPeriod } from '../../../../api/catalogs';
+import { type PayrollMovementListItem } from '../../../../api/payrollMovements';
 import {
   fetchVacationAuditTrail,
   advanceVacationState,
@@ -50,14 +50,17 @@ import {
   type PersonalActionListItem,
   type VacationHolidayItem,
 } from '../../../../api/personalActions';
-import { fetchPayPeriods, type CatalogPayPeriod } from '../../../../api/catalogs';
-import { type PayrollMovementListItem } from '../../../../api/payrollMovements';
+import { useAppSelector } from '../../../../store/hooks';
+import { hasPermission } from '../../../../store/selectors/permissions.selectors';
 import styles from '../../configuration/UsersManagementPage.module.css';
+
 import {
   VacationTransactionModal,
   type VacationFormDraft,
   type VacationDateSelection,
 } from './VacationTransactionModal';
+
+import type { ColumnsType } from 'antd/es/table';
 
 const VACATION_ACTION_TYPE_ID = 13;
 
@@ -113,7 +116,8 @@ const NEXT_STATE_ACTION_CONFIG: Partial<Record<number, NextStateActionConfig>> =
   3: {
     label: 'Aprobar',
     requiredPermission: 'approve',
-    confirmText: 'La acción de vacaciones quedará APROBADA y lista para proceso operativo. ¿Desea continuar?',
+    confirmText:
+      'La acción de vacaciones quedará APROBADA y lista para proceso operativo. ¿Desea continuar?',
     successText: 'La acción de vacaciones fue aprobada correctamente.',
     deniedText: 'No tiene permiso para aprobar vacaciones.',
   },
@@ -151,9 +155,12 @@ function getPaneValue(
   companies: Array<{ id: number; nombre: string }>,
 ): string {
   if (key === 'empresa') {
-    return companies.find((c) => Number(c.id) === row.idEmpresa)?.nombre ?? `Empresa #${row.idEmpresa}`;
+    return (
+      companies.find((c) => Number(c.id) === row.idEmpresa)?.nombre ?? `Empresa #${row.idEmpresa}`
+    );
   }
-  if (key === 'empleado') return (row.employeeLabel ?? `Empleado #${row.idEmpleado}`).trim() || '--';
+  if (key === 'empleado')
+    return (row.employeeLabel ?? `Empleado #${row.idEmpleado}`).trim() || '--';
   if (key === 'periodoPago') return (row.periodoPagoResumen ?? '').trim() || '--';
   if (key === 'movimiento') return (row.movimientoResumen ?? '').trim() || '--';
   if (key === 'estado') return ESTADO_LABEL[row.estado]?.text ?? `Estado ${row.estado}`;
@@ -161,7 +168,10 @@ function getPaneValue(
 }
 
 function getEstadoTag(estado: number) {
-  const meta = ESTADO_LABEL[estado] ?? { text: `Estado ${estado}`, tagClass: styles.tagEstadoDefault };
+  const meta = ESTADO_LABEL[estado] ?? {
+    text: `Estado ${estado}`,
+    tagClass: styles.tagEstadoDefault,
+  };
   const help = ESTADO_HELP[estado] ?? 'Estado operativo de la acción.';
   return (
     <Tooltip title={help}>
@@ -185,9 +195,9 @@ function createDraftFromVacationDetail(detail: VacationDetailItem): VacationForm
   const fechas: VacationDateSelection[] =
     detail.fechas?.length > 0
       ? detail.fechas.map((row) => ({
-        key: row.fechaVacacion ?? '',
-        fecha: row.fechaVacacion ? dayjs(row.fechaVacacion) : dayjs(),
-      }))
+          key: row.fechaVacacion ?? '',
+          fecha: row.fechaVacacion ? dayjs(row.fechaVacacion) : dayjs(),
+        }))
       : [];
 
   const first = detail.fechas?.[0];
@@ -208,16 +218,18 @@ export function VacationsPage() {
   const canCreate = useAppSelector((state) => hasPermission(state, 'hr-action-vacaciones:create'));
   const canEdit = useAppSelector((state) => hasPermission(state, 'hr-action-vacaciones:edit'));
   const canCancel = useAppSelector((state) => hasPermission(state, 'hr-action-vacaciones:cancel'));
-  const canView = useAppSelector((state) =>
-    hasPermission(state, 'hr-action-vacaciones:view') ||
-    hasPermission(state, 'hr_action:view'),
+  const canView = useAppSelector(
+    (state) =>
+      hasPermission(state, 'hr-action-vacaciones:view') || hasPermission(state, 'hr_action:view'),
   );
   const canApprove = useAppSelector(
     (state) =>
       hasPermission(state, 'hr-action-vacaciones:approve') ||
       hasPermission(state, 'hr_action:approve'),
   );
-  const canViewEmployeeSensitive = useAppSelector((state) => hasPermission(state, 'employee:view-sensitive'));
+  const canViewEmployeeSensitive = useAppSelector((state) =>
+    hasPermission(state, 'employee:view-sensitive'),
+  );
 
   const defaultCompanyId = useMemo(() => {
     const active = Number(activeCompany?.id);
@@ -296,15 +308,33 @@ export function VacationsPage() {
     setCompanyId(defaultCompanyId);
     setPaneSearch({ empresa: '', empleado: '', periodoPago: '', movimiento: '', estado: '' });
     setPaneSelections({ empresa: [], empleado: [], periodoPago: [], movimiento: [], estado: [] });
-    setPaneOpen({ empresa: false, empleado: false, periodoPago: false, movimiento: false, estado: false });
+    setPaneOpen({
+      empresa: false,
+      empleado: false,
+      periodoPago: false,
+      movimiento: false,
+      estado: false,
+    });
   };
 
   const openAllPanes = () => {
-    setPaneOpen({ empresa: true, empleado: true, periodoPago: true, movimiento: true, estado: true });
+    setPaneOpen({
+      empresa: true,
+      empleado: true,
+      periodoPago: true,
+      movimiento: true,
+      estado: true,
+    });
   };
 
   const collapseAllPanes = () => {
-    setPaneOpen({ empresa: false, empleado: false, periodoPago: false, movimiento: false, estado: false });
+    setPaneOpen({
+      empresa: false,
+      empleado: false,
+      periodoPago: false,
+      movimiento: false,
+      estado: false,
+    });
   };
 
   const loadRows = useCallback(async () => {
@@ -320,65 +350,76 @@ export function VacationsPage() {
         selectedEstados.length > 0 ? selectedEstados : undefined,
       );
       const filtered = data.filter((item) =>
-        ['vacaciones', 'vacacion', 'vacation'].includes(
-          item.tipoAccion.trim().toLowerCase(),
-        ),
+        ['vacaciones', 'vacacion', 'vacation'].includes(item.tipoAccion.trim().toLowerCase()),
       );
       setRows(filtered);
     } catch (error) {
-      message.error(error instanceof Error ? error.message : 'No se pudieron cargar las vacaciones.');
+      message.error(
+        error instanceof Error ? error.message : 'No se pudieron cargar las vacaciones.',
+      );
     } finally {
       setLoading(false);
     }
   }, [companyId, message, selectedEstados]);
 
-  const openEditModal = useCallback(async (row: VacationUiRow) => {
-    const key = `Vacation-edit-load-${row.id}`;
-    setEditingRow(row);
-    setEditingDraft({
-      idEmpresa: row.idEmpresa,
-      idEmpleado: row.idEmpleado,
-      payrollId: undefined,
-      movimientoId: 0,
-      observacion: row.descripcion ?? '',
-      fechas: [],
-    });
-    setMode('edit');
-    setLoadingEditDetail(true);
-    setAuditTrail([]);
-    setModalEmployees([]);
-    setOpenModal(true);
-    void fetchAbsenceEmployeesCatalog(row.idEmpresa).then(setModalEmployees).catch(() => setModalEmployees([]));
-    message.loading({ content: 'Cargando detalle de vacaciones...', key, duration: 0 });
-    try {
-      const detail = await fetchVacationDetail(row.id);
-      setEditingDraft(createDraftFromVacationDetail(detail));
-      message.destroy(key);
-    } catch (error) {
-      message.error({
-        content: error instanceof Error ? error.message : 'No se pudo cargar el detalle de vacaciones.',
-        key,
+  const openEditModal = useCallback(
+    async (row: VacationUiRow) => {
+      const key = `Vacation-edit-load-${row.id}`;
+      setEditingRow(row);
+      setEditingDraft({
+        idEmpresa: row.idEmpresa,
+        idEmpleado: row.idEmpleado,
+        payrollId: undefined,
+        movimientoId: 0,
+        observacion: row.descripcion ?? '',
+        fechas: [],
       });
-      setOpenModal(false);
-      setEditingDraft(undefined);
-      setEditingRow(null);
-    } finally {
-      setLoadingEditDetail(false);
-    }
-  }, [message]);
-
-  const loadVacationAuditTrail = useCallback(async (id: number) => {
-    setLoadingAuditTrail(true);
-    try {
-      const rowsAudit = await fetchVacationAuditTrail(id, 200);
-      setAuditTrail(rowsAudit ?? []);
-    } catch (error) {
+      setMode('edit');
+      setLoadingEditDetail(true);
       setAuditTrail([]);
-      message.error(error instanceof Error ? error.message : 'Error al cargar bitácora de vacaciones');
-    } finally {
-      setLoadingAuditTrail(false);
-    }
-  }, [message]);
+      setModalEmployees([]);
+      setOpenModal(true);
+      void fetchAbsenceEmployeesCatalog(row.idEmpresa)
+        .then(setModalEmployees)
+        .catch(() => setModalEmployees([]));
+      message.loading({ content: 'Cargando detalle de vacaciones...', key, duration: 0 });
+      try {
+        const detail = await fetchVacationDetail(row.id);
+        setEditingDraft(createDraftFromVacationDetail(detail));
+        message.destroy(key);
+      } catch (error) {
+        message.error({
+          content:
+            error instanceof Error ? error.message : 'No se pudo cargar el detalle de vacaciones.',
+          key,
+        });
+        setOpenModal(false);
+        setEditingDraft(undefined);
+        setEditingRow(null);
+      } finally {
+        setLoadingEditDetail(false);
+      }
+    },
+    [message],
+  );
+
+  const loadVacationAuditTrail = useCallback(
+    async (id: number) => {
+      setLoadingAuditTrail(true);
+      try {
+        const rowsAudit = await fetchVacationAuditTrail(id, 200);
+        setAuditTrail(rowsAudit ?? []);
+      } catch (error) {
+        setAuditTrail([]);
+        message.error(
+          error instanceof Error ? error.message : 'Error al cargar bitácora de vacaciones',
+        );
+      } finally {
+        setLoadingAuditTrail(false);
+      }
+    },
+    [message],
+  );
 
   const loadEditingVacationAuditTrail = useCallback(async () => {
     if (!editingRow?.id) return;
@@ -464,7 +505,8 @@ export function VacationsPage() {
       const term = search.trim().toLowerCase();
       if (!term) return true;
       const companyName = companies.find((c) => Number(c.id) === row.idEmpresa)?.nombre ?? '';
-      const text = `${row.id} ${row.idEmpleado} ${row.employeeLabel ?? ''} ${row.descripcion ?? ''} ${companyName} ${row.periodoPagoResumen ?? ''} ${row.movimientoResumen ?? ''}`.toLowerCase();
+      const text =
+        `${row.id} ${row.idEmpleado} ${row.employeeLabel ?? ''} ${row.descripcion ?? ''} ${companyName} ${row.periodoPagoResumen ?? ''} ${row.movimientoResumen ?? ''}`.toLowerCase();
       return text.includes(term);
     },
     [companies, search],
@@ -512,150 +554,167 @@ export function VacationsPage() {
     return result;
   }, [companies, dataFilteredByPaneSelections, paneSearch]);
 
-  const rowsFiltered = useMemo(() => dataFilteredByPaneSelections(), [dataFilteredByPaneSelections]);
+  const rowsFiltered = useMemo(
+    () => dataFilteredByPaneSelections(),
+    [dataFilteredByPaneSelections],
+  );
 
-  const columns: ColumnsType<VacationUiRow> = useMemo(() => [
-    {
-      title: 'EMPRESA',
-      key: 'empresa',
-      width: 240,
-      render: (_, row) => companies.find((company) => Number(company.id) === row.idEmpresa)?.nombre ?? `Empresa #${row.idEmpresa}`,
-    },
-    {
-      title: 'EMPLEADO',
-      key: 'empleado',
-      width: 260,
-      render: (_, row) => row.employeeLabel ?? `Empleado #${row.idEmpleado}`,
-    },
-    {
-      title: 'PERIODO DE PAGO',
-      dataIndex: 'periodoPagoResumen',
-      key: 'periodoPagoResumen',
-      width: 320,
-      render: (value) => summarizeCell(value),
-    },
-    {
-      title: 'MOVIMIENTO',
-      dataIndex: 'movimientoResumen',
-      key: 'movimientoResumen',
-      width: 280,
-      render: (value) => summarizeCell(value),
-    },
-    {
-      title: 'ESTADO',
-      dataIndex: 'estado',
-      key: 'estado',
-      width: 180,
-      render: (value) => getEstadoTag(value),
-    },
-    {
-      title: 'ACCIONES',
-      key: 'acciones',
-      width: 260,
-      render: (_, row) => {
-        const canInvalidate = canCancel && [1, 2, 3].includes(row.estado);
-        const nextAction = NEXT_STATE_ACTION_CONFIG[row.estado];
-        const canAdvance = nextAction
-          ? (nextAction.requiredPermission === 'approve' ? canApprove : canEdit)
-          : false;
+  const columns: ColumnsType<VacationUiRow> = useMemo(
+    () => [
+      {
+        title: 'EMPRESA',
+        key: 'empresa',
+        width: 240,
+        render: (_, row) =>
+          companies.find((company) => Number(company.id) === row.idEmpresa)?.nombre ??
+          `Empresa #${row.idEmpresa}`,
+      },
+      {
+        title: 'EMPLEADO',
+        key: 'empleado',
+        width: 260,
+        render: (_, row) => row.employeeLabel ?? `Empleado #${row.idEmpleado}`,
+      },
+      {
+        title: 'PERIODO DE PAGO',
+        dataIndex: 'periodoPagoResumen',
+        key: 'periodoPagoResumen',
+        width: 320,
+        render: (value) => summarizeCell(value),
+      },
+      {
+        title: 'MOVIMIENTO',
+        dataIndex: 'movimientoResumen',
+        key: 'movimientoResumen',
+        width: 280,
+        render: (value) => summarizeCell(value),
+      },
+      {
+        title: 'ESTADO',
+        dataIndex: 'estado',
+        key: 'estado',
+        width: 180,
+        render: (value) => getEstadoTag(value),
+      },
+      {
+        title: 'ACCIONES',
+        key: 'acciones',
+        width: 260,
+        render: (_, row) => {
+          const canInvalidate = canCancel && [1, 2, 3].includes(row.estado);
+          const nextAction = NEXT_STATE_ACTION_CONFIG[row.estado];
+          const canAdvance = nextAction
+            ? nextAction.requiredPermission === 'approve'
+              ? canApprove
+              : canEdit
+            : false;
 
-        const onInvalidate = (e: MouseEvent<HTMLElement>) => {
-          e.stopPropagation();
-          modal.confirm({
-            title: 'Confirmar invalidación',
-            content: 'Esta acción se marcará como invalidada y no seguirá su flujo operativo. ¿Desea continuar?',
-            okText: 'Sí, invalidar',
-            cancelText: 'Cancelar',
-            centered: true,
-            width: 420,
-            rootClassName: styles.companyConfirmModal,
-            okButtonProps: { className: styles.companyConfirmOk, danger: true },
-            cancelButtonProps: { className: styles.companyConfirmCancel },
-            onOk: async () => {
-              const key = `Vacation-invalidate-${row.id}`;
-              message.loading({ content: 'Invalidando vacaciones...', key, duration: 0 });
-              try {
-                await invalidateVacation(row.id);
-                message.success({ content: 'Vacaciones invalidadas correctamente.', key });
-                await loadRows();
-              } catch (error) {
-                message.error({
-                  content: error instanceof Error ? error.message : 'No se pudieron invalidar las vacaciones.',
-                  key,
-                });
-              }
-            },
-          });
-        };
+          const onInvalidate = (e: MouseEvent<HTMLElement>) => {
+            e.stopPropagation();
+            modal.confirm({
+              title: 'Confirmar invalidación',
+              content:
+                'Esta acción se marcará como invalidada y no seguirá su flujo operativo. ¿Desea continuar?',
+              okText: 'Sí, invalidar',
+              cancelText: 'Cancelar',
+              centered: true,
+              width: 420,
+              rootClassName: styles.companyConfirmModal,
+              okButtonProps: { className: styles.companyConfirmOk, danger: true },
+              cancelButtonProps: { className: styles.companyConfirmCancel },
+              onOk: async () => {
+                const key = `Vacation-invalidate-${row.id}`;
+                message.loading({ content: 'Invalidando vacaciones...', key, duration: 0 });
+                try {
+                  await invalidateVacation(row.id);
+                  message.success({ content: 'Vacaciones invalidadas correctamente.', key });
+                  await loadRows();
+                } catch (error) {
+                  message.error({
+                    content:
+                      error instanceof Error
+                        ? error.message
+                        : 'No se pudieron invalidar las vacaciones.',
+                    key,
+                  });
+                }
+              },
+            });
+          };
 
-        const invalidateBtn = (
-          <Button danger size="small" disabled={!canInvalidate} onClick={onInvalidate}>
-            Invalidar
-          </Button>
-        );
-
-        const nextBtn = nextAction ? (
-          <Tooltip title={!canAdvance ? nextAction.deniedText : undefined}>
-            <Button
-              type="primary"
-              size="small"
-              disabled={!canAdvance}
-              onClick={(e) => {
-                e.stopPropagation();
-                modal.confirm({
-                  title: 'Confirmar cambio de estado',
-                  content: nextAction.confirmText,
-                  okText: 'Sí, continuar',
-                  cancelText: 'Cancelar',
-                  centered: true,
-                  width: 420,
-                  rootClassName: styles.companyConfirmModal,
-                  okButtonProps: { className: styles.companyConfirmOk },
-                  cancelButtonProps: { className: styles.companyConfirmCancel },
-                  onOk: async () => {
-                    const key = `Vacation-advance-${row.id}`;
-                    message.loading({ content: 'Actualizando estado...', key, duration: 0 });
-                    try {
-                      await advanceVacationState(row.id);
-                      message.success({ content: nextAction.successText, key });
-                      await loadRows();
-                    } catch (error) {
-                      message.error({
-                        content: error instanceof Error ? error.message : 'No se pudo actualizar el estado.',
-                        key,
-                      });
-                    }
-                  },
-                });
-              }}
-            >
-              {nextAction.label}
+          const invalidateBtn = (
+            <Button danger size="small" disabled={!canInvalidate} onClick={onInvalidate}>
+              Invalidar
             </Button>
-          </Tooltip>
-        ) : null;
+          );
 
-        return (
-          <Flex gap={8} align="center" wrap="nowrap" className={styles.actionsCell}>
-            {nextBtn ? <span className={styles.actionsCellFirst}>{nextBtn}</span> : null}
-            <span className={!nextBtn ? styles.actionsCellFirst : undefined}>
+          const nextBtn = nextAction ? (
+            <Tooltip title={!canAdvance ? nextAction.deniedText : undefined}>
               <Button
-                icon={<EditOutlined />}
+                type="primary"
                 size="small"
-                disabled={!canView}
+                disabled={!canAdvance}
                 onClick={(e) => {
                   e.stopPropagation();
-                  void openEditModal(row);
+                  modal.confirm({
+                    title: 'Confirmar cambio de estado',
+                    content: nextAction.confirmText,
+                    okText: 'Sí, continuar',
+                    cancelText: 'Cancelar',
+                    centered: true,
+                    width: 420,
+                    rootClassName: styles.companyConfirmModal,
+                    okButtonProps: { className: styles.companyConfirmOk },
+                    cancelButtonProps: { className: styles.companyConfirmCancel },
+                    onOk: async () => {
+                      const key = `Vacation-advance-${row.id}`;
+                      message.loading({ content: 'Actualizando estado...', key, duration: 0 });
+                      try {
+                        await advanceVacationState(row.id);
+                        message.success({ content: nextAction.successText, key });
+                        await loadRows();
+                      } catch (error) {
+                        message.error({
+                          content:
+                            error instanceof Error
+                              ? error.message
+                              : 'No se pudo actualizar el estado.',
+                          key,
+                        });
+                      }
+                    },
+                  });
                 }}
               >
-                Editar
+                {nextAction.label}
               </Button>
-            </span>
-            {canInvalidate ? invalidateBtn : null}
-          </Flex>
-        );
+            </Tooltip>
+          ) : null;
+
+          return (
+            <Flex gap={8} align="center" wrap="nowrap" className={styles.actionsCell}>
+              {nextBtn ? <span className={styles.actionsCellFirst}>{nextBtn}</span> : null}
+              <span className={!nextBtn ? styles.actionsCellFirst : undefined}>
+                <Button
+                  icon={<EditOutlined />}
+                  size="small"
+                  disabled={!canView}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    void openEditModal(row);
+                  }}
+                >
+                  Editar
+                </Button>
+              </span>
+              {canInvalidate ? invalidateBtn : null}
+            </Flex>
+          );
+        },
       },
-    },
-  ], [canApprove, canCancel, canEdit, canView, companies, loadRows, message, modal, openEditModal]);
+    ],
+    [canApprove, canCancel, canEdit, canView, companies, loadRows, message, modal, openEditModal],
+  );
 
   const modalTitle = mode === 'create' ? 'Crear vacaciones' : 'Editar vacaciones';
 
@@ -678,7 +737,9 @@ export function VacationsPage() {
           </Link>
           <div className={styles.pageTitleBlock}>
             <h1 className={styles.pageTitle}>vacaciones</h1>
-            <p className={styles.pageSubtitle}>Gestione acciones de vacaciones por colaborador con calendario de días</p>
+            <p className={styles.pageSubtitle}>
+              Gestione acciones de vacaciones por colaborador con calendario de días
+            </p>
           </div>
         </div>
       </div>
@@ -692,7 +753,9 @@ export function VacationsPage() {
               </div>
               <div>
                 <h2 className={styles.gestionTitle}>Gestión de vacaciones</h2>
-                <p className={styles.gestionDesc}>Encabezado de acción + selección de días por calendario</p>
+                <p className={styles.gestionDesc}>
+                  Encabezado de acción + selección de días por calendario
+                </p>
               </div>
             </Flex>
             <Button
@@ -716,7 +779,13 @@ export function VacationsPage() {
 
       <Card className={styles.mainCard} style={{ marginBottom: 0 }}>
         <div className={styles.mainCardBody}>
-          <Flex align="center" justify="space-between" wrap="wrap" gap={12} className={styles.registrosHeader}>
+          <Flex
+            align="center"
+            justify="space-between"
+            wrap="wrap"
+            gap={12}
+            className={styles.registrosHeader}
+          >
             <Flex align="center" gap={12} wrap="wrap">
               <Flex align="center" gap={8}>
                 <FilterOutlined className={styles.registrosFilterIcon} />
@@ -747,101 +816,151 @@ export function VacationsPage() {
                 style={{ minWidth: 200 }}
                 placeholder="Estados"
                 value={selectedEstados}
-                options={Object.entries(ESTADO_LABEL).map(([value, meta]) => ({ value: Number(value), label: meta.text }))}
-                onChange={(values) => setSelectedEstados((values ?? []).map((item) => Number(item)))}
+                options={Object.entries(ESTADO_LABEL).map(([value, meta]) => ({
+                  value: Number(value),
+                  label: meta.text,
+                }))}
+                onChange={(values) =>
+                  setSelectedEstados((values ?? []).map((item) => Number(item)))
+                }
               />
-              <Button icon={<ReloadOutlined />} onClick={() => void loadRows()}>Refrescar</Button>
+              <Button icon={<ReloadOutlined />} onClick={() => void loadRows()}>
+                Refrescar
+              </Button>
             </Flex>
           </Flex>
 
           <Collapse
             activeKey={filtersExpanded ? ['filtros'] : []}
-            onChange={(keys) => setFiltersExpanded((Array.isArray(keys) ? keys : [keys]).includes('filtros'))}
+            onChange={(keys) =>
+              setFiltersExpanded((Array.isArray(keys) ? keys : [keys]).includes('filtros'))
+            }
             className={styles.filtersCollapse}
             items={[
               {
                 key: 'filtros',
                 label: 'Filtros',
                 children: (
-              <>
-              <Flex justify="space-between" align="center" wrap="wrap" gap={12} style={{ marginBottom: 16 }}>
-                <Input
-                  placeholder="Search"
-                  prefix={<SearchOutlined />}
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  allowClear
-                  className={styles.searchInput}
-                  style={{ maxWidth: 240 }}
-                />
-                <Flex gap={8}>
-                  <Button size="small" onClick={collapseAllPanes}>Collapse All</Button>
-                  <Button size="small" onClick={openAllPanes}>Show All</Button>
-                  <Button size="small" onClick={clearAllFilters}>Limpiar Todo</Button>
-                </Flex>
-              </Flex>
-              <Row gutter={[12, 12]}>
-                {paneConfig.map((pane) => (
-                  <Col xs={24} md={12} xl={8} key={pane.key}>
-                    <div className={styles.paneCard}>
-                      <Flex gap={6} align="center" wrap="wrap">
-                        <Input
-                          value={paneSearch[pane.key]}
-                          onChange={(e) => setPaneSearch((prev) => ({ ...prev, [pane.key]: e.target.value }))}
-                          placeholder={pane.title}
-                          prefix={<SearchOutlined style={{ fontSize: 12, color: '#8c8c8c' }} />}
-                          suffix={(
-                            <Flex gap={2}>
-                              <SortAscendingOutlined style={{ fontSize: 10, color: '#8c8c8c' }} />
-                              <SortDescendingOutlined style={{ fontSize: 10, color: '#8c8c8c' }} />
-                            </Flex>
-                          )}
-                          size="middle"
-                          className={styles.filterInput}
-                          style={{ flex: 1, minWidth: 120 }}
-                        />
-                        <Button
-                          size="middle"
-                          icon={<SearchOutlined />}
-                          onClick={() => setPaneOpen((prev) => ({ ...prev, [pane.key]: true }))}
-                          title="Abrir opciones"
-                        />
-                        <Button size="middle" onClick={() => clearPaneSelection(pane.key)} title="Limpiar">
-                          x
+                  <>
+                    <Flex
+                      justify="space-between"
+                      align="center"
+                      wrap="wrap"
+                      gap={12}
+                      style={{ marginBottom: 16 }}
+                    >
+                      <Input
+                        placeholder="Search"
+                        prefix={<SearchOutlined />}
+                        value={search}
+                        onChange={(e) => setSearch(e.target.value)}
+                        allowClear
+                        className={styles.searchInput}
+                        style={{ maxWidth: 240 }}
+                      />
+                      <Flex gap={8}>
+                        <Button size="small" onClick={collapseAllPanes}>
+                          Collapse All
                         </Button>
-                        <Button
-                          size="middle"
-                          icon={paneOpen[pane.key] ? <UpOutlined /> : <DownOutlined />}
-                          onClick={() => setPaneOpen((prev) => ({ ...prev, [pane.key]: !prev[pane.key] }))}
-                          title={paneOpen[pane.key] ? 'Colapsar' : 'Expandir'}
-                        />
+                        <Button size="small" onClick={openAllPanes}>
+                          Show All
+                        </Button>
+                        <Button size="small" onClick={clearAllFilters}>
+                          Limpiar Todo
+                        </Button>
                       </Flex>
-                      {paneOpen[pane.key] && (
-                        <div className={styles.paneOptionsBox}>
-                          <Checkbox.Group
-                            value={paneSelections[pane.key]}
-                            onChange={(values) => setPaneSelections((prev) => ({ ...prev, [pane.key]: values as string[] }))}
-                            style={{ display: 'flex', flexDirection: 'column', gap: 8 }}
-                          >
-                            {paneOptions[pane.key].map((option) => (
-                              <Checkbox key={`${pane.key}:${option.value}`} value={option.value}>
-                                <Space>
-                                  <span>{option.value}</span>
-                                  <Badge count={option.count} style={{ backgroundColor: '#5a6c7d' }} />
-                                </Space>
-                              </Checkbox>
-                            ))}
-                          </Checkbox.Group>
-                          {paneOptions[pane.key].length === 0 && (
-                            <span className={styles.emptyHint}>Sin valores para este filtro</span>
-                          )}
-                        </div>
-                      )}
-                    </div>
-                  </Col>
-                ))}
-              </Row>
-              </>
+                    </Flex>
+                    <Row gutter={[12, 12]}>
+                      {paneConfig.map((pane) => (
+                        <Col xs={24} md={12} xl={8} key={pane.key}>
+                          <div className={styles.paneCard}>
+                            <Flex gap={6} align="center" wrap="wrap">
+                              <Input
+                                value={paneSearch[pane.key]}
+                                onChange={(e) =>
+                                  setPaneSearch((prev) => ({ ...prev, [pane.key]: e.target.value }))
+                                }
+                                placeholder={pane.title}
+                                prefix={
+                                  <SearchOutlined style={{ fontSize: 12, color: '#8c8c8c' }} />
+                                }
+                                suffix={
+                                  <Flex gap={2}>
+                                    <SortAscendingOutlined
+                                      style={{ fontSize: 10, color: '#8c8c8c' }}
+                                    />
+                                    <SortDescendingOutlined
+                                      style={{ fontSize: 10, color: '#8c8c8c' }}
+                                    />
+                                  </Flex>
+                                }
+                                size="middle"
+                                className={styles.filterInput}
+                                style={{ flex: 1, minWidth: 120 }}
+                              />
+                              <Button
+                                size="middle"
+                                icon={<SearchOutlined />}
+                                onClick={() =>
+                                  setPaneOpen((prev) => ({ ...prev, [pane.key]: true }))
+                                }
+                                title="Abrir opciones"
+                              />
+                              <Button
+                                size="middle"
+                                onClick={() => clearPaneSelection(pane.key)}
+                                title="Limpiar"
+                              >
+                                x
+                              </Button>
+                              <Button
+                                size="middle"
+                                icon={paneOpen[pane.key] ? <UpOutlined /> : <DownOutlined />}
+                                onClick={() =>
+                                  setPaneOpen((prev) => ({ ...prev, [pane.key]: !prev[pane.key] }))
+                                }
+                                title={paneOpen[pane.key] ? 'Colapsar' : 'Expandir'}
+                              />
+                            </Flex>
+                            {paneOpen[pane.key] && (
+                              <div className={styles.paneOptionsBox}>
+                                <Checkbox.Group
+                                  value={paneSelections[pane.key]}
+                                  onChange={(values) =>
+                                    setPaneSelections((prev) => ({
+                                      ...prev,
+                                      [pane.key]: values as string[],
+                                    }))
+                                  }
+                                  style={{ display: 'flex', flexDirection: 'column', gap: 8 }}
+                                >
+                                  {paneOptions[pane.key].map((option) => (
+                                    <Checkbox
+                                      key={`${pane.key}:${option.value}`}
+                                      value={option.value}
+                                    >
+                                      <Space>
+                                        <span>{option.value}</span>
+                                        <Badge
+                                          count={option.count}
+                                          style={{ backgroundColor: '#5a6c7d' }}
+                                        />
+                                      </Space>
+                                    </Checkbox>
+                                  ))}
+                                </Checkbox.Group>
+                                {paneOptions[pane.key].length === 0 && (
+                                  <span className={styles.emptyHint}>
+                                    Sin valores para este filtro
+                                  </span>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        </Col>
+                      ))}
+                    </Row>
+                  </>
                 ),
               },
             ]}
@@ -856,7 +975,8 @@ export function VacationsPage() {
             pagination={{
               pageSize,
               showSizeChanger: false,
-              showTotal: (total, [start, end]) => `Mostrando ${start} a ${end} de ${total} registros`,
+              showTotal: (total, [start, end]) =>
+                `Mostrando ${start} a ${end} de ${total} registros`,
             }}
             onRow={(record) => ({
               onClick: () => {
@@ -876,7 +996,13 @@ export function VacationsPage() {
         mode={mode}
         title={modalTitle}
         companies={companies}
-        employees={mode === 'edit' && editingRow ? (modalEmployees.length > 0 ? modalEmployees : employees) : employees}
+        employees={
+          mode === 'edit' && editingRow
+            ? modalEmployees.length > 0
+              ? modalEmployees
+              : employees
+            : employees
+        }
         payPeriods={payPeriods}
         movements={movements}
         holidays={holidays}
@@ -895,9 +1021,7 @@ export function VacationsPage() {
         showAudit={mode === 'edit' && !!editingRow}
         auditTrail={auditTrail}
         loadingAuditTrail={loadingAuditTrail}
-        onLoadAuditTrail={
-          mode === 'edit' && editingRow ? loadEditingVacationAuditTrail : undefined
-        }
+        onLoadAuditTrail={mode === 'edit' && editingRow ? loadEditingVacationAuditTrail : undefined}
         initialCompanyId={companyId}
         initialDraft={editingDraft}
         onCancel={() => {
@@ -922,8 +1046,7 @@ export function VacationsPage() {
               await updateVacation(editingRow.id, payload);
             } else {
               const created = await createVacation(payload);
-              totalCreated =
-                Number(created?.totalCreated) > 0 ? Number(created.totalCreated) : 1;
+              totalCreated = Number(created?.totalCreated) > 0 ? Number(created.totalCreated) : 1;
             }
             message.success({
               content:
@@ -942,9 +1065,7 @@ export function VacationsPage() {
           } catch (error) {
             message.error({
               content:
-                error instanceof Error
-                  ? error.message
-                  : 'No se pudieron guardar las vacaciones.',
+                error instanceof Error ? error.message : 'No se pudieron guardar las vacaciones.',
               key: loadingKey,
               duration: 5,
             });
@@ -954,6 +1075,3 @@ export function VacationsPage() {
     </div>
   );
 }
-
-
-

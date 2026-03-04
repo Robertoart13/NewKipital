@@ -1,4 +1,17 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import {
+  BankOutlined,
+  CalendarOutlined,
+  ClockCircleOutlined,
+  CloseOutlined,
+  DeleteOutlined,
+  DollarCircleOutlined,
+  MenuOutlined,
+  IdcardOutlined,
+  MailOutlined,
+  QuestionCircleOutlined,
+  SearchOutlined,
+  UserOutlined,
+} from '@ant-design/icons';
 import {
   Alert,
   App as AntdApp,
@@ -20,22 +33,20 @@ import {
   Tag,
   Tooltip,
 } from 'antd';
-import {
-  BankOutlined,
-  CalendarOutlined,
-  ClockCircleOutlined,
-  CloseOutlined,
-  DeleteOutlined,
-  DollarCircleOutlined,
-  MenuOutlined,
-  IdcardOutlined,
-  MailOutlined,
-  QuestionCircleOutlined,
-  SearchOutlined,
-  UserOutlined,
-} from '@ant-design/icons';
 import dayjs, { type Dayjs } from 'dayjs';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+
 import 'dayjs/locale/es';
+import {
+  fetchAbsencePayrollsCatalog,
+  fetchVacationAvailability,
+  fetchVacationBookedDates,
+} from '../../../../api/personalActions';
+import { formatDateTime12h } from '../../../../lib/formatDate';
+import sharedStyles from '../../configuration/UsersManagementPage.module.css';
+
+import styles from './VacationTransactionModal.module.css';
+
 import type { CatalogPayPeriod } from '../../../../api/catalogs';
 import type { PayrollMovementListItem } from '../../../../api/payrollMovements';
 import type {
@@ -44,15 +55,7 @@ import type {
   VacationBookedDateItem,
   VacationHolidayItem,
 } from '../../../../api/personalActions';
-import {
-  fetchAbsencePayrollsCatalog,
-  fetchVacationAvailability,
-  fetchVacationBookedDates,
-} from '../../../../api/personalActions';
 import type { ColumnsType } from 'antd/es/table';
-import { formatDateTime12h } from '../../../../lib/formatDate';
-import sharedStyles from '../../configuration/UsersManagementPage.module.css';
-import styles from './VacationTransactionModal.module.css';
 
 export interface VacationDateSelection {
   key: string;
@@ -123,9 +126,7 @@ function formatEmployeeLabel(
 ) {
   const base = `${emp.nombre} ${emp.apellido1}${emp.apellido2 ? ` ${emp.apellido2}` : ''}`.trim();
   if (base) {
-    return canViewEmployeeSensitive && emp.codigo
-      ? `${base} (${emp.codigo})`
-      : base;
+    return canViewEmployeeSensitive && emp.codigo ? `${base} (${emp.codigo})` : base;
   }
   return emp.codigo || 'Empleado sin codigo';
 }
@@ -160,7 +161,11 @@ function toNumber(value: number | string | null | undefined): number {
   return Number.isFinite(parsed) ? parsed : 0;
 }
 
-function calculateSalaryByPeriod(salaryBase: number, payPeriodId?: number | null, jornada?: string | null): number {
+function calculateSalaryByPeriod(
+  salaryBase: number,
+  payPeriodId?: number | null,
+  jornada?: string | null,
+): number {
   const id = Number(payPeriodId);
   const isByHours = (jornada ?? '').trim().toLowerCase() === 'por horas';
   if (isByHours && (id === 8 || id === 11)) return 0;
@@ -187,7 +192,11 @@ function calculateSalaryByPeriod(salaryBase: number, payPeriodId?: number | null
   }
 }
 
-function calculateHourValue(salaryBase: number, payPeriodId?: number | null, jornada?: string | null): number {
+function calculateHourValue(
+  salaryBase: number,
+  payPeriodId?: number | null,
+  jornada?: string | null,
+): number {
   const id = Number(payPeriodId);
   const isByHours = (jornada ?? '').trim().toLowerCase() === 'por horas';
   if (isByHours && (id === 8 || id === 11)) return salaryBase;
@@ -366,7 +375,16 @@ export function VacationTransactionModal(props: VacationTransactionModalProps) {
     if (initialCompanyId) {
       form.setFieldsValue({ idEmpresa: initialCompanyId });
     }
-  }, [excludeActionId, form, holidays, initialCompanyId, initialDraft, message, open, warnedInvalidDates]);
+  }, [
+    excludeActionId,
+    form,
+    holidays,
+    initialCompanyId,
+    initialDraft,
+    message,
+    open,
+    warnedInvalidDates,
+  ]);
 
   useEffect(() => {
     if (!open || !showAudit || activeTab !== 'bitacora' || auditLoaded || !onLoadAuditTrail) return;
@@ -385,10 +403,7 @@ export function VacationTransactionModal(props: VacationTransactionModalProps) {
     }
 
     setLoadingPayrolls(true);
-    void fetchAbsencePayrollsCatalog(
-      Number(resolvedCompanyId),
-      Number(resolvedEmployeeId),
-    )
+    void fetchAbsencePayrollsCatalog(Number(resolvedCompanyId), Number(resolvedEmployeeId))
       .then((items) => {
         const options = items.map((item) => ({
           id: item.id,
@@ -416,10 +431,7 @@ export function VacationTransactionModal(props: VacationTransactionModalProps) {
       return;
     }
 
-    void fetchVacationAvailability(
-      Number(resolvedCompanyId),
-      Number(resolvedEmployeeId),
-    )
+    void fetchVacationAvailability(Number(resolvedCompanyId), Number(resolvedEmployeeId))
       .then((resp) => setLocalAvailability(resp ?? null))
       .catch(() => setLocalAvailability(null));
 
@@ -436,9 +448,7 @@ export function VacationTransactionModal(props: VacationTransactionModalProps) {
             .filter((value): value is string => !!value),
         );
         if (bookedSet.size > 0) {
-          setSelectedDates((prev) =>
-            prev.filter((item) => !bookedSet.has(item.key)),
-          );
+          setSelectedDates((prev) => prev.filter((item) => !bookedSet.has(item.key)));
         }
       })
       .catch(() => setBookedDates([]));
@@ -446,9 +456,7 @@ export function VacationTransactionModal(props: VacationTransactionModalProps) {
 
   const filteredEmployees = useMemo(() => {
     if (!resolvedCompanyId) return [];
-    return employees.filter(
-      (emp) => Number(emp.idEmpresa) === Number(resolvedCompanyId),
-    );
+    return employees.filter((emp) => Number(emp.idEmpresa) === Number(resolvedCompanyId));
   }, [employees, resolvedCompanyId]);
 
   const selectedEmployee = useMemo(() => {
@@ -482,18 +490,14 @@ export function VacationTransactionModal(props: VacationTransactionModalProps) {
 
   const movementOptions = useMemo(() => {
     if (!selectedCompanyId) return [];
-    return movements.filter(
-      (movement) => Number(movement.idEmpresa) === Number(selectedCompanyId),
-    );
+    return movements.filter((movement) => Number(movement.idEmpresa) === Number(selectedCompanyId));
   }, [movements, selectedCompanyId]);
 
   const availableDays = (availability ?? localAvailability)?.disponible ?? 0;
   const bookedDateSet = useMemo(
     () =>
       new Set(
-        bookedDates
-          .map((item) => item.fecha?.trim())
-          .filter((value): value is string => !!value),
+        bookedDates.map((item) => item.fecha?.trim()).filter((value): value is string => !!value),
       ),
     [bookedDates],
   );
@@ -519,15 +523,17 @@ export function VacationTransactionModal(props: VacationTransactionModalProps) {
     [payrollOptions],
   );
   const pickPreferredPayroll = useCallback(
-    (matches: Array<{
-      id: number;
-      label: string;
-      estado?: number;
-      fechaInicioPeriodo: string;
-      fechaFinPeriodo: string;
-      idTipoPlanilla?: number | null;
-      tipoPlanilla?: string | null;
-    }>) => {
+    (
+      matches: Array<{
+        id: number;
+        label: string;
+        estado?: number;
+        fechaInicioPeriodo: string;
+        fechaFinPeriodo: string;
+        idTipoPlanilla?: number | null;
+        tipoPlanilla?: string | null;
+      }>,
+    ) => {
       if (matches.length === 0) return null;
       if (matches.length === 1) return matches[0];
       const ranked = [...matches].sort((a, b) => {
@@ -618,9 +624,7 @@ export function VacationTransactionModal(props: VacationTransactionModalProps) {
     (date: Dayjs) => {
       return getDateDisableReason(date) != null;
     },
-    [
-      getDateDisableReason,
-    ],
+    [getDateDisableReason],
   );
 
   const toggleDate = useCallback(
@@ -636,9 +640,7 @@ export function VacationTransactionModal(props: VacationTransactionModalProps) {
         return;
       }
       setSelectedDates((prev) =>
-        [...prev, { key, fecha: date }].sort((a, b) =>
-          a.key < b.key ? -1 : 1,
-        ),
+        [...prev, { key, fecha: date }].sort((a, b) => (a.key < b.key ? -1 : 1)),
       );
     },
     [availableDays, message, selectedDates],
@@ -659,71 +661,84 @@ export function VacationTransactionModal(props: VacationTransactionModalProps) {
     (!!resolvedCompanyId && !!resolvedEmployeeId && loadingPayrolls) ||
     (activeTab === 'bitacora' && !!loadingAuditTrail);
 
-  const auditColumns: ColumnsType<PersonalActionAuditTrailItem> = useMemo(() => [
-    {
-      title: 'Fecha y hora',
-      dataIndex: 'fechaCreacion',
-      key: 'fechaCreacion',
-      width: 170,
-      render: (value: string | null) => formatDateTime12h(value),
-    },
-    {
-      title: 'Quién lo hizo',
-      key: 'actor',
-      width: 220,
-      render: (_, row) => {
-        const actorLabel = row.actorNombre?.trim() || row.actorEmail?.trim() || (row.actorUserId ? `Usuario ID ${row.actorUserId}` : 'Sistema');
-        return (
-          <div>
-            <div style={{ fontWeight: 600, color: '#3d4f5c' }}>{actorLabel}</div>
-            {row.actorEmail ? <div style={{ color: '#8c8c8c', fontSize: 12 }}>{row.actorEmail}</div> : null}
-          </div>
-        );
+  const auditColumns: ColumnsType<PersonalActionAuditTrailItem> = useMemo(
+    () => [
+      {
+        title: 'Fecha y hora',
+        dataIndex: 'fechaCreacion',
+        key: 'fechaCreacion',
+        width: 170,
+        render: (value: string | null) => formatDateTime12h(value),
       },
-    },
-    {
-      title: 'Acción',
-      key: 'accion',
-      width: 170,
-      render: (_, row) => (
-        <Flex gap={6} wrap="wrap">
-          <Tag className={sharedStyles.tagInactivo}>{row.modulo}</Tag>
-          <Tag className={sharedStyles.tagActivo}>{row.accion}</Tag>
-        </Flex>
-      ),
-    },
-    {
-      title: 'Detalle',
-      dataIndex: 'descripcion',
-      key: 'descripcion',
-      render: (value: string, row) => {
-        const changes = row.cambios ?? [];
-        const tooltipContent = (
-          <div style={{ maxWidth: 560, maxHeight: 360, overflowY: 'auto' }}>
-            <div style={{ fontWeight: 600, marginBottom: 8 }}>{value}</div>
-            {changes.length > 0 ? (
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
-                {changes.map((change, index) => (
-                  <div key={`${row.id}-${change.campo}-${index}`} style={{ fontSize: 12, lineHeight: 1.4 }}>
-                    <div><strong>{change.campo}</strong></div>
-                    <div>Antes: {change.antes}</div>
-                    <div>Después: {change.despues}</div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div style={{ fontSize: 12 }}>Sin detalle de campos para esta acción.</div>
-            )}
-          </div>
-        );
-        return (
-          <Tooltip title={tooltipContent}>
-            <div className={sharedStyles.auditDetailCell}>{value}</div>
-          </Tooltip>
-        );
+      {
+        title: 'Quién lo hizo',
+        key: 'actor',
+        width: 220,
+        render: (_, row) => {
+          const actorLabel =
+            row.actorNombre?.trim() ||
+            row.actorEmail?.trim() ||
+            (row.actorUserId ? `Usuario ID ${row.actorUserId}` : 'Sistema');
+          return (
+            <div>
+              <div style={{ fontWeight: 600, color: '#3d4f5c' }}>{actorLabel}</div>
+              {row.actorEmail ? (
+                <div style={{ color: '#8c8c8c', fontSize: 12 }}>{row.actorEmail}</div>
+              ) : null}
+            </div>
+          );
+        },
       },
-    },
-  ], []);
+      {
+        title: 'Acción',
+        key: 'accion',
+        width: 170,
+        render: (_, row) => (
+          <Flex gap={6} wrap="wrap">
+            <Tag className={sharedStyles.tagInactivo}>{row.modulo}</Tag>
+            <Tag className={sharedStyles.tagActivo}>{row.accion}</Tag>
+          </Flex>
+        ),
+      },
+      {
+        title: 'Detalle',
+        dataIndex: 'descripcion',
+        key: 'descripcion',
+        render: (value: string, row) => {
+          const changes = row.cambios ?? [];
+          const tooltipContent = (
+            <div style={{ maxWidth: 560, maxHeight: 360, overflowY: 'auto' }}>
+              <div style={{ fontWeight: 600, marginBottom: 8 }}>{value}</div>
+              {changes.length > 0 ? (
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+                  {changes.map((change, index) => (
+                    <div
+                      key={`${row.id}-${change.campo}-${index}`}
+                      style={{ fontSize: 12, lineHeight: 1.4 }}
+                    >
+                      <div>
+                        <strong>{change.campo}</strong>
+                      </div>
+                      <div>Antes: {change.antes}</div>
+                      <div>Después: {change.despues}</div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div style={{ fontSize: 12 }}>Sin detalle de campos para esta acción.</div>
+              )}
+            </div>
+          );
+          return (
+            <Tooltip title={tooltipContent}>
+              <div className={sharedStyles.auditDetailCell}>{value}</div>
+            </Tooltip>
+          );
+        },
+      },
+    ],
+    [],
+  );
 
   const handleAccept = useCallback(async () => {
     if (loading) return;
@@ -732,7 +747,10 @@ export function VacationTransactionModal(props: VacationTransactionModalProps) {
       message.error('Debe seleccionar al menos una fecha de vacaciones.');
       return;
     }
-    if (selectedPayrollSummary.invalidDates.length > 0 || selectedPayrollSummary.payrolls.length === 0) {
+    if (
+      selectedPayrollSummary.invalidDates.length > 0 ||
+      selectedPayrollSummary.payrolls.length === 0
+    ) {
       message.error('Hay fechas sin planilla válida. Revise las fechas seleccionadas.');
       return;
     }
@@ -746,7 +764,10 @@ export function VacationTransactionModal(props: VacationTransactionModalProps) {
     };
 
     modal.confirm({
-      title: mode === 'create' ? 'Confirmar creación de vacaciones' : 'Confirmar actualización de vacaciones',
+      title:
+        mode === 'create'
+          ? 'Confirmar creación de vacaciones'
+          : 'Confirmar actualización de vacaciones',
       content:
         mode === 'create'
           ? '¿Está seguro de crear estas vacaciones con las fechas seleccionadas?'
@@ -786,7 +807,7 @@ export function VacationTransactionModal(props: VacationTransactionModalProps) {
           padding: 16,
         },
       }}
-      title={(
+      title={
         <div
           style={{
             display: 'flex',
@@ -810,7 +831,7 @@ export function VacationTransactionModal(props: VacationTransactionModalProps) {
             className={sharedStyles.companyModalCloseBtn}
           />
         </div>
-      )}
+      }
     >
       <div
         style={{
@@ -844,7 +865,14 @@ export function VacationTransactionModal(props: VacationTransactionModalProps) {
           form={form}
           layout="vertical"
           className={sharedStyles.companyFormContent}
-          style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0, minWidth: 0, overflow: 'hidden' }}
+          style={{
+            display: 'flex',
+            flexDirection: 'column',
+            flex: 1,
+            minHeight: 0,
+            minWidth: 0,
+            overflow: 'hidden',
+          }}
         >
           <div style={{ flexShrink: 0 }}>
             {readOnly && readOnlyMessage ? (
@@ -884,25 +912,29 @@ export function VacationTransactionModal(props: VacationTransactionModalProps) {
                   },
                   ...(showAudit
                     ? [
-                      {
-                        key: 'bitacora',
-                        label: (
-                          <span>
-                            <SearchOutlined style={{ marginRight: 8, fontSize: 16 }} />
-                            Bitácora
-                          </span>
-                        ),
-                      },
-                    ]
+                        {
+                          key: 'bitacora',
+                          label: (
+                            <span>
+                              <SearchOutlined style={{ marginRight: 8, fontSize: 16 }} />
+                              Bitácora
+                            </span>
+                          ),
+                        },
+                      ]
                     : []),
                 ]}
               />
             ) : null}
 
-            {(mode !== 'edit' || activeTab === 'info') ? (
+            {mode !== 'edit' || activeTab === 'info' ? (
               <Row gutter={16} wrap style={{ flex: 1, minHeight: 0, alignItems: 'stretch' }}>
                 {/* Columna izquierda: formulario */}
-                <Col xs={24} lg={10} style={{ display: 'flex', flexDirection: 'column', minHeight: 0 }}>
+                <Col
+                  xs={24}
+                  lg={10}
+                  style={{ display: 'flex', flexDirection: 'column', minHeight: 0 }}
+                >
                   {selectedEmployee ? (
                     <Collapse
                       defaultActiveKey={[]}
@@ -922,12 +954,20 @@ export function VacationTransactionModal(props: VacationTransactionModalProps) {
                                   </div>
                                   <div className={sharedStyles.employeeAccordionId}>
                                     Empleado ID: {selectedEmployee.codigo || '--'}
-                                    {canViewEmployeeSensitive && selectedEmployee.cedula ? ` - ${selectedEmployee.cedula}` : ''}
-                                    {canViewEmployeeSensitive && selectedEmployee.telefono ? ` - ${selectedEmployee.telefono}` : ''}
+                                    {canViewEmployeeSensitive && selectedEmployee.cedula
+                                      ? ` - ${selectedEmployee.cedula}`
+                                      : ''}
+                                    {canViewEmployeeSensitive && selectedEmployee.telefono
+                                      ? ` - ${selectedEmployee.telefono}`
+                                      : ''}
                                   </div>
                                   <div className={sharedStyles.employeeAccordionCompany}>
                                     <BankOutlined />
-                                    {companies.find((c) => Number(c.id) === Number(selectedCompanyId ?? resolvedCompanyId))?.nombre ?? '--'}
+                                    {companies.find(
+                                      (c) =>
+                                        Number(c.id) ===
+                                        Number(selectedCompanyId ?? resolvedCompanyId),
+                                    )?.nombre ?? '--'}
                                   </div>
                                 </div>
                               </div>
@@ -937,72 +977,123 @@ export function VacationTransactionModal(props: VacationTransactionModalProps) {
                             <div className={sharedStyles.employeeAccordionContent}>
                               <div className={sharedStyles.employeeAccordionGrid}>
                                 <div className={sharedStyles.employeeAccordionItem}>
-                                  <IdcardOutlined className={sharedStyles.employeeAccordionItemIcon} />
+                                  <IdcardOutlined
+                                    className={sharedStyles.employeeAccordionItemIcon}
+                                  />
                                   <div>
-                                    <div className={sharedStyles.employeeAccordionItemLabel}>CÃ©dula</div>
+                                    <div className={sharedStyles.employeeAccordionItemLabel}>
+                                      CÃ©dula
+                                    </div>
                                     <div className={sharedStyles.employeeAccordionItemValue}>
-                                      {canViewEmployeeSensitive ? (selectedEmployee.cedula ?? '--') : sensitiveMaskedValue}
+                                      {canViewEmployeeSensitive
+                                        ? (selectedEmployee.cedula ?? '--')
+                                        : sensitiveMaskedValue}
                                     </div>
                                   </div>
                                 </div>
                                 <div className={sharedStyles.employeeAccordionItem}>
-                                  <MailOutlined className={sharedStyles.employeeAccordionItemIcon} />
+                                  <MailOutlined
+                                    className={sharedStyles.employeeAccordionItemIcon}
+                                  />
                                   <div>
-                                    <div className={sharedStyles.employeeAccordionItemLabel}>Email</div>
+                                    <div className={sharedStyles.employeeAccordionItemLabel}>
+                                      Email
+                                    </div>
                                     <div className={sharedStyles.employeeAccordionItemValue}>
-                                      {canViewEmployeeSensitive ? (selectedEmployee.email ?? '--') : sensitiveMaskedValue}
+                                      {canViewEmployeeSensitive
+                                        ? (selectedEmployee.email ?? '--')
+                                        : sensitiveMaskedValue}
                                     </div>
                                   </div>
                                 </div>
                                 <div className={sharedStyles.employeeAccordionItem}>
-                                  <CalendarOutlined className={sharedStyles.employeeAccordionItemIcon} />
+                                  <CalendarOutlined
+                                    className={sharedStyles.employeeAccordionItemIcon}
+                                  />
                                   <div>
-                                    <div className={sharedStyles.employeeAccordionItemLabel}>PerÃ­odo</div>
-                                    <div className={sharedStyles.employeeAccordionItemValue}>{selectedPayPeriod?.nombre ?? '--'}</div>
+                                    <div className={sharedStyles.employeeAccordionItemLabel}>
+                                      PerÃ­odo
+                                    </div>
+                                    <div className={sharedStyles.employeeAccordionItemValue}>
+                                      {selectedPayPeriod?.nombre ?? '--'}
+                                    </div>
                                   </div>
                                 </div>
                                 <div className={sharedStyles.employeeAccordionItem}>
-                                  <ClockCircleOutlined className={sharedStyles.employeeAccordionItemIcon} />
+                                  <ClockCircleOutlined
+                                    className={sharedStyles.employeeAccordionItemIcon}
+                                  />
                                   <div>
-                                    <div className={sharedStyles.employeeAccordionItemLabel}>Jornada</div>
-                                    <div className={sharedStyles.employeeAccordionItemValue}>{selectedEmployee.jornada ?? '--'}</div>
+                                    <div className={sharedStyles.employeeAccordionItemLabel}>
+                                      Jornada
+                                    </div>
+                                    <div className={sharedStyles.employeeAccordionItemValue}>
+                                      {selectedEmployee.jornada ?? '--'}
+                                    </div>
                                   </div>
                                 </div>
                               </div>
                               <hr className={sharedStyles.employeeAccordionGridHr} />
                               <div className={sharedStyles.employeeAccordionGrid}>
                                 <div className={sharedStyles.employeeAccordionItem}>
-                                  <DollarCircleOutlined className={sharedStyles.employeeAccordionItemIcon} />
+                                  <DollarCircleOutlined
+                                    className={sharedStyles.employeeAccordionItemIcon}
+                                  />
                                   <div>
-                                    <div className={sharedStyles.employeeAccordionItemLabel}>Salario Base</div>
+                                    <div className={sharedStyles.employeeAccordionItemLabel}>
+                                      Salario Base
+                                    </div>
                                     <div className={sharedStyles.employeeAccordionItemValue}>
-                                      {canViewEmployeeSensitive ? formatMoney(selectedEmployee.salarioBase, employeeCurrency) : sensitiveMaskedValue}
+                                      {canViewEmployeeSensitive
+                                        ? formatMoney(
+                                            selectedEmployee.salarioBase,
+                                            employeeCurrency,
+                                          )
+                                        : sensitiveMaskedValue}
                                     </div>
                                   </div>
                                 </div>
                                 <div className={sharedStyles.employeeAccordionItem}>
-                                  <DollarCircleOutlined className={sharedStyles.employeeAccordionItemIcon} />
+                                  <DollarCircleOutlined
+                                    className={sharedStyles.employeeAccordionItemIcon}
+                                  />
                                   <div>
-                                    <div className={sharedStyles.employeeAccordionItemLabel}>Salario {selectedPayPeriod?.nombre ?? 'PerÃ­odo'}</div>
+                                    <div className={sharedStyles.employeeAccordionItemLabel}>
+                                      Salario {selectedPayPeriod?.nombre ?? 'PerÃ­odo'}
+                                    </div>
                                     <div className={sharedStyles.employeeAccordionItemValue}>
-                                      {canViewEmployeeSensitive ? formatMoney(salaryByPeriod, employeeCurrency) : sensitiveMaskedValue}
+                                      {canViewEmployeeSensitive
+                                        ? formatMoney(salaryByPeriod, employeeCurrency)
+                                        : sensitiveMaskedValue}
                                     </div>
                                   </div>
                                 </div>
                                 <div className={sharedStyles.employeeAccordionItem}>
-                                  <DollarCircleOutlined className={sharedStyles.employeeAccordionItemIcon} />
+                                  <DollarCircleOutlined
+                                    className={sharedStyles.employeeAccordionItemIcon}
+                                  />
                                   <div>
-                                    <div className={sharedStyles.employeeAccordionItemLabel}>Valor por Hora</div>
+                                    <div className={sharedStyles.employeeAccordionItemLabel}>
+                                      Valor por Hora
+                                    </div>
                                     <div className={sharedStyles.employeeAccordionItemValue}>
-                                      {canViewEmployeeSensitive ? `${formatMoney(hourValue, employeeCurrency)}/hora` : sensitiveMaskedValue}
+                                      {canViewEmployeeSensitive
+                                        ? `${formatMoney(hourValue, employeeCurrency)}/hora`
+                                        : sensitiveMaskedValue}
                                     </div>
                                   </div>
                                 </div>
                                 <div className={sharedStyles.employeeAccordionItem}>
-                                  <ClockCircleOutlined className={sharedStyles.employeeAccordionItemIcon} />
+                                  <ClockCircleOutlined
+                                    className={sharedStyles.employeeAccordionItemIcon}
+                                  />
                                   <div>
-                                    <div className={sharedStyles.employeeAccordionItemLabel}>Horas del PerÃ­odo</div>
-                                    <div className={sharedStyles.employeeAccordionItemValue}>{`${periodHours} horas`}</div>
+                                    <div className={sharedStyles.employeeAccordionItemLabel}>
+                                      Horas del PerÃ­odo
+                                    </div>
+                                    <div
+                                      className={sharedStyles.employeeAccordionItemValue}
+                                    >{`${periodHours} horas`}</div>
                                   </div>
                                 </div>
                               </div>
@@ -1078,129 +1169,147 @@ export function VacationTransactionModal(props: VacationTransactionModalProps) {
                 </Col>
 
                 {/* Columna derecha: Calendario de vacaciones + Fechas seleccionadas */}
-                <Col xs={24} lg={14} style={{ display: 'flex', flexDirection: 'column', minHeight: 0 }}>
-                <div style={{ flex: 1, minHeight: 0, overflowX: 'hidden', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 0, minWidth: 0 }}>
-                {selectedPayrollSummary.ambiguousDates.length > 0 ? (
-                  <Alert
-                    type="warning"
-                    showIcon
-                    style={{ marginBottom: 12 }}
-                    message="Hay fechas que coinciden con múltiples planillas. Se asignará la planilla ABIERTA (o la de menor ID si hay empate)."
-                  />
-                ) : null}
-                <Row gutter={16} wrap style={{ flex: 1, minHeight: 0 }}>
-                  <Col xs={24} lg={14}>
-                    <div className={styles.calendarCard}>
-                      <div className={styles.calendarCardHeader}>
-                        <div className={styles.calendarCardHeaderIcon}>
-                          <CalendarOutlined />
-                        </div>
-                        <h3 className={styles.calendarCardHeaderTitle}>Calendario de vacaciones</h3>
-                      </div>
-                      <div className={styles.calendarContent}>
-                        <div className={styles.calendarStyled}>
-                          <Calendar
-                            fullscreen={false}
-                            disabledDate={disabledDate}
-                            onSelect={(date) => {
-                              if (readOnly) return;
-                              if (disabledDate(date)) return;
-                              toggleDate(date);
-                            }}
-                            cellRender={(date) => {
-                              const key = buildDateKey(date);
-                              const selected = selectedDates.some((item) => item.key === key);
-                              const booked = bookedDateSet.has(key);
-                              const reason = getDateDisableReason(date);
-                              if (reason && !selected) {
-                                return (
-                                  <Tooltip title={reason}>
-                                    <div className={styles.dateDisabledBadge}>Bloq.</div>
-                                  </Tooltip>
-                                );
-                              }
-                              if (booked) {
-                                return (
-                                  <div className={styles.dateReservedBadge}>Res.</div>
-                                );
-                              }
-                              return selected ? (
-                                <div className={styles.dateSelectedBadge}>Sel.</div>
-                              ) : null;
-                            }}
-                          />
-                        </div>
-                        <div className={styles.statsRow}>
-                          <div className={`${styles.statBadge} ${styles.statBadgeAvailable}`}>
-                            Disponibles: {availableDays}
+                <Col
+                  xs={24}
+                  lg={14}
+                  style={{ display: 'flex', flexDirection: 'column', minHeight: 0 }}
+                >
+                  <div
+                    style={{
+                      flex: 1,
+                      minHeight: 0,
+                      overflowX: 'hidden',
+                      overflowY: 'auto',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: 0,
+                      minWidth: 0,
+                    }}
+                  >
+                    {selectedPayrollSummary.ambiguousDates.length > 0 ? (
+                      <Alert
+                        type="warning"
+                        showIcon
+                        style={{ marginBottom: 12 }}
+                        message="Hay fechas que coinciden con múltiples planillas. Se asignará la planilla ABIERTA (o la de menor ID si hay empate)."
+                      />
+                    ) : null}
+                    <Row gutter={16} wrap style={{ flex: 1, minHeight: 0 }}>
+                      <Col xs={24} lg={14}>
+                        <div className={styles.calendarCard}>
+                          <div className={styles.calendarCardHeader}>
+                            <div className={styles.calendarCardHeaderIcon}>
+                              <CalendarOutlined />
+                            </div>
+                            <h3 className={styles.calendarCardHeaderTitle}>
+                              Calendario de vacaciones
+                            </h3>
                           </div>
-                          <div className={`${styles.statBadge} ${styles.statBadgeSelected}`}>
-                            Seleccionados: {selectedDates.length}
+                          <div className={styles.calendarContent}>
+                            <div className={styles.calendarStyled}>
+                              <Calendar
+                                fullscreen={false}
+                                disabledDate={disabledDate}
+                                onSelect={(date) => {
+                                  if (readOnly) return;
+                                  if (disabledDate(date)) return;
+                                  toggleDate(date);
+                                }}
+                                cellRender={(date) => {
+                                  const key = buildDateKey(date);
+                                  const selected = selectedDates.some((item) => item.key === key);
+                                  const booked = bookedDateSet.has(key);
+                                  const reason = getDateDisableReason(date);
+                                  if (reason && !selected) {
+                                    return (
+                                      <Tooltip title={reason}>
+                                        <div className={styles.dateDisabledBadge}>Bloq.</div>
+                                      </Tooltip>
+                                    );
+                                  }
+                                  if (booked) {
+                                    return <div className={styles.dateReservedBadge}>Res.</div>;
+                                  }
+                                  return selected ? (
+                                    <div className={styles.dateSelectedBadge}>Sel.</div>
+                                  ) : null;
+                                }}
+                              />
+                            </div>
+                            <div className={styles.statsRow}>
+                              <div className={`${styles.statBadge} ${styles.statBadgeAvailable}`}>
+                                Disponibles: {availableDays}
+                              </div>
+                              <div className={`${styles.statBadge} ${styles.statBadgeSelected}`}>
+                                Seleccionados: {selectedDates.length}
+                              </div>
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    </div>
-                  </Col>
-                  <Col xs={24} lg={10}>
-                    <div className={styles.datesListCard} style={{ minHeight: 0, display: 'flex', flexDirection: 'column' }}>
-                      <div className={styles.datesListHeader}>
-                        <div className={styles.datesListHeaderIcon}>
-                          <CalendarOutlined />
-                        </div>
-                        <h3 className={styles.datesListHeaderTitle}>Fechas seleccionadas</h3>
-                        {!readOnly && selectedDates.length > 0 && (
-                          <Button
-                            type="text"
-                            size="small"
-                            icon={<MenuOutlined />}
-                            className={styles.clearAllBtn}
-                            onClick={() => setSelectedDates([])}
-                          >
-                            Limpiar todo
-                          </Button>
-                        )}
-                      </div>
-                      <div className={styles.datesListContent}>
-                        {selectedDates.length === 0 ? (
-                          <div className={styles.datesListEmpty}>
-                            <span>No hay fechas seleccionadas</span>
-                            {!readOnly && (
-                              <span className={styles.datesListEmptyHint}>
-                                Seleccione fechas en el calendario para agregarlas
-                              </span>
+                      </Col>
+                      <Col xs={24} lg={10}>
+                        <div
+                          className={styles.datesListCard}
+                          style={{ minHeight: 0, display: 'flex', flexDirection: 'column' }}
+                        >
+                          <div className={styles.datesListHeader}>
+                            <div className={styles.datesListHeaderIcon}>
+                              <CalendarOutlined />
+                            </div>
+                            <h3 className={styles.datesListHeaderTitle}>Fechas seleccionadas</h3>
+                            {!readOnly && selectedDates.length > 0 && (
+                              <Button
+                                type="text"
+                                size="small"
+                                icon={<MenuOutlined />}
+                                className={styles.clearAllBtn}
+                                onClick={() => setSelectedDates([])}
+                              >
+                                Limpiar todo
+                              </Button>
                             )}
                           </div>
-                        ) : (
-                          selectedDates.map((item) => (
-                            <div key={item.key} className={styles.dateRow}>
-                              <div>
-                                <div className={styles.dateRowLabel}>
-                                  {parseDateKey(item.key)
-                                    .locale('es')
-                                    .format('dddd, D [de] MMMM [de] YYYY')}
-                                </div>
-                                <div className={styles.dateRowSub}>{item.key}</div>
+                          <div className={styles.datesListContent}>
+                            {selectedDates.length === 0 ? (
+                              <div className={styles.datesListEmpty}>
+                                <span>No hay fechas seleccionadas</span>
+                                {!readOnly && (
+                                  <span className={styles.datesListEmptyHint}>
+                                    Seleccione fechas en el calendario para agregarlas
+                                  </span>
+                                )}
                               </div>
-                              {!readOnly ? (
-                                <Button
-                                  type="text"
-                                  icon={<DeleteOutlined />}
-                                  size="small"
-                                  onClick={() =>
-                                    setSelectedDates((prev) =>
-                                      prev.filter((row) => row.key !== item.key),
-                                    )
-                                  }
-                                />
-                              ) : null}
-                            </div>
-                          ))
-                        )}
-                      </div>
-                    </div>
-                  </Col>
-                </Row>
-                </div>
+                            ) : (
+                              selectedDates.map((item) => (
+                                <div key={item.key} className={styles.dateRow}>
+                                  <div>
+                                    <div className={styles.dateRowLabel}>
+                                      {parseDateKey(item.key)
+                                        .locale('es')
+                                        .format('dddd, D [de] MMMM [de] YYYY')}
+                                    </div>
+                                    <div className={styles.dateRowSub}>{item.key}</div>
+                                  </div>
+                                  {!readOnly ? (
+                                    <Button
+                                      type="text"
+                                      icon={<DeleteOutlined />}
+                                      size="small"
+                                      onClick={() =>
+                                        setSelectedDates((prev) =>
+                                          prev.filter((row) => row.key !== item.key),
+                                        )
+                                      }
+                                    />
+                                  ) : null}
+                                </div>
+                              ))
+                            )}
+                          </div>
+                        </div>
+                      </Col>
+                    </Row>
+                  </div>
                 </Col>
               </Row>
             ) : null}
@@ -1253,10 +1362,3 @@ export function VacationTransactionModal(props: VacationTransactionModalProps) {
     </Modal>
   );
 }
-
-
-
-
-
-
-

@@ -10,10 +10,10 @@ import { Company } from '../companies/entities/company.entity';
 
 import { OrgProject } from './entities/project.entity';
 
-import type { AuditOutboxService } from '../integration/audit-outbox.service';
+import { AuditOutboxService } from '../integration/audit-outbox.service';
 import type { CreateProjectDto } from './dto/create-project.dto';
 import type { UpdateProjectDto } from './dto/update-project.dto';
-import type { Repository } from 'typeorm';
+import { Repository } from 'typeorm';
 
 @Injectable()
 export class ProjectsService {

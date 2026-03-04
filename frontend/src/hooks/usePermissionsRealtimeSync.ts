@@ -1,7 +1,8 @@
 import { useEffect, useRef } from 'react';
+
 import { fetchPermissionsForApp, fetchPermissionsForCompany } from '../api/permissions';
-import { httpFetch } from '../interceptors/httpInterceptor';
 import { API_URL } from '../config/api';
+import { httpFetch } from '../interceptors/httpInterceptor';
 import { useAppDispatch, useAppSelector } from '../store/hooks';
 import { setPermissions } from '../store/slices/permissionsSlice';
 
@@ -36,20 +37,28 @@ export function usePermissionsRealtimeSync() {
       refreshInFlightRef.current = true;
       try {
         if (activeCompanyId) {
-          const resolved = await fetchPermissionsForCompany(activeCompanyId, activeApp, forceBypassCache);
-          dispatch(setPermissions({
-            permissions: resolved.permissions,
-            roles: resolved.roles,
-            appId: activeApp,
-            companyId: activeCompanyId,
-          }));
+          const resolved = await fetchPermissionsForCompany(
+            activeCompanyId,
+            activeApp,
+            forceBypassCache,
+          );
+          dispatch(
+            setPermissions({
+              permissions: resolved.permissions,
+              roles: resolved.roles,
+              appId: activeApp,
+              companyId: activeCompanyId,
+            }),
+          );
         } else {
           const resolved = await fetchPermissionsForApp(activeApp, forceBypassCache);
-          dispatch(setPermissions({
-            permissions: resolved.permissions,
-            roles: resolved.roles,
-            appId: activeApp,
-          }));
+          dispatch(
+            setPermissions({
+              permissions: resolved.permissions,
+              roles: resolved.roles,
+              appId: activeApp,
+            }),
+          );
         }
         lastRefreshAtRef.current = Date.now();
       } catch {
@@ -59,7 +68,9 @@ export function usePermissionsRealtimeSync() {
       }
     };
 
-    const eventSource = new EventSource(`${API_URL}/auth/permissions-stream`, { withCredentials: true });
+    const eventSource = new EventSource(`${API_URL}/auth/permissions-stream`, {
+      withCredentials: true,
+    });
 
     eventSource.addEventListener('permissions.changed', () => {
       void refreshPermissions(true);
@@ -70,7 +81,7 @@ export function usePermissionsRealtimeSync() {
       try {
         const res = await httpFetch('/auth/authz-token');
         if (!res.ok) return;
-        const data = await res.json().catch(() => null) as { token?: string } | null;
+        const data = (await res.json().catch(() => null)) as { token?: string } | null;
         const nextToken = data?.token?.trim();
         if (!nextToken) return;
         if (!lastAuthzTokenRef.current) {

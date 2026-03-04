@@ -1,6 +1,7 @@
-import { useState } from 'react';
 import { Button, Modal, Form, Input, DatePicker } from 'antd';
 import dayjs from 'dayjs';
+import { useState } from 'react';
+
 import type { EmployeeDetail } from '../../../../api/employees';
 
 interface EmployeeActionsProps {
@@ -46,11 +47,7 @@ export function EmployeeActions({
 
   const handleLiquidateOk = () => {
     liquidateForm.validateFields().then((v) => {
-      onLiquidate(
-        employee.id,
-        dayjs(v.fechaSalida).format('YYYY-MM-DD'),
-        v.motivo,
-      );
+      onLiquidate(employee.id, dayjs(v.fechaSalida).format('YYYY-MM-DD'), v.motivo);
       setLiquidateModal(false);
       liquidateForm.resetFields();
     });
@@ -72,7 +69,11 @@ export function EmployeeActions({
           </>
         )}
         {!isActive && canReactivate && (
-          <Button type="primary" onClick={() => onReactivate(employee.id)} loading={reactivatePending}>
+          <Button
+            type="primary"
+            onClick={() => onReactivate(employee.id)}
+            loading={reactivatePending}
+          >
             Reactivar
           </Button>
         )}
@@ -82,7 +83,10 @@ export function EmployeeActions({
         title={`¿Inactivar a ${nombreCompleto}?`}
         open={inactivateModal}
         onOk={handleInactivateOk}
-        onCancel={() => { setInactivateModal(false); inactivateForm.resetFields(); }}
+        onCancel={() => {
+          setInactivateModal(false);
+          inactivateForm.resetFields();
+        }}
       >
         <p>Esta acción impedirá que el empleado aparezca en planillas futuras.</p>
         <Form form={inactivateForm} layout="vertical">
@@ -96,7 +100,10 @@ export function EmployeeActions({
         title={`¿Liquidar a ${nombreCompleto}?`}
         open={liquidateModal}
         onOk={handleLiquidateOk}
-        onCancel={() => { setLiquidateModal(false); liquidateForm.resetFields(); }}
+        onCancel={() => {
+          setLiquidateModal(false);
+          liquidateForm.resetFields();
+        }}
       >
         <p>Esta acción registrará la salida definitiva del empleado.</p>
         <Form form={liquidateForm} layout="vertical">

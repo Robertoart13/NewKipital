@@ -1,4 +1,5 @@
 ﻿import { describe, expect, it } from 'vitest';
+
 import reducer, { setActiveCompany, clearActiveCompany } from './activeCompanySlice';
 
 describe('activeCompanySlice', () => {
@@ -21,7 +22,10 @@ describe('activeCompanySlice', () => {
   });
 
   it('clearActiveCompany should reset to null', () => {
-    const filled = reducer(initial, setActiveCompany({ id: '2', name: 'X', paymentFrequency: 'monthly', currency: 'USD' }));
+    const filled = reducer(
+      initial,
+      setActiveCompany({ id: '2', name: 'X', paymentFrequency: 'monthly', currency: 'USD' }),
+    );
     const cleared = reducer(filled, clearActiveCompany());
     expect(cleared.company).toBeNull();
   });

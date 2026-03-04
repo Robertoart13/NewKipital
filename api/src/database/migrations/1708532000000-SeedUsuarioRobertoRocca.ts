@@ -1,6 +1,6 @@
 import * as bcrypt from 'bcrypt';
 
-import type { MigrationInterface, QueryRunner } from 'typeorm';
+import { MigrationInterface, QueryRunner } from 'typeorm';
 
 /**
  * Seed: Usuario roberto@roccacr.com para login local.

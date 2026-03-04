@@ -1,4 +1,4 @@
-import type { MigrationInterface, QueryRunner } from 'typeorm';
+import { MigrationInterface, QueryRunner } from 'typeorm';
 
 export class AddQueueMonitoringIndexes1708534000000 implements MigrationInterface {
   name = 'AddQueueMonitoringIndexes1708534000000';

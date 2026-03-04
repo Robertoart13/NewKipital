@@ -20,7 +20,7 @@ import { CacheResponseInterceptor } from '../../common/interceptors/cache-respon
 
 import type { CreatePayrollArticleDto } from './dto/create-payroll-article.dto';
 import type { UpdatePayrollArticleDto } from './dto/update-payroll-article.dto';
-import type { PayrollArticlesService } from './payroll-articles.service';
+import { PayrollArticlesService } from './payroll-articles.service';
 
 @CacheScope('payroll-articles')
 @UseInterceptors(CacheResponseInterceptor)

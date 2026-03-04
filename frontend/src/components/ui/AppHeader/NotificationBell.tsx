@@ -1,12 +1,8 @@
-import { useState, useCallback, useMemo } from 'react';
+import { BellOutlined, DeleteOutlined, SafetyOutlined, MessageOutlined } from '@ant-design/icons';
 import { App as AntdApp, Badge, Dropdown, Space, Button, Typography, Empty } from 'antd';
-import {
-  BellOutlined,
-  DeleteOutlined,
-  SafetyOutlined,
-  MessageOutlined,
-} from '@ant-design/icons';
-import { useAppSelector } from '../../../store/hooks';
+import { useState, useCallback, useMemo } from 'react';
+
+import { useNotificationSocket } from '../../../hooks/useNotificationSocket';
 import {
   useNotifications,
   useUnreadCount,
@@ -14,7 +10,8 @@ import {
   useMarkAsDeleted,
   useMarkAllAsRead,
 } from '../../../queries/notifications/useNotifications';
-import { useNotificationSocket } from '../../../hooks/useNotificationSocket';
+import { useAppSelector } from '../../../store/hooks';
+
 import type { NotificationItem } from '../../../api/notifications';
 
 const { Text } = Typography;
@@ -47,8 +44,10 @@ function getSectionLabel(dateStr: string): string {
 
 function getIconForTipo(tipo: string): React.ReactNode {
   const t = (tipo || '').toLowerCase();
-  if (t.includes('permiso') || t.includes('rol')) return <SafetyOutlined style={{ color: '#374151', fontSize: 18 }} />;
-  if (t.includes('mensaje') || t.includes('message')) return <MessageOutlined style={{ color: '#6b7280', fontSize: 18 }} />;
+  if (t.includes('permiso') || t.includes('rol'))
+    return <SafetyOutlined style={{ color: '#374151', fontSize: 18 }} />;
+  if (t.includes('mensaje') || t.includes('message'))
+    return <MessageOutlined style={{ color: '#6b7280', fontSize: 18 }} />;
   return <BellOutlined style={{ color: '#6b7280', fontSize: 18 }} />;
 }
 
@@ -57,8 +56,10 @@ export function NotificationBell() {
   const [open, setOpen] = useState(false);
   const activeApp = useAppSelector((s) => s.activeApp.app);
   const activeCompany = useAppSelector((s) => s.activeCompany.company);
-  const companyIdNum = activeCompany?.id != null ? parseInt(String(activeCompany.id), 10) : undefined;
-  const appCode = activeApp === 'kpital' ? 'kpital' : activeApp === 'timewise' ? 'timewise' : undefined;
+  const companyIdNum =
+    activeCompany?.id != null ? parseInt(String(activeCompany.id), 10) : undefined;
+  const appCode =
+    activeApp === 'kpital' ? 'kpital' : activeApp === 'timewise' ? 'timewise' : undefined;
 
   const isAuthenticated = useAppSelector((s) => s.auth.isAuthenticated);
   useNotificationSocket(!!isAuthenticated);
@@ -136,9 +137,17 @@ export function NotificationBell() {
           background: '#fafafa',
         }}
       >
-        <Text strong style={{ fontSize: 16 }}>Notificaciones</Text>
+        <Text strong style={{ fontSize: 16 }}>
+          Notificaciones
+        </Text>
         {count > 0 && (
-          <Button type="link" size="small" onClick={handleMarkAllRead} loading={markAllRead.isPending} style={{ padding: 0 }}>
+          <Button
+            type="link"
+            size="small"
+            onClick={handleMarkAllRead}
+            loading={markAllRead.isPending}
+            style={{ padding: 0 }}
+          >
             Marcar todas como leídas
           </Button>
         )}
@@ -160,7 +169,16 @@ export function NotificationBell() {
           <Space orientation="vertical" size={16} style={{ width: '100%' }}>
             {groupedBySection.map(({ label, items }) => (
               <div key={label}>
-                <Text type="secondary" style={{ fontSize: 12, fontWeight: 600, display: 'block', marginBottom: 10, textTransform: 'uppercase' }}>
+                <Text
+                  type="secondary"
+                  style={{
+                    fontSize: 12,
+                    fontWeight: 600,
+                    display: 'block',
+                    marginBottom: 10,
+                    textTransform: 'uppercase',
+                  }}
+                >
                   {label}
                 </Text>
                 <Space orientation="vertical" size={12} style={{ width: '100%' }}>
@@ -173,8 +191,8 @@ export function NotificationBell() {
                         gap: 12,
                         padding: 14,
                         borderRadius: 10,
-                      background: item.estado === 'UNREAD' ? '#f9fafb' : '#fff',
-                      border: `1px solid ${item.estado === 'UNREAD' ? '#e5e7eb' : '#e5e7eb'}`,
+                        background: item.estado === 'UNREAD' ? '#f9fafb' : '#fff',
+                        border: `1px solid ${item.estado === 'UNREAD' ? '#e5e7eb' : '#e5e7eb'}`,
                         cursor: 'pointer',
                       }}
                     >
@@ -193,11 +211,20 @@ export function NotificationBell() {
                         {getIconForTipo(item.tipo)}
                       </div>
                       <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8 }}>
+                        <div
+                          style={{
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            alignItems: 'flex-start',
+                            gap: 8,
+                          }}
+                        >
                           <Text strong={item.estado === 'UNREAD'} ellipsis style={{ fontSize: 14 }}>
                             {item.titulo}
                           </Text>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: 2, flexShrink: 0 }}>
+                          <div
+                            style={{ display: 'flex', alignItems: 'center', gap: 2, flexShrink: 0 }}
+                          >
                             <Text type="secondary" style={{ fontSize: 11 }}>
                               {formatTime(item.fechaCreacion)}
                             </Text>
@@ -244,7 +271,12 @@ export function NotificationBell() {
             justifyContent: 'flex-end',
           }}
         >
-          <Button type="primary" size="middle" onClick={handleMarkAllRead} loading={markAllRead.isPending}>
+          <Button
+            type="primary"
+            size="middle"
+            onClick={handleMarkAllRead}
+            loading={markAllRead.isPending}
+          >
             Marcar todas como leídas
           </Button>
         </div>

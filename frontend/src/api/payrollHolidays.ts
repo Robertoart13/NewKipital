@@ -19,7 +19,7 @@ export interface PayrollHolidayPayload {
 
 async function parseError(res: Response, fallback: string): Promise<string> {
   try {
-    const body = await res.json() as { message?: string | string[] };
+    const body = (await res.json()) as { message?: string | string[] };
     if (Array.isArray(body.message)) return body.message.join('. ');
     if (typeof body.message === 'string' && body.message.trim()) return body.message;
   } catch {
@@ -34,7 +34,9 @@ export async function fetchPayrollHolidays(): Promise<PayrollHolidayItem[]> {
   return res.json();
 }
 
-export async function createPayrollHoliday(payload: PayrollHolidayPayload): Promise<PayrollHolidayItem> {
+export async function createPayrollHoliday(
+  payload: PayrollHolidayPayload,
+): Promise<PayrollHolidayItem> {
   const res = await httpFetch('/payroll-holidays', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -44,7 +46,10 @@ export async function createPayrollHoliday(payload: PayrollHolidayPayload): Prom
   return res.json();
 }
 
-export async function updatePayrollHoliday(id: number, payload: Partial<PayrollHolidayPayload>): Promise<PayrollHolidayItem> {
+export async function updatePayrollHoliday(
+  id: number,
+  payload: Partial<PayrollHolidayPayload>,
+): Promise<PayrollHolidayItem> {
   const res = await httpFetch(`/payroll-holidays/${id}`, {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
@@ -70,4 +75,3 @@ export function payrollHolidayTypeLabel(tipo: PayrollHolidayItem['tipo']): strin
   };
   return map[tipo] ?? tipo;
 }
-

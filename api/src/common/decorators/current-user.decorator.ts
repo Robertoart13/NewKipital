@@ -1,6 +1,6 @@
 import { createParamDecorator } from '@nestjs/common';
 
-import type { ExecutionContext } from '@nestjs/common';
+import { ExecutionContext } from '@nestjs/common';
 
 /**
  * Extrae el usuario autenticado del request.

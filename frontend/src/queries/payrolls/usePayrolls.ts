@@ -1,6 +1,8 @@
 import { useQuery } from '@tanstack/react-query';
-import { payrollKeys } from './keys';
+
 import { fetchPayrolls } from '../../api/payroll';
+
+import { payrollKeys } from './keys';
 
 interface UsePayrollsParams {
   companyId: string;

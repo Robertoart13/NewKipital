@@ -15,9 +15,15 @@ describe('permissions api', () => {
     const mockHttpFetch = vi.mocked(httpFetch);
     const { fetchPermissionsForCompany } = await import('./permissions');
 
-    mockHttpFetch.mockResolvedValue({ ok: true, json: vi.fn().mockResolvedValue({ permissions: ['a'], roles: ['b'] }) } as any);
+    mockHttpFetch.mockResolvedValue({
+      ok: true,
+      json: vi.fn().mockResolvedValue({ permissions: ['a'], roles: ['b'] }),
+    } as any);
     const result = await fetchPermissionsForCompany('5', 'kpital');
-    expect(mockHttpFetch).toHaveBeenCalledWith('/auth/switch-company', expect.objectContaining({ method: 'POST' }));
+    expect(mockHttpFetch).toHaveBeenCalledWith(
+      '/auth/switch-company',
+      expect.objectContaining({ method: 'POST' }),
+    );
     expect(result.permissions).toEqual(['a']);
   });
 
@@ -26,7 +32,10 @@ describe('permissions api', () => {
     const mockHttpFetch = vi.mocked(httpFetch);
     const { fetchPermissionsForCompany } = await import('./permissions');
 
-    mockHttpFetch.mockResolvedValue({ ok: true, json: vi.fn().mockResolvedValue({ permissions: [], roles: [] }) } as any);
+    mockHttpFetch.mockResolvedValue({
+      ok: true,
+      json: vi.fn().mockResolvedValue({ permissions: [], roles: [] }),
+    } as any);
     await fetchPermissionsForCompany('5', 'kpital', true);
 
     const payload = JSON.parse((mockHttpFetch.mock.calls[0][1] as any).body);
@@ -47,7 +56,10 @@ describe('permissions api', () => {
     const mockHttpFetch = vi.mocked(httpFetch);
     const { fetchPermissionsForApp } = await import('./permissions');
 
-    mockHttpFetch.mockResolvedValue({ ok: true, json: vi.fn().mockResolvedValue({ permissions: [], roles: [] }) } as any);
+    mockHttpFetch.mockResolvedValue({
+      ok: true,
+      json: vi.fn().mockResolvedValue({ permissions: [], roles: [] }),
+    } as any);
     await fetchPermissionsForApp('timewise');
     const url = mockHttpFetch.mock.calls[0][0] as string;
     expect(url).toContain('appCode=timewise');
@@ -58,7 +70,10 @@ describe('permissions api', () => {
     const mockHttpFetch = vi.mocked(httpFetch);
     const { fetchPermissionsForApp } = await import('./permissions');
 
-    mockHttpFetch.mockResolvedValue({ ok: true, json: vi.fn().mockResolvedValue({ permissions: [], roles: [] }) } as any);
+    mockHttpFetch.mockResolvedValue({
+      ok: true,
+      json: vi.fn().mockResolvedValue({ permissions: [], roles: [] }),
+    } as any);
     await fetchPermissionsForApp('kpital', true);
     const url = mockHttpFetch.mock.calls[0][0] as string;
     expect(url).toContain('refreshAuthz=true');

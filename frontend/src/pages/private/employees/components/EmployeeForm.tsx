@@ -1,13 +1,6 @@
 import { Form, Input, Select, DatePicker, InputNumber, Switch } from 'antd';
-import {
-  GENERO_OPTIONS,
-  ESTADO_CIVIL_OPTIONS,
-  TIPO_CONTRATO_OPTIONS,
-  JORNADA_OPTIONS,
-  MONEDA_OPTIONS,
-} from '../constants/employee-enums';
-import type { SystemRole } from '../../../../api/securityConfig';
 import dayjs from 'dayjs';
+
 import {
   MAX_MONEY_AMOUNT,
   formatCurrencyInput,
@@ -15,6 +8,15 @@ import {
   isMoneyOverMax,
   parseCurrencyInput,
 } from '../../../../lib/currencyFormat';
+import {
+  GENERO_OPTIONS,
+  ESTADO_CIVIL_OPTIONS,
+  TIPO_CONTRATO_OPTIONS,
+  JORNADA_OPTIONS,
+  MONEDA_OPTIONS,
+} from '../constants/employee-enums';
+
+import type { SystemRole } from '../../../../api/securityConfig';
 
 const isIngresoDateAllowed = (value?: dayjs.Dayjs) => {
   if (!value) return true;
@@ -48,16 +50,14 @@ export function EmployeeForm({
 }: EmployeeFormProps) {
   const crearAccesoTimewise = Form.useWatch('crearAccesoTimewise', form) ?? false;
   const crearAccesoKpital = Form.useWatch('crearAccesoKpital', form) ?? false;
-  const monedaSalarioSeleccionada = (Form.useWatch('monedaSalario', form) as string | undefined) ?? 'CRC';
+  const monedaSalarioSeleccionada =
+    (Form.useWatch('monedaSalario', form) as string | undefined) ?? 'CRC';
   const currencySymbol = getCurrencySymbol(monedaSalarioSeleccionada);
   const crearAcceso = crearAccesoTimewise || crearAccesoKpital;
 
   return (
     <Form form={form} layout="vertical" disabled={readOnly}>
-      <Form.Item
-        label="Sección 1 — Identificación"
-        style={{ marginBottom: 8, fontWeight: 600 }}
-      />
+      <Form.Item label="Sección 1 — Identificación" style={{ marginBottom: 8, fontWeight: 600 }} />
       <Form.Item name="codigo" label="Código" rules={[{ required: !editMode, max: 45 }]}>
         <Input placeholder="Ej: EMP001" maxLength={45} disabled={readOnly || editMode} />
       </Form.Item>
@@ -181,13 +181,16 @@ export function EmployeeForm({
         label="Salario Base"
         initialValue={0}
         rules={[
-          { validator: (_, v) => {
-            if (v == null || v === '') return Promise.resolve();
-            const n = Number(v);
-            if (isNaN(n) || n <= 0) return Promise.reject(new Error('El salario debe ser mayor a cero'));
-            if (isMoneyOverMax(n)) return Promise.reject(new Error('Monto demasiado alto'));
-            return Promise.resolve();
-          } },
+          {
+            validator: (_, v) => {
+              if (v == null || v === '') return Promise.resolve();
+              const n = Number(v);
+              if (isNaN(n) || n <= 0)
+                return Promise.reject(new Error('El salario debe ser mayor a cero'));
+              if (isMoneyOverMax(n)) return Promise.reject(new Error('Monto demasiado alto'));
+              return Promise.resolve();
+            },
+          },
         ]}
       >
         <InputNumber
@@ -219,7 +222,11 @@ export function EmployeeForm({
             label="Sección 5 — Acceso Digital"
             style={{ marginBottom: 8, marginTop: 16, fontWeight: 600 }}
           />
-          <Form.Item name="crearAccesoTimewise" label="Crear acceso a TimeWise" valuePropName="checked">
+          <Form.Item
+            name="crearAccesoTimewise"
+            label="Crear acceso a TimeWise"
+            valuePropName="checked"
+          >
             <Switch />
           </Form.Item>
           {crearAccesoTimewise && rolesTimewise.length > 0 && (

@@ -1,6 +1,6 @@
 import { Table, TableIndex, TableForeignKey } from 'typeorm';
 
-import type { MigrationInterface, QueryRunner } from 'typeorm';
+import { MigrationInterface, QueryRunner } from 'typeorm';
 
 /**
  * Sistema de notificaciones enterprise.

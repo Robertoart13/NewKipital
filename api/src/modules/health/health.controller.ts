@@ -5,7 +5,7 @@ import { Public } from '../../common/decorators/public.decorator';
 import { SkipCsrf } from '../../common/decorators/skip-csrf.decorator';
 import { REDIS_CLIENT } from '../../config/redis.config';
 
-import type {
+import {
   HealthCheckService,
   HealthIndicatorResult,
   TypeOrmHealthIndicator,

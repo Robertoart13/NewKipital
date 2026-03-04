@@ -23,11 +23,12 @@ import {
 import { EmployeeTransfer, EstadoTransferenciaEmpleado } from './entities/employee-transfer.entity';
 import { EstadoCalendarioNomina, PayrollCalendar } from './entities/payroll-calendar.entity';
 
+import { DataSource, Repository } from 'typeorm'; // eslint-disable-line @typescript-eslint/consistent-type-imports
+
 import type { ExecuteIntercompanyTransferDto } from './dto/execute-intercompany-transfer.dto';
 import type { SimulateIntercompanyTransferDto } from './dto/simulate-intercompany-transfer.dto';
-import type { AuditOutboxService } from '../integration/audit-outbox.service';
+import { AuditOutboxService } from '../integration/audit-outbox.service';
 import type { PersonalActionEstado } from '../personal-actions/entities/personal-action.entity';
-import type { DataSource, Repository } from 'typeorm';
 
 type TransferBlockingReason = {
   code: string;

@@ -14,11 +14,12 @@ export function formatCurrencyInput(
   const numericValue = Number(value);
   if (Number.isNaN(numericValue)) return '';
 
-  const symbol = currencyOrSymbol === 'USD' || currencyOrSymbol === '$'
-    ? '$'
-    : currencyOrSymbol === 'CRC' || currencyOrSymbol == null
-      ? 'CRC'
-      : currencyOrSymbol;
+  const symbol =
+    currencyOrSymbol === 'USD' || currencyOrSymbol === '$'
+      ? '$'
+      : currencyOrSymbol === 'CRC' || currencyOrSymbol == null
+        ? 'CRC'
+        : currencyOrSymbol;
 
   if (!Number.isFinite(numericValue)) {
     return `${symbol} ${numericValue}`;
@@ -35,9 +36,7 @@ export function parseCurrencyInput(value?: string): number {
   if (!raw) return 0;
   if (/^[+-]?infinity$/i.test(raw)) return 0;
 
-  const withoutSymbols = raw
-    .replace(/\s+/g, '')
-    .replace(/crc|usd|\$/gi, '');
+  const withoutSymbols = raw.replace(/\s+/g, '').replace(/crc|usd|\$/gi, '');
   if (!withoutSymbols) return 0;
 
   if (/^[+-]?(?:\d+\.?\d*|\d*\.?\d+)e[+-]?\d+$/i.test(withoutSymbols)) {
@@ -60,9 +59,10 @@ export function parseCurrencyInput(value?: string): number {
   } else if (hasComma) {
     const commaCount = (withoutSymbols.match(/,/g) ?? []).length;
     const thousandsPattern = /^[+-]?\d{1,3}(,\d{3})+$/;
-    normalized = commaCount > 1 || thousandsPattern.test(withoutSymbols)
-      ? withoutSymbols.replace(/,/g, '')
-      : withoutSymbols.replace(',', '.');
+    normalized =
+      commaCount > 1 || thousandsPattern.test(withoutSymbols)
+        ? withoutSymbols.replace(/,/g, '')
+        : withoutSymbols.replace(',', '.');
   } else if (hasDot) {
     const thousandsPattern = /^[+-]?\d{1,3}(\.\d{3})+$/;
     if (thousandsPattern.test(withoutSymbols)) {

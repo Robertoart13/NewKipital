@@ -10,7 +10,7 @@ import { PayPeriod } from '../payroll/entities/pay-period.entity';
 import { Department } from './entities/department.entity';
 import { Position } from './entities/position.entity';
 
-import type { Repository } from 'typeorm';
+import { Repository } from 'typeorm';
 
 @CacheScope('catalogs')
 @UseInterceptors(CacheResponseInterceptor)

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { InfoCircleOutlined } from '@ant-design/icons';
 import {
   App as AntdApp,
   Button,
@@ -14,8 +14,8 @@ import {
   Tooltip,
   Typography,
 } from 'antd';
-import { InfoCircleOutlined } from '@ant-design/icons';
-import type { ColumnsType } from 'antd/es/table';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+
 import {
   fetchEncryptQueue,
   fetchIdentityQueue,
@@ -27,9 +27,11 @@ import {
   type QueueJobItem,
   type QueueSummaryResponse,
 } from '../../../api/opsMonitoring';
-import { useAppSelector } from '../../../store/hooks';
 import { formatDateTime12h } from '../../../lib/formatDate';
+import { useAppSelector } from '../../../store/hooks';
 import styles from '../configuration/UsersManagementPage.module.css';
+
+import type { ColumnsType } from 'antd/es/table';
 
 const { Text } = Typography;
 
@@ -78,7 +80,12 @@ function getQueueSummaryLabel(queue: Record<string, number> | undefined) {
 
 function buildDateFrom(range: '24h' | '7d' | '30d') {
   const now = Date.now();
-  const offsetMs = range === '24h' ? 24 * 60 * 60 * 1000 : range === '7d' ? 7 * 24 * 60 * 60 * 1000 : 30 * 24 * 60 * 60 * 1000;
+  const offsetMs =
+    range === '24h'
+      ? 24 * 60 * 60 * 1000
+      : range === '7d'
+        ? 7 * 24 * 60 * 60 * 1000
+        : 30 * 24 * 60 * 60 * 1000;
   return new Date(now - offsetMs).toISOString();
 }
 
@@ -173,7 +180,9 @@ export function AutomationMonitoringPage() {
         dataIndex: 'estado',
         key: 'estado',
         width: 140,
-        render: (status: string) => <Tag color={getStatusColor(status)}>{getStatusLabel(status)}</Tag>,
+        render: (status: string) => (
+          <Tag color={getStatusColor(status)}>{getStatusLabel(status)}</Tag>
+        ),
       },
       { title: 'Intentos', dataIndex: 'attempts', key: 'attempts', width: 90 },
       {
@@ -243,7 +252,9 @@ export function AutomationMonitoringPage() {
                       message.success('Proceso reintentado');
                       await loadData();
                     } catch (error) {
-                      message.error(error instanceof Error ? error.message : 'Error al reintentar proceso');
+                      message.error(
+                        error instanceof Error ? error.message : 'Error al reintentar proceso',
+                      );
                     }
                   }}
                 >
@@ -267,7 +278,8 @@ export function AutomationMonitoringPage() {
       },
       {
         title: 'Cola de Cifrado',
-        tooltip: 'Procesos encargados de proteger los datos sensibles del empleado mediante cifrado seguro.',
+        tooltip:
+          'Procesos encargados de proteger los datos sensibles del empleado mediante cifrado seguro.',
         value: getQueueSummaryLabel(summary?.encrypt),
       },
       {
@@ -282,7 +294,8 @@ export function AutomationMonitoringPage() {
       },
       {
         title: 'Datos sin cifrar detectados',
-        tooltip: 'Registros que contienen informacion sensible en formato visible y deben procesarse.',
+        tooltip:
+          'Registros que contienen informacion sensible en formato visible y deben procesarse.',
         value: String(summary?.plaintextDetected ?? 0),
       },
       {
@@ -367,18 +380,39 @@ export function AutomationMonitoringPage() {
                 label: '¿Qué significa este monitoreo?',
                 children: (
                   <Space direction="vertical" size={8} style={{ width: '100%' }}>
-                    <Text strong style={{ color: '#3d4f5c' }}>¿Qué estoy viendo aquí?</Text>
-                    <Text style={{ color: '#6b7a85', fontSize: 13 }}>
-                      Este panel muestra el estado de los procesos automáticos que garantizan que los datos de los
-                      empleados estén correctamente asociados y protegidos.
+                    <Text strong style={{ color: '#3d4f5c' }}>
+                      ¿Qué estoy viendo aquí?
                     </Text>
-                    <Text strong style={{ color: '#3d4f5c' }}>El sistema funciona en dos fases:</Text>
-                    <Text style={{ color: '#6b7a85', fontSize: 13 }}>1. Identidad: se crea o valida el usuario digital del empleado.</Text>
-                    <Text style={{ color: '#6b7a85', fontSize: 13 }}>2. Cifrado: se protegen los datos sensibles para cumplir estándares de seguridad.</Text>
-                    <Text strong style={{ color: '#3d4f5c' }}>¿Qué significan los estados?</Text>
-                    <Text style={{ color: '#6b7a85', fontSize: 13 }}>Pendiente: el proceso está en fila para ejecutarse. En proceso: actualmente se está ejecutando. Procesado: finalizó correctamente. Error: ocurrió un problema que requiere revisión.</Text>
-                    <Text strong style={{ color: '#3d4f5c' }}>¿Qué debería observar?</Text>
-                    <Text style={{ color: '#6b7a85', fontSize: 13 }}>Si Pendientes baja progresivamente, el sistema está trabajando. Si Datos sin cifrar baja, la protección está avanzando. Si Pendientes no baja por varios minutos, podría existir congestión.</Text>
+                    <Text style={{ color: '#6b7a85', fontSize: 13 }}>
+                      Este panel muestra el estado de los procesos automáticos que garantizan que
+                      los datos de los empleados estén correctamente asociados y protegidos.
+                    </Text>
+                    <Text strong style={{ color: '#3d4f5c' }}>
+                      El sistema funciona en dos fases:
+                    </Text>
+                    <Text style={{ color: '#6b7a85', fontSize: 13 }}>
+                      1. Identidad: se crea o valida el usuario digital del empleado.
+                    </Text>
+                    <Text style={{ color: '#6b7a85', fontSize: 13 }}>
+                      2. Cifrado: se protegen los datos sensibles para cumplir estándares de
+                      seguridad.
+                    </Text>
+                    <Text strong style={{ color: '#3d4f5c' }}>
+                      ¿Qué significan los estados?
+                    </Text>
+                    <Text style={{ color: '#6b7a85', fontSize: 13 }}>
+                      Pendiente: el proceso está en fila para ejecutarse. En proceso: actualmente se
+                      está ejecutando. Procesado: finalizó correctamente. Error: ocurrió un problema
+                      que requiere revisión.
+                    </Text>
+                    <Text strong style={{ color: '#3d4f5c' }}>
+                      ¿Qué debería observar?
+                    </Text>
+                    <Text style={{ color: '#6b7a85', fontSize: 13 }}>
+                      Si Pendientes baja progresivamente, el sistema está trabajando. Si Datos sin
+                      cifrar baja, la protección está avanzando. Si Pendientes no baja por varios
+                      minutos, podría existir congestión.
+                    </Text>
                   </Space>
                 ),
               },
@@ -408,7 +442,10 @@ export function AutomationMonitoringPage() {
                 style={{ width: 180 }}
                 placeholder="Estado"
                 value={filters.estado}
-                options={(vista === 'operativo' ? STATUS_OPTIONS_OPERATIVO : STATUS_OPTIONS_HISTORIAL).map((s) => ({
+                options={(vista === 'operativo'
+                  ? STATUS_OPTIONS_OPERATIVO
+                  : STATUS_OPTIONS_HISTORIAL
+                ).map((s) => ({
                   label: getStatusLabel(s),
                   value: s,
                 }))}
@@ -419,7 +456,9 @@ export function AutomationMonitoringPage() {
                 value={filters.idEmpleado}
                 min={1}
                 className={styles.filterInput}
-                onChange={(idEmpleado) => setFilters((prev) => ({ ...prev, idEmpleado: idEmpleado ?? undefined, page: 1 }))}
+                onChange={(idEmpleado) =>
+                  setFilters((prev) => ({ ...prev, idEmpleado: idEmpleado ?? undefined, page: 1 }))
+                }
               />
               {vista === 'operativo' ? (
                 <>
@@ -427,7 +466,9 @@ export function AutomationMonitoringPage() {
                     min={0}
                     placeholder="Intentos ≥"
                     value={filters.attemptsMin}
-                    onChange={(attemptsMin) => setFilters((prev) => ({ ...prev, attemptsMin: attemptsMin ?? 0, page: 1 }))}
+                    onChange={(attemptsMin) =>
+                      setFilters((prev) => ({ ...prev, attemptsMin: attemptsMin ?? 0, page: 1 }))
+                    }
                   />
                   <Select
                     allowClear
@@ -461,7 +502,9 @@ export function AutomationMonitoringPage() {
               )}
             </div>
             <div className={styles.monitoringControlBarRight}>
-              <Text type="secondary" style={{ fontSize: 13 }}>Actualización automática 15s</Text>
+              <Text type="secondary" style={{ fontSize: 13 }}>
+                Actualización automática 15s
+              </Text>
               <Switch checked={autoRefresh} onChange={setAutoRefresh} />
               <Button onClick={() => void loadData()} className={styles.btnSecondary}>
                 Actualizar ahora
@@ -476,7 +519,9 @@ export function AutomationMonitoringPage() {
                         message.success('Reanálisis ejecutado');
                         await loadData();
                       } catch (error) {
-                        message.error(error instanceof Error ? error.message : 'Error al reanalizar');
+                        message.error(
+                          error instanceof Error ? error.message : 'Error al reanalizar',
+                        );
                       }
                     }}
                   >
@@ -490,7 +535,11 @@ export function AutomationMonitoringPage() {
                         message.success('Procesos bloqueados liberados');
                         await loadData();
                       } catch (error) {
-                        message.error(error instanceof Error ? error.message : 'Error al liberar procesos bloqueados');
+                        message.error(
+                          error instanceof Error
+                            ? error.message
+                            : 'Error al liberar procesos bloqueados',
+                        );
                       }
                     }}
                   >
@@ -504,7 +553,9 @@ export function AutomationMonitoringPage() {
           <div className={styles.semaforoBlock}>
             <span className={styles.semaforoLabel}>Semáforo de salud del sistema</span>
             <Tag color={healthStatus.color}>{healthStatus.label}</Tag>
-            <Text type="secondary" style={{ fontSize: 13, margin: 0 }}>{healthStatus.detail}</Text>
+            <Text type="secondary" style={{ fontSize: 13, margin: 0 }}>
+              {healthStatus.detail}
+            </Text>
           </div>
 
           <div className={styles.metricsGrid}>
@@ -543,7 +594,8 @@ export function AutomationMonitoringPage() {
                         total: identityTotal,
                         showSizeChanger: true,
                         showTotal: (total) => `${total} registro(s)`,
-                        onChange: (page, pageSize) => setFilters((prev) => ({ ...prev, page, pageSize })),
+                        onChange: (page, pageSize) =>
+                          setFilters((prev) => ({ ...prev, page, pageSize })),
                       }}
                       locale={{ emptyText: 'No hay datos' }}
                     />
@@ -566,7 +618,8 @@ export function AutomationMonitoringPage() {
                         total: encryptTotal,
                         showSizeChanger: true,
                         showTotal: (total) => `${total} registro(s)`,
-                        onChange: (page, pageSize) => setFilters((prev) => ({ ...prev, page, pageSize })),
+                        onChange: (page, pageSize) =>
+                          setFilters((prev) => ({ ...prev, page, pageSize })),
                       }}
                       locale={{ emptyText: 'No hay datos' }}
                     />

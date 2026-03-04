@@ -21,13 +21,13 @@ import { Company } from '../companies/entities/company.entity';
 import { RefreshSession } from './entities/refresh-session.entity';
 
 import type { User } from './entities/user.entity';
-import type { UsersService } from './users.service';
+import { UsersService } from './users.service';
 import type { TokenPayload } from '../../common/strategies/jwt.strategy';
-import type { AuthzVersionService } from '../authz/authz-version.service';
-import type { PermissionsCacheService } from '../authz/permissions-cache.service';
-import type { ConfigService } from '@nestjs/config';
-import type { JwtService } from '@nestjs/jwt';
-import type { Repository } from 'typeorm';
+import { AuthzVersionService } from '../authz/authz-version.service';
+import { PermissionsCacheService } from '../authz/permissions-cache.service';
+import { ConfigService } from '@nestjs/config';
+import { JwtService } from '@nestjs/jwt';
+import { Repository } from 'typeorm';
 
 export interface SessionData {
   user: {

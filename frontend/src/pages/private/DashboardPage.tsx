@@ -1,4 +1,5 @@
 import { Typography } from 'antd';
+
 import { useAppSelector } from '../../store/hooks';
 
 const { Title, Text } = Typography;
