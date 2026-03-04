@@ -1,11 +1,25 @@
-import { Body, Controller, Delete, Get, Param, ParseIntPipe, Patch, Post } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  ParseIntPipe,
+  Patch,
+  Post,
+  UseInterceptors,
+} from '@nestjs/common';
 import { Public } from '../../common/decorators/public.decorator';
 import { RequirePermissions } from '../../common/decorators/require-permissions.decorator';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
+import { CacheScope } from '../../common/decorators/cache-scope.decorator';
+import { CacheResponseInterceptor } from '../../common/interceptors/cache-response.interceptor';
 import { PayrollHolidaysService } from './payroll-holidays.service';
 import { CreatePayrollHolidayDto } from './dto/create-payroll-holiday.dto';
 import { UpdatePayrollHolidayDto } from './dto/update-payroll-holiday.dto';
 
+@CacheScope('payroll-holidays')
+@UseInterceptors(CacheResponseInterceptor)
 @Controller('payroll-holidays')
 export class PayrollHolidaysController {
   constructor(private readonly service: PayrollHolidaysService) {}

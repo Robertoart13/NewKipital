@@ -21,6 +21,8 @@ import { UpdateCompanyDto } from './dto/update-company.dto';
 import { Public } from '../../common/decorators/public.decorator';
 import { RequirePermissions } from '../../common/decorators/require-permissions.decorator';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
+import { CacheScope } from '../../common/decorators/cache-scope.decorator';
+import { CacheResponseInterceptor } from '../../common/interceptors/cache-response.interceptor';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
 import { basename, extname, join } from 'node:path';
@@ -42,6 +44,8 @@ const ALLOWED_IMAGE_MIME_TYPES = new Set([
   'image/svg+xml',
 ]);
 
+@CacheScope('companies')
+@UseInterceptors(CacheResponseInterceptor)
 @Controller('companies')
 export class CompaniesController {
   constructor(private readonly service: CompaniesService) {}

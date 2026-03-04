@@ -9,6 +9,7 @@ import {
   Query,
   ParseIntPipe,
   ParseBoolPipe,
+  UseInterceptors,
 } from '@nestjs/common';
 import { EmployeesService } from './employees.service';
 import { CreateEmployeeDto } from './dto/create-employee.dto';
@@ -16,7 +17,11 @@ import { UpdateEmployeeDto } from './dto/update-employee.dto';
 import { Public } from '../../common/decorators/public.decorator';
 import { RequirePermissions } from '../../common/decorators/require-permissions.decorator';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
+import { CacheScope } from '../../common/decorators/cache-scope.decorator';
+import { CacheResponseInterceptor } from '../../common/interceptors/cache-response.interceptor';
 
+@CacheScope('employees')
+@UseInterceptors(CacheResponseInterceptor)
 @Controller('employees')
 export class EmployeesController {
   constructor(private readonly service: EmployeesService) {}

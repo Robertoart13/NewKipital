@@ -23,6 +23,7 @@ import { IntegrationModule } from './modules/integration/integration.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
 import { OpsModule } from './modules/ops/ops.module';
 import { HealthModule } from './modules/health/health.module';
+import { AppCacheModule } from './common/services/app-cache.module';
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
 import { CsrfGuard } from './common/guards/csrf.guard';
 import { PermissionsGuard } from './common/guards/permissions.guard';
@@ -33,6 +34,7 @@ import { PermissionsGuard } from './common/guards/permissions.guard';
     TypeOrmModule.forRootAsync(databaseConfig),
     EventEmitterModule.forRoot(),
     ScheduleModule.forRoot(),
+    AppCacheModule,
     AuthModule,
     CompaniesModule,
     ClassesModule,

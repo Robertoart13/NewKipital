@@ -8,6 +8,7 @@ import {
   Body,
   Query,
   ParseIntPipe,
+  UseInterceptors,
 } from '@nestjs/common';
 import { UserAssignmentService } from './user-assignment.service';
 import { AssignUserAppDto } from './dto/assign-user-app.dto';
@@ -17,7 +18,11 @@ import { ReplaceUserContextRolesDto } from './dto/replace-user-context-roles.dto
 import { ReplaceUserPermissionOverridesDto } from './dto/replace-user-permission-overrides.dto';
 import { RequirePermissions } from '../../common/decorators/require-permissions.decorator';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
+import { CacheScope } from '../../common/decorators/cache-scope.decorator';
+import { CacheResponseInterceptor } from '../../common/interceptors/cache-response.interceptor';
 
+@CacheScope('user-assignments')
+@UseInterceptors(CacheResponseInterceptor)
 @Controller('user-assignments')
 export class UserAssignmentController {
   constructor(private readonly service: UserAssignmentService) {}

@@ -17,6 +17,7 @@ export { PayrollMovementsManagementPage } from './payroll-params/PayrollMovement
 export { PayrollManagementPage } from './payroll-management/PayrollManagementPage';
 export { PayrollCalendarPage } from './payroll-management/PayrollCalendarPage';
 export { PayrollHolidaysPage } from './payroll-management/PayrollHolidaysPage';
+export { IntercompanyTransferPage } from './payroll-management/IntercompanyTransferPage';
 export { PersonalActionsPage } from './personal-actions/PersonalActionsPage';
 export { AbsencesPage } from './personal-actions/ausencias/AbsencesPage';
 export { LicensesPage } from './personal-actions/licencias/LicensesPage';

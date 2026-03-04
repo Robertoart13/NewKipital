@@ -9,13 +9,18 @@ import {
   Post,
   Put,
   Query,
+  UseInterceptors,
 } from '@nestjs/common';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { RequirePermissions } from '../../common/decorators/require-permissions.decorator';
+import { CacheScope } from '../../common/decorators/cache-scope.decorator';
+import { CacheResponseInterceptor } from '../../common/interceptors/cache-response.interceptor';
 import { CreatePermissionDto } from './dto/create-permission.dto';
 import { UpdatePermissionDto } from './dto/update-permission.dto';
 import { PermissionsService } from './permissions.service';
 
+@CacheScope('permissions')
+@UseInterceptors(CacheResponseInterceptor)
 @Controller('permissions')
 export class PermissionsController {
   constructor(private readonly service: PermissionsService) {}

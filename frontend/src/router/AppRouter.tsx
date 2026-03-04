@@ -23,6 +23,7 @@ import {
   PayrollManagementPage,
   PayrollCalendarPage,
   PayrollHolidaysPage,
+  IntercompanyTransferPage,
   PersonalActionsPage,
   AbsencesPage,
   LicensesPage,
@@ -330,6 +331,30 @@ export function AppRouter() {
             </PrivateLayout>
           )}
           path="/payroll-params/calendario/dias-pago"
+        />
+        <Route
+          element={(
+            <PrivateLayout>
+              <PermissionGuard requiredPermission="payroll:view">
+                <PayrollManagementPage />
+              </PermissionGuard>
+            </PrivateLayout>
+          )}
+          path="/payroll-management/planillas"
+        />
+        <Route
+          element={(
+            <PrivateLayout>
+              <PermissionGuard requiredPermission="payroll:intercompany-transfer">
+                <IntercompanyTransferPage />
+              </PermissionGuard>
+            </PrivateLayout>
+          )}
+          path="/payroll-management/traslado-interempresas"
+        />
+        <Route
+          path="/payroll-management"
+          element={<Navigate to="/payroll-management/planillas" replace />}
         />
         <Route
           element={(

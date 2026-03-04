@@ -8,6 +8,7 @@ import {
   Query,
 } from '@nestjs/common';
 import { RequirePermissions } from '../../common/decorators/require-permissions.decorator';
+import { AppCacheService } from '../../common/services/app-cache.service';
 import {
   ListQueueJobsDto,
   QueueTypeDto,
@@ -17,7 +18,10 @@ import { OpsService } from './ops.service';
 
 @Controller('ops/queues')
 export class OpsController {
-  constructor(private readonly opsService: OpsService) {}
+  constructor(
+    private readonly opsService: OpsService,
+    private readonly cacheService: AppCacheService,
+  ) {}
 
   @RequirePermissions('automation:monitor')
   @Get('summary')
@@ -91,5 +95,11 @@ export class OpsController {
   ) {
     const data = await this.opsService.requeue(body.queue, id);
     return { success: true, data, message: 'Job reencolado', error: null };
+  }
+
+  @RequirePermissions('automation:monitor')
+  @Get('cache-metrics')
+  getCacheMetrics() {
+    return { success: true, data: this.cacheService.getStats() };
   }
 }

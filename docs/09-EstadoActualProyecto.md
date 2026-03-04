@@ -1,7 +1,7 @@
 ﻿# KPITAL 360 â€” Estado Actual del Proyecto
 
 **Documento:** 09  
-**Ãšltima actualizaciÃ³n:** 2026-02-27  
+**Ãšltima actualizaciÃ³n:** 2026-03-04  
 **PropÃ³sito:** Registro vivo del avance. Se actualiza cada vez que se completa una directiva o se hace un cambio significativo.
 
 ---
@@ -25,6 +25,22 @@ KPITAL 360 es un ERP multiempresa enfocado en gestiÃ³n de RRHH, planillas y ac
   - Frontend: **22/22 suites - 250/250 tests pasando**.
 - Condicion operacional pendiente para go-live:
   - **rotacion de secretos en infraestructura** (RDS, Azure/SSO, JWT, Redis si aplica).
+
+### Actualizacion de cache API (Rev. 4 - 2026-03-04)
+
+- Cache backend empresarial con TTL fijo **5 minutos**.
+- Invalidacion automatica por cualquier cambio (POST/PUT/PATCH/DELETE) en el mismo `scope`.
+- Redis opcional: si `REDIS_HOST` esta definido, cache compartido entre instancias; si no, cache local por instancia.
+- Scopes activos: `personal-actions`, `companies`, `employees`, `catalogs`, `payroll*`, `roles`, `permissions`, `apps`, `user-assignments`, `config`, `notifications`, `users`.
+- Cache segmentado por empresa (`idEmpresa/companyId`) para evitar invalidaciones globales.
+- `CACHE_STRICT_REDIS` disponible para modo enterprise estricto.
+- Normalización de query + user-scope por endpoint.
+- Circuit breaker y stampede protection (lock + SWR).
+- Métricas internas disponibles en `GET /api/ops/queues/cache-metrics`.
+- Key hashing (SHA-256) + `CACHE_KEY_VERSION` para versionar keys.
+- Respuesta no cacheable si `Set-Cookie`, `Cache-Control: no-store/private` o status no-2xx.
+- Pendiente infra: Redis HA + eviction policy + Prometheus/Grafana.
+- Excepciones por seguridad/tiempo real: `auth`, `health`, `ops/queues`.
 
 ---
 

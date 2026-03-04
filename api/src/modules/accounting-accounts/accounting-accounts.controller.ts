@@ -9,14 +9,19 @@ import {
   Query,
   ParseIntPipe,
   ParseBoolPipe,
+  UseInterceptors,
 } from '@nestjs/common';
 import { Public } from '../../common/decorators/public.decorator';
 import { RequirePermissions } from '../../common/decorators/require-permissions.decorator';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
+import { CacheScope } from '../../common/decorators/cache-scope.decorator';
+import { CacheResponseInterceptor } from '../../common/interceptors/cache-response.interceptor';
 import { AccountingAccountsService } from './accounting-accounts.service';
 import { CreateAccountingAccountDto } from './dto/create-accounting-account.dto';
 import { UpdateAccountingAccountDto } from './dto/update-accounting-account.dto';
 
+@CacheScope('accounting-accounts')
+@UseInterceptors(CacheResponseInterceptor)
 @Controller('accounting-accounts')
 export class AccountingAccountsController {
   constructor(private readonly service: AccountingAccountsService) {}

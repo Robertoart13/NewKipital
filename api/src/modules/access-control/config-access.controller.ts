@@ -10,6 +10,7 @@ import {
   Patch,
   Put,
   Query,
+  UseInterceptors,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { In, Repository } from 'typeorm';
@@ -33,11 +34,15 @@ import { NotificationsService } from '../notifications/notifications.service';
 import { Company } from '../companies/entities/company.entity';
 import { Role } from './entities/role.entity';
 import { Permission } from './entities/permission.entity';
+import { CacheScope } from '../../common/decorators/cache-scope.decorator';
+import { CacheResponseInterceptor } from '../../common/interceptors/cache-response.interceptor';
 
 /**
  * Endpoints enterprise de administracion bajo prefijo /config.
  * Mantiene compatibilidad con /roles, /permissions y /user-assignments existentes.
  */
+@CacheScope('config')
+@UseInterceptors(CacheResponseInterceptor)
 @Controller('config')
 export class ConfigAccessController {
   constructor(

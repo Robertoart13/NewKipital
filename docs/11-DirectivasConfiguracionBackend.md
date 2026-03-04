@@ -238,3 +238,68 @@ payloadAfter: { idUsuario, companyIds: [...] }
 
 **Mapeo modulo+accion → etiqueta legible (frontend):** Ver `UsersManagementPage.tsx` función `getAuditActionLabel()`.
 
+---
+
+## Cache API (nuevo — 2026-03-04)
+
+Se implementó un cache empresarial con TTL fijo de **5 minutos** y **invalida automáticamente** cuando hay cambios (POST/PUT/PATCH/DELETE).  
+Objetivo: acelerar listados y catálogos sin perder consistencia.
+
+### Comportamiento
+
+- **TTL**: 5 minutos.
+- **Justificación TTL**: los datos cacheados son catálogos/listados administrativos; la consistencia real depende de invalidación en mutaciones, no del tiempo.
+- **Invalidación**: cualquier cambio en el mismo `scope` invalida el cache.
+- **Keying**: considera `url`, `params`, `query` y `userId` (evita fugas de datos entre usuarios).
+- **Scope por empresa**: el cache se segmenta por `idEmpresa/companyId` para evitar invalidaciones globales.
+- **Normalización de query**: solo parámetros allowlist por scope + orden determinístico.
+- **User scope**: `userId` solo en endpoints con payload dependiente del usuario (ej: `notifications`) para maximizar hit-rate sin comprometer seguridad.
+- **Fallback**: si no hay Redis, usa memoria local del API.
+
+### Redis (opcional recomendado)
+
+Si `REDIS_HOST` está configurado, el cache es **compartido** entre instancias (enterprise).  
+Si no, el cache es **por instancia** (dev / single node).
+
+Env vars:
+- `REDIS_HOST`
+- `REDIS_PORT` (default 6379)
+- `REDIS_PASSWORD` (opcional)
+- `CACHE_STRICT_REDIS` (true/false). Si `true`, falla si Redis cae (modo enterprise estricto).
+- `CACHE_ENV_PREFIX` (prod/stg).
+- `CACHE_KEY_VERSION` (v1/v2).
+- `CACHE_REDIS_TIMEOUT_MS` (default 75ms).
+- `CACHE_BREAKER_THRESHOLD` (default 5).
+- `CACHE_BREAKER_RESET_MS` (default 10000ms).
+- `CACHE_SWR_ENABLED` (default true).
+
+### Scopes activos (ejemplos)
+
+- `personal-actions`
+- `companies`
+- `employees`
+- `catalogs`
+- `payroll`, `payroll-articles`, `payroll-movements`, `payroll-holidays`
+- `roles`, `permissions`, `apps`, `user-assignments`, `config`
+- `notifications`
+- `users`
+
+### Excepciones (no cachear)
+
+Por seguridad y frescura de datos **NO se cachean**:
+- `auth` (tokens, login, refresh)
+- `health` (estado vivo)
+- `ops/queues` (colas en tiempo real)
+
+### Protecciones enterprise agregadas
+
+- **Circuit breaker**: si Redis falla repetidamente, se bypass el cache por una ventana corta.
+- **Stampede protection**: lock por key (Redis) + espera corta o stale-while-revalidate.
+- **Métricas internas**: hit/miss/set/error/invalidation/bypass/breaker (ver `GET /api/ops/queues/cache-metrics`).
+- **Degradación segura**: si Redis cae o el breaker se abre, el sistema continúa sin cache.
+
+### Infra requerida para 100% enterprise (pendiente operativo)
+
+- **Redis HA** (Cluster/Sentinel/Managed service) habilitado en prod.
+- **Eviction policy** definida y documentada (recomendado `allkeys-lfu`) + `maxmemory`.
+- **Observabilidad externa**: exportar métricas a Prometheus/Grafana (hit/miss/error/breaker/latencia).

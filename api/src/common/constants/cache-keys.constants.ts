@@ -1,0 +1,47 @@
+export const CACHE_QUERY_ALLOWLIST: Record<string, Set<string>> = {
+  companies: new Set(['inactiveOnly', 'includeInactive', 'page', 'size', 'sort']),
+  employees: new Set([
+    'idEmpresa',
+    'includeInactive',
+    'inactiveOnly',
+    'page',
+    'size',
+    'sort',
+    'search',
+  ]),
+  catalogs: new Set(['idEmpresa']),
+  payroll: new Set([
+    'idEmpresa',
+    'idEmpleado',
+    'estado',
+    'page',
+    'size',
+    'sort',
+  ]),
+  'payroll-articles': new Set(['idEmpresa', 'includeInactive', 'page', 'size', 'sort']),
+  'payroll-movements': new Set(['idEmpresa', 'idTipoAccionPersonal']),
+  'payroll-holidays': new Set(['year']),
+  'personal-actions': new Set([
+    'idEmpresa',
+    'estado',
+    'page',
+    'size',
+    'sort',
+  ]),
+  roles: new Set(['includeInactive', 'appCode']),
+  permissions: new Set(['modulo', 'includeInactive']),
+  apps: new Set([]),
+  'user-assignments': new Set(['appCode', 'companyId']),
+  config: new Set(['modulo', 'includeInactive', 'appCode', 'companyId']),
+  notifications: new Set(['status', 'appCode', 'companyId']),
+  users: new Set(['includeInactive', 'configView']),
+  departments: new Set(['includeInactive', 'inactiveOnly']),
+  positions: new Set(['includeInactive', 'inactiveOnly']),
+  classes: new Set(['includeInactive', 'inactiveOnly']),
+  projects: new Set(['includeInactive', 'inactiveOnly']),
+  'accounting-accounts': new Set(['includeInactive', 'inactiveOnly']),
+};
+
+export const CACHE_USER_SCOPED: Set<string> = new Set([
+  'notifications',
+]);

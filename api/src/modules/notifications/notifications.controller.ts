@@ -5,13 +5,18 @@ import {
   Param,
   Query,
   ParseIntPipe,
+  UseInterceptors,
 } from '@nestjs/common';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { NotificationsService } from './notifications.service';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { App } from '../access-control/entities/app.entity';
+import { CacheScope } from '../../common/decorators/cache-scope.decorator';
+import { CacheResponseInterceptor } from '../../common/interceptors/cache-response.interceptor';
 
+@CacheScope('notifications')
+@UseInterceptors(CacheResponseInterceptor)
 @Controller('notifications')
 export class NotificationsController {
   constructor(

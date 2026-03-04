@@ -9,6 +9,7 @@ import {
   Query,
   ParseIntPipe,
   ParseBoolPipe,
+  UseInterceptors,
 } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { CreateUserDto } from './dto/create-user.dto';
@@ -16,7 +17,11 @@ import { UpdateUserDto } from './dto/update-user.dto';
 import { Public } from '../../common/decorators/public.decorator';
 import { RequirePermissions } from '../../common/decorators/require-permissions.decorator';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
+import { CacheScope } from '../../common/decorators/cache-scope.decorator';
+import { CacheResponseInterceptor } from '../../common/interceptors/cache-response.interceptor';
 
+@CacheScope('users')
+@UseInterceptors(CacheResponseInterceptor)
 @Controller('users')
 export class UsersController {
   constructor(private readonly service: UsersService) {}

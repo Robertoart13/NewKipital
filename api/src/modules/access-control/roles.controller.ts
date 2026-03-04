@@ -10,6 +10,7 @@ import {
   Query,
   ParseIntPipe,
   ParseBoolPipe,
+  UseInterceptors,
 } from '@nestjs/common';
 import { RolesService } from './roles.service';
 import { CreateRoleDto } from './dto/create-role.dto';
@@ -19,7 +20,11 @@ import { ReplaceRolePermissionsDto } from './dto/replace-role-permissions.dto';
 import { Public } from '../../common/decorators/public.decorator';
 import { RequirePermissions } from '../../common/decorators/require-permissions.decorator';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
+import { CacheScope } from '../../common/decorators/cache-scope.decorator';
+import { CacheResponseInterceptor } from '../../common/interceptors/cache-response.interceptor';
 
+@CacheScope('roles')
+@UseInterceptors(CacheResponseInterceptor)
 @Controller('roles')
 export class RolesController {
   constructor(private readonly service: RolesService) {}

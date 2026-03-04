@@ -170,6 +170,20 @@ const initialMenuConfig: MenuItem[] = [
     ],
   },
   {
+    id: 'payroll-management',
+    label: 'Gestion Planilla',
+    path: '/payroll-management',
+    requiredPermission: 'payroll:view',
+    children: [
+      {
+        id: 'traslado-interempresas',
+        label: 'Traslado Interempresas',
+        path: '/payroll-management/traslado-interempresas',
+        requiredPermission: 'payroll:intercompany-transfer',
+      },
+    ],
+  },
+  {
     id: 'configuration',
     label: 'Configuracion',
     path: '/configuration',
