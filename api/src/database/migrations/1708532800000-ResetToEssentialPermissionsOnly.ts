@@ -92,7 +92,7 @@ export class ResetToEssentialPermissionsOnly1708532800000 implements MigrationIn
     }
   }
 
-  public async down(queryRunner: QueryRunner): Promise<void> {
+  public async down(_queryRunner: QueryRunner): Promise<void> {
     // No revertir automáticamente: el reset es destructivo.
     // Para restaurar, ejecutar las migraciones de seed anteriores.
   }

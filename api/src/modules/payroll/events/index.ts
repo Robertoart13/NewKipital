@@ -1,27 +1,27 @@
 import type { DomainEvent } from '../../../common/events/domain-event.interface';
 
-export interface PayrollOpenedEvent extends DomainEvent<{
+export type PayrollOpenedEvent = DomainEvent<{
   payrollId: string;
   companyId: string;
   periodStart: string;
   periodEnd: string;
-}> {}
+}>;
 
-export interface PayrollVerifiedEvent extends DomainEvent<{
+export type PayrollVerifiedEvent = DomainEvent<{
   payrollId: string;
   companyId: string;
   verifiedBy: string;
-}> {}
+}>;
 
-export interface PayrollAppliedEvent extends DomainEvent<{
+export type PayrollAppliedEvent = DomainEvent<{
   payrollId: string;
   companyId: string;
   appliedBy: string;
   totalAmount: number;
-}> {}
+}>;
 
-export interface PayrollDeactivatedEvent extends DomainEvent<{
+export type PayrollDeactivatedEvent = DomainEvent<{
   payrollId: string;
   companyId: string;
   reason: string;
-}> {}
+}>;

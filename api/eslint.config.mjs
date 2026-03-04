@@ -1,4 +1,6 @@
 // @ts-check
+import { fileURLToPath } from 'node:url';
+import { dirname, resolve } from 'node:path';
 import eslint from '@eslint/js';
 import eslintPluginImport from 'eslint-plugin-import';
 import eslintPluginUnusedImports from 'eslint-plugin-unused-imports';
@@ -6,15 +8,12 @@ import eslintPluginPrettierRecommended from 'eslint-plugin-prettier/recommended'
 import globals from 'globals';
 import tseslint from 'typescript-eslint';
 
+const __dirname = dirname(fileURLToPath(import.meta.url));
+const tsconfigPath = resolve(__dirname, 'tsconfig.json');
+
 export default tseslint.config(
   {
-    ignores: [
-      'eslint.config.mjs',
-      'dist/**',
-      'build/**',
-      'coverage/**',
-      'node_modules/**',
-    ],
+    ignores: ['eslint.config.mjs', 'dist/**', 'build/**', 'coverage/**', 'node_modules/**'],
   },
 
   eslint.configs.recommended,
@@ -29,7 +28,10 @@ export default tseslint.config(
     },
     settings: {
       'import/resolver': {
-        typescript: { project: true },
+        typescript: {
+          project: [tsconfigPath],
+          tsconfigRootDir: __dirname,
+        },
         node: true,
       },
     },

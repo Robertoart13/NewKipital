@@ -14,8 +14,6 @@ import { EmployeeCreationWorkflow } from '../../workflows/employees/employee-cre
 import { UserCompany } from '../access-control/entities/user-company.entity';
 import { AuthService } from '../auth/auth.service';
 import { User } from '../auth/entities/user.entity';
-
-
 import { AuditOutboxService } from '../integration/audit-outbox.service';
 import { PayrollCalendar } from '../payroll/entities/payroll-calendar.entity';
 import { PersonalAction } from '../personal-actions/entities/personal-action.entity';

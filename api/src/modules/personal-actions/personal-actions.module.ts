@@ -12,14 +12,12 @@ import { ActionQuota } from './entities/action-quota.entity';
 import { BonusLine } from './entities/bonus-line.entity';
 import { DisabilityLine } from './entities/disability-line.entity';
 import { DiscountLine } from './entities/discount-line.entity';
+import { IncreaseLine } from './entities/increase-line.entity';
 import { LicenseLine } from './entities/license-line.entity';
 import { OvertimeLine } from './entities/overtime-line.entity';
 import { PersonalAction } from './entities/personal-action.entity';
 import { RetentionLine } from './entities/retention-line.entity';
-import { IncreaseLine } from './entities/increase-line.entity';
 import { VacationDate } from './entities/vacation-date.entity';
-
-
 import { PersonalActionAutoInvalidationService } from './personal-action-auto-invalidation.service';
 import { PersonalActionEmployeeContextListener } from './personal-action-employee-context.listener';
 import { PersonalActionsHygieneService } from './personal-actions-hygiene.service';

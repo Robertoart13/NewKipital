@@ -24,7 +24,7 @@ export class FixUsersWithCompaniesWithoutApp1708533100000 implements MigrationIn
     `);
   }
 
-  public async down(queryRunner: QueryRunner): Promise<void> {
+  public async down(_queryRunner: QueryRunner): Promise<void> {
     // No revertir: los usuarios ahora tienen acceso correcto
   }
 }

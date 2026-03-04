@@ -21,7 +21,7 @@ async function run() {
     const now = new Date().toISOString().slice(0, 19).replace('T', ' ');
 
     const [empresas] = await conn.execute(
-      "SELECT id_empresa FROM sys_empresas WHERE prefijo_empresa IN ('EB','EG')"
+      "SELECT id_empresa FROM sys_empresas WHERE prefijo_empresa IN ('EB','EG')",
     );
     if (empresas.length === 0) {
       console.log('No hay empresas EB/EG. Ejecute primero run-seed-empresas.js');
@@ -37,10 +37,23 @@ async function run() {
       WHERE NOT EXISTS (SELECT 1 FROM sys_usuario_rol WHERE id_usuario=? AND id_rol=? AND id_empresa=? AND id_app=?)`;
 
     for (const e of empresas) {
-      await conn.execute(sqlUr, [adminId, adminRolId, e.id_empresa, kpitalAppId, now, now, adminId, adminRolId, e.id_empresa, kpitalAppId]);
+      await conn.execute(sqlUr, [
+        adminId,
+        adminRolId,
+        e.id_empresa,
+        kpitalAppId,
+        now,
+        now,
+        adminId,
+        adminRolId,
+        e.id_empresa,
+        kpitalAppId,
+      ]);
     }
 
-    console.log('Roles asignados correctamente. El admin ahora tiene permisos en empresas EB y EG.');
+    console.log(
+      'Roles asignados correctamente. El admin ahora tiene permisos en empresas EB y EG.',
+    );
   } catch (err) {
     console.error('Error:', err.message);
     process.exit(1);

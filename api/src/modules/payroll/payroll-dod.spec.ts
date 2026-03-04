@@ -5,9 +5,6 @@ import { getRepositoryToken } from '@nestjs/typeorm';
 import { DataSource } from 'typeorm';
 
 import { UserCompany } from '../access-control/entities/user-company.entity';
-
-import { PayrollPlanillaSnapshotJson } from './entities/payroll-planilla-snapshot.entity';
-import { PayrollSocialCharge } from './entities/payroll-social-charge.entity';
 import { EmployeeAguinaldoProvision } from '../employees/entities/employee-aguinaldo-provision.entity';
 import { EmployeeVacationService } from '../employees/services/employee-vacation.service';
 import { AuditOutboxService } from '../integration/audit-outbox.service';
@@ -22,7 +19,9 @@ import { PersonalActionAutoInvalidationService } from '../personal-actions/perso
 import { PayrollCalendar, EstadoCalendarioNomina } from './entities/payroll-calendar.entity';
 import { PayrollEmployeeSnapshot } from './entities/payroll-employee-snapshot.entity';
 import { PayrollInputSnapshot } from './entities/payroll-input-snapshot.entity';
+import { PayrollPlanillaSnapshotJson } from './entities/payroll-planilla-snapshot.entity';
 import { PayrollResult } from './entities/payroll-result.entity';
+import { PayrollSocialCharge } from './entities/payroll-social-charge.entity';
 import { PayrollService } from './payroll.service';
 
 import type { TestingModule } from '@nestjs/testing';

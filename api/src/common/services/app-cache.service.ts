@@ -337,7 +337,7 @@ export class AppCacheService {
         this.redisClient.set(lockKey, owner, 'PX', ttlMs, 'NX'),
       );
       return result === 'OK';
-    } catch (error) {
+    } catch {
       this.stats.errors += 1;
       this.recordBreakerFailure();
       return false;

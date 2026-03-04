@@ -29,17 +29,18 @@
 Los stored procedures se llaman via `DataSource.query()`:
 
 ```typescript
-const result = await this.dataSource.query(
-  'CALL sp_generar_planilla(?, ?, ?)',
-  [companyId, periodStart, periodEnd],
-);
+const result = await this.dataSource.query('CALL sp_generar_planilla(?, ?, ?)', [
+  companyId,
+  periodStart,
+  periodEnd,
+]);
 ```
 
 ## Cuándo Usar Stored Procedures vs TypeORM
 
-| Usar SP | Usar TypeORM |
-|---------|-------------|
+| Usar SP                          | Usar TypeORM                 |
+| -------------------------------- | ---------------------------- |
 | Lógica masiva (generar planilla) | CRUD simple (crear empleado) |
-| Operaciones ACID complejas | Consultas con filtros |
-| Recálculos batch | Paginación + ordenamiento |
-| Movimientos entre empresas | Relaciones simples |
+| Operaciones ACID complejas       | Consultas con filtros        |
+| Recálculos batch                 | Paginación + ordenamiento    |
+| Movimientos entre empresas       | Relaciones simples           |

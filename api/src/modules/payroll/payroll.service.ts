@@ -26,12 +26,6 @@ import {
   TipoPlanilla,
   MonedaCalendario,
 } from './entities/payroll-calendar.entity';
-
-import type { DomainEventsService } from '../integration/domain-events.service';
-
-
-import type { EmployeeVacationService } from '../employees/services/employee-vacation.service';
-
 import { PayrollEmployeeSnapshot } from './entities/payroll-employee-snapshot.entity';
 import {
   PayrollInputSnapshot,
@@ -40,10 +34,12 @@ import {
 import { PayrollPlanillaSnapshotJson } from './entities/payroll-planilla-snapshot.entity';
 import { PayrollResult } from './entities/payroll-result.entity';
 import { PayrollSocialCharge } from './entities/payroll-social-charge.entity';
-import type { UpdatePayrollDto } from './dto/update-payroll.dto';
-import type { CreatePayrollDto } from './dto/create-payroll.dto';
-import type { AuditOutboxService } from '../integration/audit-outbox.service';
 
+import type { CreatePayrollDto } from './dto/create-payroll.dto';
+import type { UpdatePayrollDto } from './dto/update-payroll.dto';
+import type { EmployeeVacationService } from '../employees/services/employee-vacation.service';
+import type { AuditOutboxService } from '../integration/audit-outbox.service';
+import type { DomainEventsService } from '../integration/domain-events.service';
 import type { PersonalActionAutoInvalidationService } from '../personal-actions/personal-action-auto-invalidation.service';
 import type { EventEmitter2 } from '@nestjs/event-emitter';
 import type { DataSource, EntityManager, Repository } from 'typeorm';

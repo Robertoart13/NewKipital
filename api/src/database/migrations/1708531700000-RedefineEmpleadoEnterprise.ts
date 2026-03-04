@@ -11,7 +11,7 @@ import type { MigrationInterface, QueryRunner } from 'typeorm';
  */
 export class RedefineEmpleadoEnterprise1708531700000 implements MigrationInterface {
   public async up(queryRunner: QueryRunner): Promise<void> {
-    const now = new Date().toISOString().slice(0, 19).replace('T', ' ');
+    const _now = new Date().toISOString().slice(0, 19).replace('T', ' ');
 
     // ═══════ 1. org_departamentos ═══════
     await queryRunner.createTable(

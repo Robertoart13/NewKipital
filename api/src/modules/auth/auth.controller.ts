@@ -30,15 +30,13 @@ import {
   getRefreshCookieOptions,
 } from '../../config/cookie.config';
 
-import type { AuthzVersionService } from '../authz/authz-version.service';
-
 import type { AuthAuditService } from './auth-audit.service';
 import type { AuthRateLimitService } from './auth-rate-limit.service';
-
 import type { AuthService } from './auth.service';
 import type { MicrosoftAuthService } from './microsoft-auth.service';
 import type { UsersService } from './users.service';
 import type { AuthzRealtimeService } from '../authz/authz-realtime.service';
+import type { AuthzVersionService } from '../authz/authz-version.service';
 import type { DomainEventsService } from '../integration/domain-events.service';
 import type { ConfigService } from '@nestjs/config';
 import type { Request, Response } from 'express';

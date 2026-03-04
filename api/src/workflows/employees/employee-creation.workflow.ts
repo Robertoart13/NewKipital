@@ -1,15 +1,13 @@
 ﻿import { Injectable, Logger, ConflictException } from '@nestjs/common';
 import * as bcrypt from 'bcrypt';
 
-import { UserRole } from '../../modules/access-control/entities/user-role.entity';
-import { WorkflowResult } from '../common/workflow.interface';
 import { DOMAIN_EVENTS } from '../../common/events/event-names';
-import { CreateEmployeeDto } from '../../modules/employees/dto/create-employee.dto';
-import { UserStatus } from '../../modules/auth/constants/user-status.enum';
 import { EmployeeSensitiveDataService } from '../../common/services/employee-sensitive-data.service';
 import { App } from '../../modules/access-control/entities/app.entity';
 import { UserApp } from '../../modules/access-control/entities/user-app.entity';
 import { UserCompany } from '../../modules/access-control/entities/user-company.entity';
+import { UserRole } from '../../modules/access-control/entities/user-role.entity';
+import { UserStatus } from '../../modules/auth/constants/user-status.enum';
 import { User } from '../../modules/auth/entities/user.entity';
 import {
   EmployeeAguinaldoProvision,
@@ -22,6 +20,8 @@ import {
 } from '../../modules/employees/entities/employee-vacation-ledger.entity';
 import { Employee, MonedaSalarioEmpleado } from '../../modules/employees/entities/employee.entity';
 
+import type { CreateEmployeeDto } from '../../modules/employees/dto/create-employee.dto';
+import type { WorkflowResult } from '../common/workflow.interface';
 import type { EventEmitter2 } from '@nestjs/event-emitter';
 import type { DataSource } from 'typeorm';
 

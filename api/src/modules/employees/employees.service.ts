@@ -13,6 +13,10 @@ import { EmployeeSensitiveDataService } from '../../common/services/employee-sen
 import { UserCompany } from '../access-control/entities/user-company.entity';
 import { User } from '../auth/entities/user.entity';
 import {
+  EstadoCalendarioNomina,
+  PayrollCalendar,
+} from '../payroll/entities/payroll-calendar.entity';
+import {
   PERSONAL_ACTION_APPROVED_STATES,
   PERSONAL_ACTION_PENDING_STATES,
   PersonalAction,
@@ -26,12 +30,6 @@ import type { UpdateEmployeeDto } from './dto/update-employee.dto';
 import type { EmployeeCreationWorkflow } from '../../workflows/employees/employee-creation.workflow';
 import type { AuthService } from '../auth/auth.service';
 import type { EmployeeVacationService } from './services/employee-vacation.service';
-
-import {
-  EstadoCalendarioNomina,
-  PayrollCalendar,
-} from '../payroll/entities/payroll-calendar.entity';
-
 import type { AuditOutboxService } from '../integration/audit-outbox.service';
 import type { EventEmitter2 } from '@nestjs/event-emitter';
 import type { DataSource, Repository } from 'typeorm';
@@ -373,7 +371,7 @@ export class EmployeesService {
   }
 
   async update(id: number, dto: UpdateEmployeeDto, modifierId?: number): Promise<Employee> {
-    const emp = await this.findOne(id, modifierId);
+    await this.findOne(id, modifierId);
     if (!modifierId) {
       throw new ForbiddenException('Usuario no autenticado para editar empleado.');
     }

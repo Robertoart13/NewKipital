@@ -8,15 +8,14 @@ import { AuditOutboxService } from '../integration/audit-outbox.service';
 
 import { App } from './entities/app.entity';
 import { Permission } from './entities/permission.entity';
-import { Role } from './entities/role.entity';
-import type { TestingModule } from '@nestjs/testing';
-
-import type { Repository } from 'typeorm';
-
-import { RolesService } from './roles.service';
 import { RolePermission } from './entities/role-permission.entity';
-import { UserRole } from './entities/user-role.entity';
+import { Role } from './entities/role.entity';
 import { UserRoleGlobal } from './entities/user-role-global.entity';
+import { UserRole } from './entities/user-role.entity';
+import { RolesService } from './roles.service';
+
+import type { TestingModule } from '@nestjs/testing';
+import type { Repository } from 'typeorm';
 
 describe('RolesService', () => {
   let service: RolesService;

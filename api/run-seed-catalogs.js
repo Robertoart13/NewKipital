@@ -14,7 +14,6 @@ async function run() {
   try {
     conn = await mysql.createConnection(config);
 
-
     // ========== 1. ORG_DEPARTAMENTOS ==========
     console.log('Insertando departamentos en org_departamentos...');
     const departamentos = [
@@ -34,7 +33,7 @@ async function run() {
         `INSERT INTO org_departamentos (nombre_departamento, estado_departamento) 
          SELECT ?, 1 FROM DUAL 
          WHERE NOT EXISTS (SELECT 1 FROM org_departamentos WHERE nombre_departamento = ?)`,
-        [nombre, nombre]
+        [nombre, nombre],
       );
     }
     console.log(`  - ${departamentos.length} departamentos insertados o ya existentes`);
@@ -60,7 +59,7 @@ async function run() {
         `INSERT INTO org_puestos (nombre_puesto, descripcion_puesto, estado_puesto) 
          SELECT ?, ?, 1 FROM DUAL 
          WHERE NOT EXISTS (SELECT 1 FROM org_puestos WHERE nombre_puesto = ?)`,
-        [p.nombre, p.desc, p.nombre]
+        [p.nombre, p.desc, p.nombre],
       );
     }
     console.log(`  - ${puestos.length} puestos insertados o ya existentes`);
@@ -80,7 +79,7 @@ async function run() {
         `INSERT INTO nom_periodos_pago (nombre_periodo_pago, dias_periodo_pago, es_inactivo) 
          SELECT ?, ?, 0 FROM DUAL 
          WHERE NOT EXISTS (SELECT 1 FROM nom_periodos_pago WHERE nombre_periodo_pago = ?)`,
-        [per.nombre, per.dias, per.nombre]
+        [per.nombre, per.dias, per.nombre],
       );
     }
     console.log(`  - Periodos adicionales insertados o ya existentes`);

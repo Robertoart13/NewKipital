@@ -13,14 +13,8 @@ import type { CreateEmployeeDto } from '../../modules/employees/dto/create-emplo
 import type { TestingModule } from '@nestjs/testing';
 import type { QueryRunner, EntityManager } from 'typeorm';
 
-
-
-
-
-
 describe('EmployeeCreationWorkflow', () => {
   let workflow: EmployeeCreationWorkflow;
-  let dataSource: jest.Mocked<DataSource>;
   let eventEmitter: jest.Mocked<EventEmitter2>;
   let sensitiveDataService: jest.Mocked<EmployeeSensitiveDataService>;
   let mockQueryRunner: jest.Mocked<QueryRunner>;
@@ -83,7 +77,6 @@ describe('EmployeeCreationWorkflow', () => {
     }).compile();
 
     workflow = module.get<EmployeeCreationWorkflow>(EmployeeCreationWorkflow);
-    dataSource = module.get(DataSource);
     eventEmitter = module.get(EventEmitter2);
     sensitiveDataService = module.get(EmployeeSensitiveDataService);
   });

@@ -6,14 +6,14 @@ import * as bcrypt from 'bcrypt';
 import { In, IsNull, MoreThan, QueryFailedError } from 'typeorm';
 
 import { App } from '../access-control/entities/app.entity';
-import { UserRoleExclusion } from '../access-control/entities/user-role-exclusion.entity';
-import { Role } from '../access-control/entities/role.entity';
-import { RolePermission } from '../access-control/entities/role-permission.entity';
 import { Permission } from '../access-control/entities/permission.entity';
+import { RolePermission } from '../access-control/entities/role-permission.entity';
+import { Role } from '../access-control/entities/role.entity';
 import { UserApp } from '../access-control/entities/user-app.entity';
 import { UserCompany } from '../access-control/entities/user-company.entity';
-import { UserPermissionOverride } from '../access-control/entities/user-permission-override.entity';
 import { UserPermissionGlobalDeny } from '../access-control/entities/user-permission-global-deny.entity';
+import { UserPermissionOverride } from '../access-control/entities/user-permission-override.entity';
+import { UserRoleExclusion } from '../access-control/entities/user-role-exclusion.entity';
 import { UserRoleGlobal } from '../access-control/entities/user-role-global.entity';
 import { UserRole } from '../access-control/entities/user-role.entity';
 import { Company } from '../companies/entities/company.entity';

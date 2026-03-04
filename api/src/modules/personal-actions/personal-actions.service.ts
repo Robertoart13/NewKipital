@@ -13,52 +13,46 @@ import {
   EstadoCalendarioNomina,
   PayrollCalendar,
 } from '../payroll/entities/payroll-calendar.entity';
-
 import { PayrollEmployeeVerification } from '../payroll/entities/payroll-employee-verification.entity';
+
 import {
   PERSONAL_ACTION_INVALIDATED_BY,
   PERSONAL_ACTION_INVALIDATION_REASON,
 } from './constants/personal-action-invalidation.constants';
 import { AbsenceLine } from './entities/absence-line.entity';
 import { ActionQuota, EstadoCuota } from './entities/action-quota.entity';
+import { BonusLine } from './entities/bonus-line.entity';
+import {
+  DisabilityLine,
+  TipoIncapacidadLinea,
+  TipoInstitucionIncapacidadLinea,
+} from './entities/disability-line.entity';
+import { DiscountLine } from './entities/discount-line.entity';
+import { IncreaseLine, MetodoCalculoAumentoLinea } from './entities/increase-line.entity';
+import { LicenseLine } from './entities/license-line.entity';
+import { OvertimeLine, TipoJornadaHoraExtraLinea } from './entities/overtime-line.entity';
 import {
   PersonalAction,
   PERSONAL_ACTION_APPROVED_STATES,
   PERSONAL_ACTION_PENDING_STATES,
   PersonalActionEstado,
 } from './entities/personal-action.entity';
+import { RetentionLine } from './entities/retention-line.entity';
+import { VacationDate } from './entities/vacation-date.entity';
+
 import type { CreatePersonalActionDto } from './dto/create-personal-action.dto';
 import type { UpsertAbsenceDto } from './dto/upsert-absence.dto';
 import type { UpsertBonusDto } from './dto/upsert-bonus.dto';
 import type { UpsertDisabilityDto } from './dto/upsert-disability.dto';
+import type { UpsertDiscountDto } from './dto/upsert-discount.dto';
+import type { UpsertIncreaseDto } from './dto/upsert-increase.dto';
 import type { UpsertLicenseDto } from './dto/upsert-license.dto';
 import type { UpsertOvertimeDto } from './dto/upsert-overtime.dto';
 import type { UpsertRetentionDto } from './dto/upsert-retention.dto';
-import type { UpsertDiscountDto } from './dto/upsert-discount.dto';
-import type { UpsertIncreaseDto } from './dto/upsert-increase.dto';
 import type { UpsertVacationDto } from './dto/upsert-vacation.dto';
-
-
 import type { EmployeeSensitiveDataService } from '../../common/services/employee-sensitive-data.service';
 import type { EmployeesService } from '../employees/employees.service';
-
-import {
-  DisabilityLine,
-  TipoIncapacidadLinea,
-  TipoInstitucionIncapacidadLinea,
-} from './entities/disability-line.entity';
-import { LicenseLine } from './entities/license-line.entity';
-import { BonusLine } from './entities/bonus-line.entity';
-import { OvertimeLine, TipoJornadaHoraExtraLinea } from './entities/overtime-line.entity';
-import { RetentionLine } from './entities/retention-line.entity';
-import { DiscountLine } from './entities/discount-line.entity';
-import { IncreaseLine, MetodoCalculoAumentoLinea } from './entities/increase-line.entity';
-import { VacationDate } from './entities/vacation-date.entity';
-
 import type { AuditOutboxService } from '../integration/audit-outbox.service';
-
-
-
 import type { EventEmitter2 } from '@nestjs/event-emitter';
 import type { DataSource, Repository } from 'typeorm';
 
@@ -3555,7 +3549,7 @@ export class PersonalActionsService {
 
   async createVacation(dto: UpsertVacationDto, userId: number) {
     await this.assertUserCompanyAccess(userId, dto.idEmpresa);
-    const { dates, payrollMap } = await this.validateVacationPayload(dto, userId, undefined, true);
+    const { payrollMap } = await this.validateVacationPayload(dto, userId, undefined, true);
 
     const employee = await this.getAbsenceEmployee(dto.idEmpresa, dto.idEmpleado);
     const moneda = String(employee?.monedaSalario ?? 'CRC').toUpperCase();

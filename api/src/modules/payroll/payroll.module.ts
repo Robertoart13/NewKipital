@@ -13,12 +13,11 @@ import { EmployeeTransfer } from './entities/employee-transfer.entity';
 import { PayPeriod } from './entities/pay-period.entity';
 import { PayrollCalendar } from './entities/payroll-calendar.entity';
 import { PayrollEmployeeSnapshot } from './entities/payroll-employee-snapshot.entity';
-import { PayrollInputSnapshot } from './entities/payroll-input-snapshot.entity';
-import { PayrollResult } from './entities/payroll-result.entity';
-import { PayrollPlanillaSnapshotJson } from './entities/payroll-planilla-snapshot.entity';
-import { PayrollSocialCharge } from './entities/payroll-social-charge.entity';
 import { PayrollEmployeeVerification } from './entities/payroll-employee-verification.entity';
-
+import { PayrollInputSnapshot } from './entities/payroll-input-snapshot.entity';
+import { PayrollPlanillaSnapshotJson } from './entities/payroll-planilla-snapshot.entity';
+import { PayrollResult } from './entities/payroll-result.entity';
+import { PayrollSocialCharge } from './entities/payroll-social-charge.entity';
 import { IntercompanyTransferController } from './intercompany-transfer.controller';
 import { IntercompanyTransferService } from './intercompany-transfer.service';
 import { PayrollController } from './payroll.controller';

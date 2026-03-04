@@ -1,14 +1,14 @@
 import type { DomainEvent } from '../../../common/events/domain-event.interface';
 
-export interface RoleAssignedEvent extends DomainEvent<{
+export type RoleAssignedEvent = DomainEvent<{
   userId: string;
   roleId: string;
   companyId: string;
-}> {}
+}>;
 
-export interface PermissionsChangedEvent extends DomainEvent<{
+export type PermissionsChangedEvent = DomainEvent<{
   userId: string;
   companyId: string;
   addedPermissions: string[];
   removedPermissions: string[];
-}> {}
+}>;

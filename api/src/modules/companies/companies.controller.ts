@@ -30,7 +30,6 @@ import { CacheResponseInterceptor } from '../../common/interceptors/cache-respon
 import type { CompaniesService } from './companies.service';
 import type { CreateCompanyDto } from './dto/create-company.dto';
 import type { UpdateCompanyDto } from './dto/update-company.dto';
-
 import type { Response } from 'express';
 
 const COMPANY_LOGO_TEMP_DIR = join(process.cwd(), 'uploads', 'logoEmpresa', 'temp');

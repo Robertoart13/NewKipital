@@ -1,12 +1,12 @@
 import type { DomainEvent } from '../../../common/events/domain-event.interface';
 
-export interface CompanyCreatedEvent extends DomainEvent<{
+export type CompanyCreatedEvent = DomainEvent<{
   companyId: string;
   name: string;
   code: string;
-}> {}
+}>;
 
-export interface CompanyUpdatedEvent extends DomainEvent<{
+export type CompanyUpdatedEvent = DomainEvent<{
   companyId: string;
   changes: Record<string, unknown>;
-}> {}
+}>;

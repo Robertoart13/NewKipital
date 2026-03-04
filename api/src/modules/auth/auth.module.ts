@@ -12,29 +12,24 @@ import { RolePermission } from '../access-control/entities/role-permission.entit
 import { Role } from '../access-control/entities/role.entity';
 import { UserApp } from '../access-control/entities/user-app.entity';
 import { UserCompany } from '../access-control/entities/user-company.entity';
-import { UserRole } from '../access-control/entities/user-role.entity';
-
-import { Company } from '../companies/entities/company.entity';
-import { AuthController } from './auth.controller';
-import { AuthService } from './auth.service';
-import { MicrosoftAuthService } from './microsoft-auth.service';
-import { UsersController } from './users.controller';
-import { UsersService } from './users.service';
-import { User } from './entities/user.entity';
-
-import { UserRoleGlobal } from '../access-control/entities/user-role-global.entity';
-import { UserRoleExclusion } from '../access-control/entities/user-role-exclusion.entity';
-import { UserPermissionOverride } from '../access-control/entities/user-permission-override.entity';
 import { UserPermissionGlobalDeny } from '../access-control/entities/user-permission-global-deny.entity';
-
-import { RefreshSession } from './entities/refresh-session.entity';
-
+import { UserPermissionOverride } from '../access-control/entities/user-permission-override.entity';
+import { UserRoleExclusion } from '../access-control/entities/user-role-exclusion.entity';
+import { UserRoleGlobal } from '../access-control/entities/user-role-global.entity';
+import { UserRole } from '../access-control/entities/user-role.entity';
+import { AuthzModule } from '../authz/authz.module';
+import { Company } from '../companies/entities/company.entity';
 import { IntegrationModule } from '../integration/integration.module';
 
 import { AuthAuditService } from './auth-audit.service';
 import { AuthRateLimitService } from './auth-rate-limit.service';
-
-import { AuthzModule } from '../authz/authz.module';
+import { AuthController } from './auth.controller';
+import { AuthService } from './auth.service';
+import { RefreshSession } from './entities/refresh-session.entity';
+import { User } from './entities/user.entity';
+import { MicrosoftAuthService } from './microsoft-auth.service';
+import { UsersController } from './users.controller';
+import { UsersService } from './users.service';
 
 @Module({
   imports: [

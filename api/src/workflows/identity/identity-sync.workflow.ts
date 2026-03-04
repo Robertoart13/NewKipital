@@ -38,7 +38,7 @@ export class IdentitySyncWorkflow {
 
   @OnEvent(DOMAIN_EVENTS.EMPLOYEE.EMAIL_CHANGED)
   async handleEmailChange(event: { payload: EmployeeEmailChangedPayload }): Promise<void> {
-    const { userId, oldEmail, newEmail, changedBy, employeeId } = event.payload;
+    const { userId, oldEmail: _oldEmail, newEmail, changedBy, employeeId } = event.payload;
 
     if (!userId) {
       this.logger.debug(`Empleado #${employeeId} sin usuario vinculado — no se sincroniza`);

@@ -77,8 +77,8 @@ export class NotificationsController {
   @Post('read-all')
   markAllAsRead(
     @CurrentUser() user: { userId: number },
-    @Query('appCode') appCode?: string,
-    @Query('companyId') companyId?: string,
+    @Query('appCode') _appCode?: string,
+    @Query('companyId') _companyId?: string,
   ) {
     return this.notificationsService.markAllAsRead(user.userId);
   }

@@ -6,15 +6,15 @@ import { App } from '../../access-control/entities/app.entity';
 import { Role } from '../../access-control/entities/role.entity';
 import { UserApp } from '../../access-control/entities/user-app.entity';
 import { UserCompany } from '../../access-control/entities/user-company.entity';
+import { UserRole } from '../../access-control/entities/user-role.entity';
 import { User } from '../../auth/entities/user.entity';
 import { EmployeeAguinaldoProvision } from '../entities/employee-aguinaldo-provision.entity';
+import { EmployeeEncryptQueue } from '../entities/employee-encrypt-queue.entity';
 import {
   EmployeeIdentityQueue,
   EmployeeQueueStatus,
 } from '../entities/employee-identity-queue.entity';
 import { Employee } from '../entities/employee.entity';
-import { EmployeeEncryptQueue } from '../entities/employee-encrypt-queue.entity';
-import { UserRole } from '../../access-control/entities/user-role.entity';
 
 import type { EmployeeVacationService } from './employee-vacation.service';
 import type { OnModuleDestroy, OnModuleInit } from '@nestjs/common';

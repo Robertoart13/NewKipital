@@ -82,8 +82,12 @@ async function run() {
     );
     const demoUserId = userRow.id_usuario;
 
-    const [[kpital]] = await conn.query(`SELECT id_app FROM sys_apps WHERE codigo_app = 'kpital' LIMIT 1`);
-    const [[master]] = await conn.query(`SELECT id_rol FROM sys_roles WHERE codigo_rol = 'MASTER' LIMIT 1`);
+    const [[kpital]] = await conn.query(
+      `SELECT id_app FROM sys_apps WHERE codigo_app = 'kpital' LIMIT 1`,
+    );
+    const [[master]] = await conn.query(
+      `SELECT id_rol FROM sys_roles WHERE codigo_rol = 'MASTER' LIMIT 1`,
+    );
     if (!kpital || !master) {
       console.log('No se encontró app kpital o rol MASTER.');
       return;

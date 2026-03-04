@@ -30,18 +30,6 @@ const PAY_PERIOD_FORMULAS: Record<number, { divisor: number; label: string } | n
   15: { divisor: 365, label: 'ANUAL: salario_base / 365' },
 };
 
-interface DueAccountRow {
-  id_vacaciones_cuenta: number;
-  id_empleado: number;
-  id_empresa: number;
-  dia_ancla_vacaciones: number;
-  fecha_ingreso_ancla_vacaciones: string;
-  ultima_fecha_provision_vacaciones: string | null;
-  id_periodos_pago: number | null;
-  salario_base_empleado: string | null;
-  fecha_salida_empleado: string | null;
-}
-
 @Injectable()
 export class EmployeeVacationService {
   private readonly logger = new Logger(EmployeeVacationService.name);

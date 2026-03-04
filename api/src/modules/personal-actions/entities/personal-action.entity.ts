@@ -17,12 +17,15 @@ export enum PersonalActionEstado {
   INVALIDATED = 7,
   EXPIRED = 8,
   REJECTED = 9,
-  // Alias de compatibilidad legacy
-  PENDIENTE = 1,
-  APROBADA = 4,
-  APROBADA_LEGACY = 2,
-  RECHAZADA = 9,
 }
+
+// Alias de compatibilidad legacy
+export const PERSONAL_ACTION_STATE_ALIAS = {
+  PENDIENTE: PersonalActionEstado.DRAFT,
+  APROBADA: PersonalActionEstado.APPROVED,
+  APROBADA_LEGACY: PersonalActionEstado.PENDING_SUPERVISOR,
+  RECHAZADA: PersonalActionEstado.REJECTED,
+} as const;
 
 export const PERSONAL_ACTION_PENDING_STATES: PersonalActionEstado[] = [
   PersonalActionEstado.DRAFT,
@@ -32,7 +35,7 @@ export const PERSONAL_ACTION_PENDING_STATES: PersonalActionEstado[] = [
 
 export const PERSONAL_ACTION_APPROVED_STATES: PersonalActionEstado[] = [
   PersonalActionEstado.APPROVED,
-  PersonalActionEstado.APROBADA_LEGACY,
+  PERSONAL_ACTION_STATE_ALIAS.APROBADA_LEGACY,
 ];
 
 export enum TipoAccionPersonal {
@@ -90,7 +93,7 @@ export class PersonalAction {
     name: 'estado_accion',
     type: 'tinyint',
     width: 1,
-    default: PersonalActionEstado.PENDIENTE,
+    default: PersonalActionEstado.DRAFT,
   })
   estado: PersonalActionEstado;
 
