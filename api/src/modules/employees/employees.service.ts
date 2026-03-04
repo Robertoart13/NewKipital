@@ -5,13 +5,17 @@
   ForbiddenException,
   BadRequestException,
 } from '@nestjs/common';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import { InjectRepository } from '@nestjs/typeorm';
-import { In, IsNull } from 'typeorm';
+import { In, IsNull, DataSource, Repository } from 'typeorm';
 
 import { DOMAIN_EVENTS } from '../../common/events/event-names';
 import { EmployeeSensitiveDataService } from '../../common/services/employee-sensitive-data.service';
+import { EmployeeCreationWorkflow } from '../../workflows/employees/employee-creation.workflow';
 import { UserCompany } from '../access-control/entities/user-company.entity';
+import { AuthService } from '../auth/auth.service';
 import { User } from '../auth/entities/user.entity';
+import { AuditOutboxService } from '../integration/audit-outbox.service';
 import {
   EstadoCalendarioNomina,
   PayrollCalendar,
@@ -24,16 +28,10 @@ import {
 
 import { EmployeeAguinaldoProvision } from './entities/employee-aguinaldo-provision.entity';
 import { Employee } from './entities/employee.entity';
-
-import { EventEmitter2 } from '@nestjs/event-emitter'; // eslint-disable-line @typescript-eslint/consistent-type-imports
-import { DataSource, Repository } from 'typeorm'; // eslint-disable-line @typescript-eslint/consistent-type-imports
+import { EmployeeVacationService } from './services/employee-vacation.service';
 
 import type { CreateEmployeeDto } from './dto/create-employee.dto';
 import type { UpdateEmployeeDto } from './dto/update-employee.dto';
-import { EmployeeCreationWorkflow } from '../../workflows/employees/employee-creation.workflow';
-import { AuthService } from '../auth/auth.service';
-import { EmployeeVacationService } from './services/employee-vacation.service';
-import { AuditOutboxService } from '../integration/audit-outbox.service';
 
 /** Estados de planilla que bloquean inactivar empleado (DOC-34 UC-01). */
 const PLANILLA_ESTADOS_BLOQUEANTES = [

@@ -16,12 +16,13 @@ import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { RequirePermissions } from '../../common/decorators/require-permissions.decorator';
 import { CacheResponseInterceptor } from '../../common/interceptors/cache-response.interceptor';
 
+import { UserAssignmentService } from './user-assignment.service';
+
 import type { AssignUserAppDto } from './dto/assign-user-app.dto';
 import type { AssignUserCompanyDto } from './dto/assign-user-company.dto';
 import type { AssignUserRoleDto } from './dto/assign-user-role.dto';
 import type { ReplaceUserContextRolesDto } from './dto/replace-user-context-roles.dto';
 import type { ReplaceUserPermissionOverridesDto } from './dto/replace-user-permission-overrides.dto';
-import { UserAssignmentService } from './user-assignment.service';
 
 @CacheScope('user-assignments')
 @UseInterceptors(CacheResponseInterceptor)

@@ -6,21 +6,20 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import * as bcrypt from 'bcrypt';
-import { In } from 'typeorm';
+import { In, Repository } from 'typeorm';
 
 import { App } from '../access-control/entities/app.entity';
 import { Role } from '../access-control/entities/role.entity';
 import { UserApp } from '../access-control/entities/user-app.entity';
 import { UserRoleGlobal } from '../access-control/entities/user-role-global.entity';
 import { UserRole } from '../access-control/entities/user-role.entity';
+import { AuditOutboxService } from '../integration/audit-outbox.service';
 
 import { UserStatus } from './constants/user-status.enum';
 import { User } from './entities/user.entity';
 
 import type { CreateUserDto } from './dto/create-user.dto';
 import type { UpdateUserDto } from './dto/update-user.dto';
-import { AuditOutboxService } from '../integration/audit-outbox.service';
-import { Repository } from 'typeorm';
 
 const TIMEWISE_SUPERVISOR_ROLES = ['SUPERVISOR_TIMEWISE', 'SUPERVISOR_GLOBAL_TIMEWISE'];
 

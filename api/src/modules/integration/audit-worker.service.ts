@@ -1,12 +1,10 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
 
 import { AuditActionEntity } from './entities/audit-action.entity';
 import { DomainEventEntity } from './entities/domain-event.entity';
-
-import { OnModuleDestroy, OnModuleInit } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
-import { Repository } from 'typeorm';
 
 interface AuditEventPayload {
   modulo: string;

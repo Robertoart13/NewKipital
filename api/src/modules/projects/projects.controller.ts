@@ -18,9 +18,10 @@ import { Public } from '../../common/decorators/public.decorator';
 import { RequirePermissions } from '../../common/decorators/require-permissions.decorator';
 import { CacheResponseInterceptor } from '../../common/interceptors/cache-response.interceptor';
 
+import { ProjectsService } from './projects.service';
+
 import type { CreateProjectDto } from './dto/create-project.dto';
 import type { UpdateProjectDto } from './dto/update-project.dto';
-import { ProjectsService } from './projects.service';
 
 @CacheScope('projects')
 @UseInterceptors(CacheResponseInterceptor)

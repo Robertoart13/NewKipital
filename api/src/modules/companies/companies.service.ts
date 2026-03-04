@@ -10,8 +10,9 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { In } from 'typeorm';
+import { In, EntityManager, Repository } from 'typeorm';
 
+import { AuditOutboxService } from '../integration/audit-outbox.service';
 import {
   EstadoCalendarioNomina,
   PayrollCalendar,
@@ -19,11 +20,8 @@ import {
 
 import { Company } from './entities/company.entity';
 
-import { EntityManager, Repository } from 'typeorm'; // eslint-disable-line @typescript-eslint/consistent-type-imports
-
 import type { CreateCompanyDto } from './dto/create-company.dto';
 import type { UpdateCompanyDto } from './dto/update-company.dto';
-import { AuditOutboxService } from '../integration/audit-outbox.service';
 
 const COMPANY_LOGO_DIR = join(process.cwd(), 'uploads', 'logoEmpresa');
 const COMPANY_LOGO_TEMP_DIR = join(COMPANY_LOGO_DIR, 'temp');

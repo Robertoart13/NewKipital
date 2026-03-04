@@ -1,6 +1,4 @@
-import { Table, TableForeignKey, TableIndex } from 'typeorm';
-
-import { MigrationInterface, QueryRunner } from 'typeorm';
+import { Table, TableForeignKey, TableIndex, MigrationInterface, QueryRunner } from 'typeorm';
 
 /**
  * Modelo NetSuite: roles globales + excepciones por empresa.

@@ -1,5 +1,6 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
 
 import { EmployeeSensitiveDataService } from '../../../common/services/employee-sensitive-data.service';
 import { App } from '../../access-control/entities/app.entity';
@@ -17,8 +18,6 @@ import {
 import { Employee } from '../entities/employee.entity';
 
 import { EmployeeVacationService } from './employee-vacation.service';
-import { OnModuleDestroy, OnModuleInit } from '@nestjs/common';
-import { Repository } from 'typeorm';
 
 class QueueTerminalError extends Error {
   constructor(

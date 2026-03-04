@@ -4,11 +4,15 @@ import {
   BadRequestException,
   ForbiddenException,
 } from '@nestjs/common';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import { InjectRepository } from '@nestjs/typeorm';
-import { In } from 'typeorm';
+import { In, DataSource, Repository } from 'typeorm';
 
 import { DOMAIN_EVENTS } from '../../common/events/event-names';
+import { EmployeeSensitiveDataService } from '../../common/services/employee-sensitive-data.service';
 import { UserCompany } from '../access-control/entities/user-company.entity';
+import { EmployeesService } from '../employees/employees.service';
+import { AuditOutboxService } from '../integration/audit-outbox.service';
 import {
   EstadoCalendarioNomina,
   PayrollCalendar,
@@ -50,12 +54,6 @@ import type { UpsertLicenseDto } from './dto/upsert-license.dto';
 import type { UpsertOvertimeDto } from './dto/upsert-overtime.dto';
 import type { UpsertRetentionDto } from './dto/upsert-retention.dto';
 import type { UpsertVacationDto } from './dto/upsert-vacation.dto';
-import { EventEmitter2 } from '@nestjs/event-emitter'; // eslint-disable-line @typescript-eslint/consistent-type-imports
-import { DataSource, Repository } from 'typeorm'; // eslint-disable-line @typescript-eslint/consistent-type-imports
-
-import { EmployeeSensitiveDataService } from '../../common/services/employee-sensitive-data.service';
-import { EmployeesService } from '../employees/employees.service';
-import { AuditOutboxService } from '../integration/audit-outbox.service';
 
 @Injectable()
 export class PersonalActionsService {

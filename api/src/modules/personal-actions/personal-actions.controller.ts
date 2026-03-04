@@ -17,6 +17,8 @@ import { Public } from '../../common/decorators/public.decorator';
 import { RequirePermissions } from '../../common/decorators/require-permissions.decorator';
 import { CacheResponseInterceptor } from '../../common/interceptors/cache-response.interceptor';
 
+import { PersonalActionsService } from './personal-actions.service';
+
 import type { CreatePersonalActionDto } from './dto/create-personal-action.dto';
 import type { UpsertAbsenceDto } from './dto/upsert-absence.dto';
 import type { UpsertBonusDto } from './dto/upsert-bonus.dto';
@@ -28,7 +30,6 @@ import type { UpsertOvertimeDto } from './dto/upsert-overtime.dto';
 import type { UpsertRetentionDto } from './dto/upsert-retention.dto';
 import type { UpsertVacationDto } from './dto/upsert-vacation.dto';
 import type { PersonalActionEstado } from './entities/personal-action.entity';
-import { PersonalActionsService } from './personal-actions.service';
 
 @CacheScope('personal-actions')
 @UseInterceptors(CacheResponseInterceptor)

@@ -1,6 +1,5 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, OnModuleDestroy } from '@nestjs/common';
 
-import { OnModuleDestroy } from '@nestjs/common';
 import type { Response } from 'express';
 
 export interface AuthzRealtimeEventPayload {

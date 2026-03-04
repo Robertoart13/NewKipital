@@ -13,16 +13,20 @@ import {
   UseInterceptors,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { In } from 'typeorm';
+import { In, Repository } from 'typeorm';
 
 import { CacheScope } from '../../common/decorators/cache-scope.decorator';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { RequirePermissions } from '../../common/decorators/require-permissions.decorator';
 import { CacheResponseInterceptor } from '../../common/interceptors/cache-response.interceptor';
 import { Company } from '../companies/entities/company.entity';
+import { NotificationsService } from '../notifications/notifications.service';
 
 import { Permission } from './entities/permission.entity';
 import { Role } from './entities/role.entity';
+import { PermissionsService } from './permissions.service';
+import { RolesService } from './roles.service';
+import { UserAssignmentService } from './user-assignment.service';
 
 import type { CreatePermissionDto } from './dto/create-permission.dto';
 import type { CreateRoleDto } from './dto/create-role.dto';
@@ -35,11 +39,6 @@ import type { ReplaceUserPermissionOverridesDto } from './dto/replace-user-permi
 import type { ReplaceUserRoleExclusionsDto } from './dto/replace-user-role-exclusions.dto';
 import type { UpdatePermissionDto } from './dto/update-permission.dto';
 import type { UpdateRoleDto } from './dto/update-role.dto';
-import { PermissionsService } from './permissions.service';
-import { RolesService } from './roles.service';
-import { UserAssignmentService } from './user-assignment.service';
-import { NotificationsService } from '../notifications/notifications.service';
-import { Repository } from 'typeorm';
 
 /**
  * Endpoints enterprise de administracion bajo prefijo /config.

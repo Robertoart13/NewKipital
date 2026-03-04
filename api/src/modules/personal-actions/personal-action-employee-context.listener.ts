@@ -7,7 +7,6 @@ import {
   PERSONAL_ACTION_INVALIDATION_REASON,
   type PersonalActionInvalidationReasonCode,
 } from './constants/personal-action-invalidation.constants';
-
 import { PersonalActionAutoInvalidationService } from './personal-action-auto-invalidation.service';
 
 interface EmployeeContextUpdatedEvent {

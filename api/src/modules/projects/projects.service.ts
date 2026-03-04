@@ -5,15 +5,15 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
 
 import { Company } from '../companies/entities/company.entity';
+import { AuditOutboxService } from '../integration/audit-outbox.service';
 
 import { OrgProject } from './entities/project.entity';
 
-import { AuditOutboxService } from '../integration/audit-outbox.service';
 import type { CreateProjectDto } from './dto/create-project.dto';
 import type { UpdateProjectDto } from './dto/update-project.dto';
-import { Repository } from 'typeorm';
 
 @Injectable()
 export class ProjectsService {

@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Inject, Injectable, Logger } from '@nestjs/common';
 
 import { DomainEventsService } from './domain-events.service';
 
@@ -21,7 +21,10 @@ export interface AuditOutboxPayload {
 export class AuditOutboxService {
   private readonly logger = new Logger(AuditOutboxService.name);
 
-  constructor(private readonly domainEvents: DomainEventsService) {}
+  constructor(
+    @Inject(DomainEventsService)
+    private readonly domainEvents: DomainEventsService,
+  ) {}
 
   publish(input: AuditOutboxPayload): void {
     const aggregateId = String(input.entidadId ?? 'na');

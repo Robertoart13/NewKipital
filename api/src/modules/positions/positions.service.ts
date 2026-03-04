@@ -1,12 +1,12 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
 
 import { Position } from '../employees/entities/position.entity';
-
 import { AuditOutboxService } from '../integration/audit-outbox.service';
+
 import type { CreatePositionDto } from './dto/create-position.dto';
 import type { UpdatePositionDto } from './dto/update-position.dto';
-import { Repository } from 'typeorm';
 
 @Injectable()
 export class PositionsService {

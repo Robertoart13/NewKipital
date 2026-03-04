@@ -1,6 +1,4 @@
-import { Table, TableIndex } from 'typeorm';
-
-import { MigrationInterface, QueryRunner } from 'typeorm';
+import { Table, TableIndex, MigrationInterface, QueryRunner } from 'typeorm';
 
 /**
  * Primera migración — sys_empresas (root aggregate)

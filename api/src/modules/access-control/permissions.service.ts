@@ -4,16 +4,17 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+
+import { AuthzVersionService } from '../authz/authz-version.service';
+import { AuditOutboxService } from '../integration/audit-outbox.service';
 
 import { Permission } from './entities/permission.entity';
 
-import { AuditOutboxService } from '../integration/audit-outbox.service';
 import type { CreatePermissionDto } from './dto/create-permission.dto';
 import type { UpdatePermissionDto } from './dto/update-permission.dto';
-import { AuthzVersionService } from '../authz/authz-version.service';
-import { ConfigService } from '@nestjs/config';
-import { Repository } from 'typeorm';
 
 export type PermissionCatalogMode = 'migration' | 'ui';
 

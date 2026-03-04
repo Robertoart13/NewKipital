@@ -6,7 +6,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { In } from 'typeorm';
+import { In, DataSource, Repository } from 'typeorm';
 
 import { UserCompany } from '../access-control/entities/user-company.entity';
 import {
@@ -14,6 +14,7 @@ import {
   EstadoProvisionAguinaldoEmpleado,
 } from '../employees/entities/employee-aguinaldo-provision.entity';
 import { Employee } from '../employees/entities/employee.entity';
+import { AuditOutboxService } from '../integration/audit-outbox.service';
 import {
   PersonalAction,
   PERSONAL_ACTION_APPROVED_STATES,
@@ -23,11 +24,8 @@ import {
 import { EmployeeTransfer, EstadoTransferenciaEmpleado } from './entities/employee-transfer.entity';
 import { EstadoCalendarioNomina, PayrollCalendar } from './entities/payroll-calendar.entity';
 
-import { DataSource, Repository } from 'typeorm'; // eslint-disable-line @typescript-eslint/consistent-type-imports
-
 import type { ExecuteIntercompanyTransferDto } from './dto/execute-intercompany-transfer.dto';
 import type { SimulateIntercompanyTransferDto } from './dto/simulate-intercompany-transfer.dto';
-import { AuditOutboxService } from '../integration/audit-outbox.service';
 import type { PersonalActionEstado } from '../personal-actions/entities/personal-action.entity';
 
 type TransferBlockingReason = {

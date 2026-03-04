@@ -1,6 +1,4 @@
-import { TableColumn } from 'typeorm';
-
-import { MigrationInterface, QueryRunner } from 'typeorm';
+import { TableColumn, MigrationInterface, QueryRunner } from 'typeorm';
 
 export class AddPermissionAuditColumns1708532500000 implements MigrationInterface {
   public async up(queryRunner: QueryRunner): Promise<void> {

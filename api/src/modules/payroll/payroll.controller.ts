@@ -17,9 +17,10 @@ import { Public } from '../../common/decorators/public.decorator';
 import { RequirePermissions } from '../../common/decorators/require-permissions.decorator';
 import { CacheResponseInterceptor } from '../../common/interceptors/cache-response.interceptor';
 
+import { PayrollService } from './payroll.service';
+
 import type { CreatePayrollDto } from './dto/create-payroll.dto';
 import type { UpdatePayrollDto } from './dto/update-payroll.dto';
-import { PayrollService } from './payroll.service';
 
 @CacheScope('payroll')
 @UseInterceptors(CacheResponseInterceptor)

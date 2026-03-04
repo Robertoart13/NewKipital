@@ -1,6 +1,4 @@
-import { Table, TableForeignKey, TableIndex } from 'typeorm';
-
-import { MigrationInterface, QueryRunner } from 'typeorm';
+import { Table, TableForeignKey, TableIndex, MigrationInterface, QueryRunner } from 'typeorm';
 
 export class CreatePayrollMovementsAndPermissions1708536300000 implements MigrationInterface {
   public async up(queryRunner: QueryRunner): Promise<void> {

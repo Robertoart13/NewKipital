@@ -1,6 +1,4 @@
-import { Table, TableForeignKey, TableIndex } from 'typeorm';
-
-import { MigrationInterface, QueryRunner } from 'typeorm';
+import { Table, TableForeignKey, TableIndex, MigrationInterface, QueryRunner } from 'typeorm';
 
 const TIPO_INCAPACIDAD_VALUES = [
   'enfermedad_comun_ccss',

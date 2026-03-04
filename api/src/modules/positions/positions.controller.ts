@@ -18,9 +18,10 @@ import { Public } from '../../common/decorators/public.decorator';
 import { RequirePermissions } from '../../common/decorators/require-permissions.decorator';
 import { CacheResponseInterceptor } from '../../common/interceptors/cache-response.interceptor';
 
+import { PositionsService } from './positions.service';
+
 import type { CreatePositionDto } from './dto/create-position.dto';
 import type { UpdatePositionDto } from './dto/update-position.dto';
-import { PositionsService } from './positions.service';
 
 @CacheScope('positions')
 @UseInterceptors(CacheResponseInterceptor)

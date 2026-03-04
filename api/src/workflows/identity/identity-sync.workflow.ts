@@ -1,12 +1,10 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { OnEvent } from '@nestjs/event-emitter';
+import { OnEvent, EventEmitter2 } from '@nestjs/event-emitter';
 import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
 
 import { DOMAIN_EVENTS } from '../../common/events/event-names';
 import { User } from '../../modules/auth/entities/user.entity';
-
-import { EventEmitter2 } from '@nestjs/event-emitter'; // eslint-disable-line @typescript-eslint/consistent-type-imports
-import { Repository } from 'typeorm'; // eslint-disable-line @typescript-eslint/consistent-type-imports
 
 interface EmployeeEmailChangedPayload {
   employeeId: string;

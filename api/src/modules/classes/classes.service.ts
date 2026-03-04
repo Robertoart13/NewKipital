@@ -1,12 +1,13 @@
 import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+
+import { AuditOutboxService } from '../integration/audit-outbox.service';
 
 import { OrgClass } from './entities/class.entity';
 
 import type { CreateClassDto } from './dto/create-class.dto';
 import type { UpdateClassDto } from './dto/update-class.dto';
-import { AuditOutboxService } from '../integration/audit-outbox.service';
-import { Repository } from 'typeorm';
 
 @Injectable()
 export class ClassesService {

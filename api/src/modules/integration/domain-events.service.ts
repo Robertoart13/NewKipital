@@ -1,9 +1,8 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
 
 import { DomainEventEntity } from './entities/domain-event.entity';
-
-import { Repository } from 'typeorm';
 
 interface RecordDomainEventInput {
   aggregateType: string;

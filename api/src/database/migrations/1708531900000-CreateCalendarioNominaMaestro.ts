@@ -1,6 +1,4 @@
-import { Table, TableIndex, TableForeignKey } from 'typeorm';
-
-import { MigrationInterface, QueryRunner } from 'typeorm';
+import { Table, TableIndex, TableForeignKey, MigrationInterface, QueryRunner } from 'typeorm';
 
 /**
  * Directiva 21 — Tabla Maestra de Planillas (Calendario de Nómina).

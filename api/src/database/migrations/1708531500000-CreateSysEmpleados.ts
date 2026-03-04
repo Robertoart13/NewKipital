@@ -1,6 +1,4 @@
-import { Table, TableIndex, TableForeignKey } from 'typeorm';
-
-import { MigrationInterface, QueryRunner } from 'typeorm';
+import { Table, TableIndex, TableForeignKey, MigrationInterface, QueryRunner } from 'typeorm';
 
 /**
  * Directiva 16 — sys_empleados (registro laboral de RRHH).

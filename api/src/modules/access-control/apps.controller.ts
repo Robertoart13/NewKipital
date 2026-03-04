@@ -14,6 +14,7 @@ import { RequirePermissions } from '../../common/decorators/require-permissions.
 import { CacheResponseInterceptor } from '../../common/interceptors/cache-response.interceptor';
 
 import { AppsService } from './apps.service';
+
 import type { CreateAppDto } from './dto/create-app.dto';
 
 @CacheScope('apps')

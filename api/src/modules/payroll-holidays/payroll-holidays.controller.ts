@@ -16,9 +16,10 @@ import { Public } from '../../common/decorators/public.decorator';
 import { RequirePermissions } from '../../common/decorators/require-permissions.decorator';
 import { CacheResponseInterceptor } from '../../common/interceptors/cache-response.interceptor';
 
+import { PayrollHolidaysService } from './payroll-holidays.service';
+
 import type { CreatePayrollHolidayDto } from './dto/create-payroll-holiday.dto';
 import type { UpdatePayrollHolidayDto } from './dto/update-payroll-holiday.dto';
-import { PayrollHolidaysService } from './payroll-holidays.service';
 
 @CacheScope('payroll-holidays')
 @UseInterceptors(CacheResponseInterceptor)

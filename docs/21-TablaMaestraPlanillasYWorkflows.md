@@ -168,6 +168,8 @@ Dispara **EmployeeMovedWorkflow**.
 
 **4.4 Regla de fecha efectiva:** Traslado **solo al inicio de periodo**. No se permite mitad de periodo.
 
+**4.4.1 Politica de continuidad:** Por defecto es **continuidad**. Liquidacion solo aplica en escenarios de **renuncia/despido**.
+
 **4.5 Acciones pendientes bloqueantes:** Definir lista (ej. licencias/incapacidades/aumentos pendientes). Recurrentes de ley no bloquean.
 
 **4.6 Política por estado (acordada):**

@@ -1,10 +1,11 @@
 import { Body, Controller, Get, Param, ParseIntPipe, Post, Query } from '@nestjs/common';
 
 import { RequirePermissions } from '../../common/decorators/require-permissions.decorator';
+import { AppCacheService } from '../../common/services/app-cache.service';
+
+import { OpsService } from './ops.service';
 
 import type { ListQueueJobsDto, RequeueJobDto } from './dto/list-queue-jobs.dto';
-import { OpsService } from './ops.service';
-import { AppCacheService } from '../../common/services/app-cache.service';
 
 @Controller('ops/queues')
 export class OpsController {

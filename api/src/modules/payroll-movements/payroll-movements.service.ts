@@ -5,19 +5,19 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
 
 import { PersonalActionType } from '../accounting-accounts/entities/personal-action-type.entity';
 import { OrgClass } from '../classes/entities/class.entity';
 import { Company } from '../companies/entities/company.entity';
+import { AuditOutboxService } from '../integration/audit-outbox.service';
 import { PayrollArticle } from '../payroll-articles/entities/payroll-article.entity';
 import { OrgProject } from '../projects/entities/project.entity';
 
 import { PayrollMovement } from './entities/payroll-movement.entity';
 
-import { AuditOutboxService } from '../integration/audit-outbox.service';
 import type { CreatePayrollMovementDto } from './dto/create-payroll-movement.dto';
 import type { UpdatePayrollMovementDto } from './dto/update-payroll-movement.dto';
-import { Repository } from 'typeorm';
 
 @Injectable()
 export class PayrollMovementsService {

@@ -28,6 +28,7 @@ import { RequirePermissions } from '../../common/decorators/require-permissions.
 import { CacheResponseInterceptor } from '../../common/interceptors/cache-response.interceptor';
 
 import { CompaniesService } from './companies.service';
+
 import type { CreateCompanyDto } from './dto/create-company.dto';
 import type { UpdateCompanyDto } from './dto/update-company.dto';
 import type { Response } from 'express';

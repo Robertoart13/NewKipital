@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
+import { EntityManager, Repository } from 'typeorm';
 
 import {
   PERSONAL_ACTION_INVALIDATED_BY,
@@ -7,8 +8,6 @@ import {
   type PersonalActionInvalidationReasonCode,
 } from './constants/personal-action-invalidation.constants';
 import { PersonalAction, PersonalActionEstado } from './entities/personal-action.entity';
-
-import { EntityManager, Repository } from 'typeorm';
 
 interface AutoInvalidationOptions {
   manager?: EntityManager;

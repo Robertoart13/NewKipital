@@ -1,5 +1,7 @@
 ﻿import { Injectable, Logger, ConflictException } from '@nestjs/common';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import * as bcrypt from 'bcrypt';
+import { DataSource } from 'typeorm';
 
 import { DOMAIN_EVENTS } from '../../common/events/event-names';
 import { EmployeeSensitiveDataService } from '../../common/services/employee-sensitive-data.service';
@@ -19,12 +21,9 @@ import {
   VacationMovementType,
 } from '../../modules/employees/entities/employee-vacation-ledger.entity';
 import { Employee, MonedaSalarioEmpleado } from '../../modules/employees/entities/employee.entity';
-
-import { EventEmitter2 } from '@nestjs/event-emitter'; // eslint-disable-line @typescript-eslint/consistent-type-imports
-import { DataSource } from 'typeorm'; // eslint-disable-line @typescript-eslint/consistent-type-imports
+import { WorkflowResult } from '../common/workflow.interface';
 
 import type { CreateEmployeeDto } from '../../modules/employees/dto/create-employee.dto';
-import { WorkflowResult } from '../common/workflow.interface';
 
 export interface EmployeeCreationResult {
   employee: Employee;

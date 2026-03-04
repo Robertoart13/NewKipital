@@ -6,7 +6,9 @@ import {
   BadRequestException,
   ForbiddenException,
 } from '@nestjs/common';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import { InjectRepository } from '@nestjs/typeorm';
+import { DataSource, EntityManager, Repository } from 'typeorm';
 
 import { DOMAIN_EVENTS } from '../../common/events/event-names';
 import { UserCompany } from '../access-control/entities/user-company.entity';
@@ -14,11 +16,15 @@ import {
   EmployeeAguinaldoProvision,
   EstadoProvisionAguinaldoEmpleado,
 } from '../employees/entities/employee-aguinaldo-provision.entity';
+import { EmployeeVacationService } from '../employees/services/employee-vacation.service';
+import { AuditOutboxService } from '../integration/audit-outbox.service';
+import { DomainEventsService } from '../integration/domain-events.service';
 import {
   PersonalAction,
   PersonalActionEstado,
   PERSONAL_ACTION_APPROVED_STATES,
 } from '../personal-actions/entities/personal-action.entity';
+import { PersonalActionAutoInvalidationService } from '../personal-actions/personal-action-auto-invalidation.service';
 
 import {
   PayrollCalendar,
@@ -35,15 +41,8 @@ import { PayrollPlanillaSnapshotJson } from './entities/payroll-planilla-snapsho
 import { PayrollResult } from './entities/payroll-result.entity';
 import { PayrollSocialCharge } from './entities/payroll-social-charge.entity';
 
-import { EventEmitter2 } from '@nestjs/event-emitter'; // eslint-disable-line @typescript-eslint/consistent-type-imports
-import { DataSource, EntityManager, Repository } from 'typeorm'; // eslint-disable-line @typescript-eslint/consistent-type-imports
-
 import type { CreatePayrollDto } from './dto/create-payroll.dto';
 import type { UpdatePayrollDto } from './dto/update-payroll.dto';
-import { EmployeeVacationService } from '../employees/services/employee-vacation.service';
-import { AuditOutboxService } from '../integration/audit-outbox.service';
-import { DomainEventsService } from '../integration/domain-events.service';
-import { PersonalActionAutoInvalidationService } from '../personal-actions/personal-action-auto-invalidation.service';
 
 @Injectable()
 export class PayrollService {

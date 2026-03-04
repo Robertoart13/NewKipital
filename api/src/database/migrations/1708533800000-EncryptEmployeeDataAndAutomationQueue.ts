@@ -1,6 +1,4 @@
-import { Table, TableIndex } from 'typeorm';
-
-import { MigrationInterface, QueryRunner } from 'typeorm';
+import { Table, TableIndex, MigrationInterface, QueryRunner } from 'typeorm';
 
 export class EncryptEmployeeDataAndAutomationQueue1708533800000 implements MigrationInterface {
   public async up(queryRunner: QueryRunner): Promise<void> {

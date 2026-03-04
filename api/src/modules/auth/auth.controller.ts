@@ -12,6 +12,7 @@ import {
   Logger,
   ForbiddenException,
 } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { IsEmail, IsString, MinLength } from 'class-validator';
 
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
@@ -29,16 +30,16 @@ import {
   getCsrfCookieOptions,
   getRefreshCookieOptions,
 } from '../../config/cookie.config';
+import { AuthzRealtimeService } from '../authz/authz-realtime.service';
+import { AuthzVersionService } from '../authz/authz-version.service';
+import { DomainEventsService } from '../integration/domain-events.service';
 
 import { AuthAuditService } from './auth-audit.service';
 import { AuthRateLimitService } from './auth-rate-limit.service';
 import { AuthService } from './auth.service';
 import { MicrosoftAuthService } from './microsoft-auth.service';
 import { UsersService } from './users.service';
-import { AuthzRealtimeService } from '../authz/authz-realtime.service';
-import { AuthzVersionService } from '../authz/authz-version.service';
-import { DomainEventsService } from '../integration/domain-events.service';
-import { ConfigService } from '@nestjs/config';
+
 import type { Request, Response } from 'express';
 
 class LoginDto {

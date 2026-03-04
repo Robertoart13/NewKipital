@@ -7,7 +7,6 @@ import {
   ForbiddenException,
   InternalServerErrorException,
 } from '@nestjs/common';
-
 import { ConfigService } from '@nestjs/config';
 
 interface MicrosoftTokenResponse {

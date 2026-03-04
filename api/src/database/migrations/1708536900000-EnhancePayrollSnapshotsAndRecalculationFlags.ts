@@ -1,6 +1,4 @@
-import { TableIndex } from 'typeorm';
-
-import { MigrationInterface, QueryRunner } from 'typeorm';
+import { TableIndex, MigrationInterface, QueryRunner } from 'typeorm';
 
 /**
  * Dia 3 - Snapshot enriquecido + flags de recalculo en planilla.

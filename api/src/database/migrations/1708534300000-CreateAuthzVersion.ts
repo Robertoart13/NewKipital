@@ -1,6 +1,4 @@
-import { Table } from 'typeorm';
-
-import { MigrationInterface, QueryRunner } from 'typeorm';
+import { Table, MigrationInterface, QueryRunner } from 'typeorm';
 
 export class CreateAuthzVersion1708534300000 implements MigrationInterface {
   public async up(queryRunner: QueryRunner): Promise<void> {

@@ -1,6 +1,4 @@
-import { Table, TableIndex, TableForeignKey } from 'typeorm';
-
-import { MigrationInterface, QueryRunner } from 'typeorm';
+import { Table, TableIndex, TableForeignKey, MigrationInterface, QueryRunner } from 'typeorm';
 
 /**
  * Crea tablas: nom_planillas, acc_acciones_personal.

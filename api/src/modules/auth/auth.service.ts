@@ -1,9 +1,11 @@
 import { randomUUID } from 'crypto';
 
 import { ForbiddenException, Injectable, Logger, UnauthorizedException } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
+import { JwtService } from '@nestjs/jwt';
 import { InjectRepository } from '@nestjs/typeorm';
 import * as bcrypt from 'bcrypt';
-import { In, IsNull, MoreThan, QueryFailedError } from 'typeorm';
+import { In, IsNull, MoreThan, QueryFailedError, Repository } from 'typeorm';
 
 import { App } from '../access-control/entities/app.entity';
 import { Permission } from '../access-control/entities/permission.entity';
@@ -16,18 +18,15 @@ import { UserPermissionOverride } from '../access-control/entities/user-permissi
 import { UserRoleExclusion } from '../access-control/entities/user-role-exclusion.entity';
 import { UserRoleGlobal } from '../access-control/entities/user-role-global.entity';
 import { UserRole } from '../access-control/entities/user-role.entity';
+import { AuthzVersionService } from '../authz/authz-version.service';
+import { PermissionsCacheService } from '../authz/permissions-cache.service';
 import { Company } from '../companies/entities/company.entity';
 
 import { RefreshSession } from './entities/refresh-session.entity';
+import { UsersService } from './users.service';
 
 import type { User } from './entities/user.entity';
-import { UsersService } from './users.service';
 import type { TokenPayload } from '../../common/strategies/jwt.strategy';
-import { AuthzVersionService } from '../authz/authz-version.service';
-import { PermissionsCacheService } from '../authz/permissions-cache.service';
-import { ConfigService } from '@nestjs/config';
-import { JwtService } from '@nestjs/jwt';
-import { Repository } from 'typeorm';
 
 export interface SessionData {
   user: {

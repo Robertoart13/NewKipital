@@ -1,7 +1,8 @@
 ﻿import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { In } from 'typeorm';
+import { In, EntityManager, Repository } from 'typeorm';
 
+import { EmployeeSensitiveDataService } from '../../../common/services/employee-sensitive-data.service';
 import {
   PERSONAL_ACTION_APPROVED_STATES,
   PersonalAction,
@@ -13,10 +14,6 @@ import {
 } from '../entities/employee-vacation-ledger.entity';
 import { EmployeeVacationMonetaryProvision } from '../entities/employee-vacation-monetary-provision.entity';
 import { Employee } from '../entities/employee.entity';
-
-import { EntityManager, Repository } from 'typeorm';
-
-import { EmployeeSensitiveDataService } from '../../../common/services/employee-sensitive-data.service';
 
 const VACATION_ACTION_TYPES = new Set(['vacaciones', 'vacacion', 'vacation']);
 

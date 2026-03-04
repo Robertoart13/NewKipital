@@ -1,4 +1,5 @@
 import { ConfigService } from '@nestjs/config';
+
 import type { CookieOptions } from 'express';
 
 export const COOKIE_NAME = 'platform_token';

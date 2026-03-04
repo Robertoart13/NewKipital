@@ -248,6 +248,7 @@ Al trasladar un empleado de empresa origen a empresa destino:
 2. Traslado **solo al inicio de periodo** (no se permite mitad de periodo).
 3. **Acciones pendientes bloqueantes**: se definen por politica (ej. licencias/incapacidades/aumentos pendientes).
 4. Acciones recurrentes de ley (CCSS/IVM) **no bloquean**.
+5. **Politica de continuidad:** por defecto continuidad. Liquidacion solo aplica en escenarios de renuncia/despido.
 5. Politica por estado (acordada):
    - **Se trasladan:** DRAFT, PENDING_SUPERVISOR, PENDING_RRHH, APPROVED.
    - **No se trasladan:** CONSUMED, INVALIDATED, CANCELLED, EXPIRED, REJECTED.
@@ -269,8 +270,12 @@ Backend:
 Frontend:
 
 1. Vista dedicada para traslado masivo (empresa origen, empresa destino, seleccion de empleados).
-2. Opcion explicita de "trasladar saldo de vacaciones".
-3. Mensajeria clara y resumen por empleado.
+2. Selector de **tipo de periodo de pago** (filtra empleados elegibles por periodo).
+3. Opcion "Aplicar para todos los empleados": si esta activa, un solo destino; si no, select por empleado.
+4. Validacion por empleado al seleccionar destino (check verde/rojo + motivos).
+5. Simulacion previa obligatoria con resumen por empleado.
+6. Opcion explicita de "trasladar saldo de vacaciones".
+7. Mensajeria clara y resumen por empleado.
 
 Auditoria:
 

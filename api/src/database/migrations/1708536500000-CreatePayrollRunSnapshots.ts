@@ -1,6 +1,4 @@
-import { Table, TableForeignKey, TableIndex } from 'typeorm';
-
-import { MigrationInterface, QueryRunner } from 'typeorm';
+import { Table, TableForeignKey, TableIndex, MigrationInterface, QueryRunner } from 'typeorm';
 
 /**
  * Directiva 40 (sin NetSuite) - Snapshot y resultados de corrida de planilla.

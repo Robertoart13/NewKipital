@@ -1,6 +1,4 @@
-import { TableIndex } from 'typeorm';
-
-import { MigrationInterface, QueryRunner } from 'typeorm';
+import { TableIndex, MigrationInterface, QueryRunner } from 'typeorm';
 
 /**
  * Fase 1 - Acciones de Personal + Planilla (compatibilidad incremental).

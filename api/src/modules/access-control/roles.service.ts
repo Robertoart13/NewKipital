@@ -5,7 +5,11 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { In } from 'typeorm';
+import { In, Repository } from 'typeorm';
+
+import { AuthzRealtimeService } from '../authz/authz-realtime.service';
+import { AuthzVersionService } from '../authz/authz-version.service';
+import { AuditOutboxService } from '../integration/audit-outbox.service';
 
 import { App } from './entities/app.entity';
 import { Permission } from './entities/permission.entity';
@@ -17,10 +21,6 @@ import { UserRole } from './entities/user-role.entity';
 import type { AssignRolePermissionDto } from './dto/assign-role-permission.dto';
 import type { CreateRoleDto } from './dto/create-role.dto';
 import type { UpdateRoleDto } from './dto/update-role.dto';
-import { AuthzRealtimeService } from '../authz/authz-realtime.service';
-import { AuthzVersionService } from '../authz/authz-version.service';
-import { AuditOutboxService } from '../integration/audit-outbox.service';
-import { Repository } from 'typeorm';
 
 @Injectable()
 export class RolesService {

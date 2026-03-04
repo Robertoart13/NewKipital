@@ -1,5 +1,4 @@
 import * as bcrypt from 'bcrypt';
-
 import { MigrationInterface, QueryRunner } from 'typeorm';
 
 /**

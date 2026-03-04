@@ -1,4 +1,4 @@
-import { BadRequestException, ValidationPipe } from '@nestjs/common';
+import { BadRequestException, ValidationPipe, ValidationError } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { NestFactory } from '@nestjs/core';
 import cookieParser from 'cookie-parser';
@@ -7,8 +7,6 @@ import helmet from 'helmet';
 import { AppModule } from './app.module';
 import { GlobalExceptionFilter } from './common/filters/http-exception.filter';
 import { LoggingInterceptor } from './common/interceptors/logging.interceptor';
-
-import { ValidationError } from '@nestjs/common';
 
 function flattenValidationErrors(errors: ValidationError[]): string[] {
   const result: string[] = [];

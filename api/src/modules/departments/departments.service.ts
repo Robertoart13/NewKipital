@@ -1,12 +1,12 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
 
 import { Department } from '../employees/entities/department.entity';
-
 import { AuditOutboxService } from '../integration/audit-outbox.service';
+
 import type { CreateDepartmentDto } from './dto/create-department.dto';
 import type { UpdateDepartmentDto } from './dto/update-department.dto';
-import { Repository } from 'typeorm';
 
 @Injectable()
 export class DepartmentsService {

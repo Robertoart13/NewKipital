@@ -19,11 +19,12 @@ import { Public } from '../../common/decorators/public.decorator';
 import { RequirePermissions } from '../../common/decorators/require-permissions.decorator';
 import { CacheResponseInterceptor } from '../../common/interceptors/cache-response.interceptor';
 
+import { RolesService } from './roles.service';
+
 import type { AssignRolePermissionDto } from './dto/assign-role-permission.dto';
 import type { CreateRoleDto } from './dto/create-role.dto';
 import type { ReplaceRolePermissionsDto } from './dto/replace-role-permissions.dto';
 import type { UpdateRoleDto } from './dto/update-role.dto';
-import { RolesService } from './roles.service';
 
 @CacheScope('roles')
 @UseInterceptors(CacheResponseInterceptor)

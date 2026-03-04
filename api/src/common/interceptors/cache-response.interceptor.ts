@@ -1,5 +1,6 @@
-import { Injectable, Logger } from '@nestjs/common';
-import { defer, from, lastValueFrom, tap } from 'rxjs';
+import { Injectable, Logger, CallHandler, ExecutionContext, NestInterceptor } from '@nestjs/common';
+import { Reflector } from '@nestjs/core';
+import { defer, from, lastValueFrom, tap, Observable } from 'rxjs';
 
 import { CACHE_QUERY_ALLOWLIST, CACHE_USER_SCOPED } from '../constants/cache-keys.constants';
 import {
@@ -7,12 +8,9 @@ import {
   CACHE_TTL_METADATA,
   DEFAULT_CACHE_TTL_MS,
 } from '../constants/cache.constants';
-
 import { AppCacheService } from '../services/app-cache.service';
-import { CallHandler, ExecutionContext, NestInterceptor } from '@nestjs/common';
-import { Reflector } from '@nestjs/core';
+
 import type { Response } from 'express';
-import { Observable } from 'rxjs';
 
 type AuthUserPayload = {
   userId?: number;

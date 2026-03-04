@@ -17,9 +17,10 @@ import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { RequirePermissions } from '../../common/decorators/require-permissions.decorator';
 import { CacheResponseInterceptor } from '../../common/interceptors/cache-response.interceptor';
 
+import { PermissionsService } from './permissions.service';
+
 import type { CreatePermissionDto } from './dto/create-permission.dto';
 import type { UpdatePermissionDto } from './dto/update-permission.dto';
-import { PermissionsService } from './permissions.service';
 
 @CacheScope('permissions')
 @UseInterceptors(CacheResponseInterceptor)

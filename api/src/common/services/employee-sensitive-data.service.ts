@@ -1,7 +1,6 @@
 import { createCipheriv, createDecipheriv, createHash, createHmac, randomBytes } from 'crypto';
 
 import { Injectable } from '@nestjs/common';
-
 import { ConfigService } from '@nestjs/config';
 
 const ENCRYPTION_PREFIX = 'enc:v1';

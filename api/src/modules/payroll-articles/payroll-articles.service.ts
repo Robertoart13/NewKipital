@@ -5,19 +5,18 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { In } from 'typeorm';
+import { In, Repository } from 'typeorm';
 
 import { AccountingAccount } from '../accounting-accounts/entities/accounting-account.entity';
 import { PersonalActionType } from '../accounting-accounts/entities/personal-action-type.entity';
 import { Company } from '../companies/entities/company.entity';
+import { AuditOutboxService } from '../integration/audit-outbox.service';
 
 import { PayrollArticleType } from './entities/payroll-article-type.entity';
 import { PayrollArticle } from './entities/payroll-article.entity';
 
 import type { CreatePayrollArticleDto } from './dto/create-payroll-article.dto';
 import type { UpdatePayrollArticleDto } from './dto/update-payroll-article.dto';
-import { AuditOutboxService } from '../integration/audit-outbox.service';
-import { Repository } from 'typeorm';
 
 type AllowedAccountMapping = {
   id: number;
