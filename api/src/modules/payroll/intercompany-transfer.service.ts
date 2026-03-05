@@ -262,30 +262,12 @@ export class IntercompanyTransferService {
       throw new BadRequestException('Fecha efectiva inválida.');
     }
 
-    const destinationCalendars = await this.findCalendarsForRange(
-      destinationCompanyId,
-      effectiveDate,
-      effectiveDate,
-      employee.idPeriodoPago ?? undefined,
-      employee.monedaSalario ?? undefined,
-    );
-
-    const effectiveCalendar = destinationCalendars.find(
-      (calendar) => this.toDateKey(calendar.fechaInicioPeriodo) === effectiveKey,
-    );
-    if (!effectiveCalendar) {
-      blockingReasons.push({
-        code: 'SIN_PERIODO_DESTINO',
-        message: 'La fecha efectiva debe ser inicio de periodo y existir en la empresa destino.',
-      });
-    }
-
     const blockingPayrolls = await this.findBlockingPayrolls(employee.idEmpresa, effectiveDate);
     if (blockingPayrolls.length > 0) {
       blockingReasons.push({
         code: 'PLANILLAS_ACTIVAS_ORIGEN',
         message:
-          'El empleado tiene planillas activas en la empresa origen para el periodo de traslado.',
+          'Planillas activas en empresa origen. Debe cerrar/terminar esas planillas antes del traslado.',
         metadata: { planillas: blockingPayrolls },
       });
     }
@@ -303,7 +285,8 @@ export class IntercompanyTransferService {
     if (blockingActions.length > 0) {
       blockingReasons.push({
         code: 'ACCIONES_BLOQUEANTES',
-        message: 'El empleado tiene acciones de personal pendientes bloqueantes.',
+        message:
+          'Acciones bloqueantes pendientes. Apruebe/rechace/cancele esas acciones antes de trasladar.',
         metadata: {
           acciones: blockingActions.map((action) => ({
             id: action.id,
@@ -320,14 +303,20 @@ export class IntercompanyTransferService {
       .map((plan) => plan.idAccion);
 
     const lineDateMap = await this.collectLineDatesByAction(actionIdsToMove);
-    const destinationCalendarsForActions = await this.findCalendarsForRange(
-      destinationCompanyId,
-      effectiveDate,
-      this.getMaxActionDate(actionPlans, lineDateMap) ?? effectiveDate,
-      employee.idPeriodoPago ?? undefined,
-      employee.monedaSalario ?? undefined,
-    );
+    const actionMinDate = this.getMinActionDate(actionPlans, lineDateMap);
+    const actionMaxDate = this.getMaxActionDate(actionPlans, lineDateMap);
+    const destinationCalendarsForActions =
+      actionMinDate && actionMaxDate
+        ? await this.findCalendarsForRange(
+            destinationCompanyId,
+            actionMinDate,
+            actionMaxDate,
+            employee.idPeriodoPago ?? undefined,
+            employee.monedaSalario ?? undefined,
+          )
+        : [];
 
+    const missingDestinationDates = new Set<string>();
     for (const plan of actionPlans) {
       if (!plan.shouldMove) {
         if (!plan.fechaEfecto && !plan.fechaInicioEfecto && !plan.fechaFinEfecto) {
@@ -347,19 +336,16 @@ export class IntercompanyTransferService {
         });
         continue;
       }
-      const requiredDates = this.getRequiredDatesForAction(
-        plan,
-        lineDateMap.get(plan.idAccion) ?? [],
-        effectiveDate,
-      );
+      const requiredDates = this.getRequiredDatesForAction(plan, lineDateMap.get(plan.idAccion) ?? []);
       const assignmentResults = requiredDates.map((date) =>
         this.resolveCalendarForDate(date, destinationCalendarsForActions),
       );
       if (assignmentResults.some((calendar) => !calendar)) {
-        blockingReasons.push({
-          code: 'SIN_PERIODO_DESTINO',
-          message: 'No existe planilla destino para una o más fechas del traslado.',
-          metadata: { idAccion: plan.idAccion },
+        requiredDates.forEach((date, index) => {
+          if (!assignmentResults[index]) {
+            const key = this.toDateKey(date);
+            if (key) missingDestinationDates.add(key);
+          }
         });
       } else {
         plan.calendarAssignments = assignmentResults.map((calendar, index) => {
@@ -378,6 +364,15 @@ export class IntercompanyTransferService {
           metadata: { idAccion: plan.idAccion },
         });
       }
+    }
+
+    if (missingDestinationDates.size > 0) {
+      const missingDates = Array.from(missingDestinationDates);
+      blockingReasons.push({
+        code: 'SIN_PERIODO_DESTINO',
+        message: this.formatMissingDestinationDatesMessage(missingDates),
+        metadata: { fechas: missingDates },
+      });
     }
 
     const aguinaldoProvision = await this.calculateAguinaldoProvisionSnapshot(
@@ -874,18 +869,50 @@ export class IntercompanyTransferService {
   private getRequiredDatesForAction(
     plan: ActionTransferPlan,
     lineDates: Array<Date | null>,
-    effectiveDate: Date,
   ): Date[] {
     if (lineDates.length > 0) {
-      return lineDates
-        .filter((date): date is Date => date instanceof Date)
-        .filter((date) => date >= effectiveDate);
+      return lineDates.filter((date): date is Date => date instanceof Date);
     }
     const dates: Date[] = [];
     if (plan.fechaEfecto) dates.push(plan.fechaEfecto);
     if (plan.fechaInicioEfecto) dates.push(plan.fechaInicioEfecto);
-    if (plan.requiresSplit) dates.push(effectiveDate);
+    if (plan.fechaFinEfecto) dates.push(plan.fechaFinEfecto);
     return dates;
+  }
+
+  private getMinActionDate(
+    actionPlans: ActionTransferPlan[],
+    lineDatesMap?: Map<number, Array<Date | null>>,
+  ): Date | null {
+    const dates: Date[] = [];
+    for (const plan of actionPlans) {
+      if (plan.fechaInicioEfecto) dates.push(plan.fechaInicioEfecto);
+      if (plan.fechaEfecto) dates.push(plan.fechaEfecto);
+      if (plan.fechaFinEfecto) dates.push(plan.fechaFinEfecto);
+      const lineDates = (lineDatesMap?.get(plan.idAccion) ?? []).filter(
+        (date): date is Date => date instanceof Date,
+      );
+      dates.push(...lineDates);
+    }
+    if (!dates.length) return null;
+    return dates.reduce((min, date) => (date < min ? date : min));
+  }
+
+  /**
+   * Mensaje UX para fechas sin planilla destino.
+   * Se limita el detalle para evitar listas extensas en UI.
+   */
+  private formatMissingDestinationDatesMessage(missingDates: string[]): string {
+    if (!missingDates.length) {
+      return 'No existe planilla destino para fechas del traslado.';
+    }
+    const uniqueSorted = Array.from(new Set(missingDates)).sort();
+    const maxPreview = 5;
+    const preview = uniqueSorted.slice(0, maxPreview);
+    const remaining = uniqueSorted.length - preview.length;
+    const previewText = preview.join(', ');
+    const extraText = remaining > 0 ? ` y ${remaining} fechas más` : '';
+    return `Faltan planillas en empresa destino para ${uniqueSorted.length} fechas de acciones: ${previewText}${extraText}.`;
   }
 
   private getMaxActionDate(
@@ -1115,7 +1142,7 @@ export class IntercompanyTransferService {
           ON p.id_calendario_nomina = r.id_nomina
         WHERE r.id_empleado = ?
           AND p.id_empresa = ?
-          AND p.estado IN (?, ?)
+          AND p.estado_calendario_nomina IN (?, ?)
           AND p.fecha_fin_periodo <= ?
       `,
       [

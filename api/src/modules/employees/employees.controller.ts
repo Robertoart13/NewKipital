@@ -20,8 +20,8 @@ import { CacheResponseInterceptor } from '../../common/interceptors/cache-respon
 
 import { EmployeesService } from './employees.service';
 
-import type { CreateEmployeeDto } from './dto/create-employee.dto';
-import type { UpdateEmployeeDto } from './dto/update-employee.dto';
+import { CreateEmployeeDto } from './dto/create-employee.dto';
+import { UpdateEmployeeDto } from './dto/update-employee.dto';
 
 @CacheScope('employees')
 @UseInterceptors(CacheResponseInterceptor)

@@ -151,8 +151,16 @@ export function EmployeeEditModal({ employeeId, open, onClose, onSuccess }: Empl
   const moneyField = useMoneyFieldFormatter(EMPLOYEE_MONEY_MAX_DIGITS);
   const { data: supervisors = [] } = useSupervisors();
 
+  const resolvedFormValues = useMemo(() => {
+    if (formValues && Object.keys(formValues).length > 0) return formValues;
+    // Al abrir el modal, Form.useWatch puede no emitir hasta interacción del usuario.
+    // Usamos los valores del empleado como fallback para habilitar el botón desde el inicio.
+    if (employee) return mapEmployeeToFormValues(employee);
+    return {};
+  }, [formValues, employee]);
+
   const canSubmit = useMemo(() => {
-    const v = formValues ?? {};
+    const v = resolvedFormValues ?? {};
     const empresaValue = v.idEmpresa;
     const departamentoValue = v.idDepartamentoCambio ?? v.idDepartamento;
     const puestoValue = v.idPuestoCambio ?? v.idPuesto;
@@ -169,7 +177,7 @@ export function EmployeeEditModal({ employeeId, open, onClose, onSuccess }: Empl
       puestoValue &&
       periodoValue
     );
-  }, [formValues]);
+  }, [resolvedFormValues]);
 
   useEffect(() => {
     if (!open) form.resetFields();

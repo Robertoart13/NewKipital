@@ -185,6 +185,31 @@ Probar con Postman/Insomnia (o curl) cada endpoint. Todos requieren cookie de se
 
 **Si algún test falla → arreglar antes de seguir al frontend.**
 
+### A.1.1 — Crear empleado con acceso a KPITAL (sin nombres)
+
+Cuando `crearAccesoKpital=true` en `POST /api/employees`, el backend ejecuta el flujo transaccional completo:
+
+1. **Usuario (`sys_usuarios`)**  
+   - Se crea el usuario con `email` normalizado (lowercase + trim).  
+   - `estado_usuario = 1` (activo).
+
+2. **Acceso a app (`sys_usuario_app`)**  
+   - Se asigna `id_app` correspondiente a `kpital`.
+
+3. **Empresa de trabajo (`sys_usuario_empresa`)**  
+   - Se asigna la empresa seleccionada en la creación del empleado.
+
+4. **Rol KPITAL (`sys_usuario_rol`)**  
+   - Se asigna `idRolKpital` con `id_app=kpital` y `id_empresa` correspondiente.
+   - Se asigna ademÃ¡s el rol global en `sys_usuario_rol_global` para reflejarse en GestiÃ³n de Usuarios.
+
+5. **Empleado (`sys_empleados`)**  
+   - Se crea el empleado con `id_usuario` asociado y datos sensibles encriptados.
+
+**Nota de visibilidad en Gestión de Usuarios:**  
+La vista consulta `GET /api/users` con cache; al crear un empleado con acceso digital se invalida ese cache y el frontend dispara un refresh automático, por lo que el usuario debe aparecer de inmediato.  
+Esta visibilidad no depende del nombre del empleado, sino de la existencia en `sys_usuarios` y su asignación a `kpital` + empresa.
+
 ### A.2 — Endpoints de Catálogos (Necesarios para Formularios)
 
 El formulario de crear/editar empleado necesita llenar selects con datos reales. Verificar o crear:

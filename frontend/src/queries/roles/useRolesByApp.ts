@@ -4,10 +4,10 @@ import { fetchRolesByApp } from '../../api/securityConfig';
 
 import { roleKeys } from './keys';
 
-export function useRolesByApp(appCode: 'timewise' | 'kpital' | null) {
+export function useRolesByApp(appCode: 'timewise' | 'kpital' | null, enabled = true) {
   return useQuery({
     queryKey: roleKeys.byApp(appCode ?? 'timewise'),
     queryFn: () => fetchRolesByApp(appCode!),
-    enabled: !!appCode,
+    enabled: !!appCode && enabled,
   });
 }

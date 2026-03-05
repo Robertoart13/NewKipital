@@ -1,4 +1,4 @@
-ï»¿import {
+import {
   AppstoreOutlined,
   ArrowLeftOutlined,
   DownOutlined,
@@ -51,6 +51,7 @@ import {
 import { useAppSelector } from '../../../../store/hooks';
 import { hasPermission } from '../../../../store/selectors/permissions.selectors';
 import styles from '../../configuration/UsersManagementPage.module.css';
+import { formatEmployeeLabel } from '../shared/employeeLabel';
 
 import {
   HoursExtraTransactionModal,
@@ -154,7 +155,7 @@ function getPaneValue(row: OvertimeUiRow, key: PaneKey, companies: Array<{ id: n
   if (key === 'movimiento') return (row.movimientoResumen ?? '').trim() || '--';
   if (key === 'remuneracion')
     return row.remuneracionResumen === 'SI'
-      ? 'SÃ­'
+      ? 'Sí'
       : row.remuneracionResumen === 'NO'
         ? 'No'
         : row.remuneracionResumen === 'MIXTA'
@@ -503,16 +504,11 @@ export function HoursExtrasPage() {
   const rowsWithEmployee = useMemo(() => {
     const map = new Map<number, string>();
     employees.forEach((employee) => {
-      map.set(
-        employee.id,
-        `${[employee.apellido1, employee.apellido2, employee.nombre]
-          .filter((part) => typeof part === 'string' && part.trim().length > 0)
-          .join(' ')}`,
-      );
+      map.set(employee.id, formatEmployeeLabel(employee, canViewEmployeeSensitive));
     });
 
     return rows.map((row) => ({ ...row, employeeLabel: map.get(row.idEmpleado) }));
-  }, [rows, employees]);
+  }, [rows, employees, canViewEmployeeSensitive]);
 
   const matchesGlobalSearch = useCallback(
     (row: OvertimeUiRow) => {
@@ -606,7 +602,7 @@ export function HoursExtrasPage() {
         key: 'remuneracionResumen',
         width: 140,
         render: (value: OvertimeUiRow['remuneracionResumen']) => {
-          if (value === 'SI') return <Tag color="green">SÃ­</Tag>;
+          if (value === 'SI') return <Tag color="green">Sí</Tag>;
           if (value === 'NO') return <Tag color="red">No</Tag>;
           if (value === 'MIXTA') return <Tag color="gold">Mixta</Tag>;
           return '--';
@@ -758,7 +754,7 @@ export function HoursExtrasPage() {
           <div className={styles.pageTitleBlock}>
             <h1 className={styles.pageTitle}>horas extra</h1>
             <p className={styles.pageSubtitle}>
-              Gestione horas extra por empresa con lÃ­neas de transacciÃ³n por periodo
+              Gestione horas extra por empresa con líneas de transacción por periodo
             </p>
           </div>
         </div>
@@ -772,8 +768,8 @@ export function HoursExtrasPage() {
                 <AppstoreOutlined className={styles.gestionIcon} />
               </div>
               <div>
-                <h2 className={styles.gestionTitle}>GestiÃ³n de horas extra</h2>
-                <p className={styles.gestionDesc}>Encabezado de acciÃ³n + mÃºltiples lÃ­neas por planilla</p>
+                <h2 className={styles.gestionTitle}>Gestión de horas extra</h2>
+                <p className={styles.gestionDesc}>Encabezado de acción + múltiples líneas por planilla</p>
               </div>
             </Flex>
             <Button
@@ -832,7 +828,11 @@ export function HoursExtrasPage() {
                   value: Number(value),
                   label: meta.text,
                 }))}
-                onChange={(values) => setSelectedEstados((values ?? []).map((item) => Number(item)))}
+                onChange={(values) => {
+                  setSelectedEstados((values ?? []).map((item) => Number(item)));
+                  setPaneSelections((prev) => ({ ...prev, estado: [] }));
+                  setPaneSearch((prev) => ({ ...prev, estado: '' }));
+                }}
               />
               <Button icon={<ReloadOutlined />} onClick={() => void loadRows()}>
                 Refrescar
@@ -1043,3 +1043,4 @@ export function HoursExtrasPage() {
     </div>
   );
 }
+

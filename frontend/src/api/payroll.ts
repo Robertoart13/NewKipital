@@ -43,6 +43,7 @@ export interface PayrollSnapshotSummary {
   empleados: number;
   inputs: number;
   accionesLigadas: number;
+  hasSocialCharges: boolean;
   totalBruto: string;
   totalDeducciones: string;
   totalNeto: string;

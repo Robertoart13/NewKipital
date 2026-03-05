@@ -47,6 +47,7 @@ Aplica a registros:
 
 - `estado_empleado = 1`
 - `id_usuario IS NULL`
+- `email`, `nombre`, `apellido1` existen
 
 Accion automatica:
 
@@ -54,6 +55,12 @@ Accion automatica:
 2. Vincular `sys_empleados.id_usuario`.
 3. Crear `sys_usuario_app` con app TimeWise.
 4. Crear `sys_usuario_rol` con rol `EMPLEADO_TIMEWISE`.
+5. Crear `sys_usuario_empresa` para la empresa del empleado.
+
+Notas:
+
+- No se asigna acceso a KPITAL en este flujo.
+- Requiere app `timewise` activa y rol `EMPLEADO_TIMEWISE` activo.
 
 Si falta configuracion de app/rol default:
 

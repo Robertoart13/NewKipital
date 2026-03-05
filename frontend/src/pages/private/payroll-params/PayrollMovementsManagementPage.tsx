@@ -121,17 +121,20 @@ function isNonNegativeNumeric(raw: string): boolean {
 
 function normalizePayload(values: PayrollMovementFormValues): PayrollMovementPayload {
   const esMontoFijo = Number(values.esMontoFijo) === 1 ? 1 : 0;
+  const nombre = String(values.nombre ?? '').trim();
+  const montoFijo = String(values.montoFijo ?? '0').trim();
+  const porcentaje = String(values.porcentaje ?? '0').trim();
   return {
     idEmpresa: values.idEmpresa!,
-    nombre: values.nombre.trim(),
+    nombre,
     idArticuloNomina: values.idArticuloNomina!,
     idTipoAccionPersonal: values.idTipoAccionPersonal!,
     idClase: values.idClase ?? null,
     idProyecto: values.idProyecto ?? null,
     descripcion: values.descripcion?.trim() || '--',
     esMontoFijo,
-    montoFijo: esMontoFijo === 1 ? values.montoFijo.trim() : '0',
-    porcentaje: esMontoFijo === 1 ? '0' : values.porcentaje.trim(),
+    montoFijo: esMontoFijo === 1 ? montoFijo : '0',
+    porcentaje: esMontoFijo === 1 ? '0' : porcentaje,
     formulaAyuda: values.formulaAyuda?.trim() || '--',
   };
 }
@@ -263,12 +266,12 @@ export function PayrollMovementsManagementPage() {
     [defaultCompanyId, message, selectedCompanyIds, showInactive],
   );
 
-  const loadBaseCatalogs = useCallback(async () => {
+  const loadBaseCatalogs = useCallback(async (includeInactive = false) => {
     setLoadingCatalogs(true);
     try {
       const [actions, classes] = await Promise.all([
-        fetchPayrollMovementPersonalActionTypes(true),
-        fetchPayrollMovementClasses(true),
+        fetchPayrollMovementPersonalActionTypes(includeInactive),
+        fetchPayrollMovementClasses(includeInactive),
       ]);
       setActionTypeOptions(actions);
       setClassOptions(classes);
@@ -282,7 +285,7 @@ export function PayrollMovementsManagementPage() {
   }, [message]);
 
   const loadCompanyCatalogs = useCallback(
-    async (idEmpresa?: number) => {
+    async (idEmpresa?: number, includeInactive = false) => {
       if (!idEmpresa) {
         setArticleOptions([]);
         setProjectOptions([]);
@@ -291,8 +294,8 @@ export function PayrollMovementsManagementPage() {
       setLoadingCompanyCatalogs(true);
       try {
         const [articles, projects] = await Promise.all([
-          fetchPayrollMovementArticles(idEmpresa, true),
-          fetchPayrollMovementProjects(idEmpresa, true),
+          fetchPayrollMovementArticles(idEmpresa, includeInactive),
+          fetchPayrollMovementProjects(idEmpresa, includeInactive),
         ]);
         setArticleOptions(articles);
         setProjectOptions(projects);
@@ -325,9 +328,9 @@ export function PayrollMovementsManagementPage() {
       descripcion: '--',
     });
     setOpenModal(true);
-    void loadBaseCatalogs();
+    void loadBaseCatalogs(false);
     if (defaultCompanyId) {
-      void loadCompanyCatalogs(defaultCompanyId);
+      void loadCompanyCatalogs(defaultCompanyId, false);
     }
   };
 
@@ -357,8 +360,8 @@ export function PayrollMovementsManagementPage() {
     setAuditTrail([]);
     setOpenModal(true);
     applyMovementToForm(row);
-    void loadBaseCatalogs();
-    void loadCompanyCatalogs(row.idEmpresa);
+    void loadBaseCatalogs(true);
+    void loadCompanyCatalogs(row.idEmpresa, true);
     void (async () => {
       setLoadingDetail(true);
       try {
@@ -1101,7 +1104,7 @@ export function PayrollMovementsManagementPage() {
                             disabled={!selectedEmpresa}
                             options={articleOptions.map((article) => ({
                               value: article.id,
-                              label: article.esInactivo === 1 ? `${article.nombre} (Inactivo)` : article.nombre,
+                              label: article.esInactivo === 0 ? `${article.nombre} (Inactivo)` : article.nombre,
                             }))}
                           />
                         </Form.Item>
@@ -1139,7 +1142,7 @@ export function PayrollMovementsManagementPage() {
                             placeholder="Seleccionar"
                             options={classOptions.map((item) => ({
                               value: item.id,
-                              label: item.esInactivo === 1 ? `${item.nombre} (Inactivo)` : item.nombre,
+                              label: item.esInactivo === 0 ? `${item.nombre} (Inactivo)` : item.nombre,
                             }))}
                           />
                         </Form.Item>
@@ -1155,7 +1158,7 @@ export function PayrollMovementsManagementPage() {
                             disabled={!selectedEmpresa}
                             options={projectOptions.map((item) => ({
                               value: item.id,
-                              label: item.esInactivo === 1 ? `${item.nombre} (Inactivo)` : item.nombre,
+                              label: item.esInactivo === 0 ? `${item.nombre} (Inactivo)` : item.nombre,
                             }))}
                           />
                         </Form.Item>

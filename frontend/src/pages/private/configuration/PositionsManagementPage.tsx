@@ -34,7 +34,7 @@ import {
   Tag,
   Tooltip,
 } from 'antd';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 
 import {
@@ -119,6 +119,7 @@ export function PositionsManagementPage() {
   const [openModal, setOpenModal] = useState(false);
   const [editing, setEditing] = useState<PositionListItem | null>(null);
   const editingId = editing?.id ?? null;
+  const detailLoadedIdRef = useRef<number | null>(null);
   const [search, setSearch] = useState('');
   const [pageSize, setPageSize] = useState(10);
   const [activeTab, setActiveTab] = useState('principal');
@@ -236,6 +237,7 @@ export function PositionsManagementPage() {
     setEditing(null);
     setActiveTab('principal');
     form.resetFields();
+    detailLoadedIdRef.current = null;
     setOpenModal(true);
   };
 
@@ -245,6 +247,7 @@ export function PositionsManagementPage() {
     setActiveTab('principal');
     setOpenModal(true);
     applyPositionToForm(row);
+    detailLoadedIdRef.current = null;
   };
 
   const closeModal = () => {
@@ -252,6 +255,7 @@ export function PositionsManagementPage() {
     setEditing(null);
     setAuditTrail([]);
     form.resetFields();
+    detailLoadedIdRef.current = null;
   };
 
   const applyPositionToForm = useCallback(
@@ -280,6 +284,8 @@ export function PositionsManagementPage() {
   useEffect(() => {
     if (!openModal || !editingId) return;
     if (editing) applyPositionToForm(editing);
+    if (detailLoadedIdRef.current === editingId) return;
+    detailLoadedIdRef.current = editingId;
     void loadPositionDetail(editingId);
   }, [openModal, editingId, editing, loadPositionDetail, applyPositionToForm]);
 

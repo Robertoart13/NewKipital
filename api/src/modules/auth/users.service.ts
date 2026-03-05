@@ -8,9 +8,11 @@ import { InjectRepository } from '@nestjs/typeorm';
 import * as bcrypt from 'bcrypt';
 import { In, Repository } from 'typeorm';
 
+import { Company } from '../companies/entities/company.entity';
 import { App } from '../access-control/entities/app.entity';
 import { Role } from '../access-control/entities/role.entity';
 import { UserApp } from '../access-control/entities/user-app.entity';
+import { UserCompany } from '../access-control/entities/user-company.entity';
 import { UserRoleGlobal } from '../access-control/entities/user-role-global.entity';
 import { UserRole } from '../access-control/entities/user-role.entity';
 import { AuditOutboxService } from '../integration/audit-outbox.service';
@@ -28,12 +30,16 @@ export class UsersService {
   constructor(
     @InjectRepository(User)
     private readonly repo: Repository<User>,
+    @InjectRepository(UserCompany)
+    private readonly userCompanyRepo: Repository<UserCompany>,
     @InjectRepository(UserApp)
     private readonly userAppRepo: Repository<UserApp>,
     @InjectRepository(UserRole)
     private readonly userRoleRepo: Repository<UserRole>,
     @InjectRepository(UserRoleGlobal)
     private readonly userRoleGlobalRepo: Repository<UserRoleGlobal>,
+    @InjectRepository(Company)
+    private readonly companyRepo: Repository<Company>,
     @InjectRepository(App)
     private readonly appRepo: Repository<App>,
     @InjectRepository(Role)
@@ -83,6 +89,22 @@ export class UsersService {
     });
 
     const saved = await this.repo.save(user);
+
+    // Regla: al crear un usuario, asignar una empresa por defecto para contexto de trabajo.
+    const defaultCompany = await this.companyRepo.findOne({
+      where: { estado: 1 },
+      order: { id: 'ASC' },
+    });
+    if (defaultCompany) {
+      await this.userCompanyRepo.save(
+        this.userCompanyRepo.create({
+          idUsuario: saved.id,
+          idEmpresa: defaultCompany.id,
+          estado: 1,
+        }),
+      );
+    }
+
     this.auditOutbox.publish({
       modulo: 'users',
       accion: 'create',

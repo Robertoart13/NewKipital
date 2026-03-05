@@ -47,7 +47,8 @@ export class ProjectsService {
       descripcion: dto.descripcion?.trim() || null,
       codigo: dto.codigo.trim(),
       idExterno: dto.idExterno?.trim() || null,
-      esInactivo: 0,
+      // 1 = activo, 0 = inactivo
+      esInactivo: 1,
     });
     const saved = await this.repo.save(entity);
     this.auditOutbox.publish({
@@ -74,9 +75,9 @@ export class ProjectsService {
     }
 
     if (inactiveOnly) {
-      qb.andWhere('p.esInactivo = 1');
-    } else if (!includeInactive) {
       qb.andWhere('p.esInactivo = 0');
+    } else if (!includeInactive) {
+      qb.andWhere('p.esInactivo = 1');
     }
 
     return qb.getMany();
@@ -138,7 +139,8 @@ export class ProjectsService {
   async inactivate(id: number, actorUserId: number): Promise<OrgProject> {
     const found = await this.findOne(id);
     const payloadBefore = this.buildAuditPayload(found);
-    found.esInactivo = 1;
+    // 0 = inactivo
+    found.esInactivo = 0;
     const saved = await this.repo.save(found);
     this.auditOutbox.publish({
       modulo: 'projects',
@@ -156,7 +158,8 @@ export class ProjectsService {
   async reactivate(id: number, actorUserId: number): Promise<OrgProject> {
     const found = await this.findOne(id);
     const payloadBefore = this.buildAuditPayload(found);
-    found.esInactivo = 0;
+    // 1 = activo
+    found.esInactivo = 1;
     const saved = await this.repo.save(found);
     this.auditOutbox.publish({
       modulo: 'projects',
@@ -229,7 +232,7 @@ export class ProjectsService {
       descripcion: entity.descripcion ?? null,
       codigo: entity.codigo ?? null,
       idExterno: entity.idExterno ?? null,
-      esInactivo: entity.esInactivo === 1 ? 'Inactivo' : 'Activo',
+      esInactivo: entity.esInactivo === 1 ? 'Activo' : 'Inactivo',
     };
   }
 

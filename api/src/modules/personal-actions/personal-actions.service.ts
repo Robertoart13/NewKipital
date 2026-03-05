@@ -5829,22 +5829,32 @@ export class PersonalActionsService {
     return map;
   }
 
+  /**
+   * Normaliza fechas a YYYY-MM-DD usando hora local para evitar desfases por zona horaria.
+   */
   private toYmdFlexible(value: unknown): string | null {
     if (value == null) return null;
     if (value instanceof Date) {
       if (Number.isNaN(value.getTime())) return null;
-      return value.toISOString().slice(0, 10);
+      return this.formatDateOnly(value);
     }
     const text = String(value);
     if (!text.trim()) return null;
     if (/^\d{4}-\d{2}-\d{2}$/.test(text)) return text;
-    const parsed = new Date(text);
+    const parsed = new Date(`${text}T00:00:00`);
     if (Number.isNaN(parsed.getTime())) return null;
-    return parsed.toISOString().slice(0, 10);
+    return this.formatDateOnly(parsed);
   }
 
   private toYmdDateTime(value: Date): string {
     if (Number.isNaN(value.getTime())) return '';
     return value.toISOString().slice(0, 19).replace('T', ' ');
+  }
+
+  private formatDateOnly(value: Date): string {
+    const year = value.getFullYear();
+    const month = String(value.getMonth() + 1).padStart(2, '0');
+    const day = String(value.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
   }
 }

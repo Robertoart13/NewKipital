@@ -20,8 +20,8 @@ import { CacheResponseInterceptor } from '../../common/interceptors/cache-respon
 
 import { PayrollArticlesService } from './payroll-articles.service';
 
-import type { CreatePayrollArticleDto } from './dto/create-payroll-article.dto';
-import type { UpdatePayrollArticleDto } from './dto/update-payroll-article.dto';
+import { CreatePayrollArticleDto } from './dto/create-payroll-article.dto';
+import { UpdatePayrollArticleDto } from './dto/update-payroll-article.dto';
 
 @CacheScope('payroll-articles')
 @UseInterceptors(CacheResponseInterceptor)
@@ -53,6 +53,7 @@ export class PayrollArticlesController {
     @Query('idEmpresa', new ParseIntPipe({ optional: true }))
     idEmpresa?: number,
     @Query('idsReferencia') idsReferenciaRaw?: string,
+    @Query('idsCuenta') idsCuentaRaw?: string,
     @Query('includeInactive', new ParseBoolPipe({ optional: true }))
     includeInactive?: boolean,
   ) {
@@ -63,8 +64,19 @@ export class PayrollArticlesController {
           .map((value) => Number(value.trim()))
           .filter((value) => Number.isFinite(value) && value > 0)
       : undefined;
-    if (!idsReferencia || idsReferencia.length === 0) return [];
-    return this.service.listAccountsByCompany(idEmpresa, includeInactive ?? false, idsReferencia);
+    const idsCuenta = idsCuentaRaw
+      ? idsCuentaRaw
+          .split(',')
+          .map((value) => Number(value.trim()))
+          .filter((value) => Number.isFinite(value) && value > 0)
+      : undefined;
+    if ((!idsReferencia || idsReferencia.length === 0) && (!idsCuenta || idsCuenta.length === 0)) return [];
+    return this.service.listAccountsByCompany(
+      idEmpresa,
+      includeInactive ?? false,
+      idsReferencia ?? [],
+      idsCuenta ?? [],
+    );
   }
 
   @RequirePermissions('payroll-article:create')

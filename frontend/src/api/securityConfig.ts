@@ -164,6 +164,9 @@ export async function fetchRolesForUsers(includeInactive = false, appCode?: stri
   params.set('includeInactive', String(includeInactive));
   if (appCode) params.set('appCode', appCode);
   const res = await httpFetch(`/config/users/roles-catalog?${params}`);
+  if (res.status === 403) {
+    return [];
+  }
   return ensureOk<SystemRole[]>(res, 'Error al cargar roles para usuarios');
 }
 

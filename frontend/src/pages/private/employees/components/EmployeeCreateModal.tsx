@@ -90,8 +90,8 @@ export function EmployeeCreateModal({ open, onClose, onSuccess }: EmployeeCreate
   const { data: departments = [] } = useDepartments();
   const { data: positions = [] } = usePositions();
   const { data: payPeriods = [] } = usePayPeriods();
-  const { data: rolesTimewise = [] } = useRolesByApp('timewise');
-  const { data: rolesKpital = [] } = useRolesByApp('kpital');
+  const { data: rolesTimewise = [] } = useRolesByApp('timewise', canAssignTimewiseRole);
+  const { data: rolesKpital = [] } = useRolesByApp('kpital', canAssignKpitalRole);
   const { data: allCompanies = [] } = useAllCompaniesForHistory();
   const historialCompanies = allCompanies.length
     ? allCompanies
@@ -240,6 +240,8 @@ export function EmployeeCreateModal({ open, onClose, onSuccess }: EmployeeCreate
     createMutation.mutate(payload, {
       onSuccess: (res: { data?: { employee?: { id: number } } }) => {
         onClose();
+        // Notifica a Gestión de Usuarios para refrescar el listado cuando se creó acceso digital.
+        window.dispatchEvent(new CustomEvent('users:refresh'));
         if (res?.data?.employee?.id) {
           onSuccess?.(res.data.employee.id);
         }

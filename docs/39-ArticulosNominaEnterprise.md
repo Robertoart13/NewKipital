@@ -151,6 +151,7 @@ Endpoints requeridos:
 - `GET /payroll-articles/types`
 - `GET /payroll-articles/personal-action-types`
 - `GET /payroll-articles/accounts?idEmpresa=&idsReferencia=18,19,17`
+- `GET /payroll-articles/accounts?idEmpresa=&idsReferencia=18,19,17&idsCuenta=1,2` (incluye cuentas actuales en edicion)
 
 Reglas de backend:
 - Validar empresa activa.

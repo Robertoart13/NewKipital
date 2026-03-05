@@ -44,6 +44,7 @@ import {
 } from '../../../../api/personalActions';
 import { formatDateTime12h } from '../../../../lib/formatDate';
 import sharedStyles from '../../configuration/UsersManagementPage.module.css';
+import { formatEmployeeLabel } from '../shared/employeeLabel';
 
 import styles from './VacationTransactionModal.module.css';
 
@@ -118,17 +119,6 @@ interface HeaderValues {
   idEmpleado?: number;
   movimientoId?: number;
   observacion?: string;
-}
-
-function formatEmployeeLabel(
-  emp: VacationTransactionModalProps['employees'][number],
-  canViewEmployeeSensitive?: boolean,
-) {
-  const base = `${emp.nombre} ${emp.apellido1}${emp.apellido2 ? ` ${emp.apellido2}` : ''}`.trim();
-  if (base) {
-    return canViewEmployeeSensitive && emp.codigo ? `${base} (${emp.codigo})` : base;
-  }
-  return emp.codigo || 'Empleado sin codigo';
 }
 
 function isWeekend(date: Dayjs) {

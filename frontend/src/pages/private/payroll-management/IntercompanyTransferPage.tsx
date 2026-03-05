@@ -12,7 +12,6 @@ import {
   Card,
   Checkbox,
   Col,
-  DatePicker,
   Flex,
   Form,
   Input,
@@ -24,7 +23,7 @@ import {
   Tooltip,
   Typography,
 } from 'antd';
-import dayjs, { type Dayjs } from 'dayjs';
+import dayjs from 'dayjs';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 
@@ -55,7 +54,7 @@ function buildEmployeeName(employee: EmployeeListItem): string {
   return parts.join(' ');
 }
 
-function toDateString(value?: Dayjs | null): string | undefined {
+function toDateString(value?: dayjs.Dayjs | null): string | undefined {
   if (!value) return undefined;
   return value.format('YYYY-MM-DD');
 }
@@ -81,7 +80,6 @@ export function IntercompanyTransferPage() {
 
   const originCompanyId = Form.useWatch('originCompanyId', form);
   const periodId = Form.useWatch('periodId', form);
-  const effectiveDate = Form.useWatch('effectiveDate', form) as Dayjs | undefined;
   const globalDestinationId = Form.useWatch('destinationCompanyId', form);
   const reason = Form.useWatch('reason', form) as string | undefined;
 
@@ -182,7 +180,7 @@ export function IntercompanyTransferPage() {
 
   useEffect(() => {
     setSimulationByEmployee({});
-  }, [effectiveDate, globalDestinationId, reason, applyAll]);
+  }, [globalDestinationId, reason, applyAll]);
 
   useEffect(() => {
     if (!originCompanyId && activeCompanyId) {
@@ -249,10 +247,6 @@ export function IntercompanyTransferPage() {
 
   // Ejecuta simulacion con los empleados seleccionados.
   const runSimulation = async () => {
-    if (!effectiveDate) {
-      message.warning('Seleccione una fecha efectiva antes de simular.');
-      return;
-    }
     if (selectedRowKeys.length === 0) {
       message.warning('Seleccione al menos un empleado para simular.');
       return;
@@ -268,7 +262,7 @@ export function IntercompanyTransferPage() {
       return;
     }
 
-    const dateValue = toDateString(effectiveDate);
+    const dateValue = toDateString(dayjs().startOf('day'));
     if (!dateValue) {
       message.warning('Fecha efectiva invalida.');
       return;
@@ -493,14 +487,13 @@ export function IntercompanyTransferPage() {
       <Card className={styles.mainCard}>
         <div className={styles.mainCardBody}>
           <Form
-            form={form}
-            layout="vertical"
-            disabled={!canTransfer}
-            initialValues={{
-              originCompanyId: activeCompanyId,
-              effectiveDate: dayjs().startOf('day'),
-            }}
-          >
+              form={form}
+              layout="vertical"
+              disabled={!canTransfer}
+              initialValues={{
+                originCompanyId: activeCompanyId,
+              }}
+            >
             <Row gutter={[12, 12]}>
               <Col xs={24} md={12} xl={8}>
                 <Form.Item name="periodId" label="Tipo de Periodo de Pago *" rules={[{ required: true }]}>
@@ -534,11 +527,6 @@ export function IntercompanyTransferPage() {
                         .includes(input.toLowerCase())
                     }
                   />
-                </Form.Item>
-              </Col>
-              <Col xs={24} md={12} xl={8}>
-                <Form.Item name="effectiveDate" label="Fecha efectiva *" rules={[{ required: true }]}>
-                  <DatePicker style={{ width: '100%' }} format="YYYY-MM-DD" />
                 </Form.Item>
               </Col>
               <Col xs={24} md={12} xl={8}>

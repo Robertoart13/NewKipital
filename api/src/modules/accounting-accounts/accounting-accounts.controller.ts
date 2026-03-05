@@ -20,8 +20,8 @@ import { CacheResponseInterceptor } from '../../common/interceptors/cache-respon
 
 import { AccountingAccountsService } from './accounting-accounts.service';
 
-import type { CreateAccountingAccountDto } from './dto/create-accounting-account.dto';
-import type { UpdateAccountingAccountDto } from './dto/update-accounting-account.dto';
+import { CreateAccountingAccountDto } from './dto/create-accounting-account.dto';
+import { UpdateAccountingAccountDto } from './dto/update-accounting-account.dto';
 
 @CacheScope('accounting-accounts')
 @UseInterceptors(CacheResponseInterceptor)

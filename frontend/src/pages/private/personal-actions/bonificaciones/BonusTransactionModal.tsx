@@ -47,6 +47,7 @@ import { formatDateTime12h } from '../../../../lib/formatDate';
 import { EMPLOYEE_MONEY_MAX_DIGITS } from '../../../../lib/moneyInputSanitizer';
 import sharedStyles from '../../configuration/UsersManagementPage.module.css';
 import { isCoreTransactionLineComplete } from '../shared/coreTransactionLine';
+import { formatEmployeeLabel } from '../shared/employeeLabel';
 
 import type { CatalogPayPeriod } from '../../../../api/catalogs';
 import type { PayrollListItem } from '../../../../api/payroll';
@@ -973,17 +974,7 @@ export function BonusTransactionModal({
                             notFoundContent={employeesLoading ? <Spin size="small" /> : null}
                             options={employeesByCompany.map((employee) => ({
                               value: employee.id,
-                              label: (() => {
-                                const fullName = `${[employee.apellido1, employee.apellido2, employee.nombre]
-                                  .filter((part) => typeof part === 'string' && part.trim().length > 0)
-                                  .join(' ')}`.trim();
-                                if (fullName) {
-                                  return canViewEmployeeSensitive && employee.codigo
-                                    ? `${fullName} (${employee.codigo})`
-                                    : fullName;
-                                }
-                                return employee.codigo || 'Empleado sin codigo';
-                              })(),
+                              label: formatEmployeeLabel(employee, canViewEmployeeSensitive),
                             }))}
                           />
                         </Form.Item>
@@ -1345,3 +1336,4 @@ export function BonusTransactionModal({
     </Modal>
   );
 }
+

@@ -191,6 +191,7 @@ export function PayrollCalendarPage() {
     empleados: number;
   } | null>(null);
   const [snapshotInputs, setSnapshotInputs] = useState<number | null>(null);
+  const [hasSocialCharges, setHasSocialCharges] = useState(false);
   const [actionLoading, setActionLoading] = useState(false);
 
   const loadPayrolls = useCallback(async () => {
@@ -273,9 +274,11 @@ export function PayrollCalendarPage() {
           empleados: totalsRes.empleados,
         });
         setSnapshotInputs(totalsRes.inputs ?? 0);
+        setHasSocialCharges(Boolean(totalsRes.hasSocialCharges));
       } else {
         setDetailTotals(null);
         setSnapshotInputs(null);
+        setHasSocialCharges(false);
       }
     } finally {
       setDetailLoading(false);
@@ -313,8 +316,10 @@ export function PayrollCalendarPage() {
     (action: 'process' | 'verify' | 'apply') => {
       const actionLabel = action === 'process' ? 'procesar' : action === 'verify' ? 'verificar' : 'aplicar';
 
-      if (action === 'verify' && snapshotInputs === 0) {
-        message.warning('No se puede verificar la planilla porque no tiene movimientos cargados para procesar.');
+      if (action === 'verify' && snapshotInputs === 0 && !hasSocialCharges) {
+        message.warning(
+          'No se puede verificar la planilla porque no tiene movimientos procesados ni cargas sociales configuradas.',
+        );
         return;
       }
       if (action === 'apply' && detail?.requiresRecalculation === 1) {
@@ -331,7 +336,7 @@ export function PayrollCalendarPage() {
         onOk: () => runAction(action),
       });
     },
-    [detail?.requiresRecalculation, message, modal, runAction, snapshotInputs],
+    [detail?.requiresRecalculation, hasSocialCharges, message, modal, runAction, snapshotInputs],
   );
 
   const periodOptions = useMemo(() => {
@@ -1008,7 +1013,7 @@ export function PayrollCalendarPage() {
                     <Tooltip title="Valida la planilla ya procesada antes de aplicarla.">
                       <Button
                         icon={<SafetyOutlined />}
-                        disabled={!canVerify || detail.estado !== 2 || snapshotInputs === 0}
+                        disabled={!canVerify || detail.estado !== 2 || (snapshotInputs === 0 && !hasSocialCharges)}
                         onClick={() => confirmAction('verify')}
                       >
                         Verificar
@@ -1035,10 +1040,10 @@ export function PayrollCalendarPage() {
                       </Button>
                     </Tooltip>
                   </div>
-                  {detail.estado === 2 && snapshotInputs === 0 ? (
+                  {detail.estado === 2 && snapshotInputs === 0 && !hasSocialCharges ? (
                     <div style={{ marginTop: 12 }}>
                       <Text type="warning">
-                        No se puede verificar esta planilla porque todavía no tiene movimientos procesados.
+                        No se puede verificar esta planilla porque no tiene movimientos procesados ni cargas sociales configuradas.
                       </Text>
                     </div>
                   ) : null}

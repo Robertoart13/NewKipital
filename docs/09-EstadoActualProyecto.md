@@ -1,7 +1,7 @@
 ﻿# KPITAL 360 â€” Estado Actual del Proyecto
 
 **Documento:** 09  
-**Ãšltima actualizaciÃ³n:** 2026-03-04  
+**Ãšltima actualizaciÃ³n:** 2026-03-05  
 **PropÃ³sito:** Registro vivo del avance. Se actualiza cada vez que se completa una directiva o se hace un cambio significativo.
 
 ---
@@ -41,6 +41,25 @@ KPITAL 360 es un ERP multiempresa enfocado en gestiÃ³n de RRHH, planillas y ac
 - Respuesta no cacheable si `Set-Cookie`, `Cache-Control: no-store/private` o status no-2xx.
 - Pendiente infra: Redis HA + eviction policy + Prometheus/Grafana.
 - Excepciones por seguridad/tiempo real: `auth`, `health`, `ops/queues`.
+
+### Actualizacion planilla (Rev. 5 - 2026-03-05)
+
+- Verificacion de planilla permite `inputs = 0` si la empresa tiene cargas sociales activas configuradas.
+
+### Actualizacion articulos de nomina (Rev. 6 - 2026-03-05)
+
+- DTOs de articulos de nomina cargan correctamente en create/update (evita errores `property ... should not exist`).
+- Edicion de articulos incluye cuentas actuales aunque no esten en el listado activo (query `idsCuenta`).
+- Cache `payroll-articles` reconoce `idEmpresas` y `idsReferencia`/`idsCuenta` para evitar respuestas incorrectas en filtros y cuentas.
+- Validaciones y filtros usan `1=Activo / 0=Inactivo` para articulos y cuentas contables relacionadas.
+
+### Actualizacion movimientos de nomina (Rev. 7 - 2026-03-05)
+
+- Normalizacion defensiva en payload evita `trim` sobre valores indefinidos al crear movimientos.
+- DTOs de movimientos de nomina cargan correctamente en create/update (evita errores `property ... should not exist`).
+- Validaciones y filtros usan `1=Activo / 0=Inactivo` para movimientos, clases, proyectos y articulos relacionados.
+- En creacion de movimientos se cargan solo articulos/proyectos activos; en edicion se permiten inactivos para ver el estado actual.
+- Catalogos base (clases y tipos de accion) siguen la misma regla: activos en creacion, inactivos solo en edicion.
 
 ---
 
@@ -564,6 +583,54 @@ Estado: Implementado (backend + frontend + BD en `hr_pro`).
 | 2026-02-27 | **Validacion real Fase 0 (Doc 42.17.1):** Confirmada PK `id_calendario_nomina`, uso actual de `id_calendario_nomina` como consumo en acciones, estados actuales 1..3, ausencia de `hr_action:*` en permisos y decision de no crear `consumed_run_id` en Fase 1. |
 | 2026-03-04 | **Traslado interempresas (backend base):** API de simulacion/ejecucion (`/api/payroll/intercompany-transfer`), tabla `sys_empleado_transferencias`, validaciones enterprise (periodo destino obligatorio, inicio de periodo, planilla activa origen) y reasignacion de acciones/lineas por fecha. **Politica:** continuidad por defecto; liquidacion solo en renuncia/despido. **Pendiente:** UI de traslado masivo con simulacion y portabilidad de saldo de vacaciones. |
 | 2026-03-04 | **Planilla - resultados extendidos:** `nomina_resultados` con devengado/salario bruto periodo/cargas/impuesto y snapshot JSON completo en `nomina_planilla_snapshot_json` para reportes RRHH y provision de aguinaldo. |
+| 2026-03-05 | **Acciones de Personal (UI):** Se sincroniza el filtro superior de Estados con el panel de filtros para evitar doble filtro oculto; al cambiar Estados se limpia el filtro interno de Estado en todas las vistas (Ausencias, Licencias, Incapacidades, Vacaciones, Bonificaciones, Horas Extra, Retenciones, Descuentos, Aumentos). |
+| 2026-03-05 | **Configuración de Usuarios (Excepciones):** Se corrige validación de DTOs en `/api/config/users/*` (imports reales para ValidationPipe) y se habilita acceso a `roles-catalog` con permisos de asignación de roles de empleados; frontend evita error 403 devolviendo lista vacía cuando el usuario no puede asignar roles. |
+| 2026-03-05 | **Traslado interempresas:** Se corrige la validación de DTOs en `/api/payroll/intercompany-transfer/*` (imports reales para ValidationPipe) para evitar rechazo de propiedades válidas en simulación/ejecución. |
+| 2026-03-05 | **Traslado interempresas:** Se corrige query de resultados de planilla para usar `estado_calendario_nomina` (evita error SQL `Unknown column 'p.estado'`). |
+| 2026-03-05 | **Traslado interempresas:** Validación de planilla destino ahora usa fechas de acciones de personal (no fecha efectiva) y se consolida el error con conteo de fechas faltantes. |
+| 2026-03-05 | **Traslado interempresas:** Mensajes de bloqueo refinados (planillas activas, acciones bloqueantes y fechas sin planilla destino con resumen legible). |
+| 2026-03-05 | **Traslado interempresas (UI):** Se elimina la fecha efectiva del formulario; la simulación usa fecha del día para registrar el traslado. |
+| 2026-03-05 | **Reset de datos (HR_PRO):** Limpieza total de datos operativos (empleados, empresas, acciones, planillas, usuarios y colas) preservando catálogos base (`sys_roles`, `sys_permisos`, `sys_apps`, `nom_periodos_pago`, `nom_tipos_*`, `erp_tipo_cuenta`, `nom_cargas_sociales`, `nom_feriados_planilla`). |
+| 2026-03-05 | **Identidad:** Se crea usuario maestro de TI (no empleado) con rol `MASTER` global para administración del sistema. Credenciales entregadas fuera de la documentación. |
+| 2026-03-05 | **RBAC:** Se asegura que el rol `MASTER` tenga todos los permisos activos asignados en `sys_rol_permiso`. |
+| 2026-03-05 | **Usuarios:** Al crear un usuario, se asigna automáticamente una empresa activa por defecto para contexto de trabajo (no altera permisos). |
+| 2026-03-05 | **Empresas:** Se crea empresa inicial (Rocca Desarrollos Residenciales) y se asigna al usuario maestro para contexto de trabajo. |
+| 2026-03-05 | **Empresas:** Se corrige validación de DTOs en `/api/companies` (imports reales para ValidationPipe) para evitar rechazo de propiedades válidas al crear/editar. |
+| 2026-03-05 | **Clases:** Se corrige validación de DTOs en `/api/classes` (imports reales para ValidationPipe) para evitar rechazo de propiedades válidas al crear/editar. |
+| 2026-03-05 | **Clases (UI):** Se evita el loop de carga al abrir edición (normalización de ID y carga única por modal). |
+| 2026-03-05 | **Proyectos:** Se corrige validación de DTOs en `/api/projects` (imports reales para ValidationPipe) para evitar rechazo de propiedades válidas al crear/editar. |
+| 2026-03-05 | **Proyectos (UI):** Se evita el loop de carga al abrir edición (normalización de ID y carga única por modal). |
+| 2026-03-05 | **Proyectos (UI):** Listado carga todos los proyectos por defecto; se agrega filtro opcional por empresa sin bloquear la carga inicial. |
+| 2026-03-05 | **Proyectos (UI):** El filtro por empresa dispara la recarga inmediata para evitar estados vacíos al cambiar de empresa. |
+| 2026-03-05 | **Cache:** Las mutaciones invalidan cache por empresa y global para evitar listados vacíos cuando se consulta sin filtro de empresa. |
+| 2026-03-05 | **Proyectos:** Se alinea la convención de estado a `1=Activo / 0=Inactivo` en backend y UI. |
+| 2026-03-05 | **Departamentos:** Se corrige validación de DTOs en `/api/departments` (imports reales para ValidationPipe) para evitar rechazo de propiedades válidas al crear/editar. |
+| 2026-03-05 | **Departamentos (UI):** Se evita recarga infinita del detalle al editar para no sobrescribir cambios en el formulario. |
+| 2026-03-05 | **Puestos:** Se corrige validación de DTOs en `/api/positions` (imports reales para ValidationPipe) para evitar rechazo de propiedades válidas al crear/editar. |
+| 2026-03-05 | **Puestos (UI):** Se evita recarga infinita del detalle al editar para no sobrescribir cambios en el formulario. |
+| 2026-03-05 | **Cuentas Contables:** Se corrige validación de DTOs en `/api/accounting-accounts` (imports reales para ValidationPipe) para evitar rechazo de propiedades válidas al crear/editar. |
+| 2026-03-05 | **Empleados:** Se corrige validación de DTOs en `/api/employees` (imports reales para ValidationPipe) para evitar rechazo de propiedades válidas al crear/editar. |
+| 2026-03-05 | **Empleados (UI):** El botón de guardar se habilita al abrir el modal usando valores iniciales del empleado (sin requerir interacción con tabs). |
+| 2026-03-05 | **Documentación:** Se actualiza regla para exigir cambios transversales en todos los docs relevantes cuando se modifique una regla/proceso/decisión. |
+| 2026-03-05 | **Empleados (Doc 23):** Se documenta el flujo de creación con acceso a KPITAL y la visibilidad en Gestión de Usuarios (cache TTL). |
+| 2026-03-05 | **Usuarios:** Se invalida el cache de `/api/users` cuando se crea un empleado con acceso y se fuerza refresh en frontend al cerrar el modal. |
+| 2026-03-05 | **Usuarios (UI):** Se normalizan IDs de empresas en Gestión de Usuarios para evitar desmarques al asignar múltiples empresas. |
+| 2026-03-05 | **Permisos (Doc 24):** Se documenta el refresco automático de Gestión de Usuarios tras crear empleado con acceso. |
+| 2026-03-05 | **Empleados:** El rol asignado al crear empleado con acceso se guarda también como rol global para reflejarse en Gestión de Usuarios. |
+| 2026-03-05 | **Usuarios (UI):** Se agrega estado de carga real en Excepciones y mensaje claro cuando el rol no tiene permisos. |
+| 2026-03-05 | **Empleados (Doc 16/31):** Se actualiza el flujo de inserción manual en BD para reflejar el provisionamiento automático de acceso TimeWise (identity worker) y sus precondiciones. |
+| 2026-03-05 | **Usuarios (UI):** Se corrige el estado de carga en Excepciones para evitar spinner infinito al cargar permisos de rol. |
+| 2026-03-05 | **Planillas:** Se corrige validación de DTOs en `/api/payroll` (imports reales para ValidationPipe) para evitar rechazo de propiedades válidas al abrir planilla. |
+| 2026-03-05 | **Planillas (API):** Se normalizan fechas a `YYYY-MM-DD` en respuestas de `/api/payroll` para evitar desfases por zona horaria en la UI. |
+| 2026-03-05 | **Planillas:** Se alinea `es_inactivo` a la regla global `1=Activo / 0=Inactivo` y se ajustan filtros/validaciones. |
+| 2026-03-05 | **Cache (Planillas):** Se agrega `fechaDesde/fechaHasta/includeInactive/inactiveOnly` a la allowlist del scope `payroll` para evitar respuestas cacheadas desactualizadas. |
+| 2026-03-05 | **Cache (Invalidación):** Se usa `idEmpresa` desde body para invalidar cache de endpoints POST/PUT/PATCH/DELETE que no llevan query. |
+| 2026-03-05 | **Planillas (API):** Se expone DTO de respuesta para planillas con fechas normalizadas `YYYY-MM-DD`. |
+| 2026-03-05 | **Fechas (TZ):** Se normaliza parseo/serialización de fechas a hora local (date-only) en planillas y acciones personales para evitar desfases de zona horaria. |
+| 2026-03-05 | **Planillas:** Se asegura compatibilidad de fechas `DATE` con TypeORM (strings) en procesos internos como cálculo quincenal. |
+| 2026-03-05 | **Planillas (UI):** Tooltip de “Procesar” en tabla ahora describe el flujo operativo (“prepara la planilla y genera movimientos a pagar”). |
+| 2026-03-05 | **Planillas (UI):** Tooltip de “Inactivar” en tabla aclara que retira la planilla del flujo operativo. |
+| 2026-03-05 | **Feriados Planilla:** Se corrige validación de DTOs en `/api/payroll-holidays` (imports reales para ValidationPipe) para evitar rechazo de propiedades válidas. |
 
 
 

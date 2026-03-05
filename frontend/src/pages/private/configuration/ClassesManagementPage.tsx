@@ -34,7 +34,7 @@ import {
   Tag,
   Tooltip,
 } from 'antd';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 
 import {
@@ -124,13 +124,14 @@ export function ClassesManagementPage() {
   const [showInactive, setShowInactive] = useState(false);
   const [openModal, setOpenModal] = useState(false);
   const [editing, setEditing] = useState<ClassListItem | null>(null);
-  const editingId = editing?.id ?? null;
+  const editingId = editing ? Number(editing.id) : null;
   const [search, setSearch] = useState('');
   const [pageSize, setPageSize] = useState(10);
   const [activeTab, setActiveTab] = useState('principal');
   const [auditTrail, setAuditTrail] = useState<ClassAuditTrailItem[]>([]);
   const [loadingAuditTrail, setLoadingAuditTrail] = useState(false);
   const [loadingDetail, setLoadingDetail] = useState(false);
+  const detailLoadedIdRef = useRef<number | null>(null);
   const [filtersExpanded, setFiltersExpanded] = useState(false);
   const [paneSearch, setPaneSearch] = useState<Record<PaneKey, string>>({
     nombre: '',
@@ -252,6 +253,7 @@ export function ClassesManagementPage() {
     setEditing(null);
     setActiveTab('principal');
     form.resetFields();
+    detailLoadedIdRef.current = null;
     setOpenModal(true);
   };
 
@@ -261,6 +263,7 @@ export function ClassesManagementPage() {
     setActiveTab('principal');
     setOpenModal(true);
     applyClassToForm(row);
+    detailLoadedIdRef.current = null;
   };
 
   const closeModal = () => {
@@ -268,6 +271,7 @@ export function ClassesManagementPage() {
     setEditing(null);
     setAuditTrail([]);
     form.resetFields();
+    detailLoadedIdRef.current = null;
   };
 
   const applyClassToForm = useCallback(
@@ -287,7 +291,7 @@ export function ClassesManagementPage() {
       setLoadingDetail(true);
       try {
         const detail = await fetchClass(id);
-        setEditing(detail);
+        setEditing({ ...detail, id: Number(detail.id) });
         applyClassToForm(detail);
       } catch {
         // Keep current form values if detail fetch fails
@@ -299,8 +303,10 @@ export function ClassesManagementPage() {
   );
 
   useEffect(() => {
-    if (!openModal || !editingId) return;
+    if (!openModal || !editingId || !Number.isFinite(editingId)) return;
     if (editing) applyClassToForm(editing);
+    if (detailLoadedIdRef.current === editingId) return;
+    detailLoadedIdRef.current = editingId;
     void loadClassDetail(editingId);
   }, [openModal, editingId, editing, loadClassDetail, applyClassToForm]);
 

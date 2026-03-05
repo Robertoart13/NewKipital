@@ -740,7 +740,7 @@ export function PayrollManagementPage() {
         render: (_, row) => (
           <Space wrap>
             {canProcess && row.estado === 1 ? (
-              <Tooltip title="Ejecuta el proceso de cálculo y genera snapshots de la planilla.">
+              <Tooltip title="Procesar: prepara la planilla del periodo y genera los movimientos a pagar.">
                 <Button
                   size="small"
                   icon={<PlayCircleOutlined />}
@@ -799,7 +799,7 @@ export function PayrollManagementPage() {
               </Tooltip>
             ) : null}
             {canCancel && row.estado !== 0 && row.estado !== 4 ? (
-              <Tooltip title="Inactiva la planilla para que no continúe en el flujo operativo.">
+              <Tooltip title="Inactivar: retira la planilla del flujo operativo. No se puede aplicar ni procesar después.">
                 <Button
                   size="small"
                   danger

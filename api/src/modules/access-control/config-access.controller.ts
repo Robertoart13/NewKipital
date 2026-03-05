@@ -18,6 +18,7 @@ import { In, Repository } from 'typeorm';
 import { CacheScope } from '../../common/decorators/cache-scope.decorator';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { RequirePermissions } from '../../common/decorators/require-permissions.decorator';
+import { RequireAnyPermissions } from '../../common/decorators/require-any-permissions.decorator';
 import { CacheResponseInterceptor } from '../../common/interceptors/cache-response.interceptor';
 import { Company } from '../companies/entities/company.entity';
 import { NotificationsService } from '../notifications/notifications.service';
@@ -28,17 +29,17 @@ import { PermissionsService } from './permissions.service';
 import { RolesService } from './roles.service';
 import { UserAssignmentService } from './user-assignment.service';
 
-import type { CreatePermissionDto } from './dto/create-permission.dto';
-import type { CreateRoleDto } from './dto/create-role.dto';
-import type { ReplaceRolePermissionsDto } from './dto/replace-role-permissions.dto';
-import type { ReplaceUserCompaniesDto } from './dto/replace-user-companies.dto';
-import type { ReplaceUserContextRolesDto } from './dto/replace-user-context-roles.dto';
-import type { ReplaceUserGlobalPermissionDenialsDto } from './dto/replace-user-global-permission-denials.dto';
-import type { ReplaceUserGlobalRolesDto } from './dto/replace-user-global-roles.dto';
-import type { ReplaceUserPermissionOverridesDto } from './dto/replace-user-permission-overrides.dto';
-import type { ReplaceUserRoleExclusionsDto } from './dto/replace-user-role-exclusions.dto';
-import type { UpdatePermissionDto } from './dto/update-permission.dto';
-import type { UpdateRoleDto } from './dto/update-role.dto';
+import { CreatePermissionDto } from './dto/create-permission.dto';
+import { CreateRoleDto } from './dto/create-role.dto';
+import { ReplaceRolePermissionsDto } from './dto/replace-role-permissions.dto';
+import { ReplaceUserCompaniesDto } from './dto/replace-user-companies.dto';
+import { ReplaceUserContextRolesDto } from './dto/replace-user-context-roles.dto';
+import { ReplaceUserGlobalPermissionDenialsDto } from './dto/replace-user-global-permission-denials.dto';
+import { ReplaceUserGlobalRolesDto } from './dto/replace-user-global-roles.dto';
+import { ReplaceUserPermissionOverridesDto } from './dto/replace-user-permission-overrides.dto';
+import { ReplaceUserRoleExclusionsDto } from './dto/replace-user-role-exclusions.dto';
+import { UpdatePermissionDto } from './dto/update-permission.dto';
+import { UpdateRoleDto } from './dto/update-role.dto';
 
 /**
  * Endpoints enterprise de administracion bajo prefijo /config.
@@ -121,7 +122,12 @@ export class ConfigAccessController {
     return this.rolesService.findAll(includeInactive ?? false, appCode);
   }
 
-  @RequirePermissions('config:users')
+  @RequireAnyPermissions(
+    'config:users',
+    'config:users:assign-roles',
+    'employee:assign-kpital-role',
+    'employee:assign-timewise-role',
+  )
   @Get('users/roles-catalog')
   listRolesForUserConfig(
     @Query('includeInactive', new ParseBoolPipe({ optional: true }))

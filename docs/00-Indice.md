@@ -2,7 +2,7 @@
 
 **Proyecto:** KPITAL 360 — ERP Multiempresa  
 **Autor:** Roberto — Arquitecto Funcional / Senior Engineer  
-**Última actualización:** 2026-03-01 (incluye cierre operativo de Retenciones y Descuentos, y consolidacion de trazabilidad de Acciones de Personal)
+**Última actualización:** 2026-03-05 (reglas de documentación: actualización transversal de docs)
 
 ---
 
@@ -102,6 +102,7 @@ La aplicación usa **un único menú horizontal en el header** (sin sidebar/men�
 3. **Si se agrega un módulo nuevo o una directiva nueva, se agrega un documento nuevo con el siguiente número.**
 4. **Nunca se modifica un documento anterior sin documentar el cambio.**
 5. **Esta carpeta es la fuente de verdad del "por qué" y el "qué". El código es la fuente de verdad del "cómo".**
+6. **Si se establece o cambia una regla, proceso o decisión, actualizar todos los documentos en `docs/` donde esa información deba reflejarse (índices, resúmenes, guías, reglas, APIs, etc.).**
 
 
 

@@ -34,7 +34,7 @@ import {
   Tag,
   Tooltip,
 } from 'antd';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 
 import {
@@ -119,6 +119,7 @@ export function DepartmentsManagementPage() {
   const [openModal, setOpenModal] = useState(false);
   const [editing, setEditing] = useState<DepartmentListItem | null>(null);
   const editingId = editing?.id ?? null;
+  const detailLoadedIdRef = useRef<number | null>(null);
   const [search, setSearch] = useState('');
   const [pageSize, setPageSize] = useState(10);
   const [activeTab, setActiveTab] = useState('principal');
@@ -236,6 +237,7 @@ export function DepartmentsManagementPage() {
     setEditing(null);
     setActiveTab('principal');
     form.resetFields();
+    detailLoadedIdRef.current = null;
     setOpenModal(true);
   };
 
@@ -245,6 +247,7 @@ export function DepartmentsManagementPage() {
     setActiveTab('principal');
     setOpenModal(true);
     applyDepartmentToForm(row);
+    detailLoadedIdRef.current = null;
   };
 
   const closeModal = () => {
@@ -252,6 +255,7 @@ export function DepartmentsManagementPage() {
     setEditing(null);
     setAuditTrail([]);
     form.resetFields();
+    detailLoadedIdRef.current = null;
   };
 
   const applyDepartmentToForm = useCallback(
@@ -280,6 +284,8 @@ export function DepartmentsManagementPage() {
   useEffect(() => {
     if (!openModal || !editingId) return;
     if (editing) applyDepartmentToForm(editing);
+    if (detailLoadedIdRef.current === editingId) return;
+    detailLoadedIdRef.current = editingId;
     void loadDepartmentDetail(editingId);
   }, [openModal, editingId, editing, loadDepartmentDetail, applyDepartmentToForm]);
 

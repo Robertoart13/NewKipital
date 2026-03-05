@@ -79,7 +79,7 @@ Selector `Periodo de pago (Planilla)` se llena por empleado/empresa:
 1. `id_empresa = empresa seleccionada`.
 2. `id_periodos_pago = periodo del empleado`.
 3. `moneda_calendario_nomina = moneda del empleado`.
-4. `es_inactivo = 0`.
+4. `es_inactivo = 1`.
 5. `estado_calendario_nomina IN (1,2)` (`ABIERTA`, `EN_PROCESO`).
 6. `fecha_fin_pago >= CURDATE()`.
 

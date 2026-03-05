@@ -19,8 +19,9 @@ import { CacheResponseInterceptor } from '../../common/interceptors/cache-respon
 
 import { PayrollService } from './payroll.service';
 
-import type { CreatePayrollDto } from './dto/create-payroll.dto';
-import type { UpdatePayrollDto } from './dto/update-payroll.dto';
+import { CreatePayrollDto } from './dto/create-payroll.dto';
+import type { PayrollCalendarResponse } from './dto/payroll-response.dto';
+import { UpdatePayrollDto } from './dto/update-payroll.dto';
 
 @CacheScope('payroll')
 @UseInterceptors(CacheResponseInterceptor)
@@ -45,28 +46,36 @@ export class PayrollController {
     inactiveOnly?: boolean,
     @Query('fechaDesde') fechaDesde?: string,
     @Query('fechaHasta') fechaHasta?: string,
-  ) {
+  ): Promise<PayrollCalendarResponse[]> {
     const idEmpresa = idEmpresaRaw ? parseInt(idEmpresaRaw, 10) : undefined;
-    return this.service.findAll(
-      user.userId,
-      Number.isNaN(idEmpresa!) ? undefined : idEmpresa,
-      includeInactive ?? false,
-      inactiveOnly ?? false,
-      fechaDesde,
-      fechaHasta,
-    );
+    return this.service
+      .findAll(
+        user.userId,
+        Number.isNaN(idEmpresa!) ? undefined : idEmpresa,
+        includeInactive ?? false,
+        inactiveOnly ?? false,
+        fechaDesde,
+        fechaHasta,
+      )
+      .then((rows) => rows.map((row) => this.service.toResponse(row)));
   }
 
   @RequirePermissions('payroll:view')
   @Get(':id')
-  findOne(@Param('id', ParseIntPipe) id: number, @CurrentUser() user: { userId: number }) {
-    return this.service.findOne(id, user.userId);
+  findOne(
+    @Param('id', ParseIntPipe) id: number,
+    @CurrentUser() user: { userId: number },
+  ): Promise<PayrollCalendarResponse> {
+    return this.service.findOne(id, user.userId).then((row) => this.service.toResponse(row));
   }
 
   @RequirePermissions('payroll:create')
   @Post()
-  create(@Body() dto: CreatePayrollDto, @CurrentUser() user: { userId: number }) {
-    return this.service.create(dto, user.userId);
+  create(
+    @Body() dto: CreatePayrollDto,
+    @CurrentUser() user: { userId: number },
+  ): Promise<PayrollCalendarResponse> {
+    return this.service.create(dto, user.userId).then((row) => this.service.toResponse(row));
   }
 
   @RequirePermissions('payroll:edit')
@@ -75,20 +84,26 @@ export class PayrollController {
     @Param('id', ParseIntPipe) id: number,
     @Body() dto: UpdatePayrollDto,
     @CurrentUser() user: { userId: number },
-  ) {
-    return this.service.update(id, dto, user.userId);
+  ): Promise<PayrollCalendarResponse> {
+    return this.service.update(id, dto, user.userId).then((row) => this.service.toResponse(row));
   }
 
   @RequirePermissions('payroll:verify')
   @Patch(':id/verify')
-  verify(@Param('id', ParseIntPipe) id: number, @CurrentUser() user: { userId: number }) {
-    return this.service.verify(id, user.userId);
+  verify(
+    @Param('id', ParseIntPipe) id: number,
+    @CurrentUser() user: { userId: number },
+  ): Promise<PayrollCalendarResponse> {
+    return this.service.verify(id, user.userId).then((row) => this.service.toResponse(row));
   }
 
   @RequirePermissions('payroll:process')
   @Patch(':id/process')
-  process(@Param('id', ParseIntPipe) id: number, @CurrentUser() user: { userId: number }) {
-    return this.service.process(id, user.userId);
+  process(
+    @Param('id', ParseIntPipe) id: number,
+    @CurrentUser() user: { userId: number },
+  ): Promise<PayrollCalendarResponse> {
+    return this.service.process(id, user.userId).then((row) => this.service.toResponse(row));
   }
 
   @RequirePermissions('payroll:apply')
@@ -98,8 +113,10 @@ export class PayrollController {
     @Body('version', new ParseIntPipe({ optional: true }))
     expectedVersion: number | undefined,
     @CurrentUser() user: { userId: number },
-  ) {
-    return this.service.apply(id, user.userId, expectedVersion);
+  ): Promise<PayrollCalendarResponse> {
+    return this.service
+      .apply(id, user.userId, expectedVersion)
+      .then((row) => this.service.toResponse(row));
   }
 
   @RequirePermissions('payroll:edit')
@@ -108,14 +125,19 @@ export class PayrollController {
     @Param('id', ParseIntPipe) id: number,
     @Body('motivo') motivo: string,
     @CurrentUser() user: { userId: number },
-  ) {
-    return this.service.reopen(id, motivo ?? 'Reapertura sin motivo', user.userId);
+  ): Promise<PayrollCalendarResponse> {
+    return this.service
+      .reopen(id, motivo ?? 'Reapertura sin motivo', user.userId)
+      .then((row) => this.service.toResponse(row));
   }
 
   @RequirePermissions('payroll:cancel')
   @Patch(':id/inactivate')
-  inactivate(@Param('id', ParseIntPipe) id: number, @CurrentUser() user: { userId: number }) {
-    return this.service.inactivate(id, user.userId);
+  inactivate(
+    @Param('id', ParseIntPipe) id: number,
+    @CurrentUser() user: { userId: number },
+  ): Promise<PayrollCalendarResponse> {
+    return this.service.inactivate(id, user.userId).then((row) => this.service.toResponse(row));
   }
 
   @RequirePermissions('payroll:view')

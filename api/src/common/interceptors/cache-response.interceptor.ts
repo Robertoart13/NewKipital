@@ -45,6 +45,7 @@ export class CacheResponseInterceptor implements NestInterceptor {
       originalUrl?: string;
       params?: Record<string, unknown>;
       query?: Record<string, unknown>;
+      body?: Record<string, unknown>;
       user?: AuthUserPayload;
     }>();
     const response = context.switchToHttp().getResponse<Response>();
@@ -53,12 +54,19 @@ export class CacheResponseInterceptor implements NestInterceptor {
       return next.handle().pipe(
         tap(() => {
           const companyKey = this.resolveCompanyKey(request);
-          void this.cache.invalidateScope(scope, companyKey).catch((error) => {
-            this.logger.warn('Failed to invalidate cache scope', {
-              scope,
-              error: error instanceof Error ? error.message : String(error),
+          const companyKeysToInvalidate =
+            companyKey === 'global' ? ['global'] : [companyKey, 'global'];
+
+          // Invalida tanto el cache por empresa como el global (listados sin filtro).
+          for (const key of companyKeysToInvalidate) {
+            void this.cache.invalidateScope(scope, key).catch((error) => {
+              this.logger.warn('Failed to invalidate cache scope', {
+                scope,
+                companyKey: key,
+                error: error instanceof Error ? error.message : String(error),
+              });
             });
-          });
+          }
         }),
       );
     }
@@ -94,9 +102,11 @@ export class CacheResponseInterceptor implements NestInterceptor {
   private resolveCompanyKey(request?: {
     params?: Record<string, unknown>;
     query?: Record<string, unknown>;
+    body?: Record<string, unknown>;
   }): string {
     const query = request?.query ?? {};
     const params = request?.params ?? {};
+    const body = request?.body ?? {};
     const candidate =
       query.idEmpresa ??
       query.companyId ??
@@ -105,7 +115,11 @@ export class CacheResponseInterceptor implements NestInterceptor {
       params.idEmpresa ??
       params.companyId ??
       params.idCompany ??
-      params.empresaId;
+      params.empresaId ??
+      body.idEmpresa ??
+      body.companyId ??
+      body.idCompany ??
+      body.empresaId;
 
     if (candidate == null) return 'global';
     const parsed = Number.parseInt(String(candidate), 10);

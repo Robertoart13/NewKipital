@@ -94,6 +94,8 @@ export class PayrollArticlesService {
     idCuentaPasivo: 'Cuenta pasivo',
     esInactivo: 'Estado',
   };
+  private readonly activeFlag = 1;
+  private readonly inactiveFlag = 0;
 
   async create(dto: CreatePayrollArticleDto, actorUserId: number): Promise<PayrollArticle> {
     await this.assertCompanyActive(dto.idEmpresa);
@@ -114,7 +116,7 @@ export class PayrollArticlesService {
       idTipoArticuloNomina: dto.idTipoArticuloNomina,
       idCuentaGasto: dto.idCuentaGasto,
       idCuentaPasivo: dto.idCuentaPasivo ?? null,
-      esInactivo: 0,
+      esInactivo: this.activeFlag,
     });
 
     const saved = await this.repo.save(entity);
@@ -145,9 +147,9 @@ export class PayrollArticlesService {
     }
 
     if (inactiveOnly) {
-      qb.andWhere('a.esInactivo = 1');
+      qb.andWhere('a.esInactivo = :inactiveFlag', { inactiveFlag: this.inactiveFlag });
     } else if (!includeInactive) {
-      qb.andWhere('a.esInactivo = 0');
+      qb.andWhere('a.esInactivo = :activeFlag', { activeFlag: this.activeFlag });
     }
 
     return qb.getMany();
@@ -224,7 +226,7 @@ export class PayrollArticlesService {
   async inactivate(id: number, actorUserId: number): Promise<PayrollArticle> {
     const found = await this.findOne(id);
     const payloadBefore = this.buildAuditPayload(found);
-    found.esInactivo = 1;
+    found.esInactivo = this.inactiveFlag;
     const saved = await this.repo.save(found);
     this.auditOutbox.publish({
       modulo: 'payroll-articles',
@@ -242,7 +244,7 @@ export class PayrollArticlesService {
   async reactivate(id: number, actorUserId: number): Promise<PayrollArticle> {
     const found = await this.findOne(id);
     const payloadBefore = this.buildAuditPayload(found);
-    found.esInactivo = 0;
+    found.esInactivo = this.activeFlag;
     const saved = await this.repo.save(found);
     this.auditOutbox.publish({
       modulo: 'payroll-articles',
@@ -320,17 +322,29 @@ export class PayrollArticlesService {
     idEmpresa: number,
     includeInactive = false,
     idsReferencia: number[],
+    idsCuenta: number[] = [],
   ): Promise<AccountingAccount[]> {
+    const allowedIdsReferencia = idsReferencia.filter((value) => Number.isFinite(value) && value > 0);
+    const allowedAccountIds = idsCuenta.filter((value) => Number.isFinite(value) && value > 0);
     const qb = this.accountRepo
       .createQueryBuilder('c')
       .where('c.idEmpresa = :idEmpresa', { idEmpresa })
       .orderBy('c.nombre', 'ASC');
 
     if (!includeInactive) {
-      qb.andWhere('c.esInactivo = 0');
+      qb.andWhere('c.esInactivo = :activeFlag', { activeFlag: this.activeFlag });
     }
 
-    qb.andWhere('c.idTipoErp IN (:...ids)', { ids: idsReferencia });
+    if (allowedIdsReferencia.length > 0 && allowedAccountIds.length > 0) {
+      qb.andWhere('(c.idTipoErp IN (:...ids) OR c.id IN (:...idsCuenta))', {
+        ids: allowedIdsReferencia,
+        idsCuenta: allowedAccountIds,
+      });
+    } else if (allowedIdsReferencia.length > 0) {
+      qb.andWhere('c.idTipoErp IN (:...ids)', { ids: allowedIdsReferencia });
+    } else if (allowedAccountIds.length > 0) {
+      qb.andWhere('c.id IN (:...idsCuenta)', { idsCuenta: allowedAccountIds });
+    }
 
     return qb.getMany();
   }
@@ -344,7 +358,7 @@ export class PayrollArticlesService {
       idTipoArticuloNomina: entity.idTipoArticuloNomina ?? null,
       idCuentaGasto: entity.idCuentaGasto ?? null,
       idCuentaPasivo: entity.idCuentaPasivo ?? null,
-      esInactivo: entity.esInactivo === 1 ? 'Inactivo' : 'Activo',
+      esInactivo: entity.esInactivo === this.inactiveFlag ? 'Inactivo' : 'Activo',
     };
   }
 
@@ -407,7 +421,7 @@ export class PayrollArticlesService {
     const found = await this.typeRepo.findOne({
       where: { id: idTipoArticuloNomina },
     });
-    if (!found || found.esInactivo === 1) {
+    if (!found || found.esInactivo === this.inactiveFlag) {
       throw new BadRequestException('Debe seleccionar un tipo de articulo de nomina activo.');
     }
   }
@@ -448,7 +462,7 @@ export class PayrollArticlesService {
           'La cuenta contable no es valida para el tipo de articulo seleccionado.',
         );
       }
-      if (account.esInactivo === 1) {
+      if (account.esInactivo === this.inactiveFlag) {
         throw new BadRequestException('La cuenta contable seleccionada esta inactiva.');
       }
     }

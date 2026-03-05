@@ -35,14 +35,15 @@ Esta tabla **NO** es el detalle de pagos. Es el **calendario oficial** que defin
 | `fecha_fin_pago` | DATE | Fin ventana de pago |
 | `moneda_calendario_nomina` | ENUM | CRC, USD (obligatorio) |
 | `estado_calendario_nomina` | TINYINT | Ver estados abajo |
-| `es_inactivo` | TINYINT | Soft disable |
+| `es_inactivo` | TINYINT | 1=Activo, 0=Inactivo |
 | `descripcion_evento_calendario_nomina` | TEXT | Opcional |
 | `etiqueta_color_calendario_nomina` | VARCHAR(20) | Para UI calendario |
 | `prioridad_calendario_nomina` | INT | Opcional, orden ejecución |
 | `fecha_creacion`, `fecha_modificacion` | DATETIME | Auditoría |
 | `creado_por`, `modificado_por` | INT | Auditoría |
 
-**Regla:** Periodo ≠ Pago. El calendario permite mostrar "periodo trabajado" y "ventana de pago" por separado.
+**Regla:** Periodo ≠ Pago. El calendario permite mostrar "periodo trabajado" y "ventana de pago" por separado.  
+**Regla (TZ):** Fechas de planilla se tratan como **date-only** (`YYYY-MM-DD`) en **hora local** para evitar desfases por zona horaria.
 
 ### Estados de Planilla (estado_calendario_nomina)
 
@@ -310,7 +311,7 @@ Referencia canonica:
   - `nomina_resultados`
 - Flujo operativo en API:
   - `process`: `Abierta -> En Proceso` con snapshot + ligue de acciones aprobadas + resultados base.
-  - `verify`: requiere existencia de snapshot, inputs y resultados para permitir `En Proceso -> Verificada`.
+  - `verify`: requiere snapshot y resultados; inputs o cargas sociales configuradas para permitir `En Proceso -> Verificada`.
 - Se mantiene inmutabilidad de `Aplicada`.
 
 Pendiente fuera de este bloque:
@@ -374,4 +375,4 @@ Default UI:
   - datos funcionales en espanol (sin terminos tecnicos internos).
   - acciones `Procesar`, `Verificar`, `Aplicar` segun estado y permisos.
   - confirmacion obligatoria antes de ejecutar cada accion.
-  - `Verificar` bloqueado si no existen movimientos procesados (snapshot inputs = 0).
+  - `Verificar` bloqueado si no existen movimientos procesados y no hay cargas sociales configuradas (snapshot inputs = 0 y cargas sociales = 0).

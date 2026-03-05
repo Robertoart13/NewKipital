@@ -145,10 +145,14 @@ export async function fetchPayrollArticleAccounts(
   idEmpresa: number,
   idsReferencia: number[],
   includeInactive = false,
+  idsCuenta: number[] = [],
 ): Promise<AccountingAccountOption[]> {
   const params = new URLSearchParams({ idEmpresa: String(idEmpresa) });
   if (idsReferencia.length > 0) {
     params.set('idsReferencia', idsReferencia.join(','));
+  }
+  if (idsCuenta.length > 0) {
+    params.set('idsCuenta', idsCuenta.join(','));
   }
   if (includeInactive) {
     params.set('includeInactive', 'true');

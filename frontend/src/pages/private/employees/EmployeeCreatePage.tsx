@@ -10,6 +10,10 @@ import { useCreateEmployee } from '../../../queries/employees/useCreateEmployee'
 import { useSupervisors } from '../../../queries/employees/useSupervisors';
 import { useRolesByApp } from '../../../queries/roles/useRolesByApp';
 import { useAppSelector } from '../../../store/hooks';
+import {
+  canAssignKpitalRoleOnEmployeeCreate,
+  canAssignTimewiseRoleOnEmployeeCreate,
+} from '../../../store/selectors/permissions.selectors';
 
 import { EmployeeForm } from './components/EmployeeForm';
 
@@ -17,14 +21,16 @@ export function EmployeeCreatePage() {
   const [form] = Form.useForm();
   const navigate = useNavigate();
   const companyId = useAppSelector((s) => s.activeCompany.company?.id ?? null);
+  const canAssignKpitalRole = useAppSelector(canAssignKpitalRoleOnEmployeeCreate);
+  const canAssignTimewiseRole = useAppSelector(canAssignTimewiseRoleOnEmployeeCreate);
   const createMutation = useCreateEmployee();
 
   const { data: departments = [] } = useDepartments();
   const { data: positions = [] } = usePositions();
   const { data: payPeriods = [] } = usePayPeriods();
   const { data: supervisors = [] } = useSupervisors();
-  const { data: rolesTimewise = [] } = useRolesByApp('timewise');
-  const { data: rolesKpital = [] } = useRolesByApp('kpital');
+  const { data: rolesTimewise = [] } = useRolesByApp('timewise', canAssignTimewiseRole);
+  const { data: rolesKpital = [] } = useRolesByApp('kpital', canAssignKpitalRole);
 
   const crearAccesoTimewise = Form.useWatch('crearAccesoTimewise', form);
   const crearAccesoKpital = Form.useWatch('crearAccesoKpital', form);

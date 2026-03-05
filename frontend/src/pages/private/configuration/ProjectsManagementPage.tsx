@@ -34,7 +34,7 @@ import {
   Tag,
   Tooltip,
 } from 'antd';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 
 import {
@@ -141,10 +141,11 @@ export function ProjectsManagementPage() {
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [showInactive, setShowInactive] = useState(false);
-  const [listCompanyId, setListCompanyId] = useState<number | undefined>(defaultCompanyId);
+  const [listCompanyId, setListCompanyId] = useState<number | undefined>(undefined);
   const [openModal, setOpenModal] = useState(false);
   const [editing, setEditing] = useState<ProjectListItem | null>(null);
-  const editingId = editing?.id ?? null;
+  const editingId = editing ? Number(editing.id) : null;
+  const detailLoadedIdRef = useRef<number | null>(null);
   const [search, setSearch] = useState('');
   const [pageSize, setPageSize] = useState(10);
   const [activeTab, setActiveTab] = useState('principal');
@@ -174,15 +175,15 @@ export function ProjectsManagementPage() {
     estado: false,
   });
 
+  /**
+   * La vista de proyectos muestra todos los registros por defecto.
+   * El filtro por empresa es opcional y solo se aplica si el usuario lo elige.
+   */
   const loadRows = useCallback(
     async (companyId?: number) => {
       setLoading(true);
       try {
-        const targetCompanyId = companyId ?? listCompanyId ?? defaultCompanyId;
-        if (!targetCompanyId) {
-          setRows([]);
-          return;
-        }
+        const targetCompanyId = companyId ?? listCompanyId;
         const data = await fetchProjects(targetCompanyId, showInactive);
         setRows(data);
       } catch (error) {
@@ -192,16 +193,12 @@ export function ProjectsManagementPage() {
         setLoading(false);
       }
     },
-    [defaultCompanyId, listCompanyId, message, showInactive],
+    [listCompanyId, message, showInactive],
   );
 
   useEffect(() => {
-    setListCompanyId(defaultCompanyId);
-  }, [defaultCompanyId]);
-
-  useEffect(() => {
     void loadRows();
-  }, [loadRows, listCompanyId, showInactive]);
+  }, [loadRows, showInactive]);
 
   const matchesGlobalSearch = useCallback(
     (row: ProjectListItem) => {
@@ -292,6 +289,7 @@ export function ProjectsManagementPage() {
     if (defaultCompanyId) {
       form.setFieldsValue({ idEmpresa: defaultCompanyId });
     }
+    detailLoadedIdRef.current = null;
     setOpenModal(true);
   };
 
@@ -301,6 +299,7 @@ export function ProjectsManagementPage() {
     setActiveTab('principal');
     setOpenModal(true);
     applyProjectToForm(row);
+    detailLoadedIdRef.current = null;
   };
 
   const closeModal = () => {
@@ -308,6 +307,7 @@ export function ProjectsManagementPage() {
     setEditing(null);
     setAuditTrail([]);
     form.resetFields();
+    detailLoadedIdRef.current = null;
   };
 
   const applyProjectToForm = useCallback(
@@ -329,7 +329,7 @@ export function ProjectsManagementPage() {
       setLoadingDetail(true);
       try {
         const detail = await fetchProject(id);
-        setEditing(detail);
+        setEditing({ ...detail, id: Number(detail.id) });
         applyProjectToForm(detail);
       } catch {
         // Keep current form values if detail fetch fails
@@ -341,8 +341,10 @@ export function ProjectsManagementPage() {
   );
 
   useEffect(() => {
-    if (!openModal || !editingId) return;
+    if (!openModal || !editingId || !Number.isFinite(editingId)) return;
     if (editing) applyProjectToForm(editing);
+    if (detailLoadedIdRef.current === editingId) return;
+    detailLoadedIdRef.current = editingId;
     void loadProjectDetail(editingId);
   }, [openModal, editingId, editing, loadProjectDetail, applyProjectToForm]);
 
@@ -426,11 +428,10 @@ export function ProjectsManagementPage() {
         }
         await createProject({ ...payload, idEmpresa: selectedEmpresa });
         message.success('Proyecto creado correctamente');
-        setListCompanyId(selectedEmpresa);
       }
 
       closeModal();
-      await loadRows(selectedEmpresa ?? listCompanyId);
+      await loadRows();
     } catch (error) {
       if (error instanceof Error && error.message) {
         message.error(error.message);
@@ -506,8 +507,8 @@ export function ProjectsManagementPage() {
       key: 'estado',
       width: 120,
       render: (_, row) => (
-        <Tag className={row.esInactivo === 1 ? styles.tagInactivo : styles.tagActivo}>
-          {row.esInactivo === 1 ? 'Inactivo' : 'Activo'}
+        <Tag className={row.esInactivo === 1 ? styles.tagActivo : styles.tagInactivo}>
+          {row.esInactivo === 1 ? 'Activo' : 'Inactivo'}
         </Tag>
       ),
     },
@@ -662,9 +663,30 @@ export function ProjectsManagementPage() {
                 <span style={{ color: '#6b7a85', fontSize: 14 }}>entries per page</span>
               </Flex>
             </Flex>
-            <Flex align="center" gap={8}>
+            <Flex align="center" gap={8} wrap="wrap">
               <span style={{ color: '#6b7a85', fontSize: 14 }}>Mostrar inactivas</span>
               <Switch checked={showInactive} onChange={setShowInactive} size="small" />
+              <Select
+                placeholder="Todas las empresas"
+                allowClear
+                value={listCompanyId}
+                onChange={(value) => {
+                  const nextValue = value ?? undefined;
+                  setListCompanyId(nextValue);
+                  void loadRows(nextValue);
+                }}
+                onClear={() => {
+                  setListCompanyId(undefined);
+                  void loadRows(undefined);
+                }}
+                options={companies.map((c) => ({ value: Number(c.id), label: c.nombre }))}
+                showSearch
+                optionFilterProp="label"
+                filterOption={(input, option) =>
+                  (option?.label ?? '').toString().toLowerCase().includes(input.toLowerCase())
+                }
+                style={{ minWidth: 220 }}
+              />
             </Flex>
           </Flex>
 
@@ -807,14 +829,14 @@ export function ProjectsManagementPage() {
                     style={{
                       fontWeight: 500,
                       fontSize: 14,
-                      color: editing.esInactivo === 1 ? '#64748b' : '#20638d',
+                      color: editing.esInactivo === 1 ? '#20638d' : '#64748b',
                     }}
                   >
-                    {editing.esInactivo === 1 ? 'Inactivo' : 'Activo'}
+                    {editing.esInactivo === 1 ? 'Activo' : 'Inactivo'}
                   </span>
                   <Switch
-                    checked={editing.esInactivo === 0}
-                    disabled={editing.esInactivo === 0 ? !canInactivate : !canReactivate}
+                    checked={editing.esInactivo === 1}
+                    disabled={editing.esInactivo === 1 ? !canInactivate : !canReactivate}
                     onChange={(checked) => {
                       if (!editing) return;
                       modal.confirm({

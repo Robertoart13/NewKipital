@@ -20,8 +20,8 @@ import { CacheResponseInterceptor } from '../../common/interceptors/cache-respon
 
 import { ProjectsService } from './projects.service';
 
-import type { CreateProjectDto } from './dto/create-project.dto';
-import type { UpdateProjectDto } from './dto/update-project.dto';
+import { CreateProjectDto } from './dto/create-project.dto';
+import { UpdateProjectDto } from './dto/update-project.dto';
 
 @CacheScope('projects')
 @UseInterceptors(CacheResponseInterceptor)

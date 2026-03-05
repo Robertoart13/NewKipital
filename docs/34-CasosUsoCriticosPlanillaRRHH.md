@@ -140,3 +140,4 @@ SOLAPE-PLANILLAS-2026-03-02)
 - La base de devengado sirve para provisiones de aguinaldo y traslados interempresas.
 - Bloqueo operativo: si el empleado esta verificado en una planilla, no se permiten nuevas acciones que apunten a esa planilla hasta desmarcar verificacion.
 - CCSS e impuesto de renta se calculan en `process` y quedan visibles antes de verificar.
+- Verificacion permitida con `inputs = 0` si la empresa tiene cargas sociales activas configuradas.

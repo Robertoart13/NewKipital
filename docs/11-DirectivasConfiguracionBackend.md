@@ -252,7 +252,9 @@ Objetivo: acelerar listados y catálogos sin perder consistencia.
 - **Invalidación**: cualquier cambio en el mismo `scope` invalida el cache.
 - **Keying**: considera `url`, `params`, `query` y `userId` (evita fugas de datos entre usuarios).
 - **Scope por empresa**: el cache se segmenta por `idEmpresa/companyId` para evitar invalidaciones globales.
-- **Normalización de query**: solo parámetros allowlist por scope + orden determinístico.
+- **Invalidación por body**: en POST/PUT/PATCH/DELETE se detecta `idEmpresa` también en `body` para invalidar el scope correcto cuando el endpoint no usa query params.
+- **Normalización de query**: solo parámetros allowlist por scope + orden determinístico.  
+  Ejemplo planilla (`scope=payroll`): `idEmpresa`, `includeInactive`, `inactiveOnly`, `fechaDesde`, `fechaHasta`, `estado`, `page`, `size`, `sort`.
 - **User scope**: `userId` solo en endpoints con payload dependiente del usuario (ej: `notifications`) para maximizar hit-rate sin comprometer seguridad.
 - **Fallback**: si no hay Redis, usa memoria local del API.
 

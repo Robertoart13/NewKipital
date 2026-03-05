@@ -868,10 +868,11 @@ en crear/editar (Ausencias y siguientes modulos):
    - `id_empresa = empresa seleccionada`.
    - `id_periodos_pago = idPeriodoPago del empleado`.
    - `moneda_calendario_nomina = monedaSalario del empleado`.
-   - `es_inactivo = 0`.
+   - `es_inactivo = 1`.
    - `estado_calendario_nomina IN (1,2)`:
      - `1 = ABIERTA`
      - `2 = EN_PROCESO`
+   - **Fechas date-only:** entradas y salidas en `YYYY-MM-DD` usando hora local.
    - `fecha_fin_pago >= CURDATE()` (ventana de pago vigente).
 
 3. Estados excluidos del select (no deben aparecer):
@@ -1006,3 +1007,8 @@ SOLAPE-PLANILLAS-2026-03-02)
 - El snapshot incluye totales por planilla + detalle por empleado + acciones aplicadas.
 - Devengado se calcula desde salario base prorrateado por `dias_periodo_pago` (quincenal/mensual) o horas estimadas (por horas).
 - Aguinaldo: al aplicar planilla se registra provision por empleado con `total_bruto / 12` usando fechas del periodo.
+
+---
+## Actualizacion 2026-03-05 - Normalizacion de fechas en API de Planilla (Implementado)
+
+- Respuestas de `/api/payroll` devuelven fechas en formato `YYYY-MM-DD` para evitar desfases por zona horaria en la UI.

@@ -243,16 +243,22 @@ export function PayrollArticlesManagementPage() {
   );
 
   const loadFormAccounts = useCallback(
-    async (companyId?: number, tipoId?: number, includeInactive?: boolean) => {
+    async (companyId?: number, tipoId?: number, includeInactive?: boolean, accountIds?: number[]) => {
       // Regla de negocio: no cargar cuentas hasta tener Empresa + Tipo Articulo.
       if (!companyId || !tipoId) {
         setFormAccounts([]);
         return;
       }
       const idsReferencia = PAYROLL_ARTICLE_TYPE_META[tipoId]?.idsReferencia ?? [];
+      const resolvedAccountIds = (accountIds ?? []).filter((value) => Number.isFinite(value) && value > 0);
       setLoadingFormAccounts(true);
       try {
-        const accounts = await fetchPayrollArticleAccounts(companyId, idsReferencia, includeInactive ?? false);
+        const accounts = await fetchPayrollArticleAccounts(
+          companyId,
+          idsReferencia,
+          includeInactive ?? false,
+          resolvedAccountIds,
+        );
         setFormAccounts(accounts);
       } catch (error) {
         message.error(error instanceof Error ? error.message : 'Error al cargar cuentas contables');
@@ -282,7 +288,12 @@ export function PayrollArticlesManagementPage() {
   }, [loadAccountsForCompanies, selectedCompanyIds]);
 
   useEffect(() => {
-    void loadFormAccounts(resolvedCompanyId, resolvedTipoArticuloId, !!editing);
+    const accountIds = editing
+      ? [editing.idCuentaGasto, editing.idCuentaPasivo]
+          .map((value) => Number(value))
+          .filter((value) => Number.isFinite(value) && value > 0)
+      : [];
+    void loadFormAccounts(resolvedCompanyId, resolvedTipoArticuloId, !!editing, accountIds);
   }, [loadFormAccounts, resolvedCompanyId, resolvedTipoArticuloId, editing]);
 
   const matchesGlobalSearch = useCallback(

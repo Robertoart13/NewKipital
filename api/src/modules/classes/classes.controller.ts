@@ -20,8 +20,8 @@ import { CacheResponseInterceptor } from '../../common/interceptors/cache-respon
 
 import { ClassesService } from './classes.service';
 
-import type { CreateClassDto } from './dto/create-class.dto';
-import type { UpdateClassDto } from './dto/update-class.dto';
+import { CreateClassDto } from './dto/create-class.dto';
+import { UpdateClassDto } from './dto/update-class.dto';
 
 @CacheScope('classes')
 @UseInterceptors(CacheResponseInterceptor)

@@ -14,21 +14,22 @@ import { AllowWithoutCompany } from '../../common/decorators/allow-without-compa
 import { CacheScope } from '../../common/decorators/cache-scope.decorator';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { Public } from '../../common/decorators/public.decorator';
+import { RequireAnyPermissions } from '../../common/decorators/require-any-permissions.decorator';
 import { RequirePermissions } from '../../common/decorators/require-permissions.decorator';
 import { CacheResponseInterceptor } from '../../common/interceptors/cache-response.interceptor';
 
+import { CreatePersonalActionDto } from './dto/create-personal-action.dto';
+import { UpsertAbsenceDto } from './dto/upsert-absence.dto';
+import { UpsertBonusDto } from './dto/upsert-bonus.dto';
+import { UpsertDisabilityDto } from './dto/upsert-disability.dto';
+import { UpsertDiscountDto } from './dto/upsert-discount.dto';
+import { UpsertIncreaseDto } from './dto/upsert-increase.dto';
+import { UpsertLicenseDto } from './dto/upsert-license.dto';
+import { UpsertOvertimeDto } from './dto/upsert-overtime.dto';
+import { UpsertRetentionDto } from './dto/upsert-retention.dto';
+import { UpsertVacationDto } from './dto/upsert-vacation.dto';
 import { PersonalActionsService } from './personal-actions.service';
 
-import type { CreatePersonalActionDto } from './dto/create-personal-action.dto';
-import type { UpsertAbsenceDto } from './dto/upsert-absence.dto';
-import type { UpsertBonusDto } from './dto/upsert-bonus.dto';
-import type { UpsertDisabilityDto } from './dto/upsert-disability.dto';
-import type { UpsertDiscountDto } from './dto/upsert-discount.dto';
-import type { UpsertIncreaseDto } from './dto/upsert-increase.dto';
-import type { UpsertLicenseDto } from './dto/upsert-license.dto';
-import type { UpsertOvertimeDto } from './dto/upsert-overtime.dto';
-import type { UpsertRetentionDto } from './dto/upsert-retention.dto';
-import type { UpsertVacationDto } from './dto/upsert-vacation.dto';
 import type { PersonalActionEstado } from './entities/personal-action.entity';
 
 @CacheScope('personal-actions')
@@ -64,7 +65,18 @@ export class PersonalActionsController {
     );
   }
 
-  @RequirePermissions('hr-action-ausencias:view')
+  @RequireAnyPermissions(
+    'hr_action:view',
+    'hr-action-ausencias:view',
+    'hr-action-licencias:view',
+    'hr-action-incapacidades:view',
+    'hr-action-bonificaciones:view',
+    'hr-action-horas-extras:view',
+    'hr-action-retenciones:view',
+    'hr-action-descuentos:view',
+    'hr-action-aumentos:view',
+    'hr-action-vacaciones:view',
+  )
   @Get('absence-movements')
   listAbsenceMovements(
     @CurrentUser() user: { userId: number },
@@ -86,7 +98,18 @@ export class PersonalActionsController {
     return this.service.findAbsenceMovementsCatalog(user.userId, idEmpresa, idTipoAccionPersonal);
   }
 
-  @RequirePermissions('hr-action-ausencias:view')
+  @RequireAnyPermissions(
+    'hr_action:view',
+    'hr-action-ausencias:view',
+    'hr-action-licencias:view',
+    'hr-action-incapacidades:view',
+    'hr-action-bonificaciones:view',
+    'hr-action-horas-extras:view',
+    'hr-action-retenciones:view',
+    'hr-action-descuentos:view',
+    'hr-action-aumentos:view',
+    'hr-action-vacaciones:view',
+  )
   @Get('absence-employees')
   listAbsenceEmployees(
     @CurrentUser() user: { userId: number },
@@ -265,7 +288,18 @@ export class PersonalActionsController {
     return this.service.getAbsenceAuditTrail(id, user.userId, limit);
   }
 
-  @RequirePermissions('hr-action-ausencias:view')
+  @RequireAnyPermissions(
+    'hr_action:view',
+    'hr-action-ausencias:view',
+    'hr-action-licencias:view',
+    'hr-action-incapacidades:view',
+    'hr-action-bonificaciones:view',
+    'hr-action-horas-extras:view',
+    'hr-action-retenciones:view',
+    'hr-action-descuentos:view',
+    'hr-action-aumentos:view',
+    'hr-action-vacaciones:view',
+  )
   @Get('absence-payrolls')
   listAbsencePayrolls(
     @CurrentUser() user: { userId: number },

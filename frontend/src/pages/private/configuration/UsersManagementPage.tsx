@@ -169,6 +169,8 @@ export function UsersManagementPage() {
   const [drawerNavTab, setDrawerNavTab] = useState<string>('empresas');
   const [excepcionRoleId, setExcepcionRoleId] = useState<number | null>(null);
   const [roleExcepcionPermissions, setRoleExcepcionPermissions] = useState<SystemPermission[]>([]);
+  const [roleExcepcionLoading, setRoleExcepcionLoading] = useState(false);
+  const [roleExcepcionLoadedId, setRoleExcepcionLoadedId] = useState<number | null>(null);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [loadingUserApps, setLoadingUserApps] = useState(false);
@@ -216,7 +218,11 @@ export function UsersManagementPage() {
       }
 
       if (companiesCatalogResult.status === 'fulfilled') {
-        setCompaniesData(companiesCatalogResult.value ?? []);
+        const normalized = (companiesCatalogResult.value ?? []).map((company) => ({
+          ...company,
+          id: Number(company.id),
+        }));
+        setCompaniesData(normalized);
       } else {
         setCompaniesData([]);
       }
@@ -231,6 +237,16 @@ export function UsersManagementPage() {
     void loadBaseData();
   }, [loadBaseData]);
 
+  useEffect(() => {
+    const handler = () => {
+      void loadBaseData();
+    };
+    window.addEventListener('users:refresh', handler);
+    return () => {
+      window.removeEventListener('users:refresh', handler);
+    };
+  }, [loadBaseData]);
+
   const loadUserCompanies = useCallback(async () => {
     if (!selectedUser) {
       setUserCompanyIds([]);
@@ -238,7 +254,12 @@ export function UsersManagementPage() {
     }
     try {
       const assignments = await fetchUserCompanies(selectedUser.id);
-      setUserCompanyIds(assignments.filter((a) => a.estado === 1).map((a) => a.idEmpresa));
+      setUserCompanyIds(
+        assignments
+          .filter((a) => a.estado === 1)
+          .map((a) => Number(a.idEmpresa))
+          .filter((id) => Number.isFinite(id)),
+      );
     } catch {
       setUserCompanyIds([]);
     }
@@ -497,15 +518,28 @@ export function UsersManagementPage() {
   useEffect(() => {
     if (!excepcionRoleId) {
       setRoleExcepcionPermissions([]);
+      setRoleExcepcionLoading(false);
+      setRoleExcepcionLoadedId(null);
       return;
     }
     let cancelled = false;
+    setRoleExcepcionLoading(true);
+    setRoleExcepcionLoadedId(null);
+    // Evita spinner infinito: cualquier resultado (success/error) debe cerrar el loading.
     fetchRolePermissions(excepcionRoleId)
       .then((perms) => {
-        if (!cancelled) setRoleExcepcionPermissions(perms ?? []);
+        if (!cancelled) {
+          setRoleExcepcionPermissions(perms ?? []);
+          setRoleExcepcionLoadedId(excepcionRoleId);
+          setRoleExcepcionLoading(false);
+        }
       })
       .catch(() => {
-        if (!cancelled) setRoleExcepcionPermissions([]);
+        if (!cancelled) {
+          setRoleExcepcionPermissions([]);
+          setRoleExcepcionLoadedId(excepcionRoleId);
+          setRoleExcepcionLoading(false);
+        }
       });
     return () => {
       cancelled = true;
@@ -880,12 +914,19 @@ export function UsersManagementPage() {
                           className={styles.searchInput}
                         />
                         <div className={styles.listBox}>
-                          <Checkbox.Group
-                            value={userCompanyIds}
-                            onChange={(v) => canAssignCompaniesPerm && setUserCompanyIds(v as number[])}
-                            disabled={!canAssignCompaniesPerm}
-                            style={{ display: 'flex', flexDirection: 'column', gap: 8 }}
-                          >
+                            <Checkbox.Group
+                              value={userCompanyIds}
+                              onChange={(v) =>
+                                canAssignCompaniesPerm &&
+                                setUserCompanyIds(
+                                  (v as Array<number | string>)
+                                    .map((id) => Number(id))
+                                    .filter((id) => Number.isFinite(id)),
+                                )
+                              }
+                              disabled={!canAssignCompaniesPerm}
+                              style={{ display: 'flex', flexDirection: 'column', gap: 8 }}
+                            >
                             {filteredCompanies.map((c) => (
                               <Checkbox key={c.id} value={c.id}>
                                 {c.nombre}
@@ -1080,8 +1121,11 @@ export function UsersManagementPage() {
                                     disabled={!canDenyPermissionsPerm}
                                     style={{ display: 'flex', flexDirection: 'column', gap: 6 }}
                                   >
-                                    {roleExcepcionPermissions.length === 0 ? (
+                                    {roleExcepcionLoading ? (
                                       <span className={styles.emptyHint}>Cargando permisos del rol…</span>
+                                    ) : roleExcepcionPermissions.length === 0 &&
+                                      roleExcepcionLoadedId === excepcionRoleId ? (
+                                      <span className={styles.emptyHint}>El rol no tiene permisos asignados.</span>
                                     ) : (
                                       filteredExceptionPermissions.map((p) => (
                                         <Checkbox key={p.id} value={p.codigo}>

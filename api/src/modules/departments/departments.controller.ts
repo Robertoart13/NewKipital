@@ -20,8 +20,8 @@ import { CacheResponseInterceptor } from '../../common/interceptors/cache-respon
 
 import { DepartmentsService } from './departments.service';
 
-import type { CreateDepartmentDto } from './dto/create-department.dto';
-import type { UpdateDepartmentDto } from './dto/update-department.dto';
+import { CreateDepartmentDto } from './dto/create-department.dto';
+import { UpdateDepartmentDto } from './dto/update-department.dto';
 
 @CacheScope('departments')
 @UseInterceptors(CacheResponseInterceptor)

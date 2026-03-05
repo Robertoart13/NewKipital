@@ -9,6 +9,7 @@ import { Reflector } from '@nestjs/core';
 
 import { AuthService } from '../../modules/auth/auth.service';
 import { ALLOW_WITHOUT_COMPANY_KEY } from '../decorators/allow-without-company.decorator';
+import { REQUIRE_ANY_PERMISSIONS_KEY } from '../decorators/require-any-permissions.decorator';
 import { REQUIRE_PERMISSIONS_KEY } from '../decorators/require-permissions.decorator';
 
 type RequestWithUser = {
@@ -52,8 +53,14 @@ export class PermissionsGuard implements CanActivate {
       REQUIRE_PERMISSIONS_KEY,
       [context.getHandler(), context.getClass()],
     );
+    const requiredAny = this.reflector.getAllAndOverride<string[] | undefined>(
+      REQUIRE_ANY_PERMISSIONS_KEY,
+      [context.getHandler(), context.getClass()],
+    );
 
-    if (!required || required.length === 0) return true;
+    const hasRequired = !!required && required.length > 0;
+    const hasRequiredAny = !!requiredAny && requiredAny.length > 0;
+    if (!hasRequired && !hasRequiredAny) return true;
     const allowWithoutCompany = this.reflector.getAllAndOverride<boolean | undefined>(
       ALLOW_WITHOUT_COMPANY_KEY,
       [context.getHandler(), context.getClass()],
@@ -81,9 +88,20 @@ export class PermissionsGuard implements CanActivate {
         roles: resolved.roles,
       };
 
-      const hasAll = required.every((p) => hasPermissionWithEnterpriseAliases(userPermissions, p));
-      if (!hasAll) {
-        throw new ForbiddenException(`Permisos insuficientes. Requiere: ${required.join(', ')}`);
+      const hasAll = hasRequired
+        ? required!.every((p) => hasPermissionWithEnterpriseAliases(userPermissions, p))
+        : true;
+      const hasAny = hasRequiredAny
+        ? requiredAny!.some((p) => hasPermissionWithEnterpriseAliases(userPermissions, p))
+        : true;
+      if (!hasAll || !hasAny) {
+        const needed = [
+          ...(required ?? []),
+          ...(requiredAny ? requiredAny.map((perm) => `(${perm})`) : []),
+        ];
+        throw new ForbiddenException(
+          `Permisos insuficientes. Requiere: ${needed.length > 0 ? needed.join(', ') : 'N/A'}`,
+        );
       }
 
       return true;
@@ -101,9 +119,20 @@ export class PermissionsGuard implements CanActivate {
       roles: resolved.roles,
     };
 
-    const hasAll = required.every((p) => hasPermissionWithEnterpriseAliases(userPermissions, p));
-    if (!hasAll) {
-      throw new ForbiddenException(`Permisos insuficientes. Requiere: ${required.join(', ')}`);
+    const hasAll = hasRequired
+      ? required!.every((p) => hasPermissionWithEnterpriseAliases(userPermissions, p))
+      : true;
+    const hasAny = hasRequiredAny
+      ? requiredAny!.some((p) => hasPermissionWithEnterpriseAliases(userPermissions, p))
+      : true;
+    if (!hasAll || !hasAny) {
+      const needed = [
+        ...(required ?? []),
+        ...(requiredAny ? requiredAny.map((perm) => `(${perm})`) : []),
+      ];
+      throw new ForbiddenException(
+        `Permisos insuficientes. Requiere: ${needed.length > 0 ? needed.join(', ') : 'N/A'}`,
+      );
     }
 
     return true;

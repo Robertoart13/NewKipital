@@ -20,8 +20,8 @@ import { CacheResponseInterceptor } from '../../common/interceptors/cache-respon
 
 import { PayrollMovementsService } from './payroll-movements.service';
 
-import type { CreatePayrollMovementDto } from './dto/create-payroll-movement.dto';
-import type { UpdatePayrollMovementDto } from './dto/update-payroll-movement.dto';
+import { CreatePayrollMovementDto } from './dto/create-payroll-movement.dto';
+import { UpdatePayrollMovementDto } from './dto/update-payroll-movement.dto';
 
 @CacheScope('payroll-movements')
 @UseInterceptors(CacheResponseInterceptor)

@@ -5,10 +5,12 @@ import { DataSource } from 'typeorm';
 
 import { DOMAIN_EVENTS } from '../../common/events/event-names';
 import { EmployeeSensitiveDataService } from '../../common/services/employee-sensitive-data.service';
+import { AppCacheService } from '../../common/services/app-cache.service';
 import { App } from '../../modules/access-control/entities/app.entity';
 import { UserApp } from '../../modules/access-control/entities/user-app.entity';
 import { UserCompany } from '../../modules/access-control/entities/user-company.entity';
 import { UserRole } from '../../modules/access-control/entities/user-role.entity';
+import { UserRoleGlobal } from '../../modules/access-control/entities/user-role-global.entity';
 import { UserStatus } from '../../modules/auth/constants/user-status.enum';
 import { User } from '../../modules/auth/entities/user.entity';
 import {
@@ -39,6 +41,7 @@ export class EmployeeCreationWorkflow {
     private readonly dataSource: DataSource,
     private readonly eventEmitter: EventEmitter2,
     private readonly sensitiveDataService: EmployeeSensitiveDataService,
+    private readonly cacheService: AppCacheService,
   ) {}
 
   async execute(
@@ -153,6 +156,17 @@ export class EmployeeCreationWorkflow {
                 modificadoPor: creator,
               }),
             );
+            await manager.save(
+              UserRoleGlobal,
+              manager.create(UserRoleGlobal, {
+                idUsuario: savedUser.id,
+                idRol: dto.idRolTimewise,
+                idApp: twApp.id,
+                estado: 1,
+                creadoPor: creator,
+                modificadoPor: creator,
+              }),
+            );
           }
         }
         if (dto.crearAccesoKpital && dto.idRolKpital) {
@@ -166,6 +180,17 @@ export class EmployeeCreationWorkflow {
                 idUsuario: savedUser.id,
                 idRol: dto.idRolKpital,
                 idEmpresa: dto.idEmpresa,
+                idApp: kpApp.id,
+                estado: 1,
+                creadoPor: creator,
+                modificadoPor: creator,
+              }),
+            );
+            await manager.save(
+              UserRoleGlobal,
+              manager.create(UserRoleGlobal, {
+                idUsuario: savedUser.id,
+                idRol: dto.idRolKpital,
                 idApp: kpApp.id,
                 estado: 1,
                 creadoPor: creator,
@@ -306,6 +331,11 @@ export class EmployeeCreationWorkflow {
             ? ` con usuario #${savedUser.id} (apps: ${appsAssigned.join(', ')})`
             : ' sin acceso digital'),
       );
+
+      if (needsAccess) {
+        // Al crear usuario desde el flujo de empleados, invalidar cache de usuarios.
+        await this.cacheService.invalidateScope('users', 'global');
+      }
 
       return {
         success: true,

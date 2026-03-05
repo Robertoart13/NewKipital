@@ -4,12 +4,46 @@ Documento de control por fases de ejecucion de pruebas.
 
 ## Resumen vigente
 - Estado actual: Completo
-- Total: 467/467 pasando
-- Backend: 217/217
-- Frontend: 250/250
+- Total: 540/540 pasando
+- Backend: 270/270
+- Frontend: 270/270
 - Fallos abiertos: 0
 - Corte de auditoria final (Rev.3): 2026-02-27
+- Corte vigente pruebas: 2026-03-05 09:53
 - Nota: los conteos de fases anteriores son historicos de su fecha y no sustituyen el corte vigente.
+
+## Fase 17 - 2026-03-05 09:53
+Alcance: cierre PEND-004 (traslado interempresas) + revalidacion completa
+
+Comandos ejecutados:
+- `cd api && npm.cmd test -- --runInBand`
+- `cd frontend && npm.cmd test`
+
+Resultados:
+- Backend: 270/270
+- Frontend: 270/270
+- Total: 540/540
+- Fallos: 0
+
+Cambios validados en esta fase:
+- Traslado interempresas con portabilidad de saldo de vacaciones (ledger + cuenta).
+- Bloqueo por acciones pendientes bloqueantes segun politica.
+- Simulacion muestra saldo de vacaciones a trasladar.
+
+## Fase 18 - 2026-03-05 10:02
+Alcance: fix validacion DTO en edicion de ausencias + revalidacion backend
+
+Comandos ejecutados:
+- `cd api && npm.cmd test -- --runInBand`
+
+Resultados:
+- Backend: 270/270
+- Total: 270/270
+- Fallos: 0
+
+Cambios validados en esta fase:
+- Validacion runtime de DTOs en controller `personal-actions`.
+- Edicion de ausencias acepta payload con `idEmpresa`, `idEmpleado`, `observacion`, `lines`.
 
 ## Fase 16 - 2026-02-27 12:00 (corte de auditoria Rev.3)
 Alcance: cierre de bloqueantes de seguridad/calidad y revalidacion completa

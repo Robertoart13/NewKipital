@@ -334,7 +334,7 @@ export class AddUniqueConstraintPayroll implements MigrationInterface {
         fecha_fin_periodo_nomina,
         tipo_planilla_nomina
       )
-      WHERE estado_calendario_nomina = 'Aplicada' AND es_inactivo_calendario_nomina = 0
+      WHERE estado_calendario_nomina = 'Aplicada' AND es_inactivo_calendario_nomina = 1
     `);
   }
 }

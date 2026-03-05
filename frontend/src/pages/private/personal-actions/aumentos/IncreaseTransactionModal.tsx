@@ -43,6 +43,7 @@ import { useMoneyFieldFormatter } from '../../../../hooks/useMoneyFieldFormatter
 import { formatDateTime12h } from '../../../../lib/formatDate';
 import { EMPLOYEE_MONEY_MAX_DIGITS } from '../../../../lib/moneyInputSanitizer';
 import sharedStyles from '../../configuration/UsersManagementPage.module.css';
+import { formatEmployeeLabel } from '../shared/employeeLabel';
 
 import type { CatalogPayPeriod } from '../../../../api/catalogs';
 import type { PayrollListItem } from '../../../../api/payroll';
@@ -859,8 +860,7 @@ export function IncreaseTransactionModal({
                             notFoundContent={employeesLoading ? <Spin size="small" /> : null}
                             options={employeesByCompany.map((employee) => ({
                               value: employee.id,
-                              label:
-                                `${employee.codigo} - ${employee.nombre} ${employee.apellido1} ${employee.apellido2 ?? ''}`.trim(),
+                              label: formatEmployeeLabel(employee, canViewEmployeeSensitive),
                             }))}
                           />
                         </Form.Item>
@@ -1152,3 +1152,4 @@ export function IncreaseTransactionModal({
     </Modal>
   );
 }
+

@@ -170,7 +170,7 @@ Columnas ordenadas de más importante a menos importante:
 | `id_periodos_pago` | INT PK AI | |
 | `nombre_periodo_pago` | VARCHAR(50) | Semanal, Quincenal, Mensual |
 | `dias_periodo_pago` | INT | 7, 15, 30 |
-| `es_inactivo` | TINYINT(1) | 0=Activo, 1=Inactivo |
+| `es_inactivo` | TINYINT(1) | 1=Activo, 0=Inactivo |
 | `fecha_creacion_periodo_pago` | DATETIME | Auto |
 | `fecha_modificacion_periodo_pago` | DATETIME | Auto onUpdate |
 

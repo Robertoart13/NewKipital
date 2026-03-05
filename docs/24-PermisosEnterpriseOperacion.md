@@ -62,12 +62,15 @@ La ventana tiene **tres pestañas** y un selector de aplicación:
 - **Guardar roles globales** → `replaceUserGlobalRoles` → `sys_usuario_rol_global`
 - Al guardar, se cambia a Excepciones y se actualiza la lista sin refrescar.
 - Requiere al menos una empresa asignada; si no, los roles no tienen efecto.
+- **Creación de empleado con acceso:** si se asigna rol al crear, también se registra en `sys_usuario_rol_global`.
 
 ### 3. Excepciones
 
 - Permisos que el usuario **NO** debe tener en ninguna empresa (para la app seleccionada). El selector de rol solo muestra los roles asignados al usuario.
 - **Permiso:** `config:users:deny-permissions`. Sin él, controles deshabilitados.
 - **Guardar** → `replaceUserGlobalPermissionDenials` → `sys_usuario_permiso_global`
+- Si el rol no tiene permisos, la UI muestra “El rol no tiene permisos asignados.”
+- La carga de permisos del rol siempre finaliza (success/error) y no deja el spinner infinito.
 
 ---
 
@@ -99,6 +102,7 @@ La ventana tiene **tres pestañas** y un selector de aplicación:
 
 - Al **volver a iniciar sesión**.
 - Al **restaurar sesión** (refresh, nueva pestaña) si la cookie es válida.
+- Al **crear empleado con acceso**: Gestión de Usuarios se refresca automáticamente y el cache de usuarios se invalida.
 
 No se aplican de forma instantánea sin recargar.
 

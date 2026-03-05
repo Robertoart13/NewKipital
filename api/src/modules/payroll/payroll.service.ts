@@ -42,11 +42,15 @@ import { PayrollResult } from './entities/payroll-result.entity';
 import { PayrollSocialCharge } from './entities/payroll-social-charge.entity';
 
 import type { CreatePayrollDto } from './dto/create-payroll.dto';
+import type { PayrollCalendarResponse } from './dto/payroll-response.dto';
 import type { UpdatePayrollDto } from './dto/update-payroll.dto';
 
 @Injectable()
 export class PayrollService {
   private readonly logger = new Logger(PayrollService.name);
+  // Regla global: 1 = Activo, 0 = Inactivo.
+  private readonly activeFlag = 1;
+  private readonly inactiveFlag = 0;
 
   private readonly rentaTramos = [
     { limite: 922000, porcentaje: 0 },
@@ -133,11 +137,12 @@ export class PayrollService {
     }
 
     if (inactiveOnly) {
-      qb.andWhere('(p.esInactivo = 1 OR p.estado = :inactiva)', {
+      qb.andWhere('(p.esInactivo = :inactiveFlag OR p.estado = :inactiva)', {
+        inactiveFlag: this.inactiveFlag,
         inactiva: EstadoCalendarioNomina.INACTIVA,
       });
     } else if (!includeInactive) {
-      qb.andWhere('p.esInactivo = 0');
+      qb.andWhere('p.esInactivo = :activeFlag', { activeFlag: this.activeFlag });
       qb.andWhere('p.estado != :inactiva', {
         inactiva: EstadoCalendarioNomina.INACTIVA,
       });
@@ -177,15 +182,17 @@ export class PayrollService {
     const tipo = (dto.tipoPlanilla as TipoPlanilla) ?? TipoPlanilla.REGULAR;
     const moneda = dto.moneda ?? MonedaCalendario.CRC;
     const resolvedTipoPlanillaId = dto.idTipoPlanilla ?? this.resolveTipoPlanillaId(tipo);
-    const inicio = new Date(dto.periodoInicio);
-    const fin = new Date(dto.periodoFin);
+    const inicio = this.parseDateOnly(dto.periodoInicio, 'periodoInicio');
+    const fin = this.parseDateOnly(dto.periodoFin, 'periodoFin');
     this.validateDateRules(
       inicio,
       fin,
-      dto.fechaCorte ? new Date(dto.fechaCorte) : fin,
-      new Date(dto.fechaInicioPago),
-      new Date(dto.fechaFinPago),
-      dto.fechaPagoProgramada ? new Date(dto.fechaPagoProgramada) : new Date(dto.fechaFinPago),
+      dto.fechaCorte ? this.parseDateOnly(dto.fechaCorte, 'fechaCorte') : fin,
+      this.parseDateOnly(dto.fechaInicioPago, 'fechaInicioPago'),
+      this.parseDateOnly(dto.fechaFinPago, 'fechaFinPago'),
+      dto.fechaPagoProgramada
+        ? this.parseDateOnly(dto.fechaPagoProgramada, 'fechaPagoProgramada')
+        : this.parseDateOnly(dto.fechaFinPago, 'fechaFinPago'),
     );
     const slotKey = this.buildSlotKey(dto.idEmpresa, inicio, fin, resolvedTipoPlanillaId, moneda);
 
@@ -209,13 +216,14 @@ export class PayrollService {
       tipoPlanilla: tipo,
       fechaInicioPeriodo: inicio,
       fechaFinPeriodo: fin,
-      fechaCorte: dto.fechaCorte ? new Date(dto.fechaCorte) : fin,
-      fechaInicioPago: new Date(dto.fechaInicioPago),
-      fechaFinPago: new Date(dto.fechaFinPago),
+      fechaCorte: dto.fechaCorte ? this.parseDateOnly(dto.fechaCorte, 'fechaCorte') : fin,
+      fechaInicioPago: this.parseDateOnly(dto.fechaInicioPago, 'fechaInicioPago'),
+      fechaFinPago: this.parseDateOnly(dto.fechaFinPago, 'fechaFinPago'),
       fechaPagoProgramada: dto.fechaPagoProgramada
-        ? new Date(dto.fechaPagoProgramada)
-        : new Date(dto.fechaFinPago),
+        ? this.parseDateOnly(dto.fechaPagoProgramada, 'fechaPagoProgramada')
+        : this.parseDateOnly(dto.fechaFinPago, 'fechaFinPago'),
       moneda,
+      esInactivo: this.activeFlag,
       estado: EstadoCalendarioNomina.ABIERTA,
       descripcionEvento: dto.descripcionEvento ?? null,
       etiquetaColor: dto.etiquetaColor ?? null,
@@ -275,8 +283,11 @@ export class PayrollService {
     const inputCount = await this.inputSnapshotRepo.count({
       where: { idNomina: p.id },
     });
-    if (inputCount === 0) {
-      throw new BadRequestException('No se puede verificar la planilla sin snapshot de inputs');
+    const hasSocialCharges = await this.hasActiveSocialCharges(p.idEmpresa);
+    if (inputCount === 0 && !hasSocialCharges) {
+      throw new BadRequestException(
+        'No se puede verificar la planilla sin snapshot de inputs ni cargas sociales configuradas',
+      );
     }
 
     const resultCount = await this.payrollResultRepo.count({
@@ -286,7 +297,7 @@ export class PayrollService {
       throw new BadRequestException('No se puede verificar la planilla sin resultados calculados');
     }
 
-    if (p.esInactivo) {
+    if (p.esInactivo === this.inactiveFlag) {
       throw new BadRequestException('No se puede verificar una planilla inactiva');
     }
     p.estado = EstadoCalendarioNomina.VERIFICADA;
@@ -326,7 +337,10 @@ export class PayrollService {
     const payroll = await this.findOne(id, userId);
     const payloadBefore = this.buildAuditPayload(payroll);
 
-    if (payroll.estado === EstadoCalendarioNomina.INACTIVA || payroll.esInactivo === 1) {
+    if (
+      payroll.estado === EstadoCalendarioNomina.INACTIVA ||
+      payroll.esInactivo === this.inactiveFlag
+    ) {
       throw new BadRequestException('No se puede editar una planilla inactiva.');
     }
     if (
@@ -351,15 +365,23 @@ export class PayrollService {
       await this.assertUserCompanyAccess(userId, nextCompanyId);
     }
 
-    const nextStart = dto.periodoInicio ? new Date(dto.periodoInicio) : payroll.fechaInicioPeriodo;
-    const nextEnd = dto.periodoFin ? new Date(dto.periodoFin) : payroll.fechaFinPeriodo;
-    const nextCutoff = dto.fechaCorte ? new Date(dto.fechaCorte) : (payroll.fechaCorte ?? nextEnd);
+    const nextStart = dto.periodoInicio
+      ? this.parseDateOnly(dto.periodoInicio, 'periodoInicio')
+      : payroll.fechaInicioPeriodo;
+    const nextEnd = dto.periodoFin
+      ? this.parseDateOnly(dto.periodoFin, 'periodoFin')
+      : payroll.fechaFinPeriodo;
+    const nextCutoff = dto.fechaCorte
+      ? this.parseDateOnly(dto.fechaCorte, 'fechaCorte')
+      : (payroll.fechaCorte ?? nextEnd);
     const nextPayStart = dto.fechaInicioPago
-      ? new Date(dto.fechaInicioPago)
+      ? this.parseDateOnly(dto.fechaInicioPago, 'fechaInicioPago')
       : payroll.fechaInicioPago;
-    const nextPayEnd = dto.fechaFinPago ? new Date(dto.fechaFinPago) : payroll.fechaFinPago;
+    const nextPayEnd = dto.fechaFinPago
+      ? this.parseDateOnly(dto.fechaFinPago, 'fechaFinPago')
+      : payroll.fechaFinPago;
     const nextProgrammed = dto.fechaPagoProgramada
-      ? new Date(dto.fechaPagoProgramada)
+      ? this.parseDateOnly(dto.fechaPagoProgramada, 'fechaPagoProgramada')
       : (payroll.fechaPagoProgramada ?? nextPayEnd);
 
     this.validateDateRules(
@@ -444,7 +466,7 @@ export class PayrollService {
     if (payroll.estado !== EstadoCalendarioNomina.ABIERTA) {
       throw new BadRequestException('Solo se puede procesar una planilla en estado Abierta');
     }
-    if (payroll.esInactivo) {
+    if (payroll.esInactivo === this.inactiveFlag) {
       throw new BadRequestException('No se puede procesar una planilla inactiva');
     }
 
@@ -453,9 +475,15 @@ export class PayrollService {
     await queryRunner.startTransaction();
 
     try {
-      const start = this.toYmd(payroll.fechaInicioPeriodo);
-      const end = this.toYmd(payroll.fechaFinPeriodo);
-      const cutoff = this.toYmd(payroll.fechaCorte ?? payroll.fechaFinPeriodo);
+      const startDate = this.ensureDateOnly(payroll.fechaInicioPeriodo, 'fechaInicioPeriodo');
+      const endDate = this.ensureDateOnly(payroll.fechaFinPeriodo, 'fechaFinPeriodo');
+      const cutoffDate = this.ensureDateOnly(
+        payroll.fechaCorte ?? payroll.fechaFinPeriodo,
+        'fechaCorte',
+      );
+      const start = this.toYmd(startDate);
+      const end = this.toYmd(endDate);
+      const cutoff = this.toYmd(cutoffDate);
 
       await queryRunner.manager.delete(PayrollEmployeeSnapshot, {
         idNomina: payroll.id,
@@ -536,13 +564,13 @@ export class PayrollService {
         .filter(([, info]) => this.isQuincenalPeriod(info.nombre))
         .map(([id]) => id);
       const shouldApplyQuincenalTax =
-        quincenalPeriodIds.length > 0 && this.isSecondHalfOfMonth(payroll.fechaFinPeriodo);
+        quincenalPeriodIds.length > 0 && this.isSecondHalfOfMonth(endDate);
       const previousQuincenalTotals = shouldApplyQuincenalTax
         ? await this.getPreviousQuincenalTotals(
             queryRunner.manager,
             payroll.idEmpresa,
-            payroll.fechaFinPeriodo,
-            payroll.fechaInicioPeriodo,
+            endDate,
+            startDate,
             quincenalPeriodIds,
           )
         : new Map<number, number>();
@@ -837,6 +865,7 @@ export class PayrollService {
     empleados: number;
     inputs: number;
     accionesLigadas: number;
+    hasSocialCharges: boolean;
     totalBruto: string;
     totalDeducciones: string;
     totalNeto: string;
@@ -845,10 +874,11 @@ export class PayrollService {
     totalImpuestoRenta: string;
   }> {
     const payroll = await this.findOne(id, userId);
-    const [empleados, inputs, accionesLigadas] = await Promise.all([
+    const [empleados, inputs, accionesLigadas, hasSocialCharges] = await Promise.all([
       this.snapshotRepo.count({ where: { idNomina: id } }),
       this.inputSnapshotRepo.count({ where: { idNomina: id } }),
       this.personalActionRepo.count({ where: { idCalendarioNomina: id } }),
+      this.hasActiveSocialCharges(payroll.idEmpresa),
     ]);
 
     const sums = await this.payrollResultRepo
@@ -874,6 +904,7 @@ export class PayrollService {
       empleados,
       inputs,
       accionesLigadas,
+      hasSocialCharges,
       totalBruto: sums?.totalBruto ?? '0.00',
       totalDeducciones: sums?.totalDeducciones ?? '0.00',
       totalNeto: sums?.totalNeto ?? '0.00',
@@ -1159,7 +1190,7 @@ export class PayrollService {
         'No se puede inactivar una planilla ya aplicada o contabilizada',
       );
     }
-    p.esInactivo = 1;
+    p.esInactivo = this.inactiveFlag;
     p.estado = EstadoCalendarioNomina.INACTIVA;
     p.isActiveSlot = 0;
     p.modificadoPor = userId ?? null;
@@ -1201,6 +1232,35 @@ export class PayrollService {
     return rows.map((row) => row.idEmpresa);
   }
 
+  /**
+   * Serializa fechas como YYYY-MM-DD para evitar desfases por zona horaria en la UI.
+   */
+  toResponse(entity: PayrollCalendar): PayrollCalendarResponse {
+    return {
+      id: entity.id,
+      idEmpresa: entity.idEmpresa,
+      idPeriodoPago: entity.idPeriodoPago,
+      idTipoPlanilla: entity.idTipoPlanilla ?? null,
+      nombrePlanilla: entity.nombrePlanilla ?? null,
+      tipoPlanilla: entity.tipoPlanilla,
+      fechaInicioPeriodo: this.toYmd(entity.fechaInicioPeriodo),
+      fechaFinPeriodo: this.toYmd(entity.fechaFinPeriodo),
+      fechaCorte: entity.fechaCorte ? this.toYmd(entity.fechaCorte) : null,
+      fechaInicioPago: this.toYmd(entity.fechaInicioPago),
+      fechaFinPago: this.toYmd(entity.fechaFinPago),
+      fechaPagoProgramada: entity.fechaPagoProgramada
+        ? this.toYmd(entity.fechaPagoProgramada)
+        : null,
+      moneda: entity.moneda,
+      estado: entity.estado,
+      esInactivo: entity.esInactivo,
+      requiresRecalculation: entity.requiresRecalculation,
+      fechaAplicacion: entity.fechaAplicacion ? this.toYmd(entity.fechaAplicacion) : null,
+      descripcionEvento: entity.descripcionEvento ?? null,
+      etiquetaColor: entity.etiquetaColor ?? null,
+    };
+  }
+
   private async assertUserCompanyAccess(userId: number, companyId: number): Promise<void> {
     const exists = await this.userCompanyRepo.findOne({
       where: { idUsuario: userId, idEmpresa: companyId, estado: 1 },
@@ -1226,14 +1286,41 @@ export class PayrollService {
     if (typeof value === 'string') {
       const direct = value.slice(0, 10);
       if (/^\d{4}-\d{2}-\d{2}$/.test(direct)) return direct;
-      const parsed = new Date(value);
-      if (!Number.isNaN(parsed.getTime())) return parsed.toISOString().slice(0, 10);
+      const parsed = this.parseDateOnly(value, 'fecha');
+      if (!Number.isNaN(parsed.getTime())) return this.formatDateOnly(parsed);
       throw new BadRequestException('Fecha invalida para conversion YYYY-MM-DD.');
     }
     if (value instanceof Date && !Number.isNaN(value.getTime())) {
-      return value.toISOString().slice(0, 10);
+      return this.formatDateOnly(value);
     }
     throw new BadRequestException('Fecha invalida para conversion YYYY-MM-DD.');
+  }
+
+  /**
+   * Convierte YYYY-MM-DD a Date con hora local 00:00 para evitar desfases de zona horaria.
+   */
+  private parseDateOnly(value: string, field: string): Date {
+    const normalized = value?.trim();
+    if (!normalized || !/^\d{4}-\d{2}-\d{2}$/.test(normalized)) {
+      throw new BadRequestException(`${field} debe tener formato YYYY-MM-DD.`);
+    }
+    const parsed = new Date(`${normalized}T00:00:00`);
+    if (Number.isNaN(parsed.getTime())) {
+      throw new BadRequestException(`${field} es una fecha invalida.`);
+    }
+    return parsed;
+  }
+
+  private ensureDateOnly(value: Date | string, field: string): Date {
+    if (value instanceof Date) return value;
+    return this.parseDateOnly(value, field);
+  }
+
+  private formatDateOnly(value: Date): string {
+    const year = value.getFullYear();
+    const month = String(value.getMonth() + 1).padStart(2, '0');
+    const day = String(value.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
   }
 
   private parseQueryDate(value: string, fieldName: string): Date {
@@ -1275,7 +1362,7 @@ export class PayrollService {
         : null,
       moneda: entity.moneda ?? null,
       estado: this.normalizeEstadoValue(entity.estado),
-      esInactivo: entity.esInactivo === 1 ? 'Inactivo' : 'Activo',
+      esInactivo: entity.esInactivo === this.inactiveFlag ? 'Inactivo' : 'Activo',
       requiresRecalculation: entity.requiresRecalculation === 1 ? 'Si' : 'No',
       lastSnapshotAt: entity.lastSnapshotAt ? this.toYmd(entity.lastSnapshotAt) : null,
     };
@@ -1413,7 +1500,7 @@ export class PayrollService {
     }>
   > {
     const charges = await manager.find(PayrollSocialCharge, {
-      where: { idEmpresa: companyId, esInactivo: 0 },
+      where: { idEmpresa: companyId, esInactivo: this.activeFlag },
       order: { id: 'ASC' },
     });
     return charges.map((charge) => ({
@@ -1422,6 +1509,17 @@ export class PayrollService {
       porcentaje: Number(charge.porcentaje ?? 0),
       idMovimiento: charge.idMovimiento,
     }));
+  }
+
+  /**
+   * Determina si la empresa tiene cargas sociales activas configuradas.
+   * Regla: si existen, la verificacion puede continuar aunque no haya inputs.
+   */
+  private async hasActiveSocialCharges(companyId: number): Promise<boolean> {
+    const activeCharges = await this.socialChargeRepo.count({
+      where: { idEmpresa: companyId, esInactivo: this.activeFlag },
+    });
+    return activeCharges > 0;
   }
 
   private calculateSocialCharges(
@@ -1498,8 +1596,9 @@ export class PayrollService {
     return Number(resultado.toFixed(2));
   }
 
-  private isSecondHalfOfMonth(date: Date): boolean {
-    return date.getUTCDate() >= 16;
+  private isSecondHalfOfMonth(date: Date | string): boolean {
+    const resolved = this.ensureDateOnly(date, 'fechaFinPeriodo');
+    return resolved.getDate() >= 16;
   }
 
   private isQuincenalPeriod(name: string): boolean {

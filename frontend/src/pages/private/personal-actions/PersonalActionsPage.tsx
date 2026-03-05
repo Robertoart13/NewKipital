@@ -40,6 +40,7 @@ import {
 import { useAppSelector } from '../../../store/hooks';
 import { hasPermission } from '../../../store/selectors/permissions.selectors';
 import styles from '../configuration/UsersManagementPage.module.css';
+import { formatEmployeeLabel } from './shared/employeeLabel';
 
 import type { ColumnsType } from 'antd/es/table';
 
@@ -98,6 +99,7 @@ export function PersonalActionsPage({
 
   const canCreate = useAppSelector((state) => hasPermission(state, createPermission));
   const canApprove = useAppSelector((state) => hasPermission(state, approvePermission));
+  const canViewEmployeeSensitive = useAppSelector((state) => hasPermission(state, 'employee:view-sensitive'));
   const companies = useAppSelector((state) => state.auth.companies);
   const activeCompany = useAppSelector((state) => state.activeCompany.company);
 
@@ -486,7 +488,7 @@ export function PersonalActionsPage({
                 placeholder="Seleccione empleado"
                 options={employees.map((employee) => ({
                   value: employee.id,
-                  label: `${employee.nombre} ${employee.apellido1} (${employee.codigo})`,
+                  label: formatEmployeeLabel(employee, canViewEmployeeSensitive),
                 }))}
               />
             </Form.Item>

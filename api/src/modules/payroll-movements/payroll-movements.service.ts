@@ -51,6 +51,8 @@ export class PayrollMovementsService {
     formulaAyuda: 'Formula ayuda',
     esInactivo: 'Estado',
   };
+  private readonly activeFlag = 1;
+  private readonly inactiveFlag = 0;
 
   async create(dto: CreatePayrollMovementDto, actorUserId: number): Promise<PayrollMovement> {
     await this.assertCompanyActive(dto.idEmpresa);
@@ -74,7 +76,7 @@ export class PayrollMovementsService {
       montoFijo: normalized.montoFijo,
       porcentaje: normalized.porcentaje,
       formulaAyuda: dto.formulaAyuda?.trim() || '--',
-      esInactivo: 0,
+      esInactivo: this.activeFlag,
     });
     const saved = await this.repo.save(entity);
     this.auditOutbox.publish({
@@ -104,9 +106,9 @@ export class PayrollMovementsService {
     }
 
     if (inactiveOnly) {
-      qb.andWhere('m.esInactivo = 1');
+      qb.andWhere('m.esInactivo = :inactiveFlag', { inactiveFlag: this.inactiveFlag });
     } else if (!includeInactive) {
-      qb.andWhere('m.esInactivo = 0');
+      qb.andWhere('m.esInactivo = :activeFlag', { activeFlag: this.activeFlag });
     }
 
     return qb.getMany();
@@ -187,7 +189,7 @@ export class PayrollMovementsService {
   async inactivate(id: number, actorUserId: number): Promise<PayrollMovement> {
     const found = await this.findOne(id);
     const payloadBefore = this.buildAuditPayload(found);
-    found.esInactivo = 1;
+    found.esInactivo = this.inactiveFlag;
     const saved = await this.repo.save(found);
     this.auditOutbox.publish({
       modulo: 'payroll-movements',
@@ -205,7 +207,7 @@ export class PayrollMovementsService {
   async reactivate(id: number, actorUserId: number): Promise<PayrollMovement> {
     const found = await this.findOne(id);
     const payloadBefore = this.buildAuditPayload(found);
-    found.esInactivo = 0;
+    found.esInactivo = this.activeFlag;
     const saved = await this.repo.save(found);
     this.auditOutbox.publish({
       modulo: 'payroll-movements',
@@ -279,7 +281,7 @@ export class PayrollMovementsService {
       .where('a.idEmpresa = :idEmpresa', { idEmpresa })
       .orderBy('a.nombre', 'ASC');
     if (!includeInactive) {
-      qb.andWhere('a.esInactivo = 0');
+      qb.andWhere('a.esInactivo = :activeFlag', { activeFlag: this.activeFlag });
     }
     return qb.getMany();
   }
@@ -295,7 +297,7 @@ export class PayrollMovementsService {
   async listClasses(includeInactive = false): Promise<OrgClass[]> {
     const qb = this.classRepo.createQueryBuilder('c').orderBy('c.nombre', 'ASC');
     if (!includeInactive) {
-      qb.andWhere('c.esInactivo = 0');
+      qb.andWhere('c.esInactivo = :activeFlag', { activeFlag: this.activeFlag });
     }
     return qb.getMany();
   }
@@ -306,7 +308,7 @@ export class PayrollMovementsService {
       .where('p.idEmpresa = :idEmpresa', { idEmpresa })
       .orderBy('p.nombre', 'ASC');
     if (!includeInactive) {
-      qb.andWhere('p.esInactivo = 0');
+      qb.andWhere('p.esInactivo = :activeFlag', { activeFlag: this.activeFlag });
     }
     return qb.getMany();
   }
@@ -324,7 +326,7 @@ export class PayrollMovementsService {
       montoFijo: entity.montoFijo ?? null,
       porcentaje: entity.porcentaje ?? null,
       formulaAyuda: entity.formulaAyuda ?? null,
-      esInactivo: entity.esInactivo === 1 ? 'Inactivo' : 'Activo',
+      esInactivo: entity.esInactivo === this.inactiveFlag ? 'Inactivo' : 'Activo',
     };
   }
 
@@ -440,7 +442,7 @@ export class PayrollMovementsService {
     }
     if (
       requireActive &&
-      article.esInactivo === 1 &&
+      article.esInactivo === this.inactiveFlag &&
       (allowedInactiveSameId == null || allowedInactiveSameId !== article.id)
     ) {
       throw new BadRequestException('El articulo de nomina seleccionado esta inactivo.');
@@ -476,7 +478,7 @@ export class PayrollMovementsService {
       throw new ConflictException('Clase no encontrada.');
     }
     if (
-      found.esInactivo === 1 &&
+      found.esInactivo === this.inactiveFlag &&
       (allowInactiveSameId == null || allowInactiveSameId !== found.id)
     ) {
       throw new BadRequestException('La clase seleccionada esta inactiva.');
@@ -497,7 +499,7 @@ export class PayrollMovementsService {
       throw new BadRequestException('El proyecto seleccionado no pertenece a la empresa.');
     }
     if (
-      found.esInactivo === 1 &&
+      found.esInactivo === this.inactiveFlag &&
       (allowInactiveSameId == null || allowInactiveSameId !== found.id)
     ) {
       throw new BadRequestException('El proyecto seleccionado esta inactivo.');

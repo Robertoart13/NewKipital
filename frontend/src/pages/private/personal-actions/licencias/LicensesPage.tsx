@@ -51,6 +51,7 @@ import {
 import { useAppSelector } from '../../../../store/hooks';
 import { hasPermission } from '../../../../store/selectors/permissions.selectors';
 import styles from '../../configuration/UsersManagementPage.module.css';
+import { formatEmployeeLabel } from '../shared/employeeLabel';
 
 import { LicenseTransactionModal, type LicenseFormDraft, type LicenseTransactionLine } from './LicenseTransactionModal';
 
@@ -497,16 +498,11 @@ export function LicensesPage() {
   const rowsWithEmployee = useMemo(() => {
     const map = new Map<number, string>();
     employees.forEach((employee) => {
-      map.set(
-        employee.id,
-        `${[employee.apellido1, employee.apellido2, employee.nombre]
-          .filter((part) => typeof part === 'string' && part.trim().length > 0)
-          .join(' ')}`,
-      );
+      map.set(employee.id, formatEmployeeLabel(employee, canViewEmployeeSensitive));
     });
 
     return rows.map((row) => ({ ...row, employeeLabel: map.get(row.idEmpleado) }));
-  }, [rows, employees]);
+  }, [rows, employees, canViewEmployeeSensitive]);
 
   const matchesGlobalSearch = useCallback(
     (row: LicenseUiRow) => {
@@ -822,7 +818,11 @@ export function LicensesPage() {
                   value: Number(value),
                   label: meta.text,
                 }))}
-                onChange={(values) => setSelectedEstados((values ?? []).map((item) => Number(item)))}
+                onChange={(values) => {
+                  setSelectedEstados((values ?? []).map((item) => Number(item)));
+                  setPaneSelections((prev) => ({ ...prev, estado: [] }));
+                  setPaneSearch((prev) => ({ ...prev, estado: '' }));
+                }}
               />
               <Button icon={<ReloadOutlined />} onClick={() => void loadRows()}>
                 Refrescar
@@ -1033,3 +1033,4 @@ export function LicensesPage() {
     </div>
   );
 }
+

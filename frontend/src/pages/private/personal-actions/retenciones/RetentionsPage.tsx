@@ -1,4 +1,4 @@
-ï»¿import {
+import {
   AppstoreOutlined,
   ArrowLeftOutlined,
   DownOutlined,
@@ -51,6 +51,7 @@ import {
 import { useAppSelector } from '../../../../store/hooks';
 import { hasPermission } from '../../../../store/selectors/permissions.selectors';
 import styles from '../../configuration/UsersManagementPage.module.css';
+import { formatEmployeeLabel } from '../shared/employeeLabel';
 
 import {
   RetentionTransactionModal,
@@ -470,16 +471,11 @@ export function RetentionsPage() {
   const rowsWithEmployee = useMemo(() => {
     const map = new Map<number, string>();
     employees.forEach((employee) => {
-      map.set(
-        employee.id,
-        `${[employee.apellido1, employee.apellido2, employee.nombre]
-          .filter((part) => typeof part === 'string' && part.trim().length > 0)
-          .join(' ')}`,
-      );
+      map.set(employee.id, formatEmployeeLabel(employee, canViewEmployeeSensitive));
     });
 
     return rows.map((row) => ({ ...row, employeeLabel: map.get(row.idEmpleado) }));
-  }, [rows, employees]);
+  }, [rows, employees, canViewEmployeeSensitive]);
 
   const matchesGlobalSearch = useCallback(
     (row: RetentionUiRow) => {
@@ -708,7 +704,7 @@ export function RetentionsPage() {
           <div className={styles.pageTitleBlock}>
             <h1 className={styles.pageTitle}>retenciones</h1>
             <p className={styles.pageSubtitle}>
-              Gestione retenciones por empresa con lÃ­neas de transacciÃ³n por perÃ­odo
+              Gestione retenciones por empresa con líneas de transacción por período
             </p>
           </div>
         </div>
@@ -722,8 +718,8 @@ export function RetentionsPage() {
                 <AppstoreOutlined className={styles.gestionIcon} />
               </div>
               <div>
-                <h2 className={styles.gestionTitle}>GestiÃ³n de retenciones</h2>
-                <p className={styles.gestionDesc}>Encabezado de acciÃ³n + mÃºltiples lÃ­neas por planilla</p>
+                <h2 className={styles.gestionTitle}>Gestión de retenciones</h2>
+                <p className={styles.gestionDesc}>Encabezado de acción + múltiples líneas por planilla</p>
               </div>
             </Flex>
             <Button
@@ -782,7 +778,11 @@ export function RetentionsPage() {
                   value: Number(value),
                   label: meta.text,
                 }))}
-                onChange={(values) => setSelectedEstados((values ?? []).map((item) => Number(item)))}
+                onChange={(values) => {
+                  setSelectedEstados((values ?? []).map((item) => Number(item)));
+                  setPaneSelections((prev) => ({ ...prev, estado: [] }));
+                  setPaneSearch((prev) => ({ ...prev, estado: '' }));
+                }}
               />
               <Button icon={<ReloadOutlined />} onClick={() => void loadRows()}>
                 Refrescar
@@ -993,3 +993,4 @@ export function RetentionsPage() {
     </div>
   );
 }
+

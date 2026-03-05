@@ -50,6 +50,7 @@ import {
 import { useAppSelector } from '../../../../store/hooks';
 import { hasPermission } from '../../../../store/selectors/permissions.selectors';
 import styles from '../../configuration/UsersManagementPage.module.css';
+import { formatEmployeeLabel } from '../shared/employeeLabel';
 
 import {
   IncreaseTransactionModal,
@@ -373,8 +374,7 @@ export function AumentosPage() {
   const rowsWithEmployee = useMemo(() => {
     const map = new Map<number, string>();
     employees.forEach((employee) => {
-      const label = `${employee.codigo} - ${employee.nombre} ${employee.apellido1} ${employee.apellido2 ?? ''}`.trim();
-      map.set(employee.id, label);
+      map.set(employee.id, formatEmployeeLabel(employee, canViewEmployeeSensitive));
     });
     return rows.map((row) => ({ ...row, employeeLabel: map.get(row.idEmpleado) }));
   }, [rows, employees]);
@@ -699,7 +699,11 @@ export function AumentosPage() {
                   value: Number(value),
                   label: meta.text,
                 }))}
-                onChange={(values) => setSelectedEstados((values ?? []).map((item) => Number(item)))}
+                onChange={(values) => {
+                  setSelectedEstados((values ?? []).map((item) => Number(item)));
+                  setPaneSelections((prev) => ({ ...prev, estado: [] }));
+                  setPaneSearch((prev) => ({ ...prev, estado: '' }));
+                }}
               />
               <Button icon={<ReloadOutlined />} onClick={() => void loadRows()}>
                 Refrescar
@@ -924,3 +928,4 @@ export function AumentosPage() {
     </div>
   );
 }
+

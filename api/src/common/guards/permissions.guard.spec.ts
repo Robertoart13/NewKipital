@@ -4,6 +4,9 @@ import { Test } from '@nestjs/testing';
 
 import { AuthService } from '../../modules/auth/auth.service';
 
+import { ALLOW_WITHOUT_COMPANY_KEY } from '../decorators/allow-without-company.decorator';
+import { REQUIRE_ANY_PERMISSIONS_KEY } from '../decorators/require-any-permissions.decorator';
+import { REQUIRE_PERMISSIONS_KEY } from '../decorators/require-permissions.decorator';
 import { PermissionsGuard } from './permissions.guard';
 
 import type { ExecutionContext } from '@nestjs/common';
@@ -57,10 +60,27 @@ describe('PermissionsGuard', () => {
     } as unknown as ExecutionContext;
   };
 
+  const mockMetadata = ({
+    required,
+    requiredAny,
+    allowWithoutCompany = false,
+  }: {
+    required?: string[];
+    requiredAny?: string[];
+    allowWithoutCompany?: boolean;
+  }) => {
+    reflector.getAllAndOverride.mockImplementation((key) => {
+      if (key === REQUIRE_PERMISSIONS_KEY) return required;
+      if (key === REQUIRE_ANY_PERMISSIONS_KEY) return requiredAny;
+      if (key === ALLOW_WITHOUT_COMPANY_KEY) return allowWithoutCompany;
+      return undefined;
+    });
+  };
+
   describe('canActivate', () => {
     it('should allow access when no permissions are required', async () => {
       // Arrange
-      reflector.getAllAndOverride.mockReturnValue(undefined);
+      mockMetadata({});
       const context = createMockExecutionContext({ userId: 1 });
 
       // Act
@@ -72,7 +92,7 @@ describe('PermissionsGuard', () => {
 
     it('should allow access when required permissions array is empty', async () => {
       // Arrange
-      reflector.getAllAndOverride.mockReturnValue([]);
+      mockMetadata({ required: [] });
       const context = createMockExecutionContext({ userId: 1 });
 
       // Act
@@ -84,7 +104,7 @@ describe('PermissionsGuard', () => {
 
     it('should throw UnauthorizedException when user is not authenticated', async () => {
       // Arrange
-      reflector.getAllAndOverride.mockReturnValue(['employee:view']);
+      mockMetadata({ required: ['employee:view'] });
       const context = createMockExecutionContext(undefined);
 
       // Act & Assert
@@ -94,7 +114,7 @@ describe('PermissionsGuard', () => {
 
     it('should allow access with valid permissions and companyId', async () => {
       // Arrange
-      reflector.getAllAndOverride.mockReturnValueOnce(['employee:view']).mockReturnValueOnce(false);
+      mockMetadata({ required: ['employee:view'] });
 
       authService.resolvePermissions.mockResolvedValue({
         permissions: ['employee:view', 'employee:create'],
@@ -120,9 +140,7 @@ describe('PermissionsGuard', () => {
 
     it('should throw ForbiddenException when user lacks required permissions', async () => {
       // Arrange
-      reflector.getAllAndOverride
-        .mockReturnValueOnce(['employee:view', 'employee:delete'])
-        .mockReturnValueOnce(false);
+      mockMetadata({ required: ['employee:view', 'employee:delete'] });
 
       authService.resolvePermissions.mockResolvedValue({
         permissions: ['employee:view'],
@@ -139,9 +157,9 @@ describe('PermissionsGuard', () => {
       );
     });
 
-    it('should resolve permissions across companies when no companyId provided', async () => {
+    it('should allow access without companyId when allowWithoutCompany is true', async () => {
       // Arrange
-      reflector.getAllAndOverride.mockReturnValueOnce(['employee:view']).mockReturnValueOnce(true);
+      mockMetadata({ required: ['employee:view'], allowWithoutCompany: true });
 
       authService.resolvePermissionsAcrossCompanies.mockResolvedValue({
         permissions: ['employee:view'],
@@ -158,9 +176,30 @@ describe('PermissionsGuard', () => {
       expect(authService.resolvePermissionsAcrossCompanies).not.toHaveBeenCalled();
     });
 
+    it('should resolve permissions across companies when no companyId provided and allowWithoutCompany is false', async () => {
+      // Arrange
+      mockMetadata({ required: ['employee:view'], allowWithoutCompany: false });
+
+      authService.resolvePermissionsAcrossCompanies.mockResolvedValue({
+        permissions: ['employee:view'],
+        roles: ['EMPLOYEE_VIEWER'],
+      });
+
+      const context = createMockExecutionContext({ userId: 1 }, {}, {}, { 'x-app-code': 'kpital' });
+
+      // Act
+      const result = await guard.canActivate(context);
+
+      // Assert
+      expect(result).toBe(true);
+      expect(authService.resolvePermissionsAcrossCompanies).toHaveBeenCalledWith(1, 'kpital', {
+        bypassCache: false,
+      });
+    });
+
     it('should extract companyId from idEmpresa query param', async () => {
       // Arrange
-      reflector.getAllAndOverride.mockReturnValueOnce(['employee:view']).mockReturnValueOnce(false);
+      mockMetadata({ required: ['employee:view'] });
 
       authService.resolvePermissions.mockResolvedValue({
         permissions: ['employee:view'],
@@ -181,9 +220,7 @@ describe('PermissionsGuard', () => {
 
     it('should extract companyId from body', async () => {
       // Arrange
-      reflector.getAllAndOverride
-        .mockReturnValueOnce(['employee:create'])
-        .mockReturnValueOnce(false);
+      mockMetadata({ required: ['employee:create'] });
 
       authService.resolvePermissions.mockResolvedValue({
         permissions: ['employee:create'],
@@ -204,9 +241,7 @@ describe('PermissionsGuard', () => {
 
     it('should support legacy company:manage permission for granular permissions', async () => {
       // Arrange
-      reflector.getAllAndOverride
-        .mockReturnValueOnce(['company:create', 'company:update'])
-        .mockReturnValueOnce(false);
+      mockMetadata({ required: ['company:create', 'company:update'] });
 
       authService.resolvePermissions.mockResolvedValue({
         permissions: ['company:manage'], // Legacy permission that covers all company:* actions
@@ -224,7 +259,7 @@ describe('PermissionsGuard', () => {
 
     it('should use default appCode "kpital" when not provided', async () => {
       // Arrange
-      reflector.getAllAndOverride.mockReturnValueOnce(['employee:view']).mockReturnValueOnce(false);
+      mockMetadata({ required: ['employee:view'] });
 
       authService.resolvePermissions.mockResolvedValue({
         permissions: ['employee:view'],
@@ -244,7 +279,7 @@ describe('PermissionsGuard', () => {
 
     it('should extract appCode from query parameter', async () => {
       // Arrange
-      reflector.getAllAndOverride.mockReturnValueOnce(['employee:view']).mockReturnValueOnce(false);
+      mockMetadata({ required: ['employee:view'] });
 
       authService.resolvePermissions.mockResolvedValue({
         permissions: ['employee:view'],
@@ -267,7 +302,7 @@ describe('PermissionsGuard', () => {
 
     it('should extract appCode from body', async () => {
       // Arrange
-      reflector.getAllAndOverride.mockReturnValueOnce(['employee:view']).mockReturnValueOnce(false);
+      mockMetadata({ required: ['employee:view'] });
 
       authService.resolvePermissions.mockResolvedValue({
         permissions: ['employee:view'],
@@ -291,7 +326,7 @@ describe('PermissionsGuard', () => {
 
     it('should extract appCode from headers', async () => {
       // Arrange
-      reflector.getAllAndOverride.mockReturnValueOnce(['employee:view']).mockReturnValueOnce(false);
+      mockMetadata({ required: ['employee:view'] });
 
       authService.resolvePermissions.mockResolvedValue({
         permissions: ['employee:view'],
@@ -316,7 +351,7 @@ describe('PermissionsGuard', () => {
 
     it('should normalize appCode to lowercase', async () => {
       // Arrange
-      reflector.getAllAndOverride.mockReturnValueOnce(['employee:view']).mockReturnValueOnce(false);
+      mockMetadata({ required: ['employee:view'] });
 
       authService.resolvePermissions.mockResolvedValue({
         permissions: ['employee:view'],
@@ -339,7 +374,7 @@ describe('PermissionsGuard', () => {
 
     it('should inject resolved permissions and roles into request.user', async () => {
       // Arrange
-      reflector.getAllAndOverride.mockReturnValueOnce(['employee:view']).mockReturnValueOnce(false);
+      mockMetadata({ required: ['employee:view'] });
 
       authService.resolvePermissions.mockResolvedValue({
         permissions: ['employee:view', 'employee:create'],
@@ -374,7 +409,7 @@ describe('PermissionsGuard', () => {
 
     it('should handle invalid companyId gracefully', async () => {
       // Arrange
-      reflector.getAllAndOverride.mockReturnValueOnce(['employee:view']).mockReturnValueOnce(true);
+      mockMetadata({ required: ['employee:view'], allowWithoutCompany: false });
 
       authService.resolvePermissionsAcrossCompanies.mockResolvedValue({
         permissions: ['employee:view'],
@@ -388,7 +423,9 @@ describe('PermissionsGuard', () => {
 
       // Assert
       expect(result).toBe(true);
-      expect(authService.resolvePermissionsAcrossCompanies).not.toHaveBeenCalled();
+      expect(authService.resolvePermissionsAcrossCompanies).toHaveBeenCalledWith(1, 'kpital', {
+        bypassCache: false,
+      });
     });
   });
 });
