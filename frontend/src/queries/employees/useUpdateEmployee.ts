@@ -12,8 +12,7 @@ export function useUpdateEmployee() {
   const { notification } = App.useApp();
 
   return useMutation({
-    mutationFn: ({ id, payload }: { id: number; payload: UpdateEmployeePayload }) =>
-      updateEmployee(id, payload),
+    mutationFn: ({ id, payload }: { id: number; payload: UpdateEmployeePayload }) => updateEmployee(id, payload),
     onSuccess: (_, { id }) => {
       queryClient.invalidateQueries({ queryKey: ['employees'] });
       queryClient.invalidateQueries({ queryKey: employeeKeys.detail(id) });

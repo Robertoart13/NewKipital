@@ -14,27 +14,18 @@ function resolveGroupedMaxLength(maxDigits: number): number {
 export function useMoneyFieldFormatter(maxDigits = EMPLOYEE_MONEY_MAX_DIGITS) {
   const maxInputLength = resolveGroupedMaxLength(maxDigits);
 
-  const sanitize = useCallback(
-    (value: unknown) => sanitizeMoneyDigits(value, maxDigits),
-    [maxDigits],
-  );
+  const sanitize = useCallback((value: unknown) => sanitizeMoneyDigits(value, maxDigits), [maxDigits]);
 
   const parse = useCallback((value: unknown) => parseSanitizedMoney(value, maxDigits), [maxDigits]);
 
-  const formatDisplay = useCallback(
-    (value: unknown) => formatGroupedIntegerDisplay(value, maxDigits),
-    [maxDigits],
-  );
+  const formatDisplay = useCallback((value: unknown) => formatGroupedIntegerDisplay(value, maxDigits), [maxDigits]);
 
   const getFormValueFromEvent = useCallback(
     (event?: { target?: { value?: unknown } }) => sanitize(event?.target?.value),
     [sanitize],
   );
 
-  const getFormValueProps = useCallback(
-    (value: unknown) => ({ value: formatDisplay(value) }),
-    [formatDisplay],
-  );
+  const getFormValueProps = useCallback((value: unknown) => ({ value: formatDisplay(value) }), [formatDisplay]);
 
   return {
     maxDigits,

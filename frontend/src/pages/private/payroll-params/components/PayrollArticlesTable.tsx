@@ -48,13 +48,7 @@ export function PayrollArticlesTable(props: PayrollArticlesTableProps) {
 
   return (
     <div className={styles.mainCardBody}>
-      <Flex
-        align="center"
-        justify="space-between"
-        wrap="wrap"
-        gap={12}
-        className={styles.registrosHeader}
-      >
+      <Flex align="center" justify="space-between" wrap="wrap" gap={12} className={styles.registrosHeader}>
         <Flex align="center" gap={12} wrap="wrap">
           <Flex align="center" gap={8}>
             <FilterOutlined className={styles.registrosFilterIcon} />

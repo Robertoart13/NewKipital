@@ -164,11 +164,7 @@ function toNumber(value: number | string | null | undefined): number {
   return Number.isFinite(parsed) ? parsed : 0;
 }
 
-function calculateSalaryByPeriod(
-  salaryBase: number,
-  payPeriodId?: number | null,
-  jornada?: string | null,
-): number {
+function calculateSalaryByPeriod(salaryBase: number, payPeriodId?: number | null, jornada?: string | null): number {
   const id = Number(payPeriodId);
   const isByHours = (jornada ?? '').trim().toLowerCase() === 'por horas';
   if (isByHours && (id === 8 || id === 11)) return 0;
@@ -195,11 +191,7 @@ function calculateSalaryByPeriod(
   }
 }
 
-function calculateHourValue(
-  salaryBase: number,
-  payPeriodId?: number | null,
-  jornada?: string | null,
-): number {
+function calculateHourValue(salaryBase: number, payPeriodId?: number | null, jornada?: string | null): number {
   const id = Number(payPeriodId);
   const isByHours = (jornada ?? '').trim().toLowerCase() === 'por horas';
   if (isByHours && (id === 8 || id === 11)) return salaryBase;
@@ -281,8 +273,7 @@ export function BonusTransactionModal({
   const { message, modal } = AntdApp.useApp();
   const moneyField = useMoneyFieldFormatter(MAX_ABSENCE_MONTO_DIGITS);
   const [form] = Form.useForm<HeaderValues>();
-  const isLineComplete = (line: BonusTransactionLine): boolean =>
-    isCoreTransactionLineComplete(line);
+  const isLineComplete = (line: BonusTransactionLine): boolean => isCoreTransactionLineComplete(line);
   const { lines, setLines, activeLineKeys, setActiveLineKeys, updateLine, addLine, removeLine } =
     useTransactionLines<BonusTransactionLine>({
       buildEmptyLine,
@@ -304,7 +295,9 @@ export function BonusTransactionModal({
 
   useEffect(() => {
     if (!open) return;
+
     setActiveTab('info');
+
     setAuditLoaded(false);
 
     form.resetFields();
@@ -315,27 +308,31 @@ export function BonusTransactionModal({
         idEmpleado: initialDraft.idEmpleado,
         observacion: initialDraft.observacion,
       });
-      const draftLines = (
-        initialDraft.lines.length > 0 ? initialDraft.lines : [buildEmptyLine()]
-      ).map((line) => ({
+      const draftLines = (initialDraft.lines.length > 0 ? initialDraft.lines : [buildEmptyLine()]).map((line) => ({
         ...line,
         montoInput: line.monto == null ? '' : String(normalizeIntegerAmount(line.monto)),
       }));
+
       setLines(draftLines);
+
       setActiveLineKeys(mode === 'edit' ? [] : draftLines.map((l) => l.key));
       return;
     }
 
     form.setFieldsValue({ idEmpresa: initialCompanyId });
     const initialLine = buildEmptyLine();
+
     setLines([initialLine]);
+
     setActiveLineKeys([initialLine.key]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, initialDraft, initialCompanyId, form, mode]);
 
   useEffect(() => {
     if (!open || !showAudit || activeTab !== 'bitacora' || auditLoaded) return;
     const load = async () => {
       await onLoadAuditTrail?.();
+
       setAuditLoaded(true);
     };
     void load();
@@ -361,21 +358,24 @@ export function BonusTransactionModal({
 
     if (prev !== undefined && prev !== current) {
       const oneLine = buildEmptyLine();
+
       setLines([oneLine]);
+
       setActiveLineKeys([oneLine.key]);
     }
+
     prevEmployeeIdRef.current = current;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, selectedEmployeeId]);
 
   useEffect(() => {
     if (!selectedEmployeeId || !selectedCompanyId) {
       setEmployeePayrollConfig(null);
+
       setEligiblePayrolls([]);
       return;
     }
-    const employee = employees.find(
-      (item) => item.id === selectedEmployeeId && item.idEmpresa === selectedCompanyId,
-    );
+    const employee = employees.find((item) => item.id === selectedEmployeeId && item.idEmpresa === selectedCompanyId);
     if (!employee) {
       setEmployeePayrollConfig(null);
       return;
@@ -389,22 +389,27 @@ export function BonusTransactionModal({
   useEffect(() => {
     if (!selectedCompanyId || !selectedEmployeeId) {
       setEligiblePayrolls([]);
+
       setLoadingPayrolls(false);
       return;
     }
     let active = true;
+
     setLoadingPayrolls(true);
     void fetchAbsencePayrollsCatalog(Number(selectedCompanyId), Number(selectedEmployeeId))
       .then((list) => {
         if (!active) return;
+
         setEligiblePayrolls(list);
       })
       .catch(() => {
         if (!active) return;
+
         setEligiblePayrolls([]);
       })
       .finally(() => {
         if (!active) return;
+
         setLoadingPayrolls(false);
       });
     return () => {
@@ -420,19 +425,15 @@ export function BonusTransactionModal({
   const selectedEmployee = useMemo(() => {
     if (!selectedCompanyId || !selectedEmployeeId) return null;
     return (
-      employees.find(
-        (employee) =>
-          employee.idEmpresa === selectedCompanyId && employee.id === selectedEmployeeId,
-      ) ?? null
+      employees.find((employee) => employee.idEmpresa === selectedCompanyId && employee.id === selectedEmployeeId) ??
+      null
     );
   }, [employees, selectedCompanyId, selectedEmployeeId]);
 
   const selectedPayPeriod = useMemo(() => {
     if (!selectedEmployee?.idPeriodoPago) return null;
-    return (
-      payPeriods.find((period) => period.id === Number(selectedEmployee.idPeriodoPago)) ?? null
-    );
-  }, [payPeriods, selectedEmployee?.idPeriodoPago]);
+    return payPeriods.find((period) => period.id === Number(selectedEmployee.idPeriodoPago)) ?? null;
+  }, [payPeriods, selectedEmployee]);
 
   // El calculo siempre usa el salario real; el permiso sensible solo controla visibilidad en UI.
   const salaryBase = toNumber(selectedEmployee?.salarioBase);
@@ -442,28 +443,17 @@ export function BonusTransactionModal({
     selectedEmployee?.idPeriodoPago,
     selectedEmployee?.jornada,
   );
-  const hourValue = calculateHourValue(
-    salaryBase,
-    selectedEmployee?.idPeriodoPago,
-    selectedEmployee?.jornada,
-  );
-  const periodHours = calculatePeriodHours(
-    selectedEmployee?.idPeriodoPago,
-    selectedEmployee?.jornada,
-  );
+  const hourValue = calculateHourValue(salaryBase, selectedEmployee?.idPeriodoPago, selectedEmployee?.jornada);
+  const periodHours = calculatePeriodHours(selectedEmployee?.idPeriodoPago, selectedEmployee?.jornada);
 
   const payrollsByCompany = useMemo(() => {
     if (!selectedCompanyId) return [];
     let list = eligiblePayrolls.filter((payroll) => payroll.idEmpresa === selectedCompanyId);
     if (employeePayrollConfig?.idPeriodoPago) {
-      list = list.filter(
-        (payroll) => Number(payroll.idPeriodoPago) === Number(employeePayrollConfig.idPeriodoPago),
-      );
+      list = list.filter((payroll) => Number(payroll.idPeriodoPago) === Number(employeePayrollConfig.idPeriodoPago));
     }
     if (employeePayrollConfig?.moneda) {
-      list = list.filter(
-        (payroll) => (payroll.moneda ?? '').toUpperCase() === employeePayrollConfig.moneda,
-      );
+      list = list.filter((payroll) => (payroll.moneda ?? '').toUpperCase() === employeePayrollConfig.moneda);
     }
     return list;
   }, [eligiblePayrolls, selectedCompanyId, employeePayrollConfig]);
@@ -482,11 +472,7 @@ export function BonusTransactionModal({
     return list;
   }, [movements, selectedCompanyId, actionTypeIdForBonus, lines]);
 
-  const calculateLineAmount = (
-    line: BonusTransactionLine,
-    movimientoId?: number,
-    cantidadValue?: number,
-  ) => {
+  const calculateLineAmount = (line: BonusTransactionLine, movimientoId?: number, cantidadValue?: number) => {
     const cantidad = parseNonNegative(cantidadValue ?? line.cantidad ?? 0);
     const movement = filteredMovements.find((m) => m.id === (movimientoId ?? line.movimientoId));
 
@@ -563,11 +549,7 @@ export function BonusTransactionModal({
   const handleTipoBonificacionChange = (lineKey: string, tipoBonificacion: BonusType) => {
     const currentLine = lines.find((line) => line.key === lineKey);
     if (!currentLine) return;
-    const calculated = calculateLineAmount(
-      currentLine,
-      currentLine.movimientoId,
-      currentLine.cantidad,
-    );
+    const calculated = calculateLineAmount(currentLine, currentLine.movimientoId, currentLine.cantidad);
     updateLine(lineKey, { tipoBonificacion, ...calculated });
   };
 
@@ -591,10 +573,7 @@ export function BonusTransactionModal({
     };
 
     modal.confirm({
-      title:
-        mode === 'create'
-          ? 'Confirmar creación de bonificacion'
-          : 'Confirmar actualización de bonificacion',
+      title: mode === 'create' ? 'Confirmar creación de bonificacion' : 'Confirmar actualización de bonificacion',
       content:
         mode === 'create'
           ? '¿Está seguro de crear esta bonificacion con las líneas capturadas?'
@@ -648,9 +627,7 @@ export function BonusTransactionModal({
           return (
             <div>
               <div style={{ fontWeight: 600, color: '#3d4f5c' }}>{actorLabel}</div>
-              {row.actorEmail ? (
-                <div style={{ color: '#8c8c8c', fontSize: 12 }}>{row.actorEmail}</div>
-              ) : null}
+              {row.actorEmail ? <div style={{ color: '#8c8c8c', fontSize: 12 }}>{row.actorEmail}</div> : null}
             </div>
           );
         },
@@ -678,10 +655,7 @@ export function BonusTransactionModal({
               {changes.length > 0 ? (
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
                   {changes.map((change, index) => (
-                    <div
-                      key={`${row.id}-${change.campo}-${index}`}
-                      style={{ fontSize: 12, lineHeight: 1.4 }}
-                    >
+                    <div key={`${row.id}-${change.campo}-${index}`} style={{ fontSize: 12, lineHeight: 1.4 }}>
                       <div>
                         <strong>{change.campo}</strong>
                       </div>
@@ -728,12 +702,7 @@ export function BonusTransactionModal({
         },
       }}
       title={
-        <Flex
-          justify="space-between"
-          align="center"
-          wrap="nowrap"
-          style={{ width: '100%', gap: 16 }}
-        >
+        <Flex justify="space-between" align="center" wrap="nowrap" style={{ width: '100%', gap: 16 }}>
           <div className={sharedStyles.companyModalHeader}>
             <div className={sharedStyles.companyModalHeaderIcon}>
               <CalendarOutlined />
@@ -795,10 +764,7 @@ export function BonusTransactionModal({
               <Alert
                 type="warning"
                 showIcon
-                title={
-                  readOnlyMessage ??
-                  'Esta bonificacion está en modo solo lectura por su estado actual.'
-                }
+                title={readOnlyMessage ?? 'Esta bonificacion está en modo solo lectura por su estado actual.'}
                 className={`${sharedStyles.infoBanner} ${sharedStyles.warningType}`}
                 style={{ marginBottom: 12 }}
               />
@@ -838,11 +804,7 @@ export function BonusTransactionModal({
 
             {mode !== 'edit' || activeTab === 'info' ? (
               <Row gutter={16} wrap style={{ flex: 1, minHeight: 0, alignItems: 'stretch' }}>
-                <Col
-                  xs={24}
-                  lg={8}
-                  style={{ display: 'flex', flexDirection: 'column', minHeight: 0 }}
-                >
+                <Col xs={24} lg={8} style={{ display: 'flex', flexDirection: 'column', minHeight: 0 }}>
                   {selectedEmployee ? (
                     <Collapse
                       defaultActiveKey={['empleado']}
@@ -871,8 +833,7 @@ export function BonusTransactionModal({
                                   </div>
                                   <div className={sharedStyles.employeeAccordionCompany}>
                                     <BankOutlined />
-                                    {companies.find((c) => Number(c.id) === selectedCompanyId)
-                                      ?.nombre ?? '--'}
+                                    {companies.find((c) => Number(c.id) === selectedCompanyId)?.nombre ?? '--'}
                                   </div>
                                 </div>
                               </div>
@@ -882,13 +843,9 @@ export function BonusTransactionModal({
                             <div className={sharedStyles.employeeAccordionContent}>
                               <div className={sharedStyles.employeeAccordionGrid}>
                                 <div className={sharedStyles.employeeAccordionItem}>
-                                  <IdcardOutlined
-                                    className={sharedStyles.employeeAccordionItemIcon}
-                                  />
+                                  <IdcardOutlined className={sharedStyles.employeeAccordionItemIcon} />
                                   <div>
-                                    <div className={sharedStyles.employeeAccordionItemLabel}>
-                                      Cédula
-                                    </div>
+                                    <div className={sharedStyles.employeeAccordionItemLabel}>Cédula</div>
                                     <div className={sharedStyles.employeeAccordionItemValue}>
                                       {canViewEmployeeSensitive
                                         ? (selectedEmployee.cedula ?? '--')
@@ -897,13 +854,9 @@ export function BonusTransactionModal({
                                   </div>
                                 </div>
                                 <div className={sharedStyles.employeeAccordionItem}>
-                                  <MailOutlined
-                                    className={sharedStyles.employeeAccordionItemIcon}
-                                  />
+                                  <MailOutlined className={sharedStyles.employeeAccordionItemIcon} />
                                   <div>
-                                    <div className={sharedStyles.employeeAccordionItemLabel}>
-                                      Email
-                                    </div>
+                                    <div className={sharedStyles.employeeAccordionItemLabel}>Email</div>
                                     <div className={sharedStyles.employeeAccordionItemValue}>
                                       {canViewEmployeeSensitive
                                         ? (selectedEmployee.email ?? '--')
@@ -912,26 +865,18 @@ export function BonusTransactionModal({
                                   </div>
                                 </div>
                                 <div className={sharedStyles.employeeAccordionItem}>
-                                  <CalendarOutlined
-                                    className={sharedStyles.employeeAccordionItemIcon}
-                                  />
+                                  <CalendarOutlined className={sharedStyles.employeeAccordionItemIcon} />
                                   <div>
-                                    <div className={sharedStyles.employeeAccordionItemLabel}>
-                                      Período
-                                    </div>
+                                    <div className={sharedStyles.employeeAccordionItemLabel}>Período</div>
                                     <div className={sharedStyles.employeeAccordionItemValue}>
                                       {selectedPayPeriod?.nombre ?? '--'}
                                     </div>
                                   </div>
                                 </div>
                                 <div className={sharedStyles.employeeAccordionItem}>
-                                  <ClockCircleOutlined
-                                    className={sharedStyles.employeeAccordionItemIcon}
-                                  />
+                                  <ClockCircleOutlined className={sharedStyles.employeeAccordionItemIcon} />
                                   <div>
-                                    <div className={sharedStyles.employeeAccordionItemLabel}>
-                                      Jornada
-                                    </div>
+                                    <div className={sharedStyles.employeeAccordionItemLabel}>Jornada</div>
                                     <div className={sharedStyles.employeeAccordionItemValue}>
                                       {selectedEmployee.jornada ?? '--'}
                                     </div>
@@ -941,27 +886,18 @@ export function BonusTransactionModal({
                               <hr className={sharedStyles.employeeAccordionGridHr} />
                               <div className={sharedStyles.employeeAccordionGrid}>
                                 <div className={sharedStyles.employeeAccordionItem}>
-                                  <DollarCircleOutlined
-                                    className={sharedStyles.employeeAccordionItemIcon}
-                                  />
+                                  <DollarCircleOutlined className={sharedStyles.employeeAccordionItemIcon} />
                                   <div>
-                                    <div className={sharedStyles.employeeAccordionItemLabel}>
-                                      Salario Base
-                                    </div>
+                                    <div className={sharedStyles.employeeAccordionItemLabel}>Salario Base</div>
                                     <div className={sharedStyles.employeeAccordionItemValue}>
                                       {canViewEmployeeSensitive
-                                        ? formatMoney(
-                                            selectedEmployee.salarioBase,
-                                            employeeCurrency,
-                                          )
+                                        ? formatMoney(selectedEmployee.salarioBase, employeeCurrency)
                                         : sensitiveMaskedValue}
                                     </div>
                                   </div>
                                 </div>
                                 <div className={sharedStyles.employeeAccordionItem}>
-                                  <DollarCircleOutlined
-                                    className={sharedStyles.employeeAccordionItemIcon}
-                                  />
+                                  <DollarCircleOutlined className={sharedStyles.employeeAccordionItemIcon} />
                                   <div>
                                     <div className={sharedStyles.employeeAccordionItemLabel}>
                                       Salario {selectedPayPeriod?.nombre ?? 'Período'}
@@ -974,13 +910,9 @@ export function BonusTransactionModal({
                                   </div>
                                 </div>
                                 <div className={sharedStyles.employeeAccordionItem}>
-                                  <DollarCircleOutlined
-                                    className={sharedStyles.employeeAccordionItemIcon}
-                                  />
+                                  <DollarCircleOutlined className={sharedStyles.employeeAccordionItemIcon} />
                                   <div>
-                                    <div className={sharedStyles.employeeAccordionItemLabel}>
-                                      Valor por Hora
-                                    </div>
+                                    <div className={sharedStyles.employeeAccordionItemLabel}>Valor por Hora</div>
                                     <div className={sharedStyles.employeeAccordionItemValue}>
                                       {canViewEmployeeSensitive
                                         ? `${formatMoney(hourValue, employeeCurrency)}/hora`
@@ -989,13 +921,9 @@ export function BonusTransactionModal({
                                   </div>
                                 </div>
                                 <div className={sharedStyles.employeeAccordionItem}>
-                                  <ClockCircleOutlined
-                                    className={sharedStyles.employeeAccordionItemIcon}
-                                  />
+                                  <ClockCircleOutlined className={sharedStyles.employeeAccordionItemIcon} />
                                   <div>
-                                    <div className={sharedStyles.employeeAccordionItemLabel}>
-                                      Horas del Período
-                                    </div>
+                                    <div className={sharedStyles.employeeAccordionItemLabel}>Horas del Período</div>
                                     <div
                                       className={sharedStyles.employeeAccordionItemValue}
                                     >{`${periodHours} horas`}</div>
@@ -1046,14 +974,8 @@ export function BonusTransactionModal({
                             options={employeesByCompany.map((employee) => ({
                               value: employee.id,
                               label: (() => {
-                                const fullName = `${[
-                                  employee.apellido1,
-                                  employee.apellido2,
-                                  employee.nombre,
-                                ]
-                                  .filter(
-                                    (part) => typeof part === 'string' && part.trim().length > 0,
-                                  )
+                                const fullName = `${[employee.apellido1, employee.apellido2, employee.nombre]
+                                  .filter((part) => typeof part === 'string' && part.trim().length > 0)
                                   .join(' ')}`.trim();
                                 if (fullName) {
                                   return canViewEmployeeSensitive && employee.codigo
@@ -1068,11 +990,7 @@ export function BonusTransactionModal({
                       ) : null}
                     </Flex>
 
-                    <Form.Item
-                      name="observacion"
-                      label="Observacion"
-                      style={{ marginTop: 8, marginBottom: 0 }}
-                    >
+                    <Form.Item name="observacion" label="Observacion" style={{ marginTop: 8, marginBottom: 0 }}>
                       <Input.TextArea
                         rows={1}
                         autoSize={{ minRows: 1, maxRows: 3 }}
@@ -1083,11 +1001,7 @@ export function BonusTransactionModal({
                   </Card>
                 </Col>
 
-                <Col
-                  xs={24}
-                  lg={16}
-                  style={{ display: 'flex', flexDirection: 'column', minHeight: 0 }}
-                >
+                <Col xs={24} lg={16} style={{ display: 'flex', flexDirection: 'column', minHeight: 0 }}>
                   {selectedCompanyId && selectedEmployeeId ? (
                     <Card
                       size="small"
@@ -1144,14 +1058,11 @@ export function BonusTransactionModal({
                                 const movementOptions = filteredMovements.map((movement) => ({
                                   value: movement.id,
                                   label: `${movement.nombre} (${movement.esMontoFijo === 1 ? 'Monto' : '%'})${movement.esInactivo === 1 ? ' (Inactivo)' : ''}`,
-                                  disabled:
-                                    movement.esInactivo === 1 && movement.id !== line.movimientoId,
+                                  disabled: movement.esInactivo === 1 && movement.id !== line.movimientoId,
                                 }));
                                 if (
                                   line.movimientoId &&
-                                  !movementOptions.some(
-                                    (option) => option.value === line.movimientoId,
-                                  )
+                                  !movementOptions.some((option) => option.value === line.movimientoId)
                                 ) {
                                   movementOptions.push({
                                     value: line.movimientoId,
@@ -1167,9 +1078,7 @@ export function BonusTransactionModal({
                                       align="center"
                                       style={{ width: '100%', paddingRight: 8 }}
                                     >
-                                      <span style={{ fontWeight: 600, color: '#3d4f5c' }}>
-                                        Línea {index + 1}
-                                      </span>
+                                      <span style={{ fontWeight: 600, color: '#3d4f5c' }}>Línea {index + 1}</span>
                                       <Button
                                         danger
                                         size="small"
@@ -1186,11 +1095,7 @@ export function BonusTransactionModal({
                                   ),
                                   children: (
                                     <div ref={index === lines.length - 1 ? lastLineRef : undefined}>
-                                      <Space
-                                        orientation="vertical"
-                                        size={16}
-                                        style={{ width: '100%' }}
-                                      >
+                                      <Space orientation="vertical" size={16} style={{ width: '100%' }}>
                                         <Row gutter={[16, 12]}>
                                           <Col xs={24} md={12} lg={8}>
                                             <div className={sharedStyles.filterLabel}>
@@ -1201,21 +1106,15 @@ export function BonusTransactionModal({
                                               showSearch
                                               optionFilterProp="label"
                                               loading={loadingPayrolls}
-                                              notFoundContent={
-                                                loadingPayrolls ? <Spin size="small" /> : null
-                                              }
+                                              notFoundContent={loadingPayrolls ? <Spin size="small" /> : null}
                                               value={line.payrollId}
                                               placeholder="Seleccione planilla"
                                               options={payrollOptions}
-                                              onChange={(value) =>
-                                                handlePayrollChange(line.key, value)
-                                              }
+                                              onChange={(value) => handlePayrollChange(line.key, value)}
                                               disabled={readOnly}
                                             />
                                             {line.payrollId &&
-                                            !payrollsByCompany.some(
-                                              (item) => item.id === line.payrollId,
-                                            ) ? (
+                                            !payrollsByCompany.some((item) => item.id === line.payrollId) ? (
                                               <Alert
                                                 type="warning"
                                                 showIcon
@@ -1239,14 +1138,10 @@ export function BonusTransactionModal({
                                             ) : null}
                                           </Col>
                                           <Col xs={24} md={12} lg={8}>
-                                            <div className={sharedStyles.filterLabel}>
-                                              2. Movimiento
-                                            </div>
+                                            <div className={sharedStyles.filterLabel}>2. Movimiento</div>
                                             <Tooltip
                                               title={
-                                                !line.payrollId
-                                                  ? 'Seleccione primero el periodo de pago'
-                                                  : undefined
+                                                !line.payrollId ? 'Seleccione primero el periodo de pago' : undefined
                                               }
                                             >
                                               <Select
@@ -1254,9 +1149,7 @@ export function BonusTransactionModal({
                                                 showSearch
                                                 optionFilterProp="label"
                                                 loading={movementsLoading}
-                                                notFoundContent={
-                                                  movementsLoading ? <Spin size="small" /> : null
-                                                }
+                                                notFoundContent={movementsLoading ? <Spin size="small" /> : null}
                                                 disabled={readOnly || !line.payrollId}
                                                 placeholder={
                                                   !line.payrollId
@@ -1264,9 +1157,7 @@ export function BonusTransactionModal({
                                                     : 'Seleccione movimiento'
                                                 }
                                                 value={line.movimientoId}
-                                                onChange={(value) =>
-                                                  handleMovimientoChange(line.key, value)
-                                                }
+                                                onChange={(value) => handleMovimientoChange(line.key, value)}
                                                 options={movementOptions}
                                               />
                                             </Tooltip>
@@ -1277,14 +1168,10 @@ export function BonusTransactionModal({
                                             ) : null}
                                           </Col>
                                           <Col xs={24} md={12} lg={8}>
-                                            <div className={sharedStyles.filterLabel}>
-                                              3. Tipo de Bonificacion
-                                            </div>
+                                            <div className={sharedStyles.filterLabel}>3. Tipo de Bonificacion</div>
                                             <Tooltip
                                               title={
-                                                !line.movimientoId
-                                                  ? 'Seleccione primero el movimiento'
-                                                  : undefined
+                                                !line.movimientoId ? 'Seleccione primero el movimiento' : undefined
                                               }
                                             >
                                               <Select
@@ -1296,22 +1183,16 @@ export function BonusTransactionModal({
                                                     : 'Seleccione tipo'
                                                 }
                                                 value={line.tipoBonificacion}
-                                                onChange={(value) =>
-                                                  handleTipoBonificacionChange(line.key, value)
-                                                }
+                                                onChange={(value) => handleTipoBonificacionChange(line.key, value)}
                                                 options={BONUS_TYPE_OPTIONS}
                                               />
                                             </Tooltip>
                                           </Col>
                                           <Col xs={24} md={12} lg={8}>
-                                            <div className={sharedStyles.filterLabel}>
-                                              4. Cantidad
-                                            </div>
+                                            <div className={sharedStyles.filterLabel}>4. Cantidad</div>
                                             <Tooltip
                                               title={
-                                                !line.movimientoId
-                                                  ? 'Seleccione primero el movimiento'
-                                                  : undefined
+                                                !line.movimientoId ? 'Seleccione primero el movimiento' : undefined
                                               }
                                             >
                                               <InputNumber
@@ -1322,9 +1203,7 @@ export function BonusTransactionModal({
                                                 disabled={readOnly || !line.movimientoId}
                                                 placeholder={!line.movimientoId ? '-' : undefined}
                                                 value={line.cantidad}
-                                                onChange={(value) =>
-                                                  handleCantidadChange(line.key, value ?? undefined)
-                                                }
+                                                onChange={(value) => handleCantidadChange(line.key, value ?? undefined)}
                                               />
                                             </Tooltip>
                                           </Col>
@@ -1334,9 +1213,7 @@ export function BonusTransactionModal({
                                             </div>
                                             <Tooltip
                                               title={
-                                                !line.movimientoId
-                                                  ? 'Seleccione primero el movimiento'
-                                                  : undefined
+                                                !line.movimientoId ? 'Seleccione primero el movimiento' : undefined
                                               }
                                             >
                                               <Input
@@ -1371,10 +1248,7 @@ export function BonusTransactionModal({
                                         >
                                           <Row gutter={[16, 12]}>
                                             <Col xs={24} md={8}>
-                                              <div
-                                                className={sharedStyles.filterLabel}
-                                                style={{ color: '#94a3b8' }}
-                                              >
+                                              <div className={sharedStyles.filterLabel} style={{ color: '#94a3b8' }}>
                                                 Fecha Efecto
                                               </div>
                                               <DatePicker
@@ -1385,10 +1259,7 @@ export function BonusTransactionModal({
                                               />
                                             </Col>
                                             <Col xs={24} md={16}>
-                                              <div
-                                                className={sharedStyles.filterLabel}
-                                                style={{ color: '#94a3b8' }}
-                                              >
+                                              <div className={sharedStyles.filterLabel} style={{ color: '#94a3b8' }}>
                                                 Fórmula
                                               </div>
                                               <Input
@@ -1416,12 +1287,7 @@ export function BonusTransactionModal({
                               flexShrink: 0,
                             }}
                           >
-                            <Button
-                              type="dashed"
-                              icon={<PlusOutlined />}
-                              onClick={handleAddLine}
-                              disabled={readOnly}
-                            >
+                            <Button type="dashed" icon={<PlusOutlined />} onClick={handleAddLine} disabled={readOnly}>
                               Agregar línea de transacción
                             </Button>
                           </Flex>

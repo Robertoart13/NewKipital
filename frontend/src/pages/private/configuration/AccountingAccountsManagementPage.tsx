@@ -83,15 +83,7 @@ interface AccountingAccountFormValues {
   idTipoAccionPersonalCambio?: number;
 }
 
-type PaneKey =
-  | 'empresa'
-  | 'nombre'
-  | 'codigo'
-  | 'netsuite'
-  | 'codigoExterno'
-  | 'tipoCuenta'
-  | 'tipoAccion'
-  | 'estado';
+type PaneKey = 'empresa' | 'nombre' | 'codigo' | 'netsuite' | 'codigoExterno' | 'tipoCuenta' | 'tipoAccion' | 'estado';
 
 interface PaneConfig {
   key: PaneKey;
@@ -177,8 +169,7 @@ function getPaneValue(
   if (key === 'netsuite') return row.idExternoNetsuite ?? '';
   if (key === 'codigoExterno') return row.codigoExterno ?? '';
   if (key === 'tipoCuenta') return tipoCuentaMap.get(row.idTipoErp) ?? `Tipo #${row.idTipoErp}`;
-  if (key === 'tipoAccion')
-    return tipoAccionMap.get(row.idTipoAccionPersonal) ?? `Accion #${row.idTipoAccionPersonal}`;
+  if (key === 'tipoAccion') return tipoAccionMap.get(row.idTipoAccionPersonal) ?? `Accion #${row.idTipoAccionPersonal}`;
   return row.esInactivo === 1 ? 'Inactivo' : 'Activo';
 }
 
@@ -204,9 +195,7 @@ export function AccountingAccountsManagementPage() {
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [showInactive, setShowInactive] = useState(false);
-  const [selectedCompanyIds, setSelectedCompanyIds] = useState<number[]>(
-    defaultCompanyId ? [defaultCompanyId] : [],
-  );
+  const [selectedCompanyIds, setSelectedCompanyIds] = useState<number[]>(defaultCompanyId ? [defaultCompanyId] : []);
   const [openModal, setOpenModal] = useState(false);
   const [editing, setEditing] = useState<AccountingAccountListItem | null>(null);
   const editingId = editing?.id ?? null;
@@ -258,15 +247,9 @@ export function AccountingAccountsManagementPage() {
     () => new Set(actionTypes.filter((t) => t.estado === 1).map((t) => t.id)),
     [actionTypes],
   );
-  const activeAccountTypes = useMemo(
-    () => accountTypes.filter((t) => t.status === 1),
-    [accountTypes],
-  );
+  const activeAccountTypes = useMemo(() => accountTypes.filter((t) => t.status === 1), [accountTypes]);
   const activeAccountTypesSorted = useMemo(
-    () =>
-      [...activeAccountTypes].sort(
-        (a, b) => getAccountTypeSortValue(a) - getAccountTypeSortValue(b),
-      ),
+    () => [...activeAccountTypes].sort((a, b) => getAccountTypeSortValue(a) - getAccountTypeSortValue(b)),
     [activeAccountTypes],
   );
   const activeActionTypes = useMemo(() => actionTypes.filter((t) => t.estado === 1), [actionTypes]);
@@ -283,10 +266,7 @@ export function AccountingAccountsManagementPage() {
     () => new Map(accountTypes.map((t) => [getAccountTypeSelectValue(t), t.id])),
     [accountTypes],
   );
-  const actionTypeMap = useMemo(
-    () => new Map(actionTypes.map((t) => [t.id, t.nombre])),
-    [actionTypes],
-  );
+  const actionTypeMap = useMemo(() => new Map(actionTypes.map((t) => [t.id, t.nombre])), [actionTypes]);
   const loadRows = useCallback(
     async (companyIds?: number[]) => {
       setLoading(true);
@@ -303,11 +283,7 @@ export function AccountingAccountsManagementPage() {
           setRows([]);
           return;
         }
-        const data = await fetchAccountingAccounts(
-          targetCompanyIds[0],
-          showInactive,
-          targetCompanyIds,
-        );
+        const data = await fetchAccountingAccounts(targetCompanyIds[0], showInactive, targetCompanyIds);
         setRows(data);
       } catch (error) {
         message.error(error instanceof Error ? error.message : 'Error al cargar cuentas contables');
@@ -321,10 +297,7 @@ export function AccountingAccountsManagementPage() {
 
   const loadCatalogs = useCallback(async () => {
     try {
-      const [types, actions] = await Promise.all([
-        fetchAccountingAccountTypes(),
-        fetchPersonalActionTypes(),
-      ]);
+      const [types, actions] = await Promise.all([fetchAccountingAccountTypes(), fetchPersonalActionTypes()]);
       setAccountTypes(types);
       setActionTypes(actions);
     } catch (error) {
@@ -356,9 +329,7 @@ export function AccountingAccountsManagementPage() {
         (row.codigo ?? '').toLowerCase().includes(term) ||
         (row.idExternoNetsuite ?? '').toLowerCase().includes(term) ||
         (row.codigoExterno ?? '').toLowerCase().includes(term) ||
-        (companies.find((c) => c.id === row.idEmpresa)?.nombre ?? '')
-          .toLowerCase()
-          .includes(term) ||
+        (companies.find((c) => c.id === row.idEmpresa)?.nombre ?? '').toLowerCase().includes(term) ||
         (accountTypeMap.get(row.idTipoErp) ?? '').toLowerCase().includes(term) ||
         (actionTypeMap.get(row.idTipoAccionPersonal) ?? '').toLowerCase().includes(term)
       );
@@ -414,10 +385,7 @@ export function AccountingAccountsManagementPage() {
     return result;
   }, [companies, dataFilteredByPaneSelections, paneSearch, accountTypeMap, actionTypeMap]);
 
-  const filteredRows = useMemo(
-    () => dataFilteredByPaneSelections(),
-    [dataFilteredByPaneSelections],
-  );
+  const filteredRows = useMemo(() => dataFilteredByPaneSelections(), [dataFilteredByPaneSelections]);
 
   const clearAllFilters = () => {
     setSearch('');
@@ -590,9 +558,7 @@ export function AccountingAccountsManagementPage() {
 
       const confirmed = await new Promise<boolean>((resolve) => {
         modal.confirm({
-          title: editing
-            ? 'Confirmar edicion de cuenta contable'
-            : 'Confirmar creacion de cuenta contable',
+          title: editing ? 'Confirmar edicion de cuenta contable' : 'Confirmar creacion de cuenta contable',
           content: editing ? 'Se guardaran los cambios.' : 'Se creara la nueva cuenta contable.',
           icon: <QuestionCircleOutlined style={{ color: '#5a6c7d', fontSize: 40 }} />,
           okText: editing ? 'Guardar cambios' : 'Crear',
@@ -797,9 +763,7 @@ export function AccountingAccountsManagementPage() {
         return (
           <div>
             <div style={{ fontWeight: 600, color: '#3d4f5c' }}>{actorLabel}</div>
-            {row.actorEmail && (
-              <div style={{ color: '#8c8c8c', fontSize: 12 }}>{row.actorEmail}</div>
-            )}
+            {row.actorEmail && <div style={{ color: '#8c8c8c', fontSize: 12 }}>{row.actorEmail}</div>}
           </div>
         );
       },
@@ -827,10 +791,7 @@ export function AccountingAccountsManagementPage() {
             {changes.length > 0 ? (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                 {changes.map((change, index) => (
-                  <div
-                    key={`${row.id}-${change.campo}-${index}`}
-                    style={{ fontSize: 12, lineHeight: 1.4 }}
-                  >
+                  <div key={`${row.id}-${change.campo}-${index}`} style={{ fontSize: 12, lineHeight: 1.4 }}>
                     <div>
                       <strong>{change.campo}</strong>
                     </div>
@@ -908,13 +869,7 @@ export function AccountingAccountsManagementPage() {
 
       <Card className={styles.mainCard}>
         <div className={styles.mainCardBody}>
-          <Flex
-            align="center"
-            justify="space-between"
-            wrap="wrap"
-            gap={12}
-            className={styles.registrosHeader}
-          >
+          <Flex align="center" justify="space-between" wrap="wrap" gap={12} className={styles.registrosHeader}>
             <Flex align="center" gap={12} wrap="wrap">
               <Flex align="center" gap={8}>
                 <FilterOutlined className={styles.registrosFilterIcon} />
@@ -962,13 +917,7 @@ export function AccountingAccountsManagementPage() {
             className={styles.filtersCollapse}
           >
             <Collapse.Panel header="Filtros" key="filtros">
-              <Flex
-                justify="space-between"
-                align="center"
-                wrap="wrap"
-                gap={12}
-                style={{ marginBottom: 16 }}
-              >
+              <Flex justify="space-between" align="center" wrap="wrap" gap={12} style={{ marginBottom: 16 }}>
                 <Input
                   placeholder="Search"
                   prefix={<SearchOutlined />}
@@ -1026,11 +975,7 @@ export function AccountingAccountsManagementPage() {
                           }
                           title="Abrir opciones"
                         />
-                        <Button
-                          size="middle"
-                          onClick={() => clearPaneSelection(pane.key)}
-                          title="Limpiar"
-                        >
+                        <Button size="middle" onClick={() => clearPaneSelection(pane.key)} title="Limpiar">
                           x
                         </Button>
                         <Button
@@ -1065,10 +1010,7 @@ export function AccountingAccountsManagementPage() {
                               <Checkbox key={`${pane.key}:${option.value}`} value={option.value}>
                                 <Space>
                                   <span>{option.value}</span>
-                                  <Badge
-                                    count={option.count}
-                                    style={{ backgroundColor: '#5a6c7d' }}
-                                  />
+                                  <Badge count={option.count} style={{ backgroundColor: '#5a6c7d' }} />
                                 </Space>
                               </Checkbox>
                             ))}
@@ -1094,8 +1036,7 @@ export function AccountingAccountsManagementPage() {
             pagination={{
               pageSize,
               showSizeChanger: false,
-              showTotal: (total, range) =>
-                `Mostrando ${range[0]} a ${range[1]} de ${total} registros`,
+              showTotal: (total, range) => `Mostrando ${range[0]} a ${range[1]} de ${total} registros`,
             }}
             onRow={(record) => ({
               onClick: () => openEditModal(record),
@@ -1114,12 +1055,7 @@ export function AccountingAccountsManagementPage() {
         width={860}
         destroyOnHidden
         title={
-          <Flex
-            justify="space-between"
-            align="center"
-            wrap="nowrap"
-            style={{ width: '100%', gap: 16 }}
-          >
+          <Flex justify="space-between" align="center" wrap="nowrap" style={{ width: '100%', gap: 16 }}>
             <div className={styles.companyModalHeader}>
               <div className={styles.companyModalHeaderIcon}>
                 <DollarOutlined />
@@ -1235,21 +1171,13 @@ export function AccountingAccountsManagementPage() {
                         </>
                       ) : companies.length === 1 ? (
                         <Col span={12}>
-                          <Form.Item
-                            name="idEmpresa"
-                            label="Empresa *"
-                            rules={[{ required: true }]}
-                          >
+                          <Form.Item name="idEmpresa" label="Empresa *" rules={[{ required: true }]}>
                             <Input value={companies[0].nombre} disabled />
                           </Form.Item>
                         </Col>
                       ) : (
                         <Col span={12}>
-                          <Form.Item
-                            name="idEmpresa"
-                            label="Empresa *"
-                            rules={[{ required: true }]}
-                          >
+                          <Form.Item name="idEmpresa" label="Empresa *" rules={[{ required: true }]}>
                             <Select
                               showSearch
                               optionFilterProp="label"
@@ -1274,11 +1202,7 @@ export function AccountingAccountsManagementPage() {
                         </Form.Item>
                       </Col>
                       <Col span={12}>
-                        <Form.Item
-                          name="codigo"
-                          label="Codigo Cuenta *"
-                          rules={textRules({ required: true, max: 50 })}
-                        >
+                        <Form.Item name="codigo" label="Codigo Cuenta *" rules={textRules({ required: true, max: 50 })}>
                           <Input placeholder="Codigo cuenta" maxLength={50} />
                         </Form.Item>
                       </Col>
@@ -1309,10 +1233,7 @@ export function AccountingAccountsManagementPage() {
                             <Form.Item label="Tipo de cuenta actual">
                               <Flex align="center" gap={8}>
                                 <Input
-                                  value={
-                                    accountTypeMap.get(editing.idTipoErp) ??
-                                    `Tipo #${editing.idTipoErp}`
-                                  }
+                                  value={accountTypeMap.get(editing.idTipoErp) ?? `Tipo #${editing.idTipoErp}`}
                                   disabled
                                 />
                                 <Tag className={styles.tagInactivo}>Inactivo</Tag>
@@ -1332,11 +1253,7 @@ export function AccountingAccountsManagementPage() {
                             </Form.Item>
                           </>
                         ) : (
-                          <Form.Item
-                            name="idTipoErp"
-                            label="Tipo de Cuenta *"
-                            rules={[{ required: true }]}
-                          >
+                          <Form.Item name="idTipoErp" label="Tipo de Cuenta *" rules={[{ required: true }]}>
                             <Select
                               showSearch
                               optionFilterProp="label"
@@ -1351,8 +1268,7 @@ export function AccountingAccountsManagementPage() {
                         )}
                       </Col>
                       <Col span={12}>
-                        {editing?.idTipoAccionPersonal &&
-                        !activeActionTypeIds.has(editing.idTipoAccionPersonal) ? (
+                        {editing?.idTipoAccionPersonal && !activeActionTypeIds.has(editing.idTipoAccionPersonal) ? (
                           <>
                             <Form.Item name="idTipoAccionPersonal" hidden>
                               <Input />
@@ -1369,10 +1285,7 @@ export function AccountingAccountsManagementPage() {
                                 <Tag className={styles.tagInactivo}>Inactivo</Tag>
                               </Flex>
                             </Form.Item>
-                            <Form.Item
-                              name="idTipoAccionPersonalCambio"
-                              label="Cambiar a tipo activo"
-                            >
+                            <Form.Item name="idTipoAccionPersonalCambio" label="Cambiar a tipo activo">
                               <Select
                                 showSearch
                                 optionFilterProp="label"
@@ -1428,12 +1341,9 @@ export function AccountingAccountsManagementPage() {
                 children: (
                   <Spin spinning={loadingAuditTrail}>
                     <div style={{ paddingTop: 8 }}>
-                      <p className={styles.sectionTitle}>
-                        Historial de cambios de la cuenta contable
-                      </p>
+                      <p className={styles.sectionTitle}>Historial de cambios de la cuenta contable</p>
                       <p className={styles.sectionDescription}>
-                        Muestra quien hizo el cambio, cuando lo hizo y el detalle registrado en
-                        bitacora.
+                        Muestra quien hizo el cambio, cuando lo hizo y el detalle registrado en bitacora.
                       </p>
                       <Table
                         columns={auditColumns}

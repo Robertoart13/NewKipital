@@ -41,9 +41,26 @@ export default defineConfig([
     },
 
     rules: {
-      // ✅ Hooks
+      // ✅ Reglas core de Hooks (siempre activas)
       'react-hooks/rules-of-hooks': 'error',
       'react-hooks/exhaustive-deps': 'warn',
+
+      // ✅ React Compiler rules — bajadas a warn porque el React Compiler (babel plugin)
+      // NO está habilitado en este proyecto (vite.config.ts usa react() sin compiler).
+      // Estas reglas son orientativas pero no bloquean el build.
+      'react-hooks/preserve-manual-memoization': 'warn',
+      'react-hooks/set-state-in-effect': 'warn',
+      'react-hooks/static-components': 'warn',
+      'react-hooks/use-memo': 'warn',
+      'react-hooks/component-hook-factories': 'warn',
+      'react-hooks/immutability': 'warn',
+      'react-hooks/globals': 'warn',
+      'react-hooks/refs': 'warn',
+      'react-hooks/error-boundaries': 'warn',
+      'react-hooks/purity': 'warn',
+      'react-hooks/set-state-in-render': 'warn',
+      'react-hooks/gating': 'warn',
+      'react-hooks/config': 'off',
 
       // ✅ React refresh (evita exports raros que rompen HMR)
       'react-refresh/only-export-components': ['warn', { allowConstantExport: true }],
@@ -57,6 +74,13 @@ export default defineConfig([
           argsIgnorePattern: '^_',
         },
       ],
+
+      // ✅ Deshabilitado: en un frontend React con tests/mocks, `any` es inevitable
+      // en adaptadores de APIs externas, mocks de vitest, y tipos de librerías sin tipos.
+      '@typescript-eslint/no-explicit-any': 'off',
+
+      // ✅ No-unused-vars delegado a unused-imports para evitar doble reporte
+      '@typescript-eslint/no-unused-vars': 'off',
 
       // ✅ Orden de imports (opcional pero recomendado)
       'import/order': [

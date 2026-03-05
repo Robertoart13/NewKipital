@@ -14,6 +14,7 @@ import {
   EstadoProvisionAguinaldoEmpleado,
 } from '../employees/entities/employee-aguinaldo-provision.entity';
 import { Employee } from '../employees/entities/employee.entity';
+import { EmployeeVacationService } from '../employees/services/employee-vacation.service';
 import { AuditOutboxService } from '../integration/audit-outbox.service';
 import {
   PersonalAction,
@@ -67,6 +68,11 @@ type TransferSimulationResult = {
     totalBruto: number;
     montoProvisionado: number;
   };
+  vacationBalance?: {
+    balance: number;
+    movedDays: number;
+    accountId: number | null;
+  };
 };
 
 type LineTableConfig = {
@@ -85,6 +91,15 @@ const TRANSFERABLE_ACTION_STATES = [
   ...PERSONAL_ACTION_PENDING_STATES,
   ...PERSONAL_ACTION_APPROVED_STATES,
 ];
+
+const BLOCKING_ACTION_TYPES = new Set([
+  'licencia',
+  'licencias',
+  'incapacidad',
+  'incapacidades',
+  'aumento',
+  'aumentos',
+]);
 
 const LINE_TABLES: LineTableConfig[] = [
   {
@@ -146,6 +161,7 @@ export class IntercompanyTransferService {
     private readonly transferRepo: Repository<EmployeeTransfer>,
     private readonly dataSource: DataSource,
     private readonly auditOutbox: AuditOutboxService,
+    private readonly vacationService: EmployeeVacationService,
   ) {}
 
   /**
@@ -281,6 +297,23 @@ export class IntercompanyTransferService {
       },
     });
 
+    const blockingActions = actions.filter((action) =>
+      this.isBlockingActionType(action.tipoAccion),
+    );
+    if (blockingActions.length > 0) {
+      blockingReasons.push({
+        code: 'ACCIONES_BLOQUEANTES',
+        message: 'El empleado tiene acciones de personal pendientes bloqueantes.',
+        metadata: {
+          acciones: blockingActions.map((action) => ({
+            id: action.id,
+            tipo: action.tipoAccion,
+            estado: action.estado,
+          })),
+        },
+      });
+    }
+
     const actionPlans = this.buildActionPlans(actions, effectiveDate);
     const actionIdsToMove = actionPlans
       .filter((plan) => plan.shouldMove)
@@ -353,6 +386,11 @@ export class IntercompanyTransferService {
       effectiveDate,
     );
 
+    const vacationBalance = await this.vacationService.getBalanceSnapshot(
+      this.dataSource.manager,
+      employee.id,
+    );
+
     const eligible = blockingReasons.length === 0;
     let transferId: number | null = null;
 
@@ -371,6 +409,7 @@ export class IntercompanyTransferService {
           actionPlans,
           actionPlans.length,
           aguinaldoProvision,
+          vacationBalance,
         ),
         motivo,
         simuladoPor: userId,
@@ -390,6 +429,11 @@ export class IntercompanyTransferService {
       actionsToMove: actionPlans.filter((plan) => plan.shouldMove),
       actionsIgnored: actionPlans.filter((plan) => !plan.shouldMove).length,
       aguinaldoProvision,
+      vacationBalance: {
+        balance: vacationBalance.balance,
+        movedDays: vacationBalance.balance,
+        accountId: vacationBalance.accountId,
+      },
     };
   }
 
@@ -467,6 +511,15 @@ export class IntercompanyTransferService {
         userId,
       );
 
+      const vacationBalance = await this.vacationService.transferBalanceForIntercompany(trx, {
+        employee,
+        sourceCompanyId: transfer.idEmpresaOrigen,
+        destinationCompanyId: transfer.idEmpresaDestino,
+        transferId: transfer.id,
+        effectiveDate,
+        actorId: userId,
+      });
+
       employee.idEmpresa = transfer.idEmpresaDestino;
       employee.modificadoPor = userId;
       await trx.save(Employee, employee);
@@ -477,6 +530,7 @@ export class IntercompanyTransferService {
       transfer.resumen = {
         ...simulation,
         aguinaldoProvision,
+        vacationBalance,
       };
       await trx.save(EmployeeTransfer, transfer);
 
@@ -771,6 +825,7 @@ export class IntercompanyTransferService {
     actionPlans: ActionTransferPlan[],
     totalActions: number,
     aguinaldoProvision?: { totalBruto: number; montoProvisionado: number },
+    vacationBalance?: { accountId: number | null; balance: number },
   ): Record<string, unknown> {
     return {
       employeeId,
@@ -782,7 +837,13 @@ export class IntercompanyTransferService {
       actionsIgnored: actionPlans.filter((plan) => !plan.shouldMove).length,
       actionsSplit: actionPlans.filter((plan) => plan.requiresSplit).length,
       aguinaldoProvision: aguinaldoProvision ?? null,
+      vacationBalance: vacationBalance ?? null,
     };
+  }
+
+  private isBlockingActionType(actionType: string | null | undefined): boolean {
+    const normalized = (actionType ?? '').trim().toLowerCase();
+    return normalized.length > 0 && BLOCKING_ACTION_TYPES.has(normalized);
   }
 
   private async collectLineDatesByAction(

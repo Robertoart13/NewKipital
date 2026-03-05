@@ -58,6 +58,7 @@ export function useNotificationSocket(enabled: boolean) {
         socketRef.current = null;
       }
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [enabled, queryClient]);
 
   return socketRef;

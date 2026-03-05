@@ -53,10 +53,7 @@ export function clearSkipRestore(): void {
 
 export function setMicrosoftSession(accessToken: string, expiresInSeconds = 3600): void {
   sessionStorage.setItem(STORAGE_KEYS.MICROSOFT_ACCESS_TOKEN, accessToken);
-  sessionStorage.setItem(
-    STORAGE_KEYS.MICROSOFT_TOKEN_EXPIRES_AT,
-    String(Date.now() + expiresInSeconds * 1000),
-  );
+  sessionStorage.setItem(STORAGE_KEYS.MICROSOFT_TOKEN_EXPIRES_AT, String(Date.now() + expiresInSeconds * 1000));
 }
 
 export function getMicrosoftAccessToken(): string | null {

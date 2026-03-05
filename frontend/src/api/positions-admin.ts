@@ -59,10 +59,7 @@ export async function createPosition(payload: PositionPayload): Promise<Position
   return res.json();
 }
 
-export async function updatePosition(
-  id: number,
-  payload: Partial<PositionPayload>,
-): Promise<PositionListItem> {
+export async function updatePosition(id: number, payload: Partial<PositionPayload>): Promise<PositionListItem> {
   const res = await httpFetch(`/positions/${id}`, {
     method: 'PUT',
     body: JSON.stringify(payload),
@@ -87,10 +84,7 @@ export async function reactivatePosition(id: number): Promise<PositionListItem> 
   return res.json();
 }
 
-export async function fetchPositionAuditTrail(
-  id: number,
-  limit = 200,
-): Promise<PositionAuditTrailItem[]> {
+export async function fetchPositionAuditTrail(id: number, limit = 200): Promise<PositionAuditTrailItem[]> {
   const qs = new URLSearchParams({ limit: String(limit) });
   const res = await httpFetch(`/positions/${id}/audit-trail?${qs}`);
   if (!res.ok) {

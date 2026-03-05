@@ -102,8 +102,7 @@
   transition: all 0.2s ease !important;
 }
 
-.calendarStyled
-  :global(.ant-picker-cell:not(.ant-picker-cell-disabled):hover .ant-picker-cell-inner) {
+.calendarStyled :global(.ant-picker-cell:not(.ant-picker-cell-disabled):hover .ant-picker-cell-inner) {
   background: #f0f9ff !important;
   border-color: #b8dfff !important;
 }

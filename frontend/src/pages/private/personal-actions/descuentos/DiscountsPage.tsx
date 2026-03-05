@@ -144,18 +144,11 @@ function isDiscountEditableState(estado: number): boolean {
   return [1, 2, 3].includes(Number(estado));
 }
 
-function getPaneValue(
-  row: DiscountUiRow,
-  key: PaneKey,
-  companies: Array<{ id: number; nombre: string }>,
-): string {
+function getPaneValue(row: DiscountUiRow, key: PaneKey, companies: Array<{ id: number; nombre: string }>): string {
   if (key === 'empresa') {
-    return (
-      companies.find((c) => Number(c.id) === row.idEmpresa)?.nombre ?? `Empresa #${row.idEmpresa}`
-    );
+    return companies.find((c) => Number(c.id) === row.idEmpresa)?.nombre ?? `Empresa #${row.idEmpresa}`;
   }
-  if (key === 'empleado')
-    return (row.employeeLabel ?? `Empleado #${row.idEmpleado}`).trim() || '--';
+  if (key === 'empleado') return (row.employeeLabel ?? `Empleado #${row.idEmpleado}`).trim() || '--';
   if (key === 'periodoPago') return (row.periodoPagoResumen ?? '').trim() || '--';
   if (key === 'movimiento') return (row.movimientoResumen ?? '').trim() || '--';
   if (key === 'estado') return ESTADO_LABEL[row.estado]?.text ?? `Estado ${row.estado}`;
@@ -227,15 +220,10 @@ export function DiscountsPage() {
   const canEdit = useAppSelector((state) => hasPermission(state, 'hr-action-descuentos:edit'));
   const canCancel = useAppSelector((state) => hasPermission(state, 'hr-action-descuentos:cancel'));
   const canView = useAppSelector(
-    (state) =>
-      hasPermission(state, 'hr-action-descuentos:view') || hasPermission(state, 'hr_action:view'),
+    (state) => hasPermission(state, 'hr-action-descuentos:view') || hasPermission(state, 'hr_action:view'),
   );
-  const canApprove = useAppSelector((state) =>
-    hasPermission(state, 'hr-action-descuentos:approve'),
-  );
-  const canViewEmployeeSensitive = useAppSelector((state) =>
-    hasPermission(state, 'employee:view-sensitive'),
-  );
+  const canApprove = useAppSelector((state) => hasPermission(state, 'hr-action-descuentos:approve'));
+  const canViewEmployeeSensitive = useAppSelector((state) => hasPermission(state, 'employee:view-sensitive'));
 
   const defaultCompanyId = useMemo(() => {
     const active = Number(activeCompany?.id);
@@ -359,9 +347,7 @@ export function DiscountsPage() {
       );
       setRows(filtered);
     } catch (error) {
-      message.error(
-        error instanceof Error ? error.message : 'No se pudieron cargar los descuentos.',
-      );
+      message.error(error instanceof Error ? error.message : 'No se pudieron cargar los descuentos.');
     } finally {
       setLoading(false);
     }
@@ -388,8 +374,7 @@ export function DiscountsPage() {
         message.destroy(key);
       } catch (error) {
         message.error({
-          content:
-            error instanceof Error ? error.message : 'No se pudo cargar el detalle de descuento.',
+          content: error instanceof Error ? error.message : 'No se pudo cargar el detalle de descuento.',
           key,
         });
         setOpenModal(false);
@@ -410,9 +395,7 @@ export function DiscountsPage() {
         setAuditTrail(rowsAudit ?? []);
       } catch (error) {
         setAuditTrail([]);
-        message.error(
-          error instanceof Error ? error.message : 'Error al cargar bitacora de descuento',
-        );
+        message.error(error instanceof Error ? error.message : 'Error al cargar bitacora de descuento');
       } finally {
         setLoadingAuditTrail(false);
       }
@@ -552,10 +535,7 @@ export function DiscountsPage() {
     return result;
   }, [companies, dataFilteredByPaneSelections, paneSearch]);
 
-  const rowsFiltered = useMemo(
-    () => dataFilteredByPaneSelections(),
-    [dataFilteredByPaneSelections],
-  );
+  const rowsFiltered = useMemo(() => dataFilteredByPaneSelections(), [dataFilteredByPaneSelections]);
 
   const columns: ColumnsType<DiscountUiRow> = useMemo(
     () => [
@@ -564,8 +544,7 @@ export function DiscountsPage() {
         key: 'empresa',
         width: 240,
         render: (_, row) =>
-          companies.find((company) => Number(company.id) === row.idEmpresa)?.nombre ??
-          `Empresa #${row.idEmpresa}`,
+          companies.find((company) => Number(company.id) === row.idEmpresa)?.nombre ?? `Empresa #${row.idEmpresa}`,
       },
       {
         title: 'EMPLEADO',
@@ -601,18 +580,13 @@ export function DiscountsPage() {
         render: (_, row) => {
           const canInvalidate = canCancel && [1, 2, 3].includes(row.estado);
           const nextAction = NEXT_STATE_ACTION_CONFIG[row.estado];
-          const canAdvance = nextAction
-            ? nextAction.requiredPermission === 'approve'
-              ? canApprove
-              : canEdit
-            : false;
+          const canAdvance = nextAction ? (nextAction.requiredPermission === 'approve' ? canApprove : canEdit) : false;
 
           const onInvalidate = (e: MouseEvent<HTMLElement>) => {
             e.stopPropagation();
             modal.confirm({
               title: 'Confirmar invalidacion',
-              content:
-                'Esta accion se marcara como invalidada y no seguira su flujo operativo. Desea continuar?',
+              content: 'Esta accion se marcara como invalidada y no seguira su flujo operativo. Desea continuar?',
               okText: 'Si, invalidar',
               cancelText: 'Cancelar',
               centered: true,
@@ -629,8 +603,7 @@ export function DiscountsPage() {
                   await loadRows();
                 } catch (error) {
                   message.error({
-                    content:
-                      error instanceof Error ? error.message : 'No se pudo invalidar el descuento.',
+                    content: error instanceof Error ? error.message : 'No se pudo invalidar el descuento.',
                     key,
                   });
                 }
@@ -671,10 +644,7 @@ export function DiscountsPage() {
                         await loadRows();
                       } catch (error) {
                         message.error({
-                          content:
-                            error instanceof Error
-                              ? error.message
-                              : 'No se pudo actualizar el estado.',
+                          content: error instanceof Error ? error.message : 'No se pudo actualizar el estado.',
                           key,
                         });
                       }
@@ -737,9 +707,7 @@ export function DiscountsPage() {
           </Link>
           <div className={styles.pageTitleBlock}>
             <h1 className={styles.pageTitle}>Descuentos</h1>
-            <p className={styles.pageSubtitle}>
-              Gestione descuentos por empresa con líneas de transacción por período
-            </p>
+            <p className={styles.pageSubtitle}>Gestione descuentos por empresa con líneas de transacción por período</p>
           </div>
         </div>
       </div>
@@ -753,9 +721,7 @@ export function DiscountsPage() {
               </div>
               <div>
                 <h2 className={styles.gestionTitle}>Gestión de descuentos</h2>
-                <p className={styles.gestionDesc}>
-                  Encabezado de acción + múltiples líneas por planilla
-                </p>
+                <p className={styles.gestionDesc}>Encabezado de acción + múltiples líneas por planilla</p>
               </div>
             </Flex>
             <Button
@@ -779,13 +745,7 @@ export function DiscountsPage() {
 
       <Card className={styles.mainCard} style={{ marginBottom: 0 }}>
         <div className={styles.mainCardBody}>
-          <Flex
-            align="center"
-            justify="space-between"
-            wrap="wrap"
-            gap={12}
-            className={styles.registrosHeader}
-          >
+          <Flex align="center" justify="space-between" wrap="wrap" gap={12} className={styles.registrosHeader}>
             <Flex align="center" gap={12} wrap="wrap">
               <Flex align="center" gap={8}>
                 <FilterOutlined className={styles.registrosFilterIcon} />
@@ -820,9 +780,7 @@ export function DiscountsPage() {
                   value: Number(value),
                   label: meta.text,
                 }))}
-                onChange={(values) =>
-                  setSelectedEstados((values ?? []).map((item) => Number(item)))
-                }
+                onChange={(values) => setSelectedEstados((values ?? []).map((item) => Number(item)))}
               />
               <Button icon={<ReloadOutlined />} onClick={() => void loadRows()}>
                 Refrescar
@@ -832,9 +790,7 @@ export function DiscountsPage() {
 
           <Collapse
             activeKey={filtersExpanded ? ['filtros'] : []}
-            onChange={(keys) =>
-              setFiltersExpanded((Array.isArray(keys) ? keys : [keys]).includes('filtros'))
-            }
+            onChange={(keys) => setFiltersExpanded((Array.isArray(keys) ? keys : [keys]).includes('filtros'))}
             className={styles.filtersCollapse}
             items={[
               {
@@ -842,13 +798,7 @@ export function DiscountsPage() {
                 label: 'Filtros',
                 children: (
                   <>
-                    <Flex
-                      justify="space-between"
-                      align="center"
-                      wrap="wrap"
-                      gap={12}
-                      style={{ marginBottom: 16 }}
-                    >
+                    <Flex justify="space-between" align="center" wrap="wrap" gap={12} style={{ marginBottom: 16 }}>
                       <Input
                         placeholder="Search"
                         prefix={<SearchOutlined />}
@@ -877,21 +827,13 @@ export function DiscountsPage() {
                             <Flex gap={6} align="center" wrap="wrap">
                               <Input
                                 value={paneSearch[pane.key]}
-                                onChange={(e) =>
-                                  setPaneSearch((prev) => ({ ...prev, [pane.key]: e.target.value }))
-                                }
+                                onChange={(e) => setPaneSearch((prev) => ({ ...prev, [pane.key]: e.target.value }))}
                                 placeholder={pane.title}
-                                prefix={
-                                  <SearchOutlined style={{ fontSize: 12, color: '#8c8c8c' }} />
-                                }
+                                prefix={<SearchOutlined style={{ fontSize: 12, color: '#8c8c8c' }} />}
                                 suffix={
                                   <Flex gap={2}>
-                                    <SortAscendingOutlined
-                                      style={{ fontSize: 10, color: '#8c8c8c' }}
-                                    />
-                                    <SortDescendingOutlined
-                                      style={{ fontSize: 10, color: '#8c8c8c' }}
-                                    />
+                                    <SortAscendingOutlined style={{ fontSize: 10, color: '#8c8c8c' }} />
+                                    <SortDescendingOutlined style={{ fontSize: 10, color: '#8c8c8c' }} />
                                   </Flex>
                                 }
                                 size="middle"
@@ -901,24 +843,16 @@ export function DiscountsPage() {
                               <Button
                                 size="middle"
                                 icon={<SearchOutlined />}
-                                onClick={() =>
-                                  setPaneOpen((prev) => ({ ...prev, [pane.key]: true }))
-                                }
+                                onClick={() => setPaneOpen((prev) => ({ ...prev, [pane.key]: true }))}
                                 title="Abrir opciones"
                               />
-                              <Button
-                                size="middle"
-                                onClick={() => clearPaneSelection(pane.key)}
-                                title="Limpiar"
-                              >
+                              <Button size="middle" onClick={() => clearPaneSelection(pane.key)} title="Limpiar">
                                 x
                               </Button>
                               <Button
                                 size="middle"
                                 icon={paneOpen[pane.key] ? <UpOutlined /> : <DownOutlined />}
-                                onClick={() =>
-                                  setPaneOpen((prev) => ({ ...prev, [pane.key]: !prev[pane.key] }))
-                                }
+                                onClick={() => setPaneOpen((prev) => ({ ...prev, [pane.key]: !prev[pane.key] }))}
                                 title={paneOpen[pane.key] ? 'Colapsar' : 'Expandir'}
                               />
                             </Flex>
@@ -935,24 +869,16 @@ export function DiscountsPage() {
                                   style={{ display: 'flex', flexDirection: 'column', gap: 8 }}
                                 >
                                   {paneOptions[pane.key].map((option) => (
-                                    <Checkbox
-                                      key={`${pane.key}:${option.value}`}
-                                      value={option.value}
-                                    >
+                                    <Checkbox key={`${pane.key}:${option.value}`} value={option.value}>
                                       <Space>
                                         <span>{option.value}</span>
-                                        <Badge
-                                          count={option.count}
-                                          style={{ backgroundColor: '#5a6c7d' }}
-                                        />
+                                        <Badge count={option.count} style={{ backgroundColor: '#5a6c7d' }} />
                                       </Space>
                                     </Checkbox>
                                   ))}
                                 </Checkbox.Group>
                                 {paneOptions[pane.key].length === 0 && (
-                                  <span className={styles.emptyHint}>
-                                    Sin valores para este filtro
-                                  </span>
+                                  <span className={styles.emptyHint}>Sin valores para este filtro</span>
                                 )}
                               </div>
                             )}
@@ -975,8 +901,7 @@ export function DiscountsPage() {
             pagination={{
               pageSize,
               showSizeChanger: false,
-              showTotal: (total, [start, end]) =>
-                `Mostrando ${start} a ${end} de ${total} registros`,
+              showTotal: (total, [start, end]) => `Mostrando ${start} a ${end} de ${total} registros`,
             }}
             onRow={(record) => ({
               onClick: () => {

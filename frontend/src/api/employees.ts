@@ -180,9 +180,7 @@ export interface EmployeeAuditTrailItem {
  * GET /employees/supervisors - Lista empleados elegibles como supervisores (rol Supervisor, Supervisor Global o Master en TimeWise).
  * Incluye todas las empresas a las que el usuario tiene acceso (un supervisor de otra subsidiaria puede asumir el rol).
  */
-export async function fetchSupervisors(): Promise<
-  { id: number; nombre: string; apellido1: string }[]
-> {
+export async function fetchSupervisors(): Promise<{ id: number; nombre: string; apellido1: string }[]> {
   const res = await httpFetch('/employees/supervisors');
   if (!res.ok) return [];
   return res.json();
@@ -245,10 +243,7 @@ export async function createEmployee(payload: CreateEmployeePayload): Promise<{
 /**
  * PUT /employees/:id - Actualizar empleado.
  */
-export async function updateEmployee(
-  id: number,
-  payload: UpdateEmployeePayload,
-): Promise<EmployeeDetail> {
+export async function updateEmployee(id: number, payload: UpdateEmployeePayload): Promise<EmployeeDetail> {
   const res = await httpFetch(`/employees/${id}`, {
     method: 'PUT',
     body: JSON.stringify(payload),
@@ -283,11 +278,7 @@ export async function inactivateEmployee(id: number, motivo?: string): Promise<E
 /**
  * PATCH /employees/:id/liquidar - Liquidar empleado.
  */
-export async function liquidateEmployee(
-  id: number,
-  fechaSalida: string,
-  motivo?: string,
-): Promise<EmployeeDetail> {
+export async function liquidateEmployee(id: number, fechaSalida: string, motivo?: string): Promise<EmployeeDetail> {
   const res = await httpFetch(`/employees/${id}/liquidar`, {
     method: 'PATCH',
     body: JSON.stringify({ fechaSalida, motivo }),
@@ -316,10 +307,7 @@ export async function reactivateEmployee(id: number): Promise<EmployeeDetail> {
 /**
  * GET /employees/:id/audit-trail - Historial de cambios del empleado.
  */
-export async function fetchEmployeeAuditTrail(
-  id: number,
-  limit = 200,
-): Promise<EmployeeAuditTrailItem[]> {
+export async function fetchEmployeeAuditTrail(id: number, limit = 200): Promise<EmployeeAuditTrailItem[]> {
   const params = new URLSearchParams();
   params.set('limit', String(limit));
   const res = await httpFetch(`/employees/${id}/audit-trail?${params.toString()}`);

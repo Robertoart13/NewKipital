@@ -57,9 +57,7 @@ export function PayrollArticlesFiltersPanel(props: PayrollArticlesFiltersPanelPr
   return (
     <Collapse
       activeKey={filtersExpanded ? ['filtros'] : []}
-      onChange={(keys) =>
-        onToggleFilters((Array.isArray(keys) ? keys : [keys]).includes('filtros'))
-      }
+      onChange={(keys) => onToggleFilters((Array.isArray(keys) ? keys : [keys]).includes('filtros'))}
       className={styles.filtersCollapse}
       items={[
         {
@@ -67,13 +65,7 @@ export function PayrollArticlesFiltersPanel(props: PayrollArticlesFiltersPanelPr
           label: 'Filtros',
           children: (
             <>
-              <Flex
-                justify="space-between"
-                align="center"
-                wrap="wrap"
-                gap={12}
-                style={{ marginBottom: 16 }}
-              >
+              <Flex justify="space-between" align="center" wrap="wrap" gap={12} style={{ marginBottom: 16 }}>
                 <Input
                   placeholder="Search"
                   prefix={<SearchOutlined />}
@@ -135,19 +127,14 @@ export function PayrollArticlesFiltersPanel(props: PayrollArticlesFiltersPanelPr
                         <div className={styles.paneOptionsBox}>
                           <Checkbox.Group
                             value={paneSelections[pane.key]}
-                            onChange={(values) =>
-                              onPaneSelectionsChange(pane.key, values as string[])
-                            }
+                            onChange={(values) => onPaneSelectionsChange(pane.key, values as string[])}
                             style={{ display: 'flex', flexDirection: 'column', gap: 8 }}
                           >
                             {paneOptions[pane.key].map((option) => (
                               <Checkbox key={`${pane.key}:${option.value}`} value={option.value}>
                                 <Space>
                                   <span>{option.value}</span>
-                                  <Badge
-                                    count={option.count}
-                                    style={{ backgroundColor: '#5a6c7d' }}
-                                  />
+                                  <Badge count={option.count} style={{ backgroundColor: '#5a6c7d' }} />
                                 </Space>
                               </Checkbox>
                             ))}

@@ -67,9 +67,7 @@ export function EmployeeDetailPage() {
           idDepartamento: values.idDepartamento,
           idPuesto: values.idPuesto,
           idSupervisor: values.idSupervisor,
-          fechaIngreso: values.fechaIngreso
-            ? dayjs(values.fechaIngreso).format('YYYY-MM-DD')
-            : undefined,
+          fechaIngreso: values.fechaIngreso ? dayjs(values.fechaIngreso).format('YYYY-MM-DD') : undefined,
           tipoContrato: values.tipoContrato,
           jornada: values.jornada,
           idPeriodoPago: values.idPeriodoPago,
@@ -147,9 +145,7 @@ export function EmployeeDetailPage() {
                 canReactivate={canReactivate}
                 onInactivate={(id, motivo) => inactivateMutation.mutate({ id, motivo })}
                 onReactivate={(id) => reactivateMutation.mutate({ id })}
-                onLiquidate={(id, fecha, motivo) =>
-                  liquidateMutation.mutate({ id, fechaSalida: fecha, motivo })
-                }
+                onLiquidate={(id, fecha, motivo) => liquidateMutation.mutate({ id, fechaSalida: fecha, motivo })}
                 inactivatePending={inactivateMutation.isPending}
                 reactivatePending={reactivateMutation.isPending}
                 liquidatePending={liquidateMutation.isPending}
@@ -175,24 +171,16 @@ export function EmployeeDetailPage() {
             <Descriptions.Item label="Apellido 1">{employee.apellido1}</Descriptions.Item>
             <Descriptions.Item label="Apellido 2">{employee.apellido2 ?? '—'}</Descriptions.Item>
             <Descriptions.Item label="Email">{employee.email}</Descriptions.Item>
-            <Descriptions.Item label="Departamento">
-              {employee.departamento?.nombre ?? '—'}
-            </Descriptions.Item>
+            <Descriptions.Item label="Departamento">{employee.departamento?.nombre ?? '—'}</Descriptions.Item>
             <Descriptions.Item label="Puesto">{employee.puesto?.nombre ?? '—'}</Descriptions.Item>
             <Descriptions.Item label="Supervisor">
-              {employee.supervisor
-                ? `${employee.supervisor.nombre} ${employee.supervisor.apellido1}`
-                : '—'}
+              {employee.supervisor ? `${employee.supervisor.nombre} ${employee.supervisor.apellido1}` : '—'}
             </Descriptions.Item>
-            <Descriptions.Item label="Periodo de Pago">
-              {employee.periodoPago?.nombre ?? '—'}
-            </Descriptions.Item>
+            <Descriptions.Item label="Periodo de Pago">{employee.periodoPago?.nombre ?? '—'}</Descriptions.Item>
             <Descriptions.Item label="Fecha Ingreso">
               {employee.fechaIngreso ? dayjs(employee.fechaIngreso).format('DD/MM/YYYY') : '—'}
             </Descriptions.Item>
-            <Descriptions.Item label="Acceso Digital">
-              {employee.idUsuario ? 'Sí' : 'No'}
-            </Descriptions.Item>
+            <Descriptions.Item label="Acceso Digital">{employee.idUsuario ? 'Sí' : 'No'}</Descriptions.Item>
           </Descriptions>
         )}
       </Card>

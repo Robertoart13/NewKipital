@@ -22,9 +22,7 @@ vi.mock('antd', () => ({
 // react-router-dom v7 pulls in server-side modules that are heavy in jsdom.
 // PermissionGuard only uses `Navigate` and `useLocation` — mock both.
 vi.mock('react-router-dom', () => ({
-  Navigate: ({ to }: { to: string }) => (
-    <div data-testid={`navigate-${to.replace(/\//g, '-').replace(/^-/, '')}`} />
-  ),
+  Navigate: ({ to }: { to: string }) => <div data-testid={`navigate-${to.replace(/\//g, '-').replace(/^-/, '')}`} />,
   useLocation: () => ({ pathname: '/test' }),
 }));
 

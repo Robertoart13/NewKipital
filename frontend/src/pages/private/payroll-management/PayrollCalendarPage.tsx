@@ -1,4 +1,19 @@
 import {
+  ArrowLeftOutlined,
+  CalendarOutlined,
+  CheckCircleOutlined,
+  CloudUploadOutlined,
+  ExclamationCircleOutlined,
+  FilterOutlined,
+  LeftOutlined,
+  LoadingOutlined,
+  PlayCircleOutlined,
+  ReloadOutlined,
+  RightOutlined,
+  SafetyOutlined,
+  WarningOutlined,
+} from '@ant-design/icons';
+import {
   App as AntdApp,
   Alert,
   Button,
@@ -21,25 +36,9 @@ import {
   Typography,
 } from 'antd';
 import dayjs from 'dayjs';
+import 'dayjs/locale/es';
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
-
-import 'dayjs/locale/es';
-import {
-  ArrowLeftOutlined,
-  CalendarOutlined,
-  CheckCircleOutlined,
-  CloudUploadOutlined,
-  ExclamationCircleOutlined,
-  FilterOutlined,
-  LeftOutlined,
-  LoadingOutlined,
-  PlayCircleOutlined,
-  ReloadOutlined,
-  RightOutlined,
-  SafetyOutlined,
-  WarningOutlined,
-} from '@ant-design/icons';
 
 import {
   applyPayroll,
@@ -50,11 +49,7 @@ import {
   verifyPayroll,
   type PayrollListItem,
 } from '../../../api/payroll';
-import {
-  fetchPayrollHolidays,
-  payrollHolidayTypeLabel,
-  type PayrollHolidayItem,
-} from '../../../api/payrollHolidays';
+import { fetchPayrollHolidays, payrollHolidayTypeLabel, type PayrollHolidayItem } from '../../../api/payrollHolidays';
 import { useAppSelector } from '../../../store/hooks';
 import sharedStyles from '../configuration/UsersManagementPage.module.css';
 
@@ -149,18 +144,10 @@ export function PayrollCalendarPage() {
   const { modal, message } = AntdApp.useApp();
   const companies = useAppSelector((state) => state.auth.companies);
   const activeCompany = useAppSelector((state) => state.activeCompany.company);
-  const canProcess = useAppSelector((state) =>
-    state.permissions.permissions.includes('payroll:process'),
-  );
-  const canVerify = useAppSelector((state) =>
-    state.permissions.permissions.includes('payroll:verify'),
-  );
-  const canApply = useAppSelector((state) =>
-    state.permissions.permissions.includes('payroll:apply'),
-  );
-  const canViewSensitive = useAppSelector((state) =>
-    state.permissions.permissions.includes('payroll:view_sensitive'),
-  );
+  const canProcess = useAppSelector((state) => state.permissions.permissions.includes('payroll:process'));
+  const canVerify = useAppSelector((state) => state.permissions.permissions.includes('payroll:verify'));
+  const canApply = useAppSelector((state) => state.permissions.permissions.includes('payroll:apply'));
+  const canViewSensitive = useAppSelector((state) => state.permissions.permissions.includes('payroll:view_sensitive'));
 
   const [rows, setRows] = useState<PayrollListItem[]>([]);
   const [allRows, setAllRows] = useState<PayrollListItem[]>([]);
@@ -185,9 +172,7 @@ export function PayrollCalendarPage() {
   const [selectedState, setSelectedState] = useState<number | undefined>(undefined);
   const [selectedPeriodId, setSelectedPeriodId] = useState<number | undefined>(undefined);
 
-  const [isNarrowScreen, setIsNarrowScreen] = useState(
-    () => typeof window !== 'undefined' && window.innerWidth < 768,
-  );
+  const [isNarrowScreen, setIsNarrowScreen] = useState(() => typeof window !== 'undefined' && window.innerWidth < 768);
   const [selectedPayrollId, setSelectedPayrollId] = useState<number | null>(null);
   const [detailOpen, setDetailOpen] = useState(false);
 
@@ -223,9 +208,7 @@ export function PayrollCalendarPage() {
       const data = await fetchPayrolls(String(selectedCompanyId), showInactive, from, to, false);
       setAllRows(data);
     } catch (err) {
-      setError(
-        err instanceof Error ? err.message : 'No se pudo cargar el calendario de planillas.',
-      );
+      setError(err instanceof Error ? err.message : 'No se pudo cargar el calendario de planillas.');
       setAllRows([]);
     } finally {
       setLoading(false);
@@ -243,11 +226,7 @@ export function PayrollCalendarPage() {
         const data = await fetchPayrollHolidays();
         setHolidays(data);
       } catch (err) {
-        message.warning(
-          err instanceof Error
-            ? err.message
-            : 'No se pudieron cargar los feriados para el calendario.',
-        );
+        message.warning(err instanceof Error ? err.message : 'No se pudieron cargar los feriados para el calendario.');
         setHolidays([]);
       } finally {
         setLoadingHolidays(false);
@@ -257,17 +236,13 @@ export function PayrollCalendarPage() {
   }, [message]);
 
   useEffect(() => {
-    let filtered = showInactive
-      ? allRows
-      : allRows.filter((item) => item.estado !== 0 && item.estado !== 7);
+    let filtered = showInactive ? allRows : allRows.filter((item) => item.estado !== 0 && item.estado !== 7);
 
     if (selectedCurrency) {
       filtered = filtered.filter((item) => (item.moneda ?? '').toUpperCase() === selectedCurrency);
     }
     if (selectedType) {
-      filtered = filtered.filter(
-        (item) => normalizeType(item.tipoPlanilla) === normalizeType(selectedType),
-      );
+      filtered = filtered.filter((item) => normalizeType(item.tipoPlanilla) === normalizeType(selectedType));
     }
     if (selectedState != null) {
       filtered = filtered.filter((item) => item.estado === selectedState);
@@ -336,19 +311,14 @@ export function PayrollCalendarPage() {
 
   const confirmAction = useCallback(
     (action: 'process' | 'verify' | 'apply') => {
-      const actionLabel =
-        action === 'process' ? 'procesar' : action === 'verify' ? 'verificar' : 'aplicar';
+      const actionLabel = action === 'process' ? 'procesar' : action === 'verify' ? 'verificar' : 'aplicar';
 
       if (action === 'verify' && snapshotInputs === 0) {
-        message.warning(
-          'No se puede verificar la planilla porque no tiene movimientos cargados para procesar.',
-        );
+        message.warning('No se puede verificar la planilla porque no tiene movimientos cargados para procesar.');
         return;
       }
       if (action === 'apply' && detail?.requiresRecalculation === 1) {
-        message.warning(
-          'No se puede aplicar: existen nuevas acciones aprobadas que requieren recalcular la planilla.',
-        );
+        message.warning('No se puede aplicar: existen nuevas acciones aprobadas que requieren recalcular la planilla.');
         return;
       }
 
@@ -376,11 +346,7 @@ export function PayrollCalendarPage() {
 
   const typeOptions = useMemo(() => {
     const types = Array.from(
-      new Set(
-        rows
-          .map((item) => item.tipoPlanilla?.trim())
-          .filter((item): item is string => Boolean(item)),
-      ),
+      new Set(rows.map((item) => item.tipoPlanilla?.trim()).filter((item): item is string => Boolean(item))),
     );
     return types.map((type) => ({ label: type, value: type }));
   }, [rows]);
@@ -495,9 +461,7 @@ export function PayrollCalendarPage() {
                   className={`${styles.eventChip} ${event.kind === 'payment' ? styles.eventChipPayment : styles.eventChipPeriod} ${event.status === 1 ? styles.eventChipOpen : ''}`}
                   onClick={() => event.payrollId && void openDetails(event.payrollId)}
                 >
-                  <span className={styles.eventChipIcon}>
-                    {STATUS_VISUAL[event.status ?? 1]?.icon}
-                  </span>
+                  <span className={styles.eventChipIcon}>{STATUS_VISUAL[event.status ?? 1]?.icon}</span>
                   <Text ellipsis style={{ fontSize: 12, flex: 1, minWidth: 0 }}>
                     {event.label}
                   </Text>
@@ -575,8 +539,8 @@ export function PayrollCalendarPage() {
             <div>
               <h2 className={sharedStyles.gestionTitle}>Calendario de Nómina</h2>
               <p className={sharedStyles.gestionDesc}>
-                Filtre por empresa, moneda, tipo y estado; revise indicadores y fechas de periodo y
-                pago en el calendario.
+                Filtre por empresa, moneda, tipo y estado; revise indicadores y fechas de periodo y pago en el
+                calendario.
               </p>
             </div>
           </Flex>
@@ -729,25 +693,19 @@ export function PayrollCalendarPage() {
                   ),
                   children: (
                     <div className={styles.metricsRow}>
-                      <div
-                        className={`${styles.metricCard} ${riskMetrics.overdueOpen > 0 ? styles.danger : ''}`}
-                      >
+                      <div className={`${styles.metricCard} ${riskMetrics.overdueOpen > 0 ? styles.danger : ''}`}>
                         <div className={styles.metricCardTitle}>
                           <WarningOutlined /> Planillas abiertas con pago vencido
                         </div>
                         <div className={styles.metricCardValue}>{riskMetrics.overdueOpen}</div>
                       </div>
-                      <div
-                        className={`${styles.metricCard} ${riskMetrics.netsuiteErrors > 0 ? styles.danger : ''}`}
-                      >
+                      <div className={`${styles.metricCard} ${riskMetrics.netsuiteErrors > 0 ? styles.danger : ''}`}>
                         <div className={styles.metricCardTitle}>
                           <ExclamationCircleOutlined /> Fallo envío contable
                         </div>
                         <div className={styles.metricCardValue}>{riskMetrics.netsuiteErrors}</div>
                       </div>
-                      <div
-                        className={`${styles.metricCard} ${riskMetrics.overlaps > 0 ? styles.danger : ''}`}
-                      >
+                      <div className={`${styles.metricCard} ${riskMetrics.overlaps > 0 ? styles.danger : ''}`}>
                         <div className={styles.metricCardTitle}>
                           <ExclamationCircleOutlined /> Periodos traslapados
                         </div>
@@ -759,9 +717,7 @@ export function PayrollCalendarPage() {
                         <div className={styles.metricCardTitle}>
                           <WarningOutlined /> Sin verificar (pago vencido)
                         </div>
-                        <div className={styles.metricCardValue}>
-                          {riskMetrics.unverifiedBeforePayment}
-                        </div>
+                        <div className={styles.metricCardValue}>{riskMetrics.unverifiedBeforePayment}</div>
                       </div>
                     </div>
                   ),
@@ -773,9 +729,7 @@ export function PayrollCalendarPage() {
           {/* Vista de calendario */}
           <Card className={sharedStyles.mainCard}>
             <div className={sharedStyles.mainCardBody}>
-              {error ? (
-                <Alert type="error" showIcon message={error} style={{ marginBottom: 16 }} />
-              ) : null}
+              {error ? <Alert type="error" showIcon message={error} style={{ marginBottom: 16 }} /> : null}
               <Flex align="center" gap={8} className={styles.calendarViewHeader}>
                 <span className={styles.calendarViewLabel}>Vista</span>
                 <div className={styles.viewSwitch}>
@@ -818,9 +772,7 @@ export function PayrollCalendarPage() {
                             render: (_, row) => (
                               <Space orientation="vertical" size={2}>
                                 <Text strong>{row.nombrePlanilla || `Planilla #${row.id}`}</Text>
-                                <Tag color={getTypeColor(row.tipoPlanilla)}>
-                                  {row.tipoPlanilla || 'Tipo N/D'}
-                                </Tag>
+                                <Tag color={getTypeColor(row.tipoPlanilla)}>{row.tipoPlanilla || 'Tipo N/D'}</Tag>
                               </Space>
                             ),
                           },
@@ -870,9 +822,7 @@ export function PayrollCalendarPage() {
                               if (!start || !end) return false;
                               const monthStart = panelMonth.startOf('month');
                               const monthEnd = panelMonth.endOf('month');
-                              return (
-                                !end.isBefore(monthStart, 'day') && !start.isAfter(monthEnd, 'day')
-                              );
+                              return !end.isBefore(monthStart, 'day') && !start.isAfter(monthEnd, 'day');
                             })}
                             locale={{ emptyText: 'No hay feriados en el mes seleccionado.' }}
                             columns={[
@@ -915,8 +865,7 @@ export function PayrollCalendarPage() {
                             <strong>No hay eventos para el periodo seleccionado</strong>
                             <br />
                             <Text type="secondary" style={{ fontSize: 13 }}>
-                              Cambie de mes en el calendario o ajuste los filtros para ver
-                              resultados.
+                              Cambie de mes en el calendario o ajuste los filtros para ver resultados.
                             </Text>
                           </span>
                         }
@@ -928,23 +877,17 @@ export function PayrollCalendarPage() {
                         type="text"
                         size="small"
                         icon={<LeftOutlined />}
-                        onClick={() =>
-                          setPanelMonth(panelMonth.clone().subtract(1, 'month').startOf('month'))
-                        }
+                        onClick={() => setPanelMonth(panelMonth.clone().subtract(1, 'month').startOf('month'))}
                         aria-label="Mes anterior"
                       />
                       <Flex align="center" gap={8} className={styles.calendarHeaderCenter}>
-                        <span className={styles.calendarHeaderMonth}>
-                          {MONTHS_ES[panelMonth.month()]}
-                        </span>
+                        <span className={styles.calendarHeaderMonth}>{MONTHS_ES[panelMonth.month()]}</span>
                         <Select
                           size="small"
                           className={styles.calendarHeaderYear}
                           value={panelMonth.year()}
                           options={getYearOptions()}
-                          onChange={(year) =>
-                            setPanelMonth(panelMonth.clone().year(year).startOf('month'))
-                          }
+                          onChange={(year) => setPanelMonth(panelMonth.clone().year(year).startOf('month'))}
                           aria-label="Seleccionar año"
                         />
                       </Flex>
@@ -952,9 +895,7 @@ export function PayrollCalendarPage() {
                         type="text"
                         size="small"
                         icon={<RightOutlined />}
-                        onClick={() =>
-                          setPanelMonth(panelMonth.clone().add(1, 'month').startOf('month'))
-                        }
+                        onClick={() => setPanelMonth(panelMonth.clone().add(1, 'month').startOf('month'))}
                         aria-label="Mes siguiente"
                       />
                     </div>
@@ -987,36 +928,25 @@ export function PayrollCalendarPage() {
               <div className={styles.drawerSection}>
                 <div className={styles.drawerSectionHeader}>Información general</div>
                 <div className={styles.drawerSectionBody}>
-                  <Descriptions
-                    column={1}
-                    size="small"
-                    bordered
-                    className={styles.drawerDescriptions}
-                  >
+                  <Descriptions column={1} size="small" bordered className={styles.drawerDescriptions}>
                     <Descriptions.Item label="Empresa">
-                      {companies.find((company) => Number(company.id) === detail.idEmpresa)
-                        ?.nombre || `Empresa #${detail.idEmpresa}`}
+                      {companies.find((company) => Number(company.id) === detail.idEmpresa)?.nombre ||
+                        `Empresa #${detail.idEmpresa}`}
                     </Descriptions.Item>
                     <Descriptions.Item label="Periodo laborado">
                       {detail.fechaInicioPeriodo} al {detail.fechaFinPeriodo}
                     </Descriptions.Item>
-                    <Descriptions.Item label="Fecha de corte">
-                      {detail.fechaCorte || '--'}
-                    </Descriptions.Item>
+                    <Descriptions.Item label="Fecha de corte">{detail.fechaCorte || '--'}</Descriptions.Item>
                     <Descriptions.Item label="Fecha programada de pago">
                       {detail.fechaPagoProgramada || '--'}
                     </Descriptions.Item>
-                    <Descriptions.Item label="Moneda de planilla">
-                      {detail.moneda || '--'}
-                    </Descriptions.Item>
+                    <Descriptions.Item label="Moneda de planilla">{detail.moneda || '--'}</Descriptions.Item>
                     <Descriptions.Item label="Estado de la planilla">
                       <Tag icon={STATUS_VISUAL[detail.estado]?.icon}>
                         {STATUS_VISUAL[detail.estado]?.label || `Estado ${detail.estado}`}
                       </Tag>
                     </Descriptions.Item>
-                    <Descriptions.Item label="Control de cambios">
-                      {detail.versionLock ?? '--'}
-                    </Descriptions.Item>
+                    <Descriptions.Item label="Control de cambios">{detail.versionLock ?? '--'}</Descriptions.Item>
                     <Descriptions.Item label="Persona que creó la planilla">
                       {detail.createdBy ?? '--'}
                     </Descriptions.Item>
@@ -1060,16 +990,9 @@ export function PayrollCalendarPage() {
                     <strong>Qué hace cada acción</strong>
                   </p>
                   <ul className={styles.drawerActionsList}>
-                    <li>
-                      Procesar: prepara la planilla del periodo y genera los movimientos a pagar.
-                    </li>
-                    <li>
-                      Verificar: revisa que la planilla procesada esté completa y lista para
-                      aprobar.
-                    </li>
-                    <li>
-                      Aplicar: confirma oficialmente la planilla y deja los resultados en firme.
-                    </li>
+                    <li>Procesar: prepara la planilla del periodo y genera los movimientos a pagar.</li>
+                    <li>Verificar: revisa que la planilla procesada esté completa y lista para aprobar.</li>
+                    <li>Aplicar: confirma oficialmente la planilla y deja los resultados en firme.</li>
                     <li>Enviar a NetSuite: envía el asiento contable de la planilla aplicada.</li>
                   </ul>
                   <div className={styles.drawerActionsButtons}>
@@ -1100,9 +1023,7 @@ export function PayrollCalendarPage() {
                     >
                       <Button
                         icon={<CheckCircleOutlined />}
-                        disabled={
-                          !canApply || detail.estado !== 3 || detail.requiresRecalculation === 1
-                        }
+                        disabled={!canApply || detail.estado !== 3 || detail.requiresRecalculation === 1}
                         onClick={() => confirmAction('apply')}
                       >
                         Aplicar
@@ -1117,16 +1038,14 @@ export function PayrollCalendarPage() {
                   {detail.estado === 2 && snapshotInputs === 0 ? (
                     <div style={{ marginTop: 12 }}>
                       <Text type="warning">
-                        No se puede verificar esta planilla porque todavía no tiene movimientos
-                        procesados.
+                        No se puede verificar esta planilla porque todavía no tiene movimientos procesados.
                       </Text>
                     </div>
                   ) : null}
                   {detail.estado === 3 && detail.requiresRecalculation === 1 ? (
                     <div style={{ marginTop: 12 }}>
                       <Text type="warning">
-                        No se puede aplicar: existen nuevas acciones aprobadas que requieren
-                        recalcular la planilla.
+                        No se puede aplicar: existen nuevas acciones aprobadas que requieren recalcular la planilla.
                       </Text>
                     </div>
                   ) : null}

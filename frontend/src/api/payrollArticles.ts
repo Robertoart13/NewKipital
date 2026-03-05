@@ -88,9 +88,7 @@ export async function fetchPayrollArticle(id: number): Promise<PayrollArticleLis
   return res.json();
 }
 
-export async function createPayrollArticle(
-  payload: PayrollArticlePayload,
-): Promise<PayrollArticleListItem> {
+export async function createPayrollArticle(payload: PayrollArticlePayload): Promise<PayrollArticleListItem> {
   const res = await httpFetch('/payroll-articles', {
     method: 'POST',
     body: JSON.stringify(payload),
@@ -160,10 +158,7 @@ export async function fetchPayrollArticleAccounts(
   return res.json();
 }
 
-export async function fetchPayrollArticleAuditTrail(
-  id: number,
-  limit = 200,
-): Promise<PayrollArticleAuditTrailItem[]> {
+export async function fetchPayrollArticleAuditTrail(id: number, limit = 200): Promise<PayrollArticleAuditTrailItem[]> {
   const qs = new URLSearchParams({ limit: String(limit) });
   const res = await httpFetch(`/payroll-articles/${id}/audit-trail?${qs}`);
   if (!res.ok) {

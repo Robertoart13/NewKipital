@@ -525,8 +525,7 @@ export async function fetchPersonalActions(
     qs.append('estado', String(estado));
   }
   const res = await httpFetch(`/personal-actions?${qs}`);
-  if (!res.ok)
-    throw new Error(await extractApiErrorMessage(res, 'Error al cargar acciones de personal'));
+  if (!res.ok) throw new Error(await extractApiErrorMessage(res, 'Error al cargar acciones de personal'));
   return res.json();
 }
 
@@ -542,16 +541,13 @@ export async function fetchPersonalAction(id: number): Promise<PersonalActionLis
 /**
  * POST /personal-actions - Crear accion.
  */
-export async function createPersonalAction(
-  payload: CreatePersonalActionPayload,
-): Promise<PersonalActionListItem> {
+export async function createPersonalAction(payload: CreatePersonalActionPayload): Promise<PersonalActionListItem> {
   const res = await httpFetch('/personal-actions', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload),
   });
-  if (!res.ok)
-    throw new Error(await extractApiErrorMessage(res, 'Error al crear accion de personal'));
+  if (!res.ok) throw new Error(await extractApiErrorMessage(res, 'Error al crear accion de personal'));
   return res.json();
 }
 
@@ -564,25 +560,20 @@ export async function approvePersonalAction(id: number): Promise<PersonalActionL
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({}),
   });
-  if (!res.ok)
-    throw new Error(await extractApiErrorMessage(res, 'Error al aprobar accion de personal'));
+  if (!res.ok) throw new Error(await extractApiErrorMessage(res, 'Error al aprobar accion de personal'));
   return res.json();
 }
 
 /**
  * PATCH /personal-actions/:id/reject - Rechazar accion pendiente.
  */
-export async function rejectPersonalAction(
-  id: number,
-  motivo?: string,
-): Promise<PersonalActionListItem> {
+export async function rejectPersonalAction(id: number, motivo?: string): Promise<PersonalActionListItem> {
   const res = await httpFetch(`/personal-actions/${id}/reject`, {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ motivo: motivo ?? '' }),
   });
-  if (!res.ok)
-    throw new Error(await extractApiErrorMessage(res, 'Error al rechazar accion de personal'));
+  if (!res.ok) throw new Error(await extractApiErrorMessage(res, 'Error al rechazar accion de personal'));
   return res.json();
 }
 
@@ -599,8 +590,7 @@ export async function fetchAbsenceMovementsCatalog(
     idTipoAccionPersonal: String(idTipoAccionPersonal),
   });
   const res = await httpFetch(`/personal-actions/absence-movements?${qs.toString()}`);
-  if (!res.ok)
-    throw new Error(await extractApiErrorMessage(res, 'Error al cargar movimientos de ausencias'));
+  if (!res.ok) throw new Error(await extractApiErrorMessage(res, 'Error al cargar movimientos de ausencias'));
   return res.json();
 }
 
@@ -608,13 +598,10 @@ export async function fetchAbsenceMovementsCatalog(
  * GET /personal-actions/absence-employees?idEmpresa=N
  * Catalogo de empleados para Ausencias sin depender de employee:view.
  */
-export async function fetchAbsenceEmployeesCatalog(
-  companyId: number,
-): Promise<AbsenceEmployeeCatalogItem[]> {
+export async function fetchAbsenceEmployeesCatalog(companyId: number): Promise<AbsenceEmployeeCatalogItem[]> {
   const qs = new URLSearchParams({ idEmpresa: String(companyId) });
   const res = await httpFetch(`/personal-actions/absence-employees?${qs.toString()}`);
-  if (!res.ok)
-    throw new Error(await extractApiErrorMessage(res, 'Error al cargar empleados de ausencias'));
+  if (!res.ok) throw new Error(await extractApiErrorMessage(res, 'Error al cargar empleados de ausencias'));
   return res.json();
 }
 
@@ -622,19 +609,13 @@ export async function fetchAbsenceEmployeesCatalog(
  * GET /personal-actions/absence-payrolls?idEmpresa=N&idEmpleado=M
  * Catalogo de planillas elegibles para Ausencias (operativas y vigentes).
  */
-export async function fetchAbsencePayrollsCatalog(
-  companyId: number,
-  employeeId: number,
-): Promise<PayrollListItem[]> {
+export async function fetchAbsencePayrollsCatalog(companyId: number, employeeId: number): Promise<PayrollListItem[]> {
   const qs = new URLSearchParams({
     idEmpresa: String(companyId),
     idEmpleado: String(employeeId),
   });
   const res = await httpFetch(`/personal-actions/absence-payrolls?${qs.toString()}`);
-  if (!res.ok)
-    throw new Error(
-      await extractApiErrorMessage(res, 'Error al cargar planillas elegibles de ausencias'),
-    );
+  if (!res.ok) throw new Error(await extractApiErrorMessage(res, 'Error al cargar planillas elegibles de ausencias'));
   return res.json();
 }
 
@@ -654,9 +635,7 @@ export async function fetchAbsenceDetail(id: number): Promise<AbsenceDetailItem>
  * POST /personal-actions/ausencias
  * Crea una ausencia con encabezado + lineas.
  */
-export async function createAbsence(
-  payload: UpsertAbsencePayload,
-): Promise<PersonalActionCreateResult> {
+export async function createAbsence(payload: UpsertAbsencePayload): Promise<PersonalActionCreateResult> {
   const res = await httpFetch('/personal-actions/ausencias', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -672,10 +651,7 @@ export async function createAbsence(
  * PATCH /personal-actions/ausencias/:id
  * Actualiza una ausencia en borrador con sus lineas.
  */
-export async function updateAbsence(
-  id: number,
-  payload: UpsertAbsencePayload,
-): Promise<PersonalActionListItem> {
+export async function updateAbsence(id: number, payload: UpsertAbsencePayload): Promise<PersonalActionListItem> {
   const res = await httpFetch(`/personal-actions/ausencias/${id}`, {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
@@ -691,10 +667,7 @@ export async function updateAbsence(
  * PATCH /personal-actions/ausencias/:id/advance
  * Avanza la ausencia al siguiente estado operativo.
  */
-export async function advanceAbsenceState(
-  id: number,
-  idEmpresa: number,
-): Promise<PersonalActionListItem> {
+export async function advanceAbsenceState(id: number, idEmpresa: number): Promise<PersonalActionListItem> {
   const res = await httpFetch(`/personal-actions/ausencias/${id}/advance`, {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
@@ -730,10 +703,7 @@ export async function invalidateAbsence(
  * GET /personal-actions/ausencias/:id/audit-trail
  * Bitacora de la ausencia.
  */
-export async function fetchAbsenceAuditTrail(
-  id: number,
-  limit = 200,
-): Promise<PersonalActionAuditTrailItem[]> {
+export async function fetchAbsenceAuditTrail(id: number, limit = 200): Promise<PersonalActionAuditTrailItem[]> {
   const qs = new URLSearchParams({ limit: String(limit) });
   const res = await httpFetch(`/personal-actions/ausencias/${id}/audit-trail?${qs}`);
   if (!res.ok) {
@@ -758,9 +728,7 @@ export async function fetchLicenseDetail(id: number): Promise<LicenseDetailItem>
  * POST /personal-actions/licencias
  * Crea una licencia con encabezado + lineas.
  */
-export async function createLicense(
-  payload: UpsertLicensePayload,
-): Promise<PersonalActionCreateResult> {
+export async function createLicense(payload: UpsertLicensePayload): Promise<PersonalActionCreateResult> {
   const res = await httpFetch('/personal-actions/licencias', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -776,10 +744,7 @@ export async function createLicense(
  * PATCH /personal-actions/licencias/:id
  * Actualiza una licencia en borrador/pendiente con sus lineas.
  */
-export async function updateLicense(
-  id: number,
-  payload: UpsertLicensePayload,
-): Promise<PersonalActionListItem> {
+export async function updateLicense(id: number, payload: UpsertLicensePayload): Promise<PersonalActionListItem> {
   const res = await httpFetch(`/personal-actions/licencias/${id}`, {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
@@ -811,10 +776,7 @@ export async function advanceLicenseState(id: number): Promise<PersonalActionLis
  * PATCH /personal-actions/licencias/:id/invalidate
  * Invalida una licencia sin eliminar trazabilidad.
  */
-export async function invalidateLicense(
-  id: number,
-  motivo?: string,
-): Promise<PersonalActionListItem> {
+export async function invalidateLicense(id: number, motivo?: string): Promise<PersonalActionListItem> {
   const res = await httpFetch(`/personal-actions/licencias/${id}/invalidate`, {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
@@ -830,10 +792,7 @@ export async function invalidateLicense(
  * GET /personal-actions/licencias/:id/audit-trail
  * Bitacora de la licencia.
  */
-export async function fetchLicenseAuditTrail(
-  id: number,
-  limit = 200,
-): Promise<PersonalActionAuditTrailItem[]> {
+export async function fetchLicenseAuditTrail(id: number, limit = 200): Promise<PersonalActionAuditTrailItem[]> {
   const qs = new URLSearchParams({ limit: String(limit) });
   const res = await httpFetch(`/personal-actions/licencias/${id}/audit-trail?${qs}`);
   if (!res.ok) {
@@ -858,9 +817,7 @@ export async function fetchDisabilityDetail(id: number): Promise<DisabilityDetai
  * POST /personal-actions/incapacidades
  * Crea una incapacidad con encabezado + lineas.
  */
-export async function createDisability(
-  payload: UpsertDisabilityPayload,
-): Promise<PersonalActionCreateResult> {
+export async function createDisability(payload: UpsertDisabilityPayload): Promise<PersonalActionCreateResult> {
   const res = await httpFetch('/personal-actions/incapacidades', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -876,10 +833,7 @@ export async function createDisability(
  * PATCH /personal-actions/incapacidades/:id
  * Actualiza una incapacidad en borrador/pendiente con sus lineas.
  */
-export async function updateDisability(
-  id: number,
-  payload: UpsertDisabilityPayload,
-): Promise<PersonalActionListItem> {
+export async function updateDisability(id: number, payload: UpsertDisabilityPayload): Promise<PersonalActionListItem> {
   const res = await httpFetch(`/personal-actions/incapacidades/${id}`, {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
@@ -911,10 +865,7 @@ export async function advanceDisabilityState(id: number): Promise<PersonalAction
  * PATCH /personal-actions/incapacidades/:id/invalidate
  * Invalida una incapacidad sin eliminar trazabilidad.
  */
-export async function invalidateDisability(
-  id: number,
-  motivo?: string,
-): Promise<PersonalActionListItem> {
+export async function invalidateDisability(id: number, motivo?: string): Promise<PersonalActionListItem> {
   const res = await httpFetch(`/personal-actions/incapacidades/${id}/invalidate`, {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
@@ -930,10 +881,7 @@ export async function invalidateDisability(
  * GET /personal-actions/incapacidades/:id/audit-trail
  * Bitacora de la incapacidad.
  */
-export async function fetchDisabilityAuditTrail(
-  id: number,
-  limit = 200,
-): Promise<PersonalActionAuditTrailItem[]> {
+export async function fetchDisabilityAuditTrail(id: number, limit = 200): Promise<PersonalActionAuditTrailItem[]> {
   const qs = new URLSearchParams({ limit: String(limit) });
   const res = await httpFetch(`/personal-actions/incapacidades/${id}/audit-trail?${qs}`);
   if (!res.ok) {
@@ -958,9 +906,7 @@ export async function fetchBonusDetail(id: number): Promise<BonusDetailItem> {
  * POST /personal-actions/bonificaciones
  * Crea una bonificacion con encabezado + lineas.
  */
-export async function createBonus(
-  payload: UpsertBonusPayload,
-): Promise<PersonalActionCreateResult> {
+export async function createBonus(payload: UpsertBonusPayload): Promise<PersonalActionCreateResult> {
   const res = await httpFetch('/personal-actions/bonificaciones', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -976,10 +922,7 @@ export async function createBonus(
  * PATCH /personal-actions/bonificaciones/:id
  * Actualiza una bonificacion en borrador/pendiente con sus lineas.
  */
-export async function updateBonus(
-  id: number,
-  payload: UpsertBonusPayload,
-): Promise<PersonalActionListItem> {
+export async function updateBonus(id: number, payload: UpsertBonusPayload): Promise<PersonalActionListItem> {
   const res = await httpFetch(`/personal-actions/bonificaciones/${id}`, {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
@@ -1002,9 +945,7 @@ export async function advanceBonusState(id: number): Promise<PersonalActionListI
     body: JSON.stringify({}),
   });
   if (!res.ok) {
-    throw new Error(
-      await extractApiErrorMessage(res, 'Error al avanzar estado de la bonificacion'),
-    );
+    throw new Error(await extractApiErrorMessage(res, 'Error al avanzar estado de la bonificacion'));
   }
   return res.json();
 }
@@ -1013,10 +954,7 @@ export async function advanceBonusState(id: number): Promise<PersonalActionListI
  * PATCH /personal-actions/bonificaciones/:id/invalidate
  * Invalida una bonificacion sin eliminar trazabilidad.
  */
-export async function invalidateBonus(
-  id: number,
-  motivo?: string,
-): Promise<PersonalActionListItem> {
+export async function invalidateBonus(id: number, motivo?: string): Promise<PersonalActionListItem> {
   const res = await httpFetch(`/personal-actions/bonificaciones/${id}/invalidate`, {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
@@ -1032,10 +970,7 @@ export async function invalidateBonus(
  * GET /personal-actions/bonificaciones/:id/audit-trail
  * Bitacora de la bonificacion.
  */
-export async function fetchBonusAuditTrail(
-  id: number,
-  limit = 200,
-): Promise<PersonalActionAuditTrailItem[]> {
+export async function fetchBonusAuditTrail(id: number, limit = 200): Promise<PersonalActionAuditTrailItem[]> {
   const qs = new URLSearchParams({ limit: String(limit) });
   const res = await httpFetch(`/personal-actions/bonificaciones/${id}/audit-trail?${qs}`);
   if (!res.ok) {
@@ -1060,9 +995,7 @@ export async function fetchOvertimeDetail(id: number): Promise<OvertimeDetailIte
  * POST /personal-actions/horas-extras
  * Crea una accion de horas extra con encabezado + lineas.
  */
-export async function createOvertime(
-  payload: UpsertOvertimePayload,
-): Promise<PersonalActionCreateResult> {
+export async function createOvertime(payload: UpsertOvertimePayload): Promise<PersonalActionCreateResult> {
   const res = await httpFetch('/personal-actions/horas-extras', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -1078,10 +1011,7 @@ export async function createOvertime(
  * PATCH /personal-actions/horas-extras/:id
  * Actualiza una accion de horas extra en borrador/pendiente con sus lineas.
  */
-export async function updateOvertime(
-  id: number,
-  payload: UpsertOvertimePayload,
-): Promise<PersonalActionListItem> {
+export async function updateOvertime(id: number, payload: UpsertOvertimePayload): Promise<PersonalActionListItem> {
   const res = await httpFetch(`/personal-actions/horas-extras/${id}`, {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
@@ -1113,10 +1043,7 @@ export async function advanceOvertimeState(id: number): Promise<PersonalActionLi
  * PATCH /personal-actions/horas-extras/:id/invalidate
  * Invalida una accion de horas extra sin eliminar trazabilidad.
  */
-export async function invalidateOvertime(
-  id: number,
-  motivo?: string,
-): Promise<PersonalActionListItem> {
+export async function invalidateOvertime(id: number, motivo?: string): Promise<PersonalActionListItem> {
   const res = await httpFetch(`/personal-actions/horas-extras/${id}/invalidate`, {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
@@ -1132,10 +1059,7 @@ export async function invalidateOvertime(
  * GET /personal-actions/horas-extras/:id/audit-trail
  * Bitacora de horas extra.
  */
-export async function fetchOvertimeAuditTrail(
-  id: number,
-  limit = 200,
-): Promise<PersonalActionAuditTrailItem[]> {
+export async function fetchOvertimeAuditTrail(id: number, limit = 200): Promise<PersonalActionAuditTrailItem[]> {
   const qs = new URLSearchParams({ limit: String(limit) });
   const res = await httpFetch(`/personal-actions/horas-extras/${id}/audit-trail?${qs}`);
   if (!res.ok) {
@@ -1160,9 +1084,7 @@ export async function fetchRetentionDetail(id: number): Promise<RetentionDetailI
  * POST /personal-actions/retenciones
  * Crea una accion de retencion con encabezado + lineas.
  */
-export async function createRetention(
-  payload: UpsertRetentionPayload,
-): Promise<PersonalActionCreateResult> {
+export async function createRetention(payload: UpsertRetentionPayload): Promise<PersonalActionCreateResult> {
   const res = await httpFetch('/personal-actions/retenciones', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -1178,10 +1100,7 @@ export async function createRetention(
  * PATCH /personal-actions/retenciones/:id
  * Actualiza una accion de retencion en borrador/pendiente con sus lineas.
  */
-export async function updateRetention(
-  id: number,
-  payload: UpsertRetentionPayload,
-): Promise<PersonalActionListItem> {
+export async function updateRetention(id: number, payload: UpsertRetentionPayload): Promise<PersonalActionListItem> {
   const res = await httpFetch(`/personal-actions/retenciones/${id}`, {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
@@ -1213,10 +1132,7 @@ export async function advanceRetentionState(id: number): Promise<PersonalActionL
  * PATCH /personal-actions/retenciones/:id/invalidate
  * Invalida una accion de retencion sin eliminar trazabilidad.
  */
-export async function invalidateRetention(
-  id: number,
-  motivo?: string,
-): Promise<PersonalActionListItem> {
+export async function invalidateRetention(id: number, motivo?: string): Promise<PersonalActionListItem> {
   const res = await httpFetch(`/personal-actions/retenciones/${id}/invalidate`, {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
@@ -1232,10 +1148,7 @@ export async function invalidateRetention(
  * GET /personal-actions/retenciones/:id/audit-trail
  * Bitacora de retencion.
  */
-export async function fetchRetentionAuditTrail(
-  id: number,
-  limit = 200,
-): Promise<PersonalActionAuditTrailItem[]> {
+export async function fetchRetentionAuditTrail(id: number, limit = 200): Promise<PersonalActionAuditTrailItem[]> {
   const qs = new URLSearchParams({ limit: String(limit) });
   const res = await httpFetch(`/personal-actions/retenciones/${id}/audit-trail?${qs}`);
   if (!res.ok) {
@@ -1260,9 +1173,7 @@ export async function fetchDiscountDetail(id: number): Promise<DiscountDetailIte
  * POST /personal-actions/descuentos
  * Crea una accion de descuento con encabezado + lineas.
  */
-export async function createDiscount(
-  payload: UpsertDiscountPayload,
-): Promise<PersonalActionCreateResult> {
+export async function createDiscount(payload: UpsertDiscountPayload): Promise<PersonalActionCreateResult> {
   const res = await httpFetch('/personal-actions/descuentos', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -1278,10 +1189,7 @@ export async function createDiscount(
  * PATCH /personal-actions/descuentos/:id
  * Actualiza una accion de descuento en borrador/pendiente con sus lineas.
  */
-export async function updateDiscount(
-  id: number,
-  payload: UpsertDiscountPayload,
-): Promise<PersonalActionListItem> {
+export async function updateDiscount(id: number, payload: UpsertDiscountPayload): Promise<PersonalActionListItem> {
   const res = await httpFetch(`/personal-actions/descuentos/${id}`, {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
@@ -1313,10 +1221,7 @@ export async function advanceDiscountState(id: number): Promise<PersonalActionLi
  * PATCH /personal-actions/descuentos/:id/invalidate
  * Invalida una accion de descuento sin eliminar trazabilidad.
  */
-export async function invalidateDiscount(
-  id: number,
-  motivo?: string,
-): Promise<PersonalActionListItem> {
+export async function invalidateDiscount(id: number, motivo?: string): Promise<PersonalActionListItem> {
   const res = await httpFetch(`/personal-actions/descuentos/${id}/invalidate`, {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
@@ -1332,10 +1237,7 @@ export async function invalidateDiscount(
  * GET /personal-actions/descuentos/:id/audit-trail
  * Bitacora de descuento.
  */
-export async function fetchDiscountAuditTrail(
-  id: number,
-  limit = 200,
-): Promise<PersonalActionAuditTrailItem[]> {
+export async function fetchDiscountAuditTrail(id: number, limit = 200): Promise<PersonalActionAuditTrailItem[]> {
   const qs = new URLSearchParams({ limit: String(limit) });
   const res = await httpFetch(`/personal-actions/descuentos/${id}/audit-trail?${qs}`);
   if (!res.ok) {
@@ -1360,10 +1262,7 @@ export async function fetchVacationDetail(id: number): Promise<VacationDetailIte
  * GET /personal-actions/vacaciones/availability
  * Saldo real, reservado y disponible de vacaciones.
  */
-export async function fetchVacationAvailability(
-  idEmpresa: number,
-  idEmpleado: number,
-): Promise<VacationAvailability> {
+export async function fetchVacationAvailability(idEmpresa: number, idEmpleado: number): Promise<VacationAvailability> {
   const qs = new URLSearchParams({
     idEmpresa: String(idEmpresa),
     idEmpleado: String(idEmpleado),
@@ -1392,10 +1291,7 @@ export async function fetchVacationHolidays(idEmpresa?: number): Promise<Vacatio
  * GET /personal-actions/aumentos/:id/audit-trail
  * Bitacora de aumento.
  */
-export async function fetchIncreaseAuditTrail(
-  id: number,
-  limit = 200,
-): Promise<PersonalActionAuditTrailItem[]> {
+export async function fetchIncreaseAuditTrail(id: number, limit = 200): Promise<PersonalActionAuditTrailItem[]> {
   const qs = new URLSearchParams({ limit: String(limit) });
   const res = await httpFetch(`/personal-actions/aumentos/${id}/audit-trail?${qs}`);
   if (!res.ok) {
@@ -1408,10 +1304,7 @@ export async function fetchIncreaseAuditTrail(
  * PATCH /personal-actions/aumentos/:id/invalidate
  * Invalida un aumento sin eliminar trazabilidad.
  */
-export async function invalidateIncrease(
-  id: number,
-  motivo?: string,
-): Promise<PersonalActionListItem> {
+export async function invalidateIncrease(id: number, motivo?: string): Promise<PersonalActionListItem> {
   const res = await httpFetch(`/personal-actions/aumentos/${id}/invalidate`, {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
@@ -1441,10 +1334,7 @@ export async function advanceIncreaseState(id: number): Promise<PersonalActionLi
  * PATCH /personal-actions/aumentos/:id
  * Actualiza un aumento en borrador/pendiente.
  */
-export async function updateIncrease(
-  id: number,
-  payload: UpsertIncreasePayload,
-): Promise<PersonalActionListItem> {
+export async function updateIncrease(id: number, payload: UpsertIncreasePayload): Promise<PersonalActionListItem> {
   const res = await httpFetch(`/personal-actions/aumentos/${id}`, {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
@@ -1459,9 +1349,7 @@ export async function updateIncrease(
  * POST /personal-actions/aumentos
  * Crea una accion de aumento.
  */
-export async function createIncrease(
-  payload: UpsertIncreasePayload,
-): Promise<PersonalActionListItem> {
+export async function createIncrease(payload: UpsertIncreasePayload): Promise<PersonalActionListItem> {
   const res = await httpFetch('/personal-actions/aumentos', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -1510,9 +1398,7 @@ export async function fetchVacationBookedDates(
  * POST /personal-actions/vacaciones
  * Crea una accion de vacaciones con fechas seleccionadas.
  */
-export async function createVacation(
-  payload: UpsertVacationPayload,
-): Promise<PersonalActionCreateResult> {
+export async function createVacation(payload: UpsertVacationPayload): Promise<PersonalActionCreateResult> {
   const res = await httpFetch('/personal-actions/vacaciones', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -1528,10 +1414,7 @@ export async function createVacation(
  * PATCH /personal-actions/vacaciones/:id
  * Actualiza una accion de vacaciones en borrador/pendiente.
  */
-export async function updateVacation(
-  id: number,
-  payload: UpsertVacationPayload,
-): Promise<PersonalActionListItem> {
+export async function updateVacation(id: number, payload: UpsertVacationPayload): Promise<PersonalActionListItem> {
   const res = await httpFetch(`/personal-actions/vacaciones/${id}`, {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
@@ -1563,10 +1446,7 @@ export async function advanceVacationState(id: number): Promise<PersonalActionLi
  * PATCH /personal-actions/vacaciones/:id/invalidate
  * Invalida una accion de vacaciones sin eliminar trazabilidad.
  */
-export async function invalidateVacation(
-  id: number,
-  motivo?: string,
-): Promise<PersonalActionListItem> {
+export async function invalidateVacation(id: number, motivo?: string): Promise<PersonalActionListItem> {
   const res = await httpFetch(`/personal-actions/vacaciones/${id}/invalidate`, {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
@@ -1582,10 +1462,7 @@ export async function invalidateVacation(
  * GET /personal-actions/vacaciones/:id/audit-trail
  * Bitacora de vacaciones.
  */
-export async function fetchVacationAuditTrail(
-  id: number,
-  limit = 200,
-): Promise<PersonalActionAuditTrailItem[]> {
+export async function fetchVacationAuditTrail(id: number, limit = 200): Promise<PersonalActionAuditTrailItem[]> {
   const qs = new URLSearchParams({ limit: String(limit) });
   const res = await httpFetch(`/personal-actions/vacaciones/${id}/audit-trail?${qs}`);
   if (!res.ok) {

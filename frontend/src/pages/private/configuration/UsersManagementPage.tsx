@@ -156,9 +156,7 @@ export function UsersManagementPage() {
 
   const [users, setUsers] = useState<SystemUser[]>([]);
   const [apps, setApps] = useState<SystemApp[]>([]);
-  const [companiesData, setCompaniesData] = useState<
-    { id: number; nombre: string; prefijo?: string | null }[]
-  >([]);
+  const [companiesData, setCompaniesData] = useState<{ id: number; nombre: string; prefijo?: string | null }[]>([]);
   const [, setRoles] = useState<SystemRole[]>([]);
   const [userAppIds, setUserAppIds] = useState<number[]>([]);
   const [rolesForSelectedApp, setRolesForSelectedApp] = useState<SystemRole[]>([]);
@@ -189,22 +187,19 @@ export function UsersManagementPage() {
   const loadBaseData = useCallback(async () => {
     setLoading(true);
     try {
-      const [usersDataResult, appsDataResult, rolesDataResult, companiesCatalogResult] =
-        await Promise.allSettled([
-          fetchUsers(false, true),
-          fetchApps(),
-          fetchRolesForUsers(false),
-          fetchCompaniesForUserConfig(),
-        ]);
+      const [usersDataResult, appsDataResult, rolesDataResult, companiesCatalogResult] = await Promise.allSettled([
+        fetchUsers(false, true),
+        fetchApps(),
+        fetchRolesForUsers(false),
+        fetchCompaniesForUserConfig(),
+      ]);
 
       if (usersDataResult.status === 'fulfilled') {
         setUsers(usersDataResult.value.filter((u) => u.estado === 1));
       } else {
         setUsers([]);
         message.error(
-          usersDataResult.reason instanceof Error
-            ? usersDataResult.reason.message
-            : 'Error al cargar usuarios',
+          usersDataResult.reason instanceof Error ? usersDataResult.reason.message : 'Error al cargar usuarios',
         );
       }
 
@@ -359,9 +354,7 @@ export function UsersManagementPage() {
     const t = search.trim().toLowerCase();
     if (!t) return users;
     return users.filter(
-      (u) =>
-        `${u.nombre} ${u.apellido}`.toLowerCase().includes(t) ||
-        (u.email ?? '').toLowerCase().includes(t),
+      (u) => `${u.nombre} ${u.apellido}`.toLowerCase().includes(t) || (u.email ?? '').toLowerCase().includes(t),
     );
   }, [users, search]);
 
@@ -370,8 +363,7 @@ export function UsersManagementPage() {
     const t = companySearch.trim().toLowerCase();
     if (!t) return list;
     return list.filter(
-      (c) =>
-        (c.nombre ?? '').toLowerCase().includes(t) || (c.prefijo ?? '').toLowerCase().includes(t),
+      (c) => (c.nombre ?? '').toLowerCase().includes(t) || (c.prefijo ?? '').toLowerCase().includes(t),
     );
   }, [companiesData, companySearch]);
 
@@ -379,8 +371,7 @@ export function UsersManagementPage() {
     const t = roleSearch.trim().toLowerCase();
     if (!t) return rolesForSelectedApp;
     return rolesForSelectedApp.filter(
-      (r) =>
-        (r.nombre ?? '').toLowerCase().includes(t) || (r.codigo ?? '').toLowerCase().includes(t),
+      (r) => (r.nombre ?? '').toLowerCase().includes(t) || (r.codigo ?? '').toLowerCase().includes(t),
     );
   }, [rolesForSelectedApp, roleSearch]);
 
@@ -388,16 +379,13 @@ export function UsersManagementPage() {
     const t = exceptionSearch.trim().toLowerCase();
     if (!t) return roleExcepcionPermissions;
     return roleExcepcionPermissions.filter(
-      (p) =>
-        (p.codigo ?? '').toLowerCase().includes(t) || (p.nombre ?? '').toLowerCase().includes(t),
+      (p) => (p.codigo ?? '').toLowerCase().includes(t) || (p.nombre ?? '').toLowerCase().includes(t),
     );
   }, [roleExcepcionPermissions, exceptionSearch]);
 
   const appOptions = useMemo(
     () =>
-      apps
-        .filter((a) => userAppIds.includes(a.id))
-        .map((a) => ({ value: a.id, label: `${a.nombre} (${a.codigo})` })),
+      apps.filter((a) => userAppIds.includes(a.id)).map((a) => ({ value: a.id, label: `${a.nombre} (${a.codigo})` })),
     [apps, userAppIds],
   );
 
@@ -406,9 +394,7 @@ export function UsersManagementPage() {
     try {
       setSaving(true);
       await replaceUserCompanies(selectedUser.id, userCompanyIds);
-      message.success(
-        'Empresas guardadas. El usuario solo podrá ver y trabajar en las empresas marcadas.',
-      );
+      message.success('Empresas guardadas. El usuario solo podrá ver y trabajar en las empresas marcadas.');
       void loadUserCompanies();
       void loadRolesSummary();
     } catch (e) {
@@ -461,9 +447,7 @@ export function UsersManagementPage() {
         appCode: selectedApp.codigo,
         deny: globalPermissionDeny,
       });
-      message.success(
-        'Denegaciones globales guardadas. El usuario no tendrá esos permisos en ninguna empresa.',
-      );
+      message.success('Denegaciones globales guardadas. El usuario no tendrá esos permisos en ninguna empresa.');
       void loadRolesSummary();
     } catch (e) {
       message.error(e instanceof Error ? e.message : 'Error al guardar');
@@ -472,10 +456,7 @@ export function UsersManagementPage() {
     }
   };
 
-  const applyUserStateChange = async (
-    userId: number,
-    action: 'inactivate' | 'reactivate' | 'block',
-  ) => {
+  const applyUserStateChange = async (userId: number, action: 'inactivate' | 'reactivate' | 'block') => {
     try {
       setSaving(true);
       if (action === 'inactivate') {
@@ -490,9 +471,7 @@ export function UsersManagementPage() {
       }
       await loadBaseData();
       if (selectedUser?.id === userId) {
-        setSelectedUser((prev) =>
-          prev ? { ...prev, estado: action === 'reactivate' ? 1 : 0 } : prev,
-        );
+        setSelectedUser((prev) => (prev ? { ...prev, estado: action === 'reactivate' ? 1 : 0 } : prev));
       }
     } catch (e) {
       message.error(e instanceof Error ? e.message : 'Error al actualizar estado de usuario');
@@ -513,10 +492,7 @@ export function UsersManagementPage() {
     setDrawerOpen(true);
   };
 
-  const appsAvailableToAssign = useMemo(
-    () => apps.filter((a) => !userAppIds.includes(a.id)),
-    [apps, userAppIds],
-  );
+  const appsAvailableToAssign = useMemo(() => apps.filter((a) => !userAppIds.includes(a.id)), [apps, userAppIds]);
 
   useEffect(() => {
     if (!excepcionRoleId) {
@@ -564,11 +540,7 @@ export function UsersManagementPage() {
       key: 'estado',
       width: 120,
       render: (v: number) =>
-        v === 1 ? (
-          <Tag className={styles.tagActivo}>Activo</Tag>
-        ) : (
-          <Tag className={styles.tagInactivo}>Inactivo</Tag>
-        ),
+        v === 1 ? <Tag className={styles.tagActivo}>Activo</Tag> : <Tag className={styles.tagInactivo}>Inactivo</Tag>,
     },
     {
       title: '',
@@ -612,9 +584,7 @@ export function UsersManagementPage() {
           return (
             <div>
               <div style={{ fontWeight: 600, color: '#3d4f5c' }}>{actorLabel}</div>
-              {row.actorEmail && (
-                <div style={{ color: '#8c8c8c', fontSize: 12 }}>{row.actorEmail}</div>
-              )}
+              {row.actorEmail && <div style={{ color: '#8c8c8c', fontSize: 12 }}>{row.actorEmail}</div>}
             </div>
           );
         },
@@ -693,8 +663,7 @@ export function UsersManagementPage() {
               <div>
                 <h2 className={styles.gestionTitle}>Gestion de Usuarios</h2>
                 <p className={styles.gestionDesc}>
-                  Administre la configuracion de usuarios, empresas, roles y permisos de acceso al
-                  sistema
+                  Administre la configuracion de usuarios, empresas, roles y permisos de acceso al sistema
                 </p>
               </div>
             </Flex>
@@ -755,9 +724,7 @@ export function UsersManagementPage() {
                 {getInitials(selectedUser.nombre, selectedUser.apellido)}
               </Avatar>
               <div className={styles.userCardInfo}>
-                <p
-                  className={styles.userCardName}
-                >{`${selectedUser.nombre} ${selectedUser.apellido}`}</p>
+                <p className={styles.userCardName}>{`${selectedUser.nombre} ${selectedUser.apellido}`}</p>
                 {selectedUser.email && (
                   <p className={styles.userCardEmail}>
                     <MailOutlined style={{ fontSize: 12, color: '#8c8c8c' }} />
@@ -810,9 +777,7 @@ export function UsersManagementPage() {
                             ))}
                           </Checkbox.Group>
                           {apps.length === 0 && (
-                            <span className={styles.emptyHint}>
-                              No hay aplicaciones disponibles.
-                            </span>
+                            <span className={styles.emptyHint}>No hay aplicaciones disponibles.</span>
                           )}
                         </div>
                         <Button
@@ -898,8 +863,7 @@ export function UsersManagementPage() {
                           />
                         )}
                         <p className={styles.sectionDescription}>
-                          Solo las empresas marcadas. Si está desmarcada, el usuario no ve nada de
-                          ella.
+                          Solo las empresas marcadas. Si está desmarcada, el usuario no ve nada de ella.
                         </p>
                         <Alert
                           className={`${styles.infoBanner} ${styles.infoType}`}
@@ -918,9 +882,7 @@ export function UsersManagementPage() {
                         <div className={styles.listBox}>
                           <Checkbox.Group
                             value={userCompanyIds}
-                            onChange={(v) =>
-                              canAssignCompaniesPerm && setUserCompanyIds(v as number[])
-                            }
+                            onChange={(v) => canAssignCompaniesPerm && setUserCompanyIds(v as number[])}
                             disabled={!canAssignCompaniesPerm}
                             style={{ display: 'flex', flexDirection: 'column', gap: 8 }}
                           >
@@ -938,13 +900,9 @@ export function UsersManagementPage() {
                           {(!companiesData || companiesData.length === 0) && (
                             <span className={styles.emptyHint}>No hay empresas.</span>
                           )}
-                          {companiesData &&
-                            companiesData.length > 0 &&
-                            filteredCompanies.length === 0 && (
-                              <span className={styles.emptyHint}>
-                                Ninguna empresa coincide con la búsqueda.
-                              </span>
-                            )}
+                          {companiesData && companiesData.length > 0 && filteredCompanies.length === 0 && (
+                            <span className={styles.emptyHint}>Ninguna empresa coincide con la búsqueda.</span>
+                          )}
                         </div>
                         <Button
                           type="primary"
@@ -1007,9 +965,7 @@ export function UsersManagementPage() {
                             <div className={styles.listBox}>
                               <Checkbox.Group
                                 value={globalRoleIds}
-                                onChange={(v) =>
-                                  canAssignRolesPerm && setGlobalRoleIds(v as number[])
-                                }
+                                onChange={(v) => canAssignRolesPerm && setGlobalRoleIds(v as number[])}
                                 disabled={!canAssignRolesPerm}
                                 style={{ display: 'flex', flexDirection: 'column', gap: 8 }}
                               >
@@ -1019,12 +975,9 @@ export function UsersManagementPage() {
                                   </Checkbox>
                                 ))}
                               </Checkbox.Group>
-                              {rolesForSelectedApp.length > 0 &&
-                                filteredRolesForApp.length === 0 && (
-                                  <span className={styles.emptyHint}>
-                                    Ningún rol coincide con la búsqueda.
-                                  </span>
-                                )}
+                              {rolesForSelectedApp.length > 0 && filteredRolesForApp.length === 0 && (
+                                <span className={styles.emptyHint}>Ningún rol coincide con la búsqueda.</span>
+                              )}
                             </div>
                             <Button
                               type="primary"
@@ -1041,9 +994,7 @@ export function UsersManagementPage() {
                       </div>
                     ) : (
                       <div>
-                        <Text type="secondary">
-                          Seleccione una aplicación para configurar roles.
-                        </Text>
+                        <Text type="secondary">Seleccione una aplicación para configurar roles.</Text>
                       </div>
                     ),
                   },
@@ -1089,10 +1040,7 @@ export function UsersManagementPage() {
                         ) : (
                           <>
                             <div style={{ marginBottom: 12 }}>
-                              <Text
-                                strong
-                                style={{ fontSize: 13, display: 'block', marginBottom: 6 }}
-                              >
+                              <Text strong style={{ fontSize: 13, display: 'block', marginBottom: 6 }}>
                                 Rol
                               </Text>
                               <Select
@@ -1112,10 +1060,7 @@ export function UsersManagementPage() {
                             </div>
                             {excepcionRoleId && (
                               <div>
-                                <Text
-                                  strong
-                                  style={{ fontSize: 13, display: 'block', marginBottom: 6 }}
-                                >
+                                <Text strong style={{ fontSize: 13, display: 'block', marginBottom: 6 }}>
                                   Permisos del rol a denegar
                                 </Text>
                                 <p className={styles.sectionDescription}>
@@ -1131,27 +1076,19 @@ export function UsersManagementPage() {
                                 <div className={styles.exceptionListBox}>
                                   <Checkbox.Group
                                     value={globalPermissionDeny}
-                                    onChange={(v) =>
-                                      canDenyPermissionsPerm &&
-                                      setGlobalPermissionDeny(v as string[])
-                                    }
+                                    onChange={(v) => canDenyPermissionsPerm && setGlobalPermissionDeny(v as string[])}
                                     disabled={!canDenyPermissionsPerm}
                                     style={{ display: 'flex', flexDirection: 'column', gap: 6 }}
                                   >
                                     {roleExcepcionPermissions.length === 0 ? (
-                                      <span className={styles.emptyHint}>
-                                        Cargando permisos del rol…
-                                      </span>
+                                      <span className={styles.emptyHint}>Cargando permisos del rol…</span>
                                     ) : (
                                       filteredExceptionPermissions.map((p) => (
                                         <Checkbox key={p.id} value={p.codigo}>
                                           <Text code style={{ fontSize: 12 }}>
                                             {p.codigo}
                                           </Text>
-                                          <Text
-                                            type="secondary"
-                                            style={{ marginLeft: 6, fontSize: 12 }}
-                                          >
+                                          <Text type="secondary" style={{ marginLeft: 6, fontSize: 12 }}>
                                             — {p.nombre}
                                           </Text>
                                         </Checkbox>
@@ -1183,9 +1120,7 @@ export function UsersManagementPage() {
                       </div>
                     ) : (
                       <div style={{ paddingTop: 16 }}>
-                        <Text type="secondary">
-                          Seleccione una aplicación para configurar excepciones.
-                        </Text>
+                        <Text type="secondary">Seleccione una aplicación para configurar excepciones.</Text>
                       </div>
                     ),
                   },
@@ -1196,8 +1131,7 @@ export function UsersManagementPage() {
                       <div style={{ paddingTop: 16 }}>
                         <p className={styles.sectionTitle}>Acceso al sistema</p>
                         <p className={styles.sectionDescription}>
-                          Controles de estado del usuario para habilitar o restringir su acceso a la
-                          plataforma.
+                          Controles de estado del usuario para habilitar o restringir su acceso a la plataforma.
                         </p>
                         <Alert
                           className={`${styles.infoBanner} ${styles.infoType}`}
@@ -1212,16 +1146,12 @@ export function UsersManagementPage() {
                               <Popconfirm
                                 title="Inactivar usuario"
                                 description="El usuario perderá acceso al sistema."
-                                onConfirm={() =>
-                                  void applyUserStateChange(selectedUser.id, 'inactivate')
-                                }
+                                onConfirm={() => void applyUserStateChange(selectedUser.id, 'inactivate')}
                               >
                                 <Button
                                   size="small"
                                   danger
-                                  disabled={
-                                    !canViewConfigUsersPerm || selectedUser.id === authUserId
-                                  }
+                                  disabled={!canViewConfigUsersPerm || selectedUser.id === authUserId}
                                 >
                                   Inactivar
                                 </Button>
@@ -1229,15 +1159,11 @@ export function UsersManagementPage() {
                               <Popconfirm
                                 title="Bloquear usuario"
                                 description="Bloquea el acceso inmediatamente."
-                                onConfirm={() =>
-                                  void applyUserStateChange(selectedUser.id, 'block')
-                                }
+                                onConfirm={() => void applyUserStateChange(selectedUser.id, 'block')}
                               >
                                 <Button
                                   size="small"
-                                  disabled={
-                                    !canViewConfigUsersPerm || selectedUser.id === authUserId
-                                  }
+                                  disabled={!canViewConfigUsersPerm || selectedUser.id === authUserId}
                                 >
                                   Bloquear
                                 </Button>
@@ -1247,15 +1173,9 @@ export function UsersManagementPage() {
                             <Popconfirm
                               title="Reactivar usuario"
                               description="Restablece el acceso al sistema."
-                              onConfirm={() =>
-                                void applyUserStateChange(selectedUser.id, 'reactivate')
-                              }
+                              onConfirm={() => void applyUserStateChange(selectedUser.id, 'reactivate')}
                             >
-                              <Button
-                                size="small"
-                                type="primary"
-                                disabled={!canViewConfigUsersPerm}
-                              >
+                              <Button size="small" type="primary" disabled={!canViewConfigUsersPerm}>
                                 Reactivar
                               </Button>
                             </Popconfirm>
@@ -1271,8 +1191,7 @@ export function UsersManagementPage() {
                       <div style={{ paddingTop: 16 }}>
                         <p className={styles.sectionTitle}>Historial de cambios</p>
                         <p className={styles.sectionDescription}>
-                          Muestra quien hizo el cambio, cuando se hizo y el detalle registrado en
-                          bitacora.
+                          Muestra quien hizo el cambio, cuando se hizo y el detalle registrado en bitacora.
                         </p>
                         <Alert
                           className={`${styles.infoBanner} ${styles.infoType}`}

@@ -162,10 +162,7 @@ export function PositionsManagementPage() {
     (row: PositionListItem) => {
       const term = search.trim().toLowerCase();
       if (!term) return true;
-      return (
-        (row.nombre ?? '').toLowerCase().includes(term) ||
-        (row.descripcion ?? '').toLowerCase().includes(term)
-      );
+      return (row.nombre ?? '').toLowerCase().includes(term) || (row.descripcion ?? '').toLowerCase().includes(term);
     },
     [search],
   );
@@ -213,10 +210,7 @@ export function PositionsManagementPage() {
     return result;
   }, [dataFilteredByPaneSelections, paneSearch]);
 
-  const filteredRows = useMemo(
-    () => dataFilteredByPaneSelections(),
-    [dataFilteredByPaneSelections],
-  );
+  const filteredRows = useMemo(() => dataFilteredByPaneSelections(), [dataFilteredByPaneSelections]);
 
   const clearAllFilters = () => {
     setSearch('');
@@ -287,7 +281,7 @@ export function PositionsManagementPage() {
     if (!openModal || !editingId) return;
     if (editing) applyPositionToForm(editing);
     void loadPositionDetail(editingId);
-  }, [openModal, editingId, loadPositionDetail, applyPositionToForm]);
+  }, [openModal, editingId, editing, loadPositionDetail, applyPositionToForm]);
 
   const loadPositionAuditTrail = useCallback(
     async (id: number) => {
@@ -446,9 +440,7 @@ export function PositionsManagementPage() {
         return (
           <div>
             <div style={{ fontWeight: 600, color: '#3d4f5c' }}>{actorLabel}</div>
-            {row.actorEmail && (
-              <div style={{ color: '#8c8c8c', fontSize: 12 }}>{row.actorEmail}</div>
-            )}
+            {row.actorEmail && <div style={{ color: '#8c8c8c', fontSize: 12 }}>{row.actorEmail}</div>}
           </div>
         );
       },
@@ -476,10 +468,7 @@ export function PositionsManagementPage() {
             {changes.length > 0 ? (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                 {changes.map((change, index) => (
-                  <div
-                    key={`${row.id}-${change.campo}-${index}`}
-                    style={{ fontSize: 12, lineHeight: 1.4 }}
-                  >
+                  <div key={`${row.id}-${change.campo}-${index}`} style={{ fontSize: 12, lineHeight: 1.4 }}>
                     <div>
                       <strong>{change.campo}</strong>
                     </div>
@@ -536,9 +525,7 @@ export function PositionsManagementPage() {
               </div>
               <div>
                 <h2 className={styles.gestionTitle}>Gestion de Puestos</h2>
-                <p className={styles.gestionDesc}>
-                  Administre y consulte todos los puestos registrados en el sistema
-                </p>
+                <p className={styles.gestionDesc}>Administre y consulte todos los puestos registrados en el sistema</p>
               </div>
             </Flex>
             {canCreate ? (
@@ -557,13 +544,7 @@ export function PositionsManagementPage() {
 
       <Card className={styles.mainCard}>
         <div className={styles.mainCardBody}>
-          <Flex
-            align="center"
-            justify="space-between"
-            wrap="wrap"
-            gap={12}
-            className={styles.registrosHeader}
-          >
+          <Flex align="center" justify="space-between" wrap="wrap" gap={12} className={styles.registrosHeader}>
             <Flex align="center" gap={12} wrap="wrap">
               <Flex align="center" gap={8}>
                 <FilterOutlined className={styles.registrosFilterIcon} />
@@ -591,13 +572,7 @@ export function PositionsManagementPage() {
             className={styles.filtersCollapse}
           >
             <Collapse.Panel header="Filtros" key="filtros">
-              <Flex
-                justify="space-between"
-                align="center"
-                wrap="wrap"
-                gap={12}
-                style={{ marginBottom: 16 }}
-              >
+              <Flex justify="space-between" align="center" wrap="wrap" gap={12} style={{ marginBottom: 16 }}>
                 <Input
                   placeholder="Search"
                   prefix={<SearchOutlined />}
@@ -626,9 +601,7 @@ export function PositionsManagementPage() {
                       <Flex gap={6} align="center" wrap="wrap">
                         <Input
                           value={paneSearch[pane.key]}
-                          onChange={(e) =>
-                            setPaneSearch((prev) => ({ ...prev, [pane.key]: e.target.value }))
-                          }
+                          onChange={(e) => setPaneSearch((prev) => ({ ...prev, [pane.key]: e.target.value }))}
                           placeholder={pane.title}
                           prefix={<SearchOutlined style={{ fontSize: 12, color: '#8c8c8c' }} />}
                           suffix={
@@ -647,19 +620,13 @@ export function PositionsManagementPage() {
                           onClick={() => setPaneOpen((prev) => ({ ...prev, [pane.key]: true }))}
                           title="Abrir opciones"
                         />
-                        <Button
-                          size="middle"
-                          onClick={() => clearPaneSelection(pane.key)}
-                          title="Limpiar"
-                        >
+                        <Button size="middle" onClick={() => clearPaneSelection(pane.key)} title="Limpiar">
                           x
                         </Button>
                         <Button
                           size="middle"
                           icon={paneOpen[pane.key] ? <UpOutlined /> : <DownOutlined />}
-                          onClick={() =>
-                            setPaneOpen((prev) => ({ ...prev, [pane.key]: !prev[pane.key] }))
-                          }
+                          onClick={() => setPaneOpen((prev) => ({ ...prev, [pane.key]: !prev[pane.key] }))}
                           title={paneOpen[pane.key] ? 'Colapsar' : 'Expandir'}
                         />
                       </Flex>
@@ -679,10 +646,7 @@ export function PositionsManagementPage() {
                               <Checkbox key={`${pane.key}:${option.value}`} value={option.value}>
                                 <Space>
                                   <span>{option.value}</span>
-                                  <Badge
-                                    count={option.count}
-                                    style={{ backgroundColor: '#5a6c7d' }}
-                                  />
+                                  <Badge count={option.count} style={{ backgroundColor: '#5a6c7d' }} />
                                 </Space>
                               </Checkbox>
                             ))}
@@ -708,8 +672,7 @@ export function PositionsManagementPage() {
             pagination={{
               pageSize,
               showSizeChanger: false,
-              showTotal: (total, range) =>
-                `Mostrando ${range[0]} a ${range[1]} de ${total} registros`,
+              showTotal: (total, range) => `Mostrando ${range[0]} a ${range[1]} de ${total} registros`,
             }}
             onRow={(record) => ({
               onClick: () => openEditModal(record),
@@ -728,12 +691,7 @@ export function PositionsManagementPage() {
         width={860}
         destroyOnHidden
         title={
-          <Flex
-            justify="space-between"
-            align="center"
-            wrap="nowrap"
-            style={{ width: '100%', gap: 16 }}
-          >
+          <Flex justify="space-between" align="center" wrap="nowrap" style={{ width: '100%', gap: 16 }}>
             <div className={styles.companyModalHeader}>
               <div className={styles.companyModalHeaderIcon}>
                 <AppstoreOutlined />
@@ -759,9 +717,7 @@ export function PositionsManagementPage() {
                       if (!editing) return;
                       modal.confirm({
                         title: checked ? 'Reactivar puesto' : 'Inactivar puesto',
-                        content: checked
-                          ? 'El puesto volvera a estar disponible.'
-                          : 'El puesto quedara inactivo.',
+                        content: checked ? 'El puesto volvera a estar disponible.' : 'El puesto quedara inactivo.',
                         okText: checked ? 'Reactivar' : 'Inactivar',
                         cancelText: 'Cancelar',
                         centered: true,
@@ -794,12 +750,7 @@ export function PositionsManagementPage() {
           </Flex>
         }
       >
-        <Form<PositionFormValues>
-          layout="vertical"
-          form={form}
-          preserve={false}
-          className={styles.companyFormContent}
-        >
+        <Form<PositionFormValues> layout="vertical" form={form} preserve={false} className={styles.companyFormContent}>
           <Tabs
             activeKey={activeTab}
             onChange={setActiveTab}
@@ -815,11 +766,7 @@ export function PositionsManagementPage() {
                 ),
                 children: (
                   <div className={styles.companyFormGrid}>
-                    <Form.Item
-                      name="nombre"
-                      label="Nombre Puesto *"
-                      rules={textRules({ required: true, max: 100 })}
-                    >
+                    <Form.Item name="nombre" label="Nombre Puesto *" rules={textRules({ required: true, max: 100 })}>
                       <Input maxLength={100} />
                     </Form.Item>
                     <Form.Item
@@ -846,8 +793,7 @@ export function PositionsManagementPage() {
                         <div style={{ paddingTop: 8 }}>
                           <p className={styles.sectionTitle}>Historial de cambios del puesto</p>
                           <p className={styles.sectionDescription}>
-                            Muestra quien hizo el cambio, cuando lo hizo y el detalle registrado en
-                            bitacora.
+                            Muestra quien hizo el cambio, cuando lo hizo y el detalle registrado en bitacora.
                           </p>
                           <Table<PositionAuditTrailItem>
                             rowKey="id"

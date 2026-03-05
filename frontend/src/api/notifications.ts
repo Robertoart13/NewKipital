@@ -37,10 +37,7 @@ export async function fetchNotifications(params?: {
   return Array.isArray(data) ? data : [];
 }
 
-export async function fetchUnreadCount(params?: {
-  appCode?: string;
-  companyId?: number;
-}): Promise<number> {
+export async function fetchUnreadCount(params?: { appCode?: string; companyId?: number }): Promise<number> {
   const search = new URLSearchParams();
   if (params?.appCode) search.set('appCode', params.appCode);
   if (params?.companyId != null) search.set('companyId', String(params.companyId));
@@ -60,10 +57,7 @@ export async function markNotificationAsDeleted(id: number): Promise<void> {
   await ensureOk(res);
 }
 
-export async function markAllNotificationsAsRead(params?: {
-  appCode?: string;
-  companyId?: number;
-}): Promise<void> {
+export async function markAllNotificationsAsRead(params?: { appCode?: string; companyId?: number }): Promise<void> {
   const search = new URLSearchParams();
   if (params?.appCode) search.set('appCode', params.appCode);
   if (params?.companyId != null) search.set('companyId', String(params.companyId));

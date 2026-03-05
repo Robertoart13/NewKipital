@@ -46,10 +46,7 @@ describe('authSlice', () => {
 
   describe('setCredentials', () => {
     it('should set user and mark as authenticated', () => {
-      const state = authReducer(
-        initialState,
-        setCredentials({ user: mockUser, companies: mockCompanies }),
-      );
+      const state = authReducer(initialState, setCredentials({ user: mockUser, companies: mockCompanies }));
 
       expect(state.user).toEqual(mockUser);
       expect(state.companies).toEqual(mockCompanies);
@@ -230,10 +227,7 @@ describe('authSlice', () => {
   describe('Complex Scenarios', () => {
     it('should handle login -> update avatar -> logout flow', () => {
       // Login
-      let state = authReducer(
-        initialState,
-        setCredentials({ user: mockUser, companies: mockCompanies }),
-      );
+      let state = authReducer(initialState, setCredentials({ user: mockUser, companies: mockCompanies }));
       expect(state.isAuthenticated).toBe(true);
 
       // Update avatar
@@ -273,10 +267,7 @@ describe('authSlice', () => {
       const initialCompanies: UserCompanyInfo[] = [{ id: 1, nombre: 'Company A', codigo: 'CA' }];
 
       // Login with Company A
-      let state = authReducer(
-        initialState,
-        setCredentials({ user: mockUser, companies: initialCompanies }),
-      );
+      let state = authReducer(initialState, setCredentials({ user: mockUser, companies: initialCompanies }));
 
       // Switch to multiple companies
       const newCompanies: UserCompanyInfo[] = [
@@ -325,10 +316,7 @@ describe('authSlice', () => {
     });
 
     it('should maintain UserCompanyInfo structure', () => {
-      const state = authReducer(
-        initialState,
-        setCredentials({ user: mockUser, companies: mockCompanies }),
-      );
+      const state = authReducer(initialState, setCredentials({ user: mockUser, companies: mockCompanies }));
 
       state.companies.forEach((company) => {
         expect(company).toHaveProperty('id');
@@ -375,14 +363,9 @@ describe('authSlice', () => {
     });
 
     it('should handle user with null codigo in companies', () => {
-      const companiesWithNullCodigo: UserCompanyInfo[] = [
-        { id: 1, nombre: 'Company A', codigo: null },
-      ];
+      const companiesWithNullCodigo: UserCompanyInfo[] = [{ id: 1, nombre: 'Company A', codigo: null }];
 
-      const state = authReducer(
-        initialState,
-        setCredentials({ user: mockUser, companies: companiesWithNullCodigo }),
-      );
+      const state = authReducer(initialState, setCredentials({ user: mockUser, companies: companiesWithNullCodigo }));
 
       expect(state.companies[0].codigo).toBeNull();
     });

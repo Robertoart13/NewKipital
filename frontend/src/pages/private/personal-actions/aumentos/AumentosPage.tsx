@@ -143,18 +143,11 @@ function isIncreaseEditableState(estado: number): boolean {
   return [1, 2, 3].includes(Number(estado));
 }
 
-function getPaneValue(
-  row: IncreaseUiRow,
-  key: PaneKey,
-  companies: Array<{ id: number; nombre: string }>,
-): string {
+function getPaneValue(row: IncreaseUiRow, key: PaneKey, companies: Array<{ id: number; nombre: string }>): string {
   if (key === 'empresa') {
-    return (
-      companies.find((c) => Number(c.id) === row.idEmpresa)?.nombre ?? `Empresa #${row.idEmpresa}`
-    );
+    return companies.find((c) => Number(c.id) === row.idEmpresa)?.nombre ?? `Empresa #${row.idEmpresa}`;
   }
-  if (key === 'empleado')
-    return (row.employeeLabel ?? `Empleado #${row.idEmpleado}`).trim() || '--';
+  if (key === 'empleado') return (row.employeeLabel ?? `Empleado #${row.idEmpleado}`).trim() || '--';
   if (key === 'periodoPago') return (row.periodoPagoResumen ?? '').trim() || '--';
   if (key === 'movimiento') return (row.movimientoResumen ?? '').trim() || '--';
   if (key === 'estado') return ESTADO_LABEL[row.estado]?.text ?? `Estado ${row.estado}`;
@@ -229,13 +222,10 @@ export function AumentosPage() {
   const canEdit = useAppSelector((state) => hasPermission(state, 'hr-action-aumentos:edit'));
   const canCancel = useAppSelector((state) => hasPermission(state, 'hr-action-aumentos:cancel'));
   const canView = useAppSelector(
-    (state) =>
-      hasPermission(state, 'hr-action-aumentos:view') || hasPermission(state, 'hr_action:view'),
+    (state) => hasPermission(state, 'hr-action-aumentos:view') || hasPermission(state, 'hr_action:view'),
   );
   const canApprove = useAppSelector((state) => hasPermission(state, 'hr-action-aumentos:approve'));
-  const canViewEmployeeSensitive = useAppSelector((state) =>
-    hasPermission(state, 'employee:view-sensitive'),
-  );
+  const canViewEmployeeSensitive = useAppSelector((state) => hasPermission(state, 'employee:view-sensitive'));
 
   const defaultCompanyId = useMemo(() => {
     const active = Number(activeCompany?.id);
@@ -383,8 +373,7 @@ export function AumentosPage() {
   const rowsWithEmployee = useMemo(() => {
     const map = new Map<number, string>();
     employees.forEach((employee) => {
-      const label =
-        `${employee.codigo} - ${employee.nombre} ${employee.apellido1} ${employee.apellido2 ?? ''}`.trim();
+      const label = `${employee.codigo} - ${employee.nombre} ${employee.apellido1} ${employee.apellido2 ?? ''}`.trim();
       map.set(employee.id, label);
     });
     return rows.map((row) => ({ ...row, employeeLabel: map.get(row.idEmpleado) }));
@@ -444,10 +433,7 @@ export function AumentosPage() {
     return result;
   }, [companies, dataFilteredByPaneSelections, paneSearch]);
 
-  const rowsFiltered = useMemo(
-    () => dataFilteredByPaneSelections(),
-    [dataFilteredByPaneSelections],
-  );
+  const rowsFiltered = useMemo(() => dataFilteredByPaneSelections(), [dataFilteredByPaneSelections]);
 
   const openCreateModal = () => {
     setMode('create');
@@ -457,27 +443,29 @@ export function AumentosPage() {
     setOpenModal(true);
   };
 
-  const openEditModal = async (row: IncreaseUiRow) => {
-    if (!isIncreaseEditableState(row.estado)) {
-      message.warning('Este aumento está en modo solo lectura.');
-    }
-    const key = `Increase-detail-${row.id}`;
-    setOpenModal(true);
-    message.loading({ content: 'Cargando detalle de aumento...', key, duration: 0 });
-    try {
-      const detail = await fetchIncreaseDetail(row.id);
-      setInitialDraft(createDraftFromIncreaseDetail(detail));
-      setEditingRow(row);
-      setMode('edit');
-      message.destroy(key);
-    } catch (error) {
-      message.error({
-        content:
-          error instanceof Error ? error.message : 'No se pudo cargar el detalle de aumento.',
-        key,
-      });
-    }
-  };
+  const openEditModal = useCallback(
+    async (row: IncreaseUiRow) => {
+      if (!isIncreaseEditableState(row.estado)) {
+        message.warning('Este aumento está en modo solo lectura.');
+      }
+      const key = `Increase-detail-${row.id}`;
+      setOpenModal(true);
+      message.loading({ content: 'Cargando detalle de aumento...', key, duration: 0 });
+      try {
+        const detail = await fetchIncreaseDetail(row.id);
+        setInitialDraft(createDraftFromIncreaseDetail(detail));
+        setEditingRow(row);
+        setMode('edit');
+        message.destroy(key);
+      } catch (error) {
+        message.error({
+          content: error instanceof Error ? error.message : 'No se pudo cargar el detalle de aumento.',
+          key,
+        });
+      }
+    },
+    [message],
+  );
 
   const loadAuditTrail = async () => {
     if (!editingRow) return;
@@ -500,8 +488,7 @@ export function AumentosPage() {
         key: 'empresa',
         width: 240,
         render: (_, row) =>
-          companies.find((c) => Number(c.id) === row.idEmpresa)?.nombre ??
-          `Empresa #${row.idEmpresa}`,
+          companies.find((c) => Number(c.id) === row.idEmpresa)?.nombre ?? `Empresa #${row.idEmpresa}`,
       },
       {
         title: 'EMPLEADO',
@@ -544,11 +531,7 @@ export function AumentosPage() {
         render: (_, row) => {
           const canInvalidate = canCancel && isIncreaseEditableState(row.estado);
           const nextAction = NEXT_STATE_ACTION_CONFIG[row.estado];
-          const canAdvance = nextAction
-            ? nextAction.requiredPermission === 'approve'
-              ? canApprove
-              : canEdit
-            : false;
+          const canAdvance = nextAction ? (nextAction.requiredPermission === 'approve' ? canApprove : canEdit) : false;
 
           const onInvalidate = (e: MouseEvent<HTMLElement>) => {
             e.stopPropagation();
@@ -566,8 +549,7 @@ export function AumentosPage() {
                   await loadRows();
                 } catch (error) {
                   message.error({
-                    content:
-                      error instanceof Error ? error.message : 'No se pudo invalidar el aumento.',
+                    content: error instanceof Error ? error.message : 'No se pudo invalidar el aumento.',
                     key,
                   });
                 }
@@ -597,10 +579,7 @@ export function AumentosPage() {
                         await loadRows();
                       } catch (error) {
                         message.error({
-                          content:
-                            error instanceof Error
-                              ? error.message
-                              : 'No se pudo avanzar el aumento.',
+                          content: error instanceof Error ? error.message : 'No se pudo avanzar el aumento.',
                           key,
                         });
                       }
@@ -653,9 +632,7 @@ export function AumentosPage() {
           </Link>
           <div className={styles.pageTitleBlock}>
             <h1 className={styles.pageTitle}>Aumentos</h1>
-            <p className={styles.pageSubtitle}>
-              Gestione aumentos salariales por empresa con una sola acción
-            </p>
+            <p className={styles.pageSubtitle}>Gestione aumentos salariales por empresa con una sola acción</p>
           </div>
         </div>
       </div>
@@ -687,13 +664,7 @@ export function AumentosPage() {
 
       <Card className={styles.mainCard} style={{ marginBottom: 0 }}>
         <div className={styles.mainCardBody}>
-          <Flex
-            align="center"
-            justify="space-between"
-            wrap="wrap"
-            gap={12}
-            className={styles.registrosHeader}
-          >
+          <Flex align="center" justify="space-between" wrap="wrap" gap={12} className={styles.registrosHeader}>
             <Flex align="center" gap={12} wrap="wrap">
               <Flex align="center" gap={8}>
                 <FilterOutlined className={styles.registrosFilterIcon} />
@@ -728,9 +699,7 @@ export function AumentosPage() {
                   value: Number(value),
                   label: meta.text,
                 }))}
-                onChange={(values) =>
-                  setSelectedEstados((values ?? []).map((item) => Number(item)))
-                }
+                onChange={(values) => setSelectedEstados((values ?? []).map((item) => Number(item)))}
               />
               <Button icon={<ReloadOutlined />} onClick={() => void loadRows()}>
                 Refrescar
@@ -740,9 +709,7 @@ export function AumentosPage() {
 
           <Collapse
             activeKey={filtersExpanded ? ['filtros'] : []}
-            onChange={(keys) =>
-              setFiltersExpanded((Array.isArray(keys) ? keys : [keys]).includes('filtros'))
-            }
+            onChange={(keys) => setFiltersExpanded((Array.isArray(keys) ? keys : [keys]).includes('filtros'))}
             className={styles.filtersCollapse}
             items={[
               {
@@ -750,13 +717,7 @@ export function AumentosPage() {
                 label: 'Filtros',
                 children: (
                   <>
-                    <Flex
-                      justify="space-between"
-                      align="center"
-                      wrap="wrap"
-                      gap={12}
-                      style={{ marginBottom: 16 }}
-                    >
+                    <Flex justify="space-between" align="center" wrap="wrap" gap={12} style={{ marginBottom: 16 }}>
                       <Input
                         placeholder="Search"
                         prefix={<SearchOutlined />}
@@ -785,13 +746,9 @@ export function AumentosPage() {
                             <Flex gap={6} align="center" wrap="wrap">
                               <Input
                                 value={paneSearch[pane.key]}
-                                onChange={(e) =>
-                                  setPaneSearch((prev) => ({ ...prev, [pane.key]: e.target.value }))
-                                }
+                                onChange={(e) => setPaneSearch((prev) => ({ ...prev, [pane.key]: e.target.value }))}
                                 placeholder={pane.title}
-                                prefix={
-                                  <SearchOutlined style={{ fontSize: 12, color: '#8c8c8c' }} />
-                                }
+                                prefix={<SearchOutlined style={{ fontSize: 12, color: '#8c8c8c' }} />}
                                 size="middle"
                                 className={styles.filterInput}
                                 style={{ flex: 1, minWidth: 120 }}
@@ -799,24 +756,16 @@ export function AumentosPage() {
                               <Button
                                 size="middle"
                                 icon={<SearchOutlined />}
-                                onClick={() =>
-                                  setPaneOpen((prev) => ({ ...prev, [pane.key]: true }))
-                                }
+                                onClick={() => setPaneOpen((prev) => ({ ...prev, [pane.key]: true }))}
                                 title="Abrir opciones"
                               />
-                              <Button
-                                size="middle"
-                                onClick={() => clearPaneSelection(pane.key)}
-                                title="Limpiar"
-                              >
+                              <Button size="middle" onClick={() => clearPaneSelection(pane.key)} title="Limpiar">
                                 x
                               </Button>
                               <Button
                                 size="middle"
                                 icon={paneOpen[pane.key] ? <UpOutlined /> : <DownOutlined />}
-                                onClick={() =>
-                                  setPaneOpen((prev) => ({ ...prev, [pane.key]: !prev[pane.key] }))
-                                }
+                                onClick={() => setPaneOpen((prev) => ({ ...prev, [pane.key]: !prev[pane.key] }))}
                                 title={paneOpen[pane.key] ? 'Colapsar' : 'Expandir'}
                               />
                             </Flex>
@@ -833,24 +782,16 @@ export function AumentosPage() {
                                   style={{ display: 'flex', flexDirection: 'column', gap: 8 }}
                                 >
                                   {paneOptions[pane.key].map((option) => (
-                                    <Checkbox
-                                      key={`${pane.key}:${option.value}`}
-                                      value={option.value}
-                                    >
+                                    <Checkbox key={`${pane.key}:${option.value}`} value={option.value}>
                                       <Space>
                                         <span>{option.value}</span>
-                                        <Badge
-                                          count={option.count}
-                                          style={{ backgroundColor: '#5a6c7d' }}
-                                        />
+                                        <Badge count={option.count} style={{ backgroundColor: '#5a6c7d' }} />
                                       </Space>
                                     </Checkbox>
                                   ))}
                                 </Checkbox.Group>
                                 {paneOptions[pane.key].length === 0 && (
-                                  <span className={styles.emptyHint}>
-                                    Sin valores para este filtro
-                                  </span>
+                                  <span className={styles.emptyHint}>Sin valores para este filtro</span>
                                 )}
                               </div>
                             )}
@@ -873,8 +814,7 @@ export function AumentosPage() {
             pagination={{
               pageSize,
               showSizeChanger: false,
-              showTotal: (total, [start, end]) =>
-                `Mostrando ${start} a ${end} de ${total} registros`,
+              showTotal: (total, [start, end]) => `Mostrando ${start} a ${end} de ${total} registros`,
             }}
             onRow={(record) => ({
               onClick: () => {
@@ -964,10 +904,7 @@ export function AumentosPage() {
               });
             }
             message.success({
-              content:
-                mode === 'edit'
-                  ? 'Aumento actualizado correctamente.'
-                  : 'Aumento creado correctamente.',
+              content: mode === 'edit' ? 'Aumento actualizado correctamente.' : 'Aumento creado correctamente.',
               key: loadingKey,
             });
             setOpenModal(false);

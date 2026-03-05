@@ -108,11 +108,7 @@ function normalizePayload(values: ProjectFormValues): Omit<ProjectPayload, 'idEm
   };
 }
 
-function getPaneValue(
-  row: ProjectListItem,
-  key: PaneKey,
-  companies: Array<{ id: number; nombre: string }>,
-): string {
+function getPaneValue(row: ProjectListItem, key: PaneKey, companies: Array<{ id: number; nombre: string }>): string {
   if (key === 'empresa') {
     const company = companies.find((c) => c.id === row.idEmpresa);
     return company?.nombre ?? `Empresa #${row.idEmpresa}`;
@@ -215,9 +211,7 @@ export function ProjectsManagementPage() {
         (row.nombre ?? '').toLowerCase().includes(term) ||
         (row.codigo ?? '').toLowerCase().includes(term) ||
         (row.idExterno ?? '').toLowerCase().includes(term) ||
-        (companies.find((c) => c.id === row.idEmpresa)?.nombre ?? '')
-          .toLowerCase()
-          .includes(term) ||
+        (companies.find((c) => c.id === row.idEmpresa)?.nombre ?? '').toLowerCase().includes(term) ||
         (row.descripcion ?? '').toLowerCase().includes(term)
       );
     },
@@ -269,10 +263,7 @@ export function ProjectsManagementPage() {
     return result;
   }, [companies, dataFilteredByPaneSelections, paneSearch]);
 
-  const filteredRows = useMemo(
-    () => dataFilteredByPaneSelections(),
-    [dataFilteredByPaneSelections],
-  );
+  const filteredRows = useMemo(() => dataFilteredByPaneSelections(), [dataFilteredByPaneSelections]);
 
   const clearAllFilters = () => {
     setSearch('');
@@ -353,7 +344,7 @@ export function ProjectsManagementPage() {
     if (!openModal || !editingId) return;
     if (editing) applyProjectToForm(editing);
     void loadProjectDetail(editingId);
-  }, [openModal, editingId, loadProjectDetail, applyProjectToForm]);
+  }, [openModal, editingId, editing, loadProjectDetail, applyProjectToForm]);
 
   const loadProjectAuditTrail = useCallback(
     async (id: number) => {
@@ -549,9 +540,7 @@ export function ProjectsManagementPage() {
         return (
           <div>
             <div style={{ fontWeight: 600, color: '#3d4f5c' }}>{actorLabel}</div>
-            {row.actorEmail && (
-              <div style={{ color: '#8c8c8c', fontSize: 12 }}>{row.actorEmail}</div>
-            )}
+            {row.actorEmail && <div style={{ color: '#8c8c8c', fontSize: 12 }}>{row.actorEmail}</div>}
           </div>
         );
       },
@@ -579,10 +568,7 @@ export function ProjectsManagementPage() {
             {changes.length > 0 ? (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                 {changes.map((change, index) => (
-                  <div
-                    key={`${row.id}-${change.campo}-${index}`}
-                    style={{ fontSize: 12, lineHeight: 1.4 }}
-                  >
+                  <div key={`${row.id}-${change.campo}-${index}`} style={{ fontSize: 12, lineHeight: 1.4 }}>
                     <div>
                       <strong>{change.campo}</strong>
                     </div>
@@ -660,13 +646,7 @@ export function ProjectsManagementPage() {
 
       <Card className={styles.mainCard}>
         <div className={styles.mainCardBody}>
-          <Flex
-            align="center"
-            justify="space-between"
-            wrap="wrap"
-            gap={12}
-            className={styles.registrosHeader}
-          >
+          <Flex align="center" justify="space-between" wrap="wrap" gap={12} className={styles.registrosHeader}>
             <Flex align="center" gap={12} wrap="wrap">
               <Flex align="center" gap={8}>
                 <FilterOutlined className={styles.registrosFilterIcon} />
@@ -694,13 +674,7 @@ export function ProjectsManagementPage() {
             className={styles.filtersCollapse}
           >
             <Collapse.Panel header="Filtros" key="filtros">
-              <Flex
-                justify="space-between"
-                align="center"
-                wrap="wrap"
-                gap={12}
-                style={{ marginBottom: 16 }}
-              >
+              <Flex justify="space-between" align="center" wrap="wrap" gap={12} style={{ marginBottom: 16 }}>
                 <Input
                   placeholder="Search"
                   prefix={<SearchOutlined />}
@@ -729,9 +703,7 @@ export function ProjectsManagementPage() {
                       <Flex gap={6} align="center" wrap="wrap">
                         <Input
                           value={paneSearch[pane.key]}
-                          onChange={(e) =>
-                            setPaneSearch((prev) => ({ ...prev, [pane.key]: e.target.value }))
-                          }
+                          onChange={(e) => setPaneSearch((prev) => ({ ...prev, [pane.key]: e.target.value }))}
                           placeholder={pane.title}
                           prefix={<SearchOutlined style={{ fontSize: 12, color: '#8c8c8c' }} />}
                           suffix={
@@ -750,19 +722,13 @@ export function ProjectsManagementPage() {
                           onClick={() => setPaneOpen((prev) => ({ ...prev, [pane.key]: true }))}
                           title="Abrir opciones"
                         />
-                        <Button
-                          size="middle"
-                          onClick={() => clearPaneSelection(pane.key)}
-                          title="Limpiar"
-                        >
+                        <Button size="middle" onClick={() => clearPaneSelection(pane.key)} title="Limpiar">
                           x
                         </Button>
                         <Button
                           size="middle"
                           icon={paneOpen[pane.key] ? <UpOutlined /> : <DownOutlined />}
-                          onClick={() =>
-                            setPaneOpen((prev) => ({ ...prev, [pane.key]: !prev[pane.key] }))
-                          }
+                          onClick={() => setPaneOpen((prev) => ({ ...prev, [pane.key]: !prev[pane.key] }))}
                           title={paneOpen[pane.key] ? 'Colapsar' : 'Expandir'}
                         />
                       </Flex>
@@ -782,10 +748,7 @@ export function ProjectsManagementPage() {
                               <Checkbox key={`${pane.key}:${option.value}`} value={option.value}>
                                 <Space>
                                   <span>{option.value}</span>
-                                  <Badge
-                                    count={option.count}
-                                    style={{ backgroundColor: '#5a6c7d' }}
-                                  />
+                                  <Badge count={option.count} style={{ backgroundColor: '#5a6c7d' }} />
                                 </Space>
                               </Checkbox>
                             ))}
@@ -811,8 +774,7 @@ export function ProjectsManagementPage() {
             pagination={{
               pageSize,
               showSizeChanger: false,
-              showTotal: (total, range) =>
-                `Mostrando ${range[0]} a ${range[1]} de ${total} registros`,
+              showTotal: (total, range) => `Mostrando ${range[0]} a ${range[1]} de ${total} registros`,
             }}
             onRow={(record) => ({
               onClick: () => openEditModal(record),
@@ -831,12 +793,7 @@ export function ProjectsManagementPage() {
         width={860}
         destroyOnHidden
         title={
-          <Flex
-            justify="space-between"
-            align="center"
-            wrap="nowrap"
-            style={{ width: '100%', gap: 16 }}
-          >
+          <Flex justify="space-between" align="center" wrap="nowrap" style={{ width: '100%', gap: 16 }}>
             <div className={styles.companyModalHeader}>
               <div className={styles.companyModalHeaderIcon}>
                 <ProjectOutlined />
@@ -862,9 +819,7 @@ export function ProjectsManagementPage() {
                       if (!editing) return;
                       modal.confirm({
                         title: checked ? 'Reactivar proyecto' : 'Inactivar proyecto',
-                        content: checked
-                          ? 'El proyecto volvera a estar disponible.'
-                          : 'El proyecto quedara inactivo.',
+                        content: checked ? 'El proyecto volvera a estar disponible.' : 'El proyecto quedara inactivo.',
                         okText: checked ? 'Reactivar' : 'Inactivar',
                         cancelText: 'Cancelar',
                         centered: true,
@@ -897,12 +852,7 @@ export function ProjectsManagementPage() {
           </Flex>
         }
       >
-        <Form<ProjectFormValues>
-          layout="vertical"
-          form={form}
-          preserve={false}
-          className={styles.companyFormContent}
-        >
+        <Form<ProjectFormValues> layout="vertical" form={form} preserve={false} className={styles.companyFormContent}>
           <Tabs
             activeKey={activeTab}
             onChange={setActiveTab}
@@ -920,9 +870,7 @@ export function ProjectsManagementPage() {
                   <Spin spinning={loadingDetail}>
                     <div className={styles.companyFormGrid}>
                       {(() => {
-                        const editingCompanyActive = editing
-                          ? activeCompanyIds.has(editing.idEmpresa)
-                          : true;
+                        const editingCompanyActive = editing ? activeCompanyIds.has(editing.idEmpresa) : true;
                         const editingCompanyLabel = editing
                           ? (companies.find((c) => c.id === editing.idEmpresa)?.nombre ??
                             `Empresa #${editing.idEmpresa}`)
@@ -948,10 +896,7 @@ export function ProjectsManagementPage() {
                                     showSearch
                                     optionFilterProp="label"
                                     filterOption={(input, option) =>
-                                      (option?.label ?? '')
-                                        .toString()
-                                        .toLowerCase()
-                                        .includes(input.toLowerCase())
+                                      (option?.label ?? '').toString().toLowerCase().includes(input.toLowerCase())
                                     }
                                   />
                                 </Form.Item>
@@ -966,11 +911,7 @@ export function ProjectsManagementPage() {
 
                         if (companies.length > 1) {
                           return (
-                            <Form.Item
-                              name="idEmpresa"
-                              label="Empresa *"
-                              rules={[{ required: true }]}
-                            >
+                            <Form.Item name="idEmpresa" label="Empresa *" rules={[{ required: true }]}>
                               <Select
                                 placeholder="Seleccionar empresa"
                                 options={companies.map((c) => ({
@@ -980,10 +921,7 @@ export function ProjectsManagementPage() {
                                 showSearch
                                 optionFilterProp="label"
                                 filterOption={(input, option) =>
-                                  (option?.label ?? '')
-                                    .toString()
-                                    .toLowerCase()
-                                    .includes(input.toLowerCase())
+                                  (option?.label ?? '').toString().toLowerCase().includes(input.toLowerCase())
                                 }
                               />
                             </Form.Item>
@@ -1016,11 +954,7 @@ export function ProjectsManagementPage() {
                       >
                         <Input maxLength={255} />
                       </Form.Item>
-                      <Form.Item
-                        name="codigo"
-                        label="Codigo Proyecto *"
-                        rules={textRules({ required: true, max: 50 })}
-                      >
+                      <Form.Item name="codigo" label="Codigo Proyecto *" rules={textRules({ required: true, max: 50 })}>
                         <Input maxLength={50} />
                       </Form.Item>
                       <Form.Item
@@ -1055,8 +989,7 @@ export function ProjectsManagementPage() {
                         <div style={{ paddingTop: 8 }}>
                           <p className={styles.sectionTitle}>Historial de cambios del proyecto</p>
                           <p className={styles.sectionDescription}>
-                            Muestra quien hizo el cambio, cuando lo hizo y el detalle registrado en
-                            bitacora.
+                            Muestra quien hizo el cambio, cuando lo hizo y el detalle registrado en bitacora.
                           </p>
                           <Table<ProjectAuditTrailItem>
                             rowKey="id"

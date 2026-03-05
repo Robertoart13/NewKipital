@@ -24,6 +24,7 @@ export function LocaleProvider({ children, defaultLocale = 'es' }: LocaleProvide
   return <LocaleContext.Provider value={{ locale, setLocale }}>{children}</LocaleContext.Provider>;
 }
 
+// eslint-disable-next-line react-refresh/only-export-components
 export function useLocale() {
   const ctx = useContext(LocaleContext);
   if (!ctx) {

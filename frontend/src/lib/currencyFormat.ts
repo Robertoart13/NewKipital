@@ -6,10 +6,7 @@ export function getCurrencySymbol(currency?: string): string {
   return currency === 'USD' ? '$' : 'CRC';
 }
 
-export function formatCurrencyInput(
-  value: string | number | null | undefined,
-  currencyOrSymbol?: string,
-): string {
+export function formatCurrencyInput(value: string | number | null | undefined, currencyOrSymbol?: string): string {
   if (value == null || value === '') return '';
   const numericValue = Number(value);
   if (Number.isNaN(numericValue)) return '';

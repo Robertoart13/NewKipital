@@ -1,9 +1,4 @@
-import {
-  ExclamationCircleFilled,
-  CloseOutlined,
-  MailOutlined,
-  LockOutlined,
-} from '@ant-design/icons';
+import { ExclamationCircleFilled, CloseOutlined, MailOutlined, LockOutlined } from '@ant-design/icons';
 import { Card, Form, Input, Button, Typography, Divider } from 'antd';
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
@@ -179,11 +174,9 @@ export function LoginPage() {
       ? `https://login.microsoftonline.com/${import.meta.env.VITE_MICROSOFT_TENANT_ID as string}`
       : undefined);
   const microsoftScopes =
-    (import.meta.env.VITE_MICROSOFT_SCOPES as string | undefined) ??
-    'openid profile email User.Read';
+    (import.meta.env.VITE_MICROSOFT_SCOPES as string | undefined) ?? 'openid profile email User.Read';
   const microsoftRedirectUri =
-    (import.meta.env.VITE_MSAL_REDIRECT_URI_PRODUCCION as string | undefined) ??
-    `${window.location.origin}/auth/login`;
+    (import.meta.env.VITE_MSAL_REDIRECT_URI_PRODUCCION as string | undefined) ?? `${window.location.origin}/auth/login`;
 
   const base64UrlEncode = (bytes: Uint8Array): string => {
     let binary = '';
@@ -297,9 +290,7 @@ export function LoginPage() {
       const tokenPayload = (await tokenResponse.json()) as MicrosoftTokenExchangeResponse;
       if (!tokenResponse.ok || !tokenPayload.id_token) {
         throw new Error(
-          tokenPayload.error_description ||
-            tokenPayload.error ||
-            'No se pudo validar el login de Microsoft',
+          tokenPayload.error_description || tokenPayload.error || 'No se pudo validar el login de Microsoft',
         );
       }
 
@@ -354,15 +345,13 @@ export function LoginPage() {
           }
         : (body?.user ?? null);
 
-      const normalizedCompanies: UserCompanyInfo[] = (
-        body?.data?.usuario?.companies ??
-        body?.companies ??
-        []
-      ).map((company: { id: number; nombre: string; codigo?: string | null }) => ({
-        id: company.id,
-        nombre: company.nombre,
-        codigo: company.codigo ?? null,
-      }));
+      const normalizedCompanies: UserCompanyInfo[] = (body?.data?.usuario?.companies ?? body?.companies ?? []).map(
+        (company: { id: number; nombre: string; codigo?: string | null }) => ({
+          id: company.id,
+          nombre: company.nombre,
+          codigo: company.codigo ?? null,
+        }),
+      );
 
       if (!normalizedUser || !Array.isArray(normalizedCompanies)) {
         throw new Error('Respuesta de autenticacion Microsoft invalida.');
@@ -400,9 +389,7 @@ export function LoginPage() {
       clearMicrosoftAvatar();
       await finalizeSession(user, companies);
     } catch (err) {
-      setError(
-        (err as Error).message || 'Credenciales invalidas. Verifique su correo y contrasena.',
-      );
+      setError((err as Error).message || 'Credenciales invalidas. Verifique su correo y contrasena.');
     } finally {
       setLoading(false);
     }
@@ -437,11 +424,7 @@ export function LoginPage() {
     authUrl.searchParams.set('code_challenge_method', 'S256');
     authUrl.searchParams.set('prompt', 'select_account');
 
-    const popup = window.open(
-      authUrl.toString(),
-      'microsoft-login',
-      'popup=yes,width=560,height=720,left=200,top=80',
-    );
+    const popup = window.open(authUrl.toString(), 'microsoft-login', 'popup=yes,width=560,height=720,left=200,top=80');
 
     if (!popup) {
       setMicrosoftLoading(false);
@@ -458,9 +441,7 @@ export function LoginPage() {
       clearMicrosoftOauthFlowState();
       clearMicrosoftSession();
       clearMicrosoftAvatar();
-      setError(
-        'No se recibio respuesta del popup de Microsoft. El usuario cancelo o el flujo no finalizo.',
-      );
+      setError('No se recibio respuesta del popup de Microsoft. El usuario cancelo o el flujo no finalizo.');
     }, 120000);
   };
 
@@ -504,10 +485,7 @@ export function LoginPage() {
       if (event.origin !== window.location.origin) return;
       if (!event.data || typeof event.data !== 'object') return;
 
-      if (
-        event.data.type === MICROSOFT_POPUP_EVENT ||
-        event.data.type === MICROSOFT_POPUP_ERROR_EVENT
-      ) {
+      if (event.data.type === MICROSOFT_POPUP_EVENT || event.data.type === MICROSOFT_POPUP_ERROR_EVENT) {
         completeMicrosoftLogin(event.data.payload as MicrosoftPopupPayload);
       }
     };
@@ -518,10 +496,7 @@ export function LoginPage() {
 
       try {
         const bridgeMessage = JSON.parse(event.newValue) as MicrosoftPopupBridgeMessage;
-        if (
-          bridgeMessage.type === MICROSOFT_POPUP_EVENT ||
-          bridgeMessage.type === MICROSOFT_POPUP_ERROR_EVENT
-        ) {
+        if (bridgeMessage.type === MICROSOFT_POPUP_EVENT || bridgeMessage.type === MICROSOFT_POPUP_ERROR_EVENT) {
           void completeMicrosoftLogin(bridgeMessage.payload);
           clearMicrosoftPopupBridge();
         }
@@ -575,20 +550,11 @@ export function LoginPage() {
         <div style={errorBannerStyle}>
           <ExclamationCircleFilled style={{ fontSize: 18, flexShrink: 0 }} />
           <span style={{ flex: 1 }}>{error}</span>
-          <CloseOutlined
-            style={{ fontSize: 12, cursor: 'pointer', opacity: 0.6 }}
-            onClick={() => setError(null)}
-          />
+          <CloseOutlined style={{ fontSize: 12, cursor: 'pointer', opacity: 0.6 }} onClick={() => setError(null)} />
         </div>
       )}
 
-      <Form<LoginForm>
-        className="login-form"
-        layout="vertical"
-        onFinish={onFinish}
-        requiredMark={false}
-        size="large"
-      >
+      <Form<LoginForm> className="login-form" layout="vertical" onFinish={onFinish} requiredMark={false} size="large">
         <Form.Item
           name="email"
           label=""
@@ -644,9 +610,7 @@ export function LoginPage() {
         </Form.Item>
       </Form>
 
-      <Divider style={{ margin: '24px 0 16px', color: '#8c8c8c', fontSize: 13 }}>
-        O continuar con
-      </Divider>
+      <Divider style={{ margin: '24px 0 16px', color: '#8c8c8c', fontSize: 13 }}>O continuar con</Divider>
 
       <Button
         block

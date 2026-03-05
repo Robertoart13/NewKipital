@@ -74,9 +74,7 @@ export function EmployeeCreatePage() {
     };
 
     if (crearAcceso && !payload.passwordInicial) {
-      form.setFields([
-        { name: 'passwordInicial', errors: ['Requerido cuando se crea acceso digital'] },
-      ]);
+      form.setFields([{ name: 'passwordInicial', errors: ['Requerido cuando se crea acceso digital'] }]);
       return;
     }
 

@@ -108,6 +108,7 @@ export function PayrollHolidaysPage() {
 
   useEffect(() => {
     void loadRows();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const filteredRows = useMemo(() => {
@@ -231,9 +232,7 @@ export function PayrollHolidaysPage() {
                       message.success('Feriado eliminado correctamente.');
                       await loadRows();
                     } catch (error) {
-                      message.error(
-                        error instanceof Error ? error.message : 'No se pudo eliminar el feriado.',
-                      );
+                      message.error(error instanceof Error ? error.message : 'No se pudo eliminar el feriado.');
                     }
                   })();
                 }}
@@ -245,6 +244,7 @@ export function PayrollHolidaysPage() {
         ),
       },
     ],
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [canDelete, canEdit, message, modal],
   );
 
@@ -286,9 +286,7 @@ export function PayrollHolidaysPage() {
           </Link>
           <div className={styles.pageTitleBlock}>
             <h1 className={styles.pageTitle}>Listado de Feriados</h1>
-            <p className={styles.pageSubtitle}>
-              Visualice y gestione los feriados para control de planilla
-            </p>
+            <p className={styles.pageSubtitle}>Visualice y gestione los feriados para control de planilla</p>
           </div>
         </div>
       </div>
@@ -322,13 +320,7 @@ export function PayrollHolidaysPage() {
 
       <Card className={styles.mainCard}>
         <div className={styles.mainCardBody}>
-          <Flex
-            align="center"
-            justify="space-between"
-            wrap="wrap"
-            gap={12}
-            className={styles.registrosHeader}
-          >
+          <Flex align="center" justify="space-between" wrap="wrap" gap={12} className={styles.registrosHeader}>
             <Flex align="center" gap={8} wrap="wrap">
               <FilterOutlined className={styles.registrosFilterIcon} />
               <h3 className={styles.registrosTitle}>Registros de Feriados</h3>
@@ -350,9 +342,7 @@ export function PayrollHolidaysPage() {
           <Collapse
             className={styles.filtersCollapse}
             activeKey={filtersExpanded ? ['filtros'] : []}
-            onChange={(keys) =>
-              setFiltersExpanded((Array.isArray(keys) ? keys : [keys]).includes('filtros'))
-            }
+            onChange={(keys) => setFiltersExpanded((Array.isArray(keys) ? keys : [keys]).includes('filtros'))}
             items={[
               {
                 key: 'filtros',
@@ -365,9 +355,7 @@ export function PayrollHolidaysPage() {
                         placeholder="Nombre o descripcion..."
                         prefix={<SearchOutlined />}
                         value={filters.search}
-                        onChange={(event) =>
-                          setFilters((prev) => ({ ...prev, search: event.target.value }))
-                        }
+                        onChange={(event) => setFilters((prev) => ({ ...prev, search: event.target.value }))}
                         allowClear
                         className={styles.filterInput}
                       />
@@ -436,8 +424,7 @@ export function PayrollHolidaysPage() {
             pagination={{
               pageSize,
               showSizeChanger: false,
-              showTotal: (total, [start, end]) =>
-                `Mostrando ${start} a ${end} de ${total} registros`,
+              showTotal: (total, [start, end]) => `Mostrando ${start} a ${end} de ${total} registros`,
             }}
             onRow={(record) => ({
               onClick: () => openEditModal(record),
@@ -456,12 +443,7 @@ export function PayrollHolidaysPage() {
         width={760}
         destroyOnHidden
         title={
-          <Flex
-            justify="space-between"
-            align="center"
-            wrap="nowrap"
-            style={{ width: '100%', gap: 16 }}
-          >
+          <Flex justify="space-between" align="center" wrap="nowrap" style={{ width: '100%', gap: 16 }}>
             <div className={styles.companyModalHeader}>
               <div className={styles.companyModalHeaderIcon}>
                 <AppstoreOutlined />
@@ -537,9 +519,7 @@ export function PayrollHolidaysPage() {
                       if (!value) return Promise.resolve();
                       const start = getFieldValue('fechaInicio');
                       if (!start || !value.isBefore(start, 'day')) return Promise.resolve();
-                      return Promise.reject(
-                        new Error('La fecha fin no puede ser menor que la fecha inicio'),
-                      );
+                      return Promise.reject(new Error('La fecha fin no puede ser menor que la fecha inicio'));
                     },
                   }),
                 ]}

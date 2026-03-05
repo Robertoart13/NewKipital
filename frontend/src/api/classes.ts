@@ -63,10 +63,7 @@ export async function createClass(payload: ClassPayload): Promise<ClassListItem>
   return res.json();
 }
 
-export async function updateClass(
-  id: number,
-  payload: Partial<ClassPayload>,
-): Promise<ClassListItem> {
+export async function updateClass(id: number, payload: Partial<ClassPayload>): Promise<ClassListItem> {
   const res = await httpFetch(`/classes/${id}`, {
     method: 'PUT',
     body: JSON.stringify(payload),
@@ -91,10 +88,7 @@ export async function reactivateClass(id: number): Promise<ClassListItem> {
   return res.json();
 }
 
-export async function fetchClassAuditTrail(
-  id: number,
-  limit = 200,
-): Promise<ClassAuditTrailItem[]> {
+export async function fetchClassAuditTrail(id: number, limit = 200): Promise<ClassAuditTrailItem[]> {
   const qs = new URLSearchParams({ limit: String(limit) });
   const res = await httpFetch(`/classes/${id}/audit-trail?${qs}`);
   if (!res.ok) {

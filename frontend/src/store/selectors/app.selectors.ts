@@ -7,9 +7,8 @@ const selectEnabledApps = (state: RootState) => state.auth.user?.enabledApps ?? 
 const selectActiveApp = (state: RootState) => state.activeApp.app;
 
 /** ¿El usuario tiene acceso a la app activa? */
-export const hasAccessToActiveApp = createSelector(
-  [selectEnabledApps, selectActiveApp],
-  (enabledApps, activeApp) => enabledApps.includes(activeApp),
+export const hasAccessToActiveApp = createSelector([selectEnabledApps, selectActiveApp], (enabledApps, activeApp) =>
+  enabledApps.includes(activeApp),
 );
 
 /** ¿El usuario tiene acceso a una app específica? */

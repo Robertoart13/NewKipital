@@ -19,12 +19,7 @@ interface EmployeesTableProps {
   canEdit?: boolean;
 }
 
-export function EmployeesTable({
-  data,
-  loading,
-  pagination,
-  canEdit = false,
-}: EmployeesTableProps) {
+export function EmployeesTable({ data, loading, pagination, canEdit = false }: EmployeesTableProps) {
   const columns: ColumnsType<EmployeeListItem> = [
     {
       title: 'Código',

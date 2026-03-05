@@ -105,6 +105,11 @@ export interface IntercompanyTransferSimulationResult {
     totalBruto: number;
     montoProvisionado: number;
   };
+  vacationBalance?: {
+    balance: number;
+    movedDays: number;
+    accountId: number | null;
+  };
 }
 
 export interface IntercompanyTransferSimulationPayload {
@@ -185,10 +190,7 @@ export async function createPayroll(payload: CreatePayrollPayload): Promise<Payr
   return res.json();
 }
 
-export async function updatePayroll(
-  id: number,
-  payload: UpdatePayrollPayload,
-): Promise<PayrollListItem> {
+export async function updatePayroll(id: number, payload: UpdatePayrollPayload): Promise<PayrollListItem> {
   const res = await httpFetch(`/payroll/${id}`, {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
@@ -223,27 +225,20 @@ export async function applyPayroll(id: number, version?: number): Promise<Payrol
 export async function inactivatePayroll(id: number): Promise<PayrollListItem> {
   const res = await httpFetch(`/payroll/${id}/inactivate`, { method: 'PATCH' });
   if (!res.ok)
-    throw new Error(
-      await extractApiErrorMessage(res, 'No se pudo inactivar la planilla. Intente nuevamente.'),
-    );
+    throw new Error(await extractApiErrorMessage(res, 'No se pudo inactivar la planilla. Intente nuevamente.'));
   return res.json();
 }
 
 export async function fetchPayrollSnapshotSummary(id: number): Promise<PayrollSnapshotSummary> {
   const res = await httpFetch(`/payroll/${id}/snapshot-summary`);
-  if (!res.ok)
-    throw new Error(await extractApiErrorMessage(res, 'Error al cargar resumen de snapshot'));
+  if (!res.ok) throw new Error(await extractApiErrorMessage(res, 'Error al cargar resumen de snapshot'));
   return res.json();
 }
 
-export async function fetchPayrollAuditTrail(
-  id: number,
-  limit = 200,
-): Promise<PayrollAuditTrailItem[]> {
+export async function fetchPayrollAuditTrail(id: number, limit = 200): Promise<PayrollAuditTrailItem[]> {
   const qs = new URLSearchParams({ limit: String(limit) });
   const res = await httpFetch(`/payroll/${id}/audit-trail?${qs}`);
-  if (!res.ok)
-    throw new Error(await extractApiErrorMessage(res, 'Error al cargar bitacora de planilla'));
+  if (!res.ok) throw new Error(await extractApiErrorMessage(res, 'Error al cargar bitacora de planilla'));
   return res.json();
 }
 

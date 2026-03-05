@@ -145,18 +145,11 @@ function isOvertimeEditableState(estado: number): boolean {
   return [1, 2, 3].includes(Number(estado));
 }
 
-function getPaneValue(
-  row: OvertimeUiRow,
-  key: PaneKey,
-  companies: Array<{ id: number; nombre: string }>,
-): string {
+function getPaneValue(row: OvertimeUiRow, key: PaneKey, companies: Array<{ id: number; nombre: string }>): string {
   if (key === 'empresa') {
-    return (
-      companies.find((c) => Number(c.id) === row.idEmpresa)?.nombre ?? `Empresa #${row.idEmpresa}`
-    );
+    return companies.find((c) => Number(c.id) === row.idEmpresa)?.nombre ?? `Empresa #${row.idEmpresa}`;
   }
-  if (key === 'empleado')
-    return (row.employeeLabel ?? `Empleado #${row.idEmpleado}`).trim() || '--';
+  if (key === 'empleado') return (row.employeeLabel ?? `Empleado #${row.idEmpleado}`).trim() || '--';
   if (key === 'periodoPago') return (row.periodoPagoResumen ?? '').trim() || '--';
   if (key === 'movimiento') return (row.movimientoResumen ?? '').trim() || '--';
   if (key === 'remuneracion')
@@ -203,9 +196,7 @@ function createDraftFromOvertimeDetail(detail: OvertimeDetailItem): OvertimeForm
           payrollId: line.payrollId,
           fechaEfecto: line.fechaEfecto ? dayjs(line.fechaEfecto) : undefined,
           movimientoId: line.movimientoId,
-          fechaInicioHoraExtra: line.fechaInicioHoraExtra
-            ? dayjs(line.fechaInicioHoraExtra)
-            : undefined,
+          fechaInicioHoraExtra: line.fechaInicioHoraExtra ? dayjs(line.fechaInicioHoraExtra) : undefined,
           fechaFinHoraExtra: line.fechaFinHoraExtra ? dayjs(line.fechaFinHoraExtra) : undefined,
           tipoJornadaHorasExtras: line.tipoJornadaHorasExtras,
           cantidad: line.cantidad,
@@ -240,21 +231,14 @@ export function HoursExtrasPage() {
   const { message, modal } = AntdApp.useApp();
   const companies = useAppSelector((state) => state.auth.companies);
   const activeCompany = useAppSelector((state) => state.activeCompany.company);
-  const canCreate = useAppSelector((state) =>
-    hasPermission(state, 'hr-action-horas-extras:create'),
-  );
+  const canCreate = useAppSelector((state) => hasPermission(state, 'hr-action-horas-extras:create'));
   const canEdit = useAppSelector((state) => hasPermission(state, 'hr-action-horas-extras:edit'));
-  const canCancel = useAppSelector((state) =>
-    hasPermission(state, 'hr-action-horas-extras:cancel'),
-  );
+  const canCancel = useAppSelector((state) => hasPermission(state, 'hr-action-horas-extras:cancel'));
   const canView = useAppSelector(
-    (state) =>
-      hasPermission(state, 'hr-action-horas-extras:view') || hasPermission(state, 'hr_action:view'),
+    (state) => hasPermission(state, 'hr-action-horas-extras:view') || hasPermission(state, 'hr_action:view'),
   );
   const canApprove = useAppSelector((state) => hasPermission(state, 'hr_action:approve'));
-  const canViewEmployeeSensitive = useAppSelector((state) =>
-    hasPermission(state, 'employee:view-sensitive'),
-  );
+  const canViewEmployeeSensitive = useAppSelector((state) => hasPermission(state, 'employee:view-sensitive'));
 
   const defaultCompanyId = useMemo(() => {
     const active = Number(activeCompany?.id);
@@ -396,9 +380,7 @@ export function HoursExtrasPage() {
       const filtered = data.filter((item) => item.tipoAccion.trim().toLowerCase() === 'hora_extra');
       setRows(filtered);
     } catch (error) {
-      message.error(
-        error instanceof Error ? error.message : 'No se pudieron cargar las horas extra.',
-      );
+      message.error(error instanceof Error ? error.message : 'No se pudieron cargar las horas extra.');
     } finally {
       setLoading(false);
     }
@@ -425,8 +407,7 @@ export function HoursExtrasPage() {
         message.destroy(key);
       } catch (error) {
         message.error({
-          content:
-            error instanceof Error ? error.message : 'No se pudo cargar el detalle de hora extra.',
+          content: error instanceof Error ? error.message : 'No se pudo cargar el detalle de hora extra.',
           key,
         });
         setOpenModal(false);
@@ -447,9 +428,7 @@ export function HoursExtrasPage() {
         setAuditTrail(rowsAudit ?? []);
       } catch (error) {
         setAuditTrail([]);
-        message.error(
-          error instanceof Error ? error.message : 'Error al cargar bitacora de hora extra',
-        );
+        message.error(error instanceof Error ? error.message : 'Error al cargar bitacora de hora extra');
       } finally {
         setLoadingAuditTrail(false);
       }
@@ -590,10 +569,7 @@ export function HoursExtrasPage() {
     return result;
   }, [companies, dataFilteredByPaneSelections, paneSearch]);
 
-  const rowsFiltered = useMemo(
-    () => dataFilteredByPaneSelections(),
-    [dataFilteredByPaneSelections],
-  );
+  const rowsFiltered = useMemo(() => dataFilteredByPaneSelections(), [dataFilteredByPaneSelections]);
 
   const columns: ColumnsType<OvertimeUiRow> = useMemo(
     () => [
@@ -602,8 +578,7 @@ export function HoursExtrasPage() {
         key: 'empresa',
         width: 240,
         render: (_, row) =>
-          companies.find((company) => Number(company.id) === row.idEmpresa)?.nombre ??
-          `Empresa #${row.idEmpresa}`,
+          companies.find((company) => Number(company.id) === row.idEmpresa)?.nombre ?? `Empresa #${row.idEmpresa}`,
       },
       {
         title: 'EMPLEADO',
@@ -651,18 +626,13 @@ export function HoursExtrasPage() {
         render: (_, row) => {
           const canInvalidate = canCancel && [1, 2, 3].includes(row.estado);
           const nextAction = NEXT_STATE_ACTION_CONFIG[row.estado];
-          const canAdvance = nextAction
-            ? nextAction.requiredPermission === 'approve'
-              ? canApprove
-              : canEdit
-            : false;
+          const canAdvance = nextAction ? (nextAction.requiredPermission === 'approve' ? canApprove : canEdit) : false;
 
           const onInvalidate = (e: MouseEvent<HTMLElement>) => {
             e.stopPropagation();
             modal.confirm({
               title: 'Confirmar invalidacion',
-              content:
-                'Esta accion se marcara como invalidada y no seguira su flujo operativo. Desea continuar?',
+              content: 'Esta accion se marcara como invalidada y no seguira su flujo operativo. Desea continuar?',
               okText: 'Si, invalidar',
               cancelText: 'Cancelar',
               centered: true,
@@ -679,10 +649,7 @@ export function HoursExtrasPage() {
                   await loadRows();
                 } catch (error) {
                   message.error({
-                    content:
-                      error instanceof Error
-                        ? error.message
-                        : 'No se pudo invalidar la hora extra.',
+                    content: error instanceof Error ? error.message : 'No se pudo invalidar la hora extra.',
                     key,
                   });
                 }
@@ -723,10 +690,7 @@ export function HoursExtrasPage() {
                         await loadRows();
                       } catch (error) {
                         message.error({
-                          content:
-                            error instanceof Error
-                              ? error.message
-                              : 'No se pudo actualizar el estado.',
+                          content: error instanceof Error ? error.message : 'No se pudo actualizar el estado.',
                           key,
                         });
                       }
@@ -809,9 +773,7 @@ export function HoursExtrasPage() {
               </div>
               <div>
                 <h2 className={styles.gestionTitle}>Gestión de horas extra</h2>
-                <p className={styles.gestionDesc}>
-                  Encabezado de acción + múltiples líneas por planilla
-                </p>
+                <p className={styles.gestionDesc}>Encabezado de acción + múltiples líneas por planilla</p>
               </div>
             </Flex>
             <Button
@@ -835,13 +797,7 @@ export function HoursExtrasPage() {
 
       <Card className={styles.mainCard} style={{ marginBottom: 0 }}>
         <div className={styles.mainCardBody}>
-          <Flex
-            align="center"
-            justify="space-between"
-            wrap="wrap"
-            gap={12}
-            className={styles.registrosHeader}
-          >
+          <Flex align="center" justify="space-between" wrap="wrap" gap={12} className={styles.registrosHeader}>
             <Flex align="center" gap={12} wrap="wrap">
               <Flex align="center" gap={8}>
                 <FilterOutlined className={styles.registrosFilterIcon} />
@@ -876,9 +832,7 @@ export function HoursExtrasPage() {
                   value: Number(value),
                   label: meta.text,
                 }))}
-                onChange={(values) =>
-                  setSelectedEstados((values ?? []).map((item) => Number(item)))
-                }
+                onChange={(values) => setSelectedEstados((values ?? []).map((item) => Number(item)))}
               />
               <Button icon={<ReloadOutlined />} onClick={() => void loadRows()}>
                 Refrescar
@@ -888,9 +842,7 @@ export function HoursExtrasPage() {
 
           <Collapse
             activeKey={filtersExpanded ? ['filtros'] : []}
-            onChange={(keys) =>
-              setFiltersExpanded((Array.isArray(keys) ? keys : [keys]).includes('filtros'))
-            }
+            onChange={(keys) => setFiltersExpanded((Array.isArray(keys) ? keys : [keys]).includes('filtros'))}
             className={styles.filtersCollapse}
             items={[
               {
@@ -898,13 +850,7 @@ export function HoursExtrasPage() {
                 label: 'Filtros',
                 children: (
                   <>
-                    <Flex
-                      justify="space-between"
-                      align="center"
-                      wrap="wrap"
-                      gap={12}
-                      style={{ marginBottom: 16 }}
-                    >
+                    <Flex justify="space-between" align="center" wrap="wrap" gap={12} style={{ marginBottom: 16 }}>
                       <Input
                         placeholder="Search"
                         prefix={<SearchOutlined />}
@@ -933,21 +879,13 @@ export function HoursExtrasPage() {
                             <Flex gap={6} align="center" wrap="wrap">
                               <Input
                                 value={paneSearch[pane.key]}
-                                onChange={(e) =>
-                                  setPaneSearch((prev) => ({ ...prev, [pane.key]: e.target.value }))
-                                }
+                                onChange={(e) => setPaneSearch((prev) => ({ ...prev, [pane.key]: e.target.value }))}
                                 placeholder={pane.title}
-                                prefix={
-                                  <SearchOutlined style={{ fontSize: 12, color: '#8c8c8c' }} />
-                                }
+                                prefix={<SearchOutlined style={{ fontSize: 12, color: '#8c8c8c' }} />}
                                 suffix={
                                   <Flex gap={2}>
-                                    <SortAscendingOutlined
-                                      style={{ fontSize: 10, color: '#8c8c8c' }}
-                                    />
-                                    <SortDescendingOutlined
-                                      style={{ fontSize: 10, color: '#8c8c8c' }}
-                                    />
+                                    <SortAscendingOutlined style={{ fontSize: 10, color: '#8c8c8c' }} />
+                                    <SortDescendingOutlined style={{ fontSize: 10, color: '#8c8c8c' }} />
                                   </Flex>
                                 }
                                 size="middle"
@@ -957,24 +895,16 @@ export function HoursExtrasPage() {
                               <Button
                                 size="middle"
                                 icon={<SearchOutlined />}
-                                onClick={() =>
-                                  setPaneOpen((prev) => ({ ...prev, [pane.key]: true }))
-                                }
+                                onClick={() => setPaneOpen((prev) => ({ ...prev, [pane.key]: true }))}
                                 title="Abrir opciones"
                               />
-                              <Button
-                                size="middle"
-                                onClick={() => clearPaneSelection(pane.key)}
-                                title="Limpiar"
-                              >
+                              <Button size="middle" onClick={() => clearPaneSelection(pane.key)} title="Limpiar">
                                 x
                               </Button>
                               <Button
                                 size="middle"
                                 icon={paneOpen[pane.key] ? <UpOutlined /> : <DownOutlined />}
-                                onClick={() =>
-                                  setPaneOpen((prev) => ({ ...prev, [pane.key]: !prev[pane.key] }))
-                                }
+                                onClick={() => setPaneOpen((prev) => ({ ...prev, [pane.key]: !prev[pane.key] }))}
                                 title={paneOpen[pane.key] ? 'Colapsar' : 'Expandir'}
                               />
                             </Flex>
@@ -991,24 +921,16 @@ export function HoursExtrasPage() {
                                   style={{ display: 'flex', flexDirection: 'column', gap: 8 }}
                                 >
                                   {paneOptions[pane.key].map((option) => (
-                                    <Checkbox
-                                      key={`${pane.key}:${option.value}`}
-                                      value={option.value}
-                                    >
+                                    <Checkbox key={`${pane.key}:${option.value}`} value={option.value}>
                                       <Space>
                                         <span>{option.value}</span>
-                                        <Badge
-                                          count={option.count}
-                                          style={{ backgroundColor: '#5a6c7d' }}
-                                        />
+                                        <Badge count={option.count} style={{ backgroundColor: '#5a6c7d' }} />
                                       </Space>
                                     </Checkbox>
                                   ))}
                                 </Checkbox.Group>
                                 {paneOptions[pane.key].length === 0 && (
-                                  <span className={styles.emptyHint}>
-                                    Sin valores para este filtro
-                                  </span>
+                                  <span className={styles.emptyHint}>Sin valores para este filtro</span>
                                 )}
                               </div>
                             )}
@@ -1031,8 +953,7 @@ export function HoursExtrasPage() {
             pagination={{
               pageSize,
               showSizeChanger: false,
-              showTotal: (total, [start, end]) =>
-                `Mostrando ${start} a ${end} de ${total} registros`,
+              showTotal: (total, [start, end]) => `Mostrando ${start} a ${end} de ${total} registros`,
             }}
             onRow={(record) => ({
               onClick: () => {

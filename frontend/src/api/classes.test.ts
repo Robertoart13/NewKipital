@@ -49,9 +49,7 @@ describe('classes api', () => {
   });
 
   it('updateClass should call endpoint with put payload', async () => {
-    mockHttpFetch.mockResolvedValue(
-      okJson({ id: 2, nombre: 'Clase', codigo: 'CL-01', esInactivo: 0 }),
-    );
+    mockHttpFetch.mockResolvedValue(okJson({ id: 2, nombre: 'Clase', codigo: 'CL-01', esInactivo: 0 }));
     await updateClass(2, { nombre: 'Clase' });
     expect(mockHttpFetch).toHaveBeenCalledWith('/classes/2', {
       method: 'PUT',

@@ -20,10 +20,7 @@ describe('permissions api', () => {
       json: vi.fn().mockResolvedValue({ permissions: ['a'], roles: ['b'] }),
     } as any);
     const result = await fetchPermissionsForCompany('5', 'kpital');
-    expect(mockHttpFetch).toHaveBeenCalledWith(
-      '/auth/switch-company',
-      expect.objectContaining({ method: 'POST' }),
-    );
+    expect(mockHttpFetch).toHaveBeenCalledWith('/auth/switch-company', expect.objectContaining({ method: 'POST' }));
     expect(result.permissions).toEqual(['a']);
   });
 

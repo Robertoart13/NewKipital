@@ -1,9 +1,4 @@
-import {
-  ArrowLeftOutlined,
-  PlusOutlined,
-  QuestionCircleOutlined,
-  TagsOutlined,
-} from '@ant-design/icons';
+import { ArrowLeftOutlined, PlusOutlined, QuestionCircleOutlined, TagsOutlined } from '@ant-design/icons';
 import { App as AntdApp, Button, Card, Flex, Form, Spin, Tag, Tooltip } from 'antd';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
@@ -97,9 +92,7 @@ export function PayrollArticlesManagementPage() {
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [showInactive, setShowInactive] = useState(false);
-  const [selectedCompanyIds, setSelectedCompanyIds] = useState<number[]>(
-    defaultCompanyId ? [defaultCompanyId] : [],
-  );
+  const [selectedCompanyIds, setSelectedCompanyIds] = useState<number[]>(defaultCompanyId ? [defaultCompanyId] : []);
   const [openModal, setOpenModal] = useState(false);
   const [editing, setEditing] = useState<PayrollArticleListItem | null>(null);
   const editingId = editing?.id ?? null;
@@ -144,12 +137,8 @@ export function PayrollArticlesManagementPage() {
   const [loadingCatalogs, setLoadingCatalogs] = useState(true);
   const [loadingFormAccounts, setLoadingFormAccounts] = useState(false);
   const [resolvedCompanyId, setResolvedCompanyId] = useState<number | undefined>(defaultCompanyId);
-  const [resolvedTipoArticuloId, setResolvedTipoArticuloId] = useState<number | undefined>(
-    undefined,
-  );
-  const [companyAccountMap, setCompanyAccountMap] = useState<
-    Record<number, AccountingAccountOption[]>
-  >({});
+  const [resolvedTipoArticuloId, setResolvedTipoArticuloId] = useState<number | undefined>(undefined);
+  const [companyAccountMap, setCompanyAccountMap] = useState<Record<number, AccountingAccountOption[]>>({});
 
   const activeArticleTypeIds = useMemo(
     () => new Set(articleTypes.filter((t) => t.esInactivo === 0).map((t) => t.id)),
@@ -159,20 +148,11 @@ export function PayrollArticlesManagementPage() {
     () => new Set(actionTypes.filter((t) => t.estado === 1).map((t) => t.id)),
     [actionTypes],
   );
-  const activeArticleTypes = useMemo(
-    () => articleTypes.filter((t) => t.esInactivo === 0),
-    [articleTypes],
-  );
+  const activeArticleTypes = useMemo(() => articleTypes.filter((t) => t.esInactivo === 0), [articleTypes]);
   const activeActionTypes = useMemo(() => actionTypes.filter((t) => t.estado === 1), [actionTypes]);
 
-  const tipoArticuloMap = useMemo(
-    () => new Map(articleTypes.map((t) => [t.id, t.nombre])),
-    [articleTypes],
-  );
-  const tipoAccionMap = useMemo(
-    () => new Map(actionTypes.map((t) => [t.id, t.nombre])),
-    [actionTypes],
-  );
+  const tipoArticuloMap = useMemo(() => new Map(articleTypes.map((t) => [t.id, t.nombre])), [articleTypes]);
+  const tipoAccionMap = useMemo(() => new Map(actionTypes.map((t) => [t.id, t.nombre])), [actionTypes]);
 
   const accountLabelMap = useMemo(() => {
     const map = new Map<number, string>();
@@ -191,10 +171,7 @@ export function PayrollArticlesManagementPage() {
     return map;
   }, [companyAccountMap, formAccounts]);
 
-  const activeFormAccounts = useMemo(
-    () => formAccounts.filter((account) => account.esInactivo === 0),
-    [formAccounts],
-  );
+  const activeFormAccounts = useMemo(() => formAccounts.filter((account) => account.esInactivo === 0), [formAccounts]);
 
   const loadRows = useCallback(
     async (companyIds?: number[]) => {
@@ -212,16 +189,10 @@ export function PayrollArticlesManagementPage() {
           setRows([]);
           return;
         }
-        const data = await fetchPayrollArticles(
-          targetCompanyIds[0],
-          showInactive,
-          targetCompanyIds,
-        );
+        const data = await fetchPayrollArticles(targetCompanyIds[0], showInactive, targetCompanyIds);
         setRows(data);
       } catch (error) {
-        message.error(
-          error instanceof Error ? error.message : 'Error al cargar articulos de nomina',
-        );
+        message.error(error instanceof Error ? error.message : 'Error al cargar articulos de nomina');
         setRows([]);
       } finally {
         setLoading(false);
@@ -233,10 +204,7 @@ export function PayrollArticlesManagementPage() {
   const loadCatalogs = useCallback(async () => {
     setLoadingCatalogs(true);
     try {
-      const [types, actions] = await Promise.all([
-        fetchPayrollArticleTypes(),
-        fetchPersonalActionTypes(),
-      ]);
+      const [types, actions] = await Promise.all([fetchPayrollArticleTypes(), fetchPersonalActionTypes()]);
       setArticleTypes(types);
       setActionTypes(actions);
     } catch (error) {
@@ -284,11 +252,7 @@ export function PayrollArticlesManagementPage() {
       const idsReferencia = PAYROLL_ARTICLE_TYPE_META[tipoId]?.idsReferencia ?? [];
       setLoadingFormAccounts(true);
       try {
-        const accounts = await fetchPayrollArticleAccounts(
-          companyId,
-          idsReferencia,
-          includeInactive ?? false,
-        );
+        const accounts = await fetchPayrollArticleAccounts(companyId, idsReferencia, includeInactive ?? false);
         setFormAccounts(accounts);
       } catch (error) {
         message.error(error instanceof Error ? error.message : 'Error al cargar cuentas contables');
@@ -327,15 +291,11 @@ export function PayrollArticlesManagementPage() {
       if (!term) return true;
       return (
         (row.nombre ?? '').toLowerCase().includes(term) ||
-        (companies.find((c) => c.id === row.idEmpresa)?.nombre ?? '')
-          .toLowerCase()
-          .includes(term) ||
+        (companies.find((c) => c.id === row.idEmpresa)?.nombre ?? '').toLowerCase().includes(term) ||
         (tipoArticuloMap.get(row.idTipoArticuloNomina) ?? '').toLowerCase().includes(term) ||
         (tipoAccionMap.get(row.idTipoAccionPersonal) ?? '').toLowerCase().includes(term) ||
         (accountLabelMap.get(row.idCuentaGasto) ?? '').toLowerCase().includes(term) ||
-        (row.idCuentaPasivo
-          ? (accountLabelMap.get(row.idCuentaPasivo) ?? '').toLowerCase().includes(term)
-          : false)
+        (row.idCuentaPasivo ? (accountLabelMap.get(row.idCuentaPasivo) ?? '').toLowerCase().includes(term) : false)
       );
     },
     [search, companies, tipoArticuloMap, tipoAccionMap, accountLabelMap],
@@ -349,28 +309,13 @@ export function PayrollArticlesManagementPage() {
           if (pane.key === excludePane) continue;
           const selected = paneSelections[pane.key];
           if (selected.length === 0) continue;
-          const value = getPaneValue(
-            row,
-            pane.key,
-            companies,
-            tipoArticuloMap,
-            tipoAccionMap,
-            accountLabelMap,
-          );
+          const value = getPaneValue(row, pane.key, companies, tipoArticuloMap, tipoAccionMap, accountLabelMap);
           if (!selected.includes(value)) return false;
         }
         return true;
       });
     },
-    [
-      companies,
-      matchesGlobalSearch,
-      paneSelections,
-      rows,
-      tipoArticuloMap,
-      tipoAccionMap,
-      accountLabelMap,
-    ],
+    [companies, matchesGlobalSearch, paneSelections, rows, tipoArticuloMap, tipoAccionMap, accountLabelMap],
   );
 
   const paneOptions = useMemo(() => {
@@ -388,14 +333,7 @@ export function PayrollArticlesManagementPage() {
       const filteredData = dataFilteredByPaneSelections(pane.key);
       const counter = new Map<string, number>();
       for (const row of filteredData) {
-        const value = getPaneValue(
-          row,
-          pane.key,
-          companies,
-          tipoArticuloMap,
-          tipoAccionMap,
-          accountLabelMap,
-        ).trim();
+        const value = getPaneValue(row, pane.key, companies, tipoArticuloMap, tipoAccionMap, accountLabelMap).trim();
         if (!value) continue;
         counter.set(value, (counter.get(value) ?? 0) + 1);
       }
@@ -408,19 +346,9 @@ export function PayrollArticlesManagementPage() {
     }
 
     return result;
-  }, [
-    companies,
-    dataFilteredByPaneSelections,
-    paneSearch,
-    tipoArticuloMap,
-    tipoAccionMap,
-    accountLabelMap,
-  ]);
+  }, [companies, dataFilteredByPaneSelections, paneSearch, tipoArticuloMap, tipoAccionMap, accountLabelMap]);
 
-  const filteredRows = useMemo(
-    () => dataFilteredByPaneSelections(),
-    [dataFilteredByPaneSelections],
-  );
+  const filteredRows = useMemo(() => dataFilteredByPaneSelections(), [dataFilteredByPaneSelections]);
 
   const clearAllFilters = () => {
     setSearch('');
@@ -631,9 +559,7 @@ export function PayrollArticlesManagementPage() {
 
       const confirmed = await new Promise<boolean>((resolve) => {
         modal.confirm({
-          title: editing
-            ? 'Confirmar edicion de articulo de nomina'
-            : 'Confirmar creacion de articulo de nomina',
+          title: editing ? 'Confirmar edicion de articulo de nomina' : 'Confirmar creacion de articulo de nomina',
           content: editing ? 'Se guardaran los cambios.' : 'Se creara el nuevo articulo de nomina.',
           icon: <QuestionCircleOutlined style={{ color: '#5a6c7d', fontSize: 40 }} />,
           okText: editing ? 'Guardar cambios' : 'Crear',
@@ -655,9 +581,7 @@ export function PayrollArticlesManagementPage() {
       const resolvedTipoAccion = values.idTipoAccionPersonalCambio ?? values.idTipoAccionPersonal;
       const resolvedCuentaGasto = values.idCuentaGastoCambio ?? values.idCuentaGasto;
       const resolvedCuentaPasivo = values.idCuentaPasivoCambio ?? values.idCuentaPasivo;
-      const meta = resolvedTipoArticulo
-        ? PAYROLL_ARTICLE_TYPE_META[resolvedTipoArticulo]
-        : undefined;
+      const meta = resolvedTipoArticulo ? PAYROLL_ARTICLE_TYPE_META[resolvedTipoArticulo] : undefined;
       const allowsPasivo = meta?.allowsPasivo ?? false;
 
       if (!resolvedEmpresa) {
@@ -681,23 +605,15 @@ export function PayrollArticlesManagementPage() {
         return;
       }
 
-      const isPrimaryAccountValidForSelection = formAccounts.some(
-        (account) => account.id === resolvedCuentaGasto,
-      );
+      const isPrimaryAccountValidForSelection = formAccounts.some((account) => account.id === resolvedCuentaGasto);
       if (!isPrimaryAccountValidForSelection) {
-        message.error(
-          'La cuenta principal no pertenece a la empresa y tipo de articulo seleccionados.',
-        );
+        message.error('La cuenta principal no pertenece a la empresa y tipo de articulo seleccionados.');
         return;
       }
       if (allowsPasivo && resolvedCuentaPasivo) {
-        const isPasivoAccountValidForSelection = formAccounts.some(
-          (account) => account.id === resolvedCuentaPasivo,
-        );
+        const isPasivoAccountValidForSelection = formAccounts.some((account) => account.id === resolvedCuentaPasivo);
         if (!isPasivoAccountValidForSelection) {
-          message.error(
-            'La cuenta pasivo no pertenece a la empresa y tipo de articulo seleccionados.',
-          );
+          message.error('La cuenta pasivo no pertenece a la empresa y tipo de articulo seleccionados.');
           return;
         }
       }
@@ -820,8 +736,7 @@ export function PayrollArticlesManagementPage() {
       dataIndex: 'idCuentaPasivo',
       key: 'idCuentaPasivo',
       width: 240,
-      render: (value: number | null) =>
-        value ? (accountLabelMap.get(value) ?? `Cuenta #${value}`) : '-',
+      render: (value: number | null) => (value ? (accountLabelMap.get(value) ?? `Cuenta #${value}`) : '-'),
     },
     {
       title: 'Estado',
@@ -862,9 +777,7 @@ export function PayrollArticlesManagementPage() {
         return (
           <div>
             <div style={{ fontWeight: 600, color: '#3d4f5c' }}>{actorLabel}</div>
-            {row.actorEmail && (
-              <div style={{ color: '#8c8c8c', fontSize: 12 }}>{row.actorEmail}</div>
-            )}
+            {row.actorEmail && <div style={{ color: '#8c8c8c', fontSize: 12 }}>{row.actorEmail}</div>}
           </div>
         );
       },
@@ -892,10 +805,7 @@ export function PayrollArticlesManagementPage() {
             {changes.length > 0 ? (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                 {changes.map((change, index) => (
-                  <div
-                    key={`${row.id}-${change.campo}-${index}`}
-                    style={{ fontSize: 12, lineHeight: 1.4 }}
-                  >
+                  <div key={`${row.id}-${change.campo}-${index}`} style={{ fontSize: 12, lineHeight: 1.4 }}>
                     <div>
                       <strong>{change.campo}</strong>
                     </div>
@@ -927,9 +837,7 @@ export function PayrollArticlesManagementPage() {
     );
   }
 
-  const resolvedMeta = resolvedTipoArticuloId
-    ? PAYROLL_ARTICLE_TYPE_META[resolvedTipoArticuloId]
-    : undefined;
+  const resolvedMeta = resolvedTipoArticuloId ? PAYROLL_ARTICLE_TYPE_META[resolvedTipoArticuloId] : undefined;
   const canLoadAccountOptions = Boolean(resolvedCompanyId && resolvedTipoArticuloId);
   const primaryLabel = resolvedMeta?.primaryLabel ?? 'Cuenta Principal';
   const secondaryLabel = resolvedMeta?.secondaryLabel ?? 'Cuenta Pasivo';
@@ -953,9 +861,7 @@ export function PayrollArticlesManagementPage() {
           </Link>
           <div className={styles.pageTitleBlock}>
             <h1 className={styles.pageTitle}>Articulos de Nomina</h1>
-            <p className={styles.pageSubtitle}>
-              Visualice y gestione los articulos de nomina configurados por empresa
-            </p>
+            <p className={styles.pageSubtitle}>Visualice y gestione los articulos de nomina configurados por empresa</p>
           </div>
         </div>
       </div>
@@ -1011,9 +917,7 @@ export function PayrollArticlesManagementPage() {
               onSearchChange={setSearch}
               paneConfig={PANE_CONFIG}
               paneSearch={paneSearch}
-              onPaneSearchChange={(key, value) =>
-                setPaneSearch((prev) => ({ ...prev, [key]: value }))
-              }
+              onPaneSearchChange={(key, value) => setPaneSearch((prev) => ({ ...prev, [key]: value }))}
               paneOptions={paneOptions}
               paneSelections={paneSelections}
               onPaneSelectionsChange={(key, selections) =>

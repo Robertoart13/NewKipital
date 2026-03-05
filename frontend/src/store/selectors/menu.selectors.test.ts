@@ -29,9 +29,7 @@ describe('menu.selectors permissions filtering', () => {
   });
 
   it('shows incapacidades when specific permission is present', () => {
-    const visible = getVisibleMenuItems(
-      buildState(['hr_action:view', 'hr-action-incapacidades:view']),
-    );
+    const visible = getVisibleMenuItems(buildState(['hr_action:view', 'hr-action-incapacidades:view']));
     expect(findMenuItemById(visible, 'incapacidades')).not.toBeNull();
   });
 
@@ -41,9 +39,7 @@ describe('menu.selectors permissions filtering', () => {
   });
 
   it('shows descuentos when specific permission is present', () => {
-    const visible = getVisibleMenuItems(
-      buildState(['hr_action:view', 'hr-action-descuentos:view']),
-    );
+    const visible = getVisibleMenuItems(buildState(['hr_action:view', 'hr-action-descuentos:view']));
     expect(findMenuItemById(visible, 'descuentos')).not.toBeNull();
   });
 

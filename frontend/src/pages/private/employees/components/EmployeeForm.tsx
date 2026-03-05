@@ -50,8 +50,7 @@ export function EmployeeForm({
 }: EmployeeFormProps) {
   const crearAccesoTimewise = Form.useWatch('crearAccesoTimewise', form) ?? false;
   const crearAccesoKpital = Form.useWatch('crearAccesoKpital', form) ?? false;
-  const monedaSalarioSeleccionada =
-    (Form.useWatch('monedaSalario', form) as string | undefined) ?? 'CRC';
+  const monedaSalarioSeleccionada = (Form.useWatch('monedaSalario', form) as string | undefined) ?? 'CRC';
   const currencySymbol = getCurrencySymbol(monedaSalarioSeleccionada);
   const crearAcceso = crearAccesoTimewise || crearAccesoKpital;
 
@@ -77,21 +76,12 @@ export function EmployeeForm({
         <Input type="email" />
       </Form.Item>
 
-      <Form.Item
-        label="Sección 2 — Datos Personales"
-        style={{ marginBottom: 8, marginTop: 16, fontWeight: 600 }}
-      />
+      <Form.Item label="Sección 2 — Datos Personales" style={{ marginBottom: 8, marginTop: 16, fontWeight: 600 }} />
       <Form.Item name="genero" label="Género">
-        <Select
-          allowClear
-          options={GENERO_OPTIONS.map((o) => ({ value: o.value, label: o.label }))}
-        />
+        <Select allowClear options={GENERO_OPTIONS.map((o) => ({ value: o.value, label: o.label }))} />
       </Form.Item>
       <Form.Item name="estadoCivil" label="Estado Civil">
-        <Select
-          allowClear
-          options={ESTADO_CIVIL_OPTIONS.map((o) => ({ value: o.value, label: o.label }))}
-        />
+        <Select allowClear options={ESTADO_CIVIL_OPTIONS.map((o) => ({ value: o.value, label: o.label }))} />
       </Form.Item>
       <Form.Item name="cantidadHijos" label="Cantidad de Hijos" initialValue={0}>
         <InputNumber min={0} style={{ width: '100%' }} />
@@ -103,10 +93,7 @@ export function EmployeeForm({
         <Input.TextArea />
       </Form.Item>
 
-      <Form.Item
-        label="Sección 3 — Organización"
-        style={{ marginBottom: 8, marginTop: 16, fontWeight: 600 }}
-      />
+      <Form.Item label="Sección 3 — Organización" style={{ marginBottom: 8, marginTop: 16, fontWeight: 600 }} />
       <Form.Item name="idDepartamento" label="Departamento">
         <Select
           allowClear
@@ -132,10 +119,7 @@ export function EmployeeForm({
         />
       </Form.Item>
 
-      <Form.Item
-        label="Sección 4 — Contrato y Pago"
-        style={{ marginBottom: 8, marginTop: 16, fontWeight: 600 }}
-      />
+      <Form.Item label="Sección 4 — Contrato y Pago" style={{ marginBottom: 8, marginTop: 16, fontWeight: 600 }} />
       <Form.Item
         name="fechaIngreso"
         label="Fecha Ingreso"
@@ -158,16 +142,10 @@ export function EmployeeForm({
         <DatePicker style={{ width: '100%' }} />
       </Form.Item>
       <Form.Item name="tipoContrato" label="Tipo Contrato">
-        <Select
-          allowClear
-          options={TIPO_CONTRATO_OPTIONS.map((o) => ({ value: o.value, label: o.label }))}
-        />
+        <Select allowClear options={TIPO_CONTRATO_OPTIONS.map((o) => ({ value: o.value, label: o.label }))} />
       </Form.Item>
       <Form.Item name="jornada" label="Jornada">
-        <Select
-          allowClear
-          options={JORNADA_OPTIONS.map((o) => ({ value: o.value, label: o.label }))}
-        />
+        <Select allowClear options={JORNADA_OPTIONS.map((o) => ({ value: o.value, label: o.label }))} />
       </Form.Item>
       <Form.Item name="idPeriodoPago" label="Periodo de Pago">
         <Select
@@ -185,8 +163,7 @@ export function EmployeeForm({
             validator: (_, v) => {
               if (v == null || v === '') return Promise.resolve();
               const n = Number(v);
-              if (isNaN(n) || n <= 0)
-                return Promise.reject(new Error('El salario debe ser mayor a cero'));
+              if (isNaN(n) || n <= 0) return Promise.reject(new Error('El salario debe ser mayor a cero'));
               if (isMoneyOverMax(n)) return Promise.reject(new Error('Monto demasiado alto'));
               return Promise.resolve();
             },
@@ -218,15 +195,8 @@ export function EmployeeForm({
 
       {!readOnly && !editMode && (
         <>
-          <Form.Item
-            label="Sección 5 — Acceso Digital"
-            style={{ marginBottom: 8, marginTop: 16, fontWeight: 600 }}
-          />
-          <Form.Item
-            name="crearAccesoTimewise"
-            label="Crear acceso a TimeWise"
-            valuePropName="checked"
-          >
+          <Form.Item label="Sección 5 — Acceso Digital" style={{ marginBottom: 8, marginTop: 16, fontWeight: 600 }} />
+          <Form.Item name="crearAccesoTimewise" label="Crear acceso a TimeWise" valuePropName="checked">
             <Switch />
           </Form.Item>
           {crearAccesoTimewise && rolesTimewise.length > 0 && (

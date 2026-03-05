@@ -85,6 +85,7 @@ export function PermissionsAdminListPage() {
 
   useEffect(() => {
     void loadData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [includeInactive]);
 
   const filteredItems = useMemo(() => {
@@ -92,10 +93,7 @@ export function PermissionsAdminListPage() {
     if (!term) return items;
 
     return items.filter((item) =>
-      [item.codigo, item.nombre, item.modulo, item.descripcion ?? '']
-        .join(' ')
-        .toLowerCase()
-        .includes(term),
+      [item.codigo, item.nombre, item.modulo, item.descripcion ?? ''].join(' ').toLowerCase().includes(term),
     );
   }, [items, search]);
 
@@ -244,6 +242,7 @@ export function PermissionsAdminListPage() {
       });
     }
     return base;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isEditable, saving]);
 
   const location = useLocation();
@@ -303,8 +302,8 @@ export function PermissionsAdminListPage() {
               <div>
                 <h2 className={styles.gestionTitle}>Gestion de Permisos</h2>
                 <p className={styles.gestionDesc}>
-                  Administre el catalogo de permisos modulo:accion utilizado por los roles y
-                  configuraciones de seguridad.
+                  Administre el catalogo de permisos modulo:accion utilizado por los roles y configuraciones de
+                  seguridad.
                 </p>
               </div>
             </Flex>
@@ -313,9 +312,7 @@ export function PermissionsAdminListPage() {
       </Card>
 
       <div className={styles.infoBanner}>
-        {isEditable
-          ? 'Modo administración por interfaz.'
-          : 'Modo controlado por migración. Catálogo solo lectura.'}
+        {isEditable ? 'Modo administración por interfaz.' : 'Modo controlado por migración. Catálogo solo lectura.'}
       </div>
 
       <Card className={styles.mainCard} styles={{ body: { padding: 0 } }}>
@@ -375,19 +372,11 @@ export function PermissionsAdminListPage() {
             <Input placeholder="Ej: employee:create" />
           </Form.Item>
 
-          <Form.Item
-            label="Módulo"
-            name="modulo"
-            rules={[{ required: true, message: 'El módulo es requerido' }]}
-          >
+          <Form.Item label="Módulo" name="modulo" rules={[{ required: true, message: 'El módulo es requerido' }]}>
             <Input placeholder="Ej: employee" />
           </Form.Item>
 
-          <Form.Item
-            label="Nombre"
-            name="nombre"
-            rules={[{ required: true, message: 'El nombre es requerido' }]}
-          >
+          <Form.Item label="Nombre" name="nombre" rules={[{ required: true, message: 'El nombre es requerido' }]}>
             <Input placeholder="Ej: Crear empleado" />
           </Form.Item>
 

@@ -82,9 +82,7 @@ export async function fetchAccountingAccount(id: number): Promise<AccountingAcco
   return res.json();
 }
 
-export async function createAccountingAccount(
-  payload: AccountingAccountPayload,
-): Promise<AccountingAccountListItem> {
+export async function createAccountingAccount(payload: AccountingAccountPayload): Promise<AccountingAccountListItem> {
   const res = await httpFetch('/accounting-accounts', {
     method: 'POST',
     body: JSON.stringify(payload),

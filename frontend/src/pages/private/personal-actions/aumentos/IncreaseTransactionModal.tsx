@@ -143,11 +143,7 @@ function round2(value: number): number {
   return Number(value.toFixed(2));
 }
 
-function calculateSalaryByPeriod(
-  salaryBase: number,
-  payPeriodId?: number | null,
-  jornada?: string | null,
-): number {
+function calculateSalaryByPeriod(salaryBase: number, payPeriodId?: number | null, jornada?: string | null): number {
   const id = Number(payPeriodId);
   const isByHours = (jornada ?? '').trim().toLowerCase() === 'por horas';
   if (isByHours && (id === 8 || id === 11)) return 0;
@@ -173,11 +169,7 @@ function calculateSalaryByPeriod(
   }
 }
 
-function calculateHourValue(
-  salaryBase: number,
-  payPeriodId?: number | null,
-  jornada?: string | null,
-): number {
+function calculateHourValue(salaryBase: number, payPeriodId?: number | null, jornada?: string | null): number {
   const id = Number(payPeriodId);
   const isByHours = (jornada ?? '').trim().toLowerCase() === 'por horas';
   if (isByHours && (id === 8 || id === 11)) return salaryBase;
@@ -246,7 +238,9 @@ export function IncreaseTransactionModal({
 
   useEffect(() => {
     if (!open) return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setActiveTab('info');
+
     setAuditLoaded(false);
     form.resetFields();
 
@@ -256,16 +250,17 @@ export function IncreaseTransactionModal({
         idEmpleado: initialDraft.idEmpleado,
         observacion: initialDraft.observacion,
       });
+
       setLine({
         ...buildEmptyLine(),
         ...initialDraft.line,
-        montoInput:
-          initialDraft.line.monto == null ? '' : String(Math.trunc(initialDraft.line.monto)),
+        montoInput: initialDraft.line.monto == null ? '' : String(Math.trunc(initialDraft.line.monto)),
       });
       return;
     }
 
     form.setFieldsValue({ idEmpresa: initialCompanyId });
+
     setLine(buildEmptyLine());
   }, [open, initialDraft, initialCompanyId, form]);
 
@@ -273,6 +268,7 @@ export function IncreaseTransactionModal({
     if (!open || !showAudit || activeTab !== 'bitacora' || auditLoaded) return;
     const load = async () => {
       await onLoadAuditTrail?.();
+
       setAuditLoaded(true);
     };
     void load();
@@ -289,6 +285,7 @@ export function IncreaseTransactionModal({
     if (!selectedEmployeeId) return;
     const prev = prevEmployeeIdRef.current;
     if (prev != null && prev !== selectedEmployeeId) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setLine(buildEmptyLine());
     }
     prevEmployeeIdRef.current = selectedEmployeeId;
@@ -296,11 +293,14 @@ export function IncreaseTransactionModal({
 
   useEffect(() => {
     if (!selectedCompanyId || !selectedEmployeeId) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setEligiblePayrolls([]);
+
       setLoadingPayrolls(false);
       return;
     }
     let active = true;
+
     setLoadingPayrolls(true);
     void fetchAbsencePayrollsCatalog(Number(selectedCompanyId), Number(selectedEmployeeId))
       .then((list) => {
@@ -328,25 +328,19 @@ export function IncreaseTransactionModal({
   const selectedEmployee = useMemo(() => {
     if (!selectedCompanyId || !selectedEmployeeId) return null;
     return (
-      employees.find(
-        (employee) =>
-          employee.idEmpresa === selectedCompanyId && employee.id === selectedEmployeeId,
-      ) ?? null
+      employees.find((employee) => employee.idEmpresa === selectedCompanyId && employee.id === selectedEmployeeId) ??
+      null
     );
   }, [employees, selectedCompanyId, selectedEmployeeId]);
 
   const selectedPayPeriod = useMemo(() => {
     if (!selectedEmployee?.idPeriodoPago) return null;
-    return (
-      payPeriods.find((period) => period.id === Number(selectedEmployee.idPeriodoPago)) ?? null
-    );
-  }, [payPeriods, selectedEmployee?.idPeriodoPago]);
+    return payPeriods.find((period) => period.id === Number(selectedEmployee.idPeriodoPago)) ?? null;
+  }, [payPeriods, selectedEmployee]);
 
   const employeeCurrency = (selectedEmployee?.monedaSalario ?? 'CRC').toUpperCase();
   const salarioActual = Number(selectedEmployee?.salarioBase ?? line.salarioActual ?? 0);
-  const salaryDisplay = canViewEmployeeSensitive
-    ? formatMoney(salarioActual, employeeCurrency)
-    : '***';
+  const salaryDisplay = canViewEmployeeSensitive ? formatMoney(salarioActual, employeeCurrency) : '***';
 
   const sensitiveMaskedValue = '***';
   const salaryBase = Number(selectedEmployee?.salarioBase ?? 0);
@@ -355,15 +349,8 @@ export function IncreaseTransactionModal({
     selectedEmployee?.idPeriodoPago,
     selectedEmployee?.jornada,
   );
-  const hourValue = calculateHourValue(
-    salaryBase,
-    selectedEmployee?.idPeriodoPago,
-    selectedEmployee?.jornada,
-  );
-  const periodHours = calculatePeriodHours(
-    selectedEmployee?.idPeriodoPago,
-    selectedEmployee?.jornada,
-  );
+  const hourValue = calculateHourValue(salaryBase, selectedEmployee?.idPeriodoPago, selectedEmployee?.jornada);
+  const periodHours = calculatePeriodHours(selectedEmployee?.idPeriodoPago, selectedEmployee?.jornada);
 
   const showGlobalPreload =
     loading ||
@@ -391,9 +378,7 @@ export function IncreaseTransactionModal({
           return (
             <div>
               <div style={{ fontWeight: 600, color: '#3d4f5c' }}>{actorLabel}</div>
-              {row.actorEmail ? (
-                <div style={{ color: '#8c8c8c', fontSize: 12 }}>{row.actorEmail}</div>
-              ) : null}
+              {row.actorEmail ? <div style={{ color: '#8c8c8c', fontSize: 12 }}>{row.actorEmail}</div> : null}
             </div>
           );
         },
@@ -421,10 +406,7 @@ export function IncreaseTransactionModal({
               {changes.length > 0 ? (
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
                   {changes.map((change, index) => (
-                    <div
-                      key={`${row.id}-${change.campo}-${index}`}
-                      style={{ fontSize: 12, lineHeight: 1.4 }}
-                    >
+                    <div key={`${row.id}-${change.campo}-${index}`} style={{ fontSize: 12, lineHeight: 1.4 }}>
                       <div>
                         <strong>{change.campo}</strong>
                       </div>
@@ -451,6 +433,7 @@ export function IncreaseTransactionModal({
 
   useEffect(() => {
     if (!selectedEmployeeId) return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setLine((prev) => ({
       ...prev,
       salarioActual,
@@ -461,9 +444,7 @@ export function IncreaseTransactionModal({
     if (!selectedCompanyId) return [];
     let list = eligiblePayrolls.filter((payroll) => payroll.idEmpresa === selectedCompanyId);
     if (selectedEmployee?.idPeriodoPago) {
-      list = list.filter(
-        (payroll) => Number(payroll.idPeriodoPago) === Number(selectedEmployee.idPeriodoPago),
-      );
+      list = list.filter((payroll) => Number(payroll.idPeriodoPago) === Number(selectedEmployee.idPeriodoPago));
     }
     if (selectedEmployee?.monedaSalario) {
       list = list.filter((payroll) => (payroll.moneda ?? '').toUpperCase() === employeeCurrency);
@@ -514,6 +495,7 @@ export function IncreaseTransactionModal({
   useEffect(() => {
     if (!selectedPayroll?.fechaInicioPago) return;
     const fechaEfecto = dayjs(selectedPayroll.fechaInicioPago);
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setLine((prev) => {
       const prevDate = prev.fechaEfecto?.format('YYYY-MM-DD');
       const nextDate = fechaEfecto.format('YYYY-MM-DD');
@@ -524,6 +506,7 @@ export function IncreaseTransactionModal({
 
   const handleMethodChange = (checked: boolean) => {
     const metodo = checked ? 'MONTO' : 'PORCENTAJE';
+
     setLine((prev) => ({
       ...prev,
       metodoCalculo: metodo,
@@ -534,8 +517,7 @@ export function IncreaseTransactionModal({
   };
 
   const porcentajeDisplay = metodoCalculo === 'MONTO' ? calculated.porcentaje : line.porcentaje;
-  const montoDisplayValue =
-    metodoCalculo === 'PORCENTAJE' ? String(Math.round(calculated.monto)) : line.montoInput;
+  const montoDisplayValue = metodoCalculo === 'PORCENTAJE' ? String(Math.round(calculated.monto)) : line.montoInput;
 
   const handleSubmit = async () => {
     try {
@@ -602,12 +584,7 @@ export function IncreaseTransactionModal({
         },
       }}
       title={
-        <Flex
-          justify="space-between"
-          align="center"
-          wrap="nowrap"
-          style={{ width: '100%', gap: 16 }}
-        >
+        <Flex justify="space-between" align="center" wrap="nowrap" style={{ width: '100%', gap: 16 }}>
           <div className={sharedStyles.companyModalHeader}>
             <div className={sharedStyles.companyModalHeaderIcon}>
               <CalendarOutlined />
@@ -669,9 +646,7 @@ export function IncreaseTransactionModal({
               <Alert
                 type="warning"
                 showIcon
-                title={
-                  readOnlyMessage ?? 'Este aumento esta en modo solo lectura por su estado actual.'
-                }
+                title={readOnlyMessage ?? 'Este aumento esta en modo solo lectura por su estado actual.'}
                 className={`${sharedStyles.infoBanner} ${sharedStyles.warningType}`}
                 style={{ marginBottom: 12 }}
               />
@@ -711,11 +686,7 @@ export function IncreaseTransactionModal({
 
             {mode !== 'edit' || activeTab === 'info' ? (
               <Row gutter={16} wrap style={{ flex: 1, minHeight: 0, alignItems: 'stretch' }}>
-                <Col
-                  xs={24}
-                  lg={8}
-                  style={{ display: 'flex', flexDirection: 'column', minHeight: 0 }}
-                >
+                <Col xs={24} lg={8} style={{ display: 'flex', flexDirection: 'column', minHeight: 0 }}>
                   {selectedEmployee ? (
                     <Collapse
                       defaultActiveKey={[]}
@@ -744,8 +715,7 @@ export function IncreaseTransactionModal({
                                   </div>
                                   <div className={sharedStyles.employeeAccordionCompany}>
                                     <BankOutlined />
-                                    {companies.find((c) => Number(c.id) === selectedCompanyId)
-                                      ?.nombre ?? '--'}
+                                    {companies.find((c) => Number(c.id) === selectedCompanyId)?.nombre ?? '--'}
                                   </div>
                                 </div>
                               </div>
@@ -755,13 +725,9 @@ export function IncreaseTransactionModal({
                             <div className={sharedStyles.employeeAccordionContent}>
                               <div className={sharedStyles.employeeAccordionGrid}>
                                 <div className={sharedStyles.employeeAccordionItem}>
-                                  <IdcardOutlined
-                                    className={sharedStyles.employeeAccordionItemIcon}
-                                  />
+                                  <IdcardOutlined className={sharedStyles.employeeAccordionItemIcon} />
                                   <div>
-                                    <div className={sharedStyles.employeeAccordionItemLabel}>
-                                      Cédula
-                                    </div>
+                                    <div className={sharedStyles.employeeAccordionItemLabel}>Cédula</div>
                                     <div className={sharedStyles.employeeAccordionItemValue}>
                                       {canViewEmployeeSensitive
                                         ? (selectedEmployee.cedula ?? '--')
@@ -770,13 +736,9 @@ export function IncreaseTransactionModal({
                                   </div>
                                 </div>
                                 <div className={sharedStyles.employeeAccordionItem}>
-                                  <MailOutlined
-                                    className={sharedStyles.employeeAccordionItemIcon}
-                                  />
+                                  <MailOutlined className={sharedStyles.employeeAccordionItemIcon} />
                                   <div>
-                                    <div className={sharedStyles.employeeAccordionItemLabel}>
-                                      Email
-                                    </div>
+                                    <div className={sharedStyles.employeeAccordionItemLabel}>Email</div>
                                     <div className={sharedStyles.employeeAccordionItemValue}>
                                       {canViewEmployeeSensitive
                                         ? (selectedEmployee.email ?? '--')
@@ -785,26 +747,18 @@ export function IncreaseTransactionModal({
                                   </div>
                                 </div>
                                 <div className={sharedStyles.employeeAccordionItem}>
-                                  <CalendarOutlined
-                                    className={sharedStyles.employeeAccordionItemIcon}
-                                  />
+                                  <CalendarOutlined className={sharedStyles.employeeAccordionItemIcon} />
                                   <div>
-                                    <div className={sharedStyles.employeeAccordionItemLabel}>
-                                      Período
-                                    </div>
+                                    <div className={sharedStyles.employeeAccordionItemLabel}>Período</div>
                                     <div className={sharedStyles.employeeAccordionItemValue}>
                                       {selectedPayPeriod?.nombre ?? '--'}
                                     </div>
                                   </div>
                                 </div>
                                 <div className={sharedStyles.employeeAccordionItem}>
-                                  <ClockCircleOutlined
-                                    className={sharedStyles.employeeAccordionItemIcon}
-                                  />
+                                  <ClockCircleOutlined className={sharedStyles.employeeAccordionItemIcon} />
                                   <div>
-                                    <div className={sharedStyles.employeeAccordionItemLabel}>
-                                      Jornada
-                                    </div>
+                                    <div className={sharedStyles.employeeAccordionItemLabel}>Jornada</div>
                                     <div className={sharedStyles.employeeAccordionItemValue}>
                                       {selectedEmployee.jornada ?? '--'}
                                     </div>
@@ -814,27 +768,18 @@ export function IncreaseTransactionModal({
                               <hr className={sharedStyles.employeeAccordionGridHr} />
                               <div className={sharedStyles.employeeAccordionGrid}>
                                 <div className={sharedStyles.employeeAccordionItem}>
-                                  <DollarCircleOutlined
-                                    className={sharedStyles.employeeAccordionItemIcon}
-                                  />
+                                  <DollarCircleOutlined className={sharedStyles.employeeAccordionItemIcon} />
                                   <div>
-                                    <div className={sharedStyles.employeeAccordionItemLabel}>
-                                      Salario Base
-                                    </div>
+                                    <div className={sharedStyles.employeeAccordionItemLabel}>Salario Base</div>
                                     <div className={sharedStyles.employeeAccordionItemValue}>
                                       {canViewEmployeeSensitive
-                                        ? formatMoney(
-                                            selectedEmployee.salarioBase,
-                                            employeeCurrency,
-                                          )
+                                        ? formatMoney(selectedEmployee.salarioBase, employeeCurrency)
                                         : sensitiveMaskedValue}
                                     </div>
                                   </div>
                                 </div>
                                 <div className={sharedStyles.employeeAccordionItem}>
-                                  <DollarCircleOutlined
-                                    className={sharedStyles.employeeAccordionItemIcon}
-                                  />
+                                  <DollarCircleOutlined className={sharedStyles.employeeAccordionItemIcon} />
                                   <div>
                                     <div className={sharedStyles.employeeAccordionItemLabel}>
                                       Salario {selectedPayPeriod?.nombre ?? 'Período'}
@@ -847,13 +792,9 @@ export function IncreaseTransactionModal({
                                   </div>
                                 </div>
                                 <div className={sharedStyles.employeeAccordionItem}>
-                                  <DollarCircleOutlined
-                                    className={sharedStyles.employeeAccordionItemIcon}
-                                  />
+                                  <DollarCircleOutlined className={sharedStyles.employeeAccordionItemIcon} />
                                   <div>
-                                    <div className={sharedStyles.employeeAccordionItemLabel}>
-                                      Valor por Hora
-                                    </div>
+                                    <div className={sharedStyles.employeeAccordionItemLabel}>Valor por Hora</div>
                                     <div className={sharedStyles.employeeAccordionItemValue}>
                                       {canViewEmployeeSensitive
                                         ? `${formatMoney(hourValue, employeeCurrency)}/hora`
@@ -862,13 +803,9 @@ export function IncreaseTransactionModal({
                                   </div>
                                 </div>
                                 <div className={sharedStyles.employeeAccordionItem}>
-                                  <ClockCircleOutlined
-                                    className={sharedStyles.employeeAccordionItemIcon}
-                                  />
+                                  <ClockCircleOutlined className={sharedStyles.employeeAccordionItemIcon} />
                                   <div>
-                                    <div className={sharedStyles.employeeAccordionItemLabel}>
-                                      Horas del Período
-                                    </div>
+                                    <div className={sharedStyles.employeeAccordionItemLabel}>Horas del Período</div>
                                     <div
                                       className={sharedStyles.employeeAccordionItemValue}
                                     >{`${periodHours} horas`}</div>
@@ -928,16 +865,8 @@ export function IncreaseTransactionModal({
                           />
                         </Form.Item>
                       ) : null}
-                      <Form.Item
-                        style={{ marginBottom: 12 }}
-                        name="observacion"
-                        label="Motivo de Aumento"
-                      >
-                        <Input.TextArea
-                          rows={2}
-                          placeholder="Detalle del motivo"
-                          disabled={readOnly}
-                        />
+                      <Form.Item style={{ marginBottom: 12 }} name="observacion" label="Motivo de Aumento">
+                        <Input.TextArea rows={2} placeholder="Detalle del motivo" disabled={readOnly} />
                       </Form.Item>
                       <Form.Item style={{ marginBottom: 12 }} label="Periodo de Planilla">
                         <Select
@@ -945,9 +874,7 @@ export function IncreaseTransactionModal({
                           disabled={readOnly || !selectedEmployeeId}
                           loading={loadingPayrolls}
                           value={line.payrollId}
-                          onChange={(value) =>
-                            setLine((prev) => ({ ...prev, payrollId: Number(value) }))
-                          }
+                          onChange={(value) => setLine((prev) => ({ ...prev, payrollId: Number(value) }))}
                           options={payrollsByCompany.map((payroll) => ({
                             value: payroll.id,
                             label: payroll.nombrePlanilla ?? `Planilla #${payroll.id}`,
@@ -960,9 +887,7 @@ export function IncreaseTransactionModal({
                           loading={movementsLoading}
                           disabled={readOnly || movementsLoading || !selectedCompanyId}
                           value={line.movimientoId}
-                          onChange={(value) =>
-                            setLine((prev) => ({ ...prev, movimientoId: Number(value) }))
-                          }
+                          onChange={(value) => setLine((prev) => ({ ...prev, movimientoId: Number(value) }))}
                           options={filteredMovements.map((movement) => ({
                             value: movement.id,
                             label: movement.nombre,
@@ -997,27 +922,17 @@ export function IncreaseTransactionModal({
                     className={sharedStyles.cardDefault}
                     style={{ border: '1px solid #e8ecf0', borderRadius: 8 }}
                   >
-                    <div
-                      className={sharedStyles.filterLabel}
-                      style={{ marginBottom: 8, fontWeight: 600 }}
-                    >
+                    <div className={sharedStyles.filterLabel} style={{ marginBottom: 8, fontWeight: 600 }}>
                       Método de Cálculo del Aumento
                     </div>
-                    <Typography.Text
-                      type="secondary"
-                      style={{ display: 'block', marginBottom: 16 }}
-                    >
+                    <Typography.Text type="secondary" style={{ display: 'block', marginBottom: 16 }}>
                       {metodoCalculo === 'PORCENTAJE'
                         ? 'El aumento se calculará por porcentaje'
                         : 'El aumento se calculará por monto'}
                     </Typography.Text>
                     <Flex align="center" gap={12} wrap="wrap" style={{ marginBottom: 20 }}>
                       <Typography.Text>Por Porcentaje</Typography.Text>
-                      <Switch
-                        checked={metodoCalculo === 'MONTO'}
-                        onChange={handleMethodChange}
-                        disabled={readOnly}
-                      />
+                      <Switch checked={metodoCalculo === 'MONTO'} onChange={handleMethodChange} disabled={readOnly} />
                       <Typography.Text>Por Monto</Typography.Text>
                     </Flex>
 
@@ -1055,8 +970,7 @@ export function IncreaseTransactionModal({
                               setLine((prev) => ({
                                 ...prev,
                                 montoInput: onlyDigits,
-                                monto:
-                                  onlyDigits.length > 0 ? (moneyField.parse(onlyDigits) ?? 0) : 0,
+                                monto: onlyDigits.length > 0 ? (moneyField.parse(onlyDigits) ?? 0) : 0,
                               }));
                             }}
                           />
@@ -1071,29 +985,20 @@ export function IncreaseTransactionModal({
                             placeholder="Ej. 10"
                             disabled={readOnly || metodoCalculo === 'MONTO'}
                             value={porcentajeDisplay === 0 ? undefined : porcentajeDisplay}
-                            onChange={(value) =>
-                              setLine((prev) => ({ ...prev, porcentaje: Number(value ?? 0) }))
-                            }
+                            onChange={(value) => setLine((prev) => ({ ...prev, porcentaje: Number(value ?? 0) }))}
                             addonAfter="%"
                           />
                         </Form.Item>
                       </Col>
                       <Col xs={24} sm={12} md={8}>
                         <Form.Item label="Nuevo Salario" style={{ marginBottom: 0 }}>
-                          <Input
-                            disabled
-                            value={formatMoney(calculated.nuevoSalario, employeeCurrency)}
-                          />
+                          <Input disabled value={formatMoney(calculated.nuevoSalario, employeeCurrency)} />
                         </Form.Item>
                       </Col>
                     </Row>
 
                     <Divider style={{ margin: '20px 0' }} />
-                    <div
-                      style={{ fontSize: 13, fontWeight: 600, color: '#262626', marginBottom: 16 }}
-                    >
-                      Resumen
-                    </div>
+                    <div style={{ fontSize: 13, fontWeight: 600, color: '#262626', marginBottom: 16 }}>Resumen</div>
 
                     <Row gutter={[20, 16]}>
                       <Col xs={24} sm={8}>
@@ -1105,10 +1010,7 @@ export function IncreaseTransactionModal({
                             backgroundColor: '#fafafa',
                           }}
                         >
-                          <Typography.Text
-                            type="secondary"
-                            style={{ fontSize: 12, display: 'block', marginBottom: 6 }}
-                          >
+                          <Typography.Text type="secondary" style={{ fontSize: 12, display: 'block', marginBottom: 6 }}>
                             Salario Actual
                           </Typography.Text>
                           <Typography.Text strong style={{ fontSize: 15 }}>
@@ -1125,10 +1027,7 @@ export function IncreaseTransactionModal({
                             backgroundColor: '#fafafa',
                           }}
                         >
-                          <Typography.Text
-                            type="secondary"
-                            style={{ fontSize: 12, display: 'block', marginBottom: 6 }}
-                          >
+                          <Typography.Text type="secondary" style={{ fontSize: 12, display: 'block', marginBottom: 6 }}>
                             Aumento Aplicado
                           </Typography.Text>
                           <Typography.Text strong style={{ fontSize: 15, color: '#389e0d' }}>
@@ -1145,10 +1044,7 @@ export function IncreaseTransactionModal({
                             backgroundColor: '#fafafa',
                           }}
                         >
-                          <Typography.Text
-                            type="secondary"
-                            style={{ fontSize: 12, display: 'block', marginBottom: 6 }}
-                          >
+                          <Typography.Text type="secondary" style={{ fontSize: 12, display: 'block', marginBottom: 6 }}>
                             Equivalente
                           </Typography.Text>
                           <Typography.Text strong style={{ fontSize: 15 }}>
@@ -1170,10 +1066,7 @@ export function IncreaseTransactionModal({
                             backgroundColor: '#f6ffed',
                           }}
                         >
-                          <Typography.Text
-                            type="secondary"
-                            style={{ fontSize: 12, display: 'block', marginBottom: 6 }}
-                          >
+                          <Typography.Text type="secondary" style={{ fontSize: 12, display: 'block', marginBottom: 6 }}>
                             Nuevo Salario
                           </Typography.Text>
                           <Typography.Text strong style={{ fontSize: 16, color: '#1677ff' }}>
@@ -1200,9 +1093,7 @@ export function IncreaseTransactionModal({
                               </Tooltip>
                             </Flex>
                           </div>
-                          <Typography.Paragraph
-                            style={{ marginBottom: 0, fontSize: 13, lineHeight: 1.5 }}
-                          >
+                          <Typography.Paragraph style={{ marginBottom: 0, fontSize: 13, lineHeight: 1.5 }}>
                             {metodoCalculo === 'PORCENTAJE'
                               ? `Nuevo salario = ${canViewEmployeeSensitive ? round2(salarioActual).toFixed(2) : '***'} + (${canViewEmployeeSensitive ? round2(salarioActual).toFixed(2) : '***'} x ${round2(calculated.porcentaje).toFixed(2)}%) = ${round2(calculated.nuevoSalario).toFixed(2)}`
                               : `Nuevo salario = ${canViewEmployeeSensitive ? round2(salarioActual).toFixed(2) : '***'} + ${round2(calculated.monto).toFixed(2)} = ${round2(calculated.nuevoSalario).toFixed(2)}`}

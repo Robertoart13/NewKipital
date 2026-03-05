@@ -79,11 +79,7 @@ export function CompanySelectionPage() {
       }}
     >
       <Space orientation="vertical" size="middle" style={{ width: '100%', textAlign: 'center' }}>
-        <img
-          src="/assets/images/global/LogoLarge.png"
-          alt="KPITAL 360"
-          style={{ height: 48, margin: '0 auto' }}
-        />
+        <img src="/assets/images/global/LogoLarge.png" alt="KPITAL 360" style={{ height: 48, margin: '0 auto' }} />
         <div>
           <Title level={4} style={{ margin: 0, color: '#262626' }}>
             Seleccionar Empresa

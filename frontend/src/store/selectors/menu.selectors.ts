@@ -45,7 +45,6 @@ const filterMenuByPermissions = (items: MenuItem[], permissions: string[]): Menu
  * Selector derivado: menú visible según permisos.
  * El componente NavBar usa este selector — nunca computa en el componente.
  */
-export const getVisibleMenuItems = createSelector(
-  [selectMenuConfig, selectPermissions],
-  (config, permissions) => filterMenuByPermissions(config, permissions),
+export const getVisibleMenuItems = createSelector([selectMenuConfig, selectPermissions], (config, permissions) =>
+  filterMenuByPermissions(config, permissions),
 );

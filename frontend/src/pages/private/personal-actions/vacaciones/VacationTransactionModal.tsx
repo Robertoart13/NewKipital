@@ -141,9 +141,7 @@ function isHoliday(date: Dayjs, holidays: VacationHolidayItem[]) {
     const start = dayjs(holiday.fechaInicio);
     const end = dayjs(holiday.fechaFin);
     return (
-      date.isSame(start, 'day') ||
-      date.isSame(end, 'day') ||
-      (date.isAfter(start, 'day') && date.isBefore(end, 'day'))
+      date.isSame(start, 'day') || date.isSame(end, 'day') || (date.isAfter(start, 'day') && date.isBefore(end, 'day'))
     );
   });
 }
@@ -161,11 +159,7 @@ function toNumber(value: number | string | null | undefined): number {
   return Number.isFinite(parsed) ? parsed : 0;
 }
 
-function calculateSalaryByPeriod(
-  salaryBase: number,
-  payPeriodId?: number | null,
-  jornada?: string | null,
-): number {
+function calculateSalaryByPeriod(salaryBase: number, payPeriodId?: number | null, jornada?: string | null): number {
   const id = Number(payPeriodId);
   const isByHours = (jornada ?? '').trim().toLowerCase() === 'por horas';
   if (isByHours && (id === 8 || id === 11)) return 0;
@@ -192,11 +186,7 @@ function calculateSalaryByPeriod(
   }
 }
 
-function calculateHourValue(
-  salaryBase: number,
-  payPeriodId?: number | null,
-  jornada?: string | null,
-): number {
+function calculateHourValue(salaryBase: number, payPeriodId?: number | null, jornada?: string | null): number {
   const id = Number(payPeriodId);
   const isByHours = (jornada ?? '').trim().toLowerCase() === 'por horas';
   if (isByHours && (id === 8 || id === 11)) return salaryBase;
@@ -318,7 +308,9 @@ export function VacationTransactionModal(props: VacationTransactionModalProps) {
 
   useEffect(() => {
     if (!open) return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setActiveTab('info');
+
     setAuditLoaded(false);
 
     if (initialDraft) {
@@ -329,9 +321,7 @@ export function VacationTransactionModal(props: VacationTransactionModalProps) {
         observacion: initialDraft.observacion ?? undefined,
       });
       setLockedPayrollId(
-        typeof initialDraft.payrollId === 'number' && initialDraft.payrollId > 0
-          ? initialDraft.payrollId
-          : null,
+        typeof initialDraft.payrollId === 'number' && initialDraft.payrollId > 0 ? initialDraft.payrollId : null,
       );
       const normalizedSelections = (initialDraft.fechas ?? []).map((item) => {
         const baseKey = normalizeSelectionKey(item.key, item.fecha);
@@ -350,17 +340,10 @@ export function VacationTransactionModal(props: VacationTransactionModalProps) {
       setSelectedDates(filteredSelections);
       setBookedDates([]);
       if (initialDraft.idEmpresa && initialDraft.idEmpleado) {
-        void fetchVacationAvailability(
-          Number(initialDraft.idEmpresa),
-          Number(initialDraft.idEmpleado),
-        )
+        void fetchVacationAvailability(Number(initialDraft.idEmpresa), Number(initialDraft.idEmpleado))
           .then((resp) => setLocalAvailability(resp ?? null))
           .catch(() => setLocalAvailability(null));
-        void fetchVacationBookedDates(
-          Number(initialDraft.idEmpresa),
-          Number(initialDraft.idEmpleado),
-          excludeActionId,
-        )
+        void fetchVacationBookedDates(Number(initialDraft.idEmpresa), Number(initialDraft.idEmpleado), excludeActionId)
           .then((resp) => setBookedDates(resp ?? []))
           .catch(() => setBookedDates([]));
       }
@@ -368,23 +351,18 @@ export function VacationTransactionModal(props: VacationTransactionModalProps) {
     }
 
     form.resetFields();
+
     setSelectedDates([]);
+
     setBookedDates([]);
+
     setWarnedInvalidDates(false);
+
     setLockedPayrollId(null);
     if (initialCompanyId) {
       form.setFieldsValue({ idEmpresa: initialCompanyId });
     }
-  }, [
-    excludeActionId,
-    form,
-    holidays,
-    initialCompanyId,
-    initialDraft,
-    message,
-    open,
-    warnedInvalidDates,
-  ]);
+  }, [excludeActionId, form, holidays, initialCompanyId, initialDraft, message, open, warnedInvalidDates]);
 
   useEffect(() => {
     if (!open || !showAudit || activeTab !== 'bitacora' || auditLoaded || !onLoadAuditTrail) return;
@@ -397,7 +375,9 @@ export function VacationTransactionModal(props: VacationTransactionModalProps) {
 
   useEffect(() => {
     if (!resolvedCompanyId || !resolvedEmployeeId) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setPayrollOptions([]);
+
       setLocalAvailability(null);
       return;
     }
@@ -426,7 +406,9 @@ export function VacationTransactionModal(props: VacationTransactionModalProps) {
 
   useEffect(() => {
     if (!resolvedCompanyId || !resolvedEmployeeId) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setLocalAvailability(null);
+
       setBookedDates([]);
       return;
     }
@@ -435,17 +417,11 @@ export function VacationTransactionModal(props: VacationTransactionModalProps) {
       .then((resp) => setLocalAvailability(resp ?? null))
       .catch(() => setLocalAvailability(null));
 
-    void fetchVacationBookedDates(
-      Number(resolvedCompanyId),
-      Number(resolvedEmployeeId),
-      excludeActionId,
-    )
+    void fetchVacationBookedDates(Number(resolvedCompanyId), Number(resolvedEmployeeId), excludeActionId)
       .then((resp) => {
         setBookedDates(resp ?? []);
         const bookedSet = new Set(
-          (resp ?? [])
-            .map((item) => item.fecha?.trim())
-            .filter((value): value is string => !!value),
+          (resp ?? []).map((item) => item.fecha?.trim()).filter((value): value is string => !!value),
         );
         if (bookedSet.size > 0) {
           setSelectedDates((prev) => prev.filter((item) => !bookedSet.has(item.key)));
@@ -467,7 +443,7 @@ export function VacationTransactionModal(props: VacationTransactionModalProps) {
   const selectedPayPeriod = useMemo(() => {
     if (!selectedEmployee?.idPeriodoPago) return null;
     return payPeriods.find((p) => Number(p.id) === Number(selectedEmployee.idPeriodoPago)) ?? null;
-  }, [payPeriods, selectedEmployee?.idPeriodoPago]);
+  }, [payPeriods, selectedEmployee]);
 
   const salaryBase = toNumber(selectedEmployee?.salarioBase);
   const employeeCurrency = (selectedEmployee?.monedaSalario ?? 'CRC').toUpperCase();
@@ -476,15 +452,8 @@ export function VacationTransactionModal(props: VacationTransactionModalProps) {
     selectedEmployee?.idPeriodoPago,
     selectedEmployee?.jornada,
   );
-  const hourValue = calculateHourValue(
-    salaryBase,
-    selectedEmployee?.idPeriodoPago,
-    selectedEmployee?.jornada,
-  );
-  const periodHours = calculatePeriodHours(
-    selectedEmployee?.idPeriodoPago,
-    selectedEmployee?.jornada,
-  );
+  const hourValue = calculateHourValue(salaryBase, selectedEmployee?.idPeriodoPago, selectedEmployee?.jornada);
+  const periodHours = calculatePeriodHours(selectedEmployee?.idPeriodoPago, selectedEmployee?.jornada);
 
   const sensitiveMaskedValue = '***';
 
@@ -495,10 +464,7 @@ export function VacationTransactionModal(props: VacationTransactionModalProps) {
 
   const availableDays = (availability ?? localAvailability)?.disponible ?? 0;
   const bookedDateSet = useMemo(
-    () =>
-      new Set(
-        bookedDates.map((item) => item.fecha?.trim()).filter((value): value is string => !!value),
-      ),
+    () => new Set(bookedDates.map((item) => item.fecha?.trim()).filter((value): value is string => !!value)),
     [bookedDates],
   );
   const getPayrollTypeKey = useCallback(
@@ -616,6 +582,7 @@ export function VacationTransactionModal(props: VacationTransactionModalProps) {
       holidays,
       lockedPayrollId,
       payrollOptions.length,
+      pickPreferredPayroll,
       selectionTypeKey,
     ],
   );
@@ -639,9 +606,7 @@ export function VacationTransactionModal(props: VacationTransactionModalProps) {
         message.warning('No hay saldo disponible para agregar más días.');
         return;
       }
-      setSelectedDates((prev) =>
-        [...prev, { key, fecha: date }].sort((a, b) => (a.key < b.key ? -1 : 1)),
-      );
+      setSelectedDates((prev) => [...prev, { key, fecha: date }].sort((a, b) => (a.key < b.key ? -1 : 1)));
     },
     [availableDays, message, selectedDates],
   );
@@ -682,9 +647,7 @@ export function VacationTransactionModal(props: VacationTransactionModalProps) {
           return (
             <div>
               <div style={{ fontWeight: 600, color: '#3d4f5c' }}>{actorLabel}</div>
-              {row.actorEmail ? (
-                <div style={{ color: '#8c8c8c', fontSize: 12 }}>{row.actorEmail}</div>
-              ) : null}
+              {row.actorEmail ? <div style={{ color: '#8c8c8c', fontSize: 12 }}>{row.actorEmail}</div> : null}
             </div>
           );
         },
@@ -712,10 +675,7 @@ export function VacationTransactionModal(props: VacationTransactionModalProps) {
               {changes.length > 0 ? (
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
                   {changes.map((change, index) => (
-                    <div
-                      key={`${row.id}-${change.campo}-${index}`}
-                      style={{ fontSize: 12, lineHeight: 1.4 }}
-                    >
+                    <div key={`${row.id}-${change.campo}-${index}`} style={{ fontSize: 12, lineHeight: 1.4 }}>
                       <div>
                         <strong>{change.campo}</strong>
                       </div>
@@ -737,6 +697,7 @@ export function VacationTransactionModal(props: VacationTransactionModalProps) {
         },
       },
     ],
+
     [],
   );
 
@@ -747,10 +708,7 @@ export function VacationTransactionModal(props: VacationTransactionModalProps) {
       message.error('Debe seleccionar al menos una fecha de vacaciones.');
       return;
     }
-    if (
-      selectedPayrollSummary.invalidDates.length > 0 ||
-      selectedPayrollSummary.payrolls.length === 0
-    ) {
+    if (selectedPayrollSummary.invalidDates.length > 0 || selectedPayrollSummary.payrolls.length === 0) {
       message.error('Hay fechas sin planilla válida. Revise las fechas seleccionadas.');
       return;
     }
@@ -764,10 +722,7 @@ export function VacationTransactionModal(props: VacationTransactionModalProps) {
     };
 
     modal.confirm({
-      title:
-        mode === 'create'
-          ? 'Confirmar creación de vacaciones'
-          : 'Confirmar actualización de vacaciones',
+      title: mode === 'create' ? 'Confirmar creación de vacaciones' : 'Confirmar actualización de vacaciones',
       content:
         mode === 'create'
           ? '¿Está seguro de crear estas vacaciones con las fechas seleccionadas?'
@@ -784,7 +739,7 @@ export function VacationTransactionModal(props: VacationTransactionModalProps) {
         await onSubmit(payload);
       },
     });
-  }, [activeTab, loading, message, modal, mode, onSubmit, selectedDates, selectedPayrollSummary]);
+  }, [form, loading, message, modal, mode, onSubmit, selectedDates, selectedPayrollSummary]);
 
   return (
     <Modal
@@ -930,11 +885,7 @@ export function VacationTransactionModal(props: VacationTransactionModalProps) {
             {mode !== 'edit' || activeTab === 'info' ? (
               <Row gutter={16} wrap style={{ flex: 1, minHeight: 0, alignItems: 'stretch' }}>
                 {/* Columna izquierda: formulario */}
-                <Col
-                  xs={24}
-                  lg={10}
-                  style={{ display: 'flex', flexDirection: 'column', minHeight: 0 }}
-                >
+                <Col xs={24} lg={10} style={{ display: 'flex', flexDirection: 'column', minHeight: 0 }}>
                   {selectedEmployee ? (
                     <Collapse
                       defaultActiveKey={[]}
@@ -964,9 +915,7 @@ export function VacationTransactionModal(props: VacationTransactionModalProps) {
                                   <div className={sharedStyles.employeeAccordionCompany}>
                                     <BankOutlined />
                                     {companies.find(
-                                      (c) =>
-                                        Number(c.id) ===
-                                        Number(selectedCompanyId ?? resolvedCompanyId),
+                                      (c) => Number(c.id) === Number(selectedCompanyId ?? resolvedCompanyId),
                                     )?.nombre ?? '--'}
                                   </div>
                                 </div>
@@ -977,13 +926,9 @@ export function VacationTransactionModal(props: VacationTransactionModalProps) {
                             <div className={sharedStyles.employeeAccordionContent}>
                               <div className={sharedStyles.employeeAccordionGrid}>
                                 <div className={sharedStyles.employeeAccordionItem}>
-                                  <IdcardOutlined
-                                    className={sharedStyles.employeeAccordionItemIcon}
-                                  />
+                                  <IdcardOutlined className={sharedStyles.employeeAccordionItemIcon} />
                                   <div>
-                                    <div className={sharedStyles.employeeAccordionItemLabel}>
-                                      CÃ©dula
-                                    </div>
+                                    <div className={sharedStyles.employeeAccordionItemLabel}>CÃ©dula</div>
                                     <div className={sharedStyles.employeeAccordionItemValue}>
                                       {canViewEmployeeSensitive
                                         ? (selectedEmployee.cedula ?? '--')
@@ -992,13 +937,9 @@ export function VacationTransactionModal(props: VacationTransactionModalProps) {
                                   </div>
                                 </div>
                                 <div className={sharedStyles.employeeAccordionItem}>
-                                  <MailOutlined
-                                    className={sharedStyles.employeeAccordionItemIcon}
-                                  />
+                                  <MailOutlined className={sharedStyles.employeeAccordionItemIcon} />
                                   <div>
-                                    <div className={sharedStyles.employeeAccordionItemLabel}>
-                                      Email
-                                    </div>
+                                    <div className={sharedStyles.employeeAccordionItemLabel}>Email</div>
                                     <div className={sharedStyles.employeeAccordionItemValue}>
                                       {canViewEmployeeSensitive
                                         ? (selectedEmployee.email ?? '--')
@@ -1007,26 +948,18 @@ export function VacationTransactionModal(props: VacationTransactionModalProps) {
                                   </div>
                                 </div>
                                 <div className={sharedStyles.employeeAccordionItem}>
-                                  <CalendarOutlined
-                                    className={sharedStyles.employeeAccordionItemIcon}
-                                  />
+                                  <CalendarOutlined className={sharedStyles.employeeAccordionItemIcon} />
                                   <div>
-                                    <div className={sharedStyles.employeeAccordionItemLabel}>
-                                      PerÃ­odo
-                                    </div>
+                                    <div className={sharedStyles.employeeAccordionItemLabel}>PerÃ­odo</div>
                                     <div className={sharedStyles.employeeAccordionItemValue}>
                                       {selectedPayPeriod?.nombre ?? '--'}
                                     </div>
                                   </div>
                                 </div>
                                 <div className={sharedStyles.employeeAccordionItem}>
-                                  <ClockCircleOutlined
-                                    className={sharedStyles.employeeAccordionItemIcon}
-                                  />
+                                  <ClockCircleOutlined className={sharedStyles.employeeAccordionItemIcon} />
                                   <div>
-                                    <div className={sharedStyles.employeeAccordionItemLabel}>
-                                      Jornada
-                                    </div>
+                                    <div className={sharedStyles.employeeAccordionItemLabel}>Jornada</div>
                                     <div className={sharedStyles.employeeAccordionItemValue}>
                                       {selectedEmployee.jornada ?? '--'}
                                     </div>
@@ -1036,27 +969,18 @@ export function VacationTransactionModal(props: VacationTransactionModalProps) {
                               <hr className={sharedStyles.employeeAccordionGridHr} />
                               <div className={sharedStyles.employeeAccordionGrid}>
                                 <div className={sharedStyles.employeeAccordionItem}>
-                                  <DollarCircleOutlined
-                                    className={sharedStyles.employeeAccordionItemIcon}
-                                  />
+                                  <DollarCircleOutlined className={sharedStyles.employeeAccordionItemIcon} />
                                   <div>
-                                    <div className={sharedStyles.employeeAccordionItemLabel}>
-                                      Salario Base
-                                    </div>
+                                    <div className={sharedStyles.employeeAccordionItemLabel}>Salario Base</div>
                                     <div className={sharedStyles.employeeAccordionItemValue}>
                                       {canViewEmployeeSensitive
-                                        ? formatMoney(
-                                            selectedEmployee.salarioBase,
-                                            employeeCurrency,
-                                          )
+                                        ? formatMoney(selectedEmployee.salarioBase, employeeCurrency)
                                         : sensitiveMaskedValue}
                                     </div>
                                   </div>
                                 </div>
                                 <div className={sharedStyles.employeeAccordionItem}>
-                                  <DollarCircleOutlined
-                                    className={sharedStyles.employeeAccordionItemIcon}
-                                  />
+                                  <DollarCircleOutlined className={sharedStyles.employeeAccordionItemIcon} />
                                   <div>
                                     <div className={sharedStyles.employeeAccordionItemLabel}>
                                       Salario {selectedPayPeriod?.nombre ?? 'PerÃ­odo'}
@@ -1069,13 +993,9 @@ export function VacationTransactionModal(props: VacationTransactionModalProps) {
                                   </div>
                                 </div>
                                 <div className={sharedStyles.employeeAccordionItem}>
-                                  <DollarCircleOutlined
-                                    className={sharedStyles.employeeAccordionItemIcon}
-                                  />
+                                  <DollarCircleOutlined className={sharedStyles.employeeAccordionItemIcon} />
                                   <div>
-                                    <div className={sharedStyles.employeeAccordionItemLabel}>
-                                      Valor por Hora
-                                    </div>
+                                    <div className={sharedStyles.employeeAccordionItemLabel}>Valor por Hora</div>
                                     <div className={sharedStyles.employeeAccordionItemValue}>
                                       {canViewEmployeeSensitive
                                         ? `${formatMoney(hourValue, employeeCurrency)}/hora`
@@ -1084,13 +1004,9 @@ export function VacationTransactionModal(props: VacationTransactionModalProps) {
                                   </div>
                                 </div>
                                 <div className={sharedStyles.employeeAccordionItem}>
-                                  <ClockCircleOutlined
-                                    className={sharedStyles.employeeAccordionItemIcon}
-                                  />
+                                  <ClockCircleOutlined className={sharedStyles.employeeAccordionItemIcon} />
                                   <div>
-                                    <div className={sharedStyles.employeeAccordionItemLabel}>
-                                      Horas del PerÃ­odo
-                                    </div>
+                                    <div className={sharedStyles.employeeAccordionItemLabel}>Horas del PerÃ­odo</div>
                                     <div
                                       className={sharedStyles.employeeAccordionItemValue}
                                     >{`${periodHours} horas`}</div>
@@ -1169,11 +1085,7 @@ export function VacationTransactionModal(props: VacationTransactionModalProps) {
                 </Col>
 
                 {/* Columna derecha: Calendario de vacaciones + Fechas seleccionadas */}
-                <Col
-                  xs={24}
-                  lg={14}
-                  style={{ display: 'flex', flexDirection: 'column', minHeight: 0 }}
-                >
+                <Col xs={24} lg={14} style={{ display: 'flex', flexDirection: 'column', minHeight: 0 }}>
                   <div
                     style={{
                       flex: 1,
@@ -1201,9 +1113,7 @@ export function VacationTransactionModal(props: VacationTransactionModalProps) {
                             <div className={styles.calendarCardHeaderIcon}>
                               <CalendarOutlined />
                             </div>
-                            <h3 className={styles.calendarCardHeaderTitle}>
-                              Calendario de vacaciones
-                            </h3>
+                            <h3 className={styles.calendarCardHeaderTitle}>Calendario de vacaciones</h3>
                           </div>
                           <div className={styles.calendarContent}>
                             <div className={styles.calendarStyled}>
@@ -1230,9 +1140,7 @@ export function VacationTransactionModal(props: VacationTransactionModalProps) {
                                   if (booked) {
                                     return <div className={styles.dateReservedBadge}>Res.</div>;
                                   }
-                                  return selected ? (
-                                    <div className={styles.dateSelectedBadge}>Sel.</div>
-                                  ) : null;
+                                  return selected ? <div className={styles.dateSelectedBadge}>Sel.</div> : null;
                                 }}
                               />
                             </div>
@@ -1284,9 +1192,7 @@ export function VacationTransactionModal(props: VacationTransactionModalProps) {
                                 <div key={item.key} className={styles.dateRow}>
                                   <div>
                                     <div className={styles.dateRowLabel}>
-                                      {parseDateKey(item.key)
-                                        .locale('es')
-                                        .format('dddd, D [de] MMMM [de] YYYY')}
+                                      {parseDateKey(item.key).locale('es').format('dddd, D [de] MMMM [de] YYYY')}
                                     </div>
                                     <div className={styles.dateRowSub}>{item.key}</div>
                                   </div>
@@ -1296,9 +1202,7 @@ export function VacationTransactionModal(props: VacationTransactionModalProps) {
                                       icon={<DeleteOutlined />}
                                       size="small"
                                       onClick={() =>
-                                        setSelectedDates((prev) =>
-                                          prev.filter((row) => row.key !== item.key),
-                                        )
+                                        setSelectedDates((prev) => prev.filter((row) => row.key !== item.key))
                                       }
                                     />
                                   ) : null}

@@ -4,6 +4,7 @@ import { DataSource } from 'typeorm';
 
 import { UserCompany } from '../access-control/entities/user-company.entity';
 import { Employee } from '../employees/entities/employee.entity';
+import { EmployeeVacationService } from '../employees/services/employee-vacation.service';
 import { AuditOutboxService } from '../integration/audit-outbox.service';
 import { PersonalAction } from '../personal-actions/entities/personal-action.entity';
 
@@ -43,6 +44,12 @@ describe('IntercompanyTransferService', () => {
           useValue: { query: jest.fn().mockResolvedValue([{ total: 0 }]), transaction: jest.fn() },
         },
         { provide: AuditOutboxService, useValue: { publish: jest.fn() } },
+        {
+          provide: EmployeeVacationService,
+          useValue: {
+            getBalanceSnapshot: jest.fn().mockResolvedValue({ accountId: null, balance: 0 }),
+          },
+        },
       ],
     }).compile();
 

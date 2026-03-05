@@ -346,14 +346,17 @@ export class EmployeeVacationService {
       sourceId?: number | null;
       description?: string | null;
       actorId?: number | null;
+      companyId?: number | null;
     },
   ): Promise<{ created: boolean; ledger: EmployeeVacationLedger }> {
+    const companyId = input.companyId ?? input.employee.idEmpresa;
     if (input.sourceType && input.sourceId != null) {
       const existingBySource = await manager.findOne(EmployeeVacationLedger, {
         where: {
           sourceType: input.sourceType,
           sourceId: input.sourceId,
           tipoMovimiento: input.movementType,
+          idEmpresa: companyId,
         },
       });
       if (existingBySource) {
@@ -384,7 +387,7 @@ export class EmployeeVacationService {
 
     const ledger = manager.create(EmployeeVacationLedger, {
       idEmpleado: input.employee.id,
-      idEmpresa: input.employee.idEmpresa,
+      idEmpresa: companyId,
       idVacacionesCuenta: input.account.id,
       tipoMovimiento: input.movementType,
       diasDelta: input.daysDelta,
@@ -399,6 +402,94 @@ export class EmployeeVacationService {
 
     const saved = await manager.save(EmployeeVacationLedger, ledger);
     return { created: true, ledger: saved };
+  }
+
+  async getBalanceSnapshot(
+    manager: EntityManager,
+    employeeId: number,
+  ): Promise<{ accountId: number | null; balance: number }> {
+    const account = await manager.findOne(EmployeeVacationAccount, {
+      where: { idEmpleado: employeeId },
+    });
+    if (!account) {
+      return { accountId: null, balance: 0 };
+    }
+
+    const lastMovement = await manager.findOne(EmployeeVacationLedger, {
+      where: { idVacacionesCuenta: account.id },
+      order: { id: 'DESC' },
+    });
+
+    return { accountId: account.id, balance: lastMovement?.saldoResultante ?? 0 };
+  }
+
+  async transferBalanceForIntercompany(
+    manager: EntityManager,
+    input: {
+      employee: Employee;
+      sourceCompanyId: number;
+      destinationCompanyId: number;
+      transferId: number;
+      effectiveDate: Date;
+      actorId?: number | null;
+    },
+  ): Promise<{ balance: number; movedDays: number; accountId: number | null }> {
+    let account = await manager.findOne(EmployeeVacationAccount, {
+      where: { idEmpleado: input.employee.id },
+    });
+
+    if (!account) {
+      await this.createInitialAccount(manager, input.employee, 0, input.actorId ?? undefined);
+      account = await manager.findOne(EmployeeVacationAccount, {
+        where: { idEmpleado: input.employee.id },
+      });
+    }
+
+    if (!account) {
+      return { balance: 0, movedDays: 0, accountId: null };
+    }
+
+    const lastMovement = await manager.findOne(EmployeeVacationLedger, {
+      where: { idVacacionesCuenta: account.id },
+      order: { id: 'DESC' },
+    });
+    const balance = lastMovement?.saldoResultante ?? 0;
+    const movedDays = balance;
+
+    const originDelta = -movedDays;
+    const destinationDelta = movedDays;
+
+    await this.appendMovement(manager, {
+      account,
+      employee: input.employee,
+      movementType: VacationMovementType.ADJUSTMENT,
+      daysDelta: originDelta,
+      effectiveDate: input.effectiveDate,
+      sourceType: 'TRANSFER',
+      sourceId: input.transferId,
+      description: 'Traslado de empresa (origen)',
+      actorId: input.actorId ?? null,
+      companyId: input.sourceCompanyId,
+    });
+
+    await this.appendMovement(manager, {
+      account,
+      employee: input.employee,
+      movementType: VacationMovementType.ADJUSTMENT,
+      daysDelta: destinationDelta,
+      effectiveDate: input.effectiveDate,
+      sourceType: 'TRANSFER',
+      sourceId: input.transferId,
+      description: 'Traslado de empresa (destino)',
+      actorId: input.actorId ?? null,
+      companyId: input.destinationCompanyId,
+    });
+
+    account.idEmpresa = input.destinationCompanyId;
+    account.modificadoPor = input.actorId ?? null;
+    await manager.save(EmployeeVacationAccount, account);
+
+    return { balance, movedDays, accountId: account.id };
   }
 
   private calculateProvisionAmount(

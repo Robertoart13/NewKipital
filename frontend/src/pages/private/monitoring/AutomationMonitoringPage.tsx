@@ -81,11 +81,7 @@ function getQueueSummaryLabel(queue: Record<string, number> | undefined) {
 function buildDateFrom(range: '24h' | '7d' | '30d') {
   const now = Date.now();
   const offsetMs =
-    range === '24h'
-      ? 24 * 60 * 60 * 1000
-      : range === '7d'
-        ? 7 * 24 * 60 * 60 * 1000
-        : 30 * 24 * 60 * 60 * 1000;
+    range === '24h' ? 24 * 60 * 60 * 1000 : range === '7d' ? 7 * 24 * 60 * 60 * 1000 : 30 * 24 * 60 * 60 * 1000;
   return new Date(now - offsetMs).toISOString();
 }
 
@@ -180,9 +176,7 @@ export function AutomationMonitoringPage() {
         dataIndex: 'estado',
         key: 'estado',
         width: 140,
-        render: (status: string) => (
-          <Tag color={getStatusColor(status)}>{getStatusLabel(status)}</Tag>
-        ),
+        render: (status: string) => <Tag color={getStatusColor(status)}>{getStatusLabel(status)}</Tag>,
       },
       { title: 'Intentos', dataIndex: 'attempts', key: 'attempts', width: 90 },
       {
@@ -252,9 +246,7 @@ export function AutomationMonitoringPage() {
                       message.success('Proceso reintentado');
                       await loadData();
                     } catch (error) {
-                      message.error(
-                        error instanceof Error ? error.message : 'Error al reintentar proceso',
-                      );
+                      message.error(error instanceof Error ? error.message : 'Error al reintentar proceso');
                     }
                   }}
                 >
@@ -278,8 +270,7 @@ export function AutomationMonitoringPage() {
       },
       {
         title: 'Cola de Cifrado',
-        tooltip:
-          'Procesos encargados de proteger los datos sensibles del empleado mediante cifrado seguro.',
+        tooltip: 'Procesos encargados de proteger los datos sensibles del empleado mediante cifrado seguro.',
         value: getQueueSummaryLabel(summary?.encrypt),
       },
       {
@@ -294,8 +285,7 @@ export function AutomationMonitoringPage() {
       },
       {
         title: 'Datos sin cifrar detectados',
-        tooltip:
-          'Registros que contienen informacion sensible en formato visible y deben procesarse.',
+        tooltip: 'Registros que contienen informacion sensible en formato visible y deben procesarse.',
         value: String(summary?.plaintextDetected ?? 0),
       },
       {
@@ -384,8 +374,8 @@ export function AutomationMonitoringPage() {
                       ¿Qué estoy viendo aquí?
                     </Text>
                     <Text style={{ color: '#6b7a85', fontSize: 13 }}>
-                      Este panel muestra el estado de los procesos automáticos que garantizan que
-                      los datos de los empleados estén correctamente asociados y protegidos.
+                      Este panel muestra el estado de los procesos automáticos que garantizan que los datos de los
+                      empleados estén correctamente asociados y protegidos.
                     </Text>
                     <Text strong style={{ color: '#3d4f5c' }}>
                       El sistema funciona en dos fases:
@@ -394,24 +384,21 @@ export function AutomationMonitoringPage() {
                       1. Identidad: se crea o valida el usuario digital del empleado.
                     </Text>
                     <Text style={{ color: '#6b7a85', fontSize: 13 }}>
-                      2. Cifrado: se protegen los datos sensibles para cumplir estándares de
-                      seguridad.
+                      2. Cifrado: se protegen los datos sensibles para cumplir estándares de seguridad.
                     </Text>
                     <Text strong style={{ color: '#3d4f5c' }}>
                       ¿Qué significan los estados?
                     </Text>
                     <Text style={{ color: '#6b7a85', fontSize: 13 }}>
-                      Pendiente: el proceso está en fila para ejecutarse. En proceso: actualmente se
-                      está ejecutando. Procesado: finalizó correctamente. Error: ocurrió un problema
-                      que requiere revisión.
+                      Pendiente: el proceso está en fila para ejecutarse. En proceso: actualmente se está ejecutando.
+                      Procesado: finalizó correctamente. Error: ocurrió un problema que requiere revisión.
                     </Text>
                     <Text strong style={{ color: '#3d4f5c' }}>
                       ¿Qué debería observar?
                     </Text>
                     <Text style={{ color: '#6b7a85', fontSize: 13 }}>
-                      Si Pendientes baja progresivamente, el sistema está trabajando. Si Datos sin
-                      cifrar baja, la protección está avanzando. Si Pendientes no baja por varios
-                      minutos, podría existir congestión.
+                      Si Pendientes baja progresivamente, el sistema está trabajando. Si Datos sin cifrar baja, la
+                      protección está avanzando. Si Pendientes no baja por varios minutos, podría existir congestión.
                     </Text>
                   </Space>
                 ),
@@ -442,10 +429,7 @@ export function AutomationMonitoringPage() {
                 style={{ width: 180 }}
                 placeholder="Estado"
                 value={filters.estado}
-                options={(vista === 'operativo'
-                  ? STATUS_OPTIONS_OPERATIVO
-                  : STATUS_OPTIONS_HISTORIAL
-                ).map((s) => ({
+                options={(vista === 'operativo' ? STATUS_OPTIONS_OPERATIVO : STATUS_OPTIONS_HISTORIAL).map((s) => ({
                   label: getStatusLabel(s),
                   value: s,
                 }))}
@@ -519,9 +503,7 @@ export function AutomationMonitoringPage() {
                         message.success('Reanálisis ejecutado');
                         await loadData();
                       } catch (error) {
-                        message.error(
-                          error instanceof Error ? error.message : 'Error al reanalizar',
-                        );
+                        message.error(error instanceof Error ? error.message : 'Error al reanalizar');
                       }
                     }}
                   >
@@ -535,11 +517,7 @@ export function AutomationMonitoringPage() {
                         message.success('Procesos bloqueados liberados');
                         await loadData();
                       } catch (error) {
-                        message.error(
-                          error instanceof Error
-                            ? error.message
-                            : 'Error al liberar procesos bloqueados',
-                        );
+                        message.error(error instanceof Error ? error.message : 'Error al liberar procesos bloqueados');
                       }
                     }}
                   >
@@ -594,8 +572,7 @@ export function AutomationMonitoringPage() {
                         total: identityTotal,
                         showSizeChanger: true,
                         showTotal: (total) => `${total} registro(s)`,
-                        onChange: (page, pageSize) =>
-                          setFilters((prev) => ({ ...prev, page, pageSize })),
+                        onChange: (page, pageSize) => setFilters((prev) => ({ ...prev, page, pageSize })),
                       }}
                       locale={{ emptyText: 'No hay datos' }}
                     />
@@ -618,8 +595,7 @@ export function AutomationMonitoringPage() {
                         total: encryptTotal,
                         showSizeChanger: true,
                         showTotal: (total) => `${total} registro(s)`,
-                        onChange: (page, pageSize) =>
-                          setFilters((prev) => ({ ...prev, page, pageSize })),
+                        onChange: (page, pageSize) => setFilters((prev) => ({ ...prev, page, pageSize })),
                       }}
                       locale={{ emptyText: 'No hay datos' }}
                     />

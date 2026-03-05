@@ -40,14 +40,9 @@ describe('securityConfig api', () => {
   });
 
   it('createConfigPermission sends POST', async () => {
-    mockHttpFetch.mockResolvedValue(
-      okJson({ id: 1, codigo: 'test', nombre: 'Test', modulo: 'test' }),
-    );
+    mockHttpFetch.mockResolvedValue(okJson({ id: 1, codigo: 'test', nombre: 'Test', modulo: 'test' }));
     await createConfigPermission({ codigo: 'test', nombre: 'Test', modulo: 'test' });
-    expect(mockHttpFetch).toHaveBeenCalledWith(
-      '/config/permissions',
-      expect.objectContaining({ method: 'POST' }),
-    );
+    expect(mockHttpFetch).toHaveBeenCalledWith('/config/permissions', expect.objectContaining({ method: 'POST' }));
   });
 
   it('fetchRoles includes includeInactive param', async () => {
@@ -74,10 +69,7 @@ describe('securityConfig api', () => {
   it('createRole sends POST with appCode', async () => {
     mockHttpFetch.mockResolvedValue(okJson({ id: 1 }));
     await createRole({ codigo: 'TEST', nombre: 'Test', appCode: 'kpital' });
-    expect(mockHttpFetch).toHaveBeenCalledWith(
-      '/config/roles',
-      expect.objectContaining({ method: 'POST' }),
-    );
+    expect(mockHttpFetch).toHaveBeenCalledWith('/config/roles', expect.objectContaining({ method: 'POST' }));
   });
 
   it('fetchUserAuditTrail uses limit param', async () => {

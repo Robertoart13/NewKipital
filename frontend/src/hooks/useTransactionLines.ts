@@ -6,9 +6,7 @@ interface UseTransactionLinesConfig<TLine extends { key: string }> {
   onIncompleteLine?: () => void;
 }
 
-export function useTransactionLines<TLine extends { key: string }>(
-  config: UseTransactionLinesConfig<TLine>,
-) {
+export function useTransactionLines<TLine extends { key: string }>(config: UseTransactionLinesConfig<TLine>) {
   const { buildEmptyLine, isLineComplete, onIncompleteLine } = config;
 
   const [lines, setLines] = useState<TLine[]>([buildEmptyLine()]);
@@ -37,11 +35,7 @@ export function useTransactionLines<TLine extends { key: string }>(
       setLines(remaining);
       setActiveLineKeys((prevKeys) => {
         const next = prevKeys.filter((k) => k !== lineKey);
-        return next.length > 0
-          ? next
-          : remaining.length > 0
-            ? [remaining[remaining.length - 1].key]
-            : [];
+        return next.length > 0 ? next : remaining.length > 0 ? [remaining[remaining.length - 1].key] : [];
       });
     },
     [lines],

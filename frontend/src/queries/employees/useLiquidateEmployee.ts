@@ -10,15 +10,8 @@ export function useLiquidateEmployee() {
   const { notification } = App.useApp();
 
   return useMutation({
-    mutationFn: ({
-      id,
-      fechaSalida,
-      motivo,
-    }: {
-      id: number;
-      fechaSalida: string;
-      motivo?: string;
-    }) => liquidateEmployee(id, fechaSalida, motivo),
+    mutationFn: ({ id, fechaSalida, motivo }: { id: number; fechaSalida: string; motivo?: string }) =>
+      liquidateEmployee(id, fechaSalida, motivo),
     onSuccess: (_, { id }) => {
       queryClient.invalidateQueries({ queryKey: ['employees'] });
       queryClient.invalidateQueries({ queryKey: employeeKeys.detail(id) });

@@ -75,14 +75,7 @@ const ESTADO_LABEL: Record<number, { text: string; color: string }> = {
   9: { text: 'Rechazada', color: 'red' },
 };
 
-const TIPO_ACCION_SUGERIDA = [
-  'AUSENCIA',
-  'INCAPACIDAD',
-  'LICENCIA',
-  'BONIFICACION',
-  'DESCUENTO',
-  'AUMENTO',
-] as const;
+const TIPO_ACCION_SUGERIDA = ['AUSENCIA', 'INCAPACIDAD', 'LICENCIA', 'BONIFICACION', 'DESCUENTO', 'AUMENTO'] as const;
 
 function getEstadoTag(estado: number) {
   const meta = ESTADO_LABEL[estado] ?? { text: `Estado ${estado}`, color: 'default' };
@@ -162,9 +155,7 @@ export function PersonalActionsPage({
         fetchPayrolls(String(companyId), true),
       ]);
       setEmployees(employeeResp.data);
-      setPayrollHelpers(
-        payrollResp.filter((payroll) => payroll.estado === 1 || payroll.estado === 2),
-      );
+      setPayrollHelpers(payrollResp.filter((payroll) => payroll.estado === 1 || payroll.estado === 2));
     } catch {
       setEmployees([]);
       setPayrollHelpers([]);
@@ -193,9 +184,7 @@ export function PersonalActionsPage({
   const filteredRows = useMemo(() => {
     const term = search.trim().toLowerCase();
     const baseRows = fixedTipoAccion
-      ? rows.filter(
-          (row) => row.tipoAccion.trim().toLowerCase() === fixedTipoAccion.trim().toLowerCase(),
-        )
+      ? rows.filter((row) => row.tipoAccion.trim().toLowerCase() === fixedTipoAccion.trim().toLowerCase())
       : rows;
     if (!term) return baseRows;
     return baseRows.filter((row) => {
@@ -221,8 +210,7 @@ export function PersonalActionsPage({
         dataIndex: 'fechaEfecto',
         key: 'fechaEfecto',
         width: 130,
-        render: (value: string | null | undefined) =>
-          value ? dayjs(value).format('YYYY-MM-DD') : '--',
+        render: (value: string | null | undefined) => (value ? dayjs(value).format('YYYY-MM-DD') : '--'),
       },
       {
         title: 'Monto',
@@ -265,9 +253,7 @@ export function PersonalActionsPage({
                       message.success('Accion aprobada correctamente.');
                       await loadRows();
                     } catch (error) {
-                      message.error(
-                        error instanceof Error ? error.message : 'No se pudo aprobar la accion.',
-                      );
+                      message.error(error instanceof Error ? error.message : 'No se pudo aprobar la accion.');
                     }
                   },
                 });
@@ -292,9 +278,7 @@ export function PersonalActionsPage({
                       message.success('Accion rechazada correctamente.');
                       await loadRows();
                     } catch (error) {
-                      message.error(
-                        error instanceof Error ? error.message : 'No se pudo rechazar la accion.',
-                      );
+                      message.error(error instanceof Error ? error.message : 'No se pudo rechazar la accion.');
                     }
                   },
                 });
@@ -395,13 +379,7 @@ export function PersonalActionsPage({
 
       <Card className={styles.mainCard}>
         <div className={styles.mainCardBody}>
-          <Flex
-            align="center"
-            justify="space-between"
-            wrap="wrap"
-            gap={12}
-            className={styles.registrosHeader}
-          >
+          <Flex align="center" justify="space-between" wrap="wrap" gap={12} className={styles.registrosHeader}>
             <Flex align="center" gap={8} wrap="wrap">
               <FilterOutlined className={styles.registrosFilterIcon} />
               <h3 className={styles.registrosTitle}>Registros de Acciones</h3>
@@ -415,9 +393,7 @@ export function PersonalActionsPage({
           <Collapse
             className={styles.filtersCollapse}
             activeKey={filtersOpen ? ['filtros'] : []}
-            onChange={(keys) =>
-              setFiltersOpen((Array.isArray(keys) ? keys : [keys]).includes('filtros'))
-            }
+            onChange={(keys) => setFiltersOpen((Array.isArray(keys) ? keys : [keys]).includes('filtros'))}
             items={[
               {
                 key: 'filtros',
@@ -477,8 +453,7 @@ export function PersonalActionsPage({
             pagination={{
               pageSize: 10,
               showSizeChanger: false,
-              showTotal: (total, [start, end]) =>
-                `Mostrando ${start} a ${end} de ${total} registros`,
+              showTotal: (total, [start, end]) => `Mostrando ${start} a ${end} de ${total} registros`,
             }}
           />
         </div>
@@ -497,12 +472,7 @@ export function PersonalActionsPage({
         <Form form={form} layout="vertical">
           <Flex gap={12} wrap="wrap">
             <Form.Item label="Empresa" style={{ flex: '1 1 260px' }}>
-              <Input
-                value={
-                  companies.find((company) => Number(company.id) === companyId)?.nombre ?? '--'
-                }
-                disabled
-              />
+              <Input value={companies.find((company) => Number(company.id) === companyId)?.nombre ?? '--'} disabled />
             </Form.Item>
             <Form.Item
               name="idEmpleado"
@@ -573,9 +543,7 @@ export function PersonalActionsPage({
                 Periodo: {selectedHelper.fechaInicioPeriodo} a {selectedHelper.fechaFinPeriodo}
               </div>
               <div>Moneda: {selectedHelper.moneda ?? 'CRC'}</div>
-              <div>
-                Nota: se usa solo como apoyo visual, no enlaza la accion directamente al run.
-              </div>
+              <div>Nota: se usa solo como apoyo visual, no enlaza la accion directamente al run.</div>
             </Card>
           )}
         </Form>

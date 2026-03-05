@@ -92,9 +92,7 @@ describe('formValidation', () => {
     });
 
     it('should reject strings with SQL injection attempts', async () => {
-      await expect(noSqlInjection(undefined, "' OR '1'='1")).rejects.toThrow(
-        'Caracteres o patrones no permitidos',
-      );
+      await expect(noSqlInjection(undefined, "' OR '1'='1")).rejects.toThrow('Caracteres o patrones no permitidos');
       await expect(noSqlInjection(undefined, 'SELECT * FROM users')).rejects.toThrow(
         'Caracteres o patrones no permitidos',
       );
@@ -146,24 +144,16 @@ describe('formValidation', () => {
       const rules = textRules({ max: 10 });
       const validator = rules.find((r) => 'validator' in r);
 
-      await expect(validator!.validator(undefined, '12345678901')).rejects.toThrow(
-        'Máximo 10 caracteres',
-      );
+      await expect(validator!.validator(undefined, '12345678901')).rejects.toThrow('Máximo 10 caracteres');
       await expect(validator!.validator(undefined, '12345')).resolves.toBeUndefined();
     });
 
     it('should include min and max length validation', async () => {
       const rules = textRules({ min: 5, max: 10 });
-      const lengthValidator = rules.find(
-        (r) => 'validator' in r && r.validator.toString().includes('isLength'),
-      );
+      const lengthValidator = rules.find((r) => 'validator' in r && r.validator.toString().includes('isLength'));
 
-      await expect(lengthValidator!.validator(undefined, 'test')).rejects.toThrow(
-        'Entre 5 y 10 caracteres',
-      );
-      await expect(lengthValidator!.validator(undefined, '12345678901')).rejects.toThrow(
-        'Entre 5 y 10 caracteres',
-      );
+      await expect(lengthValidator!.validator(undefined, 'test')).rejects.toThrow('Entre 5 y 10 caracteres');
+      await expect(lengthValidator!.validator(undefined, '12345678901')).rejects.toThrow('Entre 5 y 10 caracteres');
       await expect(lengthValidator!.validator(undefined, '123456')).resolves.toBeUndefined();
     });
 
@@ -182,9 +172,7 @@ describe('formValidation', () => {
 
     it('should accept empty values for optional fields during length validation', async () => {
       const rules = textRules({ min: 5, max: 10 });
-      const lengthValidator = rules.find(
-        (r) => 'validator' in r && r.validator.toString().includes('isLength'),
-      );
+      const lengthValidator = rules.find((r) => 'validator' in r && r.validator.toString().includes('isLength'));
 
       await expect(lengthValidator!.validator(undefined, '')).resolves.toBeUndefined();
       await expect(lengthValidator!.validator(undefined, null)).resolves.toBeUndefined();
@@ -210,24 +198,16 @@ describe('formValidation', () => {
       const validator = rules.find((r) => 'validator' in r);
 
       await expect(validator!.validator(undefined, 'test@example.com')).resolves.toBeUndefined();
-      await expect(
-        validator!.validator(undefined, 'user.name+tag@example.co.uk'),
-      ).resolves.toBeUndefined();
+      await expect(validator!.validator(undefined, 'user.name+tag@example.co.uk')).resolves.toBeUndefined();
     });
 
     it('should reject invalid email format', async () => {
       const rules = emailRules(true);
       const validator = rules.find((r) => 'validator' in r);
 
-      await expect(validator!.validator(undefined, 'not-an-email')).rejects.toThrow(
-        'Formato de correo inválido',
-      );
-      await expect(validator!.validator(undefined, 'missing@domain')).rejects.toThrow(
-        'Formato de correo inválido',
-      );
-      await expect(validator!.validator(undefined, '@example.com')).rejects.toThrow(
-        'Formato de correo inválido',
-      );
+      await expect(validator!.validator(undefined, 'not-an-email')).rejects.toThrow('Formato de correo inválido');
+      await expect(validator!.validator(undefined, 'missing@domain')).rejects.toThrow('Formato de correo inválido');
+      await expect(validator!.validator(undefined, '@example.com')).rejects.toThrow('Formato de correo inválido');
     });
 
     it('should reject email with SQL injection', async () => {
@@ -251,9 +231,7 @@ describe('formValidation', () => {
       const rules = emailRules(true);
       const validator = rules.find((r) => 'validator' in r);
 
-      await expect(
-        validator!.validator(undefined, '  test@example.com  '),
-      ).resolves.toBeUndefined();
+      await expect(validator!.validator(undefined, '  test@example.com  ')).resolves.toBeUndefined();
     });
   });
 
@@ -302,9 +280,7 @@ describe('formValidation', () => {
       }
 
       // Invalid input (too short)
-      const lengthRule = fieldRules.find(
-        (r) => 'validator' in r && r.validator.toString().includes('isLength'),
-      );
+      const lengthRule = fieldRules.find((r) => 'validator' in r && r.validator.toString().includes('isLength'));
       if (lengthRule && 'validator' in lengthRule) {
         await expect(lengthRule.validator({}, 'ab')).rejects.toThrow();
       }

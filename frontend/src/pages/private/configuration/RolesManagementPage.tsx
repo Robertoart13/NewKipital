@@ -176,6 +176,7 @@ export function RolesManagementPage() {
 
   useEffect(() => {
     void loadData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedApp]);
 
   const modulesWithPermissions = useMemo(() => {
@@ -294,7 +295,11 @@ export function RolesManagementPage() {
     setRolePermissionMap((prev) => {
       const next = { ...prev };
       const set = new Set(next[roleId] ?? []);
-      checked ? set.add(permissionCode) : set.delete(permissionCode);
+      if (checked) {
+        set.add(permissionCode);
+      } else {
+        set.delete(permissionCode);
+      }
       next[roleId] = set;
       return next;
     });
@@ -307,7 +312,11 @@ export function RolesManagementPage() {
       const next = { ...prev };
       const set = new Set(next[roleId] ?? []);
       for (const code of codes) {
-        checked ? set.add(code) : set.delete(code);
+        if (checked) {
+          set.add(code);
+        } else {
+          set.delete(code);
+        }
       }
       next[roleId] = set;
       return next;
@@ -319,9 +328,7 @@ export function RolesManagementPage() {
     try {
       setSaving(true);
       await Promise.all(
-        roles.map((role) =>
-          replaceRolePermissions(role.id, Array.from(rolePermissionMap[role.id] ?? []).sort()),
-        ),
+        roles.map((role) => replaceRolePermissions(role.id, Array.from(rolePermissionMap[role.id] ?? []).sort())),
       );
       message.success('Permisos guardados correctamente');
       setDirty(false);
@@ -408,10 +415,7 @@ export function RolesManagementPage() {
         if (row.type === 'permission' && row.codigo) {
           const checked = rolePermissionMap[role.id]?.has(row.codigo) ?? false;
           return (
-            <Checkbox
-              checked={checked}
-              onChange={(e) => togglePermission(role.id, row.codigo!, e.target.checked)}
-            />
+            <Checkbox checked={checked} onChange={(e) => togglePermission(role.id, row.codigo!, e.target.checked)} />
           );
         }
         if (row.type === 'module' && row.moduleName) {
@@ -499,6 +503,7 @@ export function RolesManagementPage() {
       },
       ...roleCols,
     ];
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [permissionCodesByModule, rolePermissionMap, roles]);
 
   const activeTab = location.pathname.includes('/users')
@@ -557,8 +562,7 @@ export function RolesManagementPage() {
               <div>
                 <h2 className={styles.gestionTitle}>Gestion de Roles</h2>
                 <p className={styles.gestionDesc}>
-                  Defina qué permisos tiene cada rol en KPITAL 360 y TimeWise para administrar el
-                  acceso al sistema.
+                  Defina qué permisos tiene cada rol en KPITAL 360 y TimeWise para administrar el acceso al sistema.
                 </p>
               </div>
             </div>
@@ -569,16 +573,10 @@ export function RolesManagementPage() {
       <div className={styles.appSelector}>
         <span className={styles.appSelectorLabel}>Aplicación:</span>
         <div className={styles.appSelectorButtons}>
-          <Button
-            type={selectedApp === 'kpital' ? 'primary' : 'default'}
-            onClick={() => setSelectedApp('kpital')}
-          >
+          <Button type={selectedApp === 'kpital' ? 'primary' : 'default'} onClick={() => setSelectedApp('kpital')}>
             KPITAL 360
           </Button>
-          <Button
-            type={selectedApp === 'timewise' ? 'primary' : 'default'}
-            onClick={() => setSelectedApp('timewise')}
-          >
+          <Button type={selectedApp === 'timewise' ? 'primary' : 'default'} onClick={() => setSelectedApp('timewise')}>
             TimeWise
           </Button>
         </div>
@@ -602,11 +600,7 @@ export function RolesManagementPage() {
               />
             </div>
             <Space size={12}>
-              <Button
-                icon={<PlusOutlined />}
-                onClick={openAddRoleModal}
-                className={styles.btnSecondary}
-              >
+              <Button icon={<PlusOutlined />} onClick={openAddRoleModal} className={styles.btnSecondary}>
                 Agregar rol
               </Button>
               <Button
@@ -684,18 +678,10 @@ export function RolesManagementPage() {
               <Radio value="timewise">TimeWise — Asistencia y tiempo</Radio>
             </Radio.Group>
           </Form.Item>
-          <Form.Item
-            label="Código"
-            name="codigo"
-            rules={[{ required: true, message: 'Requerido' }]}
-          >
+          <Form.Item label="Código" name="codigo" rules={[{ required: true, message: 'Requerido' }]}>
             <Input placeholder="Ej: GERENTE_RRHH o SUPERVISOR_AREA" />
           </Form.Item>
-          <Form.Item
-            label="Nombre"
-            name="nombre"
-            rules={[{ required: true, message: 'Requerido' }]}
-          >
+          <Form.Item label="Nombre" name="nombre" rules={[{ required: true, message: 'Requerido' }]}>
             <Input placeholder="Ej: Gerente de RRHH" />
           </Form.Item>
           <Form.Item label="Descripción" name="descripcion">

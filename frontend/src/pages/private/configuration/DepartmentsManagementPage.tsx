@@ -162,10 +162,7 @@ export function DepartmentsManagementPage() {
     (row: DepartmentListItem) => {
       const term = search.trim().toLowerCase();
       if (!term) return true;
-      return (
-        (row.nombre ?? '').toLowerCase().includes(term) ||
-        (row.idExterno ?? '').toLowerCase().includes(term)
-      );
+      return (row.nombre ?? '').toLowerCase().includes(term) || (row.idExterno ?? '').toLowerCase().includes(term);
     },
     [search],
   );
@@ -213,10 +210,7 @@ export function DepartmentsManagementPage() {
     return result;
   }, [dataFilteredByPaneSelections, paneSearch]);
 
-  const filteredRows = useMemo(
-    () => dataFilteredByPaneSelections(),
-    [dataFilteredByPaneSelections],
-  );
+  const filteredRows = useMemo(() => dataFilteredByPaneSelections(), [dataFilteredByPaneSelections]);
 
   const clearAllFilters = () => {
     setSearch('');
@@ -287,7 +281,7 @@ export function DepartmentsManagementPage() {
     if (!openModal || !editingId) return;
     if (editing) applyDepartmentToForm(editing);
     void loadDepartmentDetail(editingId);
-  }, [openModal, editingId, loadDepartmentDetail, applyDepartmentToForm]);
+  }, [openModal, editingId, editing, loadDepartmentDetail, applyDepartmentToForm]);
 
   const loadDepartmentAuditTrail = useCallback(
     async (id: number) => {
@@ -330,9 +324,7 @@ export function DepartmentsManagementPage() {
 
       const confirmed = await new Promise<boolean>((resolve) => {
         modal.confirm({
-          title: editing
-            ? 'Confirmar edicion de departamento'
-            : 'Confirmar creacion de departamento',
+          title: editing ? 'Confirmar edicion de departamento' : 'Confirmar creacion de departamento',
           content: editing ? 'Se guardaran los cambios.' : 'Se creara el nuevo departamento.',
           icon: <QuestionCircleOutlined style={{ color: '#5a6c7d', fontSize: 40 }} />,
           okText: editing ? 'Guardar cambios' : 'Crear',
@@ -449,9 +441,7 @@ export function DepartmentsManagementPage() {
         return (
           <div>
             <div style={{ fontWeight: 600, color: '#3d4f5c' }}>{actorLabel}</div>
-            {row.actorEmail && (
-              <div style={{ color: '#8c8c8c', fontSize: 12 }}>{row.actorEmail}</div>
-            )}
+            {row.actorEmail && <div style={{ color: '#8c8c8c', fontSize: 12 }}>{row.actorEmail}</div>}
           </div>
         );
       },
@@ -479,10 +469,7 @@ export function DepartmentsManagementPage() {
             {changes.length > 0 ? (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                 {changes.map((change, index) => (
-                  <div
-                    key={`${row.id}-${change.campo}-${index}`}
-                    style={{ fontSize: 12, lineHeight: 1.4 }}
-                  >
+                  <div key={`${row.id}-${change.campo}-${index}`} style={{ fontSize: 12, lineHeight: 1.4 }}>
                     <div>
                       <strong>{change.campo}</strong>
                     </div>
@@ -524,8 +511,7 @@ export function DepartmentsManagementPage() {
           <div className={styles.pageTitleBlock}>
             <h1 className={styles.pageTitle}>Listado de Departamentos</h1>
             <p className={styles.pageSubtitle}>
-              Visualice y gestione todos los departamentos registrados en el sistema de recursos
-              humanos
+              Visualice y gestione todos los departamentos registrados en el sistema de recursos humanos
             </p>
           </div>
         </div>
@@ -561,13 +547,7 @@ export function DepartmentsManagementPage() {
 
       <Card className={styles.mainCard}>
         <div className={styles.mainCardBody}>
-          <Flex
-            align="center"
-            justify="space-between"
-            wrap="wrap"
-            gap={12}
-            className={styles.registrosHeader}
-          >
+          <Flex align="center" justify="space-between" wrap="wrap" gap={12} className={styles.registrosHeader}>
             <Flex align="center" gap={12} wrap="wrap">
               <Flex align="center" gap={8}>
                 <FilterOutlined className={styles.registrosFilterIcon} />
@@ -595,13 +575,7 @@ export function DepartmentsManagementPage() {
             className={styles.filtersCollapse}
           >
             <Collapse.Panel header="Filtros" key="filtros">
-              <Flex
-                justify="space-between"
-                align="center"
-                wrap="wrap"
-                gap={12}
-                style={{ marginBottom: 16 }}
-              >
+              <Flex justify="space-between" align="center" wrap="wrap" gap={12} style={{ marginBottom: 16 }}>
                 <Input
                   placeholder="Search"
                   prefix={<SearchOutlined />}
@@ -630,9 +604,7 @@ export function DepartmentsManagementPage() {
                       <Flex gap={6} align="center" wrap="wrap">
                         <Input
                           value={paneSearch[pane.key]}
-                          onChange={(e) =>
-                            setPaneSearch((prev) => ({ ...prev, [pane.key]: e.target.value }))
-                          }
+                          onChange={(e) => setPaneSearch((prev) => ({ ...prev, [pane.key]: e.target.value }))}
                           placeholder={pane.title}
                           prefix={<SearchOutlined style={{ fontSize: 12, color: '#8c8c8c' }} />}
                           suffix={
@@ -651,19 +623,13 @@ export function DepartmentsManagementPage() {
                           onClick={() => setPaneOpen((prev) => ({ ...prev, [pane.key]: true }))}
                           title="Abrir opciones"
                         />
-                        <Button
-                          size="middle"
-                          onClick={() => clearPaneSelection(pane.key)}
-                          title="Limpiar"
-                        >
+                        <Button size="middle" onClick={() => clearPaneSelection(pane.key)} title="Limpiar">
                           x
                         </Button>
                         <Button
                           size="middle"
                           icon={paneOpen[pane.key] ? <UpOutlined /> : <DownOutlined />}
-                          onClick={() =>
-                            setPaneOpen((prev) => ({ ...prev, [pane.key]: !prev[pane.key] }))
-                          }
+                          onClick={() => setPaneOpen((prev) => ({ ...prev, [pane.key]: !prev[pane.key] }))}
                           title={paneOpen[pane.key] ? 'Colapsar' : 'Expandir'}
                         />
                       </Flex>
@@ -683,10 +649,7 @@ export function DepartmentsManagementPage() {
                               <Checkbox key={`${pane.key}:${option.value}`} value={option.value}>
                                 <Space>
                                   <span>{option.value}</span>
-                                  <Badge
-                                    count={option.count}
-                                    style={{ backgroundColor: '#5a6c7d' }}
-                                  />
+                                  <Badge count={option.count} style={{ backgroundColor: '#5a6c7d' }} />
                                 </Space>
                               </Checkbox>
                             ))}
@@ -712,8 +675,7 @@ export function DepartmentsManagementPage() {
             pagination={{
               pageSize,
               showSizeChanger: false,
-              showTotal: (total, range) =>
-                `Mostrando ${range[0]} a ${range[1]} de ${total} registros`,
+              showTotal: (total, range) => `Mostrando ${range[0]} a ${range[1]} de ${total} registros`,
             }}
             onRow={(record) => ({
               onClick: () => openEditModal(record),
@@ -732,12 +694,7 @@ export function DepartmentsManagementPage() {
         width={860}
         destroyOnHidden
         title={
-          <Flex
-            justify="space-between"
-            align="center"
-            wrap="nowrap"
-            style={{ width: '100%', gap: 16 }}
-          >
+          <Flex justify="space-between" align="center" wrap="nowrap" style={{ width: '100%', gap: 16 }}>
             <div className={styles.companyModalHeader}>
               <div className={styles.companyModalHeaderIcon}>
                 <AppstoreOutlined />
@@ -848,12 +805,9 @@ export function DepartmentsManagementPage() {
                       ),
                       children: (
                         <div style={{ paddingTop: 8 }}>
-                          <p className={styles.sectionTitle}>
-                            Historial de cambios del departamento
-                          </p>
+                          <p className={styles.sectionTitle}>Historial de cambios del departamento</p>
                           <p className={styles.sectionDescription}>
-                            Muestra quien hizo el cambio, cuando lo hizo y el detalle registrado en
-                            bitacora.
+                            Muestra quien hizo el cambio, cuando lo hizo y el detalle registrado en bitacora.
                           </p>
                           <Table<DepartmentAuditTrailItem>
                             rowKey="id"

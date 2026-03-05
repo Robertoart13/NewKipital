@@ -378,10 +378,7 @@ export function AppRouter() {
           }
           path="/payroll-params/calendario/ver"
         />
-        <Route
-          path="/payroll-params/calendario"
-          element={<Navigate to="/payroll-params/calendario/ver" replace />}
-        />
+        <Route path="/payroll-params/calendario" element={<Navigate to="/payroll-params/calendario/ver" replace />} />
         <Route
           element={
             <PrivateLayout>
@@ -422,10 +419,7 @@ export function AppRouter() {
           }
           path="/payroll-management/traslado-interempresas"
         />
-        <Route
-          path="/payroll-management"
-          element={<Navigate to="/payroll-management/planillas" replace />}
-        />
+        <Route path="/payroll-management" element={<Navigate to="/payroll-management/planillas" replace />} />
         <Route
           element={
             <PrivateLayout>

@@ -101,9 +101,7 @@ export async function fetchPayrollMovement(id: number): Promise<PayrollMovementL
   return res.json();
 }
 
-export async function createPayrollMovement(
-  payload: PayrollMovementPayload,
-): Promise<PayrollMovementListItem> {
+export async function createPayrollMovement(payload: PayrollMovementPayload): Promise<PayrollMovementListItem> {
   const res = await httpFetch('/payroll-movements', {
     method: 'POST',
     body: JSON.stringify(payload),
@@ -170,9 +168,7 @@ export async function fetchPayrollMovementPersonalActionTypes(
   return res.json();
 }
 
-export async function fetchPayrollMovementClasses(
-  includeInactive = false,
-): Promise<PayrollMovementClassOption[]> {
+export async function fetchPayrollMovementClasses(includeInactive = false): Promise<PayrollMovementClassOption[]> {
   const params = new URLSearchParams();
   if (includeInactive) {
     params.set('includeInactive', 'true');

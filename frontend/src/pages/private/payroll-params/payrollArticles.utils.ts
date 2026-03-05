@@ -37,10 +37,8 @@ export function getPaneValue(
   if (key === 'nombre') return row.nombre ?? '';
   if (key === 'tipoArticulo')
     return tipoArticuloMap.get(row.idTipoArticuloNomina) ?? `Tipo #${row.idTipoArticuloNomina}`;
-  if (key === 'tipoAccion')
-    return tipoAccionMap.get(row.idTipoAccionPersonal) ?? `Accion #${row.idTipoAccionPersonal}`;
-  if (key === 'cuentaPrincipal')
-    return accountLabelMap.get(row.idCuentaGasto) ?? `Cuenta #${row.idCuentaGasto}`;
+  if (key === 'tipoAccion') return tipoAccionMap.get(row.idTipoAccionPersonal) ?? `Accion #${row.idTipoAccionPersonal}`;
+  if (key === 'cuentaPrincipal') return accountLabelMap.get(row.idCuentaGasto) ?? `Cuenta #${row.idCuentaGasto}`;
   if (key === 'cuentaPasivo') {
     return row.idCuentaPasivo
       ? (accountLabelMap.get(row.idCuentaPasivo) ?? `Cuenta #${row.idCuentaPasivo}`)

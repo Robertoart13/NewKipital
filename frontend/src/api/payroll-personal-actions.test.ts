@@ -93,9 +93,7 @@ describe('payroll and personal actions api', () => {
 
     await fetchPersonalActions('11', [1, 2, 3]);
 
-    expect(mockHttpFetch).toHaveBeenCalledWith(
-      '/personal-actions?idEmpresa=11&estado=1&estado=2&estado=3',
-    );
+    expect(mockHttpFetch).toHaveBeenCalledWith('/personal-actions?idEmpresa=11&estado=1&estado=2&estado=3');
   });
 
   it('createPersonalAction should post payload to API', async () => {

@@ -82,10 +82,7 @@ async function ensureOk<T>(res: Response, defaultMessage: string): Promise<T> {
 
 export async function fetchPermissionsCatalogMode(): Promise<PermissionCatalogMode> {
   const res = await httpFetch('/config/permissions/mode');
-  const data = await ensureOk<{ mode: PermissionCatalogMode }>(
-    res,
-    'Error al cargar modo de catalogo',
-  );
+  const data = await ensureOk<{ mode: PermissionCatalogMode }>(res, 'Error al cargar modo de catalogo');
   return data.mode;
 }
 
@@ -96,8 +93,7 @@ export async function fetchConfigPermissions(filters?: {
   const params = new URLSearchParams();
 
   if (filters?.modulo) params.set('modulo', filters.modulo);
-  if (filters?.includeInactive !== undefined)
-    params.set('includeInactive', String(filters.includeInactive));
+  if (filters?.includeInactive !== undefined) params.set('includeInactive', String(filters.includeInactive));
 
   const res = await httpFetch(`/config/permissions${params.toString() ? `?${params}` : ''}`);
   return ensureOk<SystemPermission[]>(res, 'Error al cargar permisos');
@@ -110,8 +106,7 @@ export async function fetchPermissionsForRoles(filters?: {
   const params = new URLSearchParams();
 
   if (filters?.modulo) params.set('modulo', filters.modulo);
-  if (filters?.includeInactive !== undefined)
-    params.set('includeInactive', String(filters.includeInactive));
+  if (filters?.includeInactive !== undefined) params.set('includeInactive', String(filters.includeInactive));
 
   const res = await httpFetch(`/permissions${params.toString() ? `?${params}` : ''}`);
   return ensureOk<SystemPermission[]>(res, 'Error al cargar permisos para roles');
@@ -156,10 +151,7 @@ export async function reactivateConfigPermission(id: number): Promise<SystemPerm
   return ensureOk<SystemPermission>(res, 'Error al reactivar permiso');
 }
 
-export async function fetchRoles(
-  includeInactive = false,
-  appCode?: 'kpital' | 'timewise',
-): Promise<SystemRole[]> {
+export async function fetchRoles(includeInactive = false, appCode?: 'kpital' | 'timewise'): Promise<SystemRole[]> {
   const params = new URLSearchParams();
   params.set('includeInactive', String(includeInactive));
   if (appCode) params.set('appCode', appCode);
@@ -167,10 +159,7 @@ export async function fetchRoles(
   return ensureOk<SystemRole[]>(res, 'Error al cargar roles');
 }
 
-export async function fetchRolesForUsers(
-  includeInactive = false,
-  appCode?: string,
-): Promise<SystemRole[]> {
+export async function fetchRolesForUsers(includeInactive = false, appCode?: string): Promise<SystemRole[]> {
   const params = new URLSearchParams();
   params.set('includeInactive', String(includeInactive));
   if (appCode) params.set('appCode', appCode);
@@ -198,10 +187,7 @@ export interface UserAuditTrailItem {
 
 export async function fetchCompaniesForUserConfig(): Promise<ConfigCompanyItem[]> {
   const res = await httpFetch('/config/users/companies-catalog');
-  return ensureOk<ConfigCompanyItem[]>(
-    res,
-    'Error al cargar empresas para configuración de usuarios',
-  );
+  return ensureOk<ConfigCompanyItem[]>(res, 'Error al cargar empresas para configuración de usuarios');
 }
 
 export async function createRole(payload: {
@@ -217,10 +203,7 @@ export async function createRole(payload: {
   return ensureOk<SystemRole>(res, 'Error al crear rol');
 }
 
-export async function updateRole(
-  id: number,
-  payload: { nombre?: string; descripcion?: string },
-): Promise<SystemRole> {
+export async function updateRole(id: number, payload: { nombre?: string; descripcion?: string }): Promise<SystemRole> {
   const res = await httpFetch(`/config/roles/${id}`, {
     method: 'PATCH',
     body: JSON.stringify(payload),
@@ -228,10 +211,7 @@ export async function updateRole(
   return ensureOk<SystemRole>(res, 'Error al actualizar rol');
 }
 
-export async function replaceRolePermissions(
-  id: number,
-  permissions: string[],
-): Promise<SystemPermission[]> {
+export async function replaceRolePermissions(id: number, permissions: string[]): Promise<SystemPermission[]> {
   const res = await httpFetch(`/config/roles/${id}/permissions`, {
     method: 'PUT',
     body: JSON.stringify({ permissions }),
@@ -254,10 +234,7 @@ export async function reactivateRole(id: number): Promise<SystemRole> {
   return ensureOk<SystemRole>(res, 'Error al reactivar rol');
 }
 
-export async function fetchUsers(
-  includeInactive = false,
-  configView = false,
-): Promise<SystemUser[]> {
+export async function fetchUsers(includeInactive = false, configView = false): Promise<SystemUser[]> {
   const params = new URLSearchParams();
   params.set('includeInactive', String(includeInactive));
   if (configView) params.set('configView', 'true');
@@ -313,10 +290,7 @@ export async function fetchUserCompanies(userId: number): Promise<UserCompanyAss
   return ensureOk<UserCompanyAssignment[]>(res, 'Error al cargar empresas del usuario');
 }
 
-export async function replaceUserCompanies(
-  userId: number,
-  companyIds: number[],
-): Promise<{ companyIds: number[] }> {
+export async function replaceUserCompanies(userId: number, companyIds: number[]): Promise<{ companyIds: number[] }> {
   const res = await httpFetch(`/config/users/${userId}/companies`, {
     method: 'PUT',
     body: JSON.stringify({ companyIds }),
@@ -361,19 +335,13 @@ export interface UserRolesSummary {
   permissionOverrides: { companyId: number; allow: string[]; deny: string[] }[];
 }
 
-export async function fetchUserRolesSummary(
-  userId: number,
-  appCode: string,
-): Promise<UserRolesSummary> {
+export async function fetchUserRolesSummary(userId: number, appCode: string): Promise<UserRolesSummary> {
   const params = new URLSearchParams({ appCode });
   const res = await httpFetch(`/config/users/${userId}/roles-summary?${params}`);
   return ensureOk<UserRolesSummary>(res, 'Error al cargar resumen de roles');
 }
 
-export async function fetchUserAuditTrail(
-  userId: number,
-  limit = 150,
-): Promise<UserAuditTrailItem[]> {
+export async function fetchUserAuditTrail(userId: number, limit = 150): Promise<UserAuditTrailItem[]> {
   const params = new URLSearchParams({ limit: String(limit) });
   const res = await httpFetch(`/config/users/${userId}/audit-trail?${params}`);
   return ensureOk<UserAuditTrailItem[]>(res, 'Error al cargar bitacora del usuario');
@@ -424,10 +392,7 @@ export async function fetchUserRoleExclusions(
 ): Promise<{ companyId: number; appCode: string; roleIds: number[] }> {
   const params = new URLSearchParams({ companyId: String(companyId), appCode });
   const res = await httpFetch(`/config/users/${userId}/role-exclusions?${params}`);
-  return ensureOk<{ companyId: number; appCode: string; roleIds: number[] }>(
-    res,
-    'Error al cargar excepciones de rol',
-  );
+  return ensureOk<{ companyId: number; appCode: string; roleIds: number[] }>(res, 'Error al cargar excepciones de rol');
 }
 
 export async function fetchUserPermissionOverrides(
@@ -457,10 +422,7 @@ export async function replaceUserGlobalPermissionDenials(
     method: 'PUT',
     body: JSON.stringify(payload),
   });
-  return ensureOk<{ appCode: string; deny: string[] }>(
-    res,
-    'Error al guardar denegaciones globales',
-  );
+  return ensureOk<{ appCode: string; deny: string[] }>(res, 'Error al guardar denegaciones globales');
 }
 
 export async function replaceUserPermissionOverrides(

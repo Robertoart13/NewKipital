@@ -226,10 +226,7 @@ export function ClassesManagementPage() {
     return result;
   }, [dataFilteredByPaneSelections, paneSearch]);
 
-  const filteredRows = useMemo(
-    () => dataFilteredByPaneSelections(),
-    [dataFilteredByPaneSelections],
-  );
+  const filteredRows = useMemo(() => dataFilteredByPaneSelections(), [dataFilteredByPaneSelections]);
 
   const clearAllFilters = () => {
     setSearch('');
@@ -305,7 +302,7 @@ export function ClassesManagementPage() {
     if (!openModal || !editingId) return;
     if (editing) applyClassToForm(editing);
     void loadClassDetail(editingId);
-  }, [openModal, editingId, loadClassDetail, applyClassToForm]);
+  }, [openModal, editingId, editing, loadClassDetail, applyClassToForm]);
 
   const loadClassAuditTrail = useCallback(
     async (id: number) => {
@@ -477,9 +474,7 @@ export function ClassesManagementPage() {
         return (
           <div>
             <div style={{ fontWeight: 600, color: '#3d4f5c' }}>{actorLabel}</div>
-            {row.actorEmail && (
-              <div style={{ color: '#8c8c8c', fontSize: 12 }}>{row.actorEmail}</div>
-            )}
+            {row.actorEmail && <div style={{ color: '#8c8c8c', fontSize: 12 }}>{row.actorEmail}</div>}
           </div>
         );
       },
@@ -507,10 +502,7 @@ export function ClassesManagementPage() {
             {changes.length > 0 ? (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                 {changes.map((change, index) => (
-                  <div
-                    key={`${row.id}-${change.campo}-${index}`}
-                    style={{ fontSize: 12, lineHeight: 1.4 }}
-                  >
+                  <div key={`${row.id}-${change.campo}-${index}`} style={{ fontSize: 12, lineHeight: 1.4 }}>
                     <div>
                       <strong>{change.campo}</strong>
                     </div>
@@ -567,9 +559,7 @@ export function ClassesManagementPage() {
               </div>
               <div>
                 <h2 className={styles.gestionTitle}>Gestion de Clases</h2>
-                <p className={styles.gestionDesc}>
-                  Administre y consulte todas las clases registradas en el sistema
-                </p>
+                <p className={styles.gestionDesc}>Administre y consulte todas las clases registradas en el sistema</p>
               </div>
             </Flex>
             {canCreate ? (
@@ -588,13 +578,7 @@ export function ClassesManagementPage() {
 
       <Card className={styles.mainCard}>
         <div className={styles.mainCardBody}>
-          <Flex
-            align="center"
-            justify="space-between"
-            wrap="wrap"
-            gap={12}
-            className={styles.registrosHeader}
-          >
+          <Flex align="center" justify="space-between" wrap="wrap" gap={12} className={styles.registrosHeader}>
             <Flex align="center" gap={12} wrap="wrap">
               <Flex align="center" gap={8}>
                 <FilterOutlined className={styles.registrosFilterIcon} />
@@ -622,13 +606,7 @@ export function ClassesManagementPage() {
             className={styles.filtersCollapse}
           >
             <Collapse.Panel header="Filtros" key="filtros">
-              <Flex
-                justify="space-between"
-                align="center"
-                wrap="wrap"
-                gap={12}
-                style={{ marginBottom: 16 }}
-              >
+              <Flex justify="space-between" align="center" wrap="wrap" gap={12} style={{ marginBottom: 16 }}>
                 <Input
                   placeholder="Search"
                   prefix={<SearchOutlined />}
@@ -657,9 +635,7 @@ export function ClassesManagementPage() {
                       <Flex gap={6} align="center" wrap="wrap">
                         <Input
                           value={paneSearch[pane.key]}
-                          onChange={(e) =>
-                            setPaneSearch((prev) => ({ ...prev, [pane.key]: e.target.value }))
-                          }
+                          onChange={(e) => setPaneSearch((prev) => ({ ...prev, [pane.key]: e.target.value }))}
                           placeholder={pane.title}
                           prefix={<SearchOutlined style={{ fontSize: 12, color: '#8c8c8c' }} />}
                           suffix={
@@ -678,19 +654,13 @@ export function ClassesManagementPage() {
                           onClick={() => setPaneOpen((prev) => ({ ...prev, [pane.key]: true }))}
                           title="Abrir opciones"
                         />
-                        <Button
-                          size="middle"
-                          onClick={() => clearPaneSelection(pane.key)}
-                          title="Limpiar"
-                        >
+                        <Button size="middle" onClick={() => clearPaneSelection(pane.key)} title="Limpiar">
                           x
                         </Button>
                         <Button
                           size="middle"
                           icon={paneOpen[pane.key] ? <UpOutlined /> : <DownOutlined />}
-                          onClick={() =>
-                            setPaneOpen((prev) => ({ ...prev, [pane.key]: !prev[pane.key] }))
-                          }
+                          onClick={() => setPaneOpen((prev) => ({ ...prev, [pane.key]: !prev[pane.key] }))}
                           title={paneOpen[pane.key] ? 'Colapsar' : 'Expandir'}
                         />
                       </Flex>
@@ -710,10 +680,7 @@ export function ClassesManagementPage() {
                               <Checkbox key={`${pane.key}:${option.value}`} value={option.value}>
                                 <Space>
                                   <span>{option.value}</span>
-                                  <Badge
-                                    count={option.count}
-                                    style={{ backgroundColor: '#5a6c7d' }}
-                                  />
+                                  <Badge count={option.count} style={{ backgroundColor: '#5a6c7d' }} />
                                 </Space>
                               </Checkbox>
                             ))}
@@ -739,8 +706,7 @@ export function ClassesManagementPage() {
             pagination={{
               pageSize,
               showSizeChanger: false,
-              showTotal: (total, range) =>
-                `Mostrando ${range[0]} a ${range[1]} de ${total} registros`,
+              showTotal: (total, range) => `Mostrando ${range[0]} a ${range[1]} de ${total} registros`,
             }}
             onRow={(record) => ({
               onClick: () => openEditModal(record),
@@ -759,12 +725,7 @@ export function ClassesManagementPage() {
         width={860}
         destroyOnHidden
         title={
-          <Flex
-            justify="space-between"
-            align="center"
-            wrap="nowrap"
-            style={{ width: '100%', gap: 16 }}
-          >
+          <Flex justify="space-between" align="center" wrap="nowrap" style={{ width: '100%', gap: 16 }}>
             <div className={styles.companyModalHeader}>
               <div className={styles.companyModalHeaderIcon}>
                 <AppstoreOutlined />
@@ -790,9 +751,7 @@ export function ClassesManagementPage() {
                       if (!editing) return;
                       modal.confirm({
                         title: checked ? 'Reactivar clase' : 'Inactivar clase',
-                        content: checked
-                          ? 'La clase volvera a estar disponible.'
-                          : 'La clase quedara inactiva.',
+                        content: checked ? 'La clase volvera a estar disponible.' : 'La clase quedara inactiva.',
                         okText: checked ? 'Reactivar' : 'Inactivar',
                         cancelText: 'Cancelar',
                         centered: true,
@@ -825,12 +784,7 @@ export function ClassesManagementPage() {
           </Flex>
         }
       >
-        <Form<ClassFormValues>
-          layout="vertical"
-          form={form}
-          preserve={false}
-          className={styles.companyFormContent}
-        >
+        <Form<ClassFormValues> layout="vertical" form={form} preserve={false} className={styles.companyFormContent}>
           <Tabs
             activeKey={activeTab}
             onChange={setActiveTab}
@@ -847,18 +801,10 @@ export function ClassesManagementPage() {
                 children: (
                   <Spin spinning={loadingDetail}>
                     <div className={styles.companyFormGrid}>
-                      <Form.Item
-                        name="nombre"
-                        label="Nombre Clase *"
-                        rules={textRules({ required: true, max: 255 })}
-                      >
+                      <Form.Item name="nombre" label="Nombre Clase *" rules={textRules({ required: true, max: 255 })}>
                         <Input maxLength={255} />
                       </Form.Item>
-                      <Form.Item
-                        name="codigo"
-                        label="Codigo Clase *"
-                        rules={textRules({ required: true, max: 50 })}
-                      >
+                      <Form.Item name="codigo" label="Codigo Clase *" rules={textRules({ required: true, max: 50 })}>
                         <Input maxLength={50} />
                       </Form.Item>
                       <Form.Item
@@ -893,8 +839,7 @@ export function ClassesManagementPage() {
                         <div style={{ paddingTop: 8 }}>
                           <p className={styles.sectionTitle}>Historial de cambios de la clase</p>
                           <p className={styles.sectionDescription}>
-                            Muestra quien hizo el cambio, cuando lo hizo y el detalle registrado en
-                            bitacora.
+                            Muestra quien hizo el cambio, cuando lo hizo y el detalle registrado en bitacora.
                           </p>
                           <Table<ClassAuditTrailItem>
                             rowKey="id"

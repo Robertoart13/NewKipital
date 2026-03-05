@@ -37,11 +37,7 @@ export function usePermissionsRealtimeSync() {
       refreshInFlightRef.current = true;
       try {
         if (activeCompanyId) {
-          const resolved = await fetchPermissionsForCompany(
-            activeCompanyId,
-            activeApp,
-            forceBypassCache,
-          );
+          const resolved = await fetchPermissionsForCompany(activeCompanyId, activeApp, forceBypassCache);
           dispatch(
             setPermissions({
               permissions: resolved.permissions,

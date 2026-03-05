@@ -34,9 +34,7 @@ export async function fetchPayrollHolidays(): Promise<PayrollHolidayItem[]> {
   return res.json();
 }
 
-export async function createPayrollHoliday(
-  payload: PayrollHolidayPayload,
-): Promise<PayrollHolidayItem> {
+export async function createPayrollHoliday(payload: PayrollHolidayPayload): Promise<PayrollHolidayItem> {
   const res = await httpFetch('/payroll-holidays', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },

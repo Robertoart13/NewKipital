@@ -20,9 +20,7 @@ vi.mock('antd', () => ({
   }) => {
     const total = dataSource?.length ?? 0;
     const showTotal =
-      pagination !== false
-        ? (pagination as { showTotal?: (n: number) => React.ReactNode })?.showTotal
-        : undefined;
+      pagination !== false ? (pagination as { showTotal?: (n: number) => React.ReactNode })?.showTotal : undefined;
     return (
       <div className={['ant-table', className].filter(Boolean).join(' ')}>
         {loading && <div className="ant-spin" />}

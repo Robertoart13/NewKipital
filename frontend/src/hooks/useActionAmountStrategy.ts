@@ -30,16 +30,10 @@ interface ResolveActionAmountArgs<TLine, TExtra> {
 export function useActionAmountStrategy<TLine, TMovement, TExtra = undefined>(
   config: UseActionAmountStrategyConfig<TLine, TMovement, TExtra>,
 ) {
-  const { movements, getMovementId, getCurrentMovementId, onNoMovement, calculateWithMovement } =
-    config;
+  const { movements, getMovementId, getCurrentMovementId, onNoMovement, calculateWithMovement } = config;
 
   return useCallback(
-    ({
-      line,
-      movementId,
-      cantidadValue,
-      extra,
-    }: ResolveActionAmountArgs<TLine, TExtra>): AmountCalculationResult => {
+    ({ line, movementId, cantidadValue, extra }: ResolveActionAmountArgs<TLine, TExtra>): AmountCalculationResult => {
       const resolvedMovementId = movementId ?? getCurrentMovementId(line);
       const movement = movements.find((item) => getMovementId(item) === resolvedMovementId);
 

@@ -35,10 +35,7 @@ export interface ProjectAuditTrailItem {
   cambios: Array<{ campo: string; antes: string; despues: string }>;
 }
 
-export async function fetchProjects(
-  idEmpresa?: number,
-  showInactive = false,
-): Promise<ProjectListItem[]> {
+export async function fetchProjects(idEmpresa?: number, showInactive = false): Promise<ProjectListItem[]> {
   const params = new URLSearchParams();
   if (idEmpresa) {
     params.set('idEmpresa', String(idEmpresa));
@@ -71,10 +68,7 @@ export async function createProject(payload: ProjectPayload): Promise<ProjectLis
   return res.json();
 }
 
-export async function updateProject(
-  id: number,
-  payload: Partial<ProjectPayload>,
-): Promise<ProjectListItem> {
+export async function updateProject(id: number, payload: Partial<ProjectPayload>): Promise<ProjectListItem> {
   const res = await httpFetch(`/projects/${id}`, {
     method: 'PUT',
     body: JSON.stringify(payload),
@@ -99,10 +93,7 @@ export async function reactivateProject(id: number): Promise<ProjectListItem> {
   return res.json();
 }
 
-export async function fetchProjectAuditTrail(
-  id: number,
-  limit = 200,
-): Promise<ProjectAuditTrailItem[]> {
+export async function fetchProjectAuditTrail(id: number, limit = 200): Promise<ProjectAuditTrailItem[]> {
   const qs = new URLSearchParams({ limit: String(limit) });
   const res = await httpFetch(`/projects/${id}/audit-trail?${qs}`);
   if (!res.ok) {

@@ -69,11 +69,7 @@ export function EmployeeActions({
           </>
         )}
         {!isActive && canReactivate && (
-          <Button
-            type="primary"
-            onClick={() => onReactivate(employee.id)}
-            loading={reactivatePending}
-          >
+          <Button type="primary" onClick={() => onReactivate(employee.id)} loading={reactivatePending}>
             Reactivar
           </Button>
         )}

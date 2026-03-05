@@ -38,6 +38,7 @@ import { usePayPeriods } from '../../../../queries/catalogs/usePayPeriods';
 import { usePositions } from '../../../../queries/catalogs/usePositions';
 import { useAllCompaniesForHistory } from '../../../../queries/companies/useAllCompaniesForHistory';
 import { useCreateEmployee } from '../../../../queries/employees/useCreateEmployee';
+import { useSupervisors } from '../../../../queries/employees/useSupervisors';
 import { useRolesByApp } from '../../../../queries/roles/useRolesByApp';
 import { useAppSelector } from '../../../../store/hooks';
 import {
@@ -45,7 +46,6 @@ import {
   canAssignKpitalRoleOnEmployeeCreate,
   canAssignTimewiseRoleOnEmployeeCreate,
 } from '../../../../store/selectors/permissions.selectors';
-import { useSupervisors } from '../../../../queries/employees/useSupervisors';
 import styles from '../../configuration/UsersManagementPage.module.css';
 import {
   GENERO_OPTIONS,
@@ -62,10 +62,7 @@ interface EmployeeCreateModalProps {
   onSuccess?: (employeeId: number) => void;
 }
 
-const defaultIdEmpresa = (
-  companies: { id: number }[],
-  activeId: string | undefined,
-): number | undefined => {
+const defaultIdEmpresa = (companies: { id: number }[], activeId: string | undefined): number | undefined => {
   if (!companies.length) return undefined;
   const activeNum = activeId ? parseInt(activeId, 10) : NaN;
   const activeInList = !isNaN(activeNum) && companies.some((c) => c.id === activeNum);
@@ -106,15 +103,13 @@ export function EmployeeCreateModal({ open, onClose, onSuccess }: EmployeeCreate
   const crearAccesoKpital = Form.useWatch('crearAccesoKpital', form) ?? false;
   const crearAcceso = crearAccesoTimewise || crearAccesoKpital;
   const activo = Form.useWatch('activo', form) ?? true;
-  const monedaSalarioSeleccionada =
-    (Form.useWatch('monedaSalario', form) as string | undefined) ?? 'CRC';
+  const monedaSalarioSeleccionada = (Form.useWatch('monedaSalario', form) as string | undefined) ?? 'CRC';
   const currencySymbol = getCurrencySymbol(monedaSalarioSeleccionada);
   const moneyField = useMoneyFieldFormatter(EMPLOYEE_MONEY_MAX_DIGITS);
   const empresaLaboralSeleccionada = Form.useWatch('idEmpresa', form) as number | undefined;
   const estadoInactivo = !activo;
   const { data: supervisors = [] } = useSupervisors();
-  const empresaLaboralActual =
-    companies.length === 1 ? companies[0]?.id : empresaLaboralSeleccionada;
+  const empresaLaboralActual = companies.length === 1 ? companies[0]?.id : empresaLaboralSeleccionada;
 
   const canSubmit = useMemo(() => {
     const v = formValues ?? {};
@@ -133,8 +128,7 @@ export function EmployeeCreateModal({ open, onClose, onSuccess }: EmployeeCreate
     const idEmp = companies.length === 1 ? companies[0].id : v.idEmpresa;
     if (!idEmp) return false;
     if (!estadoInactivo && crearAcceso && !v.passwordInicial?.trim()) return false;
-    if (!estadoInactivo && crearAccesoTimewise && canAssignTimewiseRole && !v.idRolTimewise)
-      return false;
+    if (!estadoInactivo && crearAccesoTimewise && canAssignTimewiseRole && !v.idRolTimewise) return false;
     if (!estadoInactivo && crearAccesoKpital && canAssignKpitalRole && !v.idRolKpital) return false;
     return true;
   }, [
@@ -158,6 +152,7 @@ export function EmployeeCreateModal({ open, onClose, onSuccess }: EmployeeCreate
   }, [open, form, companies, activeCompany?.id]);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     if (open) setActiveTabKey('personal');
   }, [open]);
 
@@ -181,8 +176,7 @@ export function EmployeeCreateModal({ open, onClose, onSuccess }: EmployeeCreate
     });
     if (!confirmed) return;
     const values = await form.validateFields().catch(() => null);
-    const idEmpresa =
-      companies.length === 1 ? companies[0].id : (values?.idEmpresa as number | undefined);
+    const idEmpresa = companies.length === 1 ? companies[0].id : (values?.idEmpresa as number | undefined);
     if (!values || idEmpresa == null) return;
 
     const payload = {
@@ -209,8 +203,7 @@ export function EmployeeCreateModal({ open, onClose, onSuccess }: EmployeeCreate
       monedaSalario: values.monedaSalario || 'CRC',
       numeroCcss: values.numeroCcss?.trim() || undefined,
       cuentaBanco: values.cuentaBanco || undefined,
-      vacacionesAcumuladas:
-        values.vacacionesAcumuladas != null ? String(values.vacacionesAcumuladas) : undefined,
+      vacacionesAcumuladas: values.vacacionesAcumuladas != null ? String(values.vacacionesAcumuladas) : undefined,
       cesantiaAcumulada:
         moneyField.parse(values.cesantiaAcumulada) != null
           ? String(moneyField.parse(values.cesantiaAcumulada))
@@ -227,9 +220,7 @@ export function EmployeeCreateModal({ open, onClose, onSuccess }: EmployeeCreate
           idEmpresa: item.idEmpresa,
           montoProvisionado: moneyField.parse(item.montoProvisionado) ?? 0,
           fechaInicioLaboral: dayjs(item.fechaInicioLaboral).format('YYYY-MM-DD'),
-          fechaFinLaboral: item.fechaFinLaboral
-            ? dayjs(item.fechaFinLaboral).format('YYYY-MM-DD')
-            : undefined,
+          fechaFinLaboral: item.fechaFinLaboral ? dayjs(item.fechaFinLaboral).format('YYYY-MM-DD') : undefined,
           registroEmpresa: item.registroEmpresa?.trim() || undefined,
           estado: item.estado ?? 1,
         }),
@@ -242,9 +233,7 @@ export function EmployeeCreateModal({ open, onClose, onSuccess }: EmployeeCreate
     };
 
     if (!estadoInactivo && crearAcceso && !payload.passwordInicial) {
-      form.setFields([
-        { name: 'passwordInicial', errors: ['Requerido cuando se crea acceso digital'] },
-      ]);
+      form.setFields([{ name: 'passwordInicial', errors: ['Requerido cuando se crea acceso digital'] }]);
       return;
     }
 
@@ -270,20 +259,12 @@ export function EmployeeCreateModal({ open, onClose, onSuccess }: EmployeeCreate
       children: (
         <Row gutter={[12, 12]} className={styles.companyFormGrid}>
           <Col span={12}>
-            <Form.Item
-              name="nombre"
-              label="Nombre *"
-              rules={textRules({ required: true, max: 100 })}
-            >
+            <Form.Item name="nombre" label="Nombre *" rules={textRules({ required: true, max: 100 })}>
               <Input maxLength={100} />
             </Form.Item>
           </Col>
           <Col span={12}>
-            <Form.Item
-              name="apellido1"
-              label="Apellido *"
-              rules={textRules({ required: true, max: 100 })}
-            >
+            <Form.Item name="apellido1" label="Apellido *" rules={textRules({ required: true, max: 100 })}>
               <Input maxLength={100} />
             </Form.Item>
           </Col>
@@ -293,11 +274,7 @@ export function EmployeeCreateModal({ open, onClose, onSuccess }: EmployeeCreate
             </Form.Item>
           </Col>
           <Col span={8}>
-            <Form.Item
-              name="cedula"
-              label="Cédula *"
-              rules={textRules({ required: true, max: 30 })}
-            >
+            <Form.Item name="cedula" label="Cédula *" rules={textRules({ required: true, max: 30 })}>
               <Input maxLength={30} />
             </Form.Item>
           </Col>
@@ -313,9 +290,7 @@ export function EmployeeCreateModal({ open, onClose, onSuccess }: EmployeeCreate
           </Col>
           <Col span={8}>
             <Form.Item name="estadoCivil" label="Estado Civil" initialValue="Soltero">
-              <Select
-                options={ESTADO_CIVIL_OPTIONS.map((o) => ({ value: o.value, label: o.label }))}
-              />
+              <Select options={ESTADO_CIVIL_OPTIONS.map((o) => ({ value: o.value, label: o.label }))} />
             </Form.Item>
           </Col>
           <Col span={8}>
@@ -325,9 +300,7 @@ export function EmployeeCreateModal({ open, onClose, onSuccess }: EmployeeCreate
           </Col>
           <Col span={8}>
             <Form.Item name="tieneConyuge" label="Tiene Cónyuge" initialValue="No">
-              <Select
-                options={TIENE_CONYUGE_OPTIONS.map((o) => ({ value: o.value, label: o.label }))}
-              />
+              <Select options={TIENE_CONYUGE_OPTIONS.map((o) => ({ value: o.value, label: o.label }))} />
             </Form.Item>
           </Col>
         </Row>
@@ -344,11 +317,7 @@ export function EmployeeCreateModal({ open, onClose, onSuccess }: EmployeeCreate
       children: (
         <Row gutter={[12, 12]} className={styles.companyFormGrid}>
           <Col span={12}>
-            <Form.Item
-              name="telefono"
-              label="Teléfono"
-              rules={[{ validator: optionalNoSqlInjection }]}
-            >
+            <Form.Item name="telefono" label="Teléfono" rules={[{ validator: optionalNoSqlInjection }]}>
               <Input maxLength={30} placeholder="00000000" />
             </Form.Item>
           </Col>
@@ -358,20 +327,12 @@ export function EmployeeCreateModal({ open, onClose, onSuccess }: EmployeeCreate
             </Form.Item>
           </Col>
           <Col span={24}>
-            <Form.Item
-              name="direccion"
-              label="Dirección"
-              rules={[{ validator: optionalNoSqlInjection }]}
-            >
+            <Form.Item name="direccion" label="Dirección" rules={[{ validator: optionalNoSqlInjection }]}>
               <Input placeholder="No especifica" />
             </Form.Item>
           </Col>
           <Col span={12}>
-            <Form.Item
-              name="codigoPostal"
-              label="Código Postal"
-              rules={[{ validator: optionalNoSqlInjection }]}
-            >
+            <Form.Item name="codigoPostal" label="Código Postal" rules={[{ validator: optionalNoSqlInjection }]}>
               <Input placeholder="0" maxLength={20} />
             </Form.Item>
           </Col>
@@ -521,8 +482,7 @@ export function EmployeeCreateModal({ open, onClose, onSuccess }: EmployeeCreate
                   validator: (_, v) => {
                     const n = moneyField.parse(v);
                     if (n == null) return Promise.resolve();
-                    if (isNaN(n) || n <= 0)
-                      return Promise.reject(new Error('El salario debe ser mayor a cero'));
+                    if (isNaN(n) || n <= 0) return Promise.reject(new Error('El salario debe ser mayor a cero'));
                     if (isMoneyOverMax(n)) return Promise.reject(new Error('Monto demasiado alto'));
                     return Promise.resolve();
                   },
@@ -565,11 +525,7 @@ export function EmployeeCreateModal({ open, onClose, onSuccess }: EmployeeCreate
             </Form.Item>
           </Col>
           <Col span={12}>
-            <Form.Item
-              name="cuentaBanco"
-              label="Cuenta bancaria"
-              rules={[{ validator: optionalNoSqlInjection }]}
-            >
+            <Form.Item name="cuentaBanco" label="Cuenta bancaria" rules={[{ validator: optionalNoSqlInjection }]}>
               <Input placeholder="CRC-" maxLength={50} />
             </Form.Item>
           </Col>
@@ -596,29 +552,22 @@ export function EmployeeCreateModal({ open, onClose, onSuccess }: EmployeeCreate
                 <Select
                   allowClear
                   placeholder="Seleccionar"
-                  options={supervisors.map(
-                    (s: { id: number; nombre: string; apellido1: string }) => ({
-                      value: s.id,
-                      label: `${s.nombre} ${s.apellido1}`.trim(),
-                    }),
-                  )}
+                  options={supervisors.map((s: { id: number; nombre: string; apellido1: string }) => ({
+                    value: s.id,
+                    label: `${s.nombre} ${s.apellido1}`.trim(),
+                  }))}
                 />
               </Form.Item>
             </Col>
           </Row>
           {estadoInactivo && (
             <p style={{ color: '#64748b', fontSize: '13px', marginBottom: 16 }}>
-              Para habilitar el acceso al sistema, active primero el empleado en el bloque Estado
-              (arriba).
+              Para habilitar el acceso al sistema, active primero el empleado en el bloque Estado (arriba).
             </p>
           )}
           <Row gutter={[12, 12]} className={styles.companyFormGrid}>
             <Col span={12}>
-              <Form.Item
-                name="crearAccesoTimewise"
-                label="Crear acceso a TimeWise"
-                valuePropName="checked"
-              >
+              <Form.Item name="crearAccesoTimewise" label="Crear acceso a TimeWise" valuePropName="checked">
                 <Switch disabled={estadoInactivo || !canAssignTimewiseRole} />
               </Form.Item>
               {!canAssignTimewiseRole && (
@@ -641,11 +590,7 @@ export function EmployeeCreateModal({ open, onClose, onSuccess }: EmployeeCreate
               )}
             </Col>
             <Col span={12}>
-              <Form.Item
-                name="crearAccesoKpital"
-                label="Crear acceso a KPITAL"
-                valuePropName="checked"
-              >
+              <Form.Item name="crearAccesoKpital" label="Crear acceso a KPITAL" valuePropName="checked">
                 <Switch disabled={estadoInactivo || !canAssignKpitalRole} />
               </Form.Item>
               {!canAssignKpitalRole && (
@@ -703,11 +648,7 @@ export function EmployeeCreateModal({ open, onClose, onSuccess }: EmployeeCreate
                     validator: (_, value) => {
                       if (value == null || value === '') return Promise.resolve();
                       const numericValue = Number(value);
-                      if (
-                        Number.isNaN(numericValue) ||
-                        numericValue < 0 ||
-                        !Number.isInteger(numericValue)
-                      ) {
+                      if (Number.isNaN(numericValue) || numericValue < 0 || !Number.isInteger(numericValue)) {
                         return Promise.reject(new Error('Debe ser un número entero de 0 o mayor'));
                       }
                       return Promise.resolve();
@@ -716,14 +657,7 @@ export function EmployeeCreateModal({ open, onClose, onSuccess }: EmployeeCreate
                 ]}
                 extra="Cantidad de días iniciales (entero). Este valor queda bloqueado luego de crear."
               >
-                <InputNumber
-                  min={0}
-                  max={99999}
-                  precision={0}
-                  step={1}
-                  style={{ width: '100%' }}
-                  placeholder="0"
-                />
+                <InputNumber min={0} max={99999} precision={0} step={1} style={{ width: '100%' }} placeholder="0" />
               </Form.Item>
             </Col>
             <Col span={12}>
@@ -766,8 +700,7 @@ export function EmployeeCreateModal({ open, onClose, onSuccess }: EmployeeCreate
               <div className={styles.historicoProvisionBlock}>
                 <p className={styles.sectionTitle}>Provisión de Aguinaldo del Empleado</p>
                 <p className={styles.sectionDescription}>
-                  Agregue los registros de provisión de aguinaldo por empresa (traslados, montos y
-                  fechas laborales).
+                  Agregue los registros de provisión de aguinaldo por empresa (traslados, montos y fechas laborales).
                 </p>
                 {fields.length > 0 && (
                   <div className={styles.historicoTableWrap}>
@@ -791,9 +724,7 @@ export function EmployeeCreateModal({ open, onClose, onSuccess }: EmployeeCreate
                               validator: (_, value) => {
                                 if (!value || !empresaLaboralActual) return Promise.resolve();
                                 if (Number(value) === Number(empresaLaboralActual)) {
-                                  return Promise.reject(
-                                    new Error('Debe ser distinta a la empresa laboral actual'),
-                                  );
+                                  return Promise.reject(new Error('Debe ser distinta a la empresa laboral actual'));
                                 }
                                 return Promise.resolve();
                               },
@@ -807,10 +738,7 @@ export function EmployeeCreateModal({ open, onClose, onSuccess }: EmployeeCreate
                               .filter((company) => company.id !== empresaLaboralActual)
                               .map((company) => ({ value: company.id, label: company.nombre }))}
                             filterOption={(input, option) =>
-                              (option?.label ?? '')
-                                .toString()
-                                .toLowerCase()
-                                .includes(input.toLowerCase())
+                              (option?.label ?? '').toString().toLowerCase().includes(input.toLowerCase())
                             }
                             optionFilterProp="label"
                           />
@@ -826,10 +754,8 @@ export function EmployeeCreateModal({ open, onClose, onSuccess }: EmployeeCreate
                             {
                               validator: (_, value) => {
                                 const numericValue = moneyField.parse(value);
-                                if (numericValue == null)
-                                  return Promise.reject(new Error('Monto requerido'));
-                                if (numericValue < 0)
-                                  return Promise.reject(new Error('No puede ser negativo'));
+                                if (numericValue == null) return Promise.reject(new Error('Monto requerido'));
+                                if (numericValue < 0) return Promise.reject(new Error('No puede ser negativo'));
                                 if (isMoneyOverMax(numericValue))
                                   return Promise.reject(new Error('Monto demasiado alto'));
                                 return Promise.resolve();
@@ -863,9 +789,7 @@ export function EmployeeCreateModal({ open, onClose, onSuccess }: EmployeeCreate
                         <Form.Item
                           className={styles.historicoCellItem}
                           name={[field.name, 'fechaFinLaboral']}
-                          dependencies={[
-                            ['provisionesAguinaldo', field.name, 'fechaInicioLaboral'],
-                          ]}
+                          dependencies={[['provisionesAguinaldo', field.name, 'fechaInicioLaboral']]}
                           rules={[
                             {
                               validator: (_, value) => {
@@ -878,13 +802,8 @@ export function EmployeeCreateModal({ open, onClose, onSuccess }: EmployeeCreate
                                 if (dayjs(value).isAfter(dayjs(), 'day')) {
                                   return Promise.reject(new Error('No puede ser futura'));
                                 }
-                                if (
-                                  fechaInicio &&
-                                  dayjs(value).isBefore(dayjs(fechaInicio), 'day')
-                                ) {
-                                  return Promise.reject(
-                                    new Error('Debe ser igual o posterior al inicio'),
-                                  );
+                                if (fechaInicio && dayjs(value).isBefore(dayjs(fechaInicio), 'day')) {
+                                  return Promise.reject(new Error('Debe ser igual o posterior al inicio'));
                                 }
                                 return Promise.resolve();
                               },
@@ -935,17 +854,13 @@ export function EmployeeCreateModal({ open, onClose, onSuccess }: EmployeeCreate
                   </div>
                 )}
                 {fields.length === 0 && (
-                  <p className={styles.historicoEmptyHint}>
-                    No hay registros de provisión de aguinaldo.
-                  </p>
+                  <p className={styles.historicoEmptyHint}>No hay registros de provisión de aguinaldo.</p>
                 )}
                 <Button
                   type="primary"
                   icon={<PlusOutlined />}
                   className={styles.historicoAddBtn}
-                  onClick={() =>
-                    add({ montoProvisionado: 0, estado: 1, registroEmpresa: 'Traslado de empresa' })
-                  }
+                  onClick={() => add({ montoProvisionado: 0, estado: 1, registroEmpresa: 'Traslado de empresa' })}
                 >
                   Agregar Registro
                 </Button>
@@ -971,12 +886,7 @@ export function EmployeeCreateModal({ open, onClose, onSuccess }: EmployeeCreate
         body: { padding: 24, maxHeight: '70vh', overflowY: 'auto' },
       }}
       title={
-        <Flex
-          justify="space-between"
-          align="center"
-          wrap="nowrap"
-          style={{ width: '100%', gap: 16 }}
-        >
+        <Flex justify="space-between" align="center" wrap="nowrap" style={{ width: '100%', gap: 16 }}>
           <div className={styles.companyModalHeader}>
             <div className={styles.companyModalHeaderIcon}>
               <UserAddOutlined />
@@ -985,9 +895,7 @@ export function EmployeeCreateModal({ open, onClose, onSuccess }: EmployeeCreate
           </div>
           <Flex align="center" gap={12} className={styles.companyModalHeaderRight}>
             <div className={styles.companyModalEstadoPaper}>
-              <span
-                style={{ fontWeight: 500, fontSize: 14, color: activo ? '#20638d' : '#64748b' }}
-              >
+              <span style={{ fontWeight: 500, fontSize: 14, color: activo ? '#20638d' : '#64748b' }}>
                 {activo ? 'Activo' : 'Inactivo'}
               </span>
               <Switch checked={activo} onChange={(v) => form.setFieldValue('activo', v)} />

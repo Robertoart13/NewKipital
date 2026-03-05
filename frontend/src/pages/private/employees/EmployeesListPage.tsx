@@ -27,7 +27,7 @@ import {
   Table,
   Tag,
 } from 'antd';
-import { useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 
 import { employeeKeys } from '../../../queries/employees/keys';
@@ -39,20 +39,10 @@ import styles from '../configuration/UsersManagementPage.module.css';
 import { EmployeeCreateModal } from './components/EmployeeCreateModal';
 import { EmployeeEditModal } from './components/EmployeeEditModal';
 
-import type {
-  EmployeeFilters as EmployeeFiltersType,
-  EmployeeListItem,
-} from '../../../api/employees';
+import type { EmployeeFilters as EmployeeFiltersType, EmployeeListItem } from '../../../api/employees';
 import type { ColumnsType } from 'antd/es/table';
 
-type PaneKey =
-  | 'codigo'
-  | 'empresa'
-  | 'nombreCompleto'
-  | 'cedula'
-  | 'correo'
-  | 'telefono'
-  | 'estado';
+type PaneKey = 'codigo' | 'empresa' | 'nombreCompleto' | 'cedula' | 'correo' | 'telefono' | 'estado';
 
 interface PaneConfig {
   key: PaneKey;
@@ -80,14 +70,9 @@ function buildFullName(employee: EmployeeListItem): string {
     .join(' ');
 }
 
-function getPaneValue(
-  employee: EmployeeListItem,
-  key: PaneKey,
-  companyNameById: Map<number, string>,
-): string {
+function getPaneValue(employee: EmployeeListItem, key: PaneKey, companyNameById: Map<number, string>): string {
   if (key === 'codigo') return employee.codigo ?? '';
-  if (key === 'empresa')
-    return companyNameById.get(employee.idEmpresa) ?? `Empresa #${employee.idEmpresa}`;
+  if (key === 'empresa') return companyNameById.get(employee.idEmpresa) ?? `Empresa #${employee.idEmpresa}`;
   if (key === 'nombreCompleto') return buildFullName(employee);
   if (key === 'cedula') return employee.cedula ?? '';
   if (key === 'correo') return employee.email ?? '';
@@ -169,33 +154,39 @@ export function EmployeesListPage() {
     ? (data ?? { data: [], total: 0, page: 1, pageSize })
     : { data: [], total: 0, page: 1, pageSize };
 
-  const matchesGlobalSearch = (employee: EmployeeListItem): boolean => {
-    const term = search.trim().toLowerCase();
-    if (!term) return true;
-    const fullName = buildFullName(employee).toLowerCase();
-    const companyName = (companyNameById.get(employee.idEmpresa) ?? '').toLowerCase();
-    return (
-      (employee.codigo ?? '').toLowerCase().includes(term) ||
-      (employee.cedula ?? '').toLowerCase().includes(term) ||
-      (employee.email ?? '').toLowerCase().includes(term) ||
-      (employee.telefono ?? '').toLowerCase().includes(term) ||
-      fullName.includes(term) ||
-      companyName.includes(term)
-    );
-  };
+  const matchesGlobalSearch = useCallback(
+    (employee: EmployeeListItem): boolean => {
+      const term = search.trim().toLowerCase();
+      if (!term) return true;
+      const fullName = buildFullName(employee).toLowerCase();
+      const companyName = (companyNameById.get(employee.idEmpresa) ?? '').toLowerCase();
+      return (
+        (employee.codigo ?? '').toLowerCase().includes(term) ||
+        (employee.cedula ?? '').toLowerCase().includes(term) ||
+        (employee.email ?? '').toLowerCase().includes(term) ||
+        (employee.telefono ?? '').toLowerCase().includes(term) ||
+        fullName.includes(term) ||
+        companyName.includes(term)
+      );
+    },
+    [companyNameById, search],
+  );
 
-  const dataFilteredByPaneSelections = (excludePane?: PaneKey) =>
-    paginated.data.filter((employee) => {
-      if (!matchesGlobalSearch(employee)) return false;
-      for (const pane of paneConfig) {
-        if (pane.key === excludePane) continue;
-        const selected = paneSelections[pane.key];
-        if (selected.length === 0) continue;
-        const value = getPaneValue(employee, pane.key, companyNameById);
-        if (!selected.includes(value)) return false;
-      }
-      return true;
-    });
+  const dataFilteredByPaneSelections = useCallback(
+    (excludePane?: PaneKey) =>
+      paginated.data.filter((employee) => {
+        if (!matchesGlobalSearch(employee)) return false;
+        for (const pane of paneConfig) {
+          if (pane.key === excludePane) continue;
+          const selected = paneSelections[pane.key];
+          if (selected.length === 0) continue;
+          const value = getPaneValue(employee, pane.key, companyNameById);
+          if (!selected.includes(value)) return false;
+        }
+        return true;
+      }),
+    [companyNameById, matchesGlobalSearch, paginated.data, paneSelections],
+  );
 
   const paneOptions = useMemo(() => {
     const result: Record<PaneKey, PaneOption[]> = {
@@ -223,12 +214,9 @@ export function EmployeesListPage() {
         .sort((a, b) => a.value.localeCompare(b.value));
     }
     return result;
-  }, [companyNameById, paneSearch, paneSelections, paginated.data, search]);
+  }, [companyNameById, dataFilteredByPaneSelections, paneSearch]);
 
-  const filteredEmployees = useMemo(
-    () => dataFilteredByPaneSelections(),
-    [paneSelections, paginated.data, search, companyNameById],
-  );
+  const filteredEmployees = useMemo(() => dataFilteredByPaneSelections(), [dataFilteredByPaneSelections]);
 
   const columns: ColumnsType<EmployeeListItem> = [
     {
@@ -241,8 +229,7 @@ export function EmployeesListPage() {
       title: 'Empresa',
       key: 'empresa',
       width: 220,
-      render: (_, employee) =>
-        companyNameById.get(employee.idEmpresa) ?? `Empresa #${employee.idEmpresa}`,
+      render: (_, employee) => companyNameById.get(employee.idEmpresa) ?? `Empresa #${employee.idEmpresa}`,
     },
     {
       title: 'Nombre completo',
@@ -406,13 +393,7 @@ export function EmployeesListPage() {
 
       <Card className={styles.mainCard}>
         <div className={styles.mainCardBody}>
-          <Flex
-            justify="space-between"
-            align="center"
-            className={styles.registrosHeader}
-            wrap="wrap"
-            gap={12}
-          >
+          <Flex justify="space-between" align="center" className={styles.registrosHeader} wrap="wrap" gap={12}>
             <Flex align="center" gap={8}>
               <FilterOutlined className={styles.registrosFilterIcon} />
               <h3 className={styles.registrosTitle}>Registros de Empleados</h3>
@@ -473,13 +454,7 @@ export function EmployeesListPage() {
                 label: 'Filtros',
                 children: (
                   <>
-                    <Flex
-                      justify="space-between"
-                      align="center"
-                      wrap="wrap"
-                      gap={12}
-                      style={{ marginBottom: 16 }}
-                    >
+                    <Flex justify="space-between" align="center" wrap="wrap" gap={12} style={{ marginBottom: 16 }}>
                       <Input
                         placeholder="Search"
                         prefix={<SearchOutlined />}
@@ -520,17 +495,11 @@ export function EmployeesListPage() {
                                   }))
                                 }
                                 placeholder={pane.title}
-                                prefix={
-                                  <SearchOutlined style={{ fontSize: 12, color: '#8c8c8c' }} />
-                                }
+                                prefix={<SearchOutlined style={{ fontSize: 12, color: '#8c8c8c' }} />}
                                 suffix={
                                   <Flex gap={2}>
-                                    <SortAscendingOutlined
-                                      style={{ fontSize: 10, color: '#8c8c8c' }}
-                                    />
-                                    <SortDescendingOutlined
-                                      style={{ fontSize: 10, color: '#8c8c8c' }}
-                                    />
+                                    <SortAscendingOutlined style={{ fontSize: 10, color: '#8c8c8c' }} />
+                                    <SortDescendingOutlined style={{ fontSize: 10, color: '#8c8c8c' }} />
                                   </Flex>
                                 }
                                 size="middle"
@@ -540,24 +509,16 @@ export function EmployeesListPage() {
                               <Button
                                 size="middle"
                                 icon={<SearchOutlined />}
-                                onClick={() =>
-                                  setPaneOpen((prev) => ({ ...prev, [pane.key]: true }))
-                                }
+                                onClick={() => setPaneOpen((prev) => ({ ...prev, [pane.key]: true }))}
                                 title="Abrir opciones"
                               />
-                              <Button
-                                size="middle"
-                                onClick={() => clearPaneSelection(pane.key)}
-                                title="Limpiar"
-                              >
+                              <Button size="middle" onClick={() => clearPaneSelection(pane.key)} title="Limpiar">
                                 x
                               </Button>
                               <Button
                                 size="middle"
                                 icon={paneOpen[pane.key] ? <UpOutlined /> : <DownOutlined />}
-                                onClick={() =>
-                                  setPaneOpen((prev) => ({ ...prev, [pane.key]: !prev[pane.key] }))
-                                }
+                                onClick={() => setPaneOpen((prev) => ({ ...prev, [pane.key]: !prev[pane.key] }))}
                                 title={paneOpen[pane.key] ? 'Colapsar' : 'Expandir'}
                               />
                             </Flex>
@@ -574,24 +535,16 @@ export function EmployeesListPage() {
                                   style={{ display: 'flex', flexDirection: 'column', gap: 8 }}
                                 >
                                   {paneOptions[pane.key].map((option) => (
-                                    <Checkbox
-                                      key={`${pane.key}:${option.value}`}
-                                      value={option.value}
-                                    >
+                                    <Checkbox key={`${pane.key}:${option.value}`} value={option.value}>
                                       <Space>
                                         <span>{option.value}</span>
-                                        <Badge
-                                          count={option.count}
-                                          style={{ backgroundColor: '#5a6c7d' }}
-                                        />
+                                        <Badge count={option.count} style={{ backgroundColor: '#5a6c7d' }} />
                                       </Space>
                                     </Checkbox>
                                   ))}
                                 </Checkbox.Group>
                                 {paneOptions[pane.key].length === 0 && (
-                                  <span className={styles.emptyHint}>
-                                    Sin valores para este filtro
-                                  </span>
+                                  <span className={styles.emptyHint}>Sin valores para este filtro</span>
                                 )}
                               </div>
                             )}
@@ -627,8 +580,7 @@ export function EmployeesListPage() {
                 onChange: (page, size) => {
                   setFilters((current) => ({ ...current, page, pageSize: size }));
                 },
-                showTotal: (total, range) =>
-                  `Mostrando ${range[0]} a ${range[1]} de ${total} registros`,
+                showTotal: (total, range) => `Mostrando ${range[0]} a ${range[1]} de ${total} registros`,
               }}
               onRow={(record) => ({
                 onClick: () => {

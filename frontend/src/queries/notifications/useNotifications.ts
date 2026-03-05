@@ -62,8 +62,7 @@ export function useMarkAsDeleted() {
 export function useMarkAllAsRead() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (params?: { appCode?: string; companyId?: number }) =>
-      markAllNotificationsAsRead(params),
+    mutationFn: (params?: { appCode?: string; companyId?: number }) => markAllNotificationsAsRead(params),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: notificationKeys.all });
     },

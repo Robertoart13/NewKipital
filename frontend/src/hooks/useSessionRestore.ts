@@ -2,12 +2,7 @@ import { useEffect } from 'react';
 
 import { httpFetch } from '../interceptors/httpInterceptor';
 import { isMicrosoftOAuthCallbackInProgress } from '../lib/microsoftAuth';
-import {
-  STORAGE_KEYS,
-  getStoredActiveApp,
-  consumeSkipRestore,
-  getMicrosoftAvatar,
-} from '../lib/storage';
+import { STORAGE_KEYS, getStoredActiveApp, consumeSkipRestore, getMicrosoftAvatar } from '../lib/storage';
 import { useAppDispatch, useAppSelector } from '../store/hooks';
 import { setActiveApp } from '../store/slices/activeAppSlice';
 import { setActiveCompany } from '../store/slices/activeCompanySlice';

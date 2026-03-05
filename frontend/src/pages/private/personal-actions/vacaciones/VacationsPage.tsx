@@ -116,8 +116,7 @@ const NEXT_STATE_ACTION_CONFIG: Partial<Record<number, NextStateActionConfig>> =
   3: {
     label: 'Aprobar',
     requiredPermission: 'approve',
-    confirmText:
-      'La acción de vacaciones quedará APROBADA y lista para proceso operativo. ¿Desea continuar?',
+    confirmText: 'La acción de vacaciones quedará APROBADA y lista para proceso operativo. ¿Desea continuar?',
     successText: 'La acción de vacaciones fue aprobada correctamente.',
     deniedText: 'No tiene permiso para aprobar vacaciones.',
   },
@@ -149,18 +148,11 @@ function isVacationEditableState(estado: number): boolean {
   return [1, 2, 3].includes(Number(estado));
 }
 
-function getPaneValue(
-  row: VacationUiRow,
-  key: PaneKey,
-  companies: Array<{ id: number; nombre: string }>,
-): string {
+function getPaneValue(row: VacationUiRow, key: PaneKey, companies: Array<{ id: number; nombre: string }>): string {
   if (key === 'empresa') {
-    return (
-      companies.find((c) => Number(c.id) === row.idEmpresa)?.nombre ?? `Empresa #${row.idEmpresa}`
-    );
+    return companies.find((c) => Number(c.id) === row.idEmpresa)?.nombre ?? `Empresa #${row.idEmpresa}`;
   }
-  if (key === 'empleado')
-    return (row.employeeLabel ?? `Empleado #${row.idEmpleado}`).trim() || '--';
+  if (key === 'empleado') return (row.employeeLabel ?? `Empleado #${row.idEmpleado}`).trim() || '--';
   if (key === 'periodoPago') return (row.periodoPagoResumen ?? '').trim() || '--';
   if (key === 'movimiento') return (row.movimientoResumen ?? '').trim() || '--';
   if (key === 'estado') return ESTADO_LABEL[row.estado]?.text ?? `Estado ${row.estado}`;
@@ -219,17 +211,12 @@ export function VacationsPage() {
   const canEdit = useAppSelector((state) => hasPermission(state, 'hr-action-vacaciones:edit'));
   const canCancel = useAppSelector((state) => hasPermission(state, 'hr-action-vacaciones:cancel'));
   const canView = useAppSelector(
-    (state) =>
-      hasPermission(state, 'hr-action-vacaciones:view') || hasPermission(state, 'hr_action:view'),
+    (state) => hasPermission(state, 'hr-action-vacaciones:view') || hasPermission(state, 'hr_action:view'),
   );
   const canApprove = useAppSelector(
-    (state) =>
-      hasPermission(state, 'hr-action-vacaciones:approve') ||
-      hasPermission(state, 'hr_action:approve'),
+    (state) => hasPermission(state, 'hr-action-vacaciones:approve') || hasPermission(state, 'hr_action:approve'),
   );
-  const canViewEmployeeSensitive = useAppSelector((state) =>
-    hasPermission(state, 'employee:view-sensitive'),
-  );
+  const canViewEmployeeSensitive = useAppSelector((state) => hasPermission(state, 'employee:view-sensitive'));
 
   const defaultCompanyId = useMemo(() => {
     const active = Number(activeCompany?.id);
@@ -354,9 +341,7 @@ export function VacationsPage() {
       );
       setRows(filtered);
     } catch (error) {
-      message.error(
-        error instanceof Error ? error.message : 'No se pudieron cargar las vacaciones.',
-      );
+      message.error(error instanceof Error ? error.message : 'No se pudieron cargar las vacaciones.');
     } finally {
       setLoading(false);
     }
@@ -389,8 +374,7 @@ export function VacationsPage() {
         message.destroy(key);
       } catch (error) {
         message.error({
-          content:
-            error instanceof Error ? error.message : 'No se pudo cargar el detalle de vacaciones.',
+          content: error instanceof Error ? error.message : 'No se pudo cargar el detalle de vacaciones.',
           key,
         });
         setOpenModal(false);
@@ -411,9 +395,7 @@ export function VacationsPage() {
         setAuditTrail(rowsAudit ?? []);
       } catch (error) {
         setAuditTrail([]);
-        message.error(
-          error instanceof Error ? error.message : 'Error al cargar bitácora de vacaciones',
-        );
+        message.error(error instanceof Error ? error.message : 'Error al cargar bitácora de vacaciones');
       } finally {
         setLoadingAuditTrail(false);
       }
@@ -554,10 +536,7 @@ export function VacationsPage() {
     return result;
   }, [companies, dataFilteredByPaneSelections, paneSearch]);
 
-  const rowsFiltered = useMemo(
-    () => dataFilteredByPaneSelections(),
-    [dataFilteredByPaneSelections],
-  );
+  const rowsFiltered = useMemo(() => dataFilteredByPaneSelections(), [dataFilteredByPaneSelections]);
 
   const columns: ColumnsType<VacationUiRow> = useMemo(
     () => [
@@ -566,8 +545,7 @@ export function VacationsPage() {
         key: 'empresa',
         width: 240,
         render: (_, row) =>
-          companies.find((company) => Number(company.id) === row.idEmpresa)?.nombre ??
-          `Empresa #${row.idEmpresa}`,
+          companies.find((company) => Number(company.id) === row.idEmpresa)?.nombre ?? `Empresa #${row.idEmpresa}`,
       },
       {
         title: 'EMPLEADO',
@@ -603,18 +581,13 @@ export function VacationsPage() {
         render: (_, row) => {
           const canInvalidate = canCancel && [1, 2, 3].includes(row.estado);
           const nextAction = NEXT_STATE_ACTION_CONFIG[row.estado];
-          const canAdvance = nextAction
-            ? nextAction.requiredPermission === 'approve'
-              ? canApprove
-              : canEdit
-            : false;
+          const canAdvance = nextAction ? (nextAction.requiredPermission === 'approve' ? canApprove : canEdit) : false;
 
           const onInvalidate = (e: MouseEvent<HTMLElement>) => {
             e.stopPropagation();
             modal.confirm({
               title: 'Confirmar invalidación',
-              content:
-                'Esta acción se marcará como invalidada y no seguirá su flujo operativo. ¿Desea continuar?',
+              content: 'Esta acción se marcará como invalidada y no seguirá su flujo operativo. ¿Desea continuar?',
               okText: 'Sí, invalidar',
               cancelText: 'Cancelar',
               centered: true,
@@ -631,10 +604,7 @@ export function VacationsPage() {
                   await loadRows();
                 } catch (error) {
                   message.error({
-                    content:
-                      error instanceof Error
-                        ? error.message
-                        : 'No se pudieron invalidar las vacaciones.',
+                    content: error instanceof Error ? error.message : 'No se pudieron invalidar las vacaciones.',
                     key,
                   });
                 }
@@ -675,10 +645,7 @@ export function VacationsPage() {
                         await loadRows();
                       } catch (error) {
                         message.error({
-                          content:
-                            error instanceof Error
-                              ? error.message
-                              : 'No se pudo actualizar el estado.',
+                          content: error instanceof Error ? error.message : 'No se pudo actualizar el estado.',
                           key,
                         });
                       }
@@ -753,9 +720,7 @@ export function VacationsPage() {
               </div>
               <div>
                 <h2 className={styles.gestionTitle}>Gestión de vacaciones</h2>
-                <p className={styles.gestionDesc}>
-                  Encabezado de acción + selección de días por calendario
-                </p>
+                <p className={styles.gestionDesc}>Encabezado de acción + selección de días por calendario</p>
               </div>
             </Flex>
             <Button
@@ -779,13 +744,7 @@ export function VacationsPage() {
 
       <Card className={styles.mainCard} style={{ marginBottom: 0 }}>
         <div className={styles.mainCardBody}>
-          <Flex
-            align="center"
-            justify="space-between"
-            wrap="wrap"
-            gap={12}
-            className={styles.registrosHeader}
-          >
+          <Flex align="center" justify="space-between" wrap="wrap" gap={12} className={styles.registrosHeader}>
             <Flex align="center" gap={12} wrap="wrap">
               <Flex align="center" gap={8}>
                 <FilterOutlined className={styles.registrosFilterIcon} />
@@ -820,9 +779,7 @@ export function VacationsPage() {
                   value: Number(value),
                   label: meta.text,
                 }))}
-                onChange={(values) =>
-                  setSelectedEstados((values ?? []).map((item) => Number(item)))
-                }
+                onChange={(values) => setSelectedEstados((values ?? []).map((item) => Number(item)))}
               />
               <Button icon={<ReloadOutlined />} onClick={() => void loadRows()}>
                 Refrescar
@@ -832,9 +789,7 @@ export function VacationsPage() {
 
           <Collapse
             activeKey={filtersExpanded ? ['filtros'] : []}
-            onChange={(keys) =>
-              setFiltersExpanded((Array.isArray(keys) ? keys : [keys]).includes('filtros'))
-            }
+            onChange={(keys) => setFiltersExpanded((Array.isArray(keys) ? keys : [keys]).includes('filtros'))}
             className={styles.filtersCollapse}
             items={[
               {
@@ -842,13 +797,7 @@ export function VacationsPage() {
                 label: 'Filtros',
                 children: (
                   <>
-                    <Flex
-                      justify="space-between"
-                      align="center"
-                      wrap="wrap"
-                      gap={12}
-                      style={{ marginBottom: 16 }}
-                    >
+                    <Flex justify="space-between" align="center" wrap="wrap" gap={12} style={{ marginBottom: 16 }}>
                       <Input
                         placeholder="Search"
                         prefix={<SearchOutlined />}
@@ -877,21 +826,13 @@ export function VacationsPage() {
                             <Flex gap={6} align="center" wrap="wrap">
                               <Input
                                 value={paneSearch[pane.key]}
-                                onChange={(e) =>
-                                  setPaneSearch((prev) => ({ ...prev, [pane.key]: e.target.value }))
-                                }
+                                onChange={(e) => setPaneSearch((prev) => ({ ...prev, [pane.key]: e.target.value }))}
                                 placeholder={pane.title}
-                                prefix={
-                                  <SearchOutlined style={{ fontSize: 12, color: '#8c8c8c' }} />
-                                }
+                                prefix={<SearchOutlined style={{ fontSize: 12, color: '#8c8c8c' }} />}
                                 suffix={
                                   <Flex gap={2}>
-                                    <SortAscendingOutlined
-                                      style={{ fontSize: 10, color: '#8c8c8c' }}
-                                    />
-                                    <SortDescendingOutlined
-                                      style={{ fontSize: 10, color: '#8c8c8c' }}
-                                    />
+                                    <SortAscendingOutlined style={{ fontSize: 10, color: '#8c8c8c' }} />
+                                    <SortDescendingOutlined style={{ fontSize: 10, color: '#8c8c8c' }} />
                                   </Flex>
                                 }
                                 size="middle"
@@ -901,24 +842,16 @@ export function VacationsPage() {
                               <Button
                                 size="middle"
                                 icon={<SearchOutlined />}
-                                onClick={() =>
-                                  setPaneOpen((prev) => ({ ...prev, [pane.key]: true }))
-                                }
+                                onClick={() => setPaneOpen((prev) => ({ ...prev, [pane.key]: true }))}
                                 title="Abrir opciones"
                               />
-                              <Button
-                                size="middle"
-                                onClick={() => clearPaneSelection(pane.key)}
-                                title="Limpiar"
-                              >
+                              <Button size="middle" onClick={() => clearPaneSelection(pane.key)} title="Limpiar">
                                 x
                               </Button>
                               <Button
                                 size="middle"
                                 icon={paneOpen[pane.key] ? <UpOutlined /> : <DownOutlined />}
-                                onClick={() =>
-                                  setPaneOpen((prev) => ({ ...prev, [pane.key]: !prev[pane.key] }))
-                                }
+                                onClick={() => setPaneOpen((prev) => ({ ...prev, [pane.key]: !prev[pane.key] }))}
                                 title={paneOpen[pane.key] ? 'Colapsar' : 'Expandir'}
                               />
                             </Flex>
@@ -935,24 +868,16 @@ export function VacationsPage() {
                                   style={{ display: 'flex', flexDirection: 'column', gap: 8 }}
                                 >
                                   {paneOptions[pane.key].map((option) => (
-                                    <Checkbox
-                                      key={`${pane.key}:${option.value}`}
-                                      value={option.value}
-                                    >
+                                    <Checkbox key={`${pane.key}:${option.value}`} value={option.value}>
                                       <Space>
                                         <span>{option.value}</span>
-                                        <Badge
-                                          count={option.count}
-                                          style={{ backgroundColor: '#5a6c7d' }}
-                                        />
+                                        <Badge count={option.count} style={{ backgroundColor: '#5a6c7d' }} />
                                       </Space>
                                     </Checkbox>
                                   ))}
                                 </Checkbox.Group>
                                 {paneOptions[pane.key].length === 0 && (
-                                  <span className={styles.emptyHint}>
-                                    Sin valores para este filtro
-                                  </span>
+                                  <span className={styles.emptyHint}>Sin valores para este filtro</span>
                                 )}
                               </div>
                             )}
@@ -975,8 +900,7 @@ export function VacationsPage() {
             pagination={{
               pageSize,
               showSizeChanger: false,
-              showTotal: (total, [start, end]) =>
-                `Mostrando ${start} a ${end} de ${total} registros`,
+              showTotal: (total, [start, end]) => `Mostrando ${start} a ${end} de ${total} registros`,
             }}
             onRow={(record) => ({
               onClick: () => {
@@ -996,13 +920,7 @@ export function VacationsPage() {
         mode={mode}
         title={modalTitle}
         companies={companies}
-        employees={
-          mode === 'edit' && editingRow
-            ? modalEmployees.length > 0
-              ? modalEmployees
-              : employees
-            : employees
-        }
+        employees={mode === 'edit' && editingRow ? (modalEmployees.length > 0 ? modalEmployees : employees) : employees}
         payPeriods={payPeriods}
         movements={movements}
         holidays={holidays}
@@ -1064,8 +982,7 @@ export function VacationsPage() {
             await loadRows();
           } catch (error) {
             message.error({
-              content:
-                error instanceof Error ? error.message : 'No se pudieron guardar las vacaciones.',
+              content: error instanceof Error ? error.message : 'No se pudieron guardar las vacaciones.',
               key: loadingKey,
               duration: 5,
             });

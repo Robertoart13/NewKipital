@@ -11,9 +11,7 @@ import { payrollKeys } from './keys';
 export function usePayroll(id: number | string | null, companyId?: string) {
   const numId = typeof id === 'string' ? parseInt(id, 10) : id;
   return useQuery({
-    queryKey: companyId
-      ? payrollKeys.detail(companyId, String(numId))
-      : [...payrollKeys.details(), numId],
+    queryKey: companyId ? payrollKeys.detail(companyId, String(numId)) : [...payrollKeys.details(), numId],
     queryFn: () => fetchPayroll(numId!),
     enabled: numId != null && !isNaN(numId),
   });

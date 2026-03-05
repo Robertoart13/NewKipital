@@ -4,7 +4,7 @@ import { expect, afterEach } from 'vitest';
 
 // Force garbage collection before each test file if --expose-gc is available.
 // This prevents memory accumulation when many module-heavy files share a worker.
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+
 (globalThis as any).gc?.();
 
 // Extend Vitest's expect with jest-dom matchers

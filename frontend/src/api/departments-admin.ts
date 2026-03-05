@@ -59,10 +59,7 @@ export async function createDepartment(payload: DepartmentPayload): Promise<Depa
   return res.json();
 }
 
-export async function updateDepartment(
-  id: number,
-  payload: Partial<DepartmentPayload>,
-): Promise<DepartmentListItem> {
+export async function updateDepartment(id: number, payload: Partial<DepartmentPayload>): Promise<DepartmentListItem> {
   const res = await httpFetch(`/departments/${id}`, {
     method: 'PUT',
     body: JSON.stringify(payload),
@@ -87,10 +84,7 @@ export async function reactivateDepartment(id: number): Promise<DepartmentListIt
   return res.json();
 }
 
-export async function fetchDepartmentAuditTrail(
-  id: number,
-  limit = 200,
-): Promise<DepartmentAuditTrailItem[]> {
+export async function fetchDepartmentAuditTrail(id: number, limit = 200): Promise<DepartmentAuditTrailItem[]> {
   const qs = new URLSearchParams({ limit: String(limit) });
   const res = await httpFetch(`/departments/${id}/audit-trail?${qs}`);
   if (!res.ok) {

@@ -1,7 +1,8 @@
 ﻿import validator from 'validator';
 
 const SQL_DANGER_PATTERN =
-  /('|"|`|;|\-\-|\/\*|\*\/|\x00|\\x00|\\b|union|select|insert|update|delete|drop|exec|execute|truncate|alter|create|<script)/i;
+  // eslint-disable-next-line no-control-regex
+  /('|"|`|;|--|\/\*|\*\/|[\u0000]|\\x00|\\b|union|select|insert|update|delete|drop|exec|execute|truncate|alter|create|<script)/i;
 
 export function hasSqlInjectionAttempt(value: unknown): boolean {
   if (value == null || typeof value !== 'string') return false;
@@ -19,8 +20,7 @@ export function noSqlInjection(_: unknown, value: unknown) {
 
 export function textRules(options: { required?: boolean; min?: number; max?: number }) {
   const rules: Array<
-    | { required?: boolean; message?: string }
-    | { validator: (a: unknown, v: unknown) => Promise<void> }
+    { required?: boolean; message?: string } | { validator: (a: unknown, v: unknown) => Promise<void> }
   > = [];
   if (options.required) {
     rules.push({ required: true, message: 'Campo requerido' });
@@ -49,8 +49,7 @@ export function textRules(options: { required?: boolean; min?: number; max?: num
 
 export function emailRules(required = true) {
   const rules: Array<
-    | { required?: boolean; message?: string }
-    | { validator: (a: unknown, v: unknown) => Promise<void> }
+    { required?: boolean; message?: string } | { validator: (a: unknown, v: unknown) => Promise<void> }
   > = [];
   if (required) {
     rules.push({ required: true, message: 'Correo requerido' });

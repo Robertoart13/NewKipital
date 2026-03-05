@@ -113,10 +113,7 @@ export async function createCompany(payload: CompanyPayload): Promise<CompanyLis
 /**
  * PUT /companies/:id - Edita empresa.
  */
-export async function updateCompany(
-  id: number,
-  payload: Partial<CompanyPayload>,
-): Promise<CompanyListItem> {
+export async function updateCompany(id: number, payload: Partial<CompanyPayload>): Promise<CompanyListItem> {
   const res = await httpFetch(`/companies/${id}`, {
     method: 'PUT',
     body: JSON.stringify(payload),
@@ -175,10 +172,7 @@ export async function uploadCompanyLogoTemp(file: File): Promise<CompanyLogoTemp
   return res.json();
 }
 
-export async function commitCompanyLogo(
-  companyId: number,
-  tempFileName: string,
-): Promise<CompanyLogoCommitPayload> {
+export async function commitCompanyLogo(companyId: number, tempFileName: string): Promise<CompanyLogoCommitPayload> {
   const res = await httpFetch(`/companies/${companyId}/logo/commit`, {
     method: 'POST',
     body: JSON.stringify({ tempFileName }),
@@ -200,10 +194,7 @@ export async function fetchCompanyLogoBlobUrl(companyId: number): Promise<string
   return URL.createObjectURL(blob);
 }
 
-export async function fetchCompanyAuditTrail(
-  companyId: number,
-  limit = 200,
-): Promise<CompanyAuditTrailItem[]> {
+export async function fetchCompanyAuditTrail(companyId: number, limit = 200): Promise<CompanyAuditTrailItem[]> {
   const qs = new URLSearchParams({ limit: String(limit) });
   const res = await httpFetch(`/companies/${companyId}/audit-trail?${qs}`);
   if (!res.ok) {

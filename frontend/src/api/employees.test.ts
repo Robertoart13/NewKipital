@@ -64,14 +64,9 @@ describe('employees api', () => {
       email: 'a@b.com',
       fechaIngreso: '2026-01-01',
     };
-    mockHttpFetch.mockResolvedValue(
-      okJson({ success: true, data: { employee: payload, appsAssigned: [] } }),
-    );
+    mockHttpFetch.mockResolvedValue(okJson({ success: true, data: { employee: payload, appsAssigned: [] } }));
     await createEmployee(payload);
-    expect(mockHttpFetch).toHaveBeenCalledWith(
-      '/employees',
-      expect.objectContaining({ method: 'POST' }),
-    );
+    expect(mockHttpFetch).toHaveBeenCalledWith('/employees', expect.objectContaining({ method: 'POST' }));
   });
 
   it('createEmployee throws on error with backend message', async () => {
@@ -85,28 +80,19 @@ describe('employees api', () => {
   it('updateEmployee sends PUT', async () => {
     mockHttpFetch.mockResolvedValue(okJson({ id: 1 }));
     await updateEmployee(1, { nombre: 'Updated' });
-    expect(mockHttpFetch).toHaveBeenCalledWith(
-      '/employees/1',
-      expect.objectContaining({ method: 'PUT' }),
-    );
+    expect(mockHttpFetch).toHaveBeenCalledWith('/employees/1', expect.objectContaining({ method: 'PUT' }));
   });
 
   it('inactivateEmployee sends PATCH with motivo', async () => {
     mockHttpFetch.mockResolvedValue(okJson({ id: 1 }));
     await inactivateEmployee(1, 'Renuncia');
-    expect(mockHttpFetch).toHaveBeenCalledWith(
-      '/employees/1/inactivate',
-      expect.objectContaining({ method: 'PATCH' }),
-    );
+    expect(mockHttpFetch).toHaveBeenCalledWith('/employees/1/inactivate', expect.objectContaining({ method: 'PATCH' }));
   });
 
   it('reactivateEmployee sends PATCH', async () => {
     mockHttpFetch.mockResolvedValue(okJson({ id: 1 }));
     await reactivateEmployee(1);
-    expect(mockHttpFetch).toHaveBeenCalledWith(
-      '/employees/1/reactivate',
-      expect.objectContaining({ method: 'PATCH' }),
-    );
+    expect(mockHttpFetch).toHaveBeenCalledWith('/employees/1/reactivate', expect.objectContaining({ method: 'PATCH' }));
   });
 
   it('fetchSupervisors returns empty array on error', async () => {

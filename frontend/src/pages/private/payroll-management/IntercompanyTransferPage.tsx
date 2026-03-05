@@ -110,13 +110,9 @@ export function IntercompanyTransferPage() {
   }, [employees, periodId]);
 
   const selectionSummary = useMemo(() => {
-    const selectedEmployees = selectedRowKeys.filter((id) =>
-      employeesFiltered.some((emp) => emp.id === id),
-    );
+    const selectedEmployees = selectedRowKeys.filter((id) => employeesFiltered.some((emp) => emp.id === id));
     const eligible = selectedEmployees.filter((id) => simulationByEmployee[id]?.eligible);
-    const blocked = selectedEmployees.filter(
-      (id) => simulationByEmployee[id] && !simulationByEmployee[id]?.eligible,
-    );
+    const blocked = selectedEmployees.filter((id) => simulationByEmployee[id] && !simulationByEmployee[id]?.eligible);
     return {
       total: selectedEmployees.length,
       eligible: eligible.length,
@@ -373,9 +369,7 @@ export function IntercompanyTransferPage() {
       width: 220,
       render: (_, record) => {
         if (applyAll) {
-          const label = destinationCompanyOptions.find(
-            (c) => Number(c.value) === Number(globalDestinationId),
-          )?.label;
+          const label = destinationCompanyOptions.find((c) => Number(c.value) === Number(globalDestinationId))?.label;
           return <Tag color="blue">{label ?? 'Sin destino'}</Tag>;
         }
         return (
@@ -422,16 +416,20 @@ export function IntercompanyTransferPage() {
       render: (_, record) => {
         const simulation = simulationByEmployee[record.id];
         if (!simulation) return null;
-        if (simulation.eligible && simulation.aguinaldoProvision) {
+        if (simulation.eligible) {
           return (
             <div style={{ fontSize: 12 }}>
-              <div>
-                Total bruto: {formatCurrencyInput(simulation.aguinaldoProvision.totalBruto, 'CRC')}
-              </div>
-              <div>
-                Provision aguinaldo:{' '}
-                {formatCurrencyInput(simulation.aguinaldoProvision.montoProvisionado, 'CRC')}
-              </div>
+              {simulation.aguinaldoProvision && (
+                <>
+                  <div>Total bruto: {formatCurrencyInput(simulation.aguinaldoProvision.totalBruto, 'CRC')}</div>
+                  <div>
+                    Provision aguinaldo: {formatCurrencyInput(simulation.aguinaldoProvision.montoProvisionado, 'CRC')}
+                  </div>
+                </>
+              )}
+              {simulation.vacationBalance && (
+                <div>Saldo vacaciones a trasladar: {simulation.vacationBalance.movedDays} dias</div>
+              )}
             </div>
           );
         }
@@ -459,8 +457,7 @@ export function IntercompanyTransferPage() {
           <div className={styles.pageTitleBlock}>
             <h1 className={styles.pageTitle}>Traslado interempresas</h1>
             <p className={styles.pageSubtitle}>
-              Simule y ejecute traslados entre empresas con validaciones de planilla y acciones de
-              personal
+              Simule y ejecute traslados entre empresas con validaciones de planilla y acciones de personal
             </p>
           </div>
         </div>
@@ -506,11 +503,7 @@ export function IntercompanyTransferPage() {
           >
             <Row gutter={[12, 12]}>
               <Col xs={24} md={12} xl={8}>
-                <Form.Item
-                  name="periodId"
-                  label="Tipo de Periodo de Pago *"
-                  rules={[{ required: true }]}
-                >
+                <Form.Item name="periodId" label="Tipo de Periodo de Pago *" rules={[{ required: true }]}>
                   <Select
                     loading={loadingPeriods}
                     placeholder="Seleccione periodo"
@@ -526,11 +519,7 @@ export function IntercompanyTransferPage() {
                 </Form.Item>
               </Col>
               <Col xs={24} md={12} xl={8}>
-                <Form.Item
-                  name="originCompanyId"
-                  label="Empresa Origen *"
-                  rules={[{ required: true }]}
-                >
+                <Form.Item name="originCompanyId" label="Empresa Origen *" rules={[{ required: true }]}>
                   <Select
                     placeholder="Seleccione empresa origen"
                     options={companies.map((company) => ({
@@ -548,11 +537,7 @@ export function IntercompanyTransferPage() {
                 </Form.Item>
               </Col>
               <Col xs={24} md={12} xl={8}>
-                <Form.Item
-                  name="effectiveDate"
-                  label="Fecha efectiva *"
-                  rules={[{ required: true }]}
-                >
+                <Form.Item name="effectiveDate" label="Fecha efectiva *" rules={[{ required: true }]}>
                   <DatePicker style={{ width: '100%' }} format="YYYY-MM-DD" />
                 </Form.Item>
               </Col>
@@ -564,10 +549,7 @@ export function IntercompanyTransferPage() {
             </Row>
 
             <div style={{ marginTop: 12, marginBottom: 12 }}>
-              <Checkbox
-                checked={applyAll}
-                onChange={(event) => handleApplyAllToggle(event.target.checked)}
-              >
+              <Checkbox checked={applyAll} onChange={(event) => handleApplyAllToggle(event.target.checked)}>
                 Opcion de traslado: aplicar para todos los empleados seleccionados
               </Checkbox>
             </div>
@@ -600,24 +582,13 @@ export function IntercompanyTransferPage() {
           <div className={styles.registrosHeader} style={{ marginTop: 12 }}>
             <Flex align="center" gap={8} wrap="wrap">
               <Text strong>Empleados disponibles</Text>
-              <Text type="secondary">
-                {employeesFiltered.length} empleados en el periodo seleccionado
-              </Text>
+              <Text type="secondary">{employeesFiltered.length} empleados en el periodo seleccionado</Text>
             </Flex>
             <Flex align="center" gap={8} wrap="wrap">
               <Tooltip title="Recargar empleados">
-                <Button
-                  icon={<ReloadOutlined />}
-                  onClick={() => void loadEmployees()}
-                  disabled={!originCompanyId}
-                />
+                <Button icon={<ReloadOutlined />} onClick={() => void loadEmployees()} disabled={!originCompanyId} />
               </Tooltip>
-              <Button
-                type="primary"
-                loading={simulating}
-                onClick={() => void runSimulation()}
-                disabled={!canTransfer}
-              >
+              <Button type="primary" loading={simulating} onClick={() => void runSimulation()} disabled={!canTransfer}>
                 Simular seleccionados
               </Button>
               <Button

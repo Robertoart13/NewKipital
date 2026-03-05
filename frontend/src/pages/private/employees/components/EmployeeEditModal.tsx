@@ -37,28 +37,15 @@ import { useMoneyFieldFormatter } from '../../../../hooks/useMoneyFieldFormatter
 import { getCurrencySymbol, isMoneyOverMax } from '../../../../lib/currencyFormat';
 import { formatDateTime12h } from '../../../../lib/formatDate';
 import { textRules, emailRules, optionalNoSqlInjection } from '../../../../lib/formValidation';
-import {
-  EMPLOYEE_MONEY_MAX_DIGITS,
-  sanitizeMoneyDigits,
-} from '../../../../lib/moneyInputSanitizer';
+import { EMPLOYEE_MONEY_MAX_DIGITS, sanitizeMoneyDigits } from '../../../../lib/moneyInputSanitizer';
 import { useDepartments } from '../../../../queries/catalogs/useDepartments';
+import { usePayPeriods } from '../../../../queries/catalogs/usePayPeriods';
+import { usePositions } from '../../../../queries/catalogs/usePositions';
 import { useEmployee } from '../../../../queries/employees/useEmployee';
-import { useUpdateEmployee } from '../../../../queries/employees/useUpdateEmployee';
 import { useInactivateEmployee } from '../../../../queries/employees/useInactivateEmployee';
 import { useReactivateEmployee } from '../../../../queries/employees/useReactivateEmployee';
-import type { UpdateEmployeePayload } from '../../../../api/employees';
-import type { EmployeeDetail, EmployeeAuditTrailItem } from '../../../../api/employees';
-import { usePositions } from '../../../../queries/catalogs/usePositions';
-import { usePayPeriods } from '../../../../queries/catalogs/usePayPeriods';
 import { useSupervisors } from '../../../../queries/employees/useSupervisors';
-import {
-  GENERO_OPTIONS,
-  ESTADO_CIVIL_OPTIONS,
-  TIPO_CONTRATO_OPTIONS,
-  JORNADA_OPTIONS,
-  MONEDA_OPTIONS,
-} from '../constants/employee-enums';
-import styles from '../../configuration/UsersManagementPage.module.css';
+import { useUpdateEmployee } from '../../../../queries/employees/useUpdateEmployee';
 import { useAppSelector } from '../../../../store/hooks';
 import {
   canEditEmployee,
@@ -66,7 +53,17 @@ import {
   canReactivateEmployee,
   canViewEmployeeAudit,
 } from '../../../../store/selectors/permissions.selectors';
+import styles from '../../configuration/UsersManagementPage.module.css';
+import {
+  GENERO_OPTIONS,
+  ESTADO_CIVIL_OPTIONS,
+  TIPO_CONTRATO_OPTIONS,
+  JORNADA_OPTIONS,
+  MONEDA_OPTIONS,
+} from '../constants/employee-enums';
 
+import type { EmployeeDetail, EmployeeAuditTrailItem } from '../../../../api/employees';
+import type { UpdateEmployeePayload } from '../../../../api/employees';
 import type { ColumnsType } from 'antd/es/table';
 
 interface EmployeeEditModalProps {
@@ -78,8 +75,7 @@ interface EmployeeEditModalProps {
 
 /** Solo campos que devuelve la API del empleado (sin inventar fecha nacimiento, código postal, etc.) */
 function mapEmployeeToFormValues(emp: EmployeeDetail) {
-  const vacaciones =
-    emp.vacacionesAcumuladas != null ? parseInt(emp.vacacionesAcumuladas, 10) : undefined;
+  const vacaciones = emp.vacacionesAcumuladas != null ? parseInt(emp.vacacionesAcumuladas, 10) : undefined;
   const cesantia = emp.cesantiaAcumulada != null ? parseFloat(emp.cesantiaAcumulada) : undefined;
   const salario =
     emp.salarioBase != null
@@ -115,18 +111,12 @@ function mapEmployeeToFormValues(emp: EmployeeDetail) {
     numeroCcss: emp.numeroCcss ?? undefined,
     cuentaBanco: emp.cuentaBanco ?? undefined,
     vacacionesAcumuladas: Number.isFinite(vacaciones) ? vacaciones : 0,
-    cesantiaAcumulada:
-      Number.isFinite(cesantia) && cesantia != null ? sanitizeMoneyDigits(cesantia) : '0',
+    cesantiaAcumulada: Number.isFinite(cesantia) && cesantia != null ? sanitizeMoneyDigits(cesantia) : '0',
     activo: emp.estado === 1,
   };
 }
 
-export function EmployeeEditModal({
-  employeeId,
-  open,
-  onClose,
-  onSuccess,
-}: EmployeeEditModalProps) {
+export function EmployeeEditModal({ employeeId, open, onClose, onSuccess }: EmployeeEditModalProps) {
   const { modal, message } = AntdApp.useApp();
   const [form] = Form.useForm();
   const formValues = Form.useWatch([], form);
@@ -136,9 +126,7 @@ export function EmployeeEditModal({
   const canReactivate = useAppSelector(canReactivateEmployee);
   const canViewAudit = useAppSelector(canViewEmployeeAudit);
 
-  const { data: employee, isLoading: loadingEmployee } = useEmployee(
-    open && employeeId != null ? employeeId! : null,
-  );
+  const { data: employee, isLoading: loadingEmployee } = useEmployee(open && employeeId != null ? employeeId! : null);
   const updateMutation = useUpdateEmployee();
   const inactivateMutation = useInactivateEmployee();
   const reactivateMutation = useReactivateEmployee();
@@ -147,18 +135,9 @@ export function EmployeeEditModal({
   const { data: positions = [] } = usePositions();
   const { data: payPeriods = [] } = usePayPeriods();
   const activeCompanyIds = useMemo(() => new Set(companies.map((c) => c.id)), [companies]);
-  const activeDepartmentIds = useMemo(
-    () => new Set(departments.map((d: { id: number }) => d.id)),
-    [departments],
-  );
-  const activePositionIds = useMemo(
-    () => new Set(positions.map((p: { id: number }) => p.id)),
-    [positions],
-  );
-  const activePayPeriodIds = useMemo(
-    () => new Set(payPeriods.map((p: { id: number }) => p.id)),
-    [payPeriods],
-  );
+  const activeDepartmentIds = useMemo(() => new Set(departments.map((d: { id: number }) => d.id)), [departments]);
+  const activePositionIds = useMemo(() => new Set(positions.map((p: { id: number }) => p.id)), [positions]);
+  const activePayPeriodIds = useMemo(() => new Set(payPeriods.map((p: { id: number }) => p.id)), [payPeriods]);
 
   const [activeTabKey, setActiveTabKey] = useState('personal');
   const [auditTrail, setAuditTrail] = useState<EmployeeAuditTrailItem[]>([]);
@@ -167,8 +146,7 @@ export function EmployeeEditModal({
 
   const activo = Form.useWatch('activo', form) ?? true;
   const canToggleActivo = (activo && canInactivate) || (!activo && canReactivate);
-  const monedaSalarioSeleccionada =
-    (Form.useWatch('monedaSalario', form) as string | undefined) ?? 'CRC';
+  const monedaSalarioSeleccionada = (Form.useWatch('monedaSalario', form) as string | undefined) ?? 'CRC';
   const currencySymbol = getCurrencySymbol(monedaSalarioSeleccionada);
   const moneyField = useMoneyFieldFormatter(EMPLOYEE_MONEY_MAX_DIGITS);
   const { data: supervisors = [] } = useSupervisors();
@@ -308,8 +286,7 @@ export function EmployeeEditModal({
       monedaSalario: values.monedaSalario || undefined,
       numeroCcss: values.numeroCcss?.trim() || undefined,
       cuentaBanco: values.cuentaBanco || undefined,
-      vacacionesAcumuladas:
-        values.vacacionesAcumuladas != null ? String(values.vacacionesAcumuladas) : undefined,
+      vacacionesAcumuladas: values.vacacionesAcumuladas != null ? String(values.vacacionesAcumuladas) : undefined,
       cesantiaAcumulada:
         moneyField.parse(values.cesantiaAcumulada) != null
           ? String(moneyField.parse(values.cesantiaAcumulada))
@@ -349,9 +326,7 @@ export function EmployeeEditModal({
           return (
             <div>
               <div style={{ fontWeight: 600, color: '#3d4f5c' }}>{actorLabel}</div>
-              {row.actorEmail && (
-                <div style={{ color: '#8c8c8c', fontSize: 12 }}>{row.actorEmail}</div>
-              )}
+              {row.actorEmail && <div style={{ color: '#8c8c8c', fontSize: 12 }}>{row.actorEmail}</div>}
             </div>
           );
         },
@@ -379,10 +354,7 @@ export function EmployeeEditModal({
               {changes.length > 0 ? (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                   {changes.map((change, index) => (
-                    <div
-                      key={`${row.id}-${change.campo}-${index}`}
-                      style={{ fontSize: 12, lineHeight: 1.4 }}
-                    >
+                    <div key={`${row.id}-${change.campo}-${index}`} style={{ fontSize: 12, lineHeight: 1.4 }}>
                       <div>
                         <strong>{change.campo}</strong>
                       </div>
@@ -420,20 +392,12 @@ export function EmployeeEditModal({
       children: (
         <Row gutter={[12, 12]} className={styles.companyFormGrid}>
           <Col span={12}>
-            <Form.Item
-              name="nombre"
-              label="Nombre *"
-              rules={textRules({ required: true, max: 100 })}
-            >
+            <Form.Item name="nombre" label="Nombre *" rules={textRules({ required: true, max: 100 })}>
               <Input maxLength={100} />
             </Form.Item>
           </Col>
           <Col span={12}>
-            <Form.Item
-              name="apellido1"
-              label="Apellido *"
-              rules={textRules({ required: true, max: 100 })}
-            >
+            <Form.Item name="apellido1" label="Apellido *" rules={textRules({ required: true, max: 100 })}>
               <Input maxLength={100} />
             </Form.Item>
           </Col>
@@ -443,11 +407,7 @@ export function EmployeeEditModal({
             </Form.Item>
           </Col>
           <Col span={8}>
-            <Form.Item
-              name="cedula"
-              label="Cédula *"
-              rules={textRules({ required: true, max: 30 })}
-            >
+            <Form.Item name="cedula" label="Cédula *" rules={textRules({ required: true, max: 30 })}>
               <Input maxLength={30} />
             </Form.Item>
           </Col>
@@ -488,11 +448,7 @@ export function EmployeeEditModal({
       children: (
         <Row gutter={[12, 12]} className={styles.companyFormGrid}>
           <Col span={12}>
-            <Form.Item
-              name="telefono"
-              label="Teléfono"
-              rules={[{ validator: optionalNoSqlInjection }]}
-            >
+            <Form.Item name="telefono" label="Teléfono" rules={[{ validator: optionalNoSqlInjection }]}>
               <Input maxLength={30} placeholder="00000000" />
             </Form.Item>
           </Col>
@@ -502,11 +458,7 @@ export function EmployeeEditModal({
             </Form.Item>
           </Col>
           <Col span={24}>
-            <Form.Item
-              name="direccion"
-              label="Dirección"
-              rules={[{ validator: optionalNoSqlInjection }]}
-            >
+            <Form.Item name="direccion" label="Dirección" rules={[{ validator: optionalNoSqlInjection }]}>
               <Input placeholder="No especifica" />
             </Form.Item>
           </Col>
@@ -566,9 +518,7 @@ export function EmployeeEditModal({
                 <Form.Item label="Departamento actual">
                   <Flex align="center" gap={8}>
                     <Input
-                      value={
-                        employee.departamento?.nombre ?? `Departamento #${employee.idDepartamento}`
-                      }
+                      value={employee.departamento?.nombre ?? `Departamento #${employee.idDepartamento}`}
                       disabled
                     />
                     <Tag className={styles.tagInactivo}>Inactivo</Tag>
@@ -604,10 +554,7 @@ export function EmployeeEditModal({
                 </Form.Item>
                 <Form.Item label="Puesto actual">
                   <Flex align="center" gap={8}>
-                    <Input
-                      value={employee.puesto?.nombre ?? `Puesto #${employee.idPuesto}`}
-                      disabled
-                    />
+                    <Input value={employee.puesto?.nombre ?? `Puesto #${employee.idPuesto}`} disabled />
                     <Tag className={styles.tagInactivo}>Inactivo</Tag>
                   </Flex>
                 </Form.Item>
@@ -634,17 +581,8 @@ export function EmployeeEditModal({
             )}
           </Col>
           <Col span={8}>
-            <Form.Item
-              name="fechaIngreso"
-              label="Fecha de Ingreso *"
-              extra="No editable en actualización"
-            >
-              <DatePicker
-                placeholder="dd/mm/aaaa"
-                format="DD/MM/YYYY"
-                style={{ width: '100%' }}
-                disabled
-              />
+            <Form.Item name="fechaIngreso" label="Fecha de Ingreso *" extra="No editable en actualización">
+              <DatePicker placeholder="dd/mm/aaaa" format="DD/MM/YYYY" style={{ width: '100%' }} disabled />
             </Form.Item>
           </Col>
           <Col span={8}>
@@ -664,10 +602,7 @@ export function EmployeeEditModal({
                 </Form.Item>
                 <Form.Item label="Periodo de Pago actual">
                   <Flex align="center" gap={8}>
-                    <Input
-                      value={employee.periodoPago?.nombre ?? `Periodo #${employee.idPeriodoPago}`}
-                      disabled
-                    />
+                    <Input value={employee.periodoPago?.nombre ?? `Periodo #${employee.idPeriodoPago}`} disabled />
                     <Tag className={styles.tagInactivo}>Inactivo</Tag>
                   </Flex>
                 </Form.Item>
@@ -682,11 +617,7 @@ export function EmployeeEditModal({
                 </Form.Item>
               </>
             ) : (
-              <Form.Item
-                name="idPeriodoPago"
-                label="Periodo de Pago *"
-                rules={[{ required: true }]}
-              >
+              <Form.Item name="idPeriodoPago" label="Periodo de Pago *" rules={[{ required: true }]}>
                 <Select
                   placeholder="Seleccionar"
                   options={payPeriods.map((p: { id: number; nombre: string }) => ({
@@ -739,8 +670,7 @@ export function EmployeeEditModal({
                   validator: (_, v) => {
                     const n = moneyField.parse(v);
                     if (n == null) return Promise.resolve();
-                    if (isNaN(n) || n <= 0)
-                      return Promise.reject(new Error('El salario debe ser mayor a cero'));
+                    if (isNaN(n) || n <= 0) return Promise.reject(new Error('El salario debe ser mayor a cero'));
                     if (isMoneyOverMax(n)) return Promise.reject(new Error('Monto demasiado alto'));
                     return Promise.resolve();
                   },
@@ -783,11 +713,7 @@ export function EmployeeEditModal({
             </Form.Item>
           </Col>
           <Col span={12}>
-            <Form.Item
-              name="cuentaBanco"
-              label="Cuenta bancaria"
-              rules={[{ validator: optionalNoSqlInjection }]}
-            >
+            <Form.Item name="cuentaBanco" label="Cuenta bancaria" rules={[{ validator: optionalNoSqlInjection }]}>
               <Input placeholder="CRC-" maxLength={50} />
             </Form.Item>
           </Col>
@@ -814,19 +740,17 @@ export function EmployeeEditModal({
                 <Select
                   allowClear
                   placeholder="Seleccionar"
-                  options={supervisors.map(
-                    (s: { id: number; nombre: string; apellido1: string }) => ({
-                      value: s.id,
-                      label: `${s.nombre} ${s.apellido1}`.trim(),
-                    }),
-                  )}
+                  options={supervisors.map((s: { id: number; nombre: string; apellido1: string }) => ({
+                    value: s.id,
+                    label: `${s.nombre} ${s.apellido1}`.trim(),
+                  }))}
                 />
               </Form.Item>
             </Col>
           </Row>
           <p style={{ color: '#64748b', fontSize: '13px' }}>
-            La gestión de acceso al sistema (TimeWise / KPITAL) y roles se realiza desde la sección
-            de usuarios o desde la creación del empleado.
+            La gestión de acceso al sistema (TimeWise / KPITAL) y roles se realiza desde la sección de usuarios o desde
+            la creación del empleado.
           </p>
         </>
       ),
@@ -851,11 +775,7 @@ export function EmployeeEditModal({
                     validator: (_, value) => {
                       if (value == null || value === '') return Promise.resolve();
                       const numericValue = Number(value);
-                      if (
-                        Number.isNaN(numericValue) ||
-                        numericValue < 0 ||
-                        !Number.isInteger(numericValue)
-                      ) {
+                      if (Number.isNaN(numericValue) || numericValue < 0 || !Number.isInteger(numericValue)) {
                         return Promise.reject(new Error('Debe ser un número entero de 0 o mayor'));
                       }
                       return Promise.resolve();
@@ -909,8 +829,8 @@ export function EmployeeEditModal({
             </Col>
           </Row>
           <p className={styles.sectionDescription} style={{ marginTop: 16 }}>
-            La provisión de aguinaldo por empresa se gestiona en la creación del empleado. Para
-            cambios posteriores contacte al administrador.
+            La provisión de aguinaldo por empresa se gestiona en la creación del empleado. Para cambios posteriores
+            contacte al administrador.
           </p>
         </div>
       ),
@@ -969,12 +889,7 @@ export function EmployeeEditModal({
         body: { padding: 24, maxHeight: '70vh', overflowY: 'auto' },
       }}
       title={
-        <Flex
-          justify="space-between"
-          align="center"
-          wrap="nowrap"
-          style={{ width: '100%', gap: 16 }}
-        >
+        <Flex justify="space-between" align="center" wrap="nowrap" style={{ width: '100%', gap: 16 }}>
           <div className={styles.companyModalHeader}>
             <div className={styles.companyModalHeaderIcon}>
               <EditOutlined />
@@ -983,16 +898,10 @@ export function EmployeeEditModal({
           </div>
           <Flex align="center" gap={12} className={styles.companyModalHeaderRight}>
             <div className={styles.companyModalEstadoPaper}>
-              <span
-                style={{ fontWeight: 500, fontSize: 14, color: activo ? '#20638d' : '#64748b' }}
-              >
+              <span style={{ fontWeight: 500, fontSize: 14, color: activo ? '#20638d' : '#64748b' }}>
                 {activo ? 'Activo' : 'Inactivo'}
               </span>
-              <Switch
-                checked={activo}
-                onChange={(v) => form.setFieldValue('activo', v)}
-                disabled={!canToggleActivo}
-              />
+              <Switch checked={activo} onChange={(v) => form.setFieldValue('activo', v)} disabled={!canToggleActivo} />
             </div>
             <Button
               type="text"

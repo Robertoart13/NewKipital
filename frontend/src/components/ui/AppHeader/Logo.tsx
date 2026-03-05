@@ -6,11 +6,7 @@ import styles from './AppHeader.module.css';
 export function Logo() {
   return (
     <div className={styles.brand}>
-      <img
-        src="/assets/images/global/LogoLarge.png"
-        alt="Kpital360° Human Resources"
-        className={styles.logoImg}
-      />
+      <img src="/assets/images/global/LogoLarge.png" alt="Kpital360° Human Resources" className={styles.logoImg} />
     </div>
   );
 }
