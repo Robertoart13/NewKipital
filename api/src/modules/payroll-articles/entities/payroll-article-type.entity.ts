@@ -15,7 +15,7 @@ export class PayrollArticleType {
   })
   descripcion: string | null;
 
-  @Column({ name: 'es_inactivo', type: 'tinyint', width: 1, default: 0 })
+  @Column({ name: 'es_inactivo', type: 'tinyint', width: 1, default: 1 })
   esInactivo: number;
 
   @Column({

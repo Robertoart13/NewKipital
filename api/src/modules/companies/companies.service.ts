@@ -390,7 +390,7 @@ export class CompaniesService {
       where: {
         idEmpresa: id,
         estado: In(CompaniesService.PLANILLA_ESTADOS_BLOQUEANTES),
-        esInactivo: 0,
+        esInactivo: 1,
       },
       select: {
         id: true,

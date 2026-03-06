@@ -523,7 +523,7 @@ export function DisabilityTransactionModal({
     }
 
     const selectedIds = new Set(lines.map((line) => line.movimientoId).filter(Boolean));
-    list = list.filter((movement) => movement.esInactivo === 0 || selectedIds.has(movement.id));
+    list = list.filter((movement) => movement.esInactivo === 1 || selectedIds.has(movement.id));
 
     return list;
   }, [movements, selectedCompanyId, actionTypeIdForDisability, lines]);
@@ -619,7 +619,7 @@ export function DisabilityTransactionModal({
     const cleaned = {
       movimientoId,
       movimientoLabel: movement?.nombre,
-      movimientoInactivo: movement ? movement.esInactivo === 1 : false,
+      movimientoInactivo: movement ? movement.esInactivo === 0 : false,
       tipoInstitucion: inferredInstitution,
       tipoIncapacidad,
       monto: 0,
@@ -1177,8 +1177,8 @@ export function DisabilityTransactionModal({
 
                                 const movementOptions = filteredMovements.map((movement) => ({
                                   value: movement.id,
-                                  label: `${movement.nombre} (${movement.esMontoFijo === 1 ? 'Monto' : '%'})${movement.esInactivo === 1 ? ' (Inactivo)' : ''}`,
-                                  disabled: movement.esInactivo === 1 && movement.id !== line.movimientoId,
+                                  label: `${movement.nombre} (${movement.esMontoFijo === 1 ? 'Monto' : '%'})${movement.esInactivo === 0 ? ' (Inactivo)' : ''}`,
+                                  disabled: movement.esInactivo === 0 && movement.id !== line.movimientoId,
                                 }));
                                 if (
                                   line.movimientoId &&
@@ -1281,7 +1281,7 @@ export function DisabilityTransactionModal({
                                                 options={movementOptions}
                                               />
                                             </Tooltip>
-                                            {selectedMovement?.esInactivo === 1 ? (
+                                            {selectedMovement?.esInactivo === 0 ? (
                                               <Tag color="orange" style={{ marginTop: 6 }}>
                                                 Inactivo
                                               </Tag>

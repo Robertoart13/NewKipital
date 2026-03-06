@@ -60,6 +60,43 @@ KPITAL 360 es un ERP multiempresa enfocado en gestiÃ³n de RRHH, planillas y ac
 - Validaciones y filtros usan `1=Activo / 0=Inactivo` para movimientos, clases, proyectos y articulos relacionados.
 - En creacion de movimientos se cargan solo articulos/proyectos activos; en edicion se permiten inactivos para ver el estado actual.
 - Catalogos base (clases y tipos de accion) siguen la misma regla: activos en creacion, inactivos solo en edicion.
+- UI de articulos de nomina muestra estado con `1=Activo / 0=Inactivo` y mantiene filtros consistentes.
+
+### Normalizacion estado activo/inactivo (Rev. 8 - 2026-03-06)
+
+- Regla unificada: `1 = Activo`, `0 = Inactivo` en todos los campos `es_inactivo`.
+- Frontend actualizado en proyectos, clases, cuentas contables, movimientos y modales de acciones de personal.
+- Backend actualizado en clases, cuentas contables, personal-actions e intercompany-transfer.
+- BD normalizada (flags + defaults en 1) en:
+  - `erp_cuentas_contables.es_inactivo`
+  - `nom_articulos_nomina.es_inactivo`
+  - `nom_calendarios_nomina.es_inactivo`
+  - `nom_cargas_sociales.es_inactivo_carga_social`
+  - `nom_movimientos_nomina.es_inactivo_movimiento_nomina`
+  - `nom_periodos_pago.es_inactivo`
+  - `nom_tipo_articulo_nomina.es_inactivo`
+  - `nom_tipos_planilla.es_inactivo_tipo_planilla`
+  - `org_clases.es_inactivo`
+  - `org_proyectos.es_inactivo`
+- Estado actual validado: **todos los registros activos** (sin inactivos residuales).
+
+### Actualizacion ausencias (Rev. 9 - 2026-03-06)
+
+- Modal de ausencias ahora recarga empleados y movimientos segun la **empresa seleccionada en el modal**, no solo por el filtro de la tabla.
+- Evita listas vacias al cambiar empresa dentro del modal de creacion/edicion.
+- La seleccion de empresa en el modal no se resetea al cambiar el filtro externo.
+
+### Datos base acciones de personal (Rev. 10 - 2026-03-06)
+
+- Empresa `id=3`: articulos y movimientos base creados para acciones de personal (monto y % para ingresos; monto para deducciones).
+
+### Listado ausencias (Rev. 11 - 2026-03-06)
+
+- Tabla de ausencias ahora muestra el **monto total** de la accion en la lista.
+
+### Catalogos ausencias (Rev. 12 - 2026-03-06)
+
+- El listado de ausencias carga catalogo de empleados segun la empresa seleccionada en la tabla, evitando mostrar "Empleado #id".
 
 ---
 

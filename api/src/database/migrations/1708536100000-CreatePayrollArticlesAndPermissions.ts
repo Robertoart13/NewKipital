@@ -26,7 +26,7 @@ export class CreatePayrollArticlesAndPermissions1708536100000 implements Migrati
               type: 'text',
               isNullable: true,
             },
-            { name: 'es_inactivo', type: 'tinyint', width: 1, default: 0 },
+            { name: 'es_inactivo', type: 'tinyint', width: 1, default: 1 },
             {
               name: 'fecha_creacion',
               type: 'timestamp',
@@ -80,7 +80,7 @@ export class CreatePayrollArticlesAndPermissions1708536100000 implements Migrati
             { name: 'id_tipo_articulo_nomina', type: 'int', isNullable: false },
             { name: 'id_cuenta_gasto', type: 'int', isNullable: false },
             { name: 'id_cuenta_pasivo', type: 'int', isNullable: true },
-            { name: 'es_inactivo', type: 'tinyint', width: 1, default: 0 },
+            { name: 'es_inactivo', type: 'tinyint', width: 1, default: 1 },
             {
               name: 'fecha_creacion',
               type: 'timestamp',
@@ -186,10 +186,10 @@ export class CreatePayrollArticlesAndPermissions1708536100000 implements Migrati
       INSERT INTO nom_tipo_articulo_nomina
         (id_tipo_articulo_nomina, nombre_tipo_articulo_nomina, descripcion_tipo_articulo_nomina, es_inactivo)
       VALUES
-        (1, 'Ingreso', 'Ingreso: Incluye salario, bonificaciones, comisiones, horas extras, pago de vacaciones.', 0),
-        (2, 'Deduccion', 'Descuentos del salario del empleado, como CCSS, Impuesto sobre la Renta, Prestamos.', 0),
-        (9, 'Gasto Empleado', 'Reembolsos por gastos realizados por el trabajador.', 0),
-        (10, 'Aporte Patronal', 'Obligaciones del empleador, como CCSS, INS, Banco Popular y provisiones.', 0)
+        (1, 'Ingreso', 'Ingreso: Incluye salario, bonificaciones, comisiones, horas extras, pago de vacaciones.', 1),
+        (2, 'Deduccion', 'Descuentos del salario del empleado, como CCSS, Impuesto sobre la Renta, Prestamos.', 1),
+        (9, 'Gasto Empleado', 'Reembolsos por gastos realizados por el trabajador.', 1),
+        (10, 'Aporte Patronal', 'Obligaciones del empleador, como CCSS, INS, Banco Popular y provisiones.', 1)
       ON DUPLICATE KEY UPDATE
         nombre_tipo_articulo_nomina = VALUES(nombre_tipo_articulo_nomina),
         descripcion_tipo_articulo_nomina = VALUES(descripcion_tipo_articulo_nomina),

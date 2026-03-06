@@ -141,14 +141,14 @@ export function PayrollArticlesManagementPage() {
   const [companyAccountMap, setCompanyAccountMap] = useState<Record<number, AccountingAccountOption[]>>({});
 
   const activeArticleTypeIds = useMemo(
-    () => new Set(articleTypes.filter((t) => t.esInactivo === 0).map((t) => t.id)),
+    () => new Set(articleTypes.filter((t) => t.esInactivo === 1).map((t) => t.id)),
     [articleTypes],
   );
   const activeActionTypeIds = useMemo(
     () => new Set(actionTypes.filter((t) => t.estado === 1).map((t) => t.id)),
     [actionTypes],
   );
-  const activeArticleTypes = useMemo(() => articleTypes.filter((t) => t.esInactivo === 0), [articleTypes]);
+  const activeArticleTypes = useMemo(() => articleTypes.filter((t) => t.esInactivo === 1), [articleTypes]);
   const activeActionTypes = useMemo(() => actionTypes.filter((t) => t.estado === 1), [actionTypes]);
 
   const tipoArticuloMap = useMemo(() => new Map(articleTypes.map((t) => [t.id, t.nombre])), [articleTypes]);
@@ -171,7 +171,7 @@ export function PayrollArticlesManagementPage() {
     return map;
   }, [companyAccountMap, formAccounts]);
 
-  const activeFormAccounts = useMemo(() => formAccounts.filter((account) => account.esInactivo === 0), [formAccounts]);
+  const activeFormAccounts = useMemo(() => formAccounts.filter((account) => account.esInactivo === 1), [formAccounts]);
 
   const loadRows = useCallback(
     async (companyIds?: number[]) => {
@@ -754,8 +754,8 @@ export function PayrollArticlesManagementPage() {
       key: 'estado',
       width: 120,
       render: (_, row) => (
-        <Tag className={row.esInactivo === 1 ? styles.tagInactivo : styles.tagActivo}>
-          {row.esInactivo === 1 ? 'Inactivo' : 'Activo'}
+        <Tag className={row.esInactivo === 0 ? styles.tagInactivo : styles.tagActivo}>
+          {row.esInactivo === 0 ? 'Inactivo' : 'Activo'}
         </Tag>
       ),
     },

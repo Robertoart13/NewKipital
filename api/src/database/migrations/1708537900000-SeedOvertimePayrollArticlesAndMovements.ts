@@ -21,12 +21,12 @@ export class SeedOvertimePayrollArticlesAndMovements1708537900000 implements Mig
         1,
         cuentas.id_cuenta_contable,
         NULL,
-        0
+        1
       FROM sys_empresas e
       INNER JOIN (
         SELECT id_empresa, MIN(id_cuenta_contable) AS id_cuenta_contable
         FROM erp_cuentas_contables
-        WHERE es_inactivo = 0
+        WHERE es_inactivo = 1
         GROUP BY id_empresa
       ) cuentas
         ON cuentas.id_empresa = e.id_empresa
@@ -66,10 +66,10 @@ export class SeedOvertimePayrollArticlesAndMovements1708537900000 implements Mig
         '0',
         '150',
         '(salario_base/30)/horas_jornada * 150% * cantidad',
-        0
+        1
       FROM nom_articulos_nomina a
       WHERE a.id_tipo_accion_personal = 11
-        AND a.es_inactivo = 0
+        AND a.es_inactivo = 1
         AND NOT EXISTS (
           SELECT 1
           FROM nom_movimientos_nomina m
@@ -106,10 +106,10 @@ export class SeedOvertimePayrollArticlesAndMovements1708537900000 implements Mig
         '0',
         '200',
         '(salario_base/30)/horas_jornada * 200% * cantidad',
-        0
+        1
       FROM nom_articulos_nomina a
       WHERE a.id_tipo_accion_personal = 11
-        AND a.es_inactivo = 0
+        AND a.es_inactivo = 1
         AND NOT EXISTS (
           SELECT 1
           FROM nom_movimientos_nomina m

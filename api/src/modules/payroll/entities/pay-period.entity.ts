@@ -24,7 +24,7 @@ export class PayPeriod {
   dias: number;
 
   @Index('IDX_periodo_pago_estado')
-  @Column({ name: 'es_inactivo', type: 'tinyint', width: 1, default: 0 })
+  @Column({ name: 'es_inactivo', type: 'tinyint', width: 1, default: 1 })
   esInactivo: number;
 
   @CreateDateColumn({ name: 'fecha_creacion_periodo_pago' })

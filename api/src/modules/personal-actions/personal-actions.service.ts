@@ -287,7 +287,7 @@ export class PersonalActionsService {
         movimientoId: Number(line.movimientoId),
         movimientoLabel: line.movimientoLabel ? String(line.movimientoLabel) : null,
         movimientoInactivo:
-          line.movimientoInactivo == null ? null : Number(line.movimientoInactivo) === 1,
+          line.movimientoInactivo == null ? null : Number(line.movimientoInactivo) === 0,
         tipoAusencia: String(line.tipoAusencia ?? 'JUSTIFICADA'),
         cantidad: Number(line.cantidad ?? 0),
         monto: Number(line.monto ?? 0),
@@ -403,7 +403,7 @@ export class PersonalActionsService {
         movimientoId: Number(line.movimientoId),
         movimientoLabel: line.movimientoLabel ? String(line.movimientoLabel) : null,
         movimientoInactivo:
-          line.movimientoInactivo == null ? null : Number(line.movimientoInactivo) === 1,
+          line.movimientoInactivo == null ? null : Number(line.movimientoInactivo) === 0,
         tipoLicencia: String(line.tipoLicencia ?? 'permiso_con_goce'),
         cantidad: Number(line.cantidad ?? 0),
         monto: Number(line.monto ?? 0),
@@ -474,7 +474,7 @@ export class PersonalActionsService {
         movimientoId: Number(line.movimientoId),
         movimientoLabel: line.movimientoLabel ? String(line.movimientoLabel) : null,
         movimientoInactivo:
-          line.movimientoInactivo == null ? null : Number(line.movimientoInactivo) === 1,
+          line.movimientoInactivo == null ? null : Number(line.movimientoInactivo) === 0,
         tipoIncapacidad: String(line.tipoIncapacidad ?? TipoIncapacidadLinea.ENFERMEDAD_COMUN_CCSS),
         tipoInstitucion: String(line.tipoInstitucion ?? TipoInstitucionIncapacidadLinea.CCSS),
         cantidad: Number(line.cantidad ?? 0),
@@ -545,7 +545,7 @@ export class PersonalActionsService {
         movimientoId: Number(line.movimientoId),
         movimientoLabel: line.movimientoLabel ? String(line.movimientoLabel) : null,
         movimientoInactivo:
-          line.movimientoInactivo == null ? null : Number(line.movimientoInactivo) === 1,
+          line.movimientoInactivo == null ? null : Number(line.movimientoInactivo) === 0,
         tipoBonificacion: String(line.tipoBonificacion ?? 'ordinaria_salarial'),
         cantidad: Number(line.cantidad ?? 0),
         monto: Number(line.monto ?? 0),
@@ -613,7 +613,7 @@ export class PersonalActionsService {
         movimientoId: Number(line.movimientoId),
         movimientoLabel: line.movimientoLabel ? String(line.movimientoLabel) : null,
         movimientoInactivo:
-          line.movimientoInactivo == null ? null : Number(line.movimientoInactivo) === 1,
+          line.movimientoInactivo == null ? null : Number(line.movimientoInactivo) === 0,
         fechaInicioHoraExtra: this.toYmdFlexible(line.fechaInicioHoraExtra),
         fechaFinHoraExtra: this.toYmdFlexible(line.fechaFinHoraExtra),
         tipoJornadaHorasExtras: String(
@@ -682,7 +682,7 @@ export class PersonalActionsService {
         movimientoId: Number(line.movimientoId),
         movimientoLabel: line.movimientoLabel ? String(line.movimientoLabel) : null,
         movimientoInactivo:
-          line.movimientoInactivo == null ? null : Number(line.movimientoInactivo) === 1,
+          line.movimientoInactivo == null ? null : Number(line.movimientoInactivo) === 0,
         cantidad: Number(line.cantidad ?? 0),
         monto: Number(line.monto ?? 0),
         remuneracion: Number(line.remuneracion ?? 0) === 1,
@@ -746,7 +746,7 @@ export class PersonalActionsService {
         movimientoId: Number(line.movimientoId),
         movimientoLabel: line.movimientoLabel ? String(line.movimientoLabel) : null,
         movimientoInactivo:
-          line.movimientoInactivo == null ? null : Number(line.movimientoInactivo) === 1,
+          line.movimientoInactivo == null ? null : Number(line.movimientoInactivo) === 0,
         cantidad: Number(line.cantidad ?? 0),
         monto: Number(line.monto ?? 0),
         remuneracion: Number(line.remuneracion ?? 0) === 1,
@@ -804,7 +804,7 @@ export class PersonalActionsService {
           movimientoId: Number(row.movimientoId),
           movimientoLabel: row.movimientoLabel ? String(row.movimientoLabel) : null,
           movimientoInactivo:
-            row.movimientoInactivo == null ? null : Number(row.movimientoInactivo) === 1,
+            row.movimientoInactivo == null ? null : Number(row.movimientoInactivo) === 0,
           metodoCalculo: row.metodoCalculo,
           monto: Number(row.monto ?? 0),
           porcentaje: Number(row.porcentaje ?? 0),
@@ -863,7 +863,7 @@ export class PersonalActionsService {
         movimientoId: Number(row.movimientoId),
         movimientoLabel: row.movimientoLabel ? String(row.movimientoLabel) : null,
         movimientoInactivo:
-          row.movimientoInactivo == null ? null : Number(row.movimientoInactivo) === 1,
+          row.movimientoInactivo == null ? null : Number(row.movimientoInactivo) === 0,
         fechaVacacion: this.toYmdFlexible(row.fechaVacacion),
         orden: Number(row.orden ?? 0),
       })),
@@ -1147,7 +1147,7 @@ export class PersonalActionsService {
       WHERE c.id_empresa = ?
         AND c.id_periodos_pago = ?
         AND c.moneda_calendario_nomina = ?
-        AND c.es_inactivo = 0
+        AND c.es_inactivo = 1
         AND c.estado_calendario_nomina IN (?, ?)
         AND c.fecha_fin_pago >= CURDATE()
       ORDER BY c.fecha_inicio_periodo ASC, c.id_calendario_nomina ASC
@@ -4593,7 +4593,7 @@ export class PersonalActionsService {
       SET requires_recalculation_calendario_nomina = 1
       WHERE id_empresa = ?
         AND estado_calendario_nomina = ?
-        AND es_inactivo = 0
+        AND es_inactivo = 1
         AND last_snapshot_at_calendario_nomina IS NOT NULL
         AND moneda_calendario_nomina = ?
         AND fecha_fin_periodo >= ?
@@ -4995,7 +4995,7 @@ export class PersonalActionsService {
         WHERE id_movimiento_nomina = ?
           AND id_empresa_movimiento_nomina = ?
           AND id_tipo_accion_personal_movimiento_nomina = 20
-          AND es_inactivo_movimiento_nomina = 0
+          AND es_inactivo_movimiento_nomina = 1
         LIMIT 1
         `,
         [line.movimientoId, dto.idEmpresa],
@@ -5049,7 +5049,7 @@ export class PersonalActionsService {
         WHERE id_movimiento_nomina = ?
           AND id_empresa_movimiento_nomina = ?
           AND id_tipo_accion_personal_movimiento_nomina IN (17, 18, 19, 23)
-          AND es_inactivo_movimiento_nomina = 0
+          AND es_inactivo_movimiento_nomina = 1
         LIMIT 1
         `,
         [line.movimientoId, dto.idEmpresa],
@@ -5123,7 +5123,7 @@ export class PersonalActionsService {
         WHERE id_movimiento_nomina = ?
           AND id_empresa_movimiento_nomina = ?
           AND id_tipo_accion_personal_movimiento_nomina = 22
-          AND es_inactivo_movimiento_nomina = 0
+          AND es_inactivo_movimiento_nomina = 1
         LIMIT 1
         `,
         [line.movimientoId, dto.idEmpresa],
@@ -5194,7 +5194,7 @@ export class PersonalActionsService {
         WHERE id_movimiento_nomina = ?
           AND id_empresa_movimiento_nomina = ?
           AND id_tipo_accion_personal_movimiento_nomina = 9
-          AND es_inactivo_movimiento_nomina = 0
+          AND es_inactivo_movimiento_nomina = 1
         LIMIT 1
         `,
         [line.movimientoId, dto.idEmpresa],
@@ -5248,7 +5248,7 @@ export class PersonalActionsService {
         WHERE id_movimiento_nomina = ?
           AND id_empresa_movimiento_nomina = ?
           AND id_tipo_accion_personal_movimiento_nomina = 5
-          AND es_inactivo_movimiento_nomina = 0
+          AND es_inactivo_movimiento_nomina = 1
         LIMIT 1
         `,
         [line.movimientoId, dto.idEmpresa],
@@ -5302,7 +5302,7 @@ export class PersonalActionsService {
         WHERE id_movimiento_nomina = ?
           AND id_empresa_movimiento_nomina = ?
           AND id_tipo_accion_personal_movimiento_nomina = 6
-          AND es_inactivo_movimiento_nomina = 0
+          AND es_inactivo_movimiento_nomina = 1
         LIMIT 1
         `,
         [line.movimientoId, dto.idEmpresa],
@@ -5377,7 +5377,7 @@ export class PersonalActionsService {
       WHERE id_movimiento_nomina = ?
         AND id_empresa_movimiento_nomina = ?
         AND id_tipo_accion_personal_movimiento_nomina = 8
-        AND es_inactivo_movimiento_nomina = 0
+        AND es_inactivo_movimiento_nomina = 1
       LIMIT 1
       `,
       [dto.line.movimientoId, dto.idEmpresa],
@@ -5471,7 +5471,7 @@ export class PersonalActionsService {
       WHERE id_movimiento_nomina = ?
         AND id_empresa_movimiento_nomina = ?
         AND id_tipo_accion_personal_movimiento_nomina = 13
-        AND es_inactivo_movimiento_nomina = 0
+        AND es_inactivo_movimiento_nomina = 1
       LIMIT 1
       `,
       [dto.movimientoId, dto.idEmpresa],
@@ -5636,7 +5636,7 @@ export class PersonalActionsService {
         WHERE id_movimiento_nomina = ?
           AND id_empresa_movimiento_nomina = ?
           AND id_tipo_accion_personal_movimiento_nomina = 11
-          AND es_inactivo_movimiento_nomina = 0
+          AND es_inactivo_movimiento_nomina = 1
         LIMIT 1
         `,
         [line.movimientoId, dto.idEmpresa],

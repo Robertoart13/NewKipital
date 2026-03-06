@@ -953,7 +953,7 @@ export class IntercompanyTransferService {
       .andWhere('c.estado IN (:...states)', {
         states: BLOCKING_PAYROLL_STATES,
       })
-      .andWhere('c.esInactivo = 0')
+      .andWhere('c.esInactivo = 1')
       .andWhere('c.fechaInicioPeriodo <= :effectiveDate', { effectiveDate })
       .andWhere('c.fechaFinPeriodo >= :effectiveDate', { effectiveDate })
       .getRawMany();
@@ -971,7 +971,7 @@ export class IntercompanyTransferService {
     const qb = this.payrollCalendarRepo
       .createQueryBuilder('c')
       .where('c.idEmpresa = :companyId', { companyId })
-      .andWhere('c.esInactivo = 0')
+      .andWhere('c.esInactivo = 1')
       .andWhere('c.estado IN (:...states)', {
         states: [
           EstadoCalendarioNomina.ABIERTA,

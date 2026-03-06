@@ -57,7 +57,7 @@ export class AccountingAccount {
   idTipoAccionPersonal: number;
 
   @Index('IDX_cuenta_inactivo')
-  @Column({ name: 'es_inactivo', type: 'tinyint', width: 1, default: 0 })
+  @Column({ name: 'es_inactivo', type: 'tinyint', width: 1, default: 1 })
   esInactivo: number;
 
   @CreateDateColumn({ name: 'fecha_creacion' })

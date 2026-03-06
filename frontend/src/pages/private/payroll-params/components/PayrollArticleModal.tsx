@@ -262,7 +262,7 @@ export function PayrollArticleModal(props: PayrollArticleModalProps) {
               )}
             </Col>
             <Col span={12}>
-              {editing?.idCuentaGasto && (!currentPrimaryAccount || currentPrimaryAccount.esInactivo === 1) ? (
+              {editing?.idCuentaGasto && (!currentPrimaryAccount || currentPrimaryAccount.esInactivo === 0) ? (
                 <>
                   <Form.Item name="idCuentaGasto" hidden>
                     <Input />
@@ -315,7 +315,7 @@ export function PayrollArticleModal(props: PayrollArticleModalProps) {
             </Col>
             {allowsPasivo && (
               <Col span={12}>
-                {editing?.idCuentaPasivo && (!currentPasivoAccount || currentPasivoAccount.esInactivo === 1) ? (
+                {editing?.idCuentaPasivo && (!currentPasivoAccount || currentPasivoAccount.esInactivo === 0) ? (
                   <>
                     <Form.Item name="idCuentaPasivo" hidden>
                       <Input />
@@ -434,14 +434,14 @@ export function PayrollArticleModal(props: PayrollArticleModalProps) {
                   style={{
                     fontWeight: 500,
                     fontSize: 14,
-                    color: editing.esInactivo === 1 ? '#64748b' : '#20638d',
+                    color: editing.esInactivo === 0 ? '#64748b' : '#20638d',
                   }}
                 >
-                  {editing.esInactivo === 1 ? 'Inactivo' : 'Activo'}
+                  {editing.esInactivo === 0 ? 'Inactivo' : 'Activo'}
                 </span>
                 <Switch
-                  checked={editing.esInactivo === 0}
-                  disabled={editing.esInactivo === 0 ? !canInactivate : !canReactivate}
+                  checked={editing.esInactivo === 1}
+                  disabled={editing.esInactivo === 1 ? !canInactivate : !canReactivate}
                   onChange={(checked) => {
                     if (!editing) return;
                     Modal.confirm({

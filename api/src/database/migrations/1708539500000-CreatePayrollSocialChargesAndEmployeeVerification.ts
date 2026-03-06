@@ -40,7 +40,7 @@ export class CreatePayrollSocialChargesAndEmployeeVerification1708539500000 impl
               name: 'es_inactivo_carga_social',
               type: 'tinyint',
               width: 1,
-              default: 0,
+              default: 1,
             },
             {
               name: 'fecha_creacion_carga_social',

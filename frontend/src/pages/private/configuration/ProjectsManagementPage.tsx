@@ -116,7 +116,7 @@ function getPaneValue(row: ProjectListItem, key: PaneKey, companies: Array<{ id:
   if (key === 'nombre') return row.nombre ?? '';
   if (key === 'codigo') return row.codigo ?? '';
   if (key === 'idExterno') return row.idExterno ?? '';
-  return row.esInactivo === 1 ? 'Inactivo' : 'Activo';
+  return row.esInactivo === 0 ? 'Inactivo' : 'Activo';
 }
 
 export function ProjectsManagementPage() {

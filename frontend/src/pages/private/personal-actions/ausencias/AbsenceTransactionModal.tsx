@@ -128,6 +128,7 @@ interface AbsenceTransactionModalProps {
   onLoadAuditTrail?: () => Promise<void> | void;
   initialCompanyId?: number;
   initialDraft?: AbsenceFormDraft;
+  onCompanyChange?: (companyId?: number) => void;
   onCancel: () => void;
   onSubmit: (payload: AbsenceFormDraft) => Promise<void> | void;
 }
@@ -264,6 +265,7 @@ export function AbsenceTransactionModal({
   onLoadAuditTrail,
   initialCompanyId,
   initialDraft,
+  onCompanyChange,
   onCancel,
   onSubmit,
 }: AbsenceTransactionModalProps) {
@@ -289,17 +291,19 @@ export function AbsenceTransactionModal({
   const [auditLoaded, setAuditLoaded] = useState(false);
   const lastLineRef = useRef<HTMLDivElement>(null);
   const prevEmployeeIdRef = useRef<number | undefined>(undefined);
+  const initOnceRef = useRef(false);
 
   useEffect(() => {
-    if (!open) return;
+    if (!open) {
+      initOnceRef.current = false;
+      return;
+    }
 
     setActiveTab('info');
-
     setAuditLoaded(false);
 
-    form.resetFields();
-
     if (initialDraft) {
+      form.resetFields();
       form.setFieldsValue({
         idEmpresa: initialDraft.idEmpresa,
         idEmpleado: initialDraft.idEmpleado,
@@ -311,19 +315,24 @@ export function AbsenceTransactionModal({
       }));
 
       setLines(draftLines);
-
       setActiveLineKeys(mode === 'edit' ? [] : draftLines.map((l) => l.key));
       return;
     }
 
+    if (initOnceRef.current) return;
+    initOnceRef.current = true;
+
+    form.resetFields();
     form.setFieldsValue({ idEmpresa: initialCompanyId });
+    if (onCompanyChange) {
+      onCompanyChange(initialCompanyId);
+    }
     const initialLine = buildEmptyLine();
 
     setLines([initialLine]);
-
     setActiveLineKeys([initialLine.key]);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, initialDraft, initialCompanyId, form, mode]);
+  }, [open, initialDraft, initialCompanyId, form, mode, onCompanyChange]);
 
   useEffect(() => {
     if (!open || !showAudit || activeTab !== 'bitacora' || auditLoaded) return;
@@ -337,6 +346,12 @@ export function AbsenceTransactionModal({
 
   const selectedCompanyId = Form.useWatch('idEmpresa', form);
   const selectedEmployeeId = Form.useWatch('idEmpleado', form);
+
+  useEffect(() => {
+    if (!open) return;
+    if (!onCompanyChange) return;
+    onCompanyChange(selectedCompanyId ? Number(selectedCompanyId) : undefined);
+  }, [onCompanyChange, open, selectedCompanyId]);
 
   // Al cambiar de empleado se reinician las líneas porque cada empleado tiene planillas distintas
   useEffect(() => {
@@ -464,7 +479,7 @@ export function AbsenceTransactionModal({
     }
 
     const selectedIds = new Set(lines.map((line) => line.movimientoId).filter(Boolean));
-    list = list.filter((movement) => movement.esInactivo === 0 || selectedIds.has(movement.id));
+    list = list.filter((movement) => movement.esInactivo === 1 || selectedIds.has(movement.id));
 
     return list;
   }, [movements, selectedCompanyId, actionTypeIdForAbsence, lines]);
@@ -534,7 +549,7 @@ export function AbsenceTransactionModal({
     const cleaned = {
       movimientoId,
       movimientoLabel: movement?.nombre,
-      movimientoInactivo: movement ? movement.esInactivo === 1 : false,
+      movimientoInactivo: movement ? movement.esInactivo === 0 : false,
       monto: 0,
       montoInput: '0',
       formula: '',
@@ -958,6 +973,11 @@ export function AbsenceTransactionModal({
                             value: Number(company.id),
                             label: company.nombre,
                           }))}
+                          onChange={(value) => {
+                            if (onCompanyChange) {
+                              onCompanyChange(value ? Number(value) : undefined);
+                            }
+                          }}
                         />
                       </Form.Item>
 
@@ -1050,8 +1070,8 @@ export function AbsenceTransactionModal({
 
                                 const movementOptions = filteredMovements.map((movement) => ({
                                   value: movement.id,
-                                  label: `${movement.nombre} (${movement.esMontoFijo === 1 ? 'Monto' : '%'})${movement.esInactivo === 1 ? ' (Inactivo)' : ''}`,
-                                  disabled: movement.esInactivo === 1 && movement.id !== line.movimientoId,
+                                  label: `${movement.nombre} (${movement.esMontoFijo === 1 ? 'Monto' : '%'})${movement.esInactivo === 0 ? ' (Inactivo)' : ''}`,
+                                  disabled: movement.esInactivo === 0 && movement.id !== line.movimientoId,
                                 }));
                                 if (
                                   line.movimientoId &&
@@ -1154,7 +1174,7 @@ export function AbsenceTransactionModal({
                                                 options={movementOptions}
                                               />
                                             </Tooltip>
-                                            {selectedMovement?.esInactivo === 1 ? (
+                                            {selectedMovement?.esInactivo === 0 ? (
                                               <Tag color="orange" style={{ marginTop: 6 }}>
                                                 Inactivo
                                               </Tag>

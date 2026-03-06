@@ -42,6 +42,8 @@ export class AccountingAccountsService {
     idTipoAccionPersonal: 'Tipo accion personal',
     esInactivo: 'Estado',
   };
+  private readonly activeFlag = 1;
+  private readonly inactiveFlag = 0;
 
   async create(dto: CreateAccountingAccountDto, actorUserId: number): Promise<AccountingAccount> {
     await this.assertCompanyActive(dto.idEmpresa);
@@ -64,7 +66,7 @@ export class AccountingAccountsService {
       codigoExterno: dto.codigoExterno?.trim() || null,
       idTipoErp: tipoCuenta.id,
       idTipoAccionPersonal: dto.idTipoAccionPersonal,
-      esInactivo: 0,
+      esInactivo: this.activeFlag,
     });
     const saved = await this.repo.save(entity);
     this.auditOutbox.publish({
@@ -94,9 +96,9 @@ export class AccountingAccountsService {
     }
 
     if (inactiveOnly) {
-      qb.andWhere('c.esInactivo = 1');
+      qb.andWhere('c.esInactivo = :inactiveFlag', { inactiveFlag: this.inactiveFlag });
     } else if (!includeInactive) {
-      qb.andWhere('c.esInactivo = 0');
+      qb.andWhere('c.esInactivo = :activeFlag', { activeFlag: this.activeFlag });
     }
 
     return qb.getMany();
@@ -193,7 +195,7 @@ export class AccountingAccountsService {
   async inactivate(id: number, actorUserId: number): Promise<AccountingAccount> {
     const found = await this.findOne(id);
     const payloadBefore = this.buildAuditPayload(found);
-    found.esInactivo = 1;
+    found.esInactivo = this.inactiveFlag;
     const saved = await this.repo.save(found);
     this.auditOutbox.publish({
       modulo: 'accounting-accounts',
@@ -211,7 +213,7 @@ export class AccountingAccountsService {
   async reactivate(id: number, actorUserId: number): Promise<AccountingAccount> {
     const found = await this.findOne(id);
     const payloadBefore = this.buildAuditPayload(found);
-    found.esInactivo = 0;
+    found.esInactivo = this.activeFlag;
     const saved = await this.repo.save(found);
     this.auditOutbox.publish({
       modulo: 'accounting-accounts',
@@ -299,7 +301,7 @@ export class AccountingAccountsService {
       codigoExterno: entity.codigoExterno ?? null,
       idTipoErp: entity.idTipoErp ?? null,
       idTipoAccionPersonal: entity.idTipoAccionPersonal ?? null,
-      esInactivo: entity.esInactivo === 1 ? 'Inactivo' : 'Activo',
+      esInactivo: entity.esInactivo === this.inactiveFlag ? 'Inactivo' : 'Activo',
     };
   }
 

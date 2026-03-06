@@ -44,5 +44,5 @@ export function getPaneValue(
       ? (accountLabelMap.get(row.idCuentaPasivo) ?? `Cuenta #${row.idCuentaPasivo}`)
       : '(vacio)';
   }
-  return row.esInactivo === 1 ? 'Inactivo' : 'Activo';
+  return row.esInactivo === 0 ? 'Inactivo' : 'Activo';
 }

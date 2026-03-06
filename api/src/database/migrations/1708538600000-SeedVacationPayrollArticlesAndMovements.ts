@@ -21,12 +21,12 @@ export class SeedVacationPayrollArticlesAndMovements1708538600000 implements Mig
         1,
         cuentas.id_cuenta_contable,
         NULL,
-        0
+        1
       FROM sys_empresas e
       INNER JOIN (
         SELECT id_empresa, MIN(id_cuenta_contable) AS id_cuenta_contable
         FROM erp_cuentas_contables
-        WHERE es_inactivo = 0
+        WHERE es_inactivo = 1
         GROUP BY id_empresa
       ) cuentas
         ON cuentas.id_empresa = e.id_empresa
@@ -66,10 +66,10 @@ export class SeedVacationPayrollArticlesAndMovements1708538600000 implements Mig
         '1',
         '0',
         'Dias de vacaciones solicitados.',
-        0
+        1
       FROM nom_articulos_nomina a
       WHERE a.id_tipo_accion_personal = 13
-        AND a.es_inactivo = 0
+        AND a.es_inactivo = 1
         AND NOT EXISTS (
           SELECT 1
           FROM nom_movimientos_nomina m

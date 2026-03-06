@@ -167,7 +167,7 @@ function getPaneValue(
   if (key === 'tipoAccion')
     return actionTypeMap.get(row.idTipoAccionPersonal)?.nombre ?? `Accion #${row.idTipoAccionPersonal}`;
   if (key === 'tipoCalculo') return row.esMontoFijo === 1 ? 'Monto fijo' : 'Porcentaje';
-  return row.esInactivo === 1 ? 'Inactivo' : 'Activo';
+  return row.esInactivo === 0 ? 'Inactivo' : 'Activo';
 }
 
 export function PayrollMovementsManagementPage() {
@@ -665,8 +665,8 @@ export function PayrollMovementsManagementPage() {
         dataIndex: 'esInactivo',
         width: 110,
         render: (esInactivo: number) => (
-          <Tag className={esInactivo === 1 ? styles.tagInactivo : styles.tagActivo}>
-            {esInactivo === 1 ? 'Inactivo' : 'Activo'}
+          <Tag className={esInactivo === 0 ? styles.tagInactivo : styles.tagActivo}>
+            {esInactivo === 0 ? 'Inactivo' : 'Activo'}
           </Tag>
         ),
       },
@@ -978,14 +978,14 @@ export function PayrollMovementsManagementPage() {
                     style={{
                       fontWeight: 500,
                       fontSize: 14,
-                      color: editing.esInactivo === 1 ? '#64748b' : '#20638d',
+                      color: editing.esInactivo === 0 ? '#64748b' : '#20638d',
                     }}
                   >
-                    {editing.esInactivo === 1 ? 'Inactivo' : 'Activo'}
+                    {editing.esInactivo === 0 ? 'Inactivo' : 'Activo'}
                   </span>
                   <Switch
-                    checked={editing.esInactivo === 0}
-                    disabled={editing.esInactivo === 0 ? !canInactivate : !canReactivate}
+                    checked={editing.esInactivo === 1}
+                    disabled={editing.esInactivo === 1 ? !canInactivate : !canReactivate}
                     onChange={(checked) => {
                       if (!editing) return;
                       modal.confirm({
@@ -1172,7 +1172,7 @@ export function PayrollMovementsManagementPage() {
                           <Input.TextArea rows={3} placeholder="Descripcion" maxLength={2000} />
                         </Form.Item>
                       </Col>
-                      {selectedArticleObj?.esInactivo === 1 && (
+                      {selectedArticleObj?.esInactivo === 0 && (
                         <Col span={24}>
                           <Tag className={styles.tagInactivo}>El articulo seleccionado esta inactivo.</Tag>
                         </Col>
@@ -1225,11 +1225,20 @@ export function PayrollMovementsManagementPage() {
                           name="montoFijo"
                           label="Monto Fijo *"
                           rules={[
-                            { required: true, message: 'Monto fijo es requerido' },
                             {
                               validator: async (_, value) => {
-                                if (!value || !isNonNegativeNumeric(String(value))) {
+                                const esMontoFijoActual = Number(form.getFieldValue('esMontoFijo')) === 1;
+                                const raw = String(value ?? '').trim();
+                                if (!raw || !isNonNegativeNumeric(raw)) {
                                   throw new Error('Monto fijo debe ser un numero no negativo');
+                                }
+                                const numericValue = Number(raw);
+                                if (esMontoFijoActual) {
+                                  if (numericValue <= 0) {
+                                    throw new Error('Monto fijo debe ser mayor a 0');
+                                  }
+                                } else if (numericValue !== 0) {
+                                  throw new Error('Monto fijo debe ser 0 cuando el calculo es porcentaje');
                                 }
                               },
                             },
@@ -1243,11 +1252,20 @@ export function PayrollMovementsManagementPage() {
                           name="porcentaje"
                           label="Porcentaje *"
                           rules={[
-                            { required: true, message: 'Porcentaje es requerido' },
                             {
                               validator: async (_, value) => {
-                                if (!value || !isNonNegativeNumeric(String(value))) {
+                                const esMontoFijoActual = Number(form.getFieldValue('esMontoFijo')) === 1;
+                                const raw = String(value ?? '').trim();
+                                if (!raw || !isNonNegativeNumeric(raw)) {
                                   throw new Error('Porcentaje debe ser un numero no negativo');
+                                }
+                                const numericValue = Number(raw);
+                                if (!esMontoFijoActual) {
+                                  if (numericValue <= 0) {
+                                    throw new Error('Porcentaje debe ser mayor a 0');
+                                  }
+                                } else if (numericValue !== 0) {
+                                  throw new Error('Porcentaje debe ser 0 cuando el calculo es monto fijo');
                                 }
                               },
                             },

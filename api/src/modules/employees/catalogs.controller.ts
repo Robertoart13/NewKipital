@@ -49,7 +49,7 @@ export class CatalogsController {
   @Get('pay-periods')
   async payPeriods() {
     return this.periodRepo.find({
-      where: { esInactivo: 0 },
+      where: { esInactivo: 1 },
       order: { dias: 'ASC' },
       select: ['id', 'nombre', 'dias'],
     });

@@ -185,6 +185,14 @@ function summarizeCell(value?: string | null) {
   );
 }
 
+function formatMoney(value?: number | null, currency = 'CRC') {
+  if (value == null || Number.isNaN(Number(value))) return '--';
+  return `${currency} ${new Intl.NumberFormat('es-CR', {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 2,
+  }).format(Number(value))}`;
+}
+
 function createDraftFromAbsenceDetail(detail: AbsenceDetailItem): AbsenceFormDraft {
   const lines: AbsenceTransactionLine[] =
     detail.lines?.length > 0
@@ -268,6 +276,7 @@ export function AbsencesPage() {
   const [search, setSearch] = useState('');
   const [pageSize, setPageSize] = useState(10);
   const [companyId, setCompanyId] = useState<number | undefined>(defaultCompanyId);
+  const [modalCompanyId, setModalCompanyId] = useState<number | undefined>(defaultCompanyId);
   const [selectedEstados, setSelectedEstados] = useState<number[]>([1, 2, 3]);
   const [filtersExpanded, setFiltersExpanded] = useState(false);
   const [paneSearch, setPaneSearch] = useState<Record<PaneKey, string>>({
@@ -385,6 +394,7 @@ export function AbsencesPage() {
     async (row: AbsenceUiRow) => {
       const key = `absence-edit-load-${row.id}`;
       setEditingRow(row);
+      setModalCompanyId(row.idEmpresa);
       setEditingDraft({
         idEmpresa: row.idEmpresa,
         idEmpleado: row.idEmpleado,
@@ -436,11 +446,11 @@ export function AbsencesPage() {
     await loadAbsenceAuditTrail(editingRow.id);
   }, [editingRow?.id, loadAbsenceAuditTrail]);
 
-  const loadCatalogs = useCallback(async () => {
-    if (!companyId) {
+  const loadModalCatalogs = useCallback(async () => {
+    const targetCompanyId = openModal ? modalCompanyId : companyId;
+    if (!targetCompanyId) {
       setEmployees([]);
       setMovements([]);
-      setPayPeriods([]);
       setAbsenceActionTypeId(undefined);
       setLoadingEmployees(false);
       setLoadingMovements(false);
@@ -450,10 +460,9 @@ export function AbsencesPage() {
     setLoadingEmployees(true);
     setLoadingMovements(true);
     try {
-      const [employeesResp, movementsResp, payPeriodsResp] = await Promise.all([
-        fetchAbsenceEmployeesCatalog(companyId),
-        fetchAbsenceMovementsCatalog(companyId, 20),
-        fetchPayPeriods().catch(() => []),
+      const [employeesResp, movementsResp] = await Promise.all([
+        fetchAbsenceEmployeesCatalog(targetCompanyId),
+        fetchAbsenceMovementsCatalog(targetCompanyId, 20),
       ]);
 
       setEmployees(employeesResp);
@@ -474,26 +483,37 @@ export function AbsencesPage() {
           esInactivo: movement.esInactivo,
         })),
       );
-      setPayPeriods(payPeriodsResp);
       setAbsenceActionTypeId(undefined);
     } catch {
       setEmployees([]);
       setMovements([]);
-      setPayPeriods([]);
       setAbsenceActionTypeId(undefined);
     } finally {
       setLoadingEmployees(false);
       setLoadingMovements(false);
     }
-  }, [companyId]);
+  }, [companyId, modalCompanyId, openModal]);
+
+  const loadPayPeriods = useCallback(async () => {
+    try {
+      const data = await fetchPayPeriods();
+      setPayPeriods(data ?? []);
+    } catch {
+      setPayPeriods([]);
+    }
+  }, []);
 
   useEffect(() => {
     void loadRows();
   }, [loadRows]);
 
   useEffect(() => {
-    void loadCatalogs();
-  }, [loadCatalogs]);
+    void loadModalCatalogs();
+  }, [loadModalCatalogs]);
+
+  useEffect(() => {
+    void loadPayPeriods();
+  }, [loadPayPeriods]);
 
   const rowsWithEmployee = useMemo(() => {
     const map = new Map<number, string>();
@@ -589,6 +609,13 @@ export function AbsencesPage() {
         key: 'movimientoResumen',
         width: 280,
         render: (value) => summarizeCell(value),
+      },
+      {
+        title: 'MONTO',
+        dataIndex: 'monto',
+        key: 'monto',
+        width: 140,
+        render: (value: AbsenceUiRow['monto'], row) => formatMoney(value ?? null, row.moneda ?? 'CRC'),
       },
       {
         title: 'REMUNERADA',
@@ -772,6 +799,7 @@ export function AbsencesPage() {
                 setEditingDraft(undefined);
                 setLoadingEditDetail(false);
                 setMode('create');
+                setModalCompanyId(companyId ?? defaultCompanyId);
                 setOpenModal(true);
               }}
             >
@@ -981,8 +1009,11 @@ export function AbsencesPage() {
         auditTrail={auditTrail}
         loadingAuditTrail={loadingAuditTrail}
         onLoadAuditTrail={mode === 'edit' && editingRow ? loadEditingAbsenceAuditTrail : undefined}
-        initialCompanyId={companyId}
+        initialCompanyId={modalCompanyId ?? companyId ?? defaultCompanyId}
         initialDraft={editingDraft}
+        onCompanyChange={(nextCompanyId) => {
+          setModalCompanyId(nextCompanyId);
+        }}
         onCancel={() => {
           setOpenModal(false);
           setEditingDraft(undefined);

@@ -42,7 +42,7 @@ export class OrgProject {
   idExterno: string | null;
 
   @Index('IDX_proyecto_inactivo')
-  @Column({ name: 'es_inactivo', type: 'tinyint', width: 1, default: 0 })
+  @Column({ name: 'es_inactivo', type: 'tinyint', width: 1, default: 1 })
   esInactivo: number;
 
   @CreateDateColumn({ name: 'fecha_creacion' })

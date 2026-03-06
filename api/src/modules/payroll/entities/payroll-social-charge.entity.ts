@@ -49,7 +49,7 @@ export class PayrollSocialCharge {
     name: 'es_inactivo_carga_social',
     type: 'tinyint',
     width: 1,
-    default: 0,
+    default: 1,
   })
   esInactivo: number;
 

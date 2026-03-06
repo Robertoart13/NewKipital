@@ -137,7 +137,7 @@ export class CreateErpCuentasContablesAndPermissions1708535800000 implements Mig
             },
             { name: 'id_tipo_erp', type: 'int', isNullable: false },
             { name: 'id_tipo_accion_personal', type: 'int', isNullable: false },
-            { name: 'es_inactivo', type: 'tinyint', width: 1, default: 0 },
+            { name: 'es_inactivo', type: 'tinyint', width: 1, default: 1 },
             {
               name: 'fecha_creacion',
               type: 'timestamp',

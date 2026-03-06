@@ -78,7 +78,7 @@ export class CreatePayrollMovementsAndPermissions1708536300000 implements Migrat
               name: 'es_inactivo_movimiento_nomina',
               type: 'tinyint',
               width: 1,
-              default: 0,
+              default: 1,
             },
             {
               name: 'fecha_creacion_movimiento_nomina',

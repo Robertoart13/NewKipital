@@ -376,6 +376,9 @@ export class PayrollMovementsService {
     const porcentajeValue = this.parseNonNegativeValue(porcentaje, 'Porcentaje');
 
     if (esMontoFijo === 1) {
+      if (montoValue <= 0) {
+        throw new BadRequestException('El monto fijo debe ser mayor a 0.');
+      }
       if (porcentajeValue !== 0) {
         throw new BadRequestException(
           'Si el tipo de calculo es monto fijo, el porcentaje debe ser 0.',
@@ -384,6 +387,9 @@ export class PayrollMovementsService {
       return { esMontoFijo: 1, montoFijo, porcentaje: '0' };
     }
 
+    if (porcentajeValue <= 0) {
+      throw new BadRequestException('El porcentaje debe ser mayor a 0.');
+    }
     if (montoValue !== 0) {
       throw new BadRequestException(
         'Si el tipo de calculo es porcentaje, el monto fijo debe ser 0.',

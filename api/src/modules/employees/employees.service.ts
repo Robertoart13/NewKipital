@@ -568,7 +568,7 @@ export class EmployeesService {
       where: {
         idEmpresa: emp.idEmpresa,
         estado: In(PLANILLA_ESTADOS_BLOQUEANTES),
-        esInactivo: 0,
+        esInactivo: 1,
       },
       select: {
         id: true,

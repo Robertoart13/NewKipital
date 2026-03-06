@@ -36,6 +36,7 @@ export class PayrollMovementsController {
   }
 
   @RequirePermissions('payroll-movement:view')
+  @CacheScope('payroll-articles')
   @Get('articles')
   listArticles(
     @Query('idEmpresa', new ParseIntPipe({ optional: true }))
@@ -48,6 +49,7 @@ export class PayrollMovementsController {
   }
 
   @RequirePermissions('payroll-movement:view')
+  @CacheScope('accounting-accounts')
   @Get('personal-action-types')
   listPersonalActionTypes(
     @Query('includeInactive', new ParseBoolPipe({ optional: true }))
@@ -57,6 +59,7 @@ export class PayrollMovementsController {
   }
 
   @RequirePermissions('payroll-movement:view')
+  @CacheScope('classes')
   @Get('classes')
   listClasses(
     @Query('includeInactive', new ParseBoolPipe({ optional: true }))
@@ -66,6 +69,7 @@ export class PayrollMovementsController {
   }
 
   @RequirePermissions('payroll-movement:view')
+  @CacheScope('projects')
   @Get('projects')
   listProjects(
     @Query('idEmpresa', new ParseIntPipe({ optional: true }))

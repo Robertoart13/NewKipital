@@ -69,7 +69,7 @@ export class PayrollMovement {
     name: 'es_inactivo_movimiento_nomina',
     type: 'tinyint',
     width: 1,
-    default: 0,
+    default: 1,
   })
   esInactivo: number;
 

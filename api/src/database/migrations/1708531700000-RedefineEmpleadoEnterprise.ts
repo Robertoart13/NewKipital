@@ -126,7 +126,7 @@ export class RedefineEmpleadoEnterprise1708531700000 implements MigrationInterfa
           },
           { name: 'nombre_periodo_pago', type: 'varchar', length: '50' },
           { name: 'dias_periodo_pago', type: 'int' },
-          { name: 'es_inactivo', type: 'tinyint', width: 1, default: 0 },
+          { name: 'es_inactivo', type: 'tinyint', width: 1, default: 1 },
           {
             name: 'fecha_creacion_periodo_pago',
             type: 'datetime',
@@ -153,7 +153,7 @@ export class RedefineEmpleadoEnterprise1708531700000 implements MigrationInterfa
 
     // Seed periodos de pago estándar
     await queryRunner.query(
-      `INSERT INTO nom_periodos_pago (nombre_periodo_pago, dias_periodo_pago, es_inactivo) VALUES ('Semanal', 7, 0), ('Quincenal', 15, 0), ('Mensual', 30, 0)`,
+      `INSERT INTO nom_periodos_pago (nombre_periodo_pago, dias_periodo_pago, es_inactivo) VALUES ('Semanal', 7, 1), ('Quincenal', 15, 1), ('Mensual', 30, 1)`,
     );
 
     // ═══════ 4. Drop sys_empleados vieja y recrear ═══════

@@ -54,7 +54,7 @@ export class CreateCalendarioNominaMaestro1708531900000 implements MigrationInte
             width: 1,
             default: 1,
           },
-          { name: 'es_inactivo', type: 'tinyint', width: 1, default: 0 },
+          { name: 'es_inactivo', type: 'tinyint', width: 1, default: 1 },
           {
             name: 'descripcion_evento_calendario_nomina',
             type: 'text',

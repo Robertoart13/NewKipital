@@ -104,7 +104,7 @@ function getPaneValue(row: ClassListItem, key: PaneKey): string {
   if (key === 'nombre') return row.nombre ?? '';
   if (key === 'codigo') return row.codigo ?? '';
   if (key === 'idExterno') return row.idExterno ?? '';
-  return row.esInactivo === 1 ? 'Inactivo' : 'Activo';
+  return row.esInactivo === 0 ? 'Inactivo' : 'Activo';
 }
 
 export function ClassesManagementPage() {
@@ -446,8 +446,8 @@ export function ClassesManagementPage() {
       key: 'estado',
       width: 120,
       render: (_, row) => (
-        <Tag className={row.esInactivo === 1 ? styles.tagInactivo : styles.tagActivo}>
-          {row.esInactivo === 1 ? 'Inactivo' : 'Activo'}
+        <Tag className={row.esInactivo === 0 ? styles.tagInactivo : styles.tagActivo}>
+          {row.esInactivo === 0 ? 'Inactivo' : 'Activo'}
         </Tag>
       ),
     },
@@ -745,14 +745,14 @@ export function ClassesManagementPage() {
                     style={{
                       fontWeight: 500,
                       fontSize: 14,
-                      color: editing.esInactivo === 1 ? '#64748b' : '#20638d',
+                      color: editing.esInactivo === 0 ? '#64748b' : '#20638d',
                     }}
                   >
-                    {editing.esInactivo === 1 ? 'Inactivo' : 'Activo'}
+                    {editing.esInactivo === 0 ? 'Inactivo' : 'Activo'}
                   </span>
                   <Switch
-                    checked={editing.esInactivo === 0}
-                    disabled={editing.esInactivo === 0 ? !canInactivate : !canReactivate}
+                    checked={editing.esInactivo === 1}
+                    disabled={editing.esInactivo === 1 ? !canInactivate : !canReactivate}
                     onChange={(checked) => {
                       if (!editing) return;
                       modal.confirm({

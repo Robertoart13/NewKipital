@@ -49,7 +49,7 @@ export class EnhancePayrollV2Compatible1708536400000 implements MigrationInterfa
               name: 'es_inactivo_tipo_planilla',
               type: 'tinyint',
               width: 1,
-              default: 0,
+              default: 1,
             },
             {
               name: 'fecha_creacion_tipo_planilla',
@@ -82,10 +82,10 @@ export class EnhancePayrollV2Compatible1708536400000 implements MigrationInterfa
         fecha_creacion_tipo_planilla,
         fecha_modificacion_tipo_planilla
       ) VALUES
-        ('REGULAR', 'Regular', '#1E88E5', 0, '${now}', '${now}'),
-        ('AGUINALDO', 'Aguinaldo', '#2E7D32', 0, '${now}', '${now}'),
-        ('LIQUIDACION', 'Liquidacion', '#C62828', 0, '${now}', '${now}'),
-        ('EXTRAORDINARIA', 'Extraordinaria', '#F57C00', 0, '${now}', '${now}')
+        ('REGULAR', 'Regular', '#1E88E5', 1, '${now}', '${now}'),
+        ('AGUINALDO', 'Aguinaldo', '#2E7D32', 1, '${now}', '${now}'),
+        ('LIQUIDACION', 'Liquidacion', '#C62828', 1, '${now}', '${now}'),
+        ('EXTRAORDINARIA', 'Extraordinaria', '#F57C00', 1, '${now}', '${now}')
       ON DUPLICATE KEY UPDATE
         nombre_tipo_planilla = VALUES(nombre_tipo_planilla),
         color_hex_tipo_planilla = VALUES(color_hex_tipo_planilla),
@@ -183,7 +183,7 @@ export class EnhancePayrollV2Compatible1708536400000 implements MigrationInterfa
       UPDATE nom_calendarios_nomina
       SET is_active_slot_calendario_nomina =
         CASE
-          WHEN estado_calendario_nomina IN (1, 2, 3) AND es_inactivo = 0 THEN 1
+          WHEN estado_calendario_nomina IN (1, 2, 3) AND es_inactivo = 1 THEN 1
           ELSE 0
         END
     `);

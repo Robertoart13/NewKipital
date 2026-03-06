@@ -34,7 +34,7 @@ export class CreateOrgClasesAndPermissions1708534200000 implements MigrationInte
               length: '45',
               isNullable: true,
             },
-            { name: 'es_inactivo', type: 'tinyint', width: 1, default: 0 },
+            { name: 'es_inactivo', type: 'tinyint', width: 1, default: 1 },
             {
               name: 'fecha_creacion',
               type: 'timestamp',

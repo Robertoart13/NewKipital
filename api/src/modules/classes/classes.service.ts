@@ -24,6 +24,8 @@ export class ClassesService {
     idExterno: 'ID externo',
     esInactivo: 'Estado',
   };
+  private readonly activeFlag = 1;
+  private readonly inactiveFlag = 0;
 
   async create(dto: CreateClassDto, actorUserId: number): Promise<OrgClass> {
     await this.assertCodigoUnique(dto.codigo);
@@ -36,7 +38,7 @@ export class ClassesService {
       descripcion: dto.descripcion?.trim() || null,
       codigo: dto.codigo.trim(),
       idExterno: dto.idExterno?.trim() || null,
-      esInactivo: 0,
+      esInactivo: this.activeFlag,
     });
     const saved = await this.repo.save(entity);
     this.auditOutbox.publish({
@@ -55,9 +57,9 @@ export class ClassesService {
     const qb = this.repo.createQueryBuilder('c').orderBy('c.nombre', 'ASC');
 
     if (inactiveOnly) {
-      qb.where('c.esInactivo = 1');
+      qb.where('c.esInactivo = :inactiveFlag', { inactiveFlag: this.inactiveFlag });
     } else if (!includeInactive) {
-      qb.where('c.esInactivo = 0');
+      qb.where('c.esInactivo = :activeFlag', { activeFlag: this.activeFlag });
     }
 
     return qb.getMany();
@@ -114,7 +116,7 @@ export class ClassesService {
   async inactivate(id: number, actorUserId: number): Promise<OrgClass> {
     const found = await this.findOne(id);
     const payloadBefore = this.buildAuditPayload(found);
-    found.esInactivo = 1;
+    found.esInactivo = this.inactiveFlag;
     const saved = await this.repo.save(found);
     this.auditOutbox.publish({
       modulo: 'classes',
@@ -132,7 +134,7 @@ export class ClassesService {
   async reactivate(id: number, actorUserId: number): Promise<OrgClass> {
     const found = await this.findOne(id);
     const payloadBefore = this.buildAuditPayload(found);
-    found.esInactivo = 0;
+    found.esInactivo = this.activeFlag;
     const saved = await this.repo.save(found);
     this.auditOutbox.publish({
       modulo: 'classes',
@@ -204,7 +206,7 @@ export class ClassesService {
       descripcion: entity.descripcion ?? null,
       codigo: entity.codigo ?? null,
       idExterno: entity.idExterno ?? null,
-      esInactivo: entity.esInactivo === 1 ? 'Inactivo' : 'Activo',
+      esInactivo: entity.esInactivo === this.inactiveFlag ? 'Inactivo' : 'Activo',
     };
   }
 
