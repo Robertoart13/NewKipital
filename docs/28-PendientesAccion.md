@@ -95,7 +95,7 @@ UI:
 
 ---
 
-## PEND-002 - Bloqueo de inactivación de empleado con acciones de personal realizadas
+## PEND-002 - Bloqueo de inactivacin de empleado con acciones de personal realizadas
 
 ### Estado
 
@@ -107,26 +107,26 @@ UI:
 
 ### Contexto del problema
 
-Actualmente se puede inactivar un empleado sin validar si tiene acciones de personal (acciones de personal) ya realizadas o en curso. Inactivar en ese caso puede dejar historial inconsistente o procesos pendientes huérfanos.
+Actualmente se puede inactivar un empleado sin validar si tiene acciones de personal (acciones de personal) ya realizadas o en curso. Inactivar en ese caso puede dejar historial inconsistente o procesos pendientes hurfanos.
 
 ### Regla de negocio solicitada
 
 Al intentar inactivar un empleado:
 
-1. Si el empleado tiene **acciones de personal** hechas (registros asociados que no permitan cierre o reversión limpia), **no** se debe permitir inactivar.
-2. Definir con negocio qué acciones de personal son “bloqueantes” (ej. solicitudes de vacaciones aprobadas no gozadas, permisos pendientes, etc.).
-3. Solo permitir inactivar cuando no existan acciones de personal bloqueantes o cuando estén en estado que permita inactivación según catálogo acordado.
+1. Si el empleado tiene **acciones de personal** hechas (registros asociados que no permitan cierre o reversin limpia), **no** se debe permitir inactivar.
+2. Definir con negocio qu acciones de personal son bloqueantes (ej. solicitudes de vacaciones aprobadas no gozadas, permisos pendientes, etc.).
+3. Solo permitir inactivar cuando no existan acciones de personal bloqueantes o cuando estn en estado que permita inactivacin segn catlogo acordado.
 
-### Alcance técnico esperado
+### Alcance tcnico esperado
 
-- Backend: validar existencia de acciones de personal bloqueantes antes de ejecutar inactivación; retornar `409 Conflict` con mensaje claro si aplica.
+- Backend: validar existencia de acciones de personal bloqueantes antes de ejecutar inactivacin; retornar `409 Conflict` con mensaje claro si aplica.
 - Frontend: mostrar mensaje funcional al usuario cuando el intento de inactivar sea rechazado.
-- Documentar en este pendiente la definición final de “acciones de personal bloqueantes” una vez acordada con negocio.
+- Documentar en este pendiente la definicin final de acciones de personal bloqueantes una vez acordada con negocio.
 
-### Criterios de aceptación (preliminar)
+### Criterios de aceptacin (preliminar)
 
 1. Dado un empleado con acciones de personal bloqueantes, al intentar inactivar, el API responde `409` y el empleado no cambia de estado.
-2. Dado un empleado sin acciones de personal bloqueantes, la inactivación se ejecuta con éxito.
+2. Dado un empleado sin acciones de personal bloqueantes, la inactivacin se ejecuta con xito.
 3. El frontend muestra el motivo del bloqueo cuando corresponda.
 
 ---
@@ -143,29 +143,29 @@ Al intentar inactivar un empleado:
 
 ---
 
-## Completado / Actualizado (sesión 2026-02-24)
+## Completado / Actualizado (sesin 2026-02-24)
 
-### Módulo Empleados – Edición y UX
+### Mdulo Empleados  Edicin y UX
 
 1. **EmployeeEditModal**
-   - Modal de edición alineado al de creación: mismas pestañas y campos (Información Personal, Contacto, Laboral, Financiera, Autogestión, Histórico Laboral).
+   - Modal de edicin alineado al de creacin: mismas pestaas y campos (Informacin Personal, Contacto, Laboral, Financiera, Autogestin, Histrico Laboral).
    - Carga de datos del empleado con `useEmployee`; formulario se rellena con `mapEmployeeToFormValues` e `initialValues` al abrir.
-   - Actualización vía `useUpdateEmployee`; payload solo incluye campos aceptados por el backend (`UpdateEmployeePayload`).
-   - Campo **Fecha de ingreso** y **Código de empleado** en solo lectura en edición (backend no permite actualizarlos).
-   - **Empresa** en edición mostrada pero no editable (por diseño actual).
+   - Actualizacin va `useUpdateEmployee`; payload solo incluye campos aceptados por el backend (`UpdateEmployeePayload`).
+   - Campo **Fecha de ingreso** y **Cdigo de empleado** en solo lectura en edicin (backend no permite actualizarlos).
+   - **Empresa** en edicin mostrada pero no editable (por diseo actual).
 
-2. **Activar / Inactivar en el modal de edición**
-   - Switch Activo/Inactivo habilitado según permisos `canInactivateEmployee` y `canReactivateEmployee`.
-   - Al guardar solo cambio de estado: se llama `PATCH /employees/:id/inactivate` o `PATCH /employees/:id/reactivate` según corresponda.
+2. **Activar / Inactivar en el modal de edicin**
+   - Switch Activo/Inactivo habilitado segn permisos `canInactivateEmployee` y `canReactivateEmployee`.
+   - Al guardar solo cambio de estado: se llama `PATCH /employees/:id/inactivate` o `PATCH /employees/:id/reactivate` segn corresponda.
 
-3. **Corrección de avisos en consola (Ant Design / rc)**
-   - **Collapse (EmployeesListPage):** uso de `items` en lugar de `children` / `Collapse.Panel` para evitar deprecación de rc-collapse.
+3. **Correccin de avisos en consola (Ant Design / rc)**
+   - **Collapse (EmployeesListPage):** uso de `items` en lugar de `children` / `Collapse.Panel` para evitar deprecacin de rc-collapse.
    - **Modal (EmployeeEditModal):** `destroyOnClose` reemplazado por `destroyOnHidden`.
    - **Spin (EmployeeEditModal):** `tip` reemplazado por `description`.
-   - **Form (EmployeeEditModal):** eliminado `initialValue` en `Form.Item` para campos ya definidos en `initialValues` del Form (`cantidadHijos`, `salarioBase`, `monedaSalario`, `vacacionesAcumuladas`, `cesantiaAcumulada`) para evitar el aviso de “Field can not overwrite”.
+   - **Form (EmployeeEditModal):** eliminado `initialValue` en `Form.Item` para campos ya definidos en `initialValues` del Form (`cantidadHijos`, `salarioBase`, `monedaSalario`, `vacacionesAcumuladas`, `cesantiaAcumulada`) para evitar el aviso de Field can not overwrite.
 
-4. **Documentación**
-   - Este documento (28-PendientesAccion.md) actualizado con PEND-002 (regla de inactivación de empleado con acciones de personal) y con la sección “Completado / Actualizado” de esta sesión.
+4. **Documentacin**
+   - Este documento (28-PendientesAccion.md) actualizado con PEND-002 (regla de inactivacin de empleado con acciones de personal) y con la seccin Completado / Actualizado de esta sesin.
 
 ---
 

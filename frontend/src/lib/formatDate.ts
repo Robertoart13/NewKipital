@@ -17,3 +17,4 @@ export function formatDateTime12h(dateStr: string | Date | null | undefined): st
     hour12: true,
   });
 }
+

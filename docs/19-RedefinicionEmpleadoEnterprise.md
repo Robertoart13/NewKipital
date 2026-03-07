@@ -1,13 +1,13 @@
-# DIRECTIVA 19 — Redefinición Enterprise de sys_empleados + Tablas Org/Nom
+# DIRECTIVA 19  Redefinicin Enterprise de sys_empleados + Tablas Org/Nom
 
 ## Objetivo
 
-Redefinir completamente el modelo de empleado para alinearlo con estándar enterprise:
+Redefinir completamente el modelo de empleado para alinearlo con estndar enterprise:
 
-- Separación total de identidad (sys_usuarios) vs negocio (sys_empleados).
+- Separacin total de identidad (sys_usuarios) vs negocio (sys_empleados).
 - Campos estandarizados con sufijo `_empleado`.
-- Relaciones organizacionales normalizadas (FK a catálogos).
-- Creación de tablas `org_departamentos`, `org_puestos`, `nom_periodos_pago`.
+- Relaciones organizacionales normalizadas (FK a catlogos).
+- Creacin de tablas `org_departamentos`, `org_puestos`, `nom_periodos_pago`.
 - `id_usuario` gestionado por workflow, NO por DTO.
 
 ---
@@ -18,27 +18,27 @@ Redefinir completamente el modelo de empleado para alinearlo con estándar enter
 - Solape de planillas: si una fecha coincide con m?ltiples planillas ABIERTAS/EN_PROCESO, **no se bloquea** la selecci?n. Se asigna autom?ticamente por prioridad: estado ABIERTA > EN_PROCESO; si empatan, menor fecha de inicio; si empatan, menor ID.
 - Se muestra advertencia en UI cuando hay fechas solapadas.
 
-## 1) Decisión de Dominio (NO negociable)
+## 1) Decisin de Dominio (NO negociable)
 
-| Regla | Descripción |
+| Regla | Descripcin |
 |-------|-------------|
-| **1 empresa a la vez** | Empleado pertenece a 1 sola empresa. Multiempresa simultánea aplica a sys_usuarios, no a sys_empleados |
+| **1 empresa a la vez** | Empleado pertenece a 1 sola empresa. Multiempresa simultnea aplica a sys_usuarios, no a sys_empleados |
 | **Email = login** | `email_empleado` es fuente de verdad del login cuando el empleado tiene acceso |
 | **FK opcional** | `id_usuario` es nullable. Un empleado puede existir sin usuario digital |
-| **Separación estricta** | sys_usuarios ≠ sys_empleados. Se vinculan por FK, nunca se fusionan |
+| **Separacin estricta** | sys_usuarios  sys_empleados. Se vinculan por FK, nunca se fusionan |
 
 ---
 
-## 2) Modelo Definitivo — sys_empleados
+## 2) Modelo Definitivo  sys_empleados
 
-Columnas ordenadas de más importante a menos importante:
+Columnas ordenadas de ms importante a menos importante:
 
 ### Identidad
 
-| Columna | Tipo | Restricción |
+| Columna | Tipo | Restriccin |
 |---------|------|-------------|
 | `id_empleado` | INT AI | PK |
-| `id_empresa` | INT | FK → sys_empresas (NOT NULL) |
+| `id_empresa` | INT | FK  sys_empresas (NOT NULL) |
 | `codigo_empleado` | VARCHAR(45) | UNIQUE por empresa (id_empresa + codigo_empleado) |
 | `cedula_empleado` | VARCHAR(30) | UNIQUE global |
 | `nombre_empleado` | VARCHAR(100) | NOT NULL |
@@ -47,38 +47,38 @@ Columnas ordenadas de más importante a menos importante:
 
 ### Datos Personales
 
-| Columna | Tipo | Restricción |
+| Columna | Tipo | Restriccin |
 |---------|------|-------------|
 | `genero_empleado` | ENUM('Masculino','Femenino','Otro') | Nullable |
-| `estado_civil_empleado` | ENUM('Soltero','Casado','Divorciado','Viudo','Unión Libre') | Nullable |
+| `estado_civil_empleado` | ENUM('Soltero','Casado','Divorciado','Viudo','Unin Libre') | Nullable |
 | `cantidad_hijos_empleado` | INT | Default 0 |
 | `telefono_empleado` | VARCHAR(30) | Nullable |
 | `direccion_empleado` | TEXT | Nullable |
 
 ### Contacto / Login
 
-| Columna | Tipo | Restricción |
+| Columna | Tipo | Restriccin |
 |---------|------|-------------|
 | `email_empleado` | VARCHAR(150) | UNIQUE global. Source of truth para login |
 
 ### Relaciones Organizacionales
 
-| Columna | Tipo | Restricción |
+| Columna | Tipo | Restriccin |
 |---------|------|-------------|
-| `id_departamento` | INT | FK → org_departamentos (nullable) |
-| `id_puesto` | INT | FK → org_puestos (nullable) |
-| `id_supervisor_empleado` | INT | FK → sys_empleados (self-reference, nullable). **Cross-empresa permitido:** el supervisor puede ser empleado de otra empresa (ej: holdings, cuando el supervisor original renunció). Ver Doc 27. |
+| `id_departamento` | INT | FK  org_departamentos (nullable) |
+| `id_puesto` | INT | FK  org_puestos (nullable) |
+| `id_supervisor_empleado` | INT | FK  sys_empleados (self-reference, nullable). **Cross-empresa permitido:** el supervisor puede ser empleado de otra empresa (ej: holdings, cuando el supervisor original renunci). Ver Doc 27. |
 
 ### Contrato / Pago
 
-| Columna | Tipo | Restricción |
+| Columna | Tipo | Restriccin |
 |---------|------|-------------|
 | `fecha_ingreso_empleado` | DATE | NOT NULL |
 | `fecha_salida_empleado` | DATE | Nullable |
 | `motivo_salida_empleado` | TEXT | Nullable |
 | `tipo_contrato_empleado` | ENUM('Indefinido','Plazo Fijo','Por Servicios Profesionales') | Nullable |
 | `jornada_empleado` | ENUM('Tiempo Completo','Medio Tiempo','Por Horas') | Nullable |
-| `id_periodos_pago` | INT | FK → nom_periodos_pago (nullable) |
+| `id_periodos_pago` | INT | FK  nom_periodos_pago (nullable) |
 | `salario_base_empleado` | DECIMAL(12,2) | Nullable |
 | `moneda_salario_empleado` | ENUM('CRC','USD') | Default 'CRC' |
 | `numero_ccss_empleado` | VARCHAR(30) | Nullable |
@@ -86,22 +86,22 @@ Columnas ordenadas de más importante a menos importante:
 
 ### Acumulados HR
 
-| Columna | Tipo | Restricción |
+| Columna | Tipo | Restriccin |
 |---------|------|-------------|
 | `vacaciones_acumuladas_empleado` | VARCHAR(200) | Nullable |
 | `cesantia_acumulada_empleado` | VARCHAR(200) | Nullable |
 
-### Vínculo Identidad (NO en DTO)
+### Vnculo Identidad (NO en DTO)
 
-| Columna | Tipo | Restricción |
+| Columna | Tipo | Restriccin |
 |---------|------|-------------|
-| `id_usuario` | INT | FK → sys_usuarios (nullable). Gestionado por EmployeeCreationWorkflow |
+| `id_usuario` | INT | FK  sys_usuarios (nullable). Gestionado por EmployeeCreationWorkflow |
 
-### Estado + Auditoría
+### Estado + Auditora
 
-| Columna | Tipo | Restricción |
+| Columna | Tipo | Restriccin |
 |---------|------|-------------|
-| `estado_empleado` | TINYINT(1) | 1=Activo, 0=Inactivo. NO delete físico |
+| `estado_empleado` | TINYINT(1) | 1=Activo, 0=Inactivo. NO delete fsico |
 | `fecha_creacion_empleado` | DATETIME | Auto |
 | `fecha_modificacion_empleado` | DATETIME | Auto onUpdate |
 | `creado_por_empleado` | INT | Nullable |
@@ -109,7 +109,7 @@ Columnas ordenadas de más importante a menos importante:
 
 ---
 
-## 3) Índices y Constraints
+## 3) ndices y Constraints
 
 | Nombre | Tipo | Columnas |
 |--------|------|----------|
@@ -137,11 +137,11 @@ Columnas ordenadas de más importante a menos importante:
 
 ---
 
-## 4) Tablas de Catálogo Creadas
+## 4) Tablas de Catlogo Creadas
 
 ### org_departamentos
 
-| Columna | Tipo | Descripción |
+| Columna | Tipo | Descripcin |
 |---------|------|-------------|
 | `id_departamento` | INT PK AI | |
 | `nombre_departamento` | VARCHAR(100) | |
@@ -154,7 +154,7 @@ Columnas ordenadas de más importante a menos importante:
 
 ### org_puestos
 
-| Columna | Tipo | Descripción |
+| Columna | Tipo | Descripcin |
 |---------|------|-------------|
 | `id_puesto` | INT PK AI | |
 | `nombre_puesto` | VARCHAR(100) | |
@@ -165,7 +165,7 @@ Columnas ordenadas de más importante a menos importante:
 
 ### nom_periodos_pago
 
-| Columna | Tipo | Descripción |
+| Columna | Tipo | Descripcin |
 |---------|------|-------------|
 | `id_periodos_pago` | INT PK AI | |
 | `nombre_periodo_pago` | VARCHAR(50) | Semanal, Quincenal, Mensual |
@@ -181,12 +181,12 @@ Columnas ordenadas de más importante a menos importante:
 ## 5) Regla Multi-moneda
 
 - Por ahora: 1 moneda base por empleado (`moneda_salario_empleado`).
-- Si un empleado necesita cálculos en distintas monedas, eso se modela en tabla hija `nom_empleado_salarios` (futuro, cuando se implemente Payroll Engine).
-- Decisión postergada: no mezclar en sys_empleados.
+- Si un empleado necesita clculos en distintas monedas, eso se modela en tabla hija `nom_empleado_salarios` (futuro, cuando se implemente Payroll Engine).
+- Decisin postergada: no mezclar en sys_empleados.
 
 ---
 
-## 6) DTO — Lo que cambió
+## 6) DTO  Lo que cambi
 
 ### CreateEmployeeDto
 
@@ -199,14 +199,14 @@ Columnas ordenadas de más importante a menos importante:
 
 ### UpdateEmployeeDto
 
-- **NO incluye** `idUsuario`, `idEmpresa`, `codigo` (inmutables post-creación).
+- **NO incluye** `idUsuario`, `idEmpresa`, `codigo` (inmutables post-creacin).
 - Todos los campos opcionales.
 
 ---
 
 ## 7) Eventos / Workflows
 
-| Evento | Cuándo | Workflow |
+| Evento | Cundo | Workflow |
 |--------|--------|----------|
 | `employee.created` | Al crear empleado | EmployeeCreationWorkflow (si hay acceso digital) |
 | `employee.email_changed` | Al actualizar email de empleado con usuario vinculado | IdentitySyncWorkflow |
@@ -215,7 +215,7 @@ Columnas ordenadas de más importante a menos importante:
 
 ## 8) Archivos Implementados
 
-| Archivo | Descripción |
+| Archivo | Descripcin |
 |---------|-------------|
 | `api/src/modules/employees/entities/employee.entity.ts` | Entidad redefinida con modelo enterprise completo |
 | `api/src/modules/employees/entities/department.entity.ts` | Entidad org_departamentos |
@@ -229,21 +229,21 @@ Columnas ordenadas de más importante a menos importante:
 | `api/src/modules/employees/employees.module.ts` | Module con Department, Position |
 | `api/src/modules/payroll/payroll.module.ts` | Module con PayPeriod |
 | `api/src/workflows/employees/employee-creation.workflow.ts` | Workflow actualizado al nuevo modelo |
-| `api/src/database/migrations/1708531700000-RedefineEmpleadoEnterprise.ts` | Migración: drop + recreate + tablas org/nom + seed |
+| `api/src/database/migrations/1708531700000-RedefineEmpleadoEnterprise.ts` | Migracin: drop + recreate + tablas org/nom + seed |
 
 ---
 
-## 9) Migración Ejecutada
+## 9) Migracin Ejecutada
 
 - **Nombre:** `RedefineEmpleadoEnterprise1708531700000`
-- **Estado:** Ejecutada en RDS ✔
+- **Estado:** Ejecutada en RDS 
 - **Acciones:**
-  1. Creó `org_departamentos` con índices
-  2. Creó `org_puestos` con índices
-  3. Creó `nom_periodos_pago` con seed (Semanal, Quincenal, Mensual)
+  1. Cre `org_departamentos` con ndices
+  2. Cre `org_puestos` con ndices
+  3. Cre `nom_periodos_pago` con seed (Semanal, Quincenal, Mensual)
   4. Drop `sys_empleados` vieja
-  5. Recreó `sys_empleados` con 33 columnas enterprise
-  6. 10 índices + 6 foreign keys
+  5. Recre `sys_empleados` con 33 columnas enterprise
+  6. 10 ndices + 6 foreign keys
 
 ---
 ## Actualizaci?n 2026-03-02 ? Vacaciones sin selecci?n de planilla (ACTUALIZACION-VACACIONES-2026-03-02

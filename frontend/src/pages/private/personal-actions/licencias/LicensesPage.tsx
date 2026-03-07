@@ -30,6 +30,11 @@ import {
 } from 'antd';
 import dayjs from 'dayjs';
 import { useCallback, useEffect, useMemo, useState, type MouseEvent } from 'react';
+
+import { useSortableColumns } from '../../../../hooks/useSortableColumns';
+import { bustApiCache } from '../../../../lib/apiCache';
+
+
 import { Link } from 'react-router-dom';
 
 import { fetchPayPeriods, type CatalogPayPeriod } from '../../../../api/catalogs';
@@ -70,13 +75,13 @@ const ESTADO_LABEL: Record<number, { text: string; tagClass: string }> = {
 };
 
 const ESTADO_HELP: Record<number, string> = {
-  1: 'Borrador: accion en captura interna, aun no enviada al flujo de aprobacion.',
+  1: 'Borrador: acción en captura interna, aún no enviada al flujo de aprobación.',
   2: 'Pendiente Supervisor: requiere revision/aprobacion del supervisor.',
   3: 'Pendiente RRHH: aprobada por supervisor, pendiente validacion final RRHH.',
   4: 'Aprobada: lista para consumo operativo en planilla segun reglas.',
   5: 'Consumida: ya fue aplicada/consumida por proceso de planilla.',
-  6: 'Cancelada: se detuvo la accion por decision operativa.',
-  7: 'Invalidada: accion anulada por inconsistencia o cambio de criterio.',
+  6: 'Cancelada: se detuvo la acción por decisión operativa.',
+  7: 'Invalidada: acción anulada por inconsistencia o cambio de criterio.',
   8: 'Expirada: vencio su vigencia operativa.',
   9: 'Rechazada: no fue aprobada en flujo de validacion.',
 };
@@ -93,14 +98,14 @@ const NEXT_STATE_ACTION_CONFIG: Partial<Record<number, NextStateActionConfig>> =
   1: {
     label: 'Enviar a Supervisor',
     requiredPermission: 'edit',
-    confirmText: 'Esta accion se enviara a revision de supervisor. Desea continuar?',
+    confirmText: 'Esta acción se enviará a revisión de supervisor. ¿Desea continuar?',
     successText: 'La licencia fue enviada a Supervisor.',
     deniedText: 'No tiene permiso para enviar a Supervisor.',
   },
   2: {
     label: 'Enviar a RRHH',
     requiredPermission: 'approve',
-    confirmText: 'Esta accion se enviara a revision final de RRHH. Desea continuar?',
+    confirmText: 'Esta acción se enviará a revisión final de RRHH. ¿Desea continuar?',
     successText: 'La licencia fue enviada a RRHH.',
     deniedText: 'No tiene permiso para enviar a RRHH.',
   },
@@ -146,17 +151,18 @@ function getPaneValue(row: LicenseUiRow, key: PaneKey, companies: Array<{ id: nu
   if (key === 'empresa') {
     return companies.find((c) => Number(c.id) === row.idEmpresa)?.nombre ?? `Empresa #${row.idEmpresa}`;
   }
-  if (key === 'empleado') return (row.employeeLabel ?? `Empleado #${row.idEmpleado}`).trim() || '--';
+  if (key === 'empleado') return row.employeeLabel ?? `Empleado #${row.idEmpleado}`;
   if (key === 'periodoPago') return (row.periodoPagoResumen ?? '').trim() || '--';
   if (key === 'movimiento') return (row.movimientoResumen ?? '').trim() || '--';
-  if (key === 'remuneracion')
+  if (key === 'remuneracion') {
     return row.remuneracionResumen === 'SI'
-      ? 'Sí'
+      ? 'Si'
       : row.remuneracionResumen === 'NO'
         ? 'No'
         : row.remuneracionResumen === 'MIXTA'
           ? 'Mixta'
           : '--';
+  }
   if (key === 'estado') return ESTADO_LABEL[row.estado]?.text ?? `Estado ${row.estado}`;
   return '--';
 }
@@ -197,7 +203,6 @@ function createDraftFromLicenseDetail(detail: LicenseDetailItem): LicenseFormDra
           cantidad: line.cantidad,
           monto: line.monto,
           remuneracion: line.remuneracion,
-          formula: line.formula ?? '',
           payrollLabel: line.payrollLabel ?? undefined,
           payrollEstado: line.payrollEstado ?? undefined,
           movimientoLabel: line.movimientoLabel ?? undefined,
@@ -208,7 +213,6 @@ function createDraftFromLicenseDetail(detail: LicenseDetailItem): LicenseFormDra
             key: `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
             tipoLicencia: 'permiso_con_goce',
             remuneracion: true,
-            formula: detail.descripcion ?? '',
             monto: detail.monto ?? undefined,
             fechaEfecto: detail.fechaEfecto ? dayjs(detail.fechaEfecto) : undefined,
           },
@@ -268,6 +272,7 @@ export function LicensesPage() {
   const [search, setSearch] = useState('');
   const [pageSize, setPageSize] = useState(10);
   const [companyId, setCompanyId] = useState<number | undefined>(defaultCompanyId);
+  const [modalCompanyId, setModalCompanyId] = useState<number | undefined>(defaultCompanyId);
   const [selectedEstados, setSelectedEstados] = useState<number[]>([1, 2, 3]);
   const [filtersExpanded, setFiltersExpanded] = useState(false);
   const [paneSearch, setPaneSearch] = useState<Record<PaneKey, string>>({
@@ -384,6 +389,7 @@ export function LicensesPage() {
   const openEditModal = useCallback(
     async (row: LicenseUiRow) => {
       const key = `license-edit-load-${row.id}`;
+      setModalCompanyId(row.idEmpresa);
       setEditingRow(row);
       setEditingDraft({
         idEmpresa: row.idEmpresa,
@@ -437,7 +443,8 @@ export function LicensesPage() {
   }, [editingRow?.id, loadLicenseAuditTrail]);
 
   const loadCatalogs = useCallback(async () => {
-    if (!companyId) {
+    const targetCompanyId = openModal ? modalCompanyId : companyId;
+    if (!targetCompanyId) {
       setEmployees([]);
       setMovements([]);
       setPayPeriods([]);
@@ -451,8 +458,8 @@ export function LicensesPage() {
     setLoadingMovements(true);
     try {
       const [employeesResp, movementsResp, payPeriodsResp] = await Promise.all([
-        fetchAbsenceEmployeesCatalog(companyId),
-        fetchAbsenceMovementsCatalog(companyId, 23),
+        fetchAbsenceEmployeesCatalog(targetCompanyId),
+        fetchAbsenceMovementsCatalog(targetCompanyId, 23),
         fetchPayPeriods().catch(() => []),
       ]);
 
@@ -475,17 +482,17 @@ export function LicensesPage() {
         })),
       );
       setPayPeriods(payPeriodsResp);
-      setLicenseActionTypeId(undefined);
+      setLicenseActionTypeId(23);
     } catch {
       setEmployees([]);
       setMovements([]);
       setPayPeriods([]);
-      setLicenseActionTypeId(undefined);
+      setLicenseActionTypeId(23);
     } finally {
       setLoadingEmployees(false);
       setLoadingMovements(false);
     }
-  }, [companyId]);
+  }, [companyId, modalCompanyId, openModal]);
 
   useEffect(() => {
     void loadRows();
@@ -561,7 +568,7 @@ export function LicensesPage() {
 
   const rowsFiltered = useMemo(() => dataFilteredByPaneSelections(), [dataFilteredByPaneSelections]);
 
-  const columns: ColumnsType<LicenseUiRow> = useMemo(
+  const columns: ColumnsType<LicenseUiRow> = useSortableColumns(
     () => [
       {
         title: 'EMPRESA',
@@ -622,7 +629,7 @@ export function LicensesPage() {
             e.stopPropagation();
             modal.confirm({
               title: 'Confirmar invalidacion',
-              content: 'Esta accion se marcara como invalidada y no seguira su flujo operativo. Desea continuar?',
+              content: 'Esta acción se marcará como invalidada y no seguirá su flujo operativo. ¿Desea continuar?',
               okText: 'Si, invalidar',
               cancelText: 'Cancelar',
               centered: true,
@@ -718,7 +725,7 @@ export function LicensesPage() {
     [canApprove, canCancel, canEdit, canView, companies, loadRows, message, modal, openEditModal],
   );
 
-  const modalTitle = mode === 'create' ? 'Crear licencia' : 'Editar licencia';
+      fechaEfecto: line.fechaEfecto?.format('YYYY-MM-DD') ?? '',
 
   const mapDraftToPayload = (draft: LicenseFormDraft) => ({
     idEmpresa: draft.idEmpresa,
@@ -729,7 +736,7 @@ export function LicensesPage() {
       fechaEfecto: line.fechaEfecto?.format('YYYY-MM-DD') ?? '',
       movimientoId: Number(line.movimientoId),
       tipoLicencia: line.tipoLicencia,
-      cantidad: Number(line.cantidad ?? 0),
+      monto: Number(line.monto ?? 0),
       monto: Number(line.monto ?? 0),
       remuneracion: Boolean(line.remuneracion),
       formula: line.formula?.trim() || undefined,
@@ -745,7 +752,7 @@ export function LicensesPage() {
           </Link>
           <div className={styles.pageTitleBlock}>
             <h1 className={styles.pageTitle}>licencias</h1>
-            <p className={styles.pageSubtitle}>Gestione licencias por empresa con líneas de transacción por periodo</p>
+            <p className={styles.pageSubtitle}>Gestione licencias por empresa con l\u00EDneas de transacci\u00F3n por per\u00EDodo</p>
           </div>
         </div>
       </div>
@@ -759,7 +766,7 @@ export function LicensesPage() {
               </div>
               <div>
                 <h2 className={styles.gestionTitle}>Gestión de licencias</h2>
-                <p className={styles.gestionDesc}>Encabezado de acción + múltiples líneas por planilla</p>
+                <p className={styles.gestionDesc}>Encabezado de acci\u00F3n + m\u00FAltiples l\u00EDneas por planilla</p>
               </div>
             </Flex>
             <Button
@@ -772,6 +779,7 @@ export function LicensesPage() {
                 setEditingDraft(undefined);
                 setLoadingEditDetail(false);
                 setMode('create');
+                setModalCompanyId(undefined);
                 setOpenModal(true);
               }}
             >
@@ -824,7 +832,13 @@ export function LicensesPage() {
                   setPaneSearch((prev) => ({ ...prev, estado: '' }));
                 }}
               />
-              <Button icon={<ReloadOutlined />} onClick={() => void loadRows()}>
+              <Button
+                icon={<ReloadOutlined />}
+                onClick={() => {
+                  bustApiCache();
+                  void loadRows();
+                }}
+              >
                 Refrescar
               </Button>
             </Flex>
@@ -981,8 +995,11 @@ export function LicensesPage() {
         auditTrail={auditTrail}
         loadingAuditTrail={loadingAuditTrail}
         onLoadAuditTrail={mode === 'edit' && editingRow ? loadEditingLicenseAuditTrail : undefined}
-        initialCompanyId={companyId}
+        initialCompanyId={modalCompanyId}
         initialDraft={editingDraft}
+        onCompanyChange={(nextCompanyId) => {
+          setModalCompanyId(nextCompanyId);
+        }}
         onCancel={() => {
           setOpenModal(false);
           setEditingDraft(undefined);
@@ -1033,4 +1050,18 @@ export function LicensesPage() {
     </div>
   );
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 

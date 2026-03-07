@@ -2,6 +2,8 @@ import { Button, Modal, Form, Input, DatePicker } from 'antd';
 import dayjs from 'dayjs';
 import { useState } from 'react';
 
+import { buildEmployeeDisplayName } from '../../../../lib/employeeName';
+
 import type { EmployeeDetail } from '../../../../api/employees';
 
 interface EmployeeActionsProps {
@@ -34,7 +36,7 @@ export function EmployeeActions({
   const [inactivateForm] = Form.useForm();
   const [liquidateForm] = Form.useForm();
 
-  const nombreCompleto = `${employee.nombre} ${employee.apellido1}${employee.apellido2 ? ` ${employee.apellido2}` : ''}`;
+  const nombreCompleto = buildEmployeeDisplayName(employee);
   const isActive = employee.estado === 1;
 
   const handleInactivateOk = () => {
@@ -114,3 +116,5 @@ export function EmployeeActions({
     </>
   );
 }
+
+

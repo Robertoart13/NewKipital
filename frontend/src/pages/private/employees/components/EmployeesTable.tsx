@@ -1,6 +1,9 @@
 import { EllipsisOutlined, EyeOutlined, EditOutlined } from '@ant-design/icons';
 import { Table, Dropdown, Button } from 'antd';
+import { useSortableColumns } from '../../../../hooks/useSortableColumns';
 import { Link } from 'react-router-dom';
+
+import { buildEmployeeDisplayName } from '../../../../lib/employeeName';
 
 import { EmployeeStatusBadge } from './EmployeeStatusBadge';
 
@@ -20,7 +23,7 @@ interface EmployeesTableProps {
 }
 
 export function EmployeesTable({ data, loading, pagination, canEdit = false }: EmployeesTableProps) {
-  const columns: ColumnsType<EmployeeListItem> = [
+  const columns: ColumnsType<EmployeeListItem> = useSortableColumns([
     {
       title: 'Código',
       dataIndex: 'codigo',
@@ -39,7 +42,7 @@ export function EmployeesTable({ data, loading, pagination, canEdit = false }: E
       key: 'nombre',
       render: (_, r) => {
         if (!r.nombre && !r.apellido1) return '—';
-        return `${r.nombre ?? ''} ${r.apellido1 ?? ''} ${r.apellido2 ? r.apellido2 : ''}`.trim();
+        return buildEmployeeDisplayName(r);
       },
     },
     {
@@ -97,7 +100,7 @@ export function EmployeesTable({ data, loading, pagination, canEdit = false }: E
         </Dropdown>
       ),
     },
-  ];
+  ]);
 
   return (
     <Table<EmployeeListItem>
@@ -117,3 +120,7 @@ export function EmployeesTable({ data, loading, pagination, canEdit = false }: E
     />
   );
 }
+
+
+
+

@@ -50,6 +50,7 @@ import {
   type PayrollListItem,
 } from '../../../api/payroll';
 import { fetchPayrollHolidays, payrollHolidayTypeLabel, type PayrollHolidayItem } from '../../../api/payrollHolidays';
+import { bustApiCache } from '../../../lib/apiCache';
 import { useAppSelector } from '../../../store/hooks';
 import sharedStyles from '../configuration/UsersManagementPage.module.css';
 
@@ -304,7 +305,7 @@ export function PayrollCalendarPage() {
         await loadPayrolls();
         await openDetails(selectedPayrollId);
       } catch (error) {
-        message.error(error instanceof Error ? error.message : 'No se pudo ejecutar la accion.');
+        message.error(error instanceof Error ? error.message : 'No se pudo ejecutar la acción.');
       } finally {
         setActionLoading(false);
       }
@@ -328,7 +329,7 @@ export function PayrollCalendarPage() {
       }
 
       modal.confirm({
-        title: `Confirmar accion`,
+        title: 'Confirmar acción',
         content: `Esta seguro de ${actionLabel} esta planilla?`,
         okText: `Si, ${actionLabel}`,
         cancelText: 'Cancelar',
@@ -526,7 +527,10 @@ export function PayrollCalendarPage() {
         </div>
         <Button
           icon={<ReloadOutlined />}
-          onClick={() => void loadPayrolls()}
+          onClick={() => {
+            bustApiCache();
+            void loadPayrolls();
+          }}
           loading={loading}
           aria-label="Refrescar calendario"
         >
@@ -947,7 +951,7 @@ export function PayrollCalendarPage() {
                     </Descriptions.Item>
                     <Descriptions.Item label="Moneda de planilla">{detail.moneda || '--'}</Descriptions.Item>
                     <Descriptions.Item label="Estado de la planilla">
-                      <Tag icon={STATUS_VISUAL[detail.estado]?.icon}>
+                    <Descriptions.Item label="Control de cambios">{detail.versionLock ?? '--'}</Descriptions.Item>
                         {STATUS_VISUAL[detail.estado]?.label || `Estado ${detail.estado}`}
                       </Tag>
                     </Descriptions.Item>
@@ -1063,3 +1067,4 @@ export function PayrollCalendarPage() {
     </div>
   );
 }
+

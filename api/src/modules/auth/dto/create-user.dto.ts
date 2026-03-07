@@ -38,3 +38,4 @@ export class CreateUserDto {
   @MaxLength(500)
   avatarUrl?: string;
 }
+

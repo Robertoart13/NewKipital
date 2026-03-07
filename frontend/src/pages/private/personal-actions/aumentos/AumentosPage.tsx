@@ -28,6 +28,11 @@ import {
 } from 'antd';
 import dayjs from 'dayjs';
 import { useCallback, useEffect, useMemo, useState, type MouseEvent } from 'react';
+
+import { useSortableColumns } from '../../../../hooks/useSortableColumns';
+import { bustApiCache } from '../../../../lib/apiCache';
+
+
 import { Link } from 'react-router-dom';
 
 import { fetchPayPeriods, type CatalogPayPeriod } from '../../../../api/catalogs';
@@ -73,13 +78,13 @@ const ESTADO_LABEL: Record<number, { text: string; tagClass: string }> = {
 };
 
 const ESTADO_HELP: Record<number, string> = {
-  1: 'Borrador: accion en captura interna, aun no enviada al flujo de aprobacion.',
+  1: 'Borrador: acción en captura interna, aún no enviada al flujo de aprobación.',
   2: 'Pendiente Supervisor: requiere revision/aprobacion del supervisor.',
   3: 'Pendiente RRHH: aprobada por supervisor, pendiente validacion final RRHH.',
   4: 'Aprobada: lista para consumo operativo en planilla segun reglas.',
   5: 'Consumida: ya fue aplicada/consumida por proceso de planilla.',
-  6: 'Cancelada: se detuvo la accion por decision operativa.',
-  7: 'Invalidada: accion anulada por inconsistencia o cambio de criterio.',
+  6: 'Cancelada: se detuvo la acción por decisión operativa.',
+  7: 'Invalidada: acción anulada por inconsistencia o cambio de criterio.',
   8: 'Expirada: vencio su vigencia operativa.',
   9: 'Rechazada: no fue aprobada en flujo de validacion.',
 };
@@ -146,7 +151,8 @@ function isIncreaseEditableState(estado: number): boolean {
 
 function getPaneValue(row: IncreaseUiRow, key: PaneKey, companies: Array<{ id: number; nombre: string }>): string {
   if (key === 'empresa') {
-    return companies.find((c) => Number(c.id) === row.idEmpresa)?.nombre ?? `Empresa #${row.idEmpresa}`;
+    const company = companies.find((c) => Number(c.id) === row.idEmpresa);
+    return company?.nombre ?? `Empresa #${row.idEmpresa}`;
   }
   if (key === 'empleado') return (row.employeeLabel ?? `Empleado #${row.idEmpleado}`).trim() || '--';
   if (key === 'periodoPago') return (row.periodoPagoResumen ?? '').trim() || '--';
@@ -195,14 +201,12 @@ function createDraftFromIncreaseDetail(detail: IncreaseDetailItem): IncreaseForm
         movimientoId: detail.line.movimientoId,
         metodoCalculo: detail.line.metodoCalculo,
         monto: detail.line.monto,
-        montoInput: detail.line.monto != null ? String(Math.trunc(detail.line.monto)) : '',
+        payrollLabel: detail.line.payrollLabel ?? undefined,
         porcentaje: detail.line.porcentaje,
         salarioActual: detail.line.salarioActual,
         nuevoSalario: detail.line.nuevoSalario,
-        formula: detail.line.formula ?? '',
-        payrollLabel: detail.line.payrollLabel ?? undefined,
-        payrollEstado: detail.line.payrollEstado ?? undefined,
         movimientoLabel: detail.line.movimientoLabel ?? undefined,
+        payrollEstado: detail.line.payrollEstado ?? undefined,
         movimientoInactivo: detail.line.movimientoInactivo === true,
       }
     : { metodoCalculo: 'PORCENTAJE', montoInput: '' };
@@ -244,6 +248,7 @@ export function AumentosPage() {
   const movementsLoading = false;
   const [pageSize, setPageSize] = useState(10);
   const [companyId, setCompanyId] = useState<number | undefined>(defaultCompanyId);
+  const [modalCompanyId, setModalCompanyId] = useState<number | undefined>(defaultCompanyId);
   const [selectedEstados, setSelectedEstados] = useState<number[]>([1, 2, 3]);
   const [filtersExpanded, setFiltersExpanded] = useState(false);
   const [search, setSearch] = useState('');
@@ -342,7 +347,8 @@ export function AumentosPage() {
   }, [companyId, selectedEstados, message]);
 
   const loadCatalogs = useCallback(async () => {
-    if (!companyId) {
+    const targetCompanyId = openModal ? modalCompanyId : companyId;
+    if (!targetCompanyId) {
       setEmployees([]);
       setMovements([]);
       setPayPeriods([]);
@@ -350,8 +356,8 @@ export function AumentosPage() {
     }
     try {
       const [employeesResp, movementsResp, payPeriodsResp] = await Promise.all([
-        fetchAbsenceEmployeesCatalog(companyId),
-        fetchAbsenceMovementsCatalog(companyId, 8),
+        fetchAbsenceEmployeesCatalog(targetCompanyId),
+        fetchAbsenceMovementsCatalog(targetCompanyId, 8),
         fetchPayPeriods().catch(() => []),
       ]);
       setEmployees(employeesResp);
@@ -360,7 +366,7 @@ export function AumentosPage() {
     } catch (error) {
       message.error(error instanceof Error ? error.message : 'Error al cargar catálogos.');
     }
-  }, [companyId, message]);
+  }, [companyId, message, modalCompanyId, openModal]);
 
   useEffect(() => {
     if (!companyId || !canView) return;
@@ -440,6 +446,7 @@ export function AumentosPage() {
     setEditingRow(null);
     setInitialDraft(undefined);
     setAuditTrail([]);
+    setModalCompanyId(undefined);
     setOpenModal(true);
   };
 
@@ -449,13 +456,14 @@ export function AumentosPage() {
         message.warning('Este aumento está en modo solo lectura.');
       }
       const key = `Increase-detail-${row.id}`;
+      setMode('edit');
+      setModalCompanyId(row.idEmpresa);
       setOpenModal(true);
       message.loading({ content: 'Cargando detalle de aumento...', key, duration: 0 });
       try {
         const detail = await fetchIncreaseDetail(row.id);
         setInitialDraft(createDraftFromIncreaseDetail(detail));
         setEditingRow(row);
-        setMode('edit');
         message.destroy(key);
       } catch (error) {
         message.error({
@@ -481,7 +489,7 @@ export function AumentosPage() {
     }
   };
 
-  const columns: ColumnsType<IncreaseUiRow> = useMemo(
+  const columns: ColumnsType<IncreaseUiRow> = useSortableColumns(
     () => [
       {
         title: 'EMPRESA',
@@ -705,7 +713,7 @@ export function AumentosPage() {
                   setPaneSearch((prev) => ({ ...prev, estado: '' }));
                 }}
               />
-              <Button icon={<ReloadOutlined />} onClick={() => void loadRows()}>
+              <Button icon={<ReloadOutlined />} onClick={() => { bustApiCache(); void loadRows(); }}>
                 Refrescar
               </Button>
             </Flex>
@@ -855,9 +863,11 @@ export function AumentosPage() {
         showAudit={mode === 'edit'}
         auditTrail={auditTrail}
         loadingAuditTrail={loadingAuditTrail}
-        onLoadAuditTrail={loadAuditTrail}
-        initialCompanyId={companyId}
+        onLoadAuditTrail={loadAuditTrail}        initialCompanyId={modalCompanyId}
         initialDraft={initialDraft}
+        onCompanyChange={(nextCompanyId) => {
+          setModalCompanyId(nextCompanyId);
+        }}
         onCancel={() => {
           setOpenModal(false);
           setInitialDraft(undefined);
@@ -881,11 +891,11 @@ export function AumentosPage() {
                   payrollId: Number(payload.line.payrollId),
                   fechaEfecto: payload.line.fechaEfecto?.format('YYYY-MM-DD') ?? '',
                   movimientoId: Number(payload.line.movimientoId),
-                  metodoCalculo: payload.line.metodoCalculo ?? 'PORCENTAJE',
+                  formula: payload.line.formula ?? '',
                   monto: Number(payload.line.monto ?? 0),
                   porcentaje: Number(payload.line.porcentaje ?? 0),
                   salarioActual: Number(payload.line.salarioActual ?? 0),
-                  nuevoSalario: Number(payload.line.nuevoSalario ?? 0),
+                  fechaEfecto: payload.line.fechaEfecto?.format('YYYY-MM-DD') ?? '',
                   formula: payload.line.formula ?? '',
                 },
               });
@@ -898,7 +908,7 @@ export function AumentosPage() {
                   payrollId: Number(payload.line.payrollId),
                   fechaEfecto: payload.line.fechaEfecto?.format('YYYY-MM-DD') ?? '',
                   movimientoId: Number(payload.line.movimientoId),
-                  metodoCalculo: payload.line.metodoCalculo ?? 'PORCENTAJE',
+                  formula: payload.line.formula ?? '',
                   monto: Number(payload.line.monto ?? 0),
                   porcentaje: Number(payload.line.porcentaje ?? 0),
                   salarioActual: Number(payload.line.salarioActual ?? 0),
@@ -928,4 +938,22 @@ export function AumentosPage() {
     </div>
   );
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 

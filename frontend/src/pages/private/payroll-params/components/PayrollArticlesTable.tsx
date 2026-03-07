@@ -1,11 +1,12 @@
-import { FilterOutlined } from '@ant-design/icons';
-import { Flex, Select, Switch, Table } from 'antd';
+import { FilterOutlined, ReloadOutlined } from '@ant-design/icons';
+import { Button, Flex, Select, Switch, Table } from 'antd';
 
 import styles from '../../configuration/UsersManagementPage.module.css';
 
 import type { PayrollArticleListItem } from '../../../../api/payrollArticles';
 import type { ColumnsType } from 'antd/es/table';
 import type { ReactNode } from 'react';
+
 
 interface PayrollArticlesTableProps {
   rows: PayrollArticleListItem[];
@@ -22,6 +23,7 @@ interface PayrollArticlesTableProps {
   onRowClick: (row: PayrollArticleListItem) => void;
   totalLabel: (total: number, range: [number, number]) => string;
   filters: ReactNode;
+  onRefresh: () => void;
 }
 
 /**
@@ -44,6 +46,7 @@ export function PayrollArticlesTable(props: PayrollArticlesTableProps) {
     onRowClick,
     totalLabel,
     filters,
+    onRefresh,
   } = props;
 
   return (
@@ -79,6 +82,9 @@ export function PayrollArticlesTable(props: PayrollArticlesTableProps) {
             }))}
             style={{ minWidth: 220 }}
           />
+          <Button icon={<ReloadOutlined />} onClick={onRefresh}>
+            Refrescar
+          </Button>
         </Flex>
       </Flex>
 
@@ -102,3 +108,10 @@ export function PayrollArticlesTable(props: PayrollArticlesTableProps) {
     </div>
   );
 }
+
+
+
+
+
+
+

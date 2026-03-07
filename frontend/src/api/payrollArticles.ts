@@ -137,7 +137,7 @@ export async function fetchPayrollArticleTypes(): Promise<PayrollArticleType[]> 
 
 export async function fetchPersonalActionTypes(): Promise<PersonalActionType[]> {
   const res = await httpFetch('/payroll-articles/personal-action-types');
-  if (!res.ok) throw new Error('Error al cargar tipos de accion personal');
+  if (!res.ok) throw new Error('Error al cargar tipos de acción personal');
   return res.json();
 }
 
@@ -172,3 +172,4 @@ export async function fetchPayrollArticleAuditTrail(id: number, limit = 200): Pr
   }
   return res.json();
 }
+

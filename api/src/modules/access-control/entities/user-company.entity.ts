@@ -1,7 +1,7 @@
 import { Entity, PrimaryGeneratedColumn, Column, Index, CreateDateColumn } from 'typeorm';
 
 /**
- * sys_usuario_empresa — Tabla puente: Usuario ↔ Empresa.
+ * sys_usuario_empresa — Tabla puente: Usuario â†” Empresa.
  * Define en qué empresas puede operar un usuario.
  * Fundamento del modelo multiempresa.
  */
@@ -28,3 +28,4 @@ export class UserCompany {
   @CreateDateColumn({ name: 'fecha_asignacion_usuario_empresa' })
   fechaAsignacion: Date;
 }
+

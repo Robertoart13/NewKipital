@@ -44,3 +44,4 @@ export function PrivateGuard() {
 
   return <Outlet />;
 }
+

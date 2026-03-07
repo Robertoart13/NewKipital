@@ -70,3 +70,4 @@ export class ActionQuota {
   @UpdateDateColumn({ name: 'fecha_modificacion_cuota' })
   fechaModificacion: Date;
 }
+

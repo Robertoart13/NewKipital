@@ -27,3 +27,4 @@ export function AppLayout({ children, menuItems, userName = 'Usuario' }: AppLayo
     </Layout>
   );
 }
+

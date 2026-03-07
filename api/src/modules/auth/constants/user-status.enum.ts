@@ -17,3 +17,4 @@ export const USER_STATUS_LABELS: Record<UserStatus, string> = {
   [UserStatus.INACTIVO]: 'Inactivo',
   [UserStatus.BLOQUEADO]: 'Bloqueado',
 };
+

@@ -82,3 +82,4 @@ export class EmployeeTransfer {
   @UpdateDateColumn({ name: 'fecha_modificacion_transferencia' })
   fechaModificacion: Date;
 }
+

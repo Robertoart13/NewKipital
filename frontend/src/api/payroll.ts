@@ -144,7 +144,7 @@ async function extractApiErrorMessage(res: Response, fallback: string): Promise<
   }
 
   if (res.status === 503) {
-    return 'No se pudo completar la accion por una desconexion temporal. Intente nuevamente en unos segundos.';
+    return 'No se pudo completar la acción por una desconexión temporal. Intente nuevamente en unos segundos.';
   }
 
   return fallback;
@@ -270,3 +270,4 @@ export async function executeIntercompanyTransfer(
   }
   return res.json();
 }
+

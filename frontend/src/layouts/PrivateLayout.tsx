@@ -27,3 +27,4 @@ export function PrivateLayout({ children }: PrivateLayoutProps) {
     </Layout>
   );
 }
+

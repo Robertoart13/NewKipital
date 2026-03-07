@@ -564,7 +564,7 @@
 }
 
 .drawerActionsList li::before {
-  content: '• ';
+  content: 'â€¢ ';
   color: #94a3b8;
   font-weight: bold;
 }
@@ -591,3 +591,4 @@
   padding: 20px 24px;
   background: #f1f5f9;
 }
+

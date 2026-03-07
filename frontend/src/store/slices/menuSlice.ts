@@ -182,7 +182,7 @@ const initialMenuConfig: MenuItem[] = [
   },
   {
     id: 'payroll-management',
-    label: 'Gestion Planilla',
+    label: 'Gestión Planilla',
     path: '/payroll-management',
     requiredPermission: 'payroll:view',
     children: [
@@ -227,7 +227,7 @@ const initialMenuConfig: MenuItem[] = [
       },
       {
         id: 'grp-gestion-org',
-        label: 'Gestion de Organizacional',
+        label: 'Gestión Organizacional',
         path: '#',
         isGroup: true,
         children: [
@@ -303,3 +303,4 @@ const menuSlice = createSlice({
 
 export const { setMenuConfig } = menuSlice.actions;
 export default menuSlice.reducer;
+

@@ -152,3 +152,4 @@ export function HeaderActions({ userName = 'Usuario' }: HeaderActionsProps) {
     </Space>
   );
 }
+

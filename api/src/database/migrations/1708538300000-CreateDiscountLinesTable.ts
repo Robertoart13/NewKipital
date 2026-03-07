@@ -1,4 +1,4 @@
-﻿import type { MigrationInterface, QueryRunner } from 'typeorm';
+import type { MigrationInterface, QueryRunner } from 'typeorm';
 
 export class CreateDiscountLinesTable1708538300000 implements MigrationInterface {
   public async up(queryRunner: QueryRunner): Promise<void> {

@@ -1,5 +1,6 @@
 import { API_URL } from '../config/api';
 import { performLogout } from '../lib/auth';
+import { getApiCacheBuster } from '../lib/apiCache';
 import { store } from '../store/store';
 
 const REQUEST_TIMEOUT_MS = 15000;
@@ -12,7 +13,7 @@ const REFRESH_TIMEOUT_MS = 10000;
  * Cualquier response 401 → logout automático + redirige a /auth/login.
  */
 export async function httpFetch(path: string, options: RequestInit = {}): Promise<Response> {
-  const url = path.startsWith('http') ? path : `${API_URL}${path}`;
+  let url = path.startsWith('http') ? path : `${API_URL}${path}`;
 
   const headers = new Headers(options.headers);
   const isFormDataBody = options.body instanceof FormData;
@@ -21,6 +22,13 @@ export async function httpFetch(path: string, options: RequestInit = {}): Promis
   }
 
   const method = (options.method ?? 'GET').toUpperCase();
+  if (method === 'GET') {
+    const cacheBuster = getApiCacheBuster();
+    if (cacheBuster) {
+      const joiner = url.includes('?') ? '&' : '?';
+      url = `${url}${joiner}cb=${cacheBuster}`;
+    }
+  }
   const isMutating = ['POST', 'PUT', 'PATCH', 'DELETE'].includes(method);
   if (isMutating) {
     const csrfToken = getCookieValue('platform_csrf_token');
@@ -109,3 +117,4 @@ async function fetchWithTimeout(input: RequestInfo | URL, init: RequestInit, tim
     window.clearTimeout(timeout);
   }
 }
+

@@ -1,10 +1,10 @@
-# KPITAL 360 — DOCUMENTO DE VISIÓN ARQUITECTÓNICA ENTERPRISE
+# KPITAL 360  DOCUMENTO DE VISIN ARQUITECTNICA ENTERPRISE
 
-**Versión 3.0**
+**Versin 3.0**
 **Fecha:** 2025-02-21
-**Autor:** Roberto — Senior Full Stack Software Engineer / Functional Architect
-**Estado:** Aprobado — Blueprint Arquitectónico Formal
-**Clasificación:** Documento interno — Referencia arquitectónica
+**Autor:** Roberto  Senior Full Stack Software Engineer / Functional Architect
+**Estado:** Aprobado  Blueprint Arquitectnico Formal
+**Clasificacin:** Documento interno  Referencia arquitectnica
 
 ---
 
@@ -16,71 +16,71 @@
 
 ## Changelog
 
-| Versión | Fecha       | Autor   | Descripción                                                                 |
+| Versin | Fecha       | Autor   | Descripcin                                                                 |
 |---------|-------------|---------|-----------------------------------------------------------------------------|
-| 1.0     | —           | Roberto | Visión inicial: multiempresa, planillas, acciones de personal               |
-| 2.0     | —           | Roberto | Consolidación: eventos, workflows, roles dinámicos, trazabilidad, escalabilidad |
-| 3.0     | 2025-02-21  | Roberto | Blueprint formal: bounded contexts, mapa de dependencias, NFRs medibles, fases de implementación, estrategia de resiliencia, gobernanza documental |
+| 1.0     |            | Roberto | Visin inicial: multiempresa, planillas, acciones de personal               |
+| 2.0     |            | Roberto | Consolidacin: eventos, workflows, roles dinmicos, trazabilidad, escalabilidad |
+| 3.0     | 2025-02-21  | Roberto | Blueprint formal: bounded contexts, mapa de dependencias, NFRs medibles, fases de implementacin, estrategia de resiliencia, gobernanza documental |
 
 ---
 
 ## Gobernanza del Documento
 
 - **Owner:** Roberto (Arquitecto Funcional / Senior Engineer)
-- **Aprobadores de cambios:** Owner + Lead técnico del proyecto
+- **Aprobadores de cambios:** Owner + Lead tcnico del proyecto
 - **Regla de versionado:**
   - **Patch (v3.0.x):** Correcciones menores, clarificaciones, typos
   - **Minor (v3.x.0):** Nuevos NFRs, ajustes a bounded contexts, nuevos contratos
-  - **Major (vX.0.0):** Cambios de dominio, redefinición de fases, cambios estructurales
-- **Frecuencia de revisión:** Al inicio de cada fase de implementación o cuando se identifique un cambio arquitectónico significativo
-- **Formato de cambio:** Toda modificación debe documentarse en el Changelog y, si aplica, en el Decision Log (Sección 20)
+  - **Major (vX.0.0):** Cambios de dominio, redefinicin de fases, cambios estructurales
+- **Frecuencia de revisin:** Al inicio de cada fase de implementacin o cuando se identifique un cambio arquitectnico significativo
+- **Formato de cambio:** Toda modificacin debe documentarse en el Changelog y, si aplica, en el Decision Log (Seccin 20)
 
 ---
 
 ## Tabla de Contenidos
 
-1. [Visión General del Sistema](#1-visión-general-del-sistema)
+1. [Visin General del Sistema](#1-visin-general-del-sistema)
 2. [Principios Fundamentales](#2-principios-fundamentales)
-3. [Fases de Implementación](#3-fases-de-implementación)
-4. [Mapa de Dominios — Bounded Contexts](#4-mapa-de-dominios--bounded-contexts)
+3. [Fases de Implementacin](#3-fases-de-implementacin)
+4. [Mapa de Dominios  Bounded Contexts](#4-mapa-de-dominios--bounded-contexts)
 5. [Mapa de Dependencias (Upstream / Downstream)](#5-mapa-de-dependencias-upstream--downstream)
-6. [Modelo Empresarial — Multiempresa](#6-modelo-empresarial--multiempresa)
+6. [Modelo Empresarial  Multiempresa](#6-modelo-empresarial--multiempresa)
 7. [Planillas (Payroll Engine)](#7-planillas-payroll-engine)
 8. [Acciones de Personal](#8-acciones-de-personal)
 9. [Movimiento de Empleados entre Empresas](#9-movimiento-de-empleados-entre-empresas)
-10. [Recálculo Automático](#10-recálculo-automático)
-11. [Roles y Permisos Dinámicos](#11-roles-y-permisos-dinámicos)
-12. [Menús Dinámicos Basados en Permisos](#12-menús-dinámicos-basados-en-permisos)
-13. [Aprobaciones Jerárquicas](#13-aprobaciones-jerárquicas)
+10. [Reclculo Automtico](#10-reclculo-automtico)
+11. [Roles y Permisos Dinmicos](#11-roles-y-permisos-dinmicos)
+12. [Mens Dinmicos Basados en Permisos](#12-mens-dinmicos-basados-en-permisos)
+13. [Aprobaciones Jerrquicas](#13-aprobaciones-jerrquicas)
 14. [Trazabilidad Total](#14-trazabilidad-total)
 15. [Base de Datos Enterprise](#15-base-de-datos-enterprise)
 16. [Non-Functional Requirements (NFRs)](#16-non-functional-requirements-nfrs)
 17. [Estrategia de Resiliencia](#17-estrategia-de-resiliencia)
-18. [KPITAL + TimeWise — Contrato de Integración](#18-kpital--timewise--contrato-de-integración)
-19. [Integración Futura con NetSuite](#19-integración-futura-con-netsuite)
+18. [KPITAL + TimeWise  Contrato de Integracin](#18-kpital--timewise--contrato-de-integracin)
+19. [Integracin Futura con NetSuite](#19-integracin-futura-con-netsuite)
 20. [Decision Log (ADR-Lite)](#20-decision-log-adr-lite)
-21. [Qué NO Define Este Documento](#21-qué-no-define-este-documento)
+21. [Qu NO Define Este Documento](#21-qu-no-define-este-documento)
 
 ---
 
-## 1. Visión General del Sistema
+## 1. Visin General del Sistema
 
-KPITAL 360 es un **ERP de planillas multiempresa** diseñado para:
+KPITAL 360 es un **ERP de planillas multiempresa** diseado para:
 
-- **Autogestión empresarial completa** — el sistema responde automáticamente a cambios de negocio.
-- **Automatización total de procesos** — sin dependencias manuales ocultas.
-- **Workflows dinámicos basados en eventos** — todo cambio relevante genera un evento de dominio.
-- **Trazabilidad absoluta** — toda operación es auditable.
-- **Escalabilidad empresarial** — diseñado para crecer sin degradación.
-- **Integración futura con sistemas externos** (NetSuite, herramientas corporativas).
+- **Autogestin empresarial completa**  el sistema responde automticamente a cambios de negocio.
+- **Automatizacin total de procesos**  sin dependencias manuales ocultas.
+- **Workflows dinmicos basados en eventos**  todo cambio relevante genera un evento de dominio.
+- **Trazabilidad absoluta**  toda operacin es auditable.
+- **Escalabilidad empresarial**  diseado para crecer sin degradacin.
+- **Integracin futura con sistemas externos** (NetSuite, herramientas corporativas).
 
 El sistema debe comportarse como un **ERP corporativo moderno**:
 
 - Multiempresa real con dominios aislados.
-- Colaboración por roles (tipo GitHub).
-- Separación clara de dominios (bounded contexts).
-- Procesamiento asíncrono donde se requiera.
-- Seguridad fuerte con doble validación.
+- Colaboracin por roles (tipo GitHub).
+- Separacin clara de dominios (bounded contexts).
+- Procesamiento asncrono donde se requiera.
+- Seguridad fuerte con doble validacin.
 - Sin dependencias manuales ocultas.
 
 > **Principio rector:** Este sistema no es un CRUD de planillas. Es un motor de reglas empresariales automatizado. Un ERP real.
@@ -95,126 +95,126 @@ Todo cambio relevante genera un **evento de dominio**.
 
 **Eventos principales del sistema:**
 
-| Dominio             | Evento                    | Descripción                                      |
+| Dominio             | Evento                    | Descripcin                                      |
 |---------------------|---------------------------|--------------------------------------------------|
 | Employee Management | `EmployeeCreated`         | Nuevo empleado registrado                        |
 | Employee Management | `EmployeeMoved`           | Empleado transferido entre empresas              |
 | Employee Management | `EmployeeDeactivated`     | Empleado desactivado                             |
-| Personal Actions    | `PersonalActionCreated`   | Nueva acción de personal creada                  |
-| Personal Actions    | `PersonalActionApproved`  | Acción aprobada por supervisor/RRHH              |
-| Personal Actions    | `PersonalActionRejected`  | Acción rechazada                                 |
+| Personal Actions    | `PersonalActionCreated`   | Nueva accin de personal creada                  |
+| Personal Actions    | `PersonalActionApproved`  | Accin aprobada por supervisor/RRHH              |
+| Personal Actions    | `PersonalActionRejected`  | Accin rechazada                                 |
 | Personal Actions    | `SalaryIncreased`         | Aumento salarial aplicado                        |
 | Payroll Engine      | `PayrollOpened`           | Planilla abierta para periodo                    |
 | Payroll Engine      | `PayrollVerified`         | Planilla verificada                              |
 | Payroll Engine      | `PayrollApplied`          | Planilla aplicada (inmutable)                    |
 | Payroll Engine      | `PayrollDeactivated`      | Planilla cancelada/inactivada                    |
 
-Los eventos disparan **workflows automáticos**. Nada se recalcula manualmente. Nada depende de lógica dispersa.
+Los eventos disparan **workflows automticos**. Nada se recalcula manualmente. Nada depende de lgica dispersa.
 
-### 2.2 Autogestión Total
+### 2.2 Autogestin Total
 
 El sistema debe:
 
 - **Auto-recalcular** cuando cambian condiciones del periodo abierto.
 - **Auto-cancelar** acciones pendientes cuando se inactiva una planilla.
 - **Auto-mover** acciones cuando un empleado cambia de empresa.
-- **Auto-validar** antes de cada transición de estado.
-- **Auto-organizar** flujos de aprobación según configuración de roles.
+- **Auto-validar** antes de cada transicin de estado.
+- **Auto-organizar** flujos de aprobacin segn configuracin de roles.
 
-Cuando ocurre un cambio de negocio, el sistema responde automáticamente sin intervención humana.
+Cuando ocurre un cambio de negocio, el sistema responde automticamente sin intervencin humana.
 
 ### 2.3 Idempotencia como Principio
 
-Todo evento crítico del sistema debe ser **idempotente**: ejecutarse múltiples veces debe producir el mismo resultado que ejecutarse una sola vez. Esto garantiza consistencia ante reintentos, fallos de red, o procesamiento duplicado.
+Todo evento crtico del sistema debe ser **idempotente**: ejecutarse mltiples veces debe producir el mismo resultado que ejecutarse una sola vez. Esto garantiza consistencia ante reintentos, fallos de red, o procesamiento duplicado.
 
 ### 2.4 Inmutabilidad de Periodos Aplicados
 
-Una vez que una planilla alcanza el estado **Aplicada**, el periodo es **inmutable**. No se recalculan, no se modifican, no se eliminan registros de periodos aplicados. Cualquier corrección genera una nueva acción en un periodo futuro.
+Una vez que una planilla alcanza el estado **Aplicada**, el periodo es **inmutable**. No se recalculan, no se modifican, no se eliminan registros de periodos aplicados. Cualquier correccin genera una nueva accin en un periodo futuro.
 
 ---
 
-## 3. Fases de Implementación
+## 3. Fases de Implementacin
 
-### Fase 1 — MVP Operativo
+### Fase 1  MVP Operativo
 
 **Objetivo:** Sistema funcional, coherente y estable.
 
 **Alcance:**
 
-- Multiempresa básica (creación, configuración, asignación de empleados).
-- Planillas con estados completos (Abierta → Verificada → Distribución → Aplicada → Inactiva).
-- Acciones de personal con flujo de aprobación.
-- Permisos dinámicos y menús basados en permisos.
-- Recálculo automático en periodo abierto.
-- Trazabilidad mínima obligatoria (creador, modificador, timestamps, estados).
+- Multiempresa bsica (creacin, configuracin, asignacin de empleados).
+- Planillas con estados completos (Abierta  Verificada  Distribucin  Aplicada  Inactiva).
+- Acciones de personal con flujo de aprobacin.
+- Permisos dinmicos y mens basados en permisos.
+- Reclculo automtico en periodo abierto.
+- Trazabilidad mnima obligatoria (creador, modificador, timestamps, estados).
 - Roles y permisos configurables.
 
 **Exclusiones de Fase 1:**
 
-- Sin colas distribuidas (procesamiento síncrono aceptable a esta escala).
-- Sin integración NetSuite.
+- Sin colas distribuidas (procesamiento sncrono aceptable a esta escala).
+- Sin integracin NetSuite.
 - Sin movimientos masivos automatizados.
-- Sin procesamiento asíncrono avanzado.
+- Sin procesamiento asncrono avanzado.
 
-**Criterio de completitud:** El sistema puede abrir, procesar y aplicar una planilla completa para múltiples empresas con acciones aprobadas, sin intervención manual fuera del flujo definido.
+**Criterio de completitud:** El sistema puede abrir, procesar y aplicar una planilla completa para mltiples empresas con acciones aprobadas, sin intervencin manual fuera del flujo definido.
 
 ---
 
-### Fase 2 — Escalabilidad y Automatización Avanzada
+### Fase 2  Escalabilidad y Automatizacin Avanzada
 
 **Objetivo:** Robustez operativa y capacidad de escala.
 
 **Alcance:**
 
-- Procesamiento asíncrono con colas (Redis / Message Queue).
+- Procesamiento asncrono con colas (Redis / Message Queue).
 - Movimientos masivos automatizados de empleados entre empresas.
-- Reintentos automáticos con política exponencial.
-- Auditoría avanzada (motivo de cambio, versiones anteriores, diff de estados).
-- Validaciones automáticas complejas pre-transición de planilla.
+- Reintentos automticos con poltica exponencial.
+- Auditora avanzada (motivo de cambio, versiones anteriores, diff de estados).
+- Validaciones automticas complejas pre-transicin de planilla.
 - Procesamiento por lotes para operaciones pesadas.
-- Optimización de queries y stored procedures para volumen.
+- Optimizacin de queries y stored procedures para volumen.
 
-**Criterio de completitud:** El sistema soporta cierre de mes con picos de carga sin degradación crítica, y los movimientos masivos se procesan sin intervención manual.
+**Criterio de completitud:** El sistema soporta cierre de mes con picos de carga sin degradacin crtica, y los movimientos masivos se procesan sin intervencin manual.
 
 ---
 
-### Fase 3 — Integración y Resiliencia Enterprise
+### Fase 3  Integracin y Resiliencia Enterprise
 
-**Objetivo:** Comportamiento enterprise real con integración externa.
+**Objetivo:** Comportamiento enterprise real con integracin externa.
 
 **Alcance:**
 
-- Integración desacoplada con NetSuite (evento `PayrollApplied` → sincronización contable).
+- Integracin desacoplada con NetSuite (evento `PayrollApplied`  sincronizacin contable).
 - Dead Letter Queues para eventos fallidos.
 - Retry policies configurables.
-- Sistema de alerting para fallos críticos.
-- Métricas de performance y health checks.
+- Sistema de alerting para fallos crticos.
+- Mtricas de performance y health checks.
 - Dashboard de monitoreo operativo.
-- Optimización avanzada de performance.
+- Optimizacin avanzada de performance.
 
-**Criterio de completitud:** El sistema opera de forma autónoma con monitoreo activo, integración contable funcional, y recuperación automática ante fallos transitorios.
+**Criterio de completitud:** El sistema opera de forma autnoma con monitoreo activo, integracin contable funcional, y recuperacin automtica ante fallos transitorios.
 
 ---
 
-## 4. Mapa de Dominios — Bounded Contexts
+## 4. Mapa de Dominios  Bounded Contexts
 
-El sistema se organiza en **6 bounded contexts**, cada uno con responsabilidad clara, ownership definido, y contratos explícitos.
+El sistema se organiza en **6 bounded contexts**, cada uno con responsabilidad clara, ownership definido, y contratos explcitos.
 
 ### 4.1 Company Management
 
-- **Responsabilidad:** Gestión de empresas, configuración empresarial, frecuencias de pago.
+- **Responsabilidad:** Gestin de empresas, configuracin empresarial, frecuencias de pago.
 - **System of Record (SoR) de:** Entidad Empresa.
-- **Regla clave:** Cada empresa es un dominio aislado con configuración independiente.
+- **Regla clave:** Cada empresa es un dominio aislado con configuracin independiente.
 
 ### 4.2 Employee Management
 
-- **Responsabilidad:** Empleados, movimientos entre empresas, historial laboral, asignación de supervisor.
+- **Responsabilidad:** Empleados, movimientos entre empresas, historial laboral, asignacin de supervisor.
 - **System of Record (SoR) de:** Entidad Empleado (`sys_empleados`).
 - **Regla clave:** El empleado pertenece a una empresa en todo momento. Los movimientos generan eventos y preservan historial.
 
-> **REGLA FUNDAMENTAL — Separación Identidad vs Negocio:**
+> **REGLA FUNDAMENTAL  Separacin Identidad vs Negocio:**
 >
-> | Concepto | Tabla | Bounded Context | Qué representa |
+> | Concepto | Tabla | Bounded Context | Qu representa |
 > |----------|-------|----------------|---------------|
 > | **Usuario** | `sys_usuarios` | Access Control / Auth | Cuenta digital para autenticarse en el sistema |
 > | **Empleado** | `sys_empleados` | Employee Management | Persona contratada por una empresa (datos laborales: salario, puesto, departamento) |
@@ -227,26 +227,26 @@ El sistema se organiza en **6 bounded contexts**, cada uno con responsabilidad c
 
 ### 4.3 Personal Actions
 
-- **Responsabilidad:** Acciones de personal, flujos de aprobación, estados de acciones, reglas de negocio internas.
-- **System of Record (SoR) de:** Entidad Acción de Personal.
+- **Responsabilidad:** Acciones de personal, flujos de aprobacin, estados de acciones, reglas de negocio internas.
+- **System of Record (SoR) de:** Entidad Accin de Personal.
 - **Regla clave:** Las acciones siguen un flujo de vida estricto. Solo acciones aprobadas pueden asociarse a planilla.
 
 ### 4.4 Payroll Engine
 
-- **Responsabilidad:** Planillas, estados de planilla, aplicación, recálculo, distribución de costos.
+- **Responsabilidad:** Planillas, estados de planilla, aplicacin, reclculo, distribucin de costos.
 - **System of Record (SoR) de:** Entidad Planilla.
-- **Regla clave:** Planillas aplicadas son inmutables. Solo planillas abiertas permiten recálculo.
+- **Regla clave:** Planillas aplicadas son inmutables. Solo planillas abiertas permiten reclculo.
 
 ### 4.5 Access Control
 
-- **Responsabilidad:** Roles, permisos, menús dinámicos, autenticación, autorización.
+- **Responsabilidad:** Roles, permisos, mens dinmicos, autenticacin, autorizacin.
 - **System of Record (SoR) de:** Roles y Permisos.
-- **Regla clave:** Los permisos son dinámicos, configurables en tiempo real, y nunca hardcodeados. Doble validación: frontend + backend.
+- **Regla clave:** Los permisos son dinmicos, configurables en tiempo real, y nunca hardcodeados. Doble validacin: frontend + backend.
 
 ### 4.6 Integration Layer
 
-- **Responsabilidad:** Integración con NetSuite, eventos externos, contratos de salida.
-- **Regla clave:** Integración siempre desacoplada. Nunca bloquea el ERP.
+- **Responsabilidad:** Integracin con NetSuite, eventos externos, contratos de salida.
+- **Regla clave:** Integracin siempre desacoplada. Nunca bloquea el ERP.
 
 ---
 
@@ -255,80 +255,80 @@ El sistema se organiza en **6 bounded contexts**, cada uno con responsabilidad c
 ### Diagrama de Flujo de Dependencias
 
 ```
-┌─────────────────────┐
-│  Company Management  │
-│       (SoR)         │
-└────────┬────────────┘
-         │ sync contract
-         ▼
-┌─────────────────────┐       sync contract       ┌─────────────────┐
-│ Employee Management  │ ◄─────────────────────── │  Access Control   │
-│       (SoR)         │                            │     (SoR)        │
-└────────┬────────────┘                            └──────────────────┘
-         │ event: EmployeeMoved
-         │ sync contract: employee data
-         ▼
-┌─────────────────────┐
-│  Personal Actions    │
-│       (SoR)         │
-└────────┬────────────┘
-         │ event: PersonalActionApproved
-         │ sync contract: approved actions
-         ▼
-┌─────────────────────┐
-│   Payroll Engine     │
-│       (SoR)         │
-└────────┬────────────┘
-         │ event: PayrollApplied
-         ▼
-┌─────────────────────┐
-│  Integration Layer   │
-│   (NetSuite, etc.)  │
-└─────────────────────┘
+
+  Company Management  
+       (SoR)         
+
+          sync contract
+         
+       sync contract       
+ Employee Management      Access Control   
+       (SoR)                                          (SoR)        
+                            
+          event: EmployeeMoved
+          sync contract: employee data
+         
+
+  Personal Actions    
+       (SoR)         
+
+          event: PersonalActionApproved
+          sync contract: approved actions
+         
+
+   Payroll Engine     
+       (SoR)         
+
+          event: PayrollApplied
+         
+
+  Integration Layer   
+   (NetSuite, etc.)  
+
 ```
 
 ### Tabla de Contratos entre Contextos
 
-| Origen (Upstream)    | Destino (Downstream)  | Tipo de Integración    | Contrato / Evento                          |
+| Origen (Upstream)    | Destino (Downstream)  | Tipo de Integracin    | Contrato / Evento                          |
 |----------------------|-----------------------|------------------------|--------------------------------------------|
-| Company Management   | Employee Management   | Sync Contract (read)   | Empresa válida, configuración, frecuencia  |
-| Employee Management  | Personal Actions      | Sync Contract (read)   | Empleado válido, supervisor, situación laboral |
-| Employee Management  | Payroll Engine        | Sync Contract (read)   | Asignación empresa, condiciones del empleado |
-| Employee Management  | Payroll Engine        | Event Subscription     | `EmployeeMoved` → reubicación de acciones  |
+| Company Management   | Employee Management   | Sync Contract (read)   | Empresa vlida, configuracin, frecuencia  |
+| Employee Management  | Personal Actions      | Sync Contract (read)   | Empleado vlido, supervisor, situacin laboral |
+| Employee Management  | Payroll Engine        | Sync Contract (read)   | Asignacin empresa, condiciones del empleado |
+| Employee Management  | Payroll Engine        | Event Subscription     | `EmployeeMoved`  reubicacin de acciones  |
 | Personal Actions     | Payroll Engine        | Sync Contract (read)   | Acciones aprobadas del periodo              |
-| Personal Actions     | Payroll Engine        | Event Subscription     | `PersonalActionApproved` → asociar a planilla |
-| Personal Actions     | Payroll Engine        | Event Subscription     | `SalaryIncreased` → recálculo automático   |
-| Payroll Engine       | Integration Layer     | Event Subscription     | `PayrollApplied` → sincronización NetSuite |
-| Payroll Engine       | Personal Actions      | Event Subscription     | `PayrollDeactivated` → cancelar acciones pendientes |
+| Personal Actions     | Payroll Engine        | Event Subscription     | `PersonalActionApproved`  asociar a planilla |
+| Personal Actions     | Payroll Engine        | Event Subscription     | `SalaryIncreased`  reclculo automtico   |
+| Payroll Engine       | Integration Layer     | Event Subscription     | `PayrollApplied`  sincronizacin NetSuite |
+| Payroll Engine       | Personal Actions      | Event Subscription     | `PayrollDeactivated`  cancelar acciones pendientes |
 | Access Control       | Todos los contextos   | Sync Contract (read)   | Permisos del usuario, roles activos        |
 
 ### Reglas de Dependencia
 
-- **Ningún downstream puede escribir en el SoR de un upstream.** Ejemplo: Payroll Engine no puede modificar datos del empleado.
-- **Los sync contracts son de lectura.** Si un downstream necesita un cambio en un upstream, lo solicita vía evento o servicio explícito.
-- **Los eventos son el mecanismo preferido para comunicación cross-context.** Los sync contracts se usan solo para lectura de datos de referencia.
+- **Ningn downstream puede escribir en el SoR de un upstream.** Ejemplo: Payroll Engine no puede modificar datos del empleado.
+- **Los sync contracts son de lectura.** Si un downstream necesita un cambio en un upstream, lo solicita va evento o servicio explcito.
+- **Los eventos son el mecanismo preferido para comunicacin cross-context.** Los sync contracts se usan solo para lectura de datos de referencia.
 
 ---
 
-## 6. Modelo Empresarial — Multiempresa
+## 6. Modelo Empresarial  Multiempresa
 
 ### Principio
 
-Una persona de RRHH puede administrar **múltiples empresas** desde una sola interfaz.
+Una persona de RRHH puede administrar **mltiples empresas** desde una sola interfaz.
 
-### Características
+### Caractersticas
 
 Cada empresa:
 
 - Tiene empleados propios.
 - Tiene planillas independientes.
-- Tiene configuración independiente (deducciones, aportes, reglas).
+- Tiene configuracin independiente (deducciones, aportes, reglas).
 - Tiene frecuencia de pago distinta (mensual, quincenal, semanal, etc.).
 - Opera como un **dominio aislado** pero coexistente.
 
 ### Regla Fundamental
 
-Las empresas son **dominios aislados**. No comparten planillas, no comparten acciones, no comparten configuración. Un empleado pertenece a exactamente una empresa en cada momento.
+Las empresas son **dominios aislados**. No comparten planillas, no comparten acciones, no comparten configuracin. Un empleado pertenece a exactamente una empresa en cada momento.
 
 ---
 
@@ -336,32 +336,32 @@ Las empresas son **dominios aislados**. No comparten planillas, no comparten acc
 
 ### Pertenencia
 
-Cada planilla pertenece a **una empresa** y cubre **un periodo** específico.
+Cada planilla pertenece a **una empresa** y cubre **un periodo** especfico.
 
 ### Estados Oficiales
 
 ```
-Abierta → Verificada → Distribución de Costos → Aplicada
-                                                    ↓
+Abierta  Verificada  Distribucin de Costos  Aplicada
+                                                    
                                                Inmutable
-         ↓ (desde cualquier estado pre-aplicación)
+          (desde cualquier estado pre-aplicacin)
     Inactiva / Cancelada
 ```
 
-| Estado               | Descripción                                                    | Recálculo | Modificable |
+| Estado               | Descripcin                                                    | Reclculo | Modificable |
 |----------------------|----------------------------------------------------------------|-----------|-------------|
-| Abierta              | Periodo activo, acepta acciones y recálculos                   | ✅         | ✅           |
-| Verificada           | Revisada por RRHH, pendiente distribución de costos            | ❌         | ❌ (regresa a Abierta si necesita cambios) |
-| Distribución de Costos | Costos asignados a centros de costo                          | ❌         | ❌           |
-| Aplicada             | Periodo cerrado, inmutable                                     | ❌         | ❌           |
-| Inactiva / Cancelada | Planilla cancelada, acciones pendientes auto-canceladas        | ❌         | ❌           |
+| Abierta              | Periodo activo, acepta acciones y reclculos                   |          |            |
+| Verificada           | Revisada por RRHH, pendiente distribucin de costos            |          |  (regresa a Abierta si necesita cambios) |
+| Distribucin de Costos | Costos asignados a centros de costo                          |          |            |
+| Aplicada             | Periodo cerrado, inmutable                                     |          |            |
+| Inactiva / Cancelada | Planilla cancelada, acciones pendientes auto-canceladas        |          |            |
 
-### Reglas Críticas
+### Reglas Crticas
 
 - Solo planillas **Abiertas** pueden recalcular.
-- Planillas **Aplicadas** son **inmutables** — no se modifican bajo ninguna circunstancia.
-- Planillas **Inactivadas** cancelan automáticamente sus acciones pendientes (evento `PayrollDeactivated`).
-- No puede existir **ambigüedad de periodo** — un empleado no puede tener dos planillas abiertas para el mismo periodo en la misma empresa.
+- Planillas **Aplicadas** son **inmutables**  no se modifican bajo ninguna circunstancia.
+- Planillas **Inactivadas** cancelan automticamente sus acciones pendientes (evento `PayrollDeactivated`).
+- No puede existir **ambigedad de periodo**  un empleado no puede tener dos planillas abiertas para el mismo periodo en la misma empresa.
 
 ---
 
@@ -369,11 +369,11 @@ Abierta → Verificada → Distribución de Costos → Aplicada
 
 ### Naturaleza
 
-Son entidades independientes que siguen un **flujo de vida estricto**. Cada transición es auditada.
+Son entidades independientes que siguen un **flujo de vida estricto**. Cada transicin es auditada.
 
 ### Tipos de Acciones
 
-| Categoría         | Tipos                                        |
+| Categora         | Tipos                                        |
 |-------------------|----------------------------------------------|
 | Ingresos          | Horas extra, bonificaciones, comisiones      |
 | Salario           | Aumentos salariales                          |
@@ -383,23 +383,23 @@ Son entidades independientes que siguen un **flujo de vida estricto**. Cada tran
 ### Flujo de Vida
 
 ```
-Borrador (opcional) → Pendiente Aprobación → Aprobada → Asociada a Planilla → Pagada
-                                                ↓
+Borrador (opcional)  Pendiente Aprobacin  Aprobada  Asociada a Planilla  Pagada
+                                                
                                            Cancelada (desde cualquier estado pre-pago)
 ```
 
-| Estado                | Descripción                              | Transiciones Permitidas              |
+| Estado                | Descripcin                              | Transiciones Permitidas              |
 |-----------------------|------------------------------------------|--------------------------------------|
-| Borrador              | Creada pero no enviada                   | → Pendiente Aprobación, → Cancelada |
-| Pendiente Aprobación  | Enviada para aprobación                  | → Aprobada, → Cancelada             |
-| Aprobada              | Aprobada por supervisor/RRHH             | → Asociada a Planilla, → Cancelada  |
-| Asociada a Planilla   | Vinculada a planilla abierta             | → Pagada, → Cancelada               |
-| Pagada                | Planilla aplicada, acción ejecutada      | Estado final — inmutable             |
-| Cancelada             | Acción cancelada con motivo registrado   | Estado final                         |
+| Borrador              | Creada pero no enviada                   |  Pendiente Aprobacin,  Cancelada |
+| Pendiente Aprobacin  | Enviada para aprobacin                  |  Aprobada,  Cancelada             |
+| Aprobada              | Aprobada por supervisor/RRHH             |  Asociada a Planilla,  Cancelada  |
+| Asociada a Planilla   | Vinculada a planilla abierta             |  Pagada,  Cancelada               |
+| Pagada                | Planilla aplicada, accin ejecutada      | Estado final  inmutable             |
+| Cancelada             | Accin cancelada con motivo registrado   | Estado final                         |
 
 ### Reglas
 
-- Cada transición de estado es **auditada** con usuario, timestamp, estado anterior, estado nuevo, y motivo.
+- Cada transicin de estado es **auditada** con usuario, timestamp, estado anterior, estado nuevo, y motivo.
 - Solo acciones **Aprobadas** pueden asociarse a una planilla.
 - Acciones **Pagadas** son inmutables.
 
@@ -409,31 +409,31 @@ Borrador (opcional) → Pendiente Aprobación → Aprobada → Asociada a Planil
 
 ### Escenario
 
-El movimiento de empleados entre empresas es un **escenario crítico** que debe ejecutarse de forma atómica y auditable.
+El movimiento de empleados entre empresas es un **escenario crtico** que debe ejecutarse de forma atmica y auditable.
 
-### Flujo Automático
+### Flujo Automtico
 
 Cuando se genera el evento `EmployeeMoved`:
 
 1. Se identifica la planilla activa compatible en la **nueva empresa**.
 2. Las acciones **pendientes** (no pagadas) se reubican a la nueva planilla.
-3. Se recalculan montos si aplica (diferencias de configuración entre empresas).
+3. Se recalculan montos si aplica (diferencias de configuracin entre empresas).
 4. Se registra **trazabilidad completa**: empresa origen, empresa destino, acciones movidas, montos anteriores, montos nuevos.
-5. **No se pierde historial anterior** — el registro histórico en la empresa origen permanece intacto.
-6. Si falla cualquier paso → **rollback automático completo**.
+5. **No se pierde historial anterior**  el registro histrico en la empresa origen permanece intacto.
+6. Si falla cualquier paso  **rollback automtico completo**.
 
 ### Movimientos Masivos (Fase 2+)
 
 El sistema debe soportar movimientos masivos de empleados entre empresas:
 
 - Procesamiento en lotes.
-- Transacciones controladas por lote (no una transacción global).
-- Registro individual de éxito/fallo por empleado.
+- Transacciones controladas por lote (no una transaccin global).
+- Registro individual de xito/fallo por empleado.
 - Sin bloqueo del sistema para otros usuarios durante el proceso.
 
 ---
 
-## 10. Recálculo Automático
+## 10. Reclculo Automtico
 
 ### Trigger: `SalaryIncreased` (ejemplo principal)
 
@@ -443,99 +443,99 @@ Cuando ocurre un aumento salarial en un periodo abierto:
 2. Se detectan acciones del **periodo abierto** que dependen del salario.
 3. Se recalculan montos dependientes (horas extra, proporcionales, etc.).
 4. Se actualiza la planilla abierta.
-5. Se guarda **versión previa** de los montos (auditoría de recálculo).
-6. Si falla → **rollback automático** al estado anterior.
+5. Se guarda **versin previa** de los montos (auditora de reclculo).
+6. Si falla  **rollback automtico** al estado anterior.
 
 ### Reglas Inviolables
 
 - **Nunca** se recalculan periodos aplicados.
-- El recálculo solo opera sobre planillas en estado **Abierta**.
-- Todo recálculo es atómico: se completa totalmente o no se aplica.
+- El reclculo solo opera sobre planillas en estado **Abierta**.
+- Todo reclculo es atmico: se completa totalmente o no se aplica.
 
 ---
 
-## 11. Roles y Permisos Dinámicos
+## 11. Roles y Permisos Dinmicos
 
 ### Principio
 
-Sistema de permisos **completamente dinámico** — nunca hardcodeado.
+Sistema de permisos **completamente dinmico**  nunca hardcodeado.
 
 ### Capacidades de un Rol
 
-Un rol puede incluir cualquier combinación de permisos:
+Un rol puede incluir cualquier combinacin de permisos:
 
-| Permiso              | Ejemplo de Acción                         |
+| Permiso              | Ejemplo de Accin                         |
 |----------------------|-------------------------------------------|
 | Crear planillas      | Abrir nuevo periodo                       |
 | Editar planillas     | Modificar planilla abierta                |
 | Verificar planillas  | Marcar planilla como verificada           |
-| Aplicar planillas    | Aplicar planilla (acción irreversible)    |
+| Aplicar planillas    | Aplicar planilla (accin irreversible)    |
 | Cancelar planillas   | Inactivar planilla                        |
 | Crear empleados      | Registrar nuevo empleado                  |
 | Editar empleados     | Modificar datos de empleado               |
-| Crear acciones       | Crear acción de personal                  |
-| Aprobar acciones     | Aprobar acción como supervisor/RRHH       |
+| Crear acciones       | Crear accin de personal                  |
+| Aprobar acciones     | Aprobar accin como supervisor/RRHH       |
 | Ver reportes         | Consultar reportes y dashboards           |
 
-### Características
+### Caractersticas
 
 - Los permisos son **configurables** por empresa.
 - Son **modificables en tiempo real** sin reinicio de sistema.
-- Soportan **granularidad** a nivel de módulo y acción.
-- Un usuario puede tener **múltiples roles**.
+- Soportan **granularidad** a nivel de mdulo y accin.
+- Un usuario puede tener **mltiples roles**.
 
 ---
 
-## 12. Menús Dinámicos Basados en Permisos
+## 12. Mens Dinmicos Basados en Permisos
 
 ### Flujo
 
-Al iniciar sesión:
+Al iniciar sesin:
 
 1. El backend devuelve los **permisos del usuario** para la empresa activa.
-2. El frontend construye el menú **dinámicamente** basado en permisos.
-3. Si no tiene permiso → **no ve el módulo**.
+2. El frontend construye el men **dinmicamente** basado en permisos.
+3. Si no tiene permiso  **no ve el mdulo**.
 4. El backend **valida siempre** cada request (doble seguridad).
 
 ### Ejemplos
 
 | Permiso Ausente           | Resultado en UI                    |
 |---------------------------|------------------------------------|
-| Sin permiso de vacaciones | No ve menú de vacaciones           |
+| Sin permiso de vacaciones | No ve men de vacaciones           |
 | Sin permiso de listar     | No puede consultar listados        |
-| Sin permiso de crear      | Botón de crear oculto              |
-| Sin permiso de aprobar    | No ve opciones de aprobación       |
+| Sin permiso de crear      | Botn de crear oculto              |
+| Sin permiso de aprobar    | No ve opciones de aprobacin       |
 
 ### Regla de Seguridad
 
-**La UI refleja el modelo de seguridad, pero nunca es la única barrera.** El backend es la fuente de verdad de autorización.
+**La UI refleja el modelo de seguridad, pero nunca es la nica barrera.** El backend es la fuente de verdad de autorizacin.
 
 ---
 
-## 13. Aprobaciones Jerárquicas
+## 13. Aprobaciones Jerrquicas
 
-### Flujo Típico
+### Flujo Tpico
 
 ```
-Empleado crea acción
-       ↓
+Empleado crea accin
+       
 Supervisor aprueba
-       ↓
+       
 RRHH valida
-       ↓
+       
 Entra a planilla
-       ↓
+       
 Planilla aplicada
-       ↓
-Acción pagada
+       
+Accin pagada
 ```
 
 ### Reglas
 
-- Cada transición requiere **permiso específico** del rol del usuario.
-- El flujo de aprobación es **configurable** por tipo de acción y por empresa.
-- Un supervisor solo puede aprobar acciones de **sus subordinados directos**. Jerarquía de supervisión (Supervisor Global, Supervisor, Empleado) y reglas de asignación: ver [27-DiagramaFlujoEmpleadosYUsuarios.md](./27-DiagramaFlujoEmpleadosYUsuarios.md).
-- RRHH puede validar acciones de **cualquier empleado** según permisos.
+- Cada transicin requiere **permiso especfico** del rol del usuario.
+- El flujo de aprobacin es **configurable** por tipo de accin y por empresa.
+- Un supervisor solo puede aprobar acciones de **sus subordinados directos**. Jerarqua de supervisin (Supervisor Global, Supervisor, Empleado) y reglas de asignacin: ver [27-DiagramaFlujoEmpleadosYUsuarios.md](./27-DiagramaFlujoEmpleadosYUsuarios.md).
+- RRHH puede validar acciones de **cualquier empleado** segn permisos.
 
 ---
 
@@ -545,47 +545,47 @@ Acción pagada
 
 Toda entidad del sistema debe registrar su ciclo de vida completo.
 
-### Campos de Auditoría Obligatorios
+### Campos de Auditora Obligatorios
 
-| Campo               | Descripción                                    |
+| Campo               | Descripcin                                    |
 |---------------------|------------------------------------------------|
-| Usuario creador     | Quién creó el registro                         |
-| Usuario modificador | Quién realizó la última modificación           |
-| Usuario aprobador   | Quién aprobó la transición (si aplica)         |
-| Fecha de creación   | Timestamp de creación                          |
-| Fecha de modificación | Timestamp de última modificación             |
-| Estado anterior     | Estado previo a la transición                  |
-| Estado nuevo        | Estado posterior a la transición               |
-| Motivo de cambio    | Justificación textual (obligatorio en estados críticos) |
+| Usuario creador     | Quin cre el registro                         |
+| Usuario modificador | Quin realiz la ltima modificacin           |
+| Usuario aprobador   | Quin aprob la transicin (si aplica)         |
+| Fecha de creacin   | Timestamp de creacin                          |
+| Fecha de modificacin | Timestamp de ltima modificacin             |
+| Estado anterior     | Estado previo a la transicin                  |
+| Estado nuevo        | Estado posterior a la transicin               |
+| Motivo de cambio    | Justificacin textual (obligatorio en estados crticos) |
 
-### Reglas de Auditoría
+### Reglas de Auditora
 
-- **Nada es irreversible sin auditoría.**
-- Los registros de auditoría son **inmutables** — no se pueden editar ni eliminar.
-- En operaciones críticas (aplicar planilla, cancelar, movimiento de empleado), el motivo de cambio es **obligatorio**.
-- El historial de versiones se preserva para entidades críticas (montos de planilla, acciones, salarios).
+- **Nada es irreversible sin auditora.**
+- Los registros de auditora son **inmutables**  no se pueden editar ni eliminar.
+- En operaciones crticas (aplicar planilla, cancelar, movimiento de empleado), el motivo de cambio es **obligatorio**.
+- El historial de versiones se preserva para entidades crticas (montos de planilla, acciones, salarios).
 
 ---
 
 ## 15. Base de Datos Enterprise
 
-### Principios de Diseño
+### Principios de Diseo
 
-| Principio                     | Descripción                                                    |
+| Principio                     | Descripcin                                                    |
 |-------------------------------|----------------------------------------------------------------|
 | Relaciones normalizadas       | Modelo relacional limpio, sin redundancia innecesaria          |
 | Foreign keys estrictas        | Integridad referencial fuerte en todas las relaciones          |
 | Transacciones ACID            | Atomicidad, Consistencia, Aislamiento, Durabilidad            |
-| Rollbacks controlados         | Toda operación crítica tiene rollback definido                 |
-| Soft delete                   | Cuando aplique, se marca como eliminado sin borrar físicamente |
-| Historial versionado          | Entidades críticas mantienen versiones anteriores              |
-| Índices estratégicos          | Optimización para queries frecuentes y reportes                |
+| Rollbacks controlados         | Toda operacin crtica tiene rollback definido                 |
+| Soft delete                   | Cuando aplique, se marca como eliminado sin borrar fsicamente |
+| Historial versionado          | Entidades crticas mantienen versiones anteriores              |
+| ndices estratgicos          | Optimizacin para queries frecuentes y reportes                |
 
 ### Reglas de Procesamiento Masivo
 
-- Los procesos masivos se ejecutan en **transacciones controladas por lote** (no una transacción global).
-- Cada lote tiene registro individual de éxito/fallo.
-- Los bloqueos en MySQL se minimizan mediante diseño de queries y estrategia de locking.
+- Los procesos masivos se ejecutan en **transacciones controladas por lote** (no una transaccin global).
+- Cada lote tiene registro individual de xito/fallo.
+- Los bloqueos en MySQL se minimizan mediante diseo de queries y estrategia de locking.
 
 ---
 
@@ -593,35 +593,35 @@ Toda entidad del sistema debe registrar su ciclo de vida completo.
 
 ### 16.1 Performance Targets
 
-#### Perfil: Operación Normal
+#### Perfil: Operacin Normal
 
-| Operación                       | Target        |
+| Operacin                       | Target        |
 |---------------------------------|---------------|
-| Creación de acción de personal  | < 500ms       |
+| Creacin de accin de personal  | < 500ms       |
 | Apertura de planilla            | < 2s          |
-| Recálculo de 100 acciones       | < 5s          |
+| Reclculo de 100 acciones       | < 5s          |
 | Movimiento individual           | < 3s          |
 | Consulta de listado (paginado)  | < 1s          |
 
 #### Perfil: Peak Scenario (Cierre de Mes / Quincena)
 
-| Operación                           | Target        | Nota                                      |
+| Operacin                           | Target        | Nota                                      |
 |-------------------------------------|---------------|-------------------------------------------|
-| Aplicar planilla (500+ empleados)   | < 30s         | Tolera más latencia que operaciones CRUD   |
-| Recálculo masivo (500+ acciones)    | < 15s         | Procesamiento por lotes                    |
+| Aplicar planilla (500+ empleados)   | < 30s         | Tolera ms latencia que operaciones CRUD   |
+| Reclculo masivo (500+ acciones)    | < 15s         | Procesamiento por lotes                    |
 | Movimiento masivo (100 empleados)   | < 10s         | Transacciones por lote, no global          |
-| Generación de reportes              | < 20s         | Puede ser asíncrono en Fase 2+            |
+| Generacin de reportes              | < 20s         | Puede ser asncrono en Fase 2+            |
 
 ### 16.2 Concurrencia
 
-| Perfil           | Usuarios Concurrentes | Procesos Batch Simultáneos | Planillas Simultáneas |
+| Perfil           | Usuarios Concurrentes | Procesos Batch Simultneos | Planillas Simultneas |
 |------------------|-----------------------|----------------------------|-----------------------|
 | Normal Ops       | 100                   | 10                         | 10                    |
-| Peak Scenario    | 300–500               | 20                         | 10–20                 |
+| Peak Scenario    | 300500               | 20                         | 1020                 |
 
 ### 16.3 Disponibilidad
 
-| Métrica          | Target Inicial | Target Enterprise (Fase 3) |
+| Mtrica          | Target Inicial | Target Enterprise (Fase 3) |
 |------------------|----------------|----------------------------|
 | Disponibilidad   | 99.5%          | 99.9%                      |
 | RTO              | < 30 min       | < 15 min                   |
@@ -631,12 +631,12 @@ Toda entidad del sistema debe registrar su ciclo de vida completo.
 
 No todas las operaciones tienen el mismo nivel de criticidad:
 
-| Nivel      | Operaciones                                    | Latencia Máxima | Disponibilidad |
+| Nivel      | Operaciones                                    | Latencia Mxima | Disponibilidad |
 |------------|------------------------------------------------|-----------------|----------------|
-| Crítico    | Aplicar planilla, recálculo, movimiento masivo | Definido arriba | 99.9%          |
+| Crtico    | Aplicar planilla, reclculo, movimiento masivo | Definido arriba | 99.9%          |
 | Alto       | Crear/aprobar acciones, abrir planilla         | < 2s            | 99.5%          |
 | Normal     | Consultas, listados, reportes                  | < 5s            | 99%            |
-| Bajo       | Configuración, administración de roles         | < 10s           | 95%            |
+| Bajo       | Configuracin, administracin de roles         | < 10s           | 95%            |
 
 ---
 
@@ -644,49 +644,49 @@ No todas las operaciones tienen el mismo nivel de criticidad:
 
 ### Principio
 
-El sistema debe **fallar de forma controlada** y **recuperarse automáticamente** cuando sea posible.
+El sistema debe **fallar de forma controlada** y **recuperarse automticamente** cuando sea posible.
 
-### Modelo de Fallo y Recuperación
+### Modelo de Fallo y Recuperacin
 
-#### Eventos Críticos
+#### Eventos Crticos
 
-Todo evento crítico debe:
+Todo evento crtico debe:
 
-- **Confirmar procesamiento** — el emisor sabe si el evento fue procesado.
-- **Registrar estado** — cada evento tiene estado: pendiente, procesado, fallido.
-- **Permitir reintento** — eventos fallidos pueden reprocesarse.
+- **Confirmar procesamiento**  el emisor sabe si el evento fue procesado.
+- **Registrar estado**  cada evento tiene estado: pendiente, procesado, fallido.
+- **Permitir reintento**  eventos fallidos pueden reprocesarse.
 
 #### Eventos Fallidos
 
-- Se envían a **Dead Letter Queue** (DLQ).
+- Se envan a **Dead Letter Queue** (DLQ).
 - Generan **alerta** al equipo de operaciones.
 - **No bloquean** el flujo principal del sistema.
-- Se registra motivo de fallo para diagnóstico.
+- Se registra motivo de fallo para diagnstico.
 
-#### Política de Reintentos
+#### Poltica de Reintentos
 
-- Política de **backoff exponencial** (1s → 2s → 4s → 8s → ...).
-- Número máximo de reintentos **configurable** por tipo de evento.
-- Después de agotar reintentos → DLQ + alerta.
+- Poltica de **backoff exponencial** (1s  2s  4s  8s  ...).
+- Nmero mximo de reintentos **configurable** por tipo de evento.
+- Despus de agotar reintentos  DLQ + alerta.
 
 #### Idempotencia
 
 - Todos los eventos deben ser **idempotentes**.
-- Ejecutarse dos o más veces nunca produce efectos distintos a ejecutarse una vez.
-- Esto es un requisito de diseño, no de implementación.
+- Ejecutarse dos o ms veces nunca produce efectos distintos a ejecutarse una vez.
+- Esto es un requisito de diseo, no de implementacin.
 
-### Degradación Controlada (Graceful Degradation)
+### Degradacin Controlada (Graceful Degradation)
 
 | Escenario                        | Comportamiento Esperado                              |
 |----------------------------------|------------------------------------------------------|
-| Cola de eventos no disponible    | Procesamiento síncrono temporal (Fase 1 behavior)    |
+| Cola de eventos no disponible    | Procesamiento sncrono temporal (Fase 1 behavior)    |
 | NetSuite no disponible           | Planilla se aplica normalmente, sync queda en cola   |
 | Base de datos degradada          | Solo lectura, operaciones de escritura en cola        |
-| Fallo en recálculo               | Rollback automático, acción queda en estado anterior  |
+| Fallo en reclculo               | Rollback automtico, accin queda en estado anterior  |
 
 ---
 
-## 18. KPITAL + TimeWise — Contrato de Integración
+## 18. KPITAL + TimeWise  Contrato de Integracin
 
 ### Ecosistema
 
@@ -696,11 +696,11 @@ KPITAL y TimeWise son dos sistemas que comparten infraestructura pero tienen **r
 
 | Recurso        | Compartido | Ownership                |
 |----------------|------------|--------------------------|
-| Base de datos  | ✅          | Shared infrastructure    |
-| Usuarios       | ✅          | Access Control (KPITAL)  |
-| Roles          | ✅          | Access Control (KPITAL)  |
-| Permisos       | ✅          | Access Control (KPITAL)  |
-| Empleados      | ✅          | Employee Management      |
+| Base de datos  |           | Shared infrastructure    |
+| Usuarios       |           | Access Control (KPITAL)  |
+| Roles          |           | Access Control (KPITAL)  |
+| Permisos       |           | Access Control (KPITAL)  |
+| Empleados      |           | Employee Management      |
 
 ### Responsabilidades
 
@@ -710,105 +710,105 @@ KPITAL y TimeWise son dos sistemas que comparten infraestructura pero tienen **r
 | TimeWise  | Consultar empleados (read-only)        | Modificar datos de empleado       |
 | TimeWise  | Generar eventos de asistencia          | Aprobar acciones de planilla      |
 | KPITAL    | Procesar planillas                     | Generar datos de asistencia       |
-| KPITAL    | Validar acciones recibidas             | Asumir que toda acción es válida  |
-| KPITAL    | Rechazar acciones inválidas de TimeWise | —                                |
+| KPITAL    | Validar acciones recibidas             | Asumir que toda accin es vlida  |
+| KPITAL    | Rechazar acciones invlidas de TimeWise |                                 |
 
 ### Regla Fundamental
 
-> **Base de datos compartida ≠ responsabilidad compartida.**
+> **Base de datos compartida  responsabilidad compartida.**
 
-Si TimeWise genera una acción inválida → se rechaza en el dominio **Personal Actions** de KPITAL. TimeWise no tiene bypass de validación.
+Si TimeWise genera una accin invlida  se rechaza en el dominio **Personal Actions** de KPITAL. TimeWise no tiene bypass de validacin.
 
 ### Anti-Corruption Layer
 
-KPITAL actúa como **anti-corruption layer**: toda acción que ingresa desde TimeWise pasa por las mismas validaciones que una acción creada internamente. No hay "fast path" ni excepciones por origen.
+KPITAL acta como **anti-corruption layer**: toda accin que ingresa desde TimeWise pasa por las mismas validaciones que una accin creada internamente. No hay "fast path" ni excepciones por origen.
 
 ---
 
-## 19. Integración Futura con NetSuite
+## 19. Integracin Futura con NetSuite
 
 ### Trigger
 
-Después de aplicar planilla → evento `PayrollApplied`.
+Despus de aplicar planilla  evento `PayrollApplied`.
 
 ### Flujo
 
 1. `PayrollApplied` se emite.
 2. Integration Layer consume el evento.
-3. Se transforma la información al formato NetSuite.
-4. Se envía a NetSuite vía API.
-5. Se registra confirmación o fallo.
-6. Si falla → cola de reintentos → DLQ si persiste.
+3. Se transforma la informacin al formato NetSuite.
+4. Se enva a NetSuite va API.
+5. Se registra confirmacin o fallo.
+6. Si falla  cola de reintentos  DLQ si persiste.
 
 ### Principios
 
-- Integración **siempre desacoplada**.
-- **Nunca bloquea** el ERP — la planilla se aplica independientemente del estado de NetSuite.
-- La información contable se sincroniza de forma **eventual** (eventual consistency).
-- El estado de sincronización es visible y auditable.
+- Integracin **siempre desacoplada**.
+- **Nunca bloquea** el ERP  la planilla se aplica independientemente del estado de NetSuite.
+- La informacin contable se sincroniza de forma **eventual** (eventual consistency).
+- El estado de sincronizacin es visible y auditable.
 
 ---
 
 ## 20. Decision Log (ADR-Lite)
 
-| ID     | Decisión                                          | Alternativa Considerada                | Tradeoff                                                    | Impacto                           | Fecha      |
+| ID     | Decisin                                          | Alternativa Considerada                | Tradeoff                                                    | Impacto                           | Fecha      |
 |--------|---------------------------------------------------|----------------------------------------|-------------------------------------------------------------|-----------------------------------|------------|
-| ADR-001 | Employee Management es SoR del empleado          | Ownership compartido KPITAL/TimeWise   | Single source of truth vs flexibilidad de TimeWise          | Alto — define boundaries          | 2025-02-21 |
-| ADR-002 | Planillas aplicadas son inmutables                | Permitir correcciones retroactivas     | Integridad contable vs facilidad de corrección              | Crítico — base del modelo         | 2025-02-21 |
-| ADR-003 | Eventos idempotentes como principio de diseño     | Idempotencia solo donde se necesite    | Esfuerzo de diseño extra vs resiliencia                     | Alto — afecta todo evento         | 2025-02-21 |
-| ADR-004 | Fase 1 sin colas distribuidas                     | Implementar colas desde día 1          | Simplicidad inicial vs preparación para escala              | Medio — afecta timeline           | 2025-02-21 |
-| ADR-005 | Anti-corruption layer para acciones de TimeWise   | Trust implícito en datos de TimeWise   | Validación extra vs performance de ingesta                  | Alto — seguridad de datos         | 2025-02-21 |
-| ADR-006 | Permisos dinámicos, nunca hardcodeados            | Permisos estáticos por módulo          | Flexibilidad total vs complejidad de implementación         | Alto — afecta toda la UI          | 2025-02-21 |
-| ADR-007 | SLOs diferenciados por tipo de operación          | SLO único para todo el sistema         | Complejidad de monitoreo vs targets realistas               | Medio — afecta infraestructura    | 2025-02-21 |
+| ADR-001 | Employee Management es SoR del empleado          | Ownership compartido KPITAL/TimeWise   | Single source of truth vs flexibilidad de TimeWise          | Alto  define boundaries          | 2025-02-21 |
+| ADR-002 | Planillas aplicadas son inmutables                | Permitir correcciones retroactivas     | Integridad contable vs facilidad de correccin              | Crtico  base del modelo         | 2025-02-21 |
+| ADR-003 | Eventos idempotentes como principio de diseo     | Idempotencia solo donde se necesite    | Esfuerzo de diseo extra vs resiliencia                     | Alto  afecta todo evento         | 2025-02-21 |
+| ADR-004 | Fase 1 sin colas distribuidas                     | Implementar colas desde da 1          | Simplicidad inicial vs preparacin para escala              | Medio  afecta timeline           | 2025-02-21 |
+| ADR-005 | Anti-corruption layer para acciones de TimeWise   | Trust implcito en datos de TimeWise   | Validacin extra vs performance de ingesta                  | Alto  seguridad de datos         | 2025-02-21 |
+| ADR-006 | Permisos dinmicos, nunca hardcodeados            | Permisos estticos por mdulo          | Flexibilidad total vs complejidad de implementacin         | Alto  afecta toda la UI          | 2025-02-21 |
+| ADR-007 | SLOs diferenciados por tipo de operacin          | SLO nico para todo el sistema         | Complejidad de monitoreo vs targets realistas               | Medio  afecta infraestructura    | 2025-02-21 |
 
 ---
 
-## 21. Qué NO Define Este Documento
+## 21. Qu NO Define Este Documento
 
-Este documento define **visión, principios y dirección**. No define:
+Este documento define **visin, principios y direccin**. No define:
 
-- Campos específicos de tablas de base de datos.
+- Campos especficos de tablas de base de datos.
 - Endpoints de API.
 - DTOs o contratos de API.
-- Implementación técnica exacta (frameworks, librerías).
+- Implementacin tcnica exacta (frameworks, libreras).
 - Estructura de carpetas del proyecto.
-- Configuración de infraestructura (servidores, instancias).
+- Configuracin de infraestructura (servidores, instancias).
 - Diagramas de secuencia detallados.
 - Mockups de interfaz de usuario.
 
-Para cada uno de estos aspectos se generarán documentos técnicos específicos derivados de esta visión.
+Para cada uno de estos aspectos se generarn documentos tcnicos especficos derivados de esta visin.
 
 ---
 
-## Validaciones Automáticas Pre-Transición
+## Validaciones Automticas Pre-Transicin
 
-Antes de cambiar el estado de una planilla, el sistema ejecuta validaciones automáticas:
+Antes de cambiar el estado de una planilla, el sistema ejecuta validaciones automticas:
 
-| Validación                        | Descripción                                                  | Bloquea Transición |
+| Validacin                        | Descripcin                                                  | Bloquea Transicin |
 |-----------------------------------|--------------------------------------------------------------|--------------------|
-| Acciones pendientes               | No hay acciones en estado intermedio sin resolver             | ✅                  |
-| Inconsistencias de monto          | Los montos calculados son coherentes con las reglas           | ✅                  |
-| Empleados sin salario             | Todo empleado en planilla tiene salario asignado              | ✅                  |
-| Montos negativos                  | No existen montos negativos no justificados                   | ✅                  |
-| Aprobación obligatoria            | Todas las acciones que requieren aprobación están aprobadas   | ✅                  |
-| Periodo sin ambigüedad            | No existe otra planilla para el mismo periodo/empresa         | ✅                  |
+| Acciones pendientes               | No hay acciones en estado intermedio sin resolver             |                   |
+| Inconsistencias de monto          | Los montos calculados son coherentes con las reglas           |                   |
+| Empleados sin salario             | Todo empleado en planilla tiene salario asignado              |                   |
+| Montos negativos                  | No existen montos negativos no justificados                   |                   |
+| Aprobacin obligatoria            | Todas las acciones que requieren aprobacin estn aprobadas   |                   |
+| Periodo sin ambigedad            | No existe otra planilla para el mismo periodo/empresa         |                   |
 
-El sistema **impide errores humanos** mediante validación proactiva.
+El sistema **impide errores humanos** mediante validacin proactiva.
 
 ---
 
-## Conclusión
+## Conclusin
 
 KPITAL 360 no es un CRUD de planillas.
 
-Es un **motor de reglas empresariales automatizado**: un ERP real, multiempresa, basado en eventos, con permisos dinámicos, workflows robustos, trazabilidad total, y diseñado para escalar desde un MVP funcional hasta una plataforma enterprise con integración contable y resiliencia operativa.
+Es un **motor de reglas empresariales automatizado**: un ERP real, multiempresa, basado en eventos, con permisos dinmicos, workflows robustos, trazabilidad total, y diseado para escalar desde un MVP funcional hasta una plataforma enterprise con integracin contable y resiliencia operativa.
 
-Este documento es el **blueprint vivo** que guía todas las decisiones técnicas del proyecto. Toda implementación debe ser coherente con los principios aquí definidos, y cualquier desviación debe documentarse en el Decision Log con justificación explícita.
+Este documento es el **blueprint vivo** que gua todas las decisiones tcnicas del proyecto. Toda implementacin debe ser coherente con los principios aqu definidos, y cualquier desviacin debe documentarse en el Decision Log con justificacin explcita.
 
 ---
 
-*Documento generado como referencia arquitectónica formal del proyecto KPITAL 360.*
-*Toda modificación requiere aprobación del Owner y actualización del Changelog.*
+*Documento generado como referencia arquitectnica formal del proyecto KPITAL 360.*
+*Toda modificacin requiere aprobacin del Owner y actualizacin del Changelog.*
 
 ---
 ## Actualizaci?n 2026-03-02 ? Vacaciones sin selecci?n de planilla (ACTUALIZACION-VACACIONES-2026-03-02

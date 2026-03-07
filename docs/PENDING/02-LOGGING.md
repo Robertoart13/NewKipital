@@ -1,6 +1,6 @@
-# 📝 LOGGING - Issues Pendientes
+#  LOGGING - Issues Pendientes
 
-**Prioridad Global:** P0 (CRÍTICO)
+**Prioridad Global:** P0 (CRTICO)
 **Esfuerzo Total:** 1 semana
 **Asignado a:** [Sin asignar]
 
@@ -9,31 +9,31 @@
 ## ISSUE-013: Implementar Winston logger centralizado
 
 **Prioridad:** P0
-**Esfuerzo:** S (1 día)
+**Esfuerzo:** S (1 da)
 **Etiquetas:** [logging] [infrastructure]
 
-### 📝 Descripción
+###  Descripcin
 Actualmente Logger de NestJS se importa pero casi no se usa. Necesitamos Winston para logs estructurados.
 
-### 🎯 Objetivo
-Winston configurado con niveles, formatos JSON, y rotación de archivos.
+###  Objetivo
+Winston configurado con niveles, formatos JSON, y rotacin de archivos.
 
-### 📁 Archivos Afectados
+###  Archivos Afectados
 - `api/src/common/logger/logger.module.ts` (crear)
 - `api/src/common/logger/logger.config.ts` (crear)
 - `api/src/app.module.ts` (modificar)
-- `api/package.json` (añadir winston)
+- `api/package.json` (aadir winston)
 
-### ✅ Criterios de Aceptación
+###  Criterios de Aceptacin
 - [ ] Winston instalado: `npm install winston nest-winston`
 - [ ] LoggerModule configurado como global
 - [ ] Niveles: DEBUG, INFO, WARN, ERROR
 - [ ] Formato JSON para archivos
 - [ ] Formato colorizado para consola
-- [ ] Rotación diaria de archivos (logs/error.log, logs/combined.log)
-- [ ] Logs antiguos se comprimen automáticamente
+- [ ] Rotacin diaria de archivos (logs/error.log, logs/combined.log)
+- [ ] Logs antiguos se comprimen automticamente
 
-### 🔧 Implementación Sugerida
+###  Implementacin Sugerida
 
 ```typescript
 // src/common/logger/logger.module.ts
@@ -95,7 +95,7 @@ const consoleFormat = winston.format.combine(
 export class LoggerModule {}
 ```
 
-### 🧪 Cómo Verificar
+###  Cmo Verificar
 ```bash
 npm run start:dev
 # Verificar que logs aparecen en consola coloreados
@@ -108,25 +108,25 @@ ls logs/
 ## ISSUE-014: Agregar logging a AuthService
 
 **Prioridad:** P0
-**Esfuerzo:** S (1 día)
+**Esfuerzo:** S (1 da)
 **Etiquetas:** [logging] [auth]
 
-### 📝 Descripción
+###  Descripcin
 AuthService actualmente solo tiene 1 log. Necesita logging completo para auditar intentos de login.
 
-### 📁 Archivos Afectados
+###  Archivos Afectados
 - `api/src/modules/auth/auth.service.ts`
 
-### ✅ Criterios de Aceptación
+###  Criterios de Aceptacin
 - [ ] Login exitoso: log INFO con userId, email, IP
-- [ ] Login fallido: log WARN con email, razón, IP
+- [ ] Login fallido: log WARN con email, razn, IP
 - [ ] Cuenta bloqueada: log ERROR con userId, intentos
 - [ ] Refresh token exitoso: log DEBUG con userId
-- [ ] Refresh token fallido: log WARN con razón
+- [ ] Refresh token fallido: log WARN con razn
 - [ ] Microsoft login: log INFO con microsoftOid
 - [ ] Cada log incluye correlationId (ISSUE-016)
 
-### 🔧 Implementación Sugerida
+###  Implementacin Sugerida
 
 ```typescript
 // auth.service.ts
@@ -185,38 +185,38 @@ export class AuthService {
 
 ---
 
-## ISSUE-015: Agregar logging a servicios críticos
+## ISSUE-015: Agregar logging a servicios crticos
 
 **Prioridad:** P0
-**Esfuerzo:** M (2-3 días)
+**Esfuerzo:** M (2-3 das)
 **Etiquetas:** [logging] [backend]
 
-### 📝 Descripción
+###  Descripcin
 Resto de servicios (Companies, Employees, Payroll, PersonalActions) necesitan logging.
 
-### 📁 Archivos Afectados
+###  Archivos Afectados
 - `api/src/modules/companies/companies.service.ts`
 - `api/src/modules/employees/employees.service.ts`
 - `api/src/modules/payroll/payroll.service.ts`
 - `api/src/modules/personal-actions/personal-actions.service.ts`
 
-### ✅ Criterios de Aceptación
+###  Criterios de Aceptacin
 
 **CompaniesService:**
 - [ ] create(): log INFO con companyId, nombre, userId
 - [ ] update(): log INFO con cambios realizados
-- [ ] inactivate(): log WARN con razón
+- [ ] inactivate(): log WARN con razn
 - [ ] commitTempLogo(): log INFO con logoPath
 
 **EmployeesService:**
 - [ ] create(): log INFO con employeeId, nombre
 - [ ] update(): log INFO con cambios
-- [ ] inactivate(): log WARN con razón
+- [ ] inactivate(): log WARN con razn
 
 **PayrollService:**
 - [ ] create(): log INFO con payrollId, periodo
 - [ ] verify(): log INFO con payrollId, userId
-- [ ] apply(): log WARN con payrollId (crítico)
+- [ ] apply(): log WARN con payrollId (crtico)
 - [ ] reopen(): log ERROR con payrollId, motivo
 
 **PersonalActionsService:**
@@ -229,28 +229,28 @@ Resto de servicios (Companies, Employees, Payroll, PersonalActions) necesitan lo
 ## ISSUE-016: Implementar Correlation IDs
 
 **Prioridad:** P0
-**Esfuerzo:** S (1 día)
+**Esfuerzo:** S (1 da)
 **Etiquetas:** [logging] [infrastructure]
 
-### 📝 Descripción
-Sin correlation IDs es imposible trazar requests a través de múltiples servicios/funciones.
+###  Descripcin
+Sin correlation IDs es imposible trazar requests a travs de mltiples servicios/funciones.
 
-### 🎯 Objetivo
-Todo request tiene un ID único que se propaga a todos los logs.
+###  Objetivo
+Todo request tiene un ID nico que se propaga a todos los logs.
 
-### 📁 Archivos Afectados
+###  Archivos Afectados
 - `api/src/common/middleware/correlation-id.middleware.ts` (crear)
 - `api/src/app.module.ts`
 - `api/src/common/decorators/correlation-id.decorator.ts` (crear)
 
-### ✅ Criterios de Aceptación
+###  Criterios de Aceptacin
 - [ ] Middleware genera UUID si no viene en header
 - [ ] Header `x-correlation-id` se respeta si viene del cliente
 - [ ] Response incluye header `x-correlation-id`
 - [ ] Todos los logs incluyen correlationId
 - [ ] Decorador `@CorrelationId()` para inyectar en controllers
 
-### 🔧 Implementación Sugerida
+###  Implementacin Sugerida
 
 ```typescript
 // correlation-id.middleware.ts
@@ -292,19 +292,19 @@ this.logger.info('Login exitoso', {
 ## ISSUE-017: HTTP Request logging middleware
 
 **Prioridad:** P1
-**Esfuerzo:** S (1 día)
+**Esfuerzo:** S (1 da)
 **Etiquetas:** [logging] [middleware]
 
-### 📝 Descripción
-Loguear todos los HTTP requests automáticamente (método, ruta, status, duración).
+###  Descripcin
+Loguear todos los HTTP requests automticamente (mtodo, ruta, status, duracin).
 
-### ✅ Criterios de Aceptación
-- [ ] Log en cada request: método, ruta, IP, userId (si auth)
-- [ ] Log en response: status code, duración (ms)
+###  Criterios de Aceptacin
+- [ ] Log en cada request: mtodo, ruta, IP, userId (si auth)
+- [ ] Log en response: status code, duracin (ms)
 - [ ] Excluir rutas de health checks (/health, /metrics)
 - [ ] Formato: `GET /api/employees 200 45ms userId=5 ip=192.168.1.1`
 
-### 🔧 Implementación Sugerida
+###  Implementacin Sugerida
 
 ```typescript
 // http-logger.middleware.ts
@@ -355,19 +355,19 @@ export class HttpLoggerMiddleware implements NestMiddleware {
 ## ISSUE-018: Error logging interceptor
 
 **Prioridad:** P1
-**Esfuerzo:** S (1 día)
+**Esfuerzo:** S (1 da)
 **Etiquetas:** [logging] [errors]
 
-### 📝 Descripción
+###  Descripcin
 Capturar y loguear todas las excepciones con stack traces completos.
 
-### ✅ Criterios de Aceptación
+###  Criterios de Aceptacin
 - [ ] Interceptor global que captura todas las excepciones
 - [ ] Log ERROR con stack trace completo
-- [ ] Incluye contexto (controller, método, userId)
+- [ ] Incluye contexto (controller, mtodo, userId)
 - [ ] Sanitiza datos sensibles (passwords, tokens)
 
-### 🔧 Implementación Sugerida
+###  Implementacin Sugerida
 
 ```typescript
 // error-logger.interceptor.ts
@@ -410,7 +410,7 @@ export class ErrorLoggerInterceptor implements NestInterceptor {
   private sanitize(obj: any): any {
     // Remover passwords, tokens, etc.
     const sensitive = ['password', 'token', 'secret', 'passwordHash'];
-    // ...lógica de sanitización
+    // ...lgica de sanitizacin
     return obj;
   }
 }
@@ -418,11 +418,11 @@ export class ErrorLoggerInterceptor implements NestInterceptor {
 
 ---
 
-## 📊 Progreso Logging
+##  Progreso Logging
 
 - [ ] ISSUE-013: Winston logger centralizado
 - [ ] ISSUE-014: Logging en AuthService
-- [ ] ISSUE-015: Logging en servicios críticos
+- [ ] ISSUE-015: Logging en servicios crticos
 - [ ] ISSUE-016: Correlation IDs
 - [ ] ISSUE-017: HTTP Request logging
 - [ ] ISSUE-018: Error logging interceptor

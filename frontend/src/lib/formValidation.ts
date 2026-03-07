@@ -1,4 +1,4 @@
-﻿import validator from 'validator';
+import validator from 'validator';
 
 const SQL_DANGER_PATTERN =
   // eslint-disable-next-line no-control-regex

@@ -1,4 +1,4 @@
-﻿import { AuthAuditService } from './auth-audit.service';
+import { AuthAuditService } from './auth-audit.service';
 
 import type { DomainEventsService } from '../integration/domain-events.service';
 

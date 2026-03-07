@@ -41,3 +41,4 @@ export const DOMAIN_EVENTS = {
     LOGIN_UPDATED: 'identity.login_updated',
   },
 } as const;
+

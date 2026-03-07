@@ -1,6 +1,9 @@
 import { ArrowLeftOutlined, PlusOutlined, QuestionCircleOutlined, TagsOutlined } from '@ant-design/icons';
 import { App as AntdApp, Button, Card, Flex, Form, Spin, Tag, Tooltip } from 'antd';
 import { useCallback, useEffect, useMemo, useState } from 'react';
+
+import { useSortableColumns } from '../../../hooks/useSortableColumns';
+import { bustApiCache } from '../../../lib/apiCache';
 import { Link } from 'react-router-dom';
 
 import {
@@ -92,7 +95,6 @@ export function PayrollArticlesManagementPage() {
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [showInactive, setShowInactive] = useState(false);
-  const [selectedCompanyIds, setSelectedCompanyIds] = useState<number[]>(defaultCompanyId ? [defaultCompanyId] : []);
   const [openModal, setOpenModal] = useState(false);
   const [editing, setEditing] = useState<PayrollArticleListItem | null>(null);
   const editingId = editing?.id ?? null;
@@ -249,7 +251,7 @@ export function PayrollArticlesManagementPage() {
         setFormAccounts([]);
         return;
       }
-      const idsReferencia = PAYROLL_ARTICLE_TYPE_META[tipoId]?.idsReferencia ?? [];
+      const resolvedAccountIds = (accountIds ?? []).filter((value) => Number.isFinite(value) && value > 0);
       const resolvedAccountIds = (accountIds ?? []).filter((value) => Number.isFinite(value) && value > 0);
       setLoadingFormAccounts(true);
       try {
@@ -301,9 +303,9 @@ export function PayrollArticlesManagementPage() {
       const term = search.trim().toLowerCase();
       if (!term) return true;
       return (
-        (row.nombre ?? '').toLowerCase().includes(term) ||
-        (companies.find((c) => c.id === row.idEmpresa)?.nombre ?? '').toLowerCase().includes(term) ||
-        (tipoArticuloMap.get(row.idTipoArticuloNomina) ?? '').toLowerCase().includes(term) ||
+        (tipoAccionMap.get(row.idTipoAccionPersonal) ?? '').toLowerCase().includes(term) ||
+        (accountLabelMap.get(row.idCuentaGasto) ?? '').toLowerCase().includes(term) ||
+        (row.idCuentaPasivo ? (accountLabelMap.get(row.idCuentaPasivo) ?? '').toLowerCase().includes(term) : false)
         (tipoAccionMap.get(row.idTipoAccionPersonal) ?? '').toLowerCase().includes(term) ||
         (accountLabelMap.get(row.idCuentaGasto) ?? '').toLowerCase().includes(term) ||
         (row.idCuentaPasivo ? (accountLabelMap.get(row.idCuentaPasivo) ?? '').toLowerCase().includes(term) : false)
@@ -439,7 +441,7 @@ export function PayrollArticlesManagementPage() {
     (row: PayrollArticleListItem) => {
       form.setFieldsValue({
         idEmpresa: row.idEmpresa,
-        nombre: row.nombre ?? '',
+        descripcion: row.descripcion ?? '',
         descripcion: row.descripcion ?? '',
         idTipoAccionPersonal: row.idTipoAccionPersonal,
         idTipoArticuloNomina: row.idTipoArticuloNomina,
@@ -521,18 +523,18 @@ export function PayrollArticlesManagementPage() {
 
   const onFormValuesChange = (changed: Partial<PayrollArticleFormValues>) => {
     const nextEmpresa =
-      changed.idEmpresaCambio ??
-      changed.idEmpresa ??
       form.getFieldValue('idEmpresaCambio') ??
+      changed.idEmpresa ?
+      form.getFieldValue('idEmpresaCambio') ?
       form.getFieldValue('idEmpresa');
     if (nextEmpresa !== undefined) {
       setResolvedCompanyId(nextEmpresa);
     }
 
     const nextTipo =
-      changed.idTipoArticuloNominaCambio ??
-      changed.idTipoArticuloNomina ??
       form.getFieldValue('idTipoArticuloNominaCambio') ??
+      changed.idTipoArticuloNomina ?
+      form.getFieldValue('idTipoArticuloNominaCambio') ?
       form.getFieldValue('idTipoArticuloNomina');
     if (nextTipo !== undefined) {
       setResolvedTipoArticuloId(nextTipo);
@@ -587,13 +589,13 @@ export function PayrollArticlesManagementPage() {
       if (!confirmed) return;
 
       const values = await form.validateFields();
-      const resolvedEmpresa = values.idEmpresaCambio ?? values.idEmpresa ?? defaultCompanyId;
-      const resolvedTipoArticulo = values.idTipoArticuloNominaCambio ?? values.idTipoArticuloNomina;
-      const resolvedTipoAccion = values.idTipoAccionPersonalCambio ?? values.idTipoAccionPersonal;
       const resolvedCuentaGasto = values.idCuentaGastoCambio ?? values.idCuentaGasto;
       const resolvedCuentaPasivo = values.idCuentaPasivoCambio ?? values.idCuentaPasivo;
-      const meta = resolvedTipoArticulo ? PAYROLL_ARTICLE_TYPE_META[resolvedTipoArticulo] : undefined;
+      const resolvedTipoAccion = values.idTipoAccionPersonalCambio ? values.idTipoAccionPersonal;
       const allowsPasivo = meta?.allowsPasivo ?? false;
+      const resolvedCuentaPasivo = values.idCuentaPasivoCambio ? values.idCuentaPasivo;
+      const meta = resolvedTipoArticulo ? PAYROLL_ARTICLE_TYPE_META[resolvedTipoArticulo] : undefined;
+      const allowsPasivo = meta?.allowsPasivo ? false;
 
       if (!resolvedEmpresa) {
         message.error('Debe seleccionar una empresa activa para gestionar articulos de nomina.');
@@ -699,7 +701,7 @@ export function PayrollArticlesManagementPage() {
     await loadRows();
   };
 
-  const columns: ColumnsType<PayrollArticleListItem> = [
+  const columns: ColumnsType<PayrollArticleListItem> = useSortableColumns([
     {
       title: 'Empresa',
       dataIndex: 'idEmpresa',
@@ -766,7 +768,7 @@ export function PayrollArticlesManagementPage() {
       width: 220,
       render: (value) => formatDateTime12h(value),
     },
-  ];
+  ]);
 
   const auditColumns: ColumnsType<PayrollArticleAuditTrailItem> = [
     {
@@ -784,7 +786,7 @@ export function PayrollArticlesManagementPage() {
         const actorLabel =
           row.actorNombre?.trim() ||
           row.actorEmail?.trim() ||
-          (row.actorUserId ? `Usuario ID ${row.actorUserId}` : 'Sistema');
+          (row.actorUserId != null ? `Usuario ID ${row.actorUserId}` : 'Sistema');
         return (
           <div>
             <div style={{ fontWeight: 600, color: '#3d4f5c' }}>{actorLabel}</div>
@@ -848,16 +850,16 @@ export function PayrollArticlesManagementPage() {
     );
   }
 
-  const resolvedMeta = resolvedTipoArticuloId ? PAYROLL_ARTICLE_TYPE_META[resolvedTipoArticuloId] : undefined;
-  const canLoadAccountOptions = Boolean(resolvedCompanyId && resolvedTipoArticuloId);
-  const primaryLabel = resolvedMeta?.primaryLabel ?? 'Cuenta Principal';
   const secondaryLabel = resolvedMeta?.secondaryLabel ?? 'Cuenta Pasivo';
-  const allowsPasivo = resolvedMeta?.allowsPasivo ?? false;
+  const canLoadAccountOptions = Boolean(resolvedCompanyId && resolvedTipoArticuloId);
+  const primaryLabel = resolvedMeta?.primaryLabel ? 'Cuenta Principal';
+  const secondaryLabel = resolvedMeta?.secondaryLabel ? 'Cuenta Pasivo';
+  const allowsPasivo = resolvedMeta?.allowsPasivo ? false;
 
-  const selectedPrimaryAccountId = openModal ? form.getFieldValue('idCuentaGasto') : undefined;
+    formAccounts.find((account) => account.id === selectedPrimaryAccountId) ??
   const selectedPasivoAccountId = openModal ? form.getFieldValue('idCuentaPasivo') : undefined;
   const currentPrimaryAccount =
-    formAccounts.find((account) => account.id === selectedPrimaryAccountId) ??
+    formAccounts.find((account) => account.id === selectedPasivoAccountId) ???
     formAccounts.find((account) => account.id === editing?.idCuentaGasto);
   const currentPasivoAccount =
     formAccounts.find((account) => account.id === selectedPasivoAccountId) ??
@@ -885,7 +887,7 @@ export function PayrollArticlesManagementPage() {
                 <TagsOutlined className={styles.gestionIcon} />
               </div>
               <div>
-                <h2 className={styles.gestionTitle}>Gestion de Articulos de Nomina</h2>
+                <h2 className={styles.gestionTitle}>Gestión de Artículos de Nómina</h2>
                 <p className={styles.gestionDesc}>
                   Administre y consulte todos los articulos de nomina configurados para las empresas
                 </p>
@@ -920,6 +922,10 @@ export function PayrollArticlesManagementPage() {
           canEdit={canEdit}
           onRowClick={openEditModal}
           totalLabel={(total, range) => `Mostrando ${range[0]} a ${range[1]} de ${total} registros`}
+          onRefresh={() => {
+            bustApiCache();
+            void loadRows();
+          }}
           filters={
             <PayrollArticlesFiltersPanel
               filtersExpanded={filtersExpanded}
@@ -987,3 +993,11 @@ export function PayrollArticlesManagementPage() {
     </div>
   );
 }
+
+
+
+
+
+
+
+

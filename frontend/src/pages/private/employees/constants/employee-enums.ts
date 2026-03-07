@@ -37,3 +37,4 @@ export const TIENE_CONYUGE_OPTIONS = [
   { value: 'Si', label: 'Sí' },
   { value: 'No', label: 'No' },
 ] as const;
+

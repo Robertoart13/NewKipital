@@ -34,7 +34,9 @@ import {
   Tooltip,
 } from 'antd';
 import dayjs, { type Dayjs } from 'dayjs';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+
+import { buildEmployeeDisplayName, sortEmployeesByDisplayName } from '../../../../lib/employeeName';
 
 import 'dayjs/locale/es';
 import {
@@ -108,6 +110,7 @@ interface VacationTransactionModalProps {
   auditTrail?: PersonalActionAuditTrailItem[];
   loadingAuditTrail?: boolean;
   onLoadAuditTrail?: () => Promise<void> | void;
+  onCompanyChange?: (companyId?: number) => void;
   initialCompanyId?: number;
   initialDraft?: VacationFormDraft;
   onCancel: () => void;
@@ -263,6 +266,7 @@ export function VacationTransactionModal(props: VacationTransactionModalProps) {
     onLoadAuditTrail,
     initialCompanyId,
     initialDraft,
+    onCompanyChange,
     onCancel,
     onSubmit,
   } = props;
@@ -289,15 +293,33 @@ export function VacationTransactionModal(props: VacationTransactionModalProps) {
   const [auditLoaded, setAuditLoaded] = useState(false);
   const [warnedInvalidDates, setWarnedInvalidDates] = useState(false);
   const [lockedPayrollId, setLockedPayrollId] = useState<number | null>(null);
+  const initOnceRef = useRef(false);
 
   const selectedCompanyId = Form.useWatch('idEmpresa', form);
   const selectedEmployeeId = Form.useWatch('idEmpleado', form);
-  const selectedMovementId = Form.useWatch('movimientoId', form);
-  const resolvedCompanyId = selectedCompanyId ?? initialDraft?.idEmpresa ?? null;
-  const resolvedEmployeeId = selectedEmployeeId ?? initialDraft?.idEmpleado ?? null;
 
   useEffect(() => {
     if (!open) return;
+    if (!onCompanyChange) return;
+    onCompanyChange(selectedCompanyId ? Number(selectedCompanyId) : undefined);
+  }, [onCompanyChange, open, selectedCompanyId]);
+  const selectedMovementId = Form.useWatch('movimientoId', form);
+  const resolvedCompanyId = selectedCompanyId ? initialDraft?.idEmpresa ?? null;
+  const resolvedEmployeeId = selectedEmployeeId ? initialDraft?.idEmpleado ?? null;
+
+  useEffect(() => {
+    if (!open) {
+    initOnceRef.current = false;
+    return;
+  }
+
+  if (!initialDraft && initOnceRef.current) {
+    return;
+  }
+
+  if (!initialDraft) {
+    initOnceRef.current = true;
+  }
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setActiveTab('info');
 
@@ -349,10 +371,12 @@ export function VacationTransactionModal(props: VacationTransactionModalProps) {
     setWarnedInvalidDates(false);
 
     setLockedPayrollId(null);
-    if (initialCompanyId) {
-      form.setFieldsValue({ idEmpresa: initialCompanyId });
+    const nextCompanyId = mode === 'edit' ? initialCompanyId : undefined;
+    // En creacion no se preselecciona empresa; el usuario debe elegirla.
+    if (nextCompanyId) {
+      form.setFieldsValue({ idEmpresa: nextCompanyId });
     }
-  }, [excludeActionId, form, holidays, initialCompanyId, initialDraft, message, open, warnedInvalidDates]);
+  }, [excludeActionId, form, holidays, initialCompanyId, initialDraft, message, mode, open, warnedInvalidDates]);
 
   useEffect(() => {
     if (!open || !showAudit || activeTab !== 'bitacora' || auditLoaded || !onLoadAuditTrail) return;
@@ -381,7 +405,7 @@ export function VacationTransactionModal(props: VacationTransactionModalProps) {
           periodo: `${item.fechaInicioPeriodo} - ${item.fechaFinPeriodo}`,
           fechaInicioPeriodo: item.fechaInicioPeriodo,
           fechaFinPeriodo: item.fechaFinPeriodo,
-          idTipoPlanilla: item.idTipoPlanilla ?? null,
+          tipoPlanilla: item.tipoPlanilla ?? null,
           tipoPlanilla: item.tipoPlanilla ?? null,
           estado: item.estado,
         }));
@@ -422,7 +446,7 @@ export function VacationTransactionModal(props: VacationTransactionModalProps) {
 
   const filteredEmployees = useMemo(() => {
     if (!resolvedCompanyId) return [];
-    return employees.filter((emp) => Number(emp.idEmpresa) === Number(resolvedCompanyId));
+    return sortEmployeesByDisplayName(employees.filter((emp) => Number(emp.idEmpresa) === Number(resolvedCompanyId)));
   }, [employees, resolvedCompanyId]);
 
   const selectedEmployee = useMemo(() => {
@@ -493,10 +517,10 @@ export function VacationTransactionModal(props: VacationTransactionModalProps) {
       if (matches.length === 0) return null;
       if (matches.length === 1) return matches[0];
       const ranked = [...matches].sort((a, b) => {
-        const estadoA = Number(a.estado ?? 99);
         const estadoB = Number(b.estado ?? 99);
+        const estadoB = Number(b.estado ? 99);
         if (estadoA !== estadoB) return estadoA - estadoB;
-        const startA = a.fechaInicioPeriodo ?? '';
+        const startB = b.fechaInicioPeriodo ?? '';
         const startB = b.fechaInicioPeriodo ?? '';
         if (startA !== startB) return startA.localeCompare(startB);
         return Number(a.id) - Number(b.id);
@@ -633,7 +657,7 @@ export function VacationTransactionModal(props: VacationTransactionModalProps) {
           const actorLabel =
             row.actorNombre?.trim() ||
             row.actorEmail?.trim() ||
-            (row.actorUserId ? `Usuario ID ${row.actorUserId}` : 'Sistema');
+            (row.actorUserId != null ? `Usuario ID ${row.actorUserId}` : 'Sistema');
           return (
             <div>
               <div style={{ fontWeight: 600, color: '#3d4f5c' }}>{actorLabel}</div>
@@ -891,7 +915,7 @@ export function VacationTransactionModal(props: VacationTransactionModalProps) {
                                 </div>
                                 <div className={sharedStyles.employeeAccordionNameBlock}>
                                   <div className={sharedStyles.employeeAccordionName}>
-                                    {`${selectedEmployee.nombre || '--'} ${selectedEmployee.apellido1 || ''} ${selectedEmployee.apellido2 || ''}`.trim()}
+                                    {buildEmployeeDisplayName(selectedEmployee)}
                                   </div>
                                   <div className={sharedStyles.employeeAccordionId}>
                                     Empleado ID: {selectedEmployee.codigo || '--'}
@@ -905,8 +929,8 @@ export function VacationTransactionModal(props: VacationTransactionModalProps) {
                                   <div className={sharedStyles.employeeAccordionCompany}>
                                     <BankOutlined />
                                     {companies.find(
-                                      (c) => Number(c.id) === Number(selectedCompanyId ?? resolvedCompanyId),
                                     )?.nombre ?? '--'}
+                                    )?.nombre ? '--'}
                                   </div>
                                 </div>
                               </div>
@@ -918,7 +942,7 @@ export function VacationTransactionModal(props: VacationTransactionModalProps) {
                                 <div className={sharedStyles.employeeAccordionItem}>
                                   <IdcardOutlined className={sharedStyles.employeeAccordionItemIcon} />
                                   <div>
-                                    <div className={sharedStyles.employeeAccordionItemLabel}>CÃ©dula</div>
+                                    <div className={sharedStyles.employeeAccordionItemLabel}>Cédula</div>
                                     <div className={sharedStyles.employeeAccordionItemValue}>
                                       {canViewEmployeeSensitive
                                         ? (selectedEmployee.cedula ?? '--')
@@ -940,7 +964,7 @@ export function VacationTransactionModal(props: VacationTransactionModalProps) {
                                 <div className={sharedStyles.employeeAccordionItem}>
                                   <CalendarOutlined className={sharedStyles.employeeAccordionItemIcon} />
                                   <div>
-                                    <div className={sharedStyles.employeeAccordionItemLabel}>PerÃ­odo</div>
+                                    <div className={sharedStyles.employeeAccordionItemLabel}>Período</div>
                                     <div className={sharedStyles.employeeAccordionItemValue}>
                                       {selectedPayPeriod?.nombre ?? '--'}
                                     </div>
@@ -996,7 +1020,7 @@ export function VacationTransactionModal(props: VacationTransactionModalProps) {
                                 <div className={sharedStyles.employeeAccordionItem}>
                                   <ClockCircleOutlined className={sharedStyles.employeeAccordionItemIcon} />
                                   <div>
-                                    <div className={sharedStyles.employeeAccordionItemLabel}>Horas del PerÃ­odo</div>
+                                    <div className={sharedStyles.employeeAccordionItemLabel}>Horas del Período</div>
                                     <div
                                       className={sharedStyles.employeeAccordionItemValue}
                                     >{`${periodHours} horas`}</div>
@@ -1256,3 +1280,18 @@ export function VacationTransactionModal(props: VacationTransactionModalProps) {
     </Modal>
   );
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

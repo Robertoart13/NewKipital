@@ -51,3 +51,4 @@ export class AddAutomationMonitoringPermissions1708533900000 implements Migratio
     );
   }
 }
+

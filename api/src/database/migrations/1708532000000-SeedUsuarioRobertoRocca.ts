@@ -105,3 +105,4 @@ export class SeedUsuarioRobertoRocca1708532000000 implements MigrationInterface 
     await queryRunner.query(`DELETE FROM sys_usuarios WHERE id_usuario = ${uid}`);
   }
 }
+

@@ -17,3 +17,4 @@ export const hasAccessToApp = (state: RootState, app: PlatformApp) =>
 
 /** Apps disponibles para el usuario actual */
 export const getAvailableApps = createSelector([selectEnabledApps], (apps) => apps);
+

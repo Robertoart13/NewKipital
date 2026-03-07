@@ -1,4 +1,4 @@
-﻿# Testing Suite Documentation (Archivo historico)
+# Testing Suite Documentation (Archivo historico)
 
 Estado:
 - Este archivo se conserva solo como referencia historica.

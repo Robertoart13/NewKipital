@@ -637,3 +637,4 @@ export function LoginPage() {
     </Card>
   );
 }
+

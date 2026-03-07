@@ -63,3 +63,4 @@ export const menuIconMap: Record<string, React.ReactNode> = {
   monitoring: <DashboardOutlined />,
   'automation-monitor': <DashboardOutlined />,
 };
+

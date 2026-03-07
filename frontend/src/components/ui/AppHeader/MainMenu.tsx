@@ -81,3 +81,4 @@ export function MainMenu({ items, iconMap, className }: MainMenuProps) {
     <Menu mode="horizontal" selectedKeys={selectedKey ? [selectedKey] : []} items={menuItems} className={className} />
   );
 }
+

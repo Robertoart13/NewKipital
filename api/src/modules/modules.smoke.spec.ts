@@ -1,4 +1,4 @@
-﻿import { describe, expect, it } from '@jest/globals';
+import { describe, expect, it } from '@jest/globals';
 
 import { AccessControlModule } from './access-control/access-control.module';
 import { AppsController } from './access-control/apps.controller';

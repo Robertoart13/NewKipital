@@ -194,3 +194,4 @@ export class NotificationsService {
     return { idNotificacion: notif.id, recipientsCount: userIds.length };
   }
 }
+

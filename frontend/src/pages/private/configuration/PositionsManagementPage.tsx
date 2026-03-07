@@ -35,6 +35,8 @@ import {
   Tooltip,
 } from 'antd';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+
+import { useSortableColumns } from '../../../hooks/useSortableColumns';
 import { Link } from 'react-router-dom';
 
 import {
@@ -96,7 +98,7 @@ function normalizePayload(values: PositionFormValues): PositionPayload {
 }
 
 function getPaneValue(row: PositionListItem, key: PaneKey): string {
-  if (key === 'nombre') return row.nombre ?? '';
+  if (key === 'descripcion') return row.descripcion ?? '';
   if (key === 'descripcion') return row.descripcion ?? '';
   return row.estado === 0 ? 'Inactivo' : 'Activo';
 }
@@ -261,7 +263,7 @@ export function PositionsManagementPage() {
   const applyPositionToForm = useCallback(
     (row: PositionListItem) => {
       form.setFieldsValue({
-        nombre: row.nombre ?? '',
+        descripcion: row.descripcion ?? '',
         descripcion: row.descripcion ?? '',
       });
     },
@@ -389,7 +391,7 @@ export function PositionsManagementPage() {
     await loadRows();
   };
 
-  const columns: ColumnsType<PositionListItem> = [
+  const columns: ColumnsType<PositionListItem> = useSortableColumns([
     {
       title: 'Nombre',
       dataIndex: 'nombre',
@@ -424,7 +426,7 @@ export function PositionsManagementPage() {
       width: 220,
       render: (value) => formatDateTime12h(value),
     },
-  ];
+  ]);
 
   const auditColumns: ColumnsType<PositionAuditTrailItem> = [
     {
@@ -442,7 +444,7 @@ export function PositionsManagementPage() {
         const actorLabel =
           row.actorNombre?.trim() ||
           row.actorEmail?.trim() ||
-          (row.actorUserId ? `Usuario ID ${row.actorUserId}` : 'Sistema');
+          (row.actorUserId != null ? `Usuario ID ${row.actorUserId}` : 'Sistema');
         return (
           <div>
             <div style={{ fontWeight: 600, color: '#3d4f5c' }}>{actorLabel}</div>
@@ -484,7 +486,7 @@ export function PositionsManagementPage() {
                 ))}
               </div>
             ) : (
-              <div style={{ fontSize: 12 }}>Sin detalle de campos para esta accion.</div>
+              <div style={{ fontSize: 12 }}>Sin detalle de campos para esta acción.</div>
             )}
           </div>
         );
@@ -530,7 +532,7 @@ export function PositionsManagementPage() {
                 <AppstoreOutlined className={styles.gestionIcon} />
               </div>
               <div>
-                <h2 className={styles.gestionTitle}>Gestion de Puestos</h2>
+                <h2 className={styles.gestionTitle}>Gestión de Puestos</h2>
                 <p className={styles.gestionDesc}>Administre y consulte todos los puestos registrados en el sistema</p>
               </div>
             </Flex>
@@ -842,3 +844,11 @@ export function PositionsManagementPage() {
     </div>
   );
 }
+
+
+
+
+
+
+
+

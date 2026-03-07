@@ -1,4 +1,4 @@
-﻿import { AuditOutboxService } from './audit-outbox.service';
+import { AuditOutboxService } from './audit-outbox.service';
 
 import type { DomainEventsService } from './domain-events.service';
 

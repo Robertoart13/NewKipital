@@ -110,3 +110,4 @@ export class AddUserPermissionGlobalDeny1708533000000 implements MigrationInterf
     }
   }
 }
+

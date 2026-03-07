@@ -66,7 +66,7 @@ Catalogos reutilizados (mismo contrato de acciones con lineas):
 
 1. `AppRouter`: `/personal-actions/deducciones/descuentos -> <DiscountsPage />`.
 2. Export en `frontend/src/pages/private/index.ts`.
-3. Menú con permiso dedicado:
+3. Men con permiso dedicado:
    - item `descuentos`
    - `requiredPermission: 'hr-action-descuentos:view'`
 

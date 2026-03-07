@@ -189,3 +189,4 @@ export class EnhanceSysUsuarios1708531400000 implements MigrationInterface {
     await queryRunner.dropColumn('sys_usuarios', 'username_usuario');
   }
 }
+

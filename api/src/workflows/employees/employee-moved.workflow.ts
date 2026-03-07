@@ -30,3 +30,4 @@ export class EmployeeMovedWorkflow {
     // Por ahora: solo log. Implementación completa en Fase 2.
   }
 }
+

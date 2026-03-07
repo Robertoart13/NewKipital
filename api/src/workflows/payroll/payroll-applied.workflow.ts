@@ -19,3 +19,4 @@ export class PayrollAppliedWorkflow {
     // TODO: actualizar estado de cuotas asociadas a PAGADA
   }
 }
+

@@ -35,6 +35,8 @@ import {
   Tooltip,
 } from 'antd';
 import { useCallback, useEffect, useMemo, useState } from 'react';
+
+import { useSortableColumns } from '../../../hooks/useSortableColumns';
 import { Link } from 'react-router-dom';
 
 import {
@@ -170,7 +172,7 @@ function getPaneValue(
   if (key === 'codigoExterno') return row.codigoExterno ?? '';
   if (key === 'tipoCuenta') return tipoCuentaMap.get(row.idTipoErp) ?? `Tipo #${row.idTipoErp}`;
   if (key === 'tipoAccion') return tipoAccionMap.get(row.idTipoAccionPersonal) ?? `Accion #${row.idTipoAccionPersonal}`;
-  return row.esInactivo === 0 ? 'Inactivo' : 'Activo';
+  return row.esInactivo === 1 ? 'Activo' : 'Inactivo';
 }
 
 export function AccountingAccountsManagementPage() {
@@ -325,10 +327,10 @@ export function AccountingAccountsManagementPage() {
       const term = search.trim().toLowerCase();
       if (!term) return true;
       return (
-        (row.nombre ?? '').toLowerCase().includes(term) ||
-        (row.codigo ?? '').toLowerCase().includes(term) ||
         (row.idExternoNetsuite ?? '').toLowerCase().includes(term) ||
         (row.codigoExterno ?? '').toLowerCase().includes(term) ||
+        (row.nombre ?? '').toLowerCase().includes(term) ||
+        (row.codigo ?? '').toLowerCase().includes(term) ||
         (companies.find((c) => c.id === row.idEmpresa)?.nombre ?? '').toLowerCase().includes(term) ||
         (accountTypeMap.get(row.idTipoErp) ?? '').toLowerCase().includes(term) ||
         (actionTypeMap.get(row.idTipoAccionPersonal) ?? '').toLowerCase().includes(term)
@@ -468,8 +470,6 @@ export function AccountingAccountsManagementPage() {
     (row: AccountingAccountListItem) => {
       form.setFieldsValue({
         idEmpresa: row.idEmpresa,
-        nombre: row.nombre ?? '',
-        descripcion: row.descripcion ?? '',
         codigo: row.codigo ?? '',
         idExternoNetsuite: row.idExternoNetsuite ?? '',
         codigoExterno: row.codigoExterno ?? '',
@@ -575,15 +575,15 @@ export function AccountingAccountsManagementPage() {
       if (!confirmed) return;
 
       const values = await form.validateFields();
-      const resolvedEmpresa = values.idEmpresaCambio ?? values.idEmpresa ?? defaultCompanyId;
-      const resolvedTipoCuentaRaw = values.idTipoErpCambio ?? values.idTipoErp;
-      const resolvedTipoCuenta = resolvedTipoCuentaRaw
+      const resolvedEmpresa = values.idEmpresaCambio ? values.idEmpresa ? defaultCompanyId;
         ? (accountTypeInternalToSelectMap.get(resolvedTipoCuentaRaw) ?? resolvedTipoCuentaRaw)
+      const resolvedTipoCuenta = resolvedTipoCuentaRaw
+        ? (accountTypeInternalToSelectMap.get(resolvedTipoCuentaRaw) ? resolvedTipoCuentaRaw)
         : undefined;
       const resolvedTipoCuentaInternal = resolvedTipoCuenta
-        ? (accountTypeSelectToInternalMap.get(resolvedTipoCuenta) ?? resolvedTipoCuenta)
-        : undefined;
       const resolvedTipoAccion = values.idTipoAccionPersonalCambio ?? values.idTipoAccionPersonal;
+        : undefined;
+      const resolvedTipoAccion = values.idTipoAccionPersonalCambio ? values.idTipoAccionPersonal;
       const payload = normalizePayload({
         ...values,
         idEmpresa: resolvedEmpresa,
@@ -600,7 +600,7 @@ export function AccountingAccountsManagementPage() {
         return;
       }
       if (!resolvedTipoAccion) {
-        message.error('Debe seleccionar el tipo de accion personal.');
+        message.error('Debe seleccionar el tipo de acción personal.');
         return;
       }
       setSaving(true);
@@ -668,7 +668,7 @@ export function AccountingAccountsManagementPage() {
     await loadRows();
   };
 
-  const columns: ColumnsType<AccountingAccountListItem> = [
+  const columns: ColumnsType<AccountingAccountListItem> = useSortableColumns([
     {
       title: 'Empresa',
       dataIndex: 'idEmpresa',
@@ -741,7 +741,7 @@ export function AccountingAccountsManagementPage() {
       width: 220,
       render: (value) => formatDateTime12h(value),
     },
-  ];
+  ]);
 
   const auditColumns: ColumnsType<AccountingAccountAuditTrailItem> = [
     {
@@ -759,7 +759,7 @@ export function AccountingAccountsManagementPage() {
         const actorLabel =
           row.actorNombre?.trim() ||
           row.actorEmail?.trim() ||
-          (row.actorUserId ? `Usuario ID ${row.actorUserId}` : 'Sistema');
+          (row.actorUserId != null ? `Usuario ID ${row.actorUserId}` : 'Sistema');
         return (
           <div>
             <div style={{ fontWeight: 600, color: '#3d4f5c' }}>{actorLabel}</div>
@@ -801,7 +801,7 @@ export function AccountingAccountsManagementPage() {
                 ))}
               </div>
             ) : (
-              <div style={{ fontSize: 12 }}>Sin detalle de campos para esta accion.</div>
+              <div style={{ fontSize: 12 }}>Sin detalle de campos para esta acción.</div>
             )}
           </div>
         );
@@ -847,7 +847,7 @@ export function AccountingAccountsManagementPage() {
                 <DollarOutlined className={styles.gestionIcon} />
               </div>
               <div>
-                <h2 className={styles.gestionTitle}>Gestion de Cuentas Contables</h2>
+                <h2 className={styles.gestionTitle}>Gestión de Cuentas Contables</h2>
                 <p className={styles.gestionDesc}>
                   Administre y consulte todas las cuentas contables registradas en el sistema
                 </p>
@@ -1273,7 +1273,7 @@ export function AccountingAccountsManagementPage() {
                             <Form.Item name="idTipoAccionPersonal" hidden>
                               <Input />
                             </Form.Item>
-                            <Form.Item label="Tipo accion actual">
+                            <Form.Item label="Tipo acción actual">
                               <Flex align="center" gap={8}>
                                 <Input
                                   value={
@@ -1389,3 +1389,11 @@ export function AccountingAccountsManagementPage() {
     </div>
   );
 }
+
+
+
+
+
+
+
+

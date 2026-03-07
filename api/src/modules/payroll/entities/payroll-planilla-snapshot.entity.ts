@@ -19,3 +19,4 @@ export class PayrollPlanillaSnapshotJson {
   @CreateDateColumn({ name: 'fecha_creacion_snapshot' })
   fechaCreacion: Date;
 }
+

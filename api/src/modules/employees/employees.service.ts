@@ -1,4 +1,4 @@
-﻿import {
+import {
   Injectable,
   NotFoundException,
   ConflictException,
@@ -40,7 +40,7 @@ const PLANILLA_ESTADOS_BLOQUEANTES = [
   EstadoCalendarioNomina.VERIFICADA,
 ];
 
-/** Estados de acciÃ³n de personal que bloquean inactivar empleado si no estÃ¡n asociadas a planilla (DOC-34 UC-02). */
+/** Estados de acción de personal que bloquean inactivar empleado si no están asociadas a planilla (DOC-34 UC-02). */
 const ACCION_ESTADOS_BLOQUEANTES = [
   ...PERSONAL_ACTION_PENDING_STATES,
   ...PERSONAL_ACTION_APPROVED_STATES,
@@ -200,7 +200,7 @@ export class EmployeesService {
   private assertJoinDate(fechaIngresoRaw: string): void {
     const fechaIngreso = this.parseDateOnlyForDb(fechaIngresoRaw);
     if (Number.isNaN(fechaIngreso.getTime())) {
-      throw new BadRequestException('Fecha de ingreso invÃ¡lida.');
+      throw new BadRequestException('Fecha de ingreso inválida.');
     }
     const day = fechaIngreso.getDate();
     if (day < 1 || day > 28) {
@@ -227,7 +227,7 @@ export class EmployeesService {
 
       const fechaInicio = new Date(provision.fechaInicioLaboral);
       if (Number.isNaN(fechaInicio.getTime())) {
-        throw new BadRequestException(`Fecha inicio laboral invÃ¡lida en la fila ${index + 1}.`);
+        throw new BadRequestException(`Fecha inicio laboral inválida en la fila ${index + 1}.`);
       }
       fechaInicio.setHours(0, 0, 0, 0);
       if (fechaInicio > today) {
@@ -239,7 +239,7 @@ export class EmployeesService {
       if (provision.fechaFinLaboral) {
         const fechaFin = new Date(provision.fechaFinLaboral);
         if (Number.isNaN(fechaFin.getTime())) {
-          throw new BadRequestException(`Fecha fin laboral invÃ¡lida en la fila ${index + 1}.`);
+          throw new BadRequestException(`Fecha fin laboral inválida en la fila ${index + 1}.`);
         }
         fechaFin.setHours(0, 0, 0, 0);
         if (fechaFin > today) {
@@ -734,7 +734,7 @@ export class EmployeesService {
   /**
    * Lista empleados elegibles como supervisores (rol Supervisor, Supervisor Global o Master en TimeWise).
    * No filtra por empresa: devuelve todos los de las empresas a las que el usuario tiene acceso,
-   * para permitir que un supervisor de otra subsidiaria tome el rol temporalmente (mismo dueÃ±o).
+   * para permitir que un supervisor de otra subsidiaria tome el rol temporalmente (mismo dueño).
    */
   async findSupervisors(
     userId: number,
@@ -808,7 +808,7 @@ export class EmployeesService {
     });
     if (!hasAccess) {
       throw new ForbiddenException(
-        `No tiene acceso a la empresa ${idEmpresa} para esta operaciÃ³n.`,
+        `No tiene acceso a la empresa ${idEmpresa} para esta operación.`,
       );
     }
   }
@@ -970,3 +970,4 @@ export class EmployeesService {
     return date.toISOString().slice(0, 10);
   }
 }
+

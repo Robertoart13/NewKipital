@@ -20,3 +20,4 @@ export class CreateRoleDto {
   @IsIn(['kpital', 'timewise'])
   appCode: string;
 }
+

@@ -10,7 +10,7 @@ import {
 /**
  * sys_usuario_rol — TABLA CORE DEL MODELO DE IDENTIDAD.
  *
- * Relación: Usuario ↔ Rol ↔ Empresa ↔ App
+ * Relación: Usuario â†” Rol â†” Empresa â†” App
  * Define el scope real de cada usuario en el sistema.
  *
  * Permite:
@@ -55,3 +55,4 @@ export class UserRole {
   @Column({ name: 'modificado_por_usuario_rol', type: 'int' })
   modificadoPor: number;
 }
+

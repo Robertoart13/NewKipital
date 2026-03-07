@@ -1,8 +1,8 @@
-# DIRECTIVA 20 — Contratos del MVP (Fase 1)
+# DIRECTIVA 20  Contratos del MVP (Fase 1)
 
 ## Objetivo
 
-Definir el contrato oficial de endpoints mínimos para Fase 1 y el formato exacto del permission contract (`module:action`), para que frontend y backend estén alineados sin ambigüedad.
+Definir el contrato oficial de endpoints mnimos para Fase 1 y el formato exacto del permission contract (`module:action`), para que frontend y backend estn alineados sin ambigedad.
 
 ---
 
@@ -10,10 +10,10 @@ Definir el contrato oficial de endpoints mínimos para Fase 1 y el formato exact
 
 ### Auth (ya implementados)
 
-| Método | Ruta | Descripción | Auth |
+| Mtodo | Ruta | Descripcin | Auth |
 |--------|------|-------------|------|
 | POST | `/api/auth/login` | Login (email + password). Devuelve user + companies. Cookie httpOnly. | No |
-| GET | `/api/auth/me` | Sesión actual. user, enabledApps, companies, permissions (si companyId+appCode). | Cookie |
+| GET | `/api/auth/me` | Sesin actual. user, enabledApps, companies, permissions (si companyId+appCode). | Cookie |
 | POST | `/api/auth/switch-company` | Cambiar contexto. Body: `{ companyId, appCode }`. Devuelve permissions + roles. | Cookie |
 | POST | `/api/auth/logout` | Limpiar cookie. | Cookie |
 | GET | `/api/auth/permissions-stream` | SSE por usuario autenticado. Emite `permissions.changed` cuando cambia authz. | Cookie |
@@ -21,7 +21,7 @@ Definir el contrato oficial de endpoints mínimos para Fase 1 y el formato exact
 
 ### Companies
 
-| Método | Ruta | Descripción | Auth | Permiso |
+| Mtodo | Ruta | Descripcin | Auth | Permiso |
 |--------|------|-------------|------|---------|
 | GET | `/api/companies` | Listar empresas (activas por defecto). Query: `?includeInactive=true` opcional. | Cookie | company:manage |
 | GET | `/api/companies/:id` | Detalle de una empresa. | Cookie | company:manage |
@@ -32,7 +32,7 @@ Definir el contrato oficial de endpoints mínimos para Fase 1 y el formato exact
 
 ### Employees (ya implementados)
 
-| Método | Ruta | Descripción | Auth | Permiso |
+| Mtodo | Ruta | Descripcin | Auth | Permiso |
 |--------|------|-------------|------|---------|
 | GET | `/api/employees?idEmpresa=N` | Listar empleados de empresa. Query: `?includeInactive=true` opcional. | Cookie | employee:view |
 | GET | `/api/employees/:id` | Detalle empleado. | Cookie | employee:view |
@@ -64,19 +64,19 @@ Definir el contrato oficial de endpoints mínimos para Fase 1 y el formato exact
 
 ### Payroll (esqueleto MVP)
 
-| Método | Ruta | Descripción | Auth | Permiso |
+| Mtodo | Ruta | Descripcin | Auth | Permiso |
 |--------|------|-------------|------|---------|
 | GET | `/api/payroll?idEmpresa=N` | Listar planillas de empresa. | Cookie | payroll:view |
 | GET | `/api/payroll/:id` | Detalle planilla. | Cookie | payroll:view |
-| POST | `/api/payroll` | Abrir planilla (calendario nómina). Body: idEmpresa, idPeriodoPago, periodoInicio, periodoFin, fechaInicioPago, fechaFinPago, [tipoPlanilla], [moneda]. | Cookie | payroll:create |
-| PATCH | `/api/payroll/:id/reopen` | Reabrir planilla Verificada → Abierta. Body: `{ motivo }`. | Cookie | payroll:edit |
-| PATCH | `/api/payroll/:id/verify` | Verificar planilla (Abierta → Verificada). | Cookie | payroll:verify |
-| PATCH | `/api/payroll/:id/apply` | Aplicar planilla (Verificada → Aplicada, inmutabilidad). | Cookie | payroll:apply |
+| POST | `/api/payroll` | Abrir planilla (calendario nmina). Body: idEmpresa, idPeriodoPago, periodoInicio, periodoFin, fechaInicioPago, fechaFinPago, [tipoPlanilla], [moneda]. | Cookie | payroll:create |
+| PATCH | `/api/payroll/:id/reopen` | Reabrir planilla Verificada  Abierta. Body: `{ motivo }`. | Cookie | payroll:edit |
+| PATCH | `/api/payroll/:id/verify` | Verificar planilla (Abierta  Verificada). | Cookie | payroll:verify |
+| PATCH | `/api/payroll/:id/apply` | Aplicar planilla (Verificada  Aplicada, inmutabilidad). | Cookie | payroll:apply |
 | PATCH | `/api/payroll/:id/inactivate` | Inactivar planilla. | Cookie | payroll:cancel |
 
 ### Payroll Movements (Parametros de Planilla)
 
-| Método | Ruta | Descripción | Auth | Permiso |
+| Mtodo | Ruta | Descripcin | Auth | Permiso |
 |--------|------|-------------|------|---------|
 | GET | `/api/payroll-movements?idEmpresa=N&idEmpresas=1,2` | Listar movimientos de nomina (filtro empresa / multiempresa). | Cookie | payroll-movement:view |
 | GET | `/api/payroll-movements/:id` | Detalle de movimiento de nomina. | Cookie | payroll-movement:view |
@@ -92,7 +92,7 @@ Definir el contrato oficial de endpoints mínimos para Fase 1 y el formato exact
 
 ### Payroll Holidays (Listado de Feriados)
 
-| Método | Ruta | Descripción | Auth | Permiso |
+| Mtodo | Ruta | Descripcin | Auth | Permiso |
 |--------|------|-------------|------|---------|
 | GET | `/api/payroll-holidays` | Listar feriados de planilla. | Cookie | payroll-holiday:view |
 | GET | `/api/payroll-holidays/:id` | Detalle de feriado. | Cookie | payroll-holiday:view |
@@ -102,28 +102,28 @@ Definir el contrato oficial de endpoints mínimos para Fase 1 y el formato exact
 
 ### Personal Actions (esqueleto MVP)
 
-| Método | Ruta | Descripción | Auth | Permiso |
+| Mtodo | Ruta | Descripcin | Auth | Permiso |
 |--------|------|-------------|------|---------|
 | GET | `/api/personal-actions?idEmpresa=N` | Listar acciones de personal. | Cookie | personal-action:view |
-| GET | `/api/personal-actions/:id` | Detalle acción. | Cookie | personal-action:view |
-| POST | `/api/personal-actions` | Crear acción (pendiente). | Cookie | personal-action:create |
-| PATCH | `/api/personal-actions/:id/approve` | Aprobar acción. Emite `personal-action.approved`. | Cookie | personal-action:approve |
-| PATCH | `/api/personal-actions/:id/reject` | Rechazar acción. Body: `{ motivo }`. | Cookie | personal-action:approve |
-| PATCH | `/api/personal-actions/:id/associate-to-payroll` | Asociar acción aprobada a planilla. Body: `{ idPlanilla }`. | Cookie | personal-action:view |
+| GET | `/api/personal-actions/:id` | Detalle accin. | Cookie | personal-action:view |
+| POST | `/api/personal-actions` | Crear accin (pendiente). | Cookie | personal-action:create |
+| PATCH | `/api/personal-actions/:id/approve` | Aprobar accin. Emite `personal-action.approved`. | Cookie | personal-action:approve |
+| PATCH | `/api/personal-actions/:id/reject` | Rechazar accin. Body: `{ motivo }`. | Cookie | personal-action:approve |
+| PATCH | `/api/personal-actions/:id/associate-to-payroll` | Asociar accin aprobada a planilla. Body: `{ idPlanilla }`. | Cookie | personal-action:view |
 
 ---
 
-## 2. Permission Contract — Formato Exacto
+## 2. Permission Contract  Formato Exacto
 
 ### Estructura: `module:action`
 
 - **Formato:** `{module}:{action}`
 - **Separador:** dos puntos (`:`)
-- **Case:** minúsculas, sin espacios.
+- **Case:** minsculas, sin espacios.
 
-### Catálogo Oficial (sys_permisos)
+### Catlogo Oficial (sys_permisos)
 
-| Código | Módulo | Acción | Descripción |
+| Cdigo | Mdulo | Accin | Descripcin |
 |--------|--------|--------|-------------|
 | `payroll:view` | payroll | view | Ver planillas |
 | `payroll:create` | payroll | create | Crear/abrir planilla |
@@ -144,8 +144,8 @@ Definir el contrato oficial de endpoints mínimos para Fase 1 y el formato exact
 | `employee:create` | employee | create | Crear empleado |
 | `employee:edit` | employee | edit | Editar empleado |
 | `personal-action:view` | personal-action | view | Ver acciones de personal |
-| `personal-action:create` | personal-action | create | Crear acción |
-| `personal-action:approve` | personal-action | approve | Aprobar/rechazar acción |
+| `personal-action:create` | personal-action | create | Crear accin |
+| `personal-action:approve` | personal-action | approve | Aprobar/rechazar accin |
 | `company:manage` | company | manage | Gestionar empresas |
 | `report:view` | report | view | Ver reportes |
 | `config:users` | config | users | Gestionar usuarios |
@@ -153,12 +153,12 @@ Definir el contrato oficial de endpoints mínimos para Fase 1 y el formato exact
 | `config:permissions` | config | permissions | Gestionar permisos |
 | `config:payroll-movements:audit` | config | audit | Ver bitacora de movimientos de nomina |
 
-### Agrupación por Empresa
+### Agrupacin por Empresa
 
 Los permisos se resuelven **por contexto (User + Company + App)**:
 
-- `POST /auth/switch-company` con `{ companyId, appCode }` devuelve el array de códigos efectivos para ese contexto.
-- El frontend filtra menú con `permissions.includes(requiredPermission)`.
+- `POST /auth/switch-company` con `{ companyId, appCode }` devuelve el array de cdigos efectivos para ese contexto.
+- El frontend filtra men con `permissions.includes(requiredPermission)`.
 - Si el usuario no tiene acceso a la empresa, no recibe permisos de esa empresa.
 
 **Regla:** Un permiso existe solo en el contexto donde el usuario tiene rol que lo incluye, para la empresa activa y la app activa.
@@ -187,7 +187,7 @@ Regla de persistencia:
 ## 3. Base URL
 
 - **Desarrollo:** `http://localhost:3000/api`
-- **Producción:** Variable `VITE_API_URL` (ej: `https://api.kpital360.com/api`)
+- **Produccin:** Variable `VITE_API_URL` (ej: `https://api.kpital360.com/api`)
 
 Todas las rutas son relativas al prefijo `/api`.
 

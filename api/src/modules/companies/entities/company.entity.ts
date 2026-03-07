@@ -114,3 +114,4 @@ export class Company {
   @Column({ name: 'modificado_por_empresa', type: 'int' })
   modificadoPor: number;
 }
+

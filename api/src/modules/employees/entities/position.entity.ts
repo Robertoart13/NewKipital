@@ -32,3 +32,4 @@ export class Position {
   @UpdateDateColumn({ name: 'fecha_modificacion_puesto' })
   fechaModificacion: Date;
 }
+

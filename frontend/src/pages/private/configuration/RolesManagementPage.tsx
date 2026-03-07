@@ -23,6 +23,8 @@ import {
   Typography,
 } from 'antd';
 import { useEffect, useMemo, useState } from 'react';
+
+import { useSortableColumns } from '../../../hooks/useSortableColumns';
 import { Link, useLocation } from 'react-router-dom';
 
 import {
@@ -373,7 +375,7 @@ export function RolesManagementPage() {
     { key: 'permissions', label: 'Ver permisos', disabled: true },
   ];
 
-  const columns = useMemo<ColumnsType<MatrixRow>>(() => {
+  const columns = useSortableColumns<MatrixRow>(() => {
     const roleCols: ColumnsType<MatrixRow> = roles.map((role) => ({
       title: (
         <Tooltip title="Cada rol puede tener permisos distintos en KPITAL y en TimeWise. Marque las casillas para asignar.">
@@ -560,7 +562,7 @@ export function RolesManagementPage() {
                 <AppstoreOutlined className={styles.gestionIcon} />
               </div>
               <div>
-                <h2 className={styles.gestionTitle}>Gestion de Roles</h2>
+                <h2 className={styles.gestionTitle}>Gestión de Roles</h2>
                 <p className={styles.gestionDesc}>
                   Defina qué permisos tiene cada rol en KPITAL 360 y TimeWise para administrar el acceso al sistema.
                 </p>
@@ -692,3 +694,11 @@ export function RolesManagementPage() {
     </div>
   );
 }
+
+
+
+
+
+
+
+

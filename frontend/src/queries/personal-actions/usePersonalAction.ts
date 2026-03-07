@@ -18,3 +18,4 @@ export function usePersonalAction(id: number | string | null, companyId?: string
     enabled: numId != null && !isNaN(numId),
   });
 }
+

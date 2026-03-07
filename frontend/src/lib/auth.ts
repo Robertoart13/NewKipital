@@ -55,3 +55,4 @@ export async function performLogout(dispatch: AppDispatch): Promise<void> {
   clearStorage();
   setSkipRestore();
 }
+

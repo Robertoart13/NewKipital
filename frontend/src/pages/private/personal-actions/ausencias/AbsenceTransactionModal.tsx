@@ -41,6 +41,8 @@ import {
 import dayjs, { type Dayjs } from 'dayjs';
 import { useEffect, useMemo, useRef, useState } from 'react';
 
+import { buildEmployeeDisplayName, sortEmployeesByDisplayName } from '../../../../lib/employeeName';
+
 import { fetchAbsencePayrollsCatalog } from '../../../../api/personalActions';
 import { useMoneyFieldFormatter } from '../../../../hooks/useMoneyFieldFormatter';
 import { useTransactionLines } from '../../../../hooks/useTransactionLines';
@@ -162,7 +164,7 @@ function toNumber(value: number | string | null | undefined): number {
   return Number.isFinite(parsed) ? parsed : 0;
 }
 
-function calculateSalaryByPeriod(salaryBase: number, payPeriodId?: number | null, jornada?: string | null): number {
+  const isByHours = (jornada ?? '').trim().toLowerCase() === 'por horas';
   const id = Number(payPeriodId);
   const isByHours = (jornada ?? '').trim().toLowerCase() === 'por horas';
   if (isByHours && (id === 8 || id === 11)) return 0;
@@ -189,14 +191,14 @@ function calculateSalaryByPeriod(salaryBase: number, payPeriodId?: number | null
   }
 }
 
-function calculateHourValue(salaryBase: number, payPeriodId?: number | null, jornada?: string | null): number {
+  const isByHours = (jornada ?? '').trim().toLowerCase() === 'por horas';
   const id = Number(payPeriodId);
   const isByHours = (jornada ?? '').trim().toLowerCase() === 'por horas';
   if (isByHours && (id === 8 || id === 11)) return salaryBase;
   return salaryBase / 30 / 8;
 }
 
-function calculatePeriodHours(payPeriodId?: number | null, jornada?: string | null): number {
+  const isByHours = (jornada ?? '').trim().toLowerCase() === 'por horas';
   const id = Number(payPeriodId);
   const isByHours = (jornada ?? '').trim().toLowerCase() === 'por horas';
   if (isByHours && (id === 8 || id === 11)) return 0;
@@ -272,6 +274,8 @@ export function AbsenceTransactionModal({
   const { message, modal } = AntdApp.useApp();
   const moneyField = useMoneyFieldFormatter(MAX_ABSENCE_MONTO_DIGITS);
   const [form] = Form.useForm<HeaderValues>();
+  const selectedCompanyId = Form.useWatch('idEmpresa', form);
+  const selectedEmployeeId = Form.useWatch('idEmpleado', form);
   const isLineComplete = (line: AbsenceTransactionLine): boolean => isCoreTransactionLineComplete(line);
   const { lines, setLines, activeLineKeys, setActiveLineKeys, updateLine, addLine, removeLine } =
     useTransactionLines<AbsenceTransactionLine>({
@@ -322,10 +326,13 @@ export function AbsenceTransactionModal({
     if (initOnceRef.current) return;
     initOnceRef.current = true;
 
+    const nextCompanyId = mode === 'edit' ? initialCompanyId : undefined;
+
+    // En creacion no se preselecciona empresa; el usuario debe elegirla.
     form.resetFields();
-    form.setFieldsValue({ idEmpresa: initialCompanyId });
+    form.setFieldsValue({ idEmpresa: nextCompanyId });
     if (onCompanyChange) {
-      onCompanyChange(initialCompanyId);
+      onCompanyChange(nextCompanyId);
     }
     const initialLine = buildEmptyLine();
 
@@ -343,9 +350,6 @@ export function AbsenceTransactionModal({
     };
     void load();
   }, [activeTab, auditLoaded, onLoadAuditTrail, open, showAudit]);
-
-  const selectedCompanyId = Form.useWatch('idEmpresa', form);
-  const selectedEmployeeId = Form.useWatch('idEmpleado', form);
 
   useEffect(() => {
     if (!open) return;
@@ -393,7 +397,7 @@ export function AbsenceTransactionModal({
       return;
     }
     setEmployeePayrollConfig({
-      idPeriodoPago: employee.idPeriodoPago ?? undefined,
+      moneda: (employee.monedaSalario ?? '').toUpperCase() || undefined,
       moneda: (employee.monedaSalario ?? '').toUpperCase() || undefined,
     });
   }, [selectedCompanyId, selectedEmployeeId, employees]);
@@ -431,7 +435,7 @@ export function AbsenceTransactionModal({
 
   const employeesByCompany = useMemo(() => {
     if (!selectedCompanyId) return [];
-    return employees.filter((employee) => employee.idEmpresa === selectedCompanyId);
+    return sortEmployeesByDisplayName(employees.filter((employee) => employee.idEmpresa === selectedCompanyId));
   }, [employees, selectedCompanyId]);
 
   const selectedEmployee = useMemo(() => {
@@ -461,7 +465,7 @@ export function AbsenceTransactionModal({
   const payrollsByCompany = useMemo(() => {
     if (!selectedCompanyId) return [];
     let list = eligiblePayrolls.filter((payroll) => payroll.idEmpresa === selectedCompanyId);
-    if (employeePayrollConfig?.idPeriodoPago) {
+      list = list.filter((payroll) => (payroll.moneda ?? '').toUpperCase() === employeePayrollConfig.moneda);
       list = list.filter((payroll) => Number(payroll.idPeriodoPago) === Number(employeePayrollConfig.idPeriodoPago));
     }
     if (employeePayrollConfig?.moneda) {
@@ -486,13 +490,13 @@ export function AbsenceTransactionModal({
 
   const calculateLineAmount = (
     line: AbsenceTransactionLine,
-    movimientoId?: number,
-    cantidadValue?: number,
-    tipoAusenciaValue?: AbsenceType,
-  ) => {
     const tipoAusencia = tipoAusenciaValue ?? line.tipoAusencia;
     const cantidad = parseNonNegative(cantidadValue ?? line.cantidad ?? 0);
     const movement = filteredMovements.find((m) => m.id === (movimientoId ?? line.movimientoId));
+  ) => {
+    const tipoAusencia = tipoAusenciaValue ? line.tipoAusencia;
+    const cantidad = parseNonNegative(cantidadValue ? line.cantidad ?? 0);
+    const movement = filteredMovements.find((m) => m.id === (movimientoId ? line.movimientoId));
 
     if (!movement) {
       return { monto: 0, montoInput: '0', formula: 'Seleccione un movimiento para calcular' };
@@ -532,7 +536,7 @@ export function AbsenceTransactionModal({
     return { monto: 0, montoInput: '0', formula: 'Sin configuración de cálculo' };
   };
 
-  const handlePayrollChange = (lineKey: string, payrollId?: number) => {
+      payrollLabel: payroll?.nombrePlanilla ?? undefined,
     const payroll = payrollsByCompany.find((item) => item.id === payrollId);
     updateLine(lineKey, {
       payrollId,
@@ -580,7 +584,14 @@ export function AbsenceTransactionModal({
     if (loading) return;
     const values = await form.validateFields();
     if (lines.length === 0 || !lines.every(isLineComplete)) {
-      message.error('Complete todas las lineas antes de crear/guardar la ausencia.');
+      message.error('Complete todas las líneas antes de crear/guardar la ausencia.');
+      return;
+    }
+    const hasInvalidMovement = lines.some(
+      (line) => !filteredMovements.some((movement) => movement.id === line.movimientoId),
+    );
+    if (hasInvalidMovement) {
+      message.error('Seleccione un movimiento valido para la empresa antes de guardar la ausencia.');
       return;
     }
 
@@ -642,7 +653,7 @@ export function AbsenceTransactionModal({
           const actorLabel =
             row.actorNombre?.trim() ||
             row.actorEmail?.trim() ||
-            (row.actorUserId ? `Usuario ID ${row.actorUserId}` : 'Sistema');
+            (row.actorUserId != null ? `Usuario ID ${row.actorUserId}` : 'Sistema');
           return (
             <div>
               <div style={{ fontWeight: 600, color: '#3d4f5c' }}>{actorLabel}</div>
@@ -684,7 +695,7 @@ export function AbsenceTransactionModal({
                   ))}
                 </div>
               ) : (
-                <div style={{ fontSize: 12 }}>Sin detalle de campos para esta accion.</div>
+                <div style={{ fontSize: 12 }}>Sin detalle de campos para esta acción.</div>
               )}
             </div>
           );
@@ -839,7 +850,7 @@ export function AbsenceTransactionModal({
                                 </div>
                                 <div className={sharedStyles.employeeAccordionNameBlock}>
                                   <div className={sharedStyles.employeeAccordionName}>
-                                    {`${selectedEmployee.nombre || '--'} ${selectedEmployee.apellido1 || ''} ${selectedEmployee.apellido2 || ''}`.trim()}
+                                    {buildEmployeeDisplayName(selectedEmployee)}
                                   </div>
                                   <div className={sharedStyles.employeeAccordionId}>
                                     Empleado ID: {selectedEmployee.codigo || '--'}
@@ -867,7 +878,7 @@ export function AbsenceTransactionModal({
                                     <div className={sharedStyles.employeeAccordionItemLabel}>Cédula</div>
                                     <div className={sharedStyles.employeeAccordionItemValue}>
                                       {canViewEmployeeSensitive
-                                        ? (selectedEmployee.cedula ?? '--')
+                                        ? (selectedEmployee.email ?? '--')
                                         : sensitiveMaskedValue}
                                     </div>
                                   </div>
@@ -1036,7 +1047,7 @@ export function AbsenceTransactionModal({
                     >
                       {loading ? (
                         <Flex justify="center" align="center" style={{ minHeight: 220 }}>
-                          <Spin size="large" description="Cargando lineas de transaccion..." />
+                          <Spin size="large" description="Cargando líneas de transacción..." />
                         </Flex>
                       ) : (
                         <>
@@ -1211,7 +1222,7 @@ export function AbsenceTransactionModal({
                                             <div className={sharedStyles.filterLabel}>4. Cantidad</div>
                                             <Tooltip
                                               title={
-                                                !line.movimientoId ? 'Seleccione primero el movimiento' : undefined
+                                                onChange={(value) => handleCantidadChange(line.key, value ?? undefined)}
                                               }
                                             >
                                               <InputNumber
@@ -1232,7 +1243,7 @@ export function AbsenceTransactionModal({
                                             </div>
                                             <Tooltip
                                               title={
-                                                !line.movimientoId ? 'Seleccione primero el movimiento' : undefined
+                                                  const raw = event.target.value ?? '';
                                               }
                                             >
                                               <Input
@@ -1384,4 +1395,13 @@ export function AbsenceTransactionModal({
     </Modal>
   );
 }
+
+
+
+
+
+
+
+
+
 

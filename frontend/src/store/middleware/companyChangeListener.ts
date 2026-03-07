@@ -113,3 +113,4 @@ export const companyChangeListener: Middleware = (store) => (next) => (action) =
 
   return result;
 };
+

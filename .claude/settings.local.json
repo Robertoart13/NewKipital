@@ -65,7 +65,8 @@
       "Bash(node:*)",
       "Bash(npm run lint:fix:*)",
       "Bash(powershell -Command:*)",
-      "Bash(powershell -File - << 'EOF'\n$content = Get-Content 'C:\\\\Users\\\\RobertoCarlosZuñigaA\\\\Documents\\\\ROCCA ARCHIVOS\\\\Desarrollo\\\\PROYECTOS DESAROLLOS\\\\KPITAL 360\\\\NewKipital\\\\frontend\\\\lint-output.txt'\n$files = $content | Where-Object { $_ -match '^C:\\\\\\\\Users' -and $_ -notmatch '^\\\\s' } | ForEach-Object { $_.Trim\\(\\) } | Sort-Object -Unique\n$files | ForEach-Object { $_ -replace '.*\\\\\\\\frontend\\\\\\\\', '' }\nEOF)"
+      "Bash(powershell -File - << 'EOF'\n$content = Get-Content 'C:\\\\Users\\\\RobertoCarlosZuñigaA\\\\Documents\\\\ROCCA ARCHIVOS\\\\Desarrollo\\\\PROYECTOS DESAROLLOS\\\\KPITAL 360\\\\NewKipital\\\\frontend\\\\lint-output.txt'\n$files = $content | Where-Object { $_ -match '^C:\\\\\\\\Users' -and $_ -notmatch '^\\\\s' } | ForEach-Object { $_.Trim\\(\\) } | Sort-Object -Unique\n$files | ForEach-Object { $_ -replace '.*\\\\\\\\frontend\\\\\\\\', '' }\nEOF)",
+      "Bash(npx tsc --noEmit)"
     ]
   }
 }

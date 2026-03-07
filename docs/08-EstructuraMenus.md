@@ -1,9 +1,9 @@
-# KPITAL 360 — Estructura de Menús Definida
+# KPITAL 360  Estructura de Mens Definida
 
 **Documento:** 08  
 **Para:** Ingeniero Frontend  
-**De:** Roberto — Arquitecto Funcional / Senior Engineer  
-**Prerrequisito:** Haber leído [06-DirectivasHeaderMenu.md](./06-DirectivasHeaderMenu.md)
+**De:** Roberto  Arquitecto Funcional / Senior Engineer  
+**Prerrequisito:** Haber ledo [06-DirectivasHeaderMenu.md](./06-DirectivasHeaderMenu.md)
 
 ---
 
@@ -15,15 +15,15 @@
 
 ## Contexto
 
-Roberto fue definiendo las opciones del menú de forma incremental a través de directivas. Este documento consolida **exactamente qué opciones existen**, con su estructura de submenús tal como quedó definida.
+Roberto fue definiendo las opciones del men de forma incremental a travs de directivas. Este documento consolida **exactamente qu opciones existen**, con su estructura de submens tal como qued definida.
 
-**Solo existe un menú: el menú horizontal superior (header).** No hay sidebar ni menú lateral.
+**Solo existe un men: el men horizontal superior (header).** No hay sidebar ni men lateral.
 
 ---
 
-## Menú Horizontal Principal (Header — Nivel 2)
+## Men Horizontal Principal (Header  Nivel 2)
 
-Vive en `store/slices/menuSlice.ts`. Estructura jerárquica con submenús multinivel (dropdowns).
+Vive en `store/slices/menuSlice.ts`. Estructura jerrquica con submens multinivel (dropdowns).
 
 ---
 
@@ -33,21 +33,21 @@ Permiso requerido: `personal-action:view`
 
 ```
 Acciones de Personal
-├── Entradas de Personal
-├── Salidas de Personal
-│   ├── Despidos
-│   └── Renuncias
-├── Deducciones
-│   ├── Retenciones
-│   └── Descuentos
-├── Compensaciones
-│   ├── Aumentos
-│   ├── Bonificaciones
-│   ├── Horas Extras
-│   └── Vacaciones
-├── Incapacidades
-├── Licencias y Permisos
-└── Ausencias
+ Entradas de Personal
+ Salidas de Personal
+    Despidos
+    Renuncias
+ Deducciones
+    Retenciones
+    Descuentos
+ Compensaciones
+    Aumentos
+    Bonificaciones
+    Horas Extras
+    Vacaciones
+ Incapacidades
+ Licencias y Permisos
+ Ausencias
 ```
 
 ### Parametros de Planilla
@@ -56,13 +56,13 @@ Permiso requerido: por opcion
 
 ```
 Parametros de Planilla
-└── Parametros Iniciales
-    ├── Calendario de Nómina >
-    │   ├── Calendario
-    │   ├── Listado de Feriados
-    │   └── Listado de Días de Pago de Planilla
-    ├── Artículos de Nomina
-    └── Movimientos de Nomina
+ Parametros Iniciales
+     Calendario de Nmina >
+        Calendario
+        Listado de Feriados
+        Listado de Das de Pago de Planilla
+     Artculos de Nomina
+     Movimientos de Nomina
 ```
 
 Permisos por opcion:
@@ -76,29 +76,29 @@ Permisos por opcion:
 
 Actualmente **fuera de alcance** y oculto en menu.  
 La apertura/listado/operacion de planillas se trabaja desde:
-- `Parametros de Planilla > Calendario de Nómina > Listado de Días de Pago de Planilla`
-- `Parametros de Planilla > Calendario de Nómina > Calendario`
+- `Parametros de Planilla > Calendario de Nmina > Listado de Das de Pago de Planilla`
+- `Parametros de Planilla > Calendario de Nmina > Calendario`
 
 ### Configuracion
 
-Cada opción tiene su propio permiso. Si el permiso no existe en la BD o no está asignado al usuario autenticado, la opción se **oculta**.
+Cada opcin tiene su propio permiso. Si el permiso no existe en la BD o no est asignado al usuario autenticado, la opcin se **oculta**.
 
 ```
 Configuracion
-├── [Seguridad]
-│   ├── Permisos        → config:permissions
-│   ├── Roles           → config:roles
-│   └── Usuarios        → config:users
-│
-└── [Gestion de Organizacional]
-    ├── Reglas de Distribución  → config:reglas-distribucion
-    ├── Empresas                → company:view
-    ├── Empleados               → employee:view
-    ├── Clases                  → config:clases
-    ├── Proyectos               → config:proyectos
-    ├── Cuentas Contables       → config:cuentas-contables
-    ├── Departamentos           → config:departamentos
-    └── Puestos                 → config:puestos
+ [Seguridad]
+    Permisos         config:permissions
+    Roles            config:roles
+    Usuarios         config:users
+
+ [Gestion de Organizacional]
+     Reglas de Distribucin   config:reglas-distribucion
+     Empresas                 company:view
+     Empleados                employee:view
+     Clases                   config:clases
+     Proyectos                config:proyectos
+     Cuentas Contables        config:cuentas-contables
+     Departamentos            config:departamentos
+     Puestos                  config:puestos
 ```
 
 **Regla:** Las opciones sin permiso definido en BD (ej. `config:clases`, `config:proyectos`) permanecen ocultas hasta que el permiso se cree y se asigne a roles.
@@ -107,27 +107,27 @@ Configuracion
 
 ## Regla de visibilidad por permisos
 
-**Toda opción de menú debe tener `requiredPermission`.** El selector `getVisibleMenuItems` filtra según los permisos del usuario autenticado:
+**Toda opcin de men debe tener `requiredPermission`.** El selector `getVisibleMenuItems` filtra segn los permisos del usuario autenticado:
 
-- Si el permiso **no existe en la BD**: nadie lo tiene → la opción queda oculta.
-- Si el permiso **existe pero no está asignado** al usuario (vía roles/overrides): la opción queda oculta.
+- Si el permiso **no existe en la BD**: nadie lo tiene  la opcin queda oculta.
+- Si el permiso **existe pero no est asignado** al usuario (va roles/overrides): la opcin queda oculta.
 - Solo se muestra cuando el permiso existe en `sys_permisos` y el usuario lo tiene asignado.
 
-Las opciones que aún no tienen permiso creado en BD (ej. Reglas de Distribución, Clases, Proyectos) permanecen ocultas hasta que se defina el permiso y se asigne a roles en Configuración > Roles.
+Las opciones que an no tienen permiso creado en BD (ej. Reglas de Distribucin, Clases, Proyectos) permanecen ocultas hasta que se defina el permiso y se asigne a roles en Configuracin > Roles.
 
 ---
 
 ## Historial de Definiciones
 
-| Directiva | Qué Definió Roberto |
+| Directiva | Qu Defini Roberto |
 |-----------|---------------------|
 | Primera | Estructura del header con 4 opciones principales y placeholders |
-| Segunda | Submenú "Acciones de Personal" completo: Entradas, Salidas, Deducciones, Compensaciones, Incapacidades, Licencias, Ausencias |
-| Tercera | Sub-submenú "Salidas de Personal" → Despidos, Renuncias |
-| Cuarta | Sub-submenú "Deducciones" → Retenciones, Descuentos |
-| Quinta | Sub-submenú "Compensaciones" → Aumentos, Bonificaciones, Horas Extras, Vacaciones |
-| Sexta | "Parametros de Planilla": Calendario de Nómina (Calendario, Días de Pago), Artículos de Nomina, Movimientos de Nomina |
-| Séptima | "Gestion Planilla" se difiere; opciones ocultas por alcance actual |
+| Segunda | Submen "Acciones de Personal" completo: Entradas, Salidas, Deducciones, Compensaciones, Incapacidades, Licencias, Ausencias |
+| Tercera | Sub-submen "Salidas de Personal"  Despidos, Renuncias |
+| Cuarta | Sub-submen "Deducciones"  Retenciones, Descuentos |
+| Quinta | Sub-submen "Compensaciones"  Aumentos, Bonificaciones, Horas Extras, Vacaciones |
+| Sexta | "Parametros de Planilla": Calendario de Nmina (Calendario, Das de Pago), Artculos de Nomina, Movimientos de Nomina |
+| Sptima | "Gestion Planilla" se difiere; opciones ocultas por alcance actual |
 | Octava | "Configuracion" completo: Seguridad (Roles y Permisos con sub, Usuarios) + Gestion Organizacional (Reglas, Empresas, Empleados, Clases, Proyectos, Cuentas, Departamentos, Puestos) |
 
 ---
@@ -136,7 +136,7 @@ Las opciones que aún no tienen permiso creado en BD (ej. Reglas de Distribució
 
 | Elemento | Estado |
 |----------|--------|
-| (Todos los menús están definidos) | — |
+| (Todos los mens estn definidos) |  |
 
 Cuando Roberto defina estas opciones, se agregan en `menuSlice.ts` reemplazando los placeholders.
 

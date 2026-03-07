@@ -28,3 +28,4 @@ export class FixUsersWithCompaniesWithoutApp1708533100000 implements MigrationIn
     // No revertir: los usuarios ahora tienen acceso correcto
   }
 }
+

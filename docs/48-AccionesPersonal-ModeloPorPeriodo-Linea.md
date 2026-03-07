@@ -83,3 +83,22 @@ Actualizacion 2026-03-01:
 
 La propuesta anterior "workflow totalmente por cuota/período" se deja como opcion futura.  
 La decision vigente prioriza riesgo bajo y time-to-value: split por periodo al crear, manteniendo estabilidad audit-ready.
+
+
+---
+
+
+---
+
+
+---
+
+## 8. Selección de empresa en modales (UI)
+
+Regla transversal para todos los módulos de Acciones de Personal:
+
+1. En creación **no se preselecciona** empresa. El usuario debe elegirla.
+2. La empresa válida es la **seleccionada dentro del modal**, no la del filtro externo de la tabla.
+3. Al cambiar empresa en el modal se recargan catálogos: empleados, planillas y movimientos.
+4. Cambios en filtros externos no deben resetear la empresa del modal.
+5. En edición, la empresa se fija al `idEmpresa` del registro (solo lectura).

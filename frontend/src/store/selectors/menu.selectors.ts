@@ -48,3 +48,4 @@ const filterMenuByPermissions = (items: MenuItem[], permissions: string[]): Menu
 export const getVisibleMenuItems = createSelector([selectMenuConfig, selectPermissions], (config, permissions) =>
   filterMenuByPermissions(config, permissions),
 );
+

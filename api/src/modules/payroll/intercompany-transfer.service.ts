@@ -1157,3 +1157,4 @@ export class IntercompanyTransferService {
     return Number.isNaN(total) ? 0 : total;
   }
 }
+

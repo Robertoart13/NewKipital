@@ -1,6 +1,6 @@
-# 🧪 TESTING - Issues Pendientes
+#  TESTING - Issues Pendientes
 
-**Prioridad Global:** P0 (CRÍTICO)
+**Prioridad Global:** P0 (CRTICO)
 **Esfuerzo Total:** 2-3 semanas
 **Asignado a:** [Persona de testing confirmada]
 
@@ -9,30 +9,30 @@
 ## ISSUE-001: Configurar infraestructura de testing
 
 **Prioridad:** P0
-**Esfuerzo:** S (1 día)
+**Esfuerzo:** S (1 da)
 **Etiquetas:** [testing] [infrastructure]
 
-### 📝 Descripción
-Aunque package.json tiene scripts de testing, falta configuración completa de Jest y setup de base de datos de prueba.
+###  Descripcin
+Aunque package.json tiene scripts de testing, falta configuracin completa de Jest y setup de base de datos de prueba.
 
-### 🎯 Objetivo
+###  Objetivo
 - Jest configurado correctamente con TypeORM
 - Base de datos in-memory o contenedor Docker para tests
 - Coverage reports funcionando
 
-### 📁 Archivos Afectados
+###  Archivos Afectados
 - `api/jest.config.js` (crear)
 - `api/test/setup.ts` (crear)
 - `api/test/teardown.ts` (crear)
 - `api/.env.test` (crear)
 
-### ✅ Criterios de Aceptación
+###  Criterios de Aceptacin
 - [ ] `npm run test` ejecuta sin errores
 - [ ] `npm run test:cov` genera reporte de coverage
-- [ ] BD de test se crea/destruye automáticamente
-- [ ] Setup carga fixtures básicos (admin user, etc.)
+- [ ] BD de test se crea/destruye automticamente
+- [ ] Setup carga fixtures bsicos (admin user, etc.)
 
-### 🔧 Implementación Sugerida
+###  Implementacin Sugerida
 
 ```typescript
 // jest.config.js
@@ -77,10 +77,10 @@ afterAll(async () => {
 });
 ```
 
-### 🧪 Cómo Verificar
+###  Cmo Verificar
 ```bash
 npm run test
-# Debe mostrar: "No tests found" (porque aún no hay .spec.ts)
+# Debe mostrar: "No tests found" (porque an no hay .spec.ts)
 npm run test:cov
 # Debe generar carpeta coverage/
 ```
@@ -90,32 +90,32 @@ npm run test:cov
 ## ISSUE-002: Tests unitarios - AuthService
 
 **Prioridad:** P0
-**Esfuerzo:** M (2-3 días)
+**Esfuerzo:** M (2-3 das)
 **Etiquetas:** [testing] [auth] [unit]
 
-### 📝 Descripción
-AuthService es crítico (login, JWT, refresh tokens) pero sin tests. Riesgo alto de regresiones.
+###  Descripcin
+AuthService es crtico (login, JWT, refresh tokens) pero sin tests. Riesgo alto de regresiones.
 
-### 🎯 Objetivo
+###  Objetivo
 Cobertura 80%+ de AuthService con tests unitarios.
 
-### 📁 Archivos Afectados
+###  Archivos Afectados
 - `api/src/modules/auth/auth.service.spec.ts` (crear)
 - `api/src/modules/auth/auth.service.ts`
 
-### ✅ Criterios de Aceptación
-- [ ] Test: Login con credenciales válidas retorna tokens
-- [ ] Test: Login con credenciales inválidas lanza UnauthorizedException
+###  Criterios de Aceptacin
+- [ ] Test: Login con credenciales vlidas retorna tokens
+- [ ] Test: Login con credenciales invlidas lanza UnauthorizedException
 - [ ] Test: 5 intentos fallidos bloquean cuenta
 - [ ] Test: Refresh token rotation funciona correctamente
-- [ ] Test: Refresh token viejo queda revocado después de rotar
-- [ ] Test: Refresh token con JTI inválido falla
+- [ ] Test: Refresh token viejo queda revocado despus de rotar
+- [ ] Test: Refresh token con JTI invlido falla
 - [ ] Test: buildSession retorna permisos correctos
 - [ ] Test: resolvePermissions con DENY override funciona
 - [ ] Test: Microsoft login bindea identidad si no existe
 - [ ] Coverage: 80%+
 
-### 🔧 Implementación Sugerida
+###  Implementacin Sugerida
 
 ```typescript
 // auth.service.spec.ts
@@ -159,7 +159,7 @@ describe('AuthService', () => {
   });
 
   describe('login', () => {
-    it('debe retornar tokens cuando credenciales son válidas', async () => {
+    it('debe retornar tokens cuando credenciales son vlidas', async () => {
       const mockUser = {
         id: 1,
         email: 'test@example.com',
@@ -192,12 +192,12 @@ describe('AuthService', () => {
       ).rejects.toThrow(UnauthorizedException);
     });
 
-    // ...más tests
+    // ...ms tests
   });
 });
 ```
 
-### 🧪 Cómo Verificar
+###  Cmo Verificar
 ```bash
 npm run test -- auth.service.spec.ts
 npm run test:cov -- auth.service.spec.ts
@@ -209,25 +209,25 @@ npm run test:cov -- auth.service.spec.ts
 ## ISSUE-003: Tests unitarios - CompaniesService
 
 **Prioridad:** P0
-**Esfuerzo:** M (2-3 días)
+**Esfuerzo:** M (2-3 das)
 **Etiquetas:** [testing] [companies] [unit]
 
-### 📝 Descripción
-CompaniesService tiene lógica de negocio crítica (soft delete, audit trail, logo management).
+###  Descripcin
+CompaniesService tiene lgica de negocio crtica (soft delete, audit trail, logo management).
 
-### 🎯 Objetivo
+###  Objetivo
 Cobertura 70%+ con tests unitarios.
 
-### 📁 Archivos Afectados
+###  Archivos Afectados
 - `api/src/modules/companies/companies.service.spec.ts` (crear)
 
-### ✅ Criterios de Aceptación
-- [ ] Test: create() con cédula duplicada lanza ConflictException
-- [ ] Test: create() asigna automáticamente a usuarios MASTER
-- [ ] Test: update() valida prefijo único
+###  Criterios de Aceptacin
+- [ ] Test: create() con cdula duplicada lanza ConflictException
+- [ ] Test: create() asigna automticamente a usuarios MASTER
+- [ ] Test: update() valida prefijo nico
 - [ ] Test: inactivate() cambia estado a 0
 - [ ] Test: inactivate() registra fechaInactivacion
-- [ ] Test: inactivate() publica evento de auditoría
+- [ ] Test: inactivate() publica evento de auditora
 - [ ] Test: commitTempLogo() mueve archivo de temp/ a uploads/
 - [ ] Test: commitTempLogo() elimina logos antiguos
 - [ ] Test: getAuditTrail() retorna cambios ordenados por fecha
@@ -238,23 +238,23 @@ Cobertura 70%+ con tests unitarios.
 ## ISSUE-004: Tests unitarios - EmployeesService
 
 **Prioridad:** P0
-**Esfuerzo:** M (2-3 días)
+**Esfuerzo:** M (2-3 das)
 **Etiquetas:** [testing] [employees] [unit]
 
-### 📝 Descripción
+###  Descripcin
 EmployeesService es core del sistema (33 columnas, workflow creation).
 
-### 🎯 Objetivo
+###  Objetivo
 Cobertura 70%+ con tests unitarios.
 
-### 📁 Archivos Afectados
+###  Archivos Afectados
 - `api/src/modules/employees/employees.service.spec.ts` (crear)
 
-### ✅ Criterios de Aceptación
+###  Criterios de Aceptacin
 - [ ] Test: create() valida campos requeridos
-- [ ] Test: create() valida email único
-- [ ] Test: create() valida cédula única por empresa
-- [ ] Test: update() permite modificar datos básicos
+- [ ] Test: create() valida email nico
+- [ ] Test: create() valida cdula nica por empresa
+- [ ] Test: update() permite modificar datos bsicos
 - [ ] Test: inactivate() hace soft delete
 - [ ] Test: findAll() filtra por empresa del usuario
 - [ ] Test: findAll() no retorna inactivos por defecto
@@ -265,26 +265,26 @@ Cobertura 70%+ con tests unitarios.
 ## ISSUE-005: Tests unitarios - PayrollService
 
 **Prioridad:** P0
-**Esfuerzo:** M (2-3 días)
+**Esfuerzo:** M (2-3 das)
 **Etiquetas:** [testing] [payroll] [unit]
 
-### 📝 Descripción
-PayrollService maneja estados críticos (Abierta → Verificada → Aplicada).
+###  Descripcin
+PayrollService maneja estados crticos (Abierta  Verificada  Aplicada).
 
-### 🎯 Objetivo
+###  Objetivo
 Cobertura 70%+ enfocado en transiciones de estado.
 
-### 📁 Archivos Afectados
+###  Archivos Afectados
 - `api/src/modules/payroll/payroll.service.spec.ts` (crear)
 
-### ✅ Criterios de Aceptación
+###  Criterios de Aceptacin
 - [ ] Test: create() valida planilla duplicada
 - [ ] Test: verify() solo permite desde estado Abierta/EnProceso
 - [ ] Test: apply() solo permite desde estado Verificada
 - [ ] Test: apply() usa optimistic locking (versionLock)
-- [ ] Test: apply() lanza ConflictException si version cambió
+- [ ] Test: apply() lanza ConflictException si version cambi
 - [ ] Test: reopen() solo desde Verificada
-- [ ] Test: inactivate() no permite si está Aplicada
+- [ ] Test: inactivate() no permite si est Aplicada
 - [ ] Test: eventos de dominio se emiten correctamente
 - [ ] Coverage: 70%+
 
@@ -293,20 +293,20 @@ Cobertura 70%+ enfocado en transiciones de estado.
 ## ISSUE-006: Tests unitarios - PermissionsGuard
 
 **Prioridad:** P0
-**Esfuerzo:** S (1 día)
+**Esfuerzo:** S (1 da)
 **Etiquetas:** [testing] [security] [unit]
 
-### 📝 Descripción
+###  Descripcin
 PermissionsGuard es critical path de seguridad, debe estar 100% testeado.
 
-### 🎯 Objetivo
+###  Objetivo
 Cobertura 100% de PermissionsGuard.
 
-### 📁 Archivos Afectados
+###  Archivos Afectados
 - `api/src/common/guards/permissions.guard.spec.ts` (crear)
 
-### ✅ Criterios de Aceptación
-- [ ] Test: permite acceso con permiso válido
+###  Criterios de Aceptacin
+- [ ] Test: permite acceso con permiso vlido
 - [ ] Test: bloquea acceso sin permiso
 - [ ] Test: DENY override bloquea aunque rol tenga permiso
 - [ ] Test: ALLOW override permite aunque rol no tenga
@@ -316,26 +316,26 @@ Cobertura 100% de PermissionsGuard.
 
 ---
 
-## ISSUE-007: Tests de integración - EmployeeCreationWorkflow
+## ISSUE-007: Tests de integracin - EmployeeCreationWorkflow
 
 **Prioridad:** P0
-**Esfuerzo:** M (2 días)
+**Esfuerzo:** M (2 das)
 **Etiquetas:** [testing] [integration] [workflow]
 
-### 📝 Descripción
-Workflow crítico que debe ser transaccional (ACID). Necesita tests de rollback.
+###  Descripcin
+Workflow crtico que debe ser transaccional (ACID). Necesita tests de rollback.
 
-### 🎯 Objetivo
+###  Objetivo
 Validar que rollback funciona si falla cualquier paso.
 
-### 📁 Archivos Afectados
+###  Archivos Afectados
 - `api/src/workflows/employees/employee-creation.workflow.spec.ts` (crear)
 
-### ✅ Criterios de Aceptación
-- [ ] Test: crea usuario + empleado + asignaciones en una transacción
-- [ ] Test: rollback si falla creación de usuario
-- [ ] Test: rollback si falla creación de empleado
-- [ ] Test: rollback si falla asignación de empresa
+###  Criterios de Aceptacin
+- [ ] Test: crea usuario + empleado + asignaciones en una transaccin
+- [ ] Test: rollback si falla creacin de usuario
+- [ ] Test: rollback si falla creacin de empleado
+- [ ] Test: rollback si falla asignacin de empresa
 - [ ] Test: rollback si email ya existe
 - [ ] Test: emite evento EmployeeCreated al finalizar
 - [ ] Test: NO emite evento si falla
@@ -345,27 +345,27 @@ Validar que rollback funciona si falla cualquier paso.
 ## ISSUE-008: Tests E2E - Auth flow completo
 
 **Prioridad:** P1
-**Esfuerzo:** M (2 días)
+**Esfuerzo:** M (2 das)
 **Etiquetas:** [testing] [e2e] [auth]
 
-### 📝 Descripción
-Test end-to-end del flujo completo: login → refresh → logout.
+###  Descripcin
+Test end-to-end del flujo completo: login  refresh  logout.
 
-### 🎯 Objetivo
+###  Objetivo
 Validar cookies httpOnly, CSRF tokens, y refresh rotation.
 
-### 📁 Archivos Afectados
+###  Archivos Afectados
 - `api/test/auth.e2e-spec.ts` (crear)
 
-### ✅ Criterios de Aceptación
+###  Criterios de Aceptacin
 - [ ] POST /api/auth/login retorna 200 con cookies httpOnly
 - [ ] Cookie accessToken tiene SameSite correcto
 - [ ] POST /api/auth/refresh rota tokens correctamente
 - [ ] POST /api/auth/logout revoca refresh token
-- [ ] GET /api/auth/me con token válido retorna usuario
-- [ ] GET /api/auth/me con token inválido retorna 401
+- [ ] GET /api/auth/me con token vlido retorna usuario
+- [ ] GET /api/auth/me con token invlido retorna 401
 
-### 🔧 Implementación Sugerida
+###  Implementacin Sugerida
 
 ```typescript
 // test/auth.e2e-spec.ts
@@ -398,10 +398,10 @@ describe('Auth E2E', () => {
 ## ISSUE-009: Tests E2E - Companies CRUD
 
 **Prioridad:** P1
-**Esfuerzo:** S (1 día)
+**Esfuerzo:** S (1 da)
 **Etiquetas:** [testing] [e2e] [companies]
 
-### ✅ Criterios de Aceptación
+###  Criterios de Aceptacin
 - [ ] POST /api/companies crea empresa
 - [ ] GET /api/companies retorna solo empresas del usuario
 - [ ] PUT /api/companies/:id actualiza
@@ -413,12 +413,12 @@ describe('Auth E2E', () => {
 ## ISSUE-010: Tests E2E - Permissions enforcement
 
 **Prioridad:** P1
-**Esfuerzo:** S (1 día)
+**Esfuerzo:** S (1 da)
 **Etiquetas:** [testing] [e2e] [security]
 
-### ✅ Criterios de Aceptación
-- [ ] Usuario sin permiso employee:view → 403 en GET /api/employees
-- [ ] Usuario con permiso employee:view → 200
+###  Criterios de Aceptacin
+- [ ] Usuario sin permiso employee:view  403 en GET /api/employees
+- [ ] Usuario con permiso employee:view  200
 - [ ] DENY override bloquea acceso
 - [ ] Cambio de empresa actualiza permisos
 
@@ -427,13 +427,13 @@ describe('Auth E2E', () => {
 ## ISSUE-011: Setup de coverage reporting
 
 **Prioridad:** P1
-**Esfuerzo:** XS (medio día)
+**Esfuerzo:** XS (medio da)
 **Etiquetas:** [testing] [infrastructure]
 
-### 📝 Descripción
+###  Descripcin
 Integrar coverage con CI/CD y generar reportes visuales.
 
-### ✅ Criterios de Aceptación
+###  Criterios de Aceptacin
 - [ ] npm run test:cov genera reporte HTML
 - [ ] Coverage sube a Codecov o SonarQube
 - [ ] Badge de coverage en README.md
@@ -444,20 +444,20 @@ Integrar coverage con CI/CD y generar reportes visuales.
 ## ISSUE-012: Fixtures y factories para testing
 
 **Prioridad:** P1
-**Esfuerzo:** M (2 días)
+**Esfuerzo:** M (2 das)
 **Etiquetas:** [testing] [infrastructure]
 
-### 📝 Descripción
-Crear factories para generar datos de prueba fácilmente.
+###  Descripcin
+Crear factories para generar datos de prueba fcilmente.
 
-### ✅ Criterios de Aceptación
+###  Criterios de Aceptacin
 - [ ] Factory para User
 - [ ] Factory para Company
 - [ ] Factory para Employee
 - [ ] Factory para PayrollCalendar
 - [ ] Fixtures precargados (admin user, test company)
 
-### 🔧 Implementación Sugerida
+###  Implementacin Sugerida
 
 ```typescript
 // test/factories/user.factory.ts
@@ -479,7 +479,7 @@ export const createUser = async (overrides?: Partial<User>): Promise<User> => {
 
 ---
 
-## 📊 Progreso Testing
+##  Progreso Testing
 
 - [ ] ISSUE-001: Infraestructura
 - [ ] ISSUE-002: AuthService

@@ -97,3 +97,4 @@ export class ResetToEssentialPermissionsOnly1708532800000 implements MigrationIn
     // Para restaurar, ejecutar las migraciones de seed anteriores.
   }
 }
+

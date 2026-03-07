@@ -125,13 +125,13 @@ Este flujo debe usar el estandar definido en:
 
 - `docs/29-EstandarFormatoMoneda.md`
 
-**Símbolo CRC:** Se usa la abreviatura `"CRC"` en lugar del símbolo colón para evitar problemas de encoding. Formato visual: `"CRC 0.00"`.
+**Smbolo CRC:** Se usa la abreviatura `"CRC"` en lugar del smbolo coln para evitar problemas de encoding. Formato visual: `"CRC 0.00"`.
 
 ---
 
 ## Estilos (alineados con CompaniesManagementPage)
 
-La sección "Provisión de Aguinaldo del Empleado" usa las clases de `UsersManagementPage.module.css`:
+La seccin "Provisin de Aguinaldo del Empleado" usa las clases de `UsersManagementPage.module.css`:
 
 | Clase | Uso |
 |-------|-----|
@@ -139,8 +139,8 @@ La sección "Provisión de Aguinaldo del Empleado" usa las clases de `UsersManag
 | `historicoTableWrap` | Contenedor de tabla con bordes y sombra (configTable-like) |
 | `historicoTableHeader` | Encabezados: fondo #f2f4f6, uppercase, letter-spacing |
 | `historicoTableRow` | Filas con bordes, filas alternadas y hover |
-| `historicoAddBtn` | Botón "+ Agregar Registro" con estilo btnPrimary |
-| `sectionTitle`, `sectionDescription` | Título y descripción de la sección |
+| `historicoAddBtn` | Botn "+ Agregar Registro" con estilo btnPrimary |
+| `sectionTitle`, `sectionDescription` | Ttulo y descripcin de la seccin |
 
 ---
 ## Actualizaci?n 2026-03-02 ? Vacaciones sin selecci?n de planilla (ACTUALIZACION-VACACIONES-2026-03-02

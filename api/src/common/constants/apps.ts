@@ -9,3 +9,4 @@ export enum PlatformApp {
 }
 
 export const ALL_APPS = Object.values(PlatformApp);
+

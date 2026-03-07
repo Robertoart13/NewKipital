@@ -27,3 +27,4 @@ export class SeedPermisoTimeWiseDistribucionCosto1708532700000 implements Migrat
     `);
   }
 }
+

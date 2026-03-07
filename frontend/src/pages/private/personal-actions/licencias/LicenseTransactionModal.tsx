@@ -41,6 +41,8 @@ import {
 import dayjs, { type Dayjs } from 'dayjs';
 import { useEffect, useMemo, useRef, useState } from 'react';
 
+import { buildEmployeeDisplayName, sortEmployeesByDisplayName } from '../../../../lib/employeeName';
+
 import { fetchAbsencePayrollsCatalog } from '../../../../api/personalActions';
 import { useMoneyFieldFormatter } from '../../../../hooks/useMoneyFieldFormatter';
 import { useTransactionLines } from '../../../../hooks/useTransactionLines';
@@ -126,6 +128,7 @@ interface LicenseTransactionModalProps {
   onLoadAuditTrail?: () => Promise<void> | void;
   initialCompanyId?: number;
   initialDraft?: LicenseFormDraft;
+  onCompanyChange?: (companyId?: number) => void;
   onCancel: () => void;
   onSubmit: (payload: LicenseFormDraft) => Promise<void> | void;
 }
@@ -255,7 +258,7 @@ const MAX_ABSENCE_MONTO_DIGITS = EMPLOYEE_MONEY_MAX_DIGITS;
 
 function normalizeIntegerAmount(value: unknown): number {
   const raw = String(value ?? '');
-  const onlyDigits = raw.replace(/\D+/g, '').slice(0, MAX_ABSENCE_MONTO_DIGITS);
+  const onlyDigits = raw.replace(/D+/g, '').slice(0, MAX_ABSENCE_MONTO_DIGITS);
   if (!onlyDigits) return 0;
   const parsed = Number.parseInt(onlyDigits, 10);
   if (!Number.isFinite(parsed) || parsed < 0) return 0;
@@ -283,19 +286,22 @@ export function LicenseTransactionModal({
   onLoadAuditTrail,
   initialCompanyId,
   initialDraft,
+  onCompanyChange,
   onCancel,
   onSubmit,
 }: LicenseTransactionModalProps) {
   const { message, modal } = AntdApp.useApp();
   const moneyField = useMoneyFieldFormatter(MAX_ABSENCE_MONTO_DIGITS);
   const [form] = Form.useForm<HeaderValues>();
+  const selectedCompanyId = Form.useWatch('idEmpresa', form);
+  const selectedEmployeeId = Form.useWatch('idEmpleado', form);
   const isLineComplete = (line: LicenseTransactionLine): boolean => isCoreTransactionLineComplete(line);
   const { lines, setLines, activeLineKeys, setActiveLineKeys, updateLine, addLine, removeLine } =
     useTransactionLines<LicenseTransactionLine>({
       buildEmptyLine,
       isLineComplete,
       onIncompleteLine: () => {
-        message.warning('Complete la linea actual antes de agregar una nueva.');
+        message.warning('Complete la línea actual antes de agregar una nueva.');
       },
     });
   const [employeePayrollConfig, setEmployeePayrollConfig] = useState<{
@@ -308,9 +314,21 @@ export function LicenseTransactionModal({
   const [auditLoaded, setAuditLoaded] = useState(false);
   const lastLineRef = useRef<HTMLDivElement>(null);
   const prevEmployeeIdRef = useRef<number | undefined>(undefined);
+  const initOnceRef = useRef(false);
 
   useEffect(() => {
-    if (!open) return;
+    if (!open) {
+    initOnceRef.current = false;
+    return;
+  }
+
+  if (!initialDraft && initOnceRef.current) {
+    return;
+  }
+
+  if (!initialDraft) {
+    initOnceRef.current = true;
+  }
 
     setActiveTab('info');
 
@@ -335,7 +353,10 @@ export function LicenseTransactionModal({
       return;
     }
 
-    form.setFieldsValue({ idEmpresa: initialCompanyId });
+    const nextCompanyId = mode === 'edit' ? initialCompanyId : undefined;
+
+    // En creacion no se preselecciona empresa; el usuario debe elegirla.
+    form.setFieldsValue({ idEmpresa: nextCompanyId });
     const initialLine = buildEmptyLine();
 
     setLines([initialLine]);
@@ -354,8 +375,11 @@ export function LicenseTransactionModal({
     void load();
   }, [activeTab, auditLoaded, onLoadAuditTrail, open, showAudit]);
 
-  const selectedCompanyId = Form.useWatch('idEmpresa', form);
-  const selectedEmployeeId = Form.useWatch('idEmpleado', form);
+  useEffect(() => {
+    if (!open) return;
+    if (!onCompanyChange) return;
+    onCompanyChange(selectedCompanyId ? Number(selectedCompanyId) : undefined);
+  }, [onCompanyChange, open, selectedCompanyId]);
 
   // Al cambiar de empleado se reinician las líneas porque cada empleado tiene planillas distintas
   useEffect(() => {
@@ -397,7 +421,7 @@ export function LicenseTransactionModal({
       return;
     }
     setEmployeePayrollConfig({
-      idPeriodoPago: employee.idPeriodoPago ?? undefined,
+      moneda: (employee.monedaSalario ?? '').toUpperCase() || undefined,
       moneda: (employee.monedaSalario ?? '').toUpperCase() || undefined,
     });
   }, [selectedCompanyId, selectedEmployeeId, employees]);
@@ -435,7 +459,7 @@ export function LicenseTransactionModal({
 
   const employeesByCompany = useMemo(() => {
     if (!selectedCompanyId) return [];
-    return employees.filter((employee) => employee.idEmpresa === selectedCompanyId);
+    return sortEmployeesByDisplayName(employees.filter((employee) => employee.idEmpresa === selectedCompanyId));
   }, [employees, selectedCompanyId]);
 
   const selectedEmployee = useMemo(() => {
@@ -465,7 +489,7 @@ export function LicenseTransactionModal({
   const payrollsByCompany = useMemo(() => {
     if (!selectedCompanyId) return [];
     let list = eligiblePayrolls.filter((payroll) => payroll.idEmpresa === selectedCompanyId);
-    if (employeePayrollConfig?.idPeriodoPago) {
+    const cantidad = parseNonNegative(cantidadValue ?? line.cantidad ?? 0);
       list = list.filter((payroll) => Number(payroll.idPeriodoPago) === Number(employeePayrollConfig.idPeriodoPago));
     }
     if (employeePayrollConfig?.moneda) {
@@ -489,8 +513,8 @@ export function LicenseTransactionModal({
   }, [movements, selectedCompanyId, actionTypeIdForLicense, lines]);
 
   const calculateLineAmount = (line: LicenseTransactionLine, movimientoId?: number, cantidadValue?: number) => {
-    const cantidad = parseNonNegative(cantidadValue ?? line.cantidad ?? 0);
     const movement = filteredMovements.find((m) => m.id === (movimientoId ?? line.movimientoId));
+    const movement = filteredMovements.find((m) => m.id === (movimientoId ? line.movimientoId));
 
     if (!movement) {
       return { monto: 0, montoInput: '0', formula: 'Seleccione un movimiento para calcular' };
@@ -509,7 +533,7 @@ export function LicenseTransactionModal({
     }
 
     if (porcentaje > 0) {
-      const salarioBase = parseNonNegative(selectedEmployee?.salarioBase);
+      payrollLabel: payroll?.nombrePlanilla ?? undefined,
       const baseCalculo = calculateSalaryByPeriod(
         salarioBase,
         selectedEmployee?.idPeriodoPago,
@@ -577,7 +601,12 @@ export function LicenseTransactionModal({
     if (loading) return;
     const values = await form.validateFields();
     if (lines.length === 0 || !lines.every(isLineComplete)) {
-      message.error('Complete todas las lineas antes de crear/guardar la licencia.');
+      message.error('Complete todas las líneas antes de crear/guardar la licencia.');
+      return;
+    }
+    const hasInvalidMovement = lines.some((line) => !filteredMovements.some((movement) => movement.id === line.movimientoId));
+    if (hasInvalidMovement) {
+      message.error('Seleccione un movimiento valido para la empresa antes de guardar la licencia.');
       return;
     }
 
@@ -639,7 +668,7 @@ export function LicenseTransactionModal({
           const actorLabel =
             row.actorNombre?.trim() ||
             row.actorEmail?.trim() ||
-            (row.actorUserId ? `Usuario ID ${row.actorUserId}` : 'Sistema');
+            (row.actorUserId != null ? `Usuario ID ${row.actorUserId}` : 'Sistema');
           return (
             <div>
               <div style={{ fontWeight: 600, color: '#3d4f5c' }}>{actorLabel}</div>
@@ -681,7 +710,7 @@ export function LicenseTransactionModal({
                   ))}
                 </div>
               ) : (
-                <div style={{ fontSize: 12 }}>Sin detalle de campos para esta accion.</div>
+                <div style={{ fontSize: 12 }}>Sin detalle de campos para esta acción.</div>
               )}
             </div>
           );
@@ -836,7 +865,7 @@ export function LicenseTransactionModal({
                                 </div>
                                 <div className={sharedStyles.employeeAccordionNameBlock}>
                                   <div className={sharedStyles.employeeAccordionName}>
-                                    {`${selectedEmployee.nombre || '--'} ${selectedEmployee.apellido1 || ''} ${selectedEmployee.apellido2 || ''}`.trim()}
+                                    {buildEmployeeDisplayName(selectedEmployee)}
                                   </div>
                                   <div className={sharedStyles.employeeAccordionId}>
                                     Empleado ID: {selectedEmployee.codigo || '--'}
@@ -1027,9 +1056,9 @@ export function LicenseTransactionModal({
                         overflow: 'visible',
                       }}
                     >
-                      {loading ? (
+                                    label: `${line.payrollLabel ?? `Planilla #${line.payrollId}`} (No elegible hoy)`,
                         <Flex justify="center" align="center" style={{ minHeight: 220 }}>
-                          <Spin size="large" description="Cargando lineas de transaccion..." />
+                          <Spin size="large" description="Cargando líneas de transacción..." />
                         </Flex>
                       ) : (
                         <>
@@ -1124,7 +1153,7 @@ export function LicenseTransactionModal({
                                               <Alert
                                                 type="warning"
                                                 showIcon
-                                                title="La planilla de esta linea ya no es elegible (cerrada, vencida o fuera de reglas)."
+                                                title="La planilla de esta línea ya no es elegible (cerrada, vencida o fuera de reglas)."
                                                 className={`${sharedStyles.infoBanner} ${sharedStyles.warningType}`}
                                                 style={{ marginTop: 10 }}
                                               />
@@ -1207,7 +1236,7 @@ export function LicenseTransactionModal({
                                                 step={1}
                                                 style={{ width: '100%' }}
                                                 disabled={readOnly || !line.movimientoId}
-                                                placeholder={!line.movimientoId ? '-' : undefined}
+                                                        ? (moneyField.parse(onlyDigits) ?? 0)
                                                 value={line.cantidad}
                                                 onChange={(value) => handleCantidadChange(line.key, value ?? undefined)}
                                               />
@@ -1369,4 +1398,17 @@ export function LicenseTransactionModal({
     </Modal>
   );
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
 

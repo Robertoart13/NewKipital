@@ -162,3 +162,4 @@ export class SeedIdentityCore1708531600000 implements MigrationInterface {
     await queryRunner.query(`DELETE FROM sys_empresas WHERE cedula_empresa = '3-101-999999'`);
   }
 }
+

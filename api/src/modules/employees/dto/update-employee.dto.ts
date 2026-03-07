@@ -1,4 +1,4 @@
-﻿import {
+import {
   IsString,
   IsEmail,
   IsOptional,
@@ -138,7 +138,8 @@ export class UpdateEmployeeDto {
   @IsOptional()
   @IsString()
   @Matches(/^(0|[1-9]\d*)(\.\d+)?$/, {
-    message: 'cesantiaAcumulada debe ser un nÃºmero no negativo',
+    message: 'cesantiaAcumulada debe ser un número no negativo',
   })
   cesantiaAcumulada?: string;
 }
+

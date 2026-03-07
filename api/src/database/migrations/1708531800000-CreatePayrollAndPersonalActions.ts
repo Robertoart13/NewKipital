@@ -7,7 +7,7 @@ import { Table, TableIndex, TableForeignKey, MigrationInterface, QueryRunner } f
  */
 export class CreatePayrollAndPersonalActions1708531800000 implements MigrationInterface {
   public async up(queryRunner: QueryRunner): Promise<void> {
-    // ═══════ 1. nom_planillas ═══════
+    // â•â•â•â•â•â•â• 1. nom_planillas â•â•â•â•â•â•â•
     await queryRunner.createTable(
       new Table({
         name: 'nom_planillas',
@@ -92,7 +92,7 @@ export class CreatePayrollAndPersonalActions1708531800000 implements MigrationIn
       }),
     );
 
-    // ═══════ 2. acc_acciones_personal ═══════
+    // â•â•â•â•â•â•â• 2. acc_acciones_personal â•â•â•â•â•â•â•
     await queryRunner.createTable(
       new Table({
         name: 'acc_acciones_personal',
@@ -217,3 +217,4 @@ export class CreatePayrollAndPersonalActions1708531800000 implements MigrationIn
     await queryRunner.dropTable('nom_planillas', true);
   }
 }
+

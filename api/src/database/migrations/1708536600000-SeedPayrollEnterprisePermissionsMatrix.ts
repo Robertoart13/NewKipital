@@ -170,3 +170,4 @@ export class SeedPayrollEnterprisePermissionsMatrix1708536600000 implements Migr
     `);
   }
 }
+

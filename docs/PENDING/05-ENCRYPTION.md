@@ -1,6 +1,6 @@
-# 🔐 ENCRYPTION - Issues Pendientes
+#  ENCRYPTION - Issues Pendientes
 
-**Prioridad Global:** P0 (CRÍTICO - Compliance RGPD/CCPA)
+**Prioridad Global:** P0 (CRTICO - Compliance RGPD/CCPA)
 **Esfuerzo Total:** 1 semana
 **Asignado a:** [Sin asignar]
 
@@ -9,34 +9,34 @@
 ## ISSUE-032: Implementar EncryptionService completo
 
 **Prioridad:** P0
-**Esfuerzo:** M (2-3 días)
+**Esfuerzo:** M (2-3 das)
 **Etiquetas:** [security] [encryption] [compliance]
 
-### 📝 Descripción
-Datos sensibles (salarios, cédulas, emails) se guardan en texto plano. Violación de RGPD/CCPA.
+###  Descripcin
+Datos sensibles (salarios, cdulas, emails) se guardan en texto plano. Violacin de RGPD/CCPA.
 
 **Riesgo Legal:** Multas de hasta 4% del revenue anual global.
 
-### 🎯 Objetivo
-Servicio de encriptación AES-256-GCM funcionando end-to-end.
+###  Objetivo
+Servicio de encriptacin AES-256-GCM funcionando end-to-end.
 
-### 📁 Archivos Afectados
+###  Archivos Afectados
 - `api/src/common/services/encryption.service.ts` (crear/completar)
 - `api/src/common/services/employee-sensitive-data.service.ts` (ya existe, verificar)
-- `api/.env` (añadir ENCRYPTION_KEY)
+- `api/.env` (aadir ENCRYPTION_KEY)
 - `api/src/config/encryption.config.ts` (crear)
 
-### ✅ Criterios de Aceptación
-- [ ] EncryptionService con métodos encrypt/decrypt
+###  Criterios de Aceptacin
+- [ ] EncryptionService con mtodos encrypt/decrypt
 - [ ] Algoritmo: AES-256-GCM (autenticado)
 - [ ] Key management: AWS KMS o variable de entorno segura
 - [ ] Key rotation strategy documentada
 - [ ] Encrypt: retorna base64 con IV incluido
 - [ ] Decrypt: valida MAC antes de decriptar
-- [ ] Maneja errores de decriptación (datos corruptos)
+- [ ] Maneja errores de decriptacin (datos corruptos)
 - [ ] Tests unitarios: 100% coverage
 
-### 🔧 Implementación Sugerida
+###  Implementacin Sugerida
 
 ```typescript
 // src/common/services/encryption.service.ts
@@ -90,7 +90,7 @@ export class EncryptionService {
 
   /**
    * Decripta un string encriptado.
-   * Lanza error si el tag de autenticación no coincide (datos manipulados).
+   * Lanza error si el tag de autenticacin no coincide (datos manipulados).
    */
   decrypt(encrypted: string): string {
     if (!encrypted) return encrypted;
@@ -122,13 +122,13 @@ export class EncryptionService {
   }
 
   /**
-   * Encripta solo si el valor no está ya encriptado.
-   * Detecta si es base64 válido con longitud > 100 (aproximación).
+   * Encripta solo si el valor no est ya encriptado.
+   * Detecta si es base64 vlido con longitud > 100 (aproximacin).
    */
   encryptIfPlaintext(value: string): string {
     if (!value) return value;
 
-    // Si ya está encriptado (es base64 largo), no re-encriptar
+    // Si ya est encriptado (es base64 largo), no re-encriptar
     if (this.looksEncrypted(value)) {
       return value;
     }
@@ -137,7 +137,7 @@ export class EncryptionService {
   }
 
   /**
-   * Heurística simple: si es base64 válido y largo, probablemente encriptado.
+   * Heurstica simple: si es base64 vlido y largo, probablemente encriptado.
    */
   private looksEncrypted(value: string): boolean {
     if (value.length < 100) return false;
@@ -157,7 +157,7 @@ export default registerAs('encryption', () => ({
 }));
 ```
 
-### 🧪 Cómo Verificar
+###  Cmo Verificar
 
 ```typescript
 // encryption.service.spec.ts
@@ -172,7 +172,7 @@ describe('EncryptionService', () => {
     expect(decrypted).toBe(plaintext);
   });
 
-  it('debe lanzar error si datos están corruptos', () => {
+  it('debe lanzar error si datos estn corruptos', () => {
     const encrypted = service.encrypt('test');
     const corrupted = encrypted.slice(0, -5) + 'XXXXX';
 
@@ -193,38 +193,38 @@ describe('EncryptionService', () => {
 
 ---
 
-## ISSUE-033: Migración de datos legacy a formato encriptado
+## ISSUE-033: Migracin de datos legacy a formato encriptado
 
 **Prioridad:** P0
-**Esfuerzo:** M (2 días)
+**Esfuerzo:** M (2 das)
 **Etiquetas:** [security] [encryption] [migration]
 
-### 📝 Descripción
-Datos existentes en BD están en plaintext. Necesitamos migrarlos sin downtime.
+###  Descripcin
+Datos existentes en BD estn en plaintext. Necesitamos migrarlos sin downtime.
 
-### 🎯 Objetivo
-Script de migración que encripta datos sensibles de empleados existentes.
+###  Objetivo
+Script de migracin que encripta datos sensibles de empleados existentes.
 
-### 📁 Archivos Afectados
+###  Archivos Afectados
 - `api/src/database/migrations/XXXXXX-EncryptEmployeeSensitiveData.ts` (crear)
 - `api/scripts/encrypt-legacy-data.ts` (crear)
 
-### ✅ Criterios de Aceptación
-- [ ] Migración encripta campos:
+###  Criterios de Aceptacin
+- [ ] Migracin encripta campos:
   - salario_base_empleado
   - email_personal_empleado
   - telefono_personal_empleado
   - direccion_exacta_empleado
   - cedula_empleado
   - numero_cuenta_bancaria (si existe)
-- [ ] Migración es idempotente (puede correr múltiples veces)
+- [ ] Migracin es idempotente (puede correr mltiples veces)
 - [ ] No encripta datos ya encriptados
 - [ ] Usa transacciones (batch de 100 registros)
 - [ ] Logging de progreso
 - [ ] Backup de BD antes de correr
 - [ ] Rollback plan documentado
 
-### 🔧 Implementación Sugerida
+###  Implementacin Sugerida
 
 ```typescript
 // migrations/XXXXXX-EncryptEmployeeSensitiveData.ts
@@ -232,17 +232,17 @@ import { MigrationInterface, QueryRunner } from 'typeorm';
 
 export class EncryptEmployeeSensitiveData1234567890 implements MigrationInterface {
   public async up(queryRunner: QueryRunner): Promise<void> {
-    console.log('⚠️  IMPORTANTE: Esta migración encripta datos sensibles.');
-    console.log('⚠️  Asegúrese de tener backup de BD antes de continuar.');
+    console.log('  IMPORTANTE: Esta migracin encripta datos sensibles.');
+    console.log('  Asegrese de tener backup de BD antes de continuar.');
 
-    // Usar script externo para la encriptación
+    // Usar script externo para la encriptacin
     throw new Error(
-      'Esta migración debe ejecutarse manualmente usando: npm run encrypt-legacy-data',
+      'Esta migracin debe ejecutarse manualmente usando: npm run encrypt-legacy-data',
     );
   }
 
   public async down(queryRunner: QueryRunner): Promise<void> {
-    throw new Error('Esta migración no es reversible. Restaure desde backup.');
+    throw new Error('Esta migracin no es reversible. Restaure desde backup.');
   }
 }
 
@@ -281,13 +281,13 @@ async function encryptLegacyData() {
 
       await employeeRepo.save(employee);
       encrypted++;
-      console.log(`✓ Empleado ${employee.id} encriptado`);
+      console.log(` Empleado ${employee.id} encriptado`);
     } else {
       skipped++;
     }
   }
 
-  console.log(`\n✓ Migración completada:`);
+  console.log(`\n Migracin completada:`);
   console.log(`  - Encriptados: ${encrypted}`);
   console.log(`  - Saltados: ${skipped}`);
 
@@ -297,7 +297,7 @@ async function encryptLegacyData() {
 encryptLegacyData().catch(console.error);
 ```
 
-### 🧪 Cómo Verificar
+###  Cmo Verificar
 
 ```bash
 # 1. Backup de BD
@@ -317,27 +317,27 @@ curl http://localhost:3000/api/employees/1
 
 ---
 
-## ISSUE-034: Integrar encriptación en EmployeesService
+## ISSUE-034: Integrar encriptacin en EmployeesService
 
 **Prioridad:** P0
-**Esfuerzo:** S (1 día)
+**Esfuerzo:** S (1 da)
 **Etiquetas:** [security] [encryption] [backend]
 
-### 📝 Descripción
-EmployeesService debe encriptar al guardar y decriptar al leer automáticamente.
+###  Descripcin
+EmployeesService debe encriptar al guardar y decriptar al leer automticamente.
 
-### 📁 Archivos Afectados
+###  Archivos Afectados
 - `api/src/modules/employees/employees.service.ts`
 - `api/src/modules/employees/entities/employee.entity.ts`
 
-### ✅ Criterios de Aceptación
+###  Criterios de Aceptacin
 - [ ] create(): encripta campos sensibles antes de save
 - [ ] update(): encripta campos modificados
 - [ ] findOne/findAll(): decripta al retornar
 - [ ] Usar TypeORM @AfterLoad y @BeforeInsert/Update hooks
 - [ ] Tests unitarios con datos encriptados
 
-### 🔧 Implementación Sugerida
+###  Implementacin Sugerida
 
 ```typescript
 // employee.entity.ts
@@ -351,7 +351,7 @@ export class Employee {
   @Column()
   cedula: string; // Guardado encriptado
 
-  // Campos temporales para versión decriptada
+  // Campos temporales para versin decriptada
   private salarioBaseDecrypted?: number;
   private cedulaDecrypted?: string;
 
@@ -375,7 +375,7 @@ export class Employee {
   }
 }
 
-// Alternativa más simple: hacerlo en el service
+// Alternativa ms simple: hacerlo en el service
 // employees.service.ts
 async create(dto: CreateEmployeeDto): Promise<Employee> {
   const employee = this.repo.create(dto);
@@ -406,20 +406,20 @@ private decryptEmployee(employee: Employee): Employee {
 ## ISSUE-035: Key management con AWS Secrets Manager
 
 **Prioridad:** P1
-**Esfuerzo:** M (2 días)
+**Esfuerzo:** M (2 das)
 **Etiquetas:** [security] [encryption] [aws]
 
-### 📝 Descripción
+###  Descripcin
 ENCRYPTION_MASTER_SECRET no debe estar en .env. Necesitamos AWS Secrets Manager.
 
-### ✅ Criterios de Aceptación
+###  Criterios de Aceptacin
 - [ ] Master key guardada en AWS Secrets Manager
 - [ ] App carga key al iniciar (no en cada request)
-- [ ] Key rotation automática cada 90 días
-- [ ] Documentar proceso de rotación manual
+- [ ] Key rotation automtica cada 90 das
+- [ ] Documentar proceso de rotacin manual
 - [ ] Fallback a .env solo para desarrollo local
 
-### 🔧 Implementación Sugerida
+###  Implementacin Sugerida
 
 ```typescript
 // src/config/secrets.config.ts
@@ -449,22 +449,22 @@ export async function loadEncryptionKey(): Promise<string> {
 
 ---
 
-## 📊 Progreso Encryption
+##  Progreso Encryption
 
 - [ ] ISSUE-032: EncryptionService completo
-- [ ] ISSUE-033: Migración datos legacy
-- [ ] ISSUE-034: Integración en EmployeesService
+- [ ] ISSUE-033: Migracin datos legacy
+- [ ] ISSUE-034: Integracin en EmployeesService
 - [ ] ISSUE-035: AWS Secrets Manager
 
 **Total:** 0/4 completados (0%)
 
 ---
 
-## ⚠️ ADVERTENCIA LEGAL
+##  ADVERTENCIA LEGAL
 
-**Datos sin encriptar es una violación de:**
-- RGPD (Europa): Multas hasta €20M o 4% revenue anual
-- CCPA (California): Multas hasta $7,500 por violación
-- Ley 8968 Costa Rica: Protección de datos personales
+**Datos sin encriptar es una violacin de:**
+- RGPD (Europa): Multas hasta 20M o 4% revenue anual
+- CCPA (California): Multas hasta $7,500 por violacin
+- Ley 8968 Costa Rica: Proteccin de datos personales
 
-**Implementar ANTES de producción es OBLIGATORIO.**
+**Implementar ANTES de produccin es OBLIGATORIO.**

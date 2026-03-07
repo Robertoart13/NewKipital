@@ -354,3 +354,4 @@ export class CreateCalendarioNominaMaestro1708531900000 implements MigrationInte
     );
   }
 }
+

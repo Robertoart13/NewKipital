@@ -2,26 +2,26 @@
 
 Este documento define las **reglas obligatorias de desarrollo** del proyecto.
 
-Todo ingeniero debe seguir estas reglas para garantizar que el código sea:
+Todo ingeniero debe seguir estas reglas para garantizar que el cdigo sea:
 
 - Legible
 - Mantenible
 - Escalable
-- Fácil de entender por cualquier miembro del equipo
+- Fcil de entender por cualquier miembro del equipo
 
-**Antes de hacer commit o Pull Request**, el ingeniero debe revisar este documento y confirmar que su código cumple todas las reglas.
+**Antes de hacer commit o Pull Request**, el ingeniero debe revisar este documento y confirmar que su cdigo cumple todas las reglas.
 
-Cada cambio o funcionalidad debe quedar **documentado en la carpeta `docs/`** para mantener la documentación del proyecto actualizada. Cuando se establezca o modifique una **regla, proceso o cualquier cosa que deba quedar plasmada**, hay que **actualizar todos los documentos** en `docs/` (y donde corresponda) donde sea necesario que esa información aparezca. Es **regla obligatoria** y se debe cumplir junto con el resto de este documento.
+Cada cambio o funcionalidad debe quedar **documentado en la carpeta `docs/`** para mantener la documentacin del proyecto actualizada. Cuando se establezca o modifique una **regla, proceso o cualquier cosa que deba quedar plasmada**, hay que **actualizar todos los documentos** en `docs/` (y donde corresponda) donde sea necesario que esa informacin aparezca. Es **regla obligatoria** y se debe cumplir junto con el resto de este documento.
 
-Si el código no cumple estas reglas, **debe refactorizarse antes de integrarse al repositorio**.
+Si el cdigo no cumple estas reglas, **debe refactorizarse antes de integrarse al repositorio**.
 
-**Código existente:** cuando un ingeniero trabaje en código que ya está en el repositorio, debe **revisarlo** contra este documento. Si **no cumple** lo que aquí se exige, **debe refactorizarlo** para que cumpla, en el mismo cambio o en uno dedicado. El objetivo es **ir limpiando y mejorando el código** de forma continua; no se deja código legacy que viole estas reglas con el pretexto de “solo toqué una línea”.
+**Cdigo existente:** cuando un ingeniero trabaje en cdigo que ya est en el repositorio, debe **revisarlo** contra este documento. Si **no cumple** lo que aqu se exige, **debe refactorizarlo** para que cumpla, en el mismo cambio o en uno dedicado. El objetivo es **ir limpiando y mejorando el cdigo** de forma continua; no se deja cdigo legacy que viole estas reglas con el pretexto de solo toqu una lnea.
 
 ---
 
 ## 1. Principios Fundamentales
 
-Todo el código debe seguir los siguientes principios:
+Todo el cdigo debe seguir los siguientes principios:
 
 - **Clean Code**
 - **SOLID**
@@ -33,19 +33,19 @@ Siempre priorizar:
 
 > **Legibilidad > Complejidad**
 
-Un código que funciona pero es difícil de entender **no se considera código aceptable**.
+Un cdigo que funciona pero es difcil de entender **no se considera cdigo aceptable**.
 
 ---
 
-## 2. Código Siempre Comentado
+## 2. Cdigo Siempre Comentado
 
-Todo el código debe estar **documentado correctamente**.
+Todo el cdigo debe estar **documentado correctamente**.
 
-No se trata de comentar cada línea, sino de explicar:
+No se trata de comentar cada lnea, sino de explicar:
 
-- La intención
+- La intencin
 - Las reglas de negocio
-- Decisiones técnicas importantes
+- Decisiones tcnicas importantes
 
 Se debe utilizar **JSDoc o comentarios estructurados**.
 
@@ -54,11 +54,11 @@ Se debe utilizar **JSDoc o comentarios estructurados**.
 ```ts
 /**
  * Representa una cuenta contable dentro del sistema.
- * Se utiliza para transportar información entre la base de datos,
+ * Se utiliza para transportar informacin entre la base de datos,
  * servicios de negocio y la UI.
  */
 export interface AccountingAccount {
-  /** Identificador único de la cuenta */
+  /** Identificador nico de la cuenta */
   id: number
 
   /** Empresa propietaria de la cuenta (multiempresa) */
@@ -71,21 +71,21 @@ export interface AccountingAccount {
 
 Los comentarios deben explicar:
 
-- **Por qué** existe el código
-- **Qué problema** resuelve
+- **Por qu** existe el cdigo
+- **Qu problema** resuelve
 - **Reglas de negocio** relevantes
 
 **Evitar** comentarios redundantes como:
 
 ```ts
-let id: number // número
+let id: number // nmero
 ```
 
 ---
 
 ## 3. Nombres Claros y Descriptivos
 
-Los nombres deben expresar la intención del código.
+Los nombres deben expresar la intencin del cdigo.
 
 **Mal ejemplo:**
 
@@ -119,15 +119,15 @@ isEmployeeActive
 
 ---
 
-## 4. Funciones Pequeñas y con Responsabilidad Única
+## 4. Funciones Pequeas y con Responsabilidad nica
 
-Cada función debe hacer **una sola cosa** y hacerla bien.
+Cada funcin debe hacer **una sola cosa** y hacerla bien.
 
 **Reglas:**
 
-- Máximo recomendado: **20–30 líneas**
-- Si supera ese tamaño, dividir la función
-- No mezclar lógica de negocio con infraestructura
+- Mximo recomendado: **2030 lneas**
+- Si supera ese tamao, dividir la funcin
+- No mezclar lgica de negocio con infraestructura
 
 **Mal ejemplo:**
 
@@ -148,15 +148,15 @@ enviarFactura()
 
 ## 5. Principio SOLID
 
-El código debe respetar **SOLID**.
+El cdigo debe respetar **SOLID**.
 
 Especialmente:
 
-### SRP — Single Responsibility Principle
+### SRP  Single Responsibility Principle
 
-Cada módulo, clase o función debe tener **una única responsabilidad**.
+Cada mdulo, clase o funcin debe tener **una nica responsabilidad**.
 
-Si algo cambia por más de una razón, debe separarse.
+Si algo cambia por ms de una razn, debe separarse.
 
 **Ejemplo:**
 
@@ -166,30 +166,30 @@ Si algo cambia por más de una razón, debe separarse.
 
 ---
 
-## 6. DRY — No Repetir Código
+## 6. DRY  No Repetir Cdigo
 
-La duplicación genera deuda técnica.
+La duplicacin genera deuda tcnica.
 
-Si se detecta lógica repetida:
+Si se detecta lgica repetida:
 
-- Extraer a función
+- Extraer a funcin
 - Crear utilidades
 - Reutilizar servicios
 
-**Regla:** Si copias y pegas código más de una vez, debes refactorizar.
+**Regla:** Si copias y pegas cdigo ms de una vez, debes refactorizar.
 
 ---
 
 ## 7. Estructura de Archivos
 
-Los archivos deben mantenerse **pequeños y organizados**.
+Los archivos deben mantenerse **pequeos y organizados**.
 
 **Recomendaciones:**
 
-- **Ideal:** 100–300 líneas
-- **Máximo absoluto:** 1000 líneas
+- **Ideal:** 100300 lneas
+- **Mximo absoluto:** 1000 lneas
 
-Si un archivo supera ese tamaño, **debe dividirse** en múltiples archivos.
+Si un archivo supera ese tamao, **debe dividirse** en mltiples archivos.
 
 **Ejemplo de estructura recomendada:**
 
@@ -205,7 +205,7 @@ Si un archivo supera ese tamaño, **debe dividirse** en múltiples archivos.
 
 Separar responsabilidades entre:
 
-- Lógica de negocio
+- Lgica de negocio
 - Infraestructura
 - Modelos
 - Validaciones
@@ -214,7 +214,7 @@ Separar responsabilidades entre:
 
 ## 8. Manejo de Errores Limpio
 
-Evitar código anidado excesivamente.
+Evitar cdigo anidado excesivamente.
 
 **Mal ejemplo:**
 
@@ -235,60 +235,60 @@ if (!user) return
 if (!user.isValid()) return
 if (!isAdult(user)) return
 
-// Código principal aquí
+// Cdigo principal aqu
 ```
 
-Esto mantiene el código plano y legible.
+Esto mantiene el cdigo plano y legible.
 
 ---
 
 ## 9. Formateo Consistente
 
-Todo el código debe estar **correctamente formateado**.
+Todo el cdigo debe estar **correctamente formateado**.
 
 Se deben usar herramientas como:
 
 - **Prettier**
 - **ESLint**
 
-El código debe parecer escrito por una sola persona, aunque participen varios ingenieros.
+El cdigo debe parecer escrito por una sola persona, aunque participen varios ingenieros.
 
 **Reglas:**
 
-- Indentación consistente
+- Indentacin consistente
 - Espacios correctos
 - Estructura clara
-- Sin código muerto
+- Sin cdigo muerto
 
 ---
 
-## 10. Refactorización Continua
+## 10. Refactorizacin Continua
 
-El código debe mejorarse constantemente.
+El cdigo debe mejorarse constantemente.
 
 Aplicar la **Boy Scout Rule:**
 
-> *"Deja el código un poco más limpio de como lo encontraste."*
+> *"Deja el cdigo un poco ms limpio de como lo encontraste."*
 
-**Revisar el código existente:** cada vez que se modifique un archivo que ya existe en el proyecto, hay que **revisarlo** contra este documento. Si ese código **no cumple** lo que aquí se indica (nombres, tamaño de funciones, comentarios, tipado, manejo de errores, etc.), **hay que refactorizarlo** para que cumpla. No se hace “solo el cambio mínimo”; se aprovecha el contacto con el archivo para **ir limpiando y mejorando** el código hasta alinearlo con estas reglas.
+**Revisar el cdigo existente:** cada vez que se modifique un archivo que ya existe en el proyecto, hay que **revisarlo** contra este documento. Si ese cdigo **no cumple** lo que aqu se indica (nombres, tamao de funciones, comentarios, tipado, manejo de errores, etc.), **hay que refactorizarlo** para que cumpla. No se hace solo el cambio mnimo; se aprovecha el contacto con el archivo para **ir limpiando y mejorando** el cdigo hasta alinearlo con estas reglas.
 
 Cada vez que se modifique un archivo:
 
 - Mejorar nombres
-- Simplificar lógica
+- Simplificar lgica
 - Separar funciones grandes
-- Eliminar duplicación
-- **Si el código existente no cumple este documento, corregirlo hasta que cumpla**
+- Eliminar duplicacin
+- **Si el cdigo existente no cumple este documento, corregirlo hasta que cumpla**
 
 ---
 
-## 11. Tipado Fuerte — Evitar `any` y Tipos Implícitos
+## 11. Tipado Fuerte  Evitar `any` y Tipos Implcitos
 
-En TypeScript (y en cualquier lenguaje tipado), el tipo es **documentación ejecutable**.
+En TypeScript (y en cualquier lenguaje tipado), el tipo es **documentacin ejecutable**.
 
 **Reglas:**
 
-- **No usar `any`** salvo integración con librerías sin tipos; preferir `unknown` y acotar.
+- **No usar `any`** salvo integracin con libreras sin tipos; preferir `unknown` y acotar.
 - Definir interfaces/types para contratos (APIs, DTOs, respuestas).
 - Habilitar y respetar `strict` (o equivalente) en el compilador.
 
@@ -320,8 +320,8 @@ Preferir datos inmutables y funciones puras donde sea posible.
 **Reglas:**
 
 - Preferir `const` sobre `let`; evitar reasignaciones innecesarias.
-- No mutar argumentos de función; devolver nuevos valores en lugar de modificar entradas.
-- Reducir efectos secundarios (I/O, mutación global) a puntos concretos y bien identificados.
+- No mutar argumentos de funcin; devolver nuevos valores en lugar de modificar entradas.
+- Reducir efectos secundarios (I/O, mutacin global) a puntos concretos y bien identificados.
 
 **Mal ejemplo:**
 
@@ -341,15 +341,15 @@ function addItem(cart: Item[], newItem: Item): Item[] {
 
 ---
 
-## 13. Argumentos y Parámetros
+## 13. Argumentos y Parmetros
 
 Mantener las firmas de funciones simples y predecibles.
 
 **Reglas:**
 
-- **Máximo 3–4 parámetros** por función. Si necesitas más, agrupar en un objeto de opciones.
-- Parámetros opcionales al final; usar objetos de opciones en lugar de muchos booleanos.
-- Evitar parámetros que cambien el comportamiento de forma radical (flags que convierten la función en “dos funciones en una”).
+- **Mximo 34 parmetros** por funcin. Si necesitas ms, agrupar en un objeto de opciones.
+- Parmetros opcionales al final; usar objetos de opciones en lugar de muchos booleanos.
+- Evitar parmetros que cambien el comportamiento de forma radical (flags que convierten la funcin en dos funciones en una).
 
 **Mal ejemplo:**
 
@@ -372,13 +372,13 @@ function createUser(input: CreateUserInput) {}
 
 ---
 
-## 14. Un Solo Nivel de Abstracción por Función
+## 14. Un Solo Nivel de Abstraccin por Funcin
 
-Dentro de una misma función no mezclar detalles de bajo nivel con lógica de alto nivel.
+Dentro de una misma funcin no mezclar detalles de bajo nivel con lgica de alto nivel.
 
 **Reglas:**
 
-- Una función debe operar en **un solo nivel de abstracción** (por ejemplo: solo “qué hace el negocio” o solo “cómo se accede al disco”).
+- Una funcin debe operar en **un solo nivel de abstraccin** (por ejemplo: solo qu hace el negocio o solo cmo se accede al disco).
 - Extraer los detalles a funciones con nombres que describan ese nivel.
 
 **Mal ejemplo:**
@@ -405,14 +405,14 @@ function processOrder(order: Order) {
 
 ---
 
-## 15. Constantes y Configuración — Sin Números o Cadenas Mágicas
+## 15. Constantes y Configuracin  Sin Nmeros o Cadenas Mgicas
 
-Todo valor con significado de negocio o técnico debe tener nombre.
+Todo valor con significado de negocio o tcnico debe tener nombre.
 
 **Reglas:**
 
-- Extraer **números y cadenas literales** a constantes con nombre (o en configuración).
-- Agrupar constantes por dominio (errores, límites, mensajes, códigos).
+- Extraer **nmeros y cadenas literales** a constantes con nombre (o en configuracin).
+- Agrupar constantes por dominio (errores, lmites, mensajes, cdigos).
 
 **Mal ejemplo:**
 
@@ -432,15 +432,15 @@ if (items.length > MAX_ITEMS_PER_PAGE) { }
 
 ---
 
-## 16. Errores y Excepciones — No Tragarse los Errores
+## 16. Errores y Excepciones  No Tragarse los Errores
 
-El manejo de errores debe ser explícito y útil para depuración y operación.
+El manejo de errores debe ser explcito y til para depuracin y operacin.
 
 **Reglas:**
 
-- **No usar `catch` vacío**; al menos loguear o re-lanzar con contexto.
-- Usar tipos de error específicos (clases o códigos) en lugar de strings genéricos.
-- En APIs, devolver códigos y mensajes coherentes; documentar errores posibles en JSDoc.
+- **No usar `catch` vaco**; al menos loguear o re-lanzar con contexto.
+- Usar tipos de error especficos (clases o cdigos) en lugar de strings genricos.
+- En APIs, devolver cdigos y mensajes coherentes; documentar errores posibles en JSDoc.
 
 **Mal ejemplo:**
 
@@ -465,15 +465,15 @@ try {
 
 ---
 
-## 17. Dependencias Explícitas — Inyección y Testabilidad
+## 17. Dependencias Explcitas  Inyeccin y Testabilidad
 
-Las dependencias no deben estar “escondidas” dentro de la función o módulo.
+Las dependencias no deben estar escondidas dentro de la funcin o mdulo.
 
 **Reglas:**
 
-- Pasar **dependencias por parámetro o constructor** (inyección de dependencias), no instanciarlas dentro (ej. no `new Repository()` dentro del servicio).
-- Facilita tests (mocks) y hace evidente qué usa cada componente.
-- En frontend: mismo criterio para APIs, navegación, etc.
+- Pasar **dependencias por parmetro o constructor** (inyeccin de dependencias), no instanciarlas dentro (ej. no `new Repository()` dentro del servicio).
+- Facilita tests (mocks) y hace evidente qu usa cada componente.
+- En frontend: mismo criterio para APIs, navegacin, etc.
 
 **Mal ejemplo:**
 
@@ -499,101 +499,101 @@ class UserService {
 
 ---
 
-## 18. Código Testeable por Diseño
+## 18. Cdigo Testeable por Diseo
 
-Si el código es difícil de testear, suele ser una señal de diseño mejorable.
-
-**Reglas:**
-
-- Funciones puras y pequeñas son más fáciles de testear.
-- Evitar lógica compleja acoplada a frameworks (UI, HTTP); extraer a servicios/funciones que se puedan probar con unit tests.
-- Naming de tests: describir comportamiento, no implementación (ej. “debe calcular el total con descuento cuando el usuario es premium”).
-
----
-
-## 19. Complejidad y Legibilidad — Evitar Anidación y Ramas Excesivas
-
-Mantener la complejidad ciclomática baja.
+Si el cdigo es difcil de testear, suele ser una seal de diseo mejorable.
 
 **Reglas:**
 
-- Preferir **guard clauses** (salida temprana) en lugar de múltiples niveles de `if/else`.
-- Si una función tiene muchos `if/else` o `switch`, valorar extraer a funciones o estrategias por tipo/caso.
-- Máximo recomendado: **complejidad ciclomática menor a 10** por función (herramientas como ESLint pueden reportarlo).
-
-**Principio de menor asombro:** el código debe comportarse como un lector esperaría según su nombre y contexto.
+- Funciones puras y pequeas son ms fciles de testear.
+- Evitar lgica compleja acoplada a frameworks (UI, HTTP); extraer a servicios/funciones que se puedan probar con unit tests.
+- Naming de tests: describir comportamiento, no implementacin (ej. debe calcular el total con descuento cuando el usuario es premium).
 
 ---
 
-## 20. Documentación del Proyecto (carpeta `docs/`)
+## 19. Complejidad y Legibilidad  Evitar Anidacin y Ramas Excesivas
 
-**Regla obligatoria:** cada vez que se implemente o modifique algo en el proyecto, la documentación debe actualizarse en la carpeta **`docs/`**.
+Mantener la complejidad ciclomtica baja.
 
-**Qué documentar:**
+**Reglas:**
 
-- **Nuevas funcionalidades o módulos:** describir qué hace, cómo se usa y dónde está en el código (o enlazar al código).
+- Preferir **guard clauses** (salida temprana) en lugar de mltiples niveles de `if/else`.
+- Si una funcin tiene muchos `if/else` o `switch`, valorar extraer a funciones o estrategias por tipo/caso.
+- Mximo recomendado: **complejidad ciclomtica menor a 10** por funcin (herramientas como ESLint pueden reportarlo).
+
+**Principio de menor asombro:** el cdigo debe comportarse como un lector esperara segn su nombre y contexto.
+
+---
+
+## 20. Documentacin del Proyecto (carpeta `docs/`)
+
+**Regla obligatoria:** cada vez que se implemente o modifique algo en el proyecto, la documentacin debe actualizarse en la carpeta **`docs/`**.
+
+**Qu documentar:**
+
+- **Nuevas funcionalidades o mdulos:** describir qu hace, cmo se usa y dnde est en el cdigo (o enlazar al cdigo).
 - **Cambios en APIs (endpoints, contratos):** actualizar o crear documentos de API, ejemplos de request/response.
-- **Cambios en flujos de negocio o reglas:** actualizar guías, diagramas o documentos de dominio que correspondan.
-- **Nuevas decisiones técnicas o de arquitectura:** registrarlas en la documentación técnica o en ADRs (Architecture Decision Records) si aplica.
-- **Configuración, variables de entorno o despliegue:** mantener actualizado el README o la sección de setup en `docs/`.
+- **Cambios en flujos de negocio o reglas:** actualizar guas, diagramas o documentos de dominio que correspondan.
+- **Nuevas decisiones tcnicas o de arquitectura:** registrarlas en la documentacin tcnica o en ADRs (Architecture Decision Records) si aplica.
+- **Configuracin, variables de entorno o despliegue:** mantener actualizado el README o la seccin de setup en `docs/`.
 
-**Dónde va:**
+**Dnde va:**
 
 - Todo debe vivir dentro de la carpeta **`docs/`** del repositorio (o subcarpetas como `docs/api/`, `docs/arquitectura/`, `docs/reglas/`, etc.).
 - Formato preferido: **Markdown (`.md`)** para que sea legible en el repo y en GitHub/GitLab.
 
-**Cuándo:**
+**Cundo:**
 
-- En el **mismo commit o PR** donde se hace el cambio de código. La documentación no es opcional ni “para después”.
+- En el **mismo commit o PR** donde se hace el cambio de cdigo. La documentacin no es opcional ni para despus.
 
-**Actualizar todos los docs donde sea necesario:** cuando se agregue o cambie una **regla**, un **proceso**, un **flujo**, una **decisión** o cualquier cosa que **deba quedar plasmada** en el proyecto, el ingeniero debe **actualizar todos los documentos** en `docs/` (y en cualquier otro lugar relevante, por ejemplo README, wikis internas) donde esa información deba reflejarse. No basta con tocar un solo archivo: hay que revisar y actualizar **cada doc** que haga referencia al tema o que deba incluir el cambio (índices, resúmenes, guías, reglas, APIs, etc.). El objetivo es que la documentación quede **consistente y al día** en todos los puntos afectados.
+**Actualizar todos los docs donde sea necesario:** cuando se agregue o cambie una **regla**, un **proceso**, un **flujo**, una **decisin** o cualquier cosa que **deba quedar plasmada** en el proyecto, el ingeniero debe **actualizar todos los documentos** en `docs/` (y en cualquier otro lugar relevante, por ejemplo README, wikis internas) donde esa informacin deba reflejarse. No basta con tocar un solo archivo: hay que revisar y actualizar **cada doc** que haga referencia al tema o que deba incluir el cambio (ndices, resmenes, guas, reglas, APIs, etc.). El objetivo es que la documentacin quede **consistente y al da** en todos los puntos afectados.
 
-Esta regla forma parte de las reglas de desarrollo del proyecto y **debe cumplirse** junto con todas las demás de este documento.
+Esta regla forma parte de las reglas de desarrollo del proyecto y **debe cumplirse** junto con todas las dems de este documento.
 
 ---
 
 ## 21. Checklist antes de hacer Commit o PR
 
-Antes de enviar código al repositorio, el ingeniero debe confirmar:
+Antes de enviar cdigo al repositorio, el ingeniero debe confirmar:
 
 **Principios y estructura**
 
-- [ ] **Si modifiqué código existente:** lo revisé contra este documento y, si no cumplía, lo refactoricé para que cumpla (ir limpiando y mejorando el código).
-- [ ] El código sigue principios Clean Code (DRY, KISS, YAGNI, SOLID)
-- [ ] Las funciones tienen responsabilidad única y un solo nivel de abstracción
+- [ ] **Si modifiqu cdigo existente:** lo revis contra este documento y, si no cumpla, lo refactoric para que cumpla (ir limpiando y mejorando el cdigo).
+- [ ] El cdigo sigue principios Clean Code (DRY, KISS, YAGNI, SOLID)
+- [ ] Las funciones tienen responsabilidad nica y un solo nivel de abstraccin
 - [ ] Los nombres son claros y descriptivos (dominio de negocio, booleanos como preguntas)
-- [ ] No existe duplicación de código
-- [ ] El archivo no supera 1000 líneas (ideal 100–300)
-- [ ] Las funciones tienen un número razonable de parámetros (máx. 3–4 o objeto de opciones)
+- [ ] No existe duplicacin de cdigo
+- [ ] El archivo no supera 1000 lneas (ideal 100300)
+- [ ] Las funciones tienen un nmero razonable de parmetros (mx. 34 o objeto de opciones)
 
 **Calidad y tipos**
 
-- [ ] No se usa `any` sin justificación; tipos e interfaces definidos donde aplica
+- [ ] No se usa `any` sin justificacin; tipos e interfaces definidos donde aplica
 - [ ] Se prefieren inmutabilidad y evitar mutar argumentos
-- [ ] No hay números o cadenas mágicas; se usan constantes con nombre
-- [ ] El manejo de errores es explícito (no catch vacío, errores con contexto)
+- [ ] No hay nmeros o cadenas mgicas; se usan constantes con nombre
+- [ ] El manejo de errores es explcito (no catch vaco, errores con contexto)
 
-**Documentación y formato**
+**Documentacin y formato**
 
-- [ ] El código está comentado correctamente (JSDoc, intención, reglas de negocio)
-- [ ] **La documentación del proyecto está actualizada en la carpeta `docs/`** (funcionalidades, APIs, flujos o decisiones técnicas tocadas en el cambio)
-- [ ] **Si agregué o cambié una regla, proceso o algo que deba quedar plasmado:** actualicé **todos los documentos** en `docs/` (y donde corresponda) donde fuera necesario reflejar ese cambio
-- [ ] El código está bien formateado (Prettier, ESLint)
-- [ ] Las dependencias están inyectadas o explícitas (testeable)
-- [ ] El código es fácil de entender y de testear para otro ingeniero
+- [ ] El cdigo est comentado correctamente (JSDoc, intencin, reglas de negocio)
+- [ ] **La documentacin del proyecto est actualizada en la carpeta `docs/`** (funcionalidades, APIs, flujos o decisiones tcnicas tocadas en el cambio)
+- [ ] **Si agregu o cambi una regla, proceso o algo que deba quedar plasmado:** actualic **todos los documentos** en `docs/` (y donde corresponda) donde fuera necesario reflejar ese cambio
+- [ ] El cdigo est bien formateado (Prettier, ESLint)
+- [ ] Las dependencias estn inyectadas o explcitas (testeable)
+- [ ] El cdigo es fcil de entender y de testear para otro ingeniero
 
-**Si alguna regla no se cumple, el código debe refactorizarse antes de hacer merge.**
+**Si alguna regla no se cumple, el cdigo debe refactorizarse antes de hacer merge.**
 
 ---
 
 ## Regla Final
 
-Antes de finalizar cualquier tarea, el ingeniero debe revisar nuevamente este documento para confirmar que **todas** las reglas se están cumpliendo, incluida la actualización de la documentación en la carpeta `docs/` y, cuando se haya establecido o modificado una regla o algo que deba quedar plasmado, que **todos los documentos afectados** estén actualizados donde sea necesario.
+Antes de finalizar cualquier tarea, el ingeniero debe revisar nuevamente este documento para confirmar que **todas** las reglas se estn cumpliendo, incluida la actualizacin de la documentacin en la carpeta `docs/` y, cuando se haya establecido o modificado una regla o algo que deba quedar plasmado, que **todos los documentos afectados** estn actualizados donde sea necesario.
 
-Estas reglas aplican **tanto al código nuevo como al código existente**. Si se toca código que ya está en el repositorio y no cumple lo que dice este documento, **hay que refactorizarlo** para que cumpla y así ir limpiando y mejorando la base de código.
+Estas reglas aplican **tanto al cdigo nuevo como al cdigo existente**. Si se toca cdigo que ya est en el repositorio y no cumple lo que dice este documento, **hay que refactorizarlo** para que cumpla y as ir limpiando y mejorando la base de cdigo.
 
-Todo lo que está en este documento **es regla** y **se debe cumplir**. No hay excepciones sin acuerdo explícito del equipo.
+Todo lo que est en este documento **es regla** y **se debe cumplir**. No hay excepciones sin acuerdo explcito del equipo.
 
-El objetivo de estas reglas es garantizar que el código y la documentación del proyecto sean:
+El objetivo de estas reglas es garantizar que el cdigo y la documentacin del proyecto sean:
 
 **limpios, consistentes, mantenibles y profesionales.**

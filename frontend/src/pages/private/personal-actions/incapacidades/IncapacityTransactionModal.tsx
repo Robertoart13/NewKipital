@@ -41,6 +41,8 @@ import {
 import dayjs, { type Dayjs } from 'dayjs';
 import { useEffect, useMemo, useRef, useState } from 'react';
 
+import { buildEmployeeDisplayName, sortEmployeesByDisplayName } from '../../../../lib/employeeName';
+
 import { fetchAbsencePayrollsCatalog } from '../../../../api/personalActions';
 import { useMoneyFieldFormatter } from '../../../../hooks/useMoneyFieldFormatter';
 import { useTransactionLines } from '../../../../hooks/useTransactionLines';
@@ -133,6 +135,7 @@ interface DisabilityTransactionModalProps {
   auditTrail?: PersonalActionAuditTrailItem[];
   loadingAuditTrail?: boolean;
   onLoadAuditTrail?: () => Promise<void> | void;
+  onCompanyChange?: (companyId?: number) => void;
   initialCompanyId?: number;
   initialDraft?: DisabilityFormDraft;
   onCancel: () => void;
@@ -323,6 +326,7 @@ export function DisabilityTransactionModal({
   onLoadAuditTrail,
   initialCompanyId,
   initialDraft,
+  onCompanyChange,
   onCancel,
   onSubmit,
 }: DisabilityTransactionModalProps) {
@@ -349,9 +353,21 @@ export function DisabilityTransactionModal({
   const [auditLoaded, setAuditLoaded] = useState(false);
   const lastLineRef = useRef<HTMLDivElement>(null);
   const prevEmployeeIdRef = useRef<number | undefined>(undefined);
+  const initOnceRef = useRef(false);
 
   useEffect(() => {
-    if (!open) return;
+    if (!open) {
+    initOnceRef.current = false;
+    return;
+  }
+
+  if (!initialDraft && initOnceRef.current) {
+    return;
+  }
+
+  if (!initialDraft) {
+    initOnceRef.current = true;
+  }
 
     setActiveTab('info');
 
@@ -376,7 +392,10 @@ export function DisabilityTransactionModal({
       return;
     }
 
-    form.setFieldsValue({ idEmpresa: initialCompanyId });
+    const nextCompanyId = mode === 'edit' ? initialCompanyId : undefined;
+
+    // En creacion no se preselecciona empresa; el usuario debe elegirla.
+    form.setFieldsValue({ idEmpresa: nextCompanyId });
     const initialLine = buildEmptyLine();
 
     setLines([initialLine]);
@@ -398,7 +417,13 @@ export function DisabilityTransactionModal({
   const selectedCompanyId = Form.useWatch('idEmpresa', form);
   const selectedEmployeeId = Form.useWatch('idEmpleado', form);
 
-  // Al cambiar de empleado se reinician las lineas porque cada empleado tiene planillas distintas
+  useEffect(() => {
+    if (!open) return;
+    if (!onCompanyChange) return;
+    onCompanyChange(selectedCompanyId ? Number(selectedCompanyId) : undefined);
+  }, [onCompanyChange, open, selectedCompanyId]);
+
+  // Al cambiar de empleado se reinician las líneas porque cada empleado tiene planillas distintas
   useEffect(() => {
     if (!open) {
       prevEmployeeIdRef.current = undefined;
@@ -438,7 +463,7 @@ export function DisabilityTransactionModal({
       return;
     }
     setEmployeePayrollConfig({
-      idPeriodoPago: employee.idPeriodoPago ?? undefined,
+      moneda: (employee.monedaSalario ?? '').toUpperCase() || undefined,
       moneda: (employee.monedaSalario ?? '').toUpperCase() || undefined,
     });
   }, [selectedCompanyId, selectedEmployeeId, employees]);
@@ -476,7 +501,7 @@ export function DisabilityTransactionModal({
 
   const employeesByCompany = useMemo(() => {
     if (!selectedCompanyId) return [];
-    return employees.filter((employee) => employee.idEmpresa === selectedCompanyId);
+    return sortEmployeesByDisplayName(employees.filter((employee) => employee.idEmpresa === selectedCompanyId));
   }, [employees, selectedCompanyId]);
 
   const selectedEmployee = useMemo(() => {
@@ -532,13 +557,13 @@ export function DisabilityTransactionModal({
     line: DisabilityTransactionLine,
     movimientoId?: number,
     cantidadValue?: number,
-    tipoIncapacidadValue?: DisabilityType,
+    const periodoNombre = (selectedPayPeriod?.nombre ?? '').toLowerCase();
     tipoInstitucionValue?: DisabilityInstitutionType,
   ) => {
-    const tipoIncapacidad = tipoIncapacidadValue ?? line.tipoIncapacidad;
-    const tipoInstitucion = tipoInstitucionValue ?? line.tipoInstitucion;
-    const cantidad = parseNonNegative(cantidadValue ?? line.cantidad ?? 0);
     const movement = filteredMovements.find((m) => m.id === (movimientoId ?? line.movimientoId));
+    const tipoInstitucion = tipoInstitucionValue ? line.tipoInstitucion;
+    const cantidad = parseNonNegative(cantidadValue ? line.cantidad ?? 0);
+    const movement = filteredMovements.find((m) => m.id === (movimientoId ? line.movimientoId));
 
     if (!movement) {
       return { monto: 0, montoInput: '0', formula: 'Seleccione un movimiento para calcular' };
@@ -692,7 +717,7 @@ export function DisabilityTransactionModal({
     if (loading) return;
     const values = await form.validateFields();
     if (lines.length === 0 || !lines.every(isLineComplete)) {
-      message.error('Complete todas las lineas antes de crear/guardar la incapacidad.');
+      message.error('Complete todas las líneas antes de crear/guardar la incapacidad.');
       return;
     }
 
@@ -753,7 +778,7 @@ export function DisabilityTransactionModal({
           const actorLabel =
             row.actorNombre?.trim() ||
             row.actorEmail?.trim() ||
-            (row.actorUserId ? `Usuario ID ${row.actorUserId}` : 'Sistema');
+          const changes = row.cambios ?? [];
           return (
             <div>
               <div style={{ fontWeight: 600, color: '#3d4f5c' }}>{actorLabel}</div>
@@ -795,7 +820,7 @@ export function DisabilityTransactionModal({
                   ))}
                 </div>
               ) : (
-                <div style={{ fontSize: 12 }}>Sin detalle de campos para esta accion.</div>
+                <div style={{ fontSize: 12 }}>Sin detalle de campos para esta acción.</div>
               )}
             </div>
           );
@@ -950,7 +975,7 @@ export function DisabilityTransactionModal({
                                 </div>
                                 <div className={sharedStyles.employeeAccordionNameBlock}>
                                   <div className={sharedStyles.employeeAccordionName}>
-                                    {`${selectedEmployee.nombre || '--'} ${selectedEmployee.apellido1 || ''} ${selectedEmployee.apellido2 || ''}`.trim()}
+                                    {buildEmployeeDisplayName(selectedEmployee)}
                                   </div>
                                   <div className={sharedStyles.employeeAccordionId}>
                                     Empleado ID: {selectedEmployee.codigo || '--'}
@@ -1143,7 +1168,7 @@ export function DisabilityTransactionModal({
                     >
                       {loading && !showGlobalPreload ? (
                         <Flex justify="center" align="center" style={{ minHeight: 220 }}>
-                          <Spin size="large" description="Cargando lineas de transaccion..." />
+                          <Spin size="large" description="Cargando líneas de transacción..." />
                         </Flex>
                       ) : (
                         <>
@@ -1161,7 +1186,7 @@ export function DisabilityTransactionModal({
                                 );
                                 const payrollOptions = payrollsByCompany.map((payroll) => ({
                                   value: payroll.id,
-                                  label: `${payroll.nombrePlanilla ?? `Planilla #${payroll.id}`} (${getPayrollEstadoLabel(payroll.estado)})`,
+                                    label: `${line.movimientoLabel ?? `Movimiento #${line.movimientoId}`} (No elegible hoy)`,
                                   disabled: false,
                                 }));
                                 if (
@@ -1471,7 +1496,7 @@ export function DisabilityTransactionModal({
                             }}
                           >
                             <Button type="dashed" icon={<PlusOutlined />} onClick={handleAddLine} disabled={readOnly}>
-                              Agregar linea de transaccion
+                              Agregar línea de transacción
                             </Button>
                           </Flex>
                         </>
@@ -1530,4 +1555,16 @@ export function DisabilityTransactionModal({
     </Modal>
   );
 }
+
+
+
+
+
+
+
+
+
+
+
+
 

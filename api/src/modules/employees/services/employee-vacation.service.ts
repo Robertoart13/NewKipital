@@ -1,4 +1,4 @@
-﻿import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { In, EntityManager, Repository } from 'typeorm';
 
@@ -211,7 +211,7 @@ export class EmployeeVacationService {
               periodRef,
               sourceType: 'VACATION_MONTHLY_PROVISION',
               sourceId: null,
-              description: 'ProvisiÃ³n mensual automÃ¡tica de vacaciones',
+              description: 'Provisión mensual automática de vacaciones',
               actorId: null,
             });
 
@@ -315,7 +315,7 @@ export class EmployeeVacationService {
           effectiveDate: this.toDateOnly(effectiveDate),
           sourceType: 'PAYROLL_APPLIED_ACTION',
           sourceId: action.id,
-          description: `Descuento vacaciones por acciÃ³n #${action.id} aplicada en planilla #${payrollId}`,
+          description: `Descuento vacaciones por acción #${action.id} aplicada en planilla #${payrollId}`,
           actorId,
         });
 
@@ -566,7 +566,8 @@ export class EmployeeVacationService {
   assertJoinDateWithinPolicy(fechaIngreso: Date): void {
     const day = this.getDay(fechaIngreso);
     if (day < 1 || day > 28) {
-      throw new Error('La fecha de ingreso debe estar entre el dÃ­a 1 y 28 del mes.');
+      throw new Error('La fecha de ingreso debe estar entre el día 1 y 28 del mes.');
     }
   }
 }
+

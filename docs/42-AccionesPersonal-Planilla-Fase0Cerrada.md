@@ -182,7 +182,7 @@ se marca `requires_recalculation = 1` y se bloquea `APPLY` hasta reprocesar.
 
 ### Gap identificado (2026-03-04)
 
-No se persisten aÃºn los campos necesarios para:
+No se persisten aún los campos necesarios para:
 
 - `devengado_dias` / `devengado_horas`
 - `salario_bruto_periodo`
@@ -191,17 +191,17 @@ No se persisten aÃºn los campos necesarios para:
 
 ### Estrategia propuesta (Enterprise CR)
 
-1. **Persistencia normalizada para reportes rÃ¡pidos**  
+1. **Persistencia normalizada para reportes rápidos**  
    Guardar los campos anteriores en `nomina_resultados` para permitir sumatorias por planilla sin recalcular.
 
-2. **Snapshot JSON completo para auditorÃ­a**  
+2. **Snapshot JSON completo para auditoría**  
    Persistir JSON con empleado + acciones + montos finales por planilla.
 
 3. **Devengado real como base de aguinaldo**  
-   - Quincenal/mensual: salario proporcional segÃºn dÃ­as trabajados + ajustes.  
+   - Quincenal/mensual: salario proporcional según días trabajados + ajustes.  
    - Semanal/bisemanal (por hora): horas efectivas * tarifa + extras.  
 
-Resultado: reportes rÃ¡pidos, trazabilidad completa y base correcta para provisiÃ³n de aguinaldo y traslados.
+Resultado: reportes rápidos, trazabilidad completa y base correcta para provisión de aguinaldo y traslados.
 
 ---
 
@@ -928,21 +928,21 @@ en crear/editar (Ausencias y siguientes modulos):
    - Si tipo = `NO_JUSTIFICADA`:
      - Si movimiento tiene `esMontoFijo = 1` y `montoFijo > 0`:
        - `monto = montoFijo * cantidad`
-       - `formula = "Monto fijo: montoFijo × cantidad"`
+       - `formula = "Monto fijo: montoFijo  cantidad"`
      - Si no es monto fijo y `porcentaje > 0`:
        - `base = salarioBaseEmpleado`
        - si empleado es quincenal (`idPeriodoPago = 9`): `base = salarioBaseEmpleado / 2`
        - `monto = base * (porcentaje/100) * cantidad`
-       - `formula = "base × porcentaje% × cantidad"`
+       - `formula = "base  porcentaje%  cantidad"`
      - Si no hay configuracion de movimiento:
        - `monto = 0`
-       - `formula = "Sin configuración de cálculo"`
+       - `formula = "Sin configuracin de clculo"`
 
 12. Regla de visibilidad de formula con permiso sensible:
    - Permiso: `employee:view-sensitive`.
    - Si NO tiene permiso y la formula incluye salario/base del empleado:
      - mostrar base enmascarada: `***`.
-     - ejemplo: `*** × 5% × 2`.
+     - ejemplo: `***  5%  2`.
    - Si SI tiene permiso:
      - mostrar formula completa con base real.
 

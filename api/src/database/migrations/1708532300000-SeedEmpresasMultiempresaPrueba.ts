@@ -49,3 +49,4 @@ export class SeedEmpresasMultiempresaPrueba1708532300000 implements MigrationInt
     );
   }
 }
+

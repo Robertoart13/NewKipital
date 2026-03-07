@@ -1,4 +1,4 @@
-﻿# Guia de Testing - KPITAL 360
+# Guia de Testing - KPITAL 360
 
 Fecha: 2026-03-05  
 Version: 11.1  

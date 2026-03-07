@@ -30,6 +30,11 @@ import {
 } from 'antd';
 import dayjs from 'dayjs';
 import { useCallback, useEffect, useMemo, useState, type MouseEvent } from 'react';
+
+import { useSortableColumns } from '../../../../hooks/useSortableColumns';
+import { bustApiCache } from '../../../../lib/apiCache';
+
+
 import { Link } from 'react-router-dom';
 
 import { fetchPayPeriods, type CatalogPayPeriod } from '../../../../api/catalogs';
@@ -70,13 +75,13 @@ const ESTADO_LABEL: Record<number, { text: string; tagClass: string }> = {
 };
 
 const ESTADO_HELP: Record<number, string> = {
-  1: 'Borrador: accion en captura interna, aun no enviada al flujo de aprobacion.',
+  1: 'Borrador: acción en captura interna, aún no enviada al flujo de aprobación.',
   2: 'Pendiente Supervisor: requiere revision/aprobacion del supervisor.',
   3: 'Pendiente RRHH: aprobada por supervisor, pendiente validacion final RRHH.',
   4: 'Aprobada: lista para consumo operativo en planilla segun reglas.',
   5: 'Consumida: ya fue aplicada/consumida por proceso de planilla.',
-  6: 'Cancelada: se detuvo la accion por decision operativa.',
-  7: 'Invalidada: accion anulada por inconsistencia o cambio de criterio.',
+  6: 'Cancelada: se detuvo la acción por decisión operativa.',
+  7: 'Invalidada: acción anulada por inconsistencia o cambio de criterio.',
   8: 'Expirada: vencio su vigencia operativa.',
   9: 'Rechazada: no fue aprobada en flujo de validacion.',
 };
@@ -93,14 +98,14 @@ const NEXT_STATE_ACTION_CONFIG: Partial<Record<number, NextStateActionConfig>> =
   1: {
     label: 'Enviar a Supervisor',
     requiredPermission: 'edit',
-    confirmText: 'Esta accion se enviara a revision de supervisor. Desea continuar?',
+    confirmText: 'Esta acción se enviará a revisión de supervisor. ¿Desea continuar?',
     successText: 'La ausencia fue enviada a Supervisor.',
     deniedText: 'No tiene permiso para enviar a Supervisor.',
   },
   2: {
     label: 'Enviar a RRHH',
     requiredPermission: 'approve',
-    confirmText: 'Esta accion se enviara a revision final de RRHH. Desea continuar?',
+    confirmText: 'Esta acción se enviará a revisión final de RRHH. ¿Desea continuar?',
     successText: 'La ausencia fue enviada a RRHH.',
     deniedText: 'No tiene permiso para enviar a RRHH.',
   },
@@ -146,17 +151,18 @@ function getPaneValue(row: AbsenceUiRow, key: PaneKey, companies: Array<{ id: nu
   if (key === 'empresa') {
     return companies.find((c) => Number(c.id) === row.idEmpresa)?.nombre ?? `Empresa #${row.idEmpresa}`;
   }
-  if (key === 'empleado') return (row.employeeLabel ?? `Empleado #${row.idEmpleado}`).trim() || '--';
+  if (key === 'empleado') return row.employeeLabel ?? `Empleado #${row.idEmpleado}`;
   if (key === 'periodoPago') return (row.periodoPagoResumen ?? '').trim() || '--';
   if (key === 'movimiento') return (row.movimientoResumen ?? '').trim() || '--';
-  if (key === 'remuneracion')
+  if (key === 'remuneracion') {
     return row.remuneracionResumen === 'SI'
-      ? 'Sí'
+      ? 'Si'
       : row.remuneracionResumen === 'NO'
         ? 'No'
         : row.remuneracionResumen === 'MIXTA'
           ? 'Mixta'
           : '--';
+  }
   if (key === 'estado') return ESTADO_LABEL[row.estado]?.text ?? `Estado ${row.estado}`;
   return '--';
 }
@@ -205,7 +211,6 @@ function createDraftFromAbsenceDetail(detail: AbsenceDetailItem): AbsenceFormDra
           cantidad: line.cantidad,
           monto: line.monto,
           remuneracion: line.remuneracion,
-          formula: line.formula ?? '',
           payrollLabel: line.payrollLabel ?? undefined,
           payrollEstado: line.payrollEstado ?? undefined,
           movimientoLabel: line.movimientoLabel ?? undefined,
@@ -216,7 +221,7 @@ function createDraftFromAbsenceDetail(detail: AbsenceDetailItem): AbsenceFormDra
             key: `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
             tipoAusencia: 'JUSTIFICADA',
             remuneracion: true,
-            formula: detail.descripcion ?? '',
+            monto: detail.monto ?? undefined,
             monto: detail.monto ?? undefined,
             fechaEfecto: detail.fechaEfecto ? dayjs(detail.fechaEfecto) : undefined,
           },
@@ -451,7 +456,7 @@ export function AbsencesPage() {
     if (!targetCompanyId) {
       setEmployees([]);
       setMovements([]);
-      setAbsenceActionTypeId(undefined);
+      setAbsenceActionTypeId(20);
       setLoadingEmployees(false);
       setLoadingMovements(false);
       return;
@@ -483,7 +488,7 @@ export function AbsencesPage() {
           esInactivo: movement.esInactivo,
         })),
       );
-      setAbsenceActionTypeId(undefined);
+      setAbsenceActionTypeId(20);
     } catch {
       setEmployees([]);
       setMovements([]);
@@ -581,7 +586,7 @@ export function AbsencesPage() {
 
   const rowsFiltered = useMemo(() => dataFilteredByPaneSelections(), [dataFilteredByPaneSelections]);
 
-  const columns: ColumnsType<AbsenceUiRow> = useMemo(
+  const columns: ColumnsType<AbsenceUiRow> = useSortableColumns(
     () => [
       {
         title: 'EMPRESA',
@@ -649,7 +654,7 @@ export function AbsencesPage() {
             e.stopPropagation();
             modal.confirm({
               title: 'Confirmar invalidacion',
-              content: 'Esta accion se marcara como invalidada y no seguira su flujo operativo. Desea continuar?',
+              content: 'Esta acción se marcará como invalidada y no seguirá su flujo operativo. ¿Desea continuar?',
               okText: 'Si, invalidar',
               cancelText: 'Cancelar',
               centered: true,
@@ -756,7 +761,7 @@ export function AbsencesPage() {
       fechaEfecto: line.fechaEfecto?.format('YYYY-MM-DD') ?? '',
       movimientoId: Number(line.movimientoId),
       tipoAusencia: line.tipoAusencia,
-      cantidad: Number(line.cantidad ?? 0),
+      monto: Number(line.monto ?? 0),
       monto: Number(line.monto ?? 0),
       remuneracion: Boolean(line.remuneracion),
       formula: line.formula?.trim() || undefined,
@@ -772,7 +777,7 @@ export function AbsencesPage() {
           </Link>
           <div className={styles.pageTitleBlock}>
             <h1 className={styles.pageTitle}>Ausencias</h1>
-            <p className={styles.pageSubtitle}>Gestione ausencias por empresa con líneas de transacción por periodo</p>
+            <p className={styles.pageSubtitle}>Gestione ausencias por empresa con l\u00EDneas de transacci\u00F3n por per\u00EDodo</p>
           </div>
         </div>
       </div>
@@ -786,7 +791,7 @@ export function AbsencesPage() {
               </div>
               <div>
                 <h2 className={styles.gestionTitle}>Gestión de Ausencias</h2>
-                <p className={styles.gestionDesc}>Encabezado de acción + múltiples líneas por planilla</p>
+                <p className={styles.gestionDesc}>Encabezado de acci\u00F3n + m\u00FAltiples l\u00EDneas por planilla</p>
               </div>
             </Flex>
             <Button
@@ -799,7 +804,7 @@ export function AbsencesPage() {
                 setEditingDraft(undefined);
                 setLoadingEditDetail(false);
                 setMode('create');
-                setModalCompanyId(companyId ?? defaultCompanyId);
+                setModalCompanyId(undefined);
                 setOpenModal(true);
               }}
             >
@@ -852,7 +857,13 @@ export function AbsencesPage() {
                   setPaneSearch((prev) => ({ ...prev, estado: '' }));
                 }}
               />
-              <Button icon={<ReloadOutlined />} onClick={() => void loadRows()}>
+              <Button
+                icon={<ReloadOutlined />}
+                onClick={() => {
+                  bustApiCache();
+                  void loadRows();
+                }}
+              >
                 Refrescar
               </Button>
             </Flex>
@@ -1009,9 +1020,10 @@ export function AbsencesPage() {
         auditTrail={auditTrail}
         loadingAuditTrail={loadingAuditTrail}
         onLoadAuditTrail={mode === 'edit' && editingRow ? loadEditingAbsenceAuditTrail : undefined}
-        initialCompanyId={modalCompanyId ?? companyId ?? defaultCompanyId}
+        initialCompanyId={modalCompanyId}
         initialDraft={editingDraft}
         onCompanyChange={(nextCompanyId) => {
+          bustApiCache();
           setModalCompanyId(nextCompanyId);
         }}
         onCancel={() => {
@@ -1064,3 +1076,16 @@ export function AbsencesPage() {
     </div>
   );
 }
+
+
+
+
+
+
+
+
+
+
+
+
+

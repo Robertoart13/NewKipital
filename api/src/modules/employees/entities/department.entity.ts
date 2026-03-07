@@ -49,3 +49,4 @@ export class Department {
   @Column({ name: 'modificado_por_departamento', type: 'int', nullable: true })
   modificadoPor: number | null;
 }
+

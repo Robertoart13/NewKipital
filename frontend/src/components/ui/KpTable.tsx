@@ -16,3 +16,4 @@ export function KpTable<RecordType extends object>(props: TableProps<RecordType>
     />
   );
 }
+

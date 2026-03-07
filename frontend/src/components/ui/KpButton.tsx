@@ -9,3 +9,4 @@ import type { ButtonProps } from 'antd';
 export function KpButton(props: ButtonProps) {
   return <Button className="kp-button" {...props} />;
 }
+

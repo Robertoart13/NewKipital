@@ -1287,3 +1287,4 @@ export class UserAssignmentService {
     return Number.isFinite(rawTotal) ? rawTotal : 0;
   }
 }
+

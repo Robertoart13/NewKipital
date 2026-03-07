@@ -143,3 +143,4 @@ export class CreateSysEmpresas1708531200000 implements MigrationInterface {
     await queryRunner.dropTable('sys_empresas');
   }
 }
+

@@ -106,3 +106,4 @@ export class NotificationsGateway implements OnGatewayConnection, OnGatewayDisco
     this.server.to(USER_ROOM_PREFIX + userId).emit('notification:list-update');
   }
 }
+

@@ -76,7 +76,7 @@ export class GlobalExceptionFilter implements ExceptionFilter {
         success: false,
         data: null,
         message:
-          'No se pudo completar la accion por una desconexion temporal. Intente nuevamente en unos segundos.',
+          'No se pudo completar la acción por una desconexión temporal. Intente nuevamente en unos segundos.',
         error: 'Servicio temporalmente no disponible',
       });
       return;
@@ -145,3 +145,4 @@ export class GlobalExceptionFilter implements ExceptionFilter {
     return false;
   }
 }
+

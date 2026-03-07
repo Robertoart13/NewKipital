@@ -38,6 +38,8 @@ import {
 import dayjs, { type Dayjs } from 'dayjs';
 import { useEffect, useMemo, useRef, useState } from 'react';
 
+import { buildEmployeeDisplayName, sortEmployeesByDisplayName } from '../../../../lib/employeeName';
+
 import { fetchAbsencePayrollsCatalog } from '../../../../api/personalActions';
 import { useMoneyFieldFormatter } from '../../../../hooks/useMoneyFieldFormatter';
 import { formatDateTime12h } from '../../../../lib/formatDate';
@@ -111,6 +113,7 @@ interface IncreaseTransactionModalProps {
   auditTrail?: PersonalActionAuditTrailItem[];
   loadingAuditTrail?: boolean;
   onLoadAuditTrail?: () => Promise<void> | void;
+  onCompanyChange?: (companyId?: number) => void;
   initialCompanyId?: number;
   initialDraft?: IncreaseFormDraft;
   onCancel: () => void;
@@ -222,6 +225,7 @@ export function IncreaseTransactionModal({
   auditTrail = [],
   loadingAuditTrail = false,
   onLoadAuditTrail,
+  onCompanyChange,
   initialCompanyId,
   initialDraft,
   onCancel,
@@ -236,9 +240,21 @@ export function IncreaseTransactionModal({
   const [activeTab, setActiveTab] = useState('info');
   const [auditLoaded, setAuditLoaded] = useState(false);
   const prevEmployeeIdRef = useRef<number | undefined>(undefined);
+  const initOnceRef = useRef(false);
 
   useEffect(() => {
-    if (!open) return;
+    if (!open) {
+    initOnceRef.current = false;
+    return;
+  }
+
+  if (!initialDraft && initOnceRef.current) {
+    return;
+  }
+
+  if (!initialDraft) {
+    initOnceRef.current = true;
+  }
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setActiveTab('info');
 
@@ -260,7 +276,10 @@ export function IncreaseTransactionModal({
       return;
     }
 
-    form.setFieldsValue({ idEmpresa: initialCompanyId });
+    const nextCompanyId = mode === 'edit' ? initialCompanyId : undefined;
+
+    // En creacion no se preselecciona empresa; el usuario debe elegirla.
+    form.setFieldsValue({ idEmpresa: nextCompanyId });
 
     setLine(buildEmptyLine());
   }, [open, initialDraft, initialCompanyId, form]);
@@ -277,6 +296,11 @@ export function IncreaseTransactionModal({
 
   const selectedCompanyId = Form.useWatch('idEmpresa', form);
   const selectedEmployeeId = Form.useWatch('idEmpleado', form);
+
+  useEffect(() => {
+    if (!open || !onCompanyChange) return;
+    onCompanyChange(selectedCompanyId ? Number(selectedCompanyId) : undefined);
+  }, [onCompanyChange, open, selectedCompanyId]);
 
   useEffect(() => {
     if (!open) {
@@ -323,7 +347,7 @@ export function IncreaseTransactionModal({
 
   const employeesByCompany = useMemo(() => {
     if (!selectedCompanyId) return [];
-    return employees.filter((employee) => employee.idEmpresa === selectedCompanyId);
+    return sortEmployeesByDisplayName(employees.filter((employee) => employee.idEmpresa === selectedCompanyId));
   }, [employees, selectedCompanyId]);
 
   const selectedEmployee = useMemo(() => {
@@ -339,8 +363,8 @@ export function IncreaseTransactionModal({
     return payPeriods.find((period) => period.id === Number(selectedEmployee.idPeriodoPago)) ?? null;
   }, [payPeriods, selectedEmployee]);
 
-  const employeeCurrency = (selectedEmployee?.monedaSalario ?? 'CRC').toUpperCase();
   const salarioActual = Number(selectedEmployee?.salarioBase ?? line.salarioActual ?? 0);
+  const salarioActual = Number(selectedEmployee?.salarioBase ? line.salarioActual ?? 0);
   const salaryDisplay = canViewEmployeeSensitive ? formatMoney(salarioActual, employeeCurrency) : '***';
 
   const sensitiveMaskedValue = '***';
@@ -375,7 +399,7 @@ export function IncreaseTransactionModal({
           const actorLabel =
             row.actorNombre?.trim() ||
             row.actorEmail?.trim() ||
-            (row.actorUserId ? `Usuario ID ${row.actorUserId}` : 'Sistema');
+            (row.actorUserId != null ? `Usuario ID ${row.actorUserId}` : 'Sistema');
           return (
             <div>
               <div style={{ fontWeight: 600, color: '#3d4f5c' }}>{actorLabel}</div>
@@ -417,7 +441,7 @@ export function IncreaseTransactionModal({
                   ))}
                 </div>
               ) : (
-                <div style={{ fontSize: 12 }}>Sin detalle de campos para esta accion.</div>
+                <div style={{ fontSize: 12 }}>Sin detalle de campos para esta acción.</div>
               )}
             </div>
           );
@@ -444,7 +468,7 @@ export function IncreaseTransactionModal({
   const payrollsByCompany = useMemo(() => {
     if (!selectedCompanyId) return [];
     let list = eligiblePayrolls.filter((payroll) => payroll.idEmpresa === selectedCompanyId);
-    if (selectedEmployee?.idPeriodoPago) {
+  const inputMonto = Number(line.monto ?? 0);
       list = list.filter((payroll) => Number(payroll.idPeriodoPago) === Number(selectedEmployee.idPeriodoPago));
     }
     if (selectedEmployee?.monedaSalario) {
@@ -467,7 +491,7 @@ export function IncreaseTransactionModal({
     return list;
   }, [movements, selectedCompanyId, actionTypeIdForIncrease]);
 
-  const metodoCalculo = line.metodoCalculo ?? 'PORCENTAJE';
+  const inputPorcentaje = Number(line.porcentaje ?? 0);
   const inputMonto = Number(line.monto ?? 0);
   const inputPorcentaje = Number(line.porcentaje ?? 0);
 
@@ -703,7 +727,7 @@ export function IncreaseTransactionModal({
                                 </div>
                                 <div className={sharedStyles.employeeAccordionNameBlock}>
                                   <div className={sharedStyles.employeeAccordionName}>
-                                    {`${selectedEmployee.nombre || '--'} ${selectedEmployee.apellido1 || ''} ${selectedEmployee.apellido2 || ''}`.trim()}
+                                    {buildEmployeeDisplayName(selectedEmployee)}
                                   </div>
                                   <div className={sharedStyles.employeeAccordionId}>
                                     Empleado ID: {selectedEmployee.codigo || '--'}
@@ -1152,4 +1176,15 @@ export function IncreaseTransactionModal({
     </Modal>
   );
 }
+
+
+
+
+
+
+
+
+
+
+
 

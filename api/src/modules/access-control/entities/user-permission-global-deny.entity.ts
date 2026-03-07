@@ -50,3 +50,4 @@ export class UserPermissionGlobalDeny {
   @Column({ name: 'modificado_por_usuario_permiso_global', type: 'int' })
   modificadoPor: number;
 }
+

@@ -40,3 +40,4 @@ export class AddConfigUserGranularPermissions1708533300000 implements MigrationI
     `);
   }
 }
+

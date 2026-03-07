@@ -40,6 +40,8 @@ import {
 import dayjs, { type Dayjs } from 'dayjs';
 import { useEffect, useMemo, useRef, useState } from 'react';
 
+import { buildEmployeeDisplayName, sortEmployeesByDisplayName } from '../../../../lib/employeeName';
+
 import { fetchAbsencePayrollsCatalog } from '../../../../api/personalActions';
 import { useMoneyFieldFormatter } from '../../../../hooks/useMoneyFieldFormatter';
 import { useTransactionLines } from '../../../../hooks/useTransactionLines';
@@ -121,6 +123,7 @@ interface DiscountTransactionModalProps {
   auditTrail?: PersonalActionAuditTrailItem[];
   loadingAuditTrail?: boolean;
   onLoadAuditTrail?: () => Promise<void> | void;
+  onCompanyChange?: (companyId?: number) => void;
   initialCompanyId?: number;
   initialDraft?: DiscountFormDraft;
   onCancel: () => void;
@@ -255,6 +258,7 @@ export function DiscountTransactionModal({
   auditTrail = [],
   loadingAuditTrail = false,
   onLoadAuditTrail,
+  onCompanyChange,
   initialCompanyId,
   initialDraft,
   onCancel,
@@ -282,9 +286,21 @@ export function DiscountTransactionModal({
   const [auditLoaded, setAuditLoaded] = useState(false);
   const lastLineRef = useRef<HTMLDivElement>(null);
   const prevEmployeeIdRef = useRef<number | undefined>(undefined);
+  const initOnceRef = useRef(false);
 
   useEffect(() => {
-    if (!open) return;
+    if (!open) {
+    initOnceRef.current = false;
+    return;
+  }
+
+  if (!initialDraft && initOnceRef.current) {
+    return;
+  }
+
+  if (!initialDraft) {
+    initOnceRef.current = true;
+  }
 
     setActiveTab('info');
 
@@ -309,7 +325,10 @@ export function DiscountTransactionModal({
       return;
     }
 
-    form.setFieldsValue({ idEmpresa: initialCompanyId });
+    const nextCompanyId = mode === 'edit' ? initialCompanyId : undefined;
+
+    // En creacion no se preselecciona empresa; el usuario debe elegirla.
+    form.setFieldsValue({ idEmpresa: nextCompanyId });
     const initialLine = buildEmptyLine();
 
     setLines([initialLine]);
@@ -330,6 +349,11 @@ export function DiscountTransactionModal({
 
   const selectedCompanyId = Form.useWatch('idEmpresa', form);
   const selectedEmployeeId = Form.useWatch('idEmpleado', form);
+
+  useEffect(() => {
+    if (!open || !onCompanyChange) return;
+    onCompanyChange(selectedCompanyId ? Number(selectedCompanyId) : undefined);
+  }, [onCompanyChange, open, selectedCompanyId]);
 
   // Al cambiar de empleado se reinician las líneas porque cada empleado tiene planillas distintas
   useEffect(() => {
@@ -371,7 +395,7 @@ export function DiscountTransactionModal({
       return;
     }
     setEmployeePayrollConfig({
-      idPeriodoPago: employee.idPeriodoPago ?? undefined,
+      moneda: (employee.monedaSalario ?? '').toUpperCase() || undefined,
       moneda: (employee.monedaSalario ?? '').toUpperCase() || undefined,
     });
   }, [selectedCompanyId, selectedEmployeeId, employees]);
@@ -409,7 +433,7 @@ export function DiscountTransactionModal({
 
   const employeesByCompany = useMemo(() => {
     if (!selectedCompanyId) return [];
-    return employees.filter((employee) => employee.idEmpresa === selectedCompanyId);
+    return sortEmployeesByDisplayName(employees.filter((employee) => employee.idEmpresa === selectedCompanyId));
   }, [employees, selectedCompanyId]);
 
   const selectedEmployee = useMemo(() => {
@@ -439,7 +463,7 @@ export function DiscountTransactionModal({
   const payrollsByCompany = useMemo(() => {
     if (!selectedCompanyId) return [];
     let list = eligiblePayrolls.filter((payroll) => payroll.idEmpresa === selectedCompanyId);
-    if (employeePayrollConfig?.idPeriodoPago) {
+    const cantidad = parseNonNegative(cantidadValue ?? line.cantidad ?? 0);
       list = list.filter((payroll) => Number(payroll.idPeriodoPago) === Number(employeePayrollConfig.idPeriodoPago));
     }
     if (employeePayrollConfig?.moneda) {
@@ -463,8 +487,8 @@ export function DiscountTransactionModal({
   }, [movements, selectedCompanyId, actionTypeIdForDiscount, lines]);
 
   const calculateLineAmount = (line: DiscountTransactionLine, movimientoId?: number, cantidadValue?: number) => {
-    const cantidad = parseNonNegative(cantidadValue ?? line.cantidad ?? 0);
     const movement = filteredMovements.find((m) => m.id === (movimientoId ?? line.movimientoId));
+    const movement = filteredMovements.find((m) => m.id === (movimientoId ? line.movimientoId));
 
     if (!movement) {
       return { monto: 0, montoInput: '0', formula: 'Seleccione un movimiento para calcular' };
@@ -483,7 +507,7 @@ export function DiscountTransactionModal({
     }
 
     if (porcentaje > 0) {
-      const salarioBase = parseNonNegative(selectedEmployee?.salarioBase);
+      payrollLabel: payroll?.nombrePlanilla ?? undefined,
       const baseCalculo = calculateSalaryByPeriod(
         salarioBase,
         selectedEmployee?.idPeriodoPago,
@@ -606,7 +630,7 @@ export function DiscountTransactionModal({
           const actorLabel =
             row.actorNombre?.trim() ||
             row.actorEmail?.trim() ||
-            (row.actorUserId ? `Usuario ID ${row.actorUserId}` : 'Sistema');
+            (row.actorUserId != null ? `Usuario ID ${row.actorUserId}` : 'Sistema');
           return (
             <div>
               <div style={{ fontWeight: 600, color: '#3d4f5c' }}>{actorLabel}</div>
@@ -648,7 +672,7 @@ export function DiscountTransactionModal({
                   ))}
                 </div>
               ) : (
-                <div style={{ fontSize: 12 }}>Sin detalle de campos para esta accion.</div>
+                <div style={{ fontSize: 12 }}>Sin detalle de campos para esta acción.</div>
               )}
             </div>
           );
@@ -803,7 +827,7 @@ export function DiscountTransactionModal({
                                 </div>
                                 <div className={sharedStyles.employeeAccordionNameBlock}>
                                   <div className={sharedStyles.employeeAccordionName}>
-                                    {`${selectedEmployee.nombre || '--'} ${selectedEmployee.apellido1 || ''} ${selectedEmployee.apellido2 || ''}`.trim()}
+                                    {buildEmployeeDisplayName(selectedEmployee)}
                                   </div>
                                   <div className={sharedStyles.employeeAccordionId}>
                                     Empleado ID: {selectedEmployee.codigo || '--'}
@@ -996,7 +1020,7 @@ export function DiscountTransactionModal({
                     >
                       {loading && !showGlobalPreload ? (
                         <Flex justify="center" align="center" style={{ minHeight: 220 }}>
-                          <Spin size="large" description="Cargando lineas de transaccion..." />
+                          <Spin size="large" description="Cargando líneas de transacción..." />
                         </Flex>
                       ) : (
                         <>
@@ -1297,4 +1321,15 @@ export function DiscountTransactionModal({
     </Modal>
   );
 }
+
+
+
+
+
+
+
+
+
+
+
 

@@ -39,3 +39,4 @@ export function AppHeader({ menuItems, iconMap, userName = 'Usuario' }: AppHeade
     </Header>
   );
 }
+

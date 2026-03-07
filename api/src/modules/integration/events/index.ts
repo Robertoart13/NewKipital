@@ -4,3 +4,4 @@
  * Escuchará: payroll.applied (para sync con NetSuite u otros).
  */
 export {};
+

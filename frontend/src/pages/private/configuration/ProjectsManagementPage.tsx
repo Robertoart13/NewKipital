@@ -35,6 +35,8 @@ import {
   Tooltip,
 } from 'antd';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+
+import { useSortableColumns } from '../../../hooks/useSortableColumns';
 import { Link } from 'react-router-dom';
 
 import {
@@ -111,9 +113,9 @@ function normalizePayload(values: ProjectFormValues): Omit<ProjectPayload, 'idEm
 function getPaneValue(row: ProjectListItem, key: PaneKey, companies: Array<{ id: number; nombre: string }>): string {
   if (key === 'empresa') {
     const company = companies.find((c) => c.id === row.idEmpresa);
-    return company?.nombre ?? `Empresa #${row.idEmpresa}`;
-  }
   if (key === 'nombre') return row.nombre ?? '';
+  }
+  if (key === 'idExterno') return row.idExterno ?? '';
   if (key === 'codigo') return row.codigo ?? '';
   if (key === 'idExterno') return row.idExterno ?? '';
   return row.esInactivo === 0 ? 'Inactivo' : 'Activo';
@@ -205,9 +207,9 @@ export function ProjectsManagementPage() {
       const term = search.trim().toLowerCase();
       if (!term) return true;
       return (
-        (row.nombre ?? '').toLowerCase().includes(term) ||
-        (row.codigo ?? '').toLowerCase().includes(term) ||
         (row.idExterno ?? '').toLowerCase().includes(term) ||
+        (companies.find((c) => c.id === row.idEmpresa)?.nombre ?? '').toLowerCase().includes(term) ||
+        (row.descripcion ?? '').toLowerCase().includes(term)
         (companies.find((c) => c.id === row.idEmpresa)?.nombre ?? '').toLowerCase().includes(term) ||
         (row.descripcion ?? '').toLowerCase().includes(term)
       );
@@ -314,9 +316,9 @@ export function ProjectsManagementPage() {
     (row: ProjectListItem) => {
       const isActiveCompany = activeCompanyIds.has(row.idEmpresa);
       form.setFieldsValue({
-        idEmpresa: isActiveCompany ? row.idEmpresa : undefined,
-        nombre: row.nombre ?? '',
         descripcion: row.descripcion ?? '',
+        codigo: row.codigo ?? '',
+        idExterno: row.idExterno ?? '',
         codigo: row.codigo ?? '',
         idExterno: row.idExterno ?? '',
       });
@@ -461,7 +463,7 @@ export function ProjectsManagementPage() {
     await loadRows();
   };
 
-  const columns: ColumnsType<ProjectListItem> = [
+  const columns: ColumnsType<ProjectListItem> = useSortableColumns([
     {
       title: 'Empresa',
       dataIndex: 'idEmpresa',
@@ -519,7 +521,7 @@ export function ProjectsManagementPage() {
       width: 220,
       render: (value) => formatDateTime12h(value),
     },
-  ];
+  ]);
 
   const auditColumns: ColumnsType<ProjectAuditTrailItem> = [
     {
@@ -537,7 +539,7 @@ export function ProjectsManagementPage() {
         const actorLabel =
           row.actorNombre?.trim() ||
           row.actorEmail?.trim() ||
-          (row.actorUserId ? `Usuario ID ${row.actorUserId}` : 'Sistema');
+          (row.actorUserId != null ? `Usuario ID ${row.actorUserId}` : 'Sistema');
         return (
           <div>
             <div style={{ fontWeight: 600, color: '#3d4f5c' }}>{actorLabel}</div>
@@ -579,7 +581,7 @@ export function ProjectsManagementPage() {
                 ))}
               </div>
             ) : (
-              <div style={{ fontSize: 12 }}>Sin detalle de campos para esta accion.</div>
+              <div style={{ fontSize: 12 }}>Sin detalle de campos para esta acción.</div>
             )}
           </div>
         );
@@ -625,7 +627,7 @@ export function ProjectsManagementPage() {
                 <ProjectOutlined className={styles.gestionIcon} />
               </div>
               <div>
-                <h2 className={styles.gestionTitle}>Gestion de Proyectos</h2>
+                <h2 className={styles.gestionTitle}>Gestión de Proyectos</h2>
                 <p className={styles.gestionDesc}>
                   Administre y consulte todos los proyectos registrados en el sistema
                 </p>
@@ -892,9 +894,9 @@ export function ProjectsManagementPage() {
                   <Spin spinning={loadingDetail}>
                     <div className={styles.companyFormGrid}>
                       {(() => {
-                        const editingCompanyActive = editing ? activeCompanyIds.has(editing.idEmpresa) : true;
-                        const editingCompanyLabel = editing
                           ? (companies.find((c) => c.id === editing.idEmpresa)?.nombre ??
+                        const editingCompanyLabel = editing
+                          ? (companies.find((c) => c.id === editing.idEmpresa)?.nombre ?
                             `Empresa #${editing.idEmpresa}`)
                           : '';
 
@@ -1056,3 +1058,11 @@ export function ProjectsManagementPage() {
     </div>
   );
 }
+
+
+
+
+
+
+
+

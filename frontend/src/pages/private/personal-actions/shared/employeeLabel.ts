@@ -12,15 +12,20 @@ function truncateLabel(value: string): string {
   return `${value.slice(0, MAX_EMPLOYEE_LABEL_LENGTH - 3).trimEnd()}...`;
 }
 
+function buildFullName(employee: EmployeeLabelInput): string {
+  return [employee.apellido1, employee.apellido2, employee.nombre]
+    .filter((part) => typeof part === 'string' && part.trim().length > 0)
+    .join(' ')
+    .trim();
+}
+
 export function formatEmployeeLabel(employee: EmployeeLabelInput, canViewEmployeeSensitive = true): string {
   if (!canViewEmployeeSensitive) {
     const fallback = (employee.codigo ?? '').trim() || 'Empleado sin codigo';
     return truncateLabel(fallback);
   }
 
-  const fullName = `${[employee.nombre, employee.apellido1, employee.apellido2]
-    .filter((part) => typeof part === 'string' && part.trim().length > 0)
-    .join(' ')}`.trim();
+  const fullName = buildFullName(employee);
 
   const fallback = (employee.codigo ?? '').trim() || 'Empleado sin nombre';
   return truncateLabel(fullName || fallback);

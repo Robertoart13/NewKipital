@@ -11,3 +11,4 @@ export class ReplaceUserGlobalPermissionDenialsDto {
   @IsString({ each: true })
   deny?: string[];
 }
+

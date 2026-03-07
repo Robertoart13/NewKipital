@@ -30,6 +30,9 @@ import {
 } from 'antd';
 import dayjs from 'dayjs';
 import { useEffect, useMemo, useState } from 'react';
+
+import { useSortableColumns } from '../../../hooks/useSortableColumns';
+import { bustApiCache } from '../../../lib/apiCache';
 import { Link } from 'react-router-dom';
 
 import {
@@ -168,7 +171,7 @@ export function PayrollHolidaysPage() {
     form.resetFields();
   };
 
-  const columns: ColumnsType<PayrollHolidayItem> = useMemo(
+  const columns: ColumnsType<PayrollHolidayItem> = useSortableColumns(
     () => [
       { title: 'Nombre', dataIndex: 'nombre', key: 'nombre' },
       {
@@ -213,7 +216,7 @@ export function PayrollHolidaysPage() {
                     const confirmed = await new Promise<boolean>((resolve) => {
                       modal.confirm({
                         title: 'Confirmar eliminacion de feriado',
-                        content: `Se eliminara el feriado "${row.nombre}". Esta accion no se puede deshacer.`,
+                        content: `Se eliminara el feriado "${row.nombre}". Esta acción no se puede deshacer.`,
                         icon: <QuestionCircleOutlined style={{ color: '#5a6c7d', fontSize: 40 }} />,
                         okText: 'Eliminar',
                         cancelText: 'Cancelar',
@@ -299,7 +302,7 @@ export function PayrollHolidaysPage() {
                 <CalendarOutlined className={styles.gestionIcon} />
               </div>
               <div>
-                <h2 className={styles.gestionTitle}>Gestion de Feriados</h2>
+                <h2 className={styles.gestionTitle}>Gestión de Feriados</h2>
                 <p className={styles.gestionDesc}>
                   Configure feriados por tipo para aplicacion en procesos de planilla
                 </p>
@@ -333,7 +336,13 @@ export function PayrollHolidaysPage() {
               <Text style={{ color: '#6b7a85' }}>entries per page</Text>
             </Flex>
             <Flex align="center" gap={12} wrap="wrap">
-              <Button icon={<ReloadOutlined />} onClick={() => void loadRows()}>
+              <Button
+                icon={<ReloadOutlined />}
+                onClick={() => {
+                  bustApiCache();
+                  void loadRows();
+                }}
+              >
                 Refrescar
               </Button>
             </Flex>
@@ -550,3 +559,10 @@ export function PayrollHolidaysPage() {
     </div>
   );
 }
+
+
+
+
+
+
+

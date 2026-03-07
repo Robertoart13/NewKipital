@@ -317,3 +317,4 @@ export async function fetchEmployeeAuditTrail(id: number, limit = 200): Promise<
   }
   return res.json();
 }
+

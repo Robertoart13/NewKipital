@@ -1,7 +1,7 @@
 import { Entity, PrimaryGeneratedColumn, Column, Index, CreateDateColumn } from 'typeorm';
 
 /**
- * sys_rol_permiso — Tabla puente: Rol ↔ Permiso.
+ * sys_rol_permiso — Tabla puente: Rol â†” Permiso.
  * Define qué acciones puede ejecutar cada rol.
  * No depende de usuario ni de empresa.
  */
@@ -20,3 +20,4 @@ export class RolePermission {
   @CreateDateColumn({ name: 'fecha_asignacion_rol_permiso' })
   fechaAsignacion: Date;
 }
+

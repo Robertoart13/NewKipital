@@ -30,6 +30,9 @@ import {
 } from 'antd';
 import dayjs from 'dayjs';
 import { useCallback, useEffect, useMemo, useState, type MouseEvent } from 'react';
+
+import { useSortableColumns } from '../../../../hooks/useSortableColumns';
+import { bustApiCache } from '../../../../lib/apiCache';
 import { Link } from 'react-router-dom';
 
 import { fetchPayPeriods, type CatalogPayPeriod } from '../../../../api/catalogs';
@@ -151,7 +154,8 @@ function isVacationEditableState(estado: number): boolean {
 
 function getPaneValue(row: VacationUiRow, key: PaneKey, companies: Array<{ id: number; nombre: string }>): string {
   if (key === 'empresa') {
-    return companies.find((c) => Number(c.id) === row.idEmpresa)?.nombre ?? `Empresa #${row.idEmpresa}`;
+    const company = companies.find((c) => Number(c.id) === row.idEmpresa);
+    return company?.nombre ?? `Empresa #${row.idEmpresa}`;
   }
   if (key === 'empleado') return (row.employeeLabel ?? `Empleado #${row.idEmpleado}`).trim() || '--';
   if (key === 'periodoPago') return (row.periodoPagoResumen ?? '').trim() || '--';
@@ -197,9 +201,8 @@ function createDraftFromVacationDetail(detail: VacationDetailItem): VacationForm
   return {
     idEmpresa: detail.idEmpresa,
     idEmpleado: detail.idEmpleado,
-    payrollId: first?.payrollId ?? undefined,
-    movimientoId: first?.movimientoId ?? 0,
     observacion: detail.descripcion ?? '',
+    movimientoId: first?.movimientoId ?? 0,
     fechas,
   };
 }
@@ -253,6 +256,7 @@ export function VacationsPage() {
   const [search, setSearch] = useState('');
   const [pageSize, setPageSize] = useState(10);
   const [companyId, setCompanyId] = useState<number | undefined>(defaultCompanyId);
+  const [modalCompanyId, setModalCompanyId] = useState<number | undefined>(defaultCompanyId);
   const [selectedEstados, setSelectedEstados] = useState<number[]>([1, 2, 3]);
   const [filtersExpanded, setFiltersExpanded] = useState(false);
   const [paneSearch, setPaneSearch] = useState<Record<PaneKey, string>>({
@@ -360,6 +364,7 @@ export function VacationsPage() {
         observacion: row.descripcion ?? '',
         fechas: [],
       });
+      setModalCompanyId(row.idEmpresa);
       setMode('edit');
       setLoadingEditDetail(true);
       setAuditTrail([]);
@@ -410,7 +415,8 @@ export function VacationsPage() {
   }, [editingRow?.id, loadVacationAuditTrail]);
 
   const loadCatalogs = useCallback(async () => {
-    if (!companyId) {
+    const targetCompanyId = openModal ? modalCompanyId : companyId;
+    if (!targetCompanyId) {
       setEmployees([]);
       setMovements([]);
       setPayPeriods([]);
@@ -424,8 +430,8 @@ export function VacationsPage() {
     setLoadingMovements(true);
     try {
       const [employeesResp, movementsResp, payPeriodsResp, holidaysResp] = await Promise.all([
-        fetchAbsenceEmployeesCatalog(companyId),
-        fetchAbsenceMovementsCatalog(companyId, VACATION_ACTION_TYPE_ID),
+        fetchAbsenceEmployeesCatalog(targetCompanyId),
+        fetchAbsenceMovementsCatalog(targetCompanyId, VACATION_ACTION_TYPE_ID),
         fetchPayPeriods().catch(() => []),
         fetchVacationHolidays().catch(() => []),
       ]);
@@ -459,7 +465,7 @@ export function VacationsPage() {
       setLoadingEmployees(false);
       setLoadingMovements(false);
     }
-  }, [companyId]);
+  }, [companyId, modalCompanyId, openModal]);
 
   useEffect(() => {
     void loadRows();
@@ -534,14 +540,13 @@ export function VacationsPage() {
 
   const rowsFiltered = useMemo(() => dataFilteredByPaneSelections(), [dataFilteredByPaneSelections]);
 
-  const columns: ColumnsType<VacationUiRow> = useMemo(
+  const columns: ColumnsType<VacationUiRow> = useSortableColumns(
     () => [
       {
         title: 'EMPRESA',
         key: 'empresa',
         width: 240,
-        render: (_, row) =>
-          companies.find((company) => Number(company.id) === row.idEmpresa)?.nombre ?? `Empresa #${row.idEmpresa}`,
+        render: (_, row) => getPaneValue(row, 'empresa', companies),
       },
       {
         title: 'EMPLEADO',
@@ -729,6 +734,7 @@ export function VacationsPage() {
                 setEditingDraft(undefined);
                 setLoadingEditDetail(false);
                 setMode('create');
+                setModalCompanyId(undefined);
                 setOpenModal(true);
               }}
             >
@@ -781,7 +787,7 @@ export function VacationsPage() {
                   setPaneSearch((prev) => ({ ...prev, estado: '' }));
                 }}
               />
-              <Button icon={<ReloadOutlined />} onClick={() => void loadRows()}>
+              <Button icon={<ReloadOutlined />} onClick={() => { bustApiCache(); void loadRows(); }}>
                 Refrescar
               </Button>
             </Flex>
@@ -940,8 +946,11 @@ export function VacationsPage() {
         auditTrail={auditTrail}
         loadingAuditTrail={loadingAuditTrail}
         onLoadAuditTrail={mode === 'edit' && editingRow ? loadEditingVacationAuditTrail : undefined}
-        initialCompanyId={companyId}
+        initialCompanyId={modalCompanyId}
         initialDraft={editingDraft}
+        onCompanyChange={(nextCompanyId) => {
+          setModalCompanyId(nextCompanyId);
+        }}
         onCancel={() => {
           setOpenModal(false);
           setEditingDraft(undefined);
@@ -992,4 +1001,18 @@ export function VacationsPage() {
     </div>
   );
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 

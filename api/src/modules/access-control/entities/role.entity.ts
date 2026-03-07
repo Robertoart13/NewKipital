@@ -52,3 +52,4 @@ export class Role {
   @Column({ name: 'modificado_por_rol', type: 'int' })
   modificadoPor: number;
 }
+

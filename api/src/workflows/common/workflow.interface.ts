@@ -15,3 +15,4 @@ export interface WorkflowResult<T = any> {
   data?: T;
   error?: string;
 }
+

@@ -43,6 +43,9 @@ import {
 } from 'antd';
 import dayjs, { type Dayjs } from 'dayjs';
 import { useCallback, useEffect, useMemo, useState } from 'react';
+
+import { useSortableColumns } from '../../../hooks/useSortableColumns';
+import { bustApiCache } from '../../../lib/apiCache';
 import { Link } from 'react-router-dom';
 
 import { fetchPayPeriods, type CatalogPayPeriod } from '../../../api/catalogs';
@@ -131,7 +134,7 @@ function getRowPaneValue(
   if (key === 'empresa') {
     return companies.find((company) => Number(company.id) === row.idEmpresa)?.nombre ?? `Empresa #${row.idEmpresa}`;
   }
-  if (key === 'nombre') return row.nombrePlanilla?.trim() || '--';
+  return STATE_LABEL[row.estado]?.text ?? `Estado ${row.estado}`;
   if (key === 'tipo') return row.tipoPlanilla?.trim() || '--';
   if (key === 'moneda') return row.moneda?.trim() || '--';
   return STATE_LABEL[row.estado]?.text ?? `Estado ${row.estado}`;
@@ -372,7 +375,7 @@ export function PayrollManagementPage() {
     const frequency = period && endDate ? getFrequencyCode(period.nombre, endDate) : '';
 
     const generatedName =
-      prefix && frequency && dateText && currency ? `${prefix} - ${frequency} - ${dateText} - ${currency}` : '';
+      prefix && frequency && dateText && currency ?? `${prefix} - ${frequency} - ${dateText} - ${currency}` : '';
 
     form.setFieldValue('nombrePlanilla', generatedName);
   }, [
@@ -403,7 +406,7 @@ export function PayrollManagementPage() {
     (row: PayrollListItem) => {
       const term = search.trim().toLowerCase();
       if (!term) return true;
-      const stateText = STATE_LABEL[row.estado]?.text ?? '';
+        (row.tipoPlanilla ?? '').toLowerCase().includes(term) ||
       return (
         (row.nombrePlanilla ?? '').toLowerCase().includes(term) ||
         (row.tipoPlanilla ?? '').toLowerCase().includes(term) ||
@@ -507,10 +510,10 @@ export function PayrollManagementPage() {
     const values = await form.validateFields();
     setSavingCreate(true);
     try {
-      const periodoInicio = formatDateValue(values.periodoInicio ?? form.getFieldValue('periodoInicio'));
-      const periodoFin = formatDateValue(values.periodoFin ?? form.getFieldValue('periodoFin'));
-      const fechaInicioPago = formatDateValue(values.fechaInicioPago ?? form.getFieldValue('fechaInicioPago'));
       const fechaFinPago = formatDateValue(values.fechaFinPago ?? form.getFieldValue('fechaFinPago'));
+      const periodoFin = formatDateValue(values.periodoFin ? form.getFieldValue('periodoFin'));
+      const fechaInicioPago = formatDateValue(values.fechaInicioPago ? form.getFieldValue('fechaInicioPago'));
+      const fechaFinPago = formatDateValue(values.fechaFinPago ? form.getFieldValue('fechaFinPago'));
 
       if (!periodoInicio || !periodoFin || !fechaInicioPago || !fechaFinPago) {
         setActiveCreateTab('fechas');
@@ -560,12 +563,12 @@ export function PayrollManagementPage() {
       form.setFieldsValue({
         idEmpresa: row.idEmpresa,
         idPeriodoPago: row.idPeriodoPago,
-        nombrePlanilla: row.nombrePlanilla ?? '',
         tipoPlanilla: (row.tipoPlanilla as CreatePayrollFormValues['tipoPlanilla']) ?? 'Regular',
+        tipoPlanilla: (row.tipoPlanilla as CreatePayrollFormValues['tipoPlanilla']) ? 'Regular',
         periodoInicio: row.fechaInicioPeriodo ? dayjs(row.fechaInicioPeriodo) : undefined,
         periodoFin: row.fechaFinPeriodo ? dayjs(row.fechaFinPeriodo) : undefined,
         fechaCorte: row.fechaCorte ? dayjs(row.fechaCorte) : undefined,
-        fechaInicioPago: row.fechaInicioPago ? dayjs(row.fechaInicioPago) : undefined,
+        moneda: (row.moneda as 'CRC' | 'USD') ?? 'CRC',
         fechaFinPago: row.fechaFinPago ? dayjs(row.fechaFinPago) : undefined,
         fechaPagoProgramada: row.fechaPagoProgramada ? dayjs(row.fechaPagoProgramada) : undefined,
         moneda: (row.moneda as 'CRC' | 'USD') ?? 'CRC',
@@ -585,12 +588,12 @@ export function PayrollManagementPage() {
       form.setFieldsValue({
         idEmpresa: detail.idEmpresa,
         idPeriodoPago: detail.idPeriodoPago,
-        nombrePlanilla: detail.nombrePlanilla ?? '',
         tipoPlanilla: (detail.tipoPlanilla as CreatePayrollFormValues['tipoPlanilla']) ?? 'Regular',
+        tipoPlanilla: (detail.tipoPlanilla as CreatePayrollFormValues['tipoPlanilla']) ? 'Regular',
         periodoInicio: detail.fechaInicioPeriodo ? dayjs(detail.fechaInicioPeriodo) : undefined,
         periodoFin: detail.fechaFinPeriodo ? dayjs(detail.fechaFinPeriodo) : undefined,
         fechaCorte: detail.fechaCorte ? dayjs(detail.fechaCorte) : undefined,
-        fechaInicioPago: detail.fechaInicioPago ? dayjs(detail.fechaInicioPago) : undefined,
+        moneda: (detail.moneda as 'CRC' | 'USD') ?? 'CRC',
         fechaFinPago: detail.fechaFinPago ? dayjs(detail.fechaFinPago) : undefined,
         fechaPagoProgramada: detail.fechaPagoProgramada ? dayjs(detail.fechaPagoProgramada) : undefined,
         moneda: (detail.moneda as 'CRC' | 'USD') ?? 'CRC',
@@ -688,7 +691,7 @@ export function PayrollManagementPage() {
     await runAction(row.id, operation, successMessage);
   };
 
-  const columns = useMemo<ColumnsType<PayrollListItem>>(
+  const columns = useSortableColumns<PayrollListItem>(
     () => [
       {
         title: 'EMPRESA',
@@ -750,7 +753,7 @@ export function PayrollManagementPage() {
                     void confirmAndRunAction(
                       row,
                       'Confirmar proceso de planilla',
-                      'Esta accion procesara la planilla y generara snapshots. ¿Desea continuar?',
+                      'Esta acción procesará la planilla y generará snapshots. ¿Desea continuar?',
                       'Procesar',
                       () => processPayroll(row.id),
                       'Planilla procesada',
@@ -829,7 +832,7 @@ export function PayrollManagementPage() {
     [canApply, canCancel, canProcess, canVerify, companies, processingId],
   );
 
-  const auditColumns = useMemo<ColumnsType<PayrollAuditTrailItem>>(
+  const auditColumns = useSortableColumns<PayrollAuditTrailItem>(
     () => [
       {
         title: 'Fecha y hora',
@@ -846,7 +849,7 @@ export function PayrollManagementPage() {
           const actorLabel =
             row.actorNombre?.trim() ||
             row.actorEmail?.trim() ||
-            (row.actorUserId ? `Usuario ID ${row.actorUserId}` : 'Sistema');
+            (row.actorUserId != null ? `Usuario ID ${row.actorUserId}` : 'Sistema');
           return (
             <div>
               <div style={{ fontWeight: 600, color: '#3d4f5c' }}>{actorLabel}</div>
@@ -891,7 +894,7 @@ export function PayrollManagementPage() {
                   ))}
                 </div>
               ) : (
-                <div style={{ fontSize: 12 }}>Sin detalle adicional para esta accion.</div>
+                <div style={{ fontSize: 12 }}>Sin detalle adicional para esta acción.</div>
               )}
             </div>
           );
@@ -938,7 +941,7 @@ export function PayrollManagementPage() {
                 <AppstoreOutlined className={styles.gestionIcon} />
               </div>
               <div>
-                <h2 className={styles.gestionTitle}>Gestion de Planillas</h2>
+                <h2 className={styles.gestionTitle}>Gestión de Planillas</h2>
                 <p className={styles.gestionDesc}>
                   Aperture, procese, verifique y aplique corridas de planilla por empresa
                 </p>
@@ -993,7 +996,7 @@ export function PayrollManagementPage() {
                   setListDateRange([range[0].startOf('day'), range[1].startOf('day')]);
                 }}
               />
-              <Button icon={<ReloadOutlined />} onClick={() => void loadRows()}>
+              <Button icon={<ReloadOutlined />} onClick={() => { bustApiCache(); void loadRows(); }}>
                 Refrescar
               </Button>
             </Flex>
@@ -1568,3 +1571,12 @@ export function PayrollManagementPage() {
     </div>
   );
 }
+
+
+
+
+
+
+
+
+

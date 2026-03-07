@@ -39,6 +39,8 @@ import {
   Upload,
 } from 'antd';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useSortableColumns } from '../../../hooks/useSortableColumns';
+
 import { Link } from 'react-router-dom';
 
 import {
@@ -127,11 +129,11 @@ function CompanyLogoNameCell({ company }: { company: CompanyListItem }) {
 }
 
 function getPaneValue(company: CompanyListItem, key: PaneKey): string {
-  if (key === 'estado') return company.estado === 1 ? 'Activo' : 'Inactivo';
-  if (key === 'nombre') return company.nombre ?? '';
   if (key === 'cedula') return company.cedula ?? '';
   if (key === 'idExterno') return company.idExterno ?? '';
   if (key === 'prefijo') return company.prefijo ?? '';
+  if (key === 'telefono') return company.telefono ?? '';
+  return company.email ?? '';
   if (key === 'telefono') return company.telefono ?? '';
   return company.email ?? '';
 }
@@ -296,10 +298,10 @@ export function CompaniesManagementPage() {
       const term = search.trim().toLowerCase();
       if (!term) return true;
       return (
-        (company.nombre ?? '').toLowerCase().includes(term) ||
-        (company.nombreLegal ?? '').toLowerCase().includes(term) ||
         (company.cedula ?? '').toLowerCase().includes(term) ||
         (company.idExterno ?? '').toLowerCase().includes(term) ||
+        (company.email ?? '').toLowerCase().includes(term) ||
+        (company.prefijo ?? '').toLowerCase().includes(term)
         (company.email ?? '').toLowerCase().includes(term) ||
         (company.prefijo ?? '').toLowerCase().includes(term)
       );
@@ -467,14 +469,14 @@ export function CompaniesManagementPage() {
   const applyCompanyToForm = useCallback(
     (company: CompanyListItem) => {
       form.setFieldsValue({
-        nombre: company.nombre ?? '',
-        nombreLegal: company.nombreLegal ?? '',
         cedula: company.cedula ?? '',
         actividadEconomica: company.actividadEconomica ?? '',
         prefijo: company.prefijo ?? '',
         idExterno: company.idExterno ?? '',
         direccionExacta: company.direccionExacta ?? '',
         telefono: company.telefono ?? '',
+        email: company.email ?? '',
+        codigoPostal: company.codigoPostal ?? '',
         email: company.email ?? '',
         codigoPostal: company.codigoPostal ?? '',
       });
@@ -669,7 +671,7 @@ export function CompaniesManagementPage() {
     }
   };
 
-  const columns: ColumnsType<CompanyListItem> = [
+  const columns: ColumnsType<CompanyListItem> = useSortableColumns([
     {
       title: 'PREFIJO EMPRESA',
       dataIndex: 'prefijo',
@@ -734,7 +736,7 @@ export function CompaniesManagementPage() {
         </Tag>
       ),
     },
-  ];
+  ]);
 
   const companyAuditColumns: ColumnsType<CompanyAuditTrailItem> = [
     {
@@ -752,7 +754,7 @@ export function CompaniesManagementPage() {
         const actorLabel =
           row.actorNombre?.trim() ||
           row.actorEmail?.trim() ||
-          (row.actorUserId ? `Usuario ID ${row.actorUserId}` : 'Sistema');
+          (row.actorUserId != null ? `Usuario ID ${row.actorUserId}` : 'Sistema');
         return (
           <div>
             <div style={{ fontWeight: 600, color: '#3d4f5c' }}>{actorLabel}</div>
@@ -794,7 +796,7 @@ export function CompaniesManagementPage() {
                 ))}
               </div>
             ) : (
-              <div style={{ fontSize: 12 }}>Sin detalle de campos para esta accion.</div>
+              <div style={{ fontSize: 12 }}>Sin detalle de campos para esta acción.</div>
             )}
           </div>
         );
@@ -832,7 +834,7 @@ export function CompaniesManagementPage() {
                 <BankOutlined className={styles.gestionIcon} />
               </div>
               <div>
-                <h2 className={styles.gestionTitle}>Gestion de Empresas</h2>
+                <h2 className={styles.gestionTitle}>Gestión de Empresas</h2>
                 <p className={styles.gestionDesc}>Administre y consulte todas las empresas registradas en el sistema</p>
               </div>
             </Flex>
@@ -1332,3 +1334,9 @@ export function CompaniesManagementPage() {
     </div>
   );
 }
+
+
+
+
+
+

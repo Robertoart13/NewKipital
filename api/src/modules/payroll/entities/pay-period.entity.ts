@@ -33,3 +33,4 @@ export class PayPeriod {
   @UpdateDateColumn({ name: 'fecha_modificacion_periodo_pago' })
   fechaModificacion: Date;
 }
+

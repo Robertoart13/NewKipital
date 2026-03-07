@@ -62,3 +62,4 @@ export class Permission {
   @Column({ name: 'modificado_por_permiso', type: 'int', nullable: true })
   modificadoPor: number | null;
 }
+

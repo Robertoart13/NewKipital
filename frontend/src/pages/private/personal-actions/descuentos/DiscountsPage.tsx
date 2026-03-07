@@ -30,6 +30,11 @@ import {
 } from 'antd';
 import dayjs from 'dayjs';
 import { useCallback, useEffect, useMemo, useState, type MouseEvent } from 'react';
+
+import { useSortableColumns } from '../../../../hooks/useSortableColumns';
+import { bustApiCache } from '../../../../lib/apiCache';
+
+
 import { Link } from 'react-router-dom';
 
 import { fetchPayPeriods, type CatalogPayPeriod } from '../../../../api/catalogs';
@@ -147,7 +152,8 @@ function isDiscountEditableState(estado: number): boolean {
 
 function getPaneValue(row: DiscountUiRow, key: PaneKey, companies: Array<{ id: number; nombre: string }>): string {
   if (key === 'empresa') {
-    return companies.find((c) => Number(c.id) === row.idEmpresa)?.nombre ?? `Empresa #${row.idEmpresa}`;
+    const company = companies.find((c) => Number(c.id) === row.idEmpresa);
+    return company?.nombre ?? `Empresa #${row.idEmpresa}`;
   }
   if (key === 'empleado') return (row.employeeLabel ?? `Empleado #${row.idEmpleado}`).trim() || '--';
   if (key === 'periodoPago') return (row.periodoPagoResumen ?? '').trim() || '--';
@@ -186,20 +192,17 @@ function createDraftFromDiscountDetail(detail: DiscountDetailItem): DiscountForm
       ? detail.lines.map((line) => ({
           key: `${line.idLinea}-${line.orden}`,
           payrollId: line.payrollId,
-          fechaEfecto: line.fechaEfecto ? dayjs(line.fechaEfecto) : undefined,
+          payrollLabel: line.payrollLabel ?? undefined,
           movimientoId: line.movimientoId,
           cantidad: line.cantidad,
           monto: line.monto,
-          formula: line.formula ?? '',
-          payrollLabel: line.payrollLabel ?? undefined,
-          payrollEstado: line.payrollEstado ?? undefined,
           movimientoLabel: line.movimientoLabel ?? undefined,
+          payrollEstado: line.payrollEstado ?? undefined,
           movimientoInactivo: line.movimientoInactivo === true,
         }))
       : [
           {
             key: `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
-            formula: detail.descripcion ?? '',
             monto: detail.monto ?? undefined,
             fechaEfecto: detail.fechaEfecto ? dayjs(detail.fechaEfecto) : undefined,
           },
@@ -259,6 +262,7 @@ export function DiscountsPage() {
   const [search, setSearch] = useState('');
   const [pageSize, setPageSize] = useState(10);
   const [companyId, setCompanyId] = useState<number | undefined>(defaultCompanyId);
+  const [modalCompanyId, setModalCompanyId] = useState<number | undefined>(defaultCompanyId);
   const [selectedEstados, setSelectedEstados] = useState<number[]>([1, 2, 3]);
   const [filtersExpanded, setFiltersExpanded] = useState(false);
   const [paneSearch, setPaneSearch] = useState<Record<PaneKey, string>>({
@@ -364,6 +368,7 @@ export function DiscountsPage() {
         observacion: row.descripcion ?? '',
         lines: [],
       });
+      setModalCompanyId(row.idEmpresa);
       setMode('edit');
       setLoadingEditDetail(true);
       setAuditTrail([]);
@@ -410,7 +415,8 @@ export function DiscountsPage() {
   }, [editingRow?.id, loadDiscountAuditTrail]);
 
   const loadCatalogs = useCallback(async () => {
-    if (!companyId) {
+    const targetCompanyId = openModal ? modalCompanyId : companyId;
+    if (!targetCompanyId) {
       setEmployees([]);
       setMovements([]);
       setPayPeriods([]);
@@ -424,8 +430,8 @@ export function DiscountsPage() {
     setLoadingMovements(true);
     try {
       const [employeesResp, movementsResp, payPeriodsResp] = await Promise.all([
-        fetchAbsenceEmployeesCatalog(companyId),
-        fetchAbsenceMovementsCatalog(companyId, 6),
+        fetchAbsenceEmployeesCatalog(targetCompanyId),
+        fetchAbsenceMovementsCatalog(targetCompanyId, 6),
         fetchPayPeriods().catch(() => []),
       ]);
 
@@ -458,7 +464,7 @@ export function DiscountsPage() {
       setLoadingEmployees(false);
       setLoadingMovements(false);
     }
-  }, [companyId]);
+  }, [companyId, modalCompanyId, openModal]);
 
   useEffect(() => {
     void loadRows();
@@ -533,7 +539,7 @@ export function DiscountsPage() {
 
   const rowsFiltered = useMemo(() => dataFilteredByPaneSelections(), [dataFilteredByPaneSelections]);
 
-  const columns: ColumnsType<DiscountUiRow> = useMemo(
+  const columns: ColumnsType<DiscountUiRow> = useSortableColumns(
     () => [
       {
         title: 'EMPRESA',
@@ -678,7 +684,7 @@ export function DiscountsPage() {
     [canApprove, canCancel, canEdit, canView, companies, loadRows, message, modal, openEditModal],
   );
 
-  const modalTitle = mode === 'create' ? 'Crear descuento' : 'Editar descuento';
+      fechaEfecto: line.fechaEfecto?.format('YYYY-MM-DD') ?? '',
 
   const mapDraftToPayload = (draft: DiscountFormDraft) => ({
     idEmpresa: draft.idEmpresa,
@@ -688,7 +694,7 @@ export function DiscountsPage() {
       payrollId: Number(line.payrollId),
       fechaEfecto: line.fechaEfecto?.format('YYYY-MM-DD') ?? '',
       movimientoId: Number(line.movimientoId),
-      cantidad: Number(line.cantidad ?? 0),
+      monto: Number(line.monto ?? 0),
       monto: Number(line.monto ?? 0),
       formula: line.formula?.trim() || undefined,
     })),
@@ -703,7 +709,7 @@ export function DiscountsPage() {
           </Link>
           <div className={styles.pageTitleBlock}>
             <h1 className={styles.pageTitle}>Descuentos</h1>
-            <p className={styles.pageSubtitle}>Gestione descuentos por empresa con líneas de transacción por período</p>
+            <p className={styles.pageSubtitle}>Gestione descuentos por empresa con lÃ­neas de transacciÃ³n por perÃ­odo</p>
           </div>
         </div>
       </div>
@@ -716,8 +722,8 @@ export function DiscountsPage() {
                 <AppstoreOutlined className={styles.gestionIcon} />
               </div>
               <div>
-                <h2 className={styles.gestionTitle}>Gestión de descuentos</h2>
-                <p className={styles.gestionDesc}>Encabezado de acción + múltiples líneas por planilla</p>
+                <h2 className={styles.gestionTitle}>GestiÃ³n de descuentos</h2>
+                <p className={styles.gestionDesc}>Encabezado de acciÃ³n + mÃºltiples lÃ­neas por planilla</p>
               </div>
             </Flex>
             <Button
@@ -730,6 +736,7 @@ export function DiscountsPage() {
                 setEditingDraft(undefined);
                 setLoadingEditDetail(false);
                 setMode('create');
+                setModalCompanyId(undefined);
                 setOpenModal(true);
               }}
             >
@@ -782,7 +789,7 @@ export function DiscountsPage() {
                   setPaneSearch((prev) => ({ ...prev, estado: '' }));
                 }}
               />
-              <Button icon={<ReloadOutlined />} onClick={() => void loadRows()}>
+              <Button icon={<ReloadOutlined />} onClick={() => { bustApiCache(); void loadRows(); }}>
                 Refrescar
               </Button>
             </Flex>
@@ -938,9 +945,11 @@ export function DiscountsPage() {
         showAudit={mode === 'edit' && !!editingRow}
         auditTrail={auditTrail}
         loadingAuditTrail={loadingAuditTrail}
-        onLoadAuditTrail={mode === 'edit' && editingRow ? loadEditingDiscountAuditTrail : undefined}
-        initialCompanyId={companyId}
+        onLoadAuditTrail={mode === 'edit' && editingRow ? loadEditingDiscountAuditTrail : undefined}        initialCompanyId={modalCompanyId}
         initialDraft={editingDraft}
+        onCompanyChange={(nextCompanyId) => {
+          setModalCompanyId(nextCompanyId);
+        }}
         onCancel={() => {
           setOpenModal(false);
           setEditingDraft(undefined);
@@ -991,4 +1000,24 @@ export function DiscountsPage() {
     </div>
   );
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 

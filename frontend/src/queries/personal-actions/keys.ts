@@ -9,3 +9,4 @@ export const personalActionKeys = {
   details: () => [...personalActionKeys.all, 'detail'] as const,
   detail: (companyId: string, id: string) => [...personalActionKeys.details(), companyId, id] as const,
 };
+

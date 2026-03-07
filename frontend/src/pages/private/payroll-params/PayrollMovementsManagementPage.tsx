@@ -6,6 +6,7 @@ import {
   EditOutlined,
   FilterOutlined,
   PlusOutlined,
+  ReloadOutlined,
   QuestionCircleOutlined,
   SearchOutlined,
   SortAscendingOutlined,
@@ -37,6 +38,9 @@ import {
   Tooltip,
 } from 'antd';
 import { useCallback, useEffect, useMemo, useState } from 'react';
+
+import { useSortableColumns } from '../../../hooks/useSortableColumns';
+import { bustApiCache } from '../../../lib/apiCache';
 import { Link } from 'react-router-dom';
 
 import {
@@ -120,16 +124,15 @@ function isNonNegativeNumeric(raw: string): boolean {
 }
 
 function normalizePayload(values: PayrollMovementFormValues): PayrollMovementPayload {
+  const nombre = values.nombre?.trim() || '';
   const esMontoFijo = Number(values.esMontoFijo) === 1 ? 1 : 0;
-  const nombre = String(values.nombre ?? '').trim();
-  const montoFijo = String(values.montoFijo ?? '0').trim();
   const porcentaje = String(values.porcentaje ?? '0').trim();
+  const montoFijo = String(values.montoFijo ?? '0').trim();
   return {
     idEmpresa: values.idEmpresa!,
     nombre,
     idArticuloNomina: values.idArticuloNomina!,
     idTipoAccionPersonal: values.idTipoAccionPersonal!,
-    idClase: values.idClase ?? null,
     idProyecto: values.idProyecto ?? null,
     descripcion: values.descripcion?.trim() || '--',
     esMontoFijo,
@@ -167,7 +170,7 @@ function getPaneValue(
   if (key === 'tipoAccion')
     return actionTypeMap.get(row.idTipoAccionPersonal)?.nombre ?? `Accion #${row.idTipoAccionPersonal}`;
   if (key === 'tipoCalculo') return row.esMontoFijo === 1 ? 'Monto fijo' : 'Porcentaje';
-  return row.esInactivo === 0 ? 'Inactivo' : 'Activo';
+  return row.esInactivo === 1 ? 'Activo' : 'Inactivo';
 }
 
 export function PayrollMovementsManagementPage() {
@@ -254,7 +257,16 @@ export function PayrollMovementsManagementPage() {
           setRows([]);
           return;
         }
+        // DEBUG: diagnostico temporal de carga
+        console.log('payroll-movements:request', {
+          targetCompanyIds,
+          showInactive,
+        });
         const data = await fetchPayrollMovements(targetCompanyIds[0], showInactive, targetCompanyIds);
+        console.log('payroll-movements:response', {
+          count: Array.isArray(data) ? data.length : null,
+          data,
+        });
         setRows(data);
       } catch (error) {
         message.error(error instanceof Error ? error.message : 'Error al cargar movimientos de nomina');
@@ -345,9 +357,9 @@ export function PayrollMovementsManagementPage() {
         idProyecto: row.idProyecto,
         descripcion: row.descripcion ?? '--',
         esMontoFijo: row.esMontoFijo === 1 ? 1 : 0,
-        montoFijo: row.montoFijo ?? '0',
-        porcentaje: row.porcentaje ?? '0',
         formulaAyuda: row.formulaAyuda ?? '--',
+        porcentaje: row.porcentaje ? '0',
+        formulaAyuda: row.formulaAyuda ? '--',
       });
     },
     [form],
@@ -502,7 +514,7 @@ export function PayrollMovementsManagementPage() {
     (row: PayrollMovementListItem) => {
       const term = search.trim().toLowerCase();
       if (!term) return true;
-      const companyName = companies.find((company) => company.id === row.idEmpresa)?.nombre ?? '';
+      const actionName = actionTypeMap.get(row.idTipoAccionPersonal)?.nombre ?? '';
       const articleName = articleMap.get(row.idArticuloNomina)?.nombre ?? '';
       const actionName = actionTypeMap.get(row.idTipoAccionPersonal)?.nombre ?? '';
       return (
@@ -616,7 +628,7 @@ export function PayrollMovementsManagementPage() {
     });
   };
 
-  const columns = useMemo<ColumnsType<PayrollMovementListItem>>(
+  const columns = useSortableColumns<PayrollMovementListItem>(
     () => [
       {
         title: 'EMPRESA',
@@ -674,13 +686,13 @@ export function PayrollMovementsManagementPage() {
         title: 'ULTIMA MODIFICACION',
         dataIndex: 'fechaModificacion',
         width: 210,
-        render: (value?: string) => formatDateTime12h(value),
+        render: (value: string | null) => formatDateTime12h(value ?? undefined),
       },
     ],
     [actionTypeMap, articleMap, companies],
   );
 
-  const auditColumns = useMemo<ColumnsType<PayrollMovementAuditTrailItem>>(
+  const auditColumns = useSortableColumns<PayrollMovementAuditTrailItem>(
     () => [
       {
         title: 'Fecha y hora',
@@ -697,7 +709,7 @@ export function PayrollMovementsManagementPage() {
           const actorLabel =
             row.actorNombre?.trim() ||
             row.actorEmail?.trim() ||
-            (row.actorUserId ? `Usuario ID ${row.actorUserId}` : 'Sistema');
+            (row.actorUserId != null ? `Usuario ID ${row.actorUserId}` : 'Sistema');
           return (
             <div>
               <div style={{ fontWeight: 600, color: '#3d4f5c' }}>{actorLabel}</div>
@@ -782,7 +794,7 @@ export function PayrollMovementsManagementPage() {
                 <AppstoreOutlined className={styles.gestionIcon} />
               </div>
               <div>
-                <h2 className={styles.gestionTitle}>Gestion de Movimientos de Nomina</h2>
+                <h2 className={styles.gestionTitle}>Gestión de Movimientos de Nómina</h2>
                 <p className={styles.gestionDesc}>
                   Administre y consulte todos los movimientos de nomina configurados para las empresas
                 </p>
@@ -832,6 +844,15 @@ export function PayrollMovementsManagementPage() {
                 options={companies.map((company) => ({ value: company.id, label: company.nombre }))}
                 style={{ minWidth: 220 }}
               />
+              <Button
+                icon={<ReloadOutlined />}
+                onClick={() => {
+                  bustApiCache();
+                  void loadRows();
+                }}
+              >
+                Refrescar
+              </Button>
             </Flex>
           </Flex>
 
@@ -1357,3 +1378,11 @@ export function PayrollMovementsManagementPage() {
     </div>
   );
 }
+
+
+
+
+
+
+
+

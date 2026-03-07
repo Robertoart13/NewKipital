@@ -40,6 +40,8 @@ import {
 import dayjs, { type Dayjs } from 'dayjs';
 import { useEffect, useMemo, useRef, useState } from 'react';
 
+import { buildEmployeeDisplayName, sortEmployeesByDisplayName } from '../../../../lib/employeeName';
+
 import { fetchAbsencePayrollsCatalog } from '../../../../api/personalActions';
 import { useMoneyFieldFormatter } from '../../../../hooks/useMoneyFieldFormatter';
 import { useTransactionLines } from '../../../../hooks/useTransactionLines';
@@ -127,6 +129,7 @@ interface HoursExtraTransactionModalProps {
   onLoadAuditTrail?: () => Promise<void> | void;
   initialCompanyId?: number;
   initialDraft?: OvertimeFormDraft;
+  onCompanyChange?: (companyId?: number) => void;
   onCancel: () => void;
   onSubmit: (payload: OvertimeFormDraft) => Promise<void> | void;
 }
@@ -269,6 +272,7 @@ export function HoursExtraTransactionModal({
   onLoadAuditTrail,
   initialCompanyId,
   initialDraft,
+  onCompanyChange,
   onCancel,
   onSubmit,
 }: HoursExtraTransactionModalProps) {
@@ -298,9 +302,21 @@ export function HoursExtraTransactionModal({
   const [auditLoaded, setAuditLoaded] = useState(false);
   const lastLineRef = useRef<HTMLDivElement>(null);
   const prevEmployeeIdRef = useRef<number | undefined>(undefined);
+  const initOnceRef = useRef(false);
 
   useEffect(() => {
-    if (!open) return;
+    if (!open) {
+    initOnceRef.current = false;
+    return;
+  }
+
+  if (!initialDraft && initOnceRef.current) {
+    return;
+  }
+
+  if (!initialDraft) {
+    initOnceRef.current = true;
+  }
 
     setActiveTab('info');
 
@@ -325,7 +341,10 @@ export function HoursExtraTransactionModal({
       return;
     }
 
-    form.setFieldsValue({ idEmpresa: initialCompanyId });
+    const nextCompanyId = mode === 'edit' ? initialCompanyId : undefined;
+
+    // En creacion no se preselecciona empresa; el usuario debe elegirla.
+    form.setFieldsValue({ idEmpresa: nextCompanyId });
     const initialLine = buildEmptyLine();
 
     setLines([initialLine]);
@@ -346,6 +365,12 @@ export function HoursExtraTransactionModal({
 
   const selectedCompanyId = Form.useWatch('idEmpresa', form);
   const selectedEmployeeId = Form.useWatch('idEmpleado', form);
+
+  useEffect(() => {
+    if (!open) return;
+    if (!onCompanyChange) return;
+    onCompanyChange(selectedCompanyId ? Number(selectedCompanyId) : undefined);
+  }, [onCompanyChange, open, selectedCompanyId]);
 
   // Al cambiar de empleado se reinician las líneas porque cada empleado tiene planillas distintas
   useEffect(() => {
@@ -387,7 +412,7 @@ export function HoursExtraTransactionModal({
       return;
     }
     setEmployeePayrollConfig({
-      idPeriodoPago: employee.idPeriodoPago ?? undefined,
+      moneda: (employee.monedaSalario ?? '').toUpperCase() || undefined,
       moneda: (employee.monedaSalario ?? '').toUpperCase() || undefined,
     });
   }, [selectedCompanyId, selectedEmployeeId, employees]);
@@ -425,7 +450,7 @@ export function HoursExtraTransactionModal({
 
   const employeesByCompany = useMemo(() => {
     if (!selectedCompanyId) return [];
-    return employees.filter((employee) => employee.idEmpresa === selectedCompanyId);
+    return sortEmployeesByDisplayName(employees.filter((employee) => employee.idEmpresa === selectedCompanyId));
   }, [employees, selectedCompanyId]);
 
   const selectedEmployee = useMemo(() => {
@@ -455,7 +480,7 @@ export function HoursExtraTransactionModal({
   const payrollsByCompany = useMemo(() => {
     if (!selectedCompanyId) return [];
     let list = eligiblePayrolls.filter((payroll) => payroll.idEmpresa === selectedCompanyId);
-    if (employeePayrollConfig?.idPeriodoPago) {
+    const movement = filteredMovements.find((m) => m.id === (movimientoId ?? line.movimientoId));
       list = list.filter((payroll) => Number(payroll.idPeriodoPago) === Number(employeePayrollConfig.idPeriodoPago));
     }
     if (employeePayrollConfig?.moneda) {
@@ -479,8 +504,8 @@ export function HoursExtraTransactionModal({
   }, [movements, selectedCompanyId, actionTypeIdForOvertime, lines]);
 
   const calculateLineAmount = (line: OvertimeTransactionLine, movimientoId?: number, cantidadValue?: number) => {
-    const cantidad = parseNonNegative(cantidadValue ?? line.cantidad ?? 0);
     const movement = filteredMovements.find((m) => m.id === (movimientoId ?? line.movimientoId));
+    const movement = filteredMovements.find((m) => m.id === (movimientoId ? line.movimientoId));
 
     if (!movement) {
       return { monto: 0, montoInput: '0', formula: 'Seleccione un movimiento para calcular' };
@@ -609,7 +634,7 @@ export function HoursExtraTransactionModal({
     if (loading) return;
     const values = await form.validateFields();
     if (lines.length === 0 || !lines.every(isLineComplete)) {
-      message.error('Complete todas las lineas antes de crear/guardar la hora extra.');
+      message.error('Complete todas las líneas antes de crear/guardar la hora extra.');
       return;
     }
 
@@ -682,7 +707,7 @@ export function HoursExtraTransactionModal({
           const actorLabel =
             row.actorNombre?.trim() ||
             row.actorEmail?.trim() ||
-            (row.actorUserId ? `Usuario ID ${row.actorUserId}` : 'Sistema');
+          const changes = row.cambios ?? [];
           return (
             <div>
               <div style={{ fontWeight: 600, color: '#3d4f5c' }}>{actorLabel}</div>
@@ -724,7 +749,7 @@ export function HoursExtraTransactionModal({
                   ))}
                 </div>
               ) : (
-                <div style={{ fontSize: 12 }}>Sin detalle de campos para esta accion.</div>
+                <div style={{ fontSize: 12 }}>Sin detalle de campos para esta acción.</div>
               )}
             </div>
           );
@@ -879,7 +904,7 @@ export function HoursExtraTransactionModal({
                                 </div>
                                 <div className={sharedStyles.employeeAccordionNameBlock}>
                                   <div className={sharedStyles.employeeAccordionName}>
-                                    {`${selectedEmployee.nombre || '--'} ${selectedEmployee.apellido1 || ''} ${selectedEmployee.apellido2 || ''}`.trim()}
+                                    {buildEmployeeDisplayName(selectedEmployee)}
                                   </div>
                                   <div className={sharedStyles.employeeAccordionId}>
                                     Empleado ID: {selectedEmployee.codigo || '--'}
@@ -1072,7 +1097,7 @@ export function HoursExtraTransactionModal({
                     >
                       {loading && !showGlobalPreload ? (
                         <Flex justify="center" align="center" style={{ minHeight: 220 }}>
-                          <Spin size="large" description="Cargando lineas de transaccion..." />
+                          <Spin size="large" description="Cargando líneas de transacción..." />
                         </Flex>
                       ) : (
                         <>
@@ -1090,7 +1115,7 @@ export function HoursExtraTransactionModal({
                                 );
                                 const payrollOptions = payrollsByCompany.map((payroll) => ({
                                   value: payroll.id,
-                                  label: `${payroll.nombrePlanilla ?? `Planilla #${payroll.id}`} (${getPayrollEstadoLabel(payroll.estado)})`,
+                                    label: `${line.movimientoLabel ?? `Movimiento #${line.movimientoId}`} (No elegible hoy)`,
                                   disabled: false,
                                 }));
                                 if (
@@ -1261,7 +1286,7 @@ export function HoursExtraTransactionModal({
                                               disabled={readOnly || !line.movimientoId}
                                               disabledDate={disableEndDate(line)}
                                               onChange={(value) =>
-                                                handleFechaFinHoraExtraChange(line.key, value ?? undefined)
+                                              {`7. Monto (${employeePayrollConfig?.moneda ?? 'MONEDA'})`}
                                               }
                                             />
                                           </Col>
@@ -1365,7 +1390,7 @@ export function HoursExtraTransactionModal({
                             }}
                           >
                             <Button type="dashed" icon={<PlusOutlined />} onClick={handleAddLine} disabled={readOnly}>
-                              Agregar Línea de transacción
+                              Agregar línea de transacción
                             </Button>
                           </Flex>
                         </>
@@ -1424,4 +1449,18 @@ export function HoursExtraTransactionModal({
     </Modal>
   );
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 

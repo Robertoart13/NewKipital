@@ -33,7 +33,7 @@ export enum MonedaCalendario {
  * nom_calendarios_nomina — Tabla Maestra de Planillas (Calendario de Nómina).
  *
  * Define qué planillas existen: empresa, periodo, tipo, moneda.
- * Periodo trabajado ≠ ventana de pago (fecha_inicio/fin_periodo vs fecha_inicio/fin_pago).
+ * Periodo trabajado â‰  ventana de pago (fecha_inicio/fin_periodo vs fecha_inicio/fin_pago).
  * Aplicada = inmutable. Verificada puede reabrirse a Abierta.
  * Unicidad: no duplicar planilla operativa (Abierta/En Proceso/Verificada) para mismo slot.
  */
@@ -198,3 +198,4 @@ export class PayrollCalendar {
   })
   isActiveSlot: number;
 }
+

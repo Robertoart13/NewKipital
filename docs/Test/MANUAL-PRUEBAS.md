@@ -1,4 +1,4 @@
-﻿# Manual de Pruebas - KPITAL 360
+# Manual de Pruebas - KPITAL 360
 
 Fecha: 2026-02-24  
 Version: 4.0  

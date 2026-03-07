@@ -300,7 +300,7 @@ Resumen de columnas 3/4/5:
    - `Pendiente RRHH`
 3. El usuario puede agregar estados adicionales libremente.
 4. `Limpiar Todo` vuelve a la preseleccion de atencion (`[1,2,3]`) para mantener foco operativo.
-5. Optimización aplicada (escala):
+5. Optimizacin aplicada (escala):
    - el frontend ya no carga todos los estados y filtra localmente,
    - consulta directo a backend con estados seleccionados (`?estado=1&estado=2&estado=3`),
    - el backend ejecuta filtro SQL `IN (...)` por empresa + estados.

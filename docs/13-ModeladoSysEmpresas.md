@@ -1,9 +1,9 @@
-# KPITAL 360 — Modelado Tabla sys_empresas
+# KPITAL 360  Modelado Tabla sys_empresas
 
 **Documento:** 13  
 **Para:** Ingeniero Backend + DBA  
-**De:** Roberto — Arquitecto Funcional / Senior Engineer  
-**Prerrequisito:** Haber leído [01-EnfoqueSistema.md](./01-EnfoqueSistema.md) + [11-DirectivasConfiguracionBackend.md](./11-DirectivasConfiguracionBackend.md)  
+**De:** Roberto  Arquitecto Funcional / Senior Engineer  
+**Prerrequisito:** Haber ledo [01-EnfoqueSistema.md](./01-EnfoqueSistema.md) + [11-DirectivasConfiguracionBackend.md](./11-DirectivasConfiguracionBackend.md)  
 **Prioridad:** Primera tabla del sistema. Root aggregate.
 
 ---
@@ -13,22 +13,22 @@
 La empresa es el **root aggregate** del sistema.  
 Sin empresa no existen: usuarios operativos, planillas, acciones de personal, roles scopeados, permisos por empresa.
 
-- No se puede borrar físicamente
+- No se puede borrar fsicamente
 - No se puede romper integridad
 - No se puede perder trazabilidad
 - **Solo se puede inactivar**
 
 ---
 
-## Estructura Definitiva — sys_empresas
+## Estructura Definitiva  sys_empresas
 
 ### PK
 
-- `id_empresa` — INT, auto incremental, primary key
+- `id_empresa`  INT, auto incremental, primary key
 
 ### Campos de negocio
 
-| Campo | Tipo | Restricción |
+| Campo | Tipo | Restriccin |
 |-------|------|-------------|
 | `nombre_empresa` | VARCHAR(200) | NOT NULL |
 | `nombre_legal_empresa` | VARCHAR(300) | NOT NULL |
@@ -47,9 +47,9 @@ Sin empresa no existen: usuarios operativos, planillas, acciones de personal, ro
 |-------|------|-------|
 | `estado_empresa` | TINYINT(1) | 1 = Activa, 0 = Inactiva |
 
-### Auditoría obligatoria (Fase 1)
+### Auditora obligatoria (Fase 1)
 
-| Campo | Tipo | Restricción |
+| Campo | Tipo | Restriccin |
 |-------|------|-------------|
 | `fecha_creacion_empresa` | DATETIME | NOT NULL, DEFAULT NOW() |
 | `fecha_modificacion_empresa` | DATETIME | NOT NULL, ON UPDATE NOW() |
@@ -61,12 +61,12 @@ Sin empresa no existen: usuarios operativos, planillas, acciones de personal, ro
 
 ## Reglas Enterprise
 
-- **NO** existe DELETE físico
+- **NO** existe DELETE fsico
 - **NO** existe CASCADE DELETE
 - **NO** existe "hard delete"
-- **SÍ** inactivación lógica solamente
-- **SÍ** integridad referencial siempre activa
-- **SÍ** índices en: `cedula_empresa`, `prefijo_empresa`, `id_externo_empresa`, `estado_empresa`
+- **S** inactivacin lgica solamente
+- **S** integridad referencial siempre activa
+- **S** ndices en: `cedula_empresa`, `prefijo_empresa`, `id_externo_empresa`, `estado_empresa`
 
 ---
 
@@ -83,16 +83,16 @@ Sin empresa no existen: usuarios operativos, planillas, acciones de personal, ro
 
 ---
 
-## Justificación Arquitectónica
+## Justificacin Arquitectnica
 
 Esto permite:
-- Mantener histórico de planillas pasadas
-- Mantener histórico de empleados
-- Mantener histórico contable
+- Mantener histrico de planillas pasadas
+- Mantener histrico de empleados
+- Mantener histrico contable
 - No romper relaciones
-- Evitar corrupción de datos
+- Evitar corrupcin de datos
 
-NetSuite, SAP, Oracle — todos funcionan así. Nadie borra empresas.
+NetSuite, SAP, Oracle  todos funcionan as. Nadie borra empresas.
 
 ---
 
@@ -162,32 +162,32 @@ Nota:
 
 ## Lo que NO se hace ahora
 
-- No se crean relaciones aún
-- No se crea usuario aún
-- No se crea rol aún
-- No se crea planilla aún
-- **Primero se consolida el aggregate raíz**
+- No se crean relaciones an
+- No se crea usuario an
+- No se crea rol an
+- No se crea planilla an
+- **Primero se consolida el aggregate raz**
 
 ---
 
-## Qué sigue después de esta tabla
+## Qu sigue despus de esta tabla
 
-| Orden | Tabla | Propósito |
+| Orden | Tabla | Propsito |
 |-------|-------|-----------|
-| 1 | `sys_empresas` | **Esta tabla** — root aggregate |
-| 2 | `sys_usuarios` | Identidad única de la plataforma |
-| 3 | `sys_apps` | Catálogo de aplicaciones (KPITAL, TimeWise) |
-| 4 | `sys_usuario_empresa` | Relación M:M usuario ↔ empresa |
+| 1 | `sys_empresas` | **Esta tabla**  root aggregate |
+| 2 | `sys_usuarios` | Identidad nica de la plataforma |
+| 3 | `sys_apps` | Catlogo de aplicaciones (KPITAL, TimeWise) |
+| 4 | `sys_usuario_empresa` | Relacin M:M usuario  empresa |
 | 5 | `sys_roles` | Roles por app + empresa |
 | 6 | `sys_permisos` | Permisos granulares |
-| 7 | `sys_usuario_rol` | Asignación rol a usuario |
+| 7 | `sys_usuario_rol` | Asignacin rol a usuario |
 | 8 | `sys_rol_permiso` | Permisos por rol |
 
 Ese es el **core identity schema**.
 
 ---
 
-*Primer paso de modelado serio. Consolida el aggregate raíz antes de cualquier otra tabla.*
+*Primer paso de modelado serio. Consolida el aggregate raz antes de cualquier otra tabla.*
 
 ---
 
@@ -217,7 +217,7 @@ Ese es el **core identity schema**.
   - diff de campos (`cambios[]` con `campo`, `antes`, `despues`) cuando existe `payload_before/payload_after`.
 
 Regla UI:
-- La pestaña `Bitacora` aparece solo en modo edicion de empresa.
-- La pestaña `Bitacora` se muestra solo si el usuario autenticado tiene `config:companies:audit`.
+- La pestaa `Bitacora` aparece solo en modo edicion de empresa.
+- La pestaa `Bitacora` se muestra solo si el usuario autenticado tiene `config:companies:audit`.
 - El detalle completo de cambios se ve en hover (tooltip) para mantener tabla compacta.
 

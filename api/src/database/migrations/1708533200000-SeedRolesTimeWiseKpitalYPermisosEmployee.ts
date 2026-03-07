@@ -197,3 +197,4 @@ export class SeedRolesTimeWiseKpitalYPermisosEmployee1708533200000 implements Mi
     }
   }
 }
+

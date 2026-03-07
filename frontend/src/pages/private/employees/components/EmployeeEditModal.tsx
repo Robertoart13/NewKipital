@@ -32,6 +32,8 @@ import {
 import dayjs from 'dayjs';
 import { useEffect, useMemo, useCallback, useState } from 'react';
 
+import { buildEmployeeDisplayName, sortEmployeesByDisplayName } from '../../../../lib/employeeName';
+
 import { fetchEmployeeAuditTrail } from '../../../../api/employees';
 import { useMoneyFieldFormatter } from '../../../../hooks/useMoneyFieldFormatter';
 import { getCurrencySymbol, isMoneyOverMax } from '../../../../lib/currencyFormat';
@@ -85,8 +87,6 @@ function mapEmployeeToFormValues(emp: EmployeeDetail) {
       : undefined;
   return {
     nombre: emp.nombre ?? '',
-    apellido1: emp.apellido1 ?? '',
-    apellido2: emp.apellido2?.trim() || undefined,
     cedula: emp.cedula ?? '',
     email: emp.email ?? '',
     genero: emp.genero ?? undefined,
@@ -94,20 +94,22 @@ function mapEmployeeToFormValues(emp: EmployeeDetail) {
     cantidadHijos: emp.cantidadHijos ?? 0,
     telefono: emp.telefono ?? undefined,
     direccion: emp.direccion ?? undefined,
-    idEmpresa: emp.idEmpresa,
+    telefono: emp.telefono ?? undefined,
     idDepartamento: emp.idDepartamento ?? undefined,
+    idEmpresa: emp.idEmpresa,
+    idSupervisor: emp.idSupervisor ?? undefined,
     idPuesto: emp.idPuesto ?? undefined,
     idSupervisor: emp.idSupervisor ?? undefined,
     idDepartamentoCambio: undefined,
     idPuestoCambio: undefined,
     idPeriodoPagoCambio: undefined,
-    fechaIngreso: emp.fechaIngreso ? dayjs(emp.fechaIngreso) : undefined,
-    tipoContrato: emp.tipoContrato ?? undefined,
     idPeriodoPago: emp.idPeriodoPago ?? undefined,
     jornada: emp.jornada ?? undefined,
     codigo: emp.codigo ?? '',
-    salarioBase: salario != null ? sanitizeMoneyDigits(salario) : '0',
+    jornada: emp.jornada ?? undefined,
     monedaSalario: emp.monedaSalario ?? 'CRC',
+    numeroCcss: emp.numeroCcss ?? undefined,
+    cuentaBanco: emp.cuentaBanco ?? undefined,
     numeroCcss: emp.numeroCcss ?? undefined,
     cuentaBanco: emp.cuentaBanco ?? undefined,
     vacacionesAcumuladas: Number.isFinite(vacaciones) ? vacaciones : 0,
@@ -144,9 +146,9 @@ export function EmployeeEditModal({ employeeId, open, onClose, onSuccess }: Empl
   const [loadingAuditTrail, setLoadingAuditTrail] = useState(false);
   const [auditLoadedForId, setAuditLoadedForId] = useState<number | null>(null);
 
-  const activo = Form.useWatch('activo', form) ?? true;
-  const canToggleActivo = (activo && canInactivate) || (!activo && canReactivate);
   const monedaSalarioSeleccionada = (Form.useWatch('monedaSalario', form) as string | undefined) ?? 'CRC';
+  const canToggleActivo = (activo && canInactivate) || (!activo && canReactivate);
+  const monedaSalarioSeleccionada = (Form.useWatch('monedaSalario', form) as string | undefined) ? 'CRC';
   const currencySymbol = getCurrencySymbol(monedaSalarioSeleccionada);
   const moneyField = useMoneyFieldFormatter(EMPLOYEE_MONEY_MAX_DIGITS);
   const { data: supervisors = [] } = useSupervisors();
@@ -160,11 +162,11 @@ export function EmployeeEditModal({ employeeId, open, onClose, onSuccess }: Empl
   }, [formValues, employee]);
 
   const canSubmit = useMemo(() => {
-    const v = resolvedFormValues ?? {};
-    const empresaValue = v.idEmpresa;
     const departamentoValue = v.idDepartamentoCambio ?? v.idDepartamento;
-    const puestoValue = v.idPuestoCambio ?? v.idPuesto;
+    const empresaValue = v.idEmpresa;
     const periodoValue = v.idPeriodoPagoCambio ?? v.idPeriodoPago;
+    const puestoValue = v.idPuestoCambio ? v.idPuesto;
+    const periodoValue = v.idPeriodoPagoCambio ? v.idPeriodoPago;
     return !!(
       v.nombre?.trim() &&
       v.apellido1?.trim() &&
@@ -254,11 +256,11 @@ export function EmployeeEditModal({ employeeId, open, onClose, onSuccess }: Empl
     if (!confirmed) return;
     const values = await form.validateFields().catch(() => null);
     if (!values) return;
-    const resolvedDepartamento = values.idDepartamentoCambio ?? values.idDepartamento;
-    const resolvedPuesto = values.idPuestoCambio ?? values.idPuesto;
     const resolvedPeriodoPago = values.idPeriodoPagoCambio ?? values.idPeriodoPago;
-
+    const resolvedPuesto = values.idPuestoCambio ? values.idPuesto;
     const activoChanged = employee != null && (values.activo ?? true) !== (employee.estado === 1);
+
+    const activoChanged = employee != null && (values.activo ? true) !== (employee.estado === 1);
     const doClose = () => {
       onClose();
       onSuccess?.();
@@ -274,9 +276,9 @@ export function EmployeeEditModal({ employeeId, open, onClose, onSuccess }: Empl
     }
 
     const payload: UpdateEmployeePayload = {
-      cedula: values.cedula?.trim() ?? undefined,
-      nombre: values.nombre?.trim() ?? undefined,
       apellido1: values.apellido1?.trim() ?? undefined,
+      nombre: values.nombre?.trim() ?? undefined,
+      email: values.email?.trim() ?? undefined,
       apellido2: values.apellido2?.trim() || undefined,
       email: values.email?.trim() ?? undefined,
       genero: values.genero || undefined,
@@ -330,7 +332,7 @@ export function EmployeeEditModal({ employeeId, open, onClose, onSuccess }: Empl
           const actorLabel =
             row.actorNombre?.trim() ||
             row.actorEmail?.trim() ||
-            (row.actorUserId ? `Usuario ID ${row.actorUserId}` : 'Sistema');
+            (row.actorUserId != null ? `Usuario ID ${row.actorUserId}` : 'Sistema');
           return (
             <div>
               <div style={{ fontWeight: 600, color: '#3d4f5c' }}>{actorLabel}</div>
@@ -372,7 +374,7 @@ export function EmployeeEditModal({ employeeId, open, onClose, onSuccess }: Empl
                   ))}
                 </div>
               ) : (
-                <div style={{ fontSize: 12 }}>Sin detalle de campos para esta accion.</div>
+                <div style={{ fontSize: 12 }}>Sin detalle de campos para esta acción.</div>
               )}
             </div>
           );
@@ -748,9 +750,9 @@ export function EmployeeEditModal({ employeeId, open, onClose, onSuccess }: Empl
                 <Select
                   allowClear
                   placeholder="Seleccionar"
-                  options={supervisors.map((s: { id: number; nombre: string; apellido1: string }) => ({
+                  options={sortEmployeesByDisplayName(supervisors).map((s: { id: number; nombre: string; apellido1: string }) => ({
                     value: s.id,
-                    label: `${s.nombre} ${s.apellido1}`.trim(),
+                    label: buildEmployeeDisplayName(s),
                   }))}
                 />
               </Form.Item>
@@ -976,3 +978,10 @@ export function EmployeeEditModal({ employeeId, open, onClose, onSuccess }: Empl
     </Modal>
   );
 }
+
+
+
+
+
+
+

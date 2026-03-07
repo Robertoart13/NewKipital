@@ -15,6 +15,8 @@ import {
   Typography,
 } from 'antd';
 import { useEffect, useMemo, useState } from 'react';
+
+import { useSortableColumns } from '../../../hooks/useSortableColumns';
 import { Link, useLocation } from 'react-router-dom';
 
 import {
@@ -163,7 +165,7 @@ export function PermissionsAdminListPage() {
     }
   };
 
-  const columns: ColumnsType<SystemPermission> = useMemo(() => {
+  const columns: ColumnsType<SystemPermission> = useSortableColumns(() => {
     const base: ColumnsType<SystemPermission> = [
       {
         title: 'Código',
@@ -300,9 +302,9 @@ export function PermissionsAdminListPage() {
                 <AppstoreOutlined className={styles.gestionIcon} />
               </div>
               <div>
-                <h2 className={styles.gestionTitle}>Gestion de Permisos</h2>
+                <h2 className={styles.gestionTitle}>Gestión de Permisos</h2>
                 <p className={styles.gestionDesc}>
-                  Administre el catalogo de permisos modulo:accion utilizado por los roles y configuraciones de
+                  Administre el catálogo de permisos módulo:acción utilizado por los roles y configuraciones de
                   seguridad.
                 </p>
               </div>
@@ -366,7 +368,7 @@ export function PermissionsAdminListPage() {
             name="codigo"
             rules={[
               { required: true, message: 'El código es requerido' },
-              { pattern: CODE_PATTERN, message: 'Formato: modulo:accion (ej: employee:create)' },
+              { pattern: CODE_PATTERN, message: 'Formato: módulo:acción (ej: employee:create)' },
             ]}
           >
             <Input placeholder="Ej: employee:create" />
@@ -388,3 +390,8 @@ export function PermissionsAdminListPage() {
     </div>
   );
 }
+
+
+
+
+

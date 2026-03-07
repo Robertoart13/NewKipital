@@ -9,3 +9,4 @@ export const payrollKeys = {
   details: () => [...payrollKeys.all, 'detail'] as const,
   detail: (companyId: string, id: string) => [...payrollKeys.details(), companyId, id] as const,
 };
+

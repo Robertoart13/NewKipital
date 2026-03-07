@@ -64,3 +64,4 @@ export class AddIdAppToSysRoles1708533300000 implements MigrationInterface {
     await queryRunner.dropColumn('sys_roles', 'id_app');
   }
 }
+

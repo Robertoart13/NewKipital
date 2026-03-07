@@ -34,14 +34,14 @@ Funciones oficiales:
 - `parseCurrencyInput(value)`
 - `isMoneyOverMax(value)`
 
-**Nota de encoding:** Para CRC se usa la abreviatura `"CRC"` (en lugar del símbolo colón) para evitar problemas de codificación en distintos entornos. El formato visual es `"CRC 0.00"`.
+**Nota de encoding:** Para CRC se usa la abreviatura `"CRC"` (en lugar del smbolo coln) para evitar problemas de codificacin en distintos entornos. El formato visual es `"CRC 0.00"`.
 
 ---
 
 ## Comportamiento obligatorio
 
 1. El simbolo visual se toma de la moneda seleccionada por el usuario.
-2. `CRC` muestra `"CRC"` (abreviatura; evita problemas de encoding del símbolo colón).
+2. `CRC` muestra `"CRC"` (abreviatura; evita problemas de encoding del smbolo coln).
 3. `USD` muestra `$`.
 4. El formato visual usa separadores y 2 decimales.
 5. El parser limpia simbolos y separadores sin inflar ceros al blur/focus.

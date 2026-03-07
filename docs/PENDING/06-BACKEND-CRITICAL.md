@@ -1,35 +1,35 @@
-# 🔥 BACKEND CRITICAL - Issues Pendientes
+#  BACKEND CRITICAL - Issues Pendientes
 
-**Prioridad Global:** P0-P1 (CRÍTICO/ALTO)
+**Prioridad Global:** P0-P1 (CRTICO/ALTO)
 **Esfuerzo Total:** 1-2 semanas
 **Asignado a:** [Sin asignar]
 
 ---
 
-## ISSUE-036: PEND-001 - Validación bloqueo de empresa con planillas activas
+## ISSUE-036: PEND-001 - Validacin bloqueo de empresa con planillas activas
 
 **Prioridad:** P0
-**Esfuerzo:** S (1 día)
+**Esfuerzo:** S (1 da)
 **Etiquetas:** [backend] [bug] [validation]
 
-### 📝 Descripción
-**BUG CRÍTICO:** CompaniesService.inactivate() permite inactivar empresa aunque tenga planillas activas, causando inconsistencia de datos.
+###  Descripcin
+**BUG CRTICO:** CompaniesService.inactivate() permite inactivar empresa aunque tenga planillas activas, causando inconsistencia de datos.
 
-**Impacto:** Datos huérfanos, reportes incorrectos, pérdida de integridad referencial.
+**Impacto:** Datos hurfanos, reportes incorrectos, prdida de integridad referencial.
 
-### 📁 Archivos Afectados
-- `api/src/modules/companies/companies.service.ts` (línea 350-376)
-- `api/src/modules/payroll/payroll.service.ts` (añadir helper)
+###  Archivos Afectados
+- `api/src/modules/companies/companies.service.ts` (lnea 350-376)
+- `api/src/modules/payroll/payroll.service.ts` (aadir helper)
 
-### ✅ Criterios de Aceptación
+###  Criterios de Aceptacin
 - [ ] inactivate() valida que NO hay planillas en estados operativos
 - [ ] Estados operativos: ABIERTA, EN_PROCESO, VERIFICADA
 - [ ] Si hay planillas activas: lanza BadRequestException con detalle
 - [ ] Mensaje de error: "No se puede inactivar: hay X planillas activas"
-- [ ] Test unitario: intento de inactivar con planillas → 400
-- [ ] Test unitario: inactivar sin planillas → 200
+- [ ] Test unitario: intento de inactivar con planillas  400
+- [ ] Test unitario: inactivar sin planillas  200
 
-### 🔧 Implementación Sugerida
+###  Implementacin Sugerida
 
 ```typescript
 // companies.service.ts
@@ -52,7 +52,7 @@ export class CompaniesService {
       throw new NotFoundException(`Empresa con ID ${id} no encontrada`);
     }
 
-    // ✅ VALIDACIÓN CRÍTICA: Verificar planillas activas
+    //  VALIDACIN CRTICA: Verificar planillas activas
     const estadosOperativos = [
       EstadoCalendarioNomina.ABIERTA,
       EstadoCalendarioNomina.EN_PROCESO,
@@ -74,7 +74,7 @@ export class CompaniesService {
       );
     }
 
-    // ✅ VALIDACIÓN OPCIONAL: Verificar empleados activos
+    //  VALIDACIN OPCIONAL: Verificar empleados activos
     const empleadosActivos = await this.repo.manager.query(
       `SELECT COUNT(*) as count FROM sys_empleados WHERE id_empresa = ? AND estado_empleado = 1`,
       [id],
@@ -111,7 +111,7 @@ export class CompaniesService {
 }
 ```
 
-### 🧪 Cómo Verificar
+###  Cmo Verificar
 
 ```typescript
 // companies.service.spec.ts
@@ -128,7 +128,7 @@ describe('CompaniesService - inactivate', () => {
     ).rejects.toThrow('No se puede inactivar la empresa: hay 1 planilla(s) activa(s)');
   });
 
-  it('debe permitir inactivar si todas las planillas están aplicadas', async () => {
+  it('debe permitir inactivar si todas las planillas estn aplicadas', async () => {
     const company = await createCompany({ id: 1 });
     const payroll = await createPayroll({
       idEmpresa: 1,
@@ -143,33 +143,33 @@ describe('CompaniesService - inactivate', () => {
 
 ---
 
-## ISSUE-037: Recálculo automático de acciones de personal
+## ISSUE-037: Reclculo automtico de acciones de personal
 
 **Prioridad:** P0
-**Esfuerzo:** M (3-5 días)
+**Esfuerzo:** M (3-5 das)
 **Etiquetas:** [backend] [feature] [payroll]
 
-### 📝 Descripción
-**FEATURE FALTANTE:** Cuando se aprueba una acción de personal (aumento salarial, bono), la planilla abierta NO se recalcula automáticamente.
+###  Descripcin
+**FEATURE FALTANTE:** Cuando se aprueba una accin de personal (aumento salarial, bono), la planilla abierta NO se recalcula automticamente.
 
 **Documentado en:** Doc 10, Doc 30
 **Estado actual:** Evento PERSONAL_ACTION.APPROVED se emite pero NO hay listeners.
 
-### 📁 Archivos Afectados
+###  Archivos Afectados
 - `api/src/modules/payroll/listeners/payroll-recalculation.listener.ts` (crear)
-- `api/src/modules/payroll/payroll.service.ts` (añadir método recalculate)
+- `api/src/modules/payroll/payroll.service.ts` (aadir mtodo recalculate)
 - `api/src/modules/personal-actions/personal-actions.service.ts`
 
-### ✅ Criterios de Aceptación
+###  Criterios de Aceptacin
 - [ ] @OnEvent listener para PERSONAL_ACTION.APPROVED
 - [ ] Listener busca planilla abierta para el empleado/empresa
 - [ ] Si existe planilla ABIERTA o EN_PROCESO: recalcula
-- [ ] Recálculo actualiza montos pero NO cambia estado
-- [ ] Si planilla está VERIFICADA/APLICADA: NO recalcula (inmutable)
-- [ ] Logging de cada recálculo
-- [ ] Tests unitarios: aprobar acción → recálculo automático
+- [ ] Reclculo actualiza montos pero NO cambia estado
+- [ ] Si planilla est VERIFICADA/APLICADA: NO recalcula (inmutable)
+- [ ] Logging de cada reclculo
+- [ ] Tests unitarios: aprobar accin  reclculo automtico
 
-### 🔧 Implementación Sugerida
+###  Implementacin Sugerida
 
 ```typescript
 // payroll/listeners/payroll-recalculation.listener.ts
@@ -208,7 +208,7 @@ export class PayrollRecalculationListener {
   async handlePersonalActionApproved(event: PersonalActionApprovedEvent) {
     const { employeeId, companyId, actionId } = event.payload;
 
-    this.logger.log(`Procesando recálculo por acción ${actionId} para empleado ${employeeId}`);
+    this.logger.log(`Procesando reclculo por accin ${actionId} para empleado ${employeeId}`);
 
     // Buscar planillas abiertas de la empresa
     const openPayrolls = await this.payrollRepo.find({
@@ -223,7 +223,7 @@ export class PayrollRecalculationListener {
     });
 
     if (openPayrolls.length === 0) {
-      this.logger.debug(`No hay planillas abiertas para empresa ${companyId}, skip recálculo`);
+      this.logger.debug(`No hay planillas abiertas para empresa ${companyId}, skip reclculo`);
       return;
     }
 
@@ -232,7 +232,7 @@ export class PayrollRecalculationListener {
         await this.payrollService.recalculateForEmployee(payroll.id, parseInt(employeeId));
 
         this.logger.log(
-          `Recálculo exitoso: planilla ${payroll.id}, empleado ${employeeId}, acción ${actionId}`
+          `Reclculo exitoso: planilla ${payroll.id}, empleado ${employeeId}, accin ${actionId}`
         );
       } catch (error) {
         this.logger.error(
@@ -265,7 +265,7 @@ export class PayrollService {
       throw new NotFoundException(`Empleado ${employeeId} no encontrado`);
     }
 
-    // TODO: Lógica de recálculo según tipo de planilla
+    // TODO: Lgica de reclculo segn tipo de planilla
     // Por ahora, solo logging
     this.logger.log(`Recalculando empleado ${employeeId} en planilla ${payrollId}`);
 
@@ -281,10 +281,10 @@ export class PayrollService {
 ## ISSUE-038: Implementar listeners de eventos de dominio
 
 **Prioridad:** P1
-**Esfuerzo:** M (2-3 días)
+**Esfuerzo:** M (2-3 das)
 **Etiquetas:** [backend] [events] [architecture]
 
-### 📝 Descripción
+###  Descripcin
 **FEATURE FALTANTE:** Eventos de dominio se emiten pero NO hay listeners implementados.
 
 **Eventos emitidos sin listeners:**
@@ -294,36 +294,36 @@ export class PayrollService {
 - `PERSONAL_ACTION.CREATED`
 - `EMPLOYEE.CREATED`
 
-### ✅ Criterios de Aceptación
-- [ ] Listener para PAYROLL.OPENED → enviar notificación a RRHH
-- [ ] Listener para PAYROLL.APPLIED → trigger contabilización (Fase 3)
-- [ ] Listener para EMPLOYEE.CREATED → enviar email bienvenida
+###  Criterios de Aceptacin
+- [ ] Listener para PAYROLL.OPENED  enviar notificacin a RRHH
+- [ ] Listener para PAYROLL.APPLIED  trigger contabilizacin (Fase 3)
+- [ ] Listener para EMPLOYEE.CREATED  enviar email bienvenida
 - [ ] Cada listener con logging
 - [ ] Tests unitarios de cada listener
 
 ---
 
-## ISSUE-039: Aplicación de planilla sin enforcement de estados
+## ISSUE-039: Aplicacin de planilla sin enforcement de estados
 
 **Prioridad:** P1
-**Esfuerzo:** M (2-3 días)
+**Esfuerzo:** M (2-3 das)
 **Etiquetas:** [backend] [bug] [payroll]
 
-### 📝 Descripción
-**BUG:** PayrollService.apply() tiene validación de estado VERIFICADA, pero NO impide aplicar múltiples veces si se llama concurrentemente.
+###  Descripcin
+**BUG:** PayrollService.apply() tiene validacin de estado VERIFICADA, pero NO impide aplicar mltiples veces si se llama concurrentemente.
 
 **Riesgo:** Planilla aplicada 2 veces = pagos duplicados.
 
-### ✅ Criterios de Aceptación
-- [ ] apply() usa optimistic locking (versionLock) ✅ YA IMPLEMENTADO
-- [ ] Añadir constraint UNIQUE en BD: (id_empresa, periodo, tipo, estado=APLICADA)
-- [ ] Test: aplicar 2 veces concurrentemente → solo 1 éxito
-- [ ] Test: aplicar después de aplicada → 409 Conflict
+###  Criterios de Aceptacin
+- [ ] apply() usa optimistic locking (versionLock)  YA IMPLEMENTADO
+- [ ] Aadir constraint UNIQUE en BD: (id_empresa, periodo, tipo, estado=APLICADA)
+- [ ] Test: aplicar 2 veces concurrentemente  solo 1 xito
+- [ ] Test: aplicar despus de aplicada  409 Conflict
 
-### 🔧 Implementación Sugerida
+###  Implementacin Sugerida
 
 ```typescript
-// Migración
+// Migracin
 export class AddUniqueConstraintPayroll implements MigrationInterface {
   public async up(queryRunner: QueryRunner): Promise<void> {
     await queryRunner.query(`
@@ -345,16 +345,16 @@ export class AddUniqueConstraintPayroll implements MigrationInterface {
 ## ISSUE-040: Historial laboral incompleto (tablas faltantes)
 
 **Prioridad:** P1
-**Esfuerzo:** S (1-2 días)
+**Esfuerzo:** S (1-2 das)
 **Etiquetas:** [backend] [database] [migration]
 
-### 📝 Descripción
+###  Descripcin
 **FEATURE FALTANTE:** Docs mencionan tabla `sys_empleado_provision_aguinaldo` pero NO existe en migraciones.
 
 **Documentado en:** Doc 23, Doc 30
 
-### ✅ Criterios de Aceptación
-- [ ] Migración crea tabla `sys_empleado_provision_aguinaldo`
+###  Criterios de Aceptacin
+- [ ] Migracin crea tabla `sys_empleado_provision_aguinaldo`
 - [ ] Columnas:
   - id_provision
   - id_empleado (FK)
@@ -374,12 +374,12 @@ export class AddUniqueConstraintPayroll implements MigrationInterface {
 **Esfuerzo:** L (1 semana)
 **Etiquetas:** [backend] [infrastructure] [queues]
 
-### 📝 Descripción
+###  Descripcin
 **FEATURE FALTANTE:** Docs mencionan colas (identity sync, encryption) pero tablas NO existen y Redis no configurado.
 
 **Documentado en:** Doc 01, Doc 04, automatizaciones/
 
-### ✅ Criterios de Aceptación
+###  Criterios de Aceptacin
 - [ ] Redis instalado y configurado
 - [ ] BullMQ integrado
 - [ ] Colas:
@@ -391,7 +391,7 @@ export class AddUniqueConstraintPayroll implements MigrationInterface {
 - [ ] Dead Letter Queue configurada
 - [ ] Retry policy: exponential backoff
 
-### 🔧 Implementación Sugerida
+###  Implementacin Sugerida
 
 ```typescript
 // queues.module.ts
@@ -423,7 +423,7 @@ export class IdentitySyncProcessor {
   @Process()
   async handleIdentitySync(job: Job) {
     const { userId, changes } = job.data;
-    // Lógica de sincronización
+    // Lgica de sincronizacin
   }
 }
 ```
@@ -433,22 +433,22 @@ export class IdentitySyncProcessor {
 ## ISSUE-042: Rate limiting no integrado
 
 **Prioridad:** P1
-**Esfuerzo:** S (1 día)
+**Esfuerzo:** S (1 da)
 **Etiquetas:** [backend] [security]
 
-### 📝 Descripción
+###  Descripcin
 **SECURITY GAP:** AuthRateLimitService existe pero NO se usa en AuthController.
 
-**Riesgo:** Brute force attacks sin límite.
+**Riesgo:** Brute force attacks sin lmite.
 
-### ✅ Criterios de Aceptación
+###  Criterios de Aceptacin
 - [ ] @UseGuards(ThrottlerGuard) en POST /auth/login
-- [ ] Límite: 5 intentos por minuto por IP
-- [ ] Límite: 10 intentos por hora por IP
+- [ ] Lmite: 5 intentos por minuto por IP
+- [ ] Lmite: 10 intentos por hora por IP
 - [ ] Response 429 Too Many Requests
 - [ ] Header: Retry-After con segundos
 
-### 🔧 Implementación Sugerida
+###  Implementacin Sugerida
 
 ```typescript
 // auth.controller.ts
@@ -483,15 +483,15 @@ export class AppModule {}
 ## ISSUE-043: Respuestas HTTP inconsistentes
 
 **Prioridad:** P2
-**Esfuerzo:** M (2 días)
+**Esfuerzo:** M (2 das)
 **Etiquetas:** [backend] [api] [consistency]
 
-### 📝 Descripción
+###  Descripcin
 **INCONSISTENCY:** main.ts define formato `{ success, data, message, error }` pero controllers retornan solo entity.
 
-### ✅ Criterios de Aceptación
+###  Criterios de Aceptacin
 - [ ] Interceptor global que envuelve todas las respuestas
-- [ ] Formato estándar:
+- [ ] Formato estndar:
   ```json
   {
     "success": true,
@@ -500,15 +500,15 @@ export class AppModule {}
     "error": null
   }
   ```
-- [ ] Errores también en formato estándar
+- [ ] Errores tambin en formato estndar
 - [ ] Tests E2E verifican formato
 
 ---
 
-## 📊 Progreso Backend Critical
+##  Progreso Backend Critical
 
-- [ ] ISSUE-036: PEND-001 validación bloqueo empresa
-- [ ] ISSUE-037: Recálculo automático
+- [ ] ISSUE-036: PEND-001 validacin bloqueo empresa
+- [ ] ISSUE-037: Reclculo automtico
 - [ ] ISSUE-038: Listeners de eventos
 - [ ] ISSUE-039: Enforcement estados planilla
 - [ ] ISSUE-040: Historial laboral completo

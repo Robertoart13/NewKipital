@@ -165,3 +165,4 @@ export const hasPermission = (state: RootState, permission: Permission) =>
  */
 export const hasModuleAction = (state: RootState, module: string, action: string) =>
   hasPermissionWithAliases(selectPermissions(state), `${module}:${action}` as Permission);
+

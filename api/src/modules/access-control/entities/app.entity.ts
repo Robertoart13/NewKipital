@@ -48,3 +48,4 @@ export class App {
   @UpdateDateColumn({ name: 'fecha_modificacion_app' })
   fechaModificacion: Date;
 }
+

@@ -89,3 +89,4 @@ export function clearMicrosoftAvatar(): void {
 
 /** @deprecated Usar shouldSkipRestore. Alias para compatibilidad. */
 export const consumeSkipRestore = shouldSkipRestore;
+

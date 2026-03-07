@@ -11,7 +11,7 @@ import { Table, TableIndex, TableForeignKey, MigrationInterface, QueryRunner } f
  */
 export class CreateIdentitySchema1708531300000 implements MigrationInterface {
   public async up(queryRunner: QueryRunner): Promise<void> {
-    // ─── 1. sys_usuarios ───
+    // â”€â”€â”€ 1. sys_usuarios â”€â”€â”€
     await queryRunner.createTable(
       new Table({
         name: 'sys_usuarios',
@@ -101,7 +101,7 @@ export class CreateIdentitySchema1708531300000 implements MigrationInterface {
       }),
     );
 
-    // ─── 2. sys_apps ───
+    // â”€â”€â”€ 2. sys_apps â”€â”€â”€
     await queryRunner.createTable(
       new Table({
         name: 'sys_apps',
@@ -172,7 +172,7 @@ export class CreateIdentitySchema1708531300000 implements MigrationInterface {
       }),
     );
 
-    // ─── 3. sys_usuario_app ───
+    // â”€â”€â”€ 3. sys_usuario_app â”€â”€â”€
     await queryRunner.createTable(
       new Table({
         name: 'sys_usuario_app',
@@ -229,7 +229,7 @@ export class CreateIdentitySchema1708531300000 implements MigrationInterface {
       }),
     );
 
-    // ─── 4. sys_usuario_empresa ───
+    // â”€â”€â”€ 4. sys_usuario_empresa â”€â”€â”€
     await queryRunner.createTable(
       new Table({
         name: 'sys_usuario_empresa',
@@ -291,7 +291,7 @@ export class CreateIdentitySchema1708531300000 implements MigrationInterface {
       }),
     );
 
-    // ─── 5. sys_roles ───
+    // â”€â”€â”€ 5. sys_roles â”€â”€â”€
     await queryRunner.createTable(
       new Table({
         name: 'sys_roles',
@@ -357,7 +357,7 @@ export class CreateIdentitySchema1708531300000 implements MigrationInterface {
       }),
     );
 
-    // ─── 6. sys_permisos ───
+    // â”€â”€â”€ 6. sys_permisos â”€â”€â”€
     await queryRunner.createTable(
       new Table({
         name: 'sys_permisos',
@@ -428,7 +428,7 @@ export class CreateIdentitySchema1708531300000 implements MigrationInterface {
       }),
     );
 
-    // ─── 7. sys_rol_permiso ───
+    // â”€â”€â”€ 7. sys_rol_permiso â”€â”€â”€
     await queryRunner.createTable(
       new Table({
         name: 'sys_rol_permiso',
@@ -484,7 +484,7 @@ export class CreateIdentitySchema1708531300000 implements MigrationInterface {
       }),
     );
 
-    // ─── 8. sys_usuario_rol (TABLA CORE) ───
+    // â”€â”€â”€ 8. sys_usuario_rol (TABLA CORE) â”€â”€â”€
     await queryRunner.createTable(
       new Table({
         name: 'sys_usuario_rol',
@@ -604,3 +604,4 @@ export class CreateIdentitySchema1708531300000 implements MigrationInterface {
     await queryRunner.dropTable('sys_usuarios');
   }
 }
+

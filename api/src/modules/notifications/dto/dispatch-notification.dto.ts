@@ -42,3 +42,4 @@ export class DispatchNotificationDto {
   @IsOptional()
   idUsuariosAdicionales?: number[];
 }
+

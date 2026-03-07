@@ -145,6 +145,7 @@ export async function fetchAccountingAccountTypes(): Promise<AccountingAccountTy
 
 export async function fetchPersonalActionTypes(): Promise<PersonalActionType[]> {
   const res = await httpFetch('/accounting-accounts/personal-action-types');
-  if (!res.ok) throw new Error('Error al cargar tipos de accion personal');
+  if (!res.ok) throw new Error('Error al cargar tipos de acción personal');
   return res.json();
 }
+

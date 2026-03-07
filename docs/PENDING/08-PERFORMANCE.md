@@ -1,4 +1,4 @@
-# ⚡ PERFORMANCE - Issues Pendientes
+#  PERFORMANCE - Issues Pendientes
 
 **Prioridad Global:** P1 (ALTO)
 **Esfuerzo Total:** 1 semana
@@ -7,20 +7,20 @@
 
 ## ISSUE-049: Problema N+1 en EmployeesService
 
-**Prioridad:** P1 | **Esfuerzo:** S (1 día)
+**Prioridad:** P1 | **Esfuerzo:** S (1 da)
 
-### Descripción
-Carga de empleados hace múltiples queries para departamento, supervisor, puesto.
+### Descripcin
+Carga de empleados hace mltiples queries para departamento, supervisor, puesto.
 
 ### Archivos Afectados
 - `api/src/modules/employees/employees.service.ts`
 
-### Criterios de Aceptación
+### Criterios de Aceptacin
 - [ ] findAll() usa eager loading o DataLoader
-- [ ] Query único con JOINs
+- [ ] Query nico con JOINs
 - [ ] Tests de performance: 100 empleados < 200ms
 
-### Implementación
+### Implementacin
 
 ```typescript
 // employees.service.ts
@@ -39,42 +39,42 @@ async findAll(userId: number, idEmpresa?: number): Promise<Employee[]> {
 
 ---
 
-## ISSUE-050: Caché de permisos con Redis
+## ISSUE-050: Cach de permisos con Redis
 
-**Prioridad:** P1 | **Esfuerzo:** M (2-3 días)
+**Prioridad:** P1 | **Esfuerzo:** M (2-3 das)
 
-### Descripción
-PermissionsGuard consulta BD en cada request. Necesita caché.
+### Descripcin
+PermissionsGuard consulta BD en cada request. Necesita cach.
 
-### Criterios de Aceptación
+### Criterios de Aceptacin
 - [ ] Redis configurado
 - [ ] Cache de permisos por (userId, companyId, appCode)
 - [ ] TTL: 5 minutos
 - [ ] Invalidar cache al cambiar permisos
-- [ ] Reducción latencia: 200ms → 20ms
+- [ ] Reduccin latencia: 200ms  20ms
 
 ---
 
-## ISSUE-051: Índices de BD faltantes
+## ISSUE-051: ndices de BD faltantes
 
-**Prioridad:** P1 | **Esfuerzo:** S (1 día)
+**Prioridad:** P1 | **Esfuerzo:** S (1 da)
 
-### Descripción
-Queries lentos por falta de índices.
+### Descripcin
+Queries lentos por falta de ndices.
 
-### Criterios de Aceptación
-- [ ] Índice: sys_empleados(id_empresa, estado_empleado)
-- [ ] Índice: nom_calendarios_nomina(id_empresa, estado_calendario_nomina)
-- [ ] Índice: sys_auditoria_acciones(id_empresa_contexto_auditoria, fecha_creacion_auditoria)
-- [ ] Analyze query plans antes/después
+### Criterios de Aceptacin
+- [ ] ndice: sys_empleados(id_empresa, estado_empleado)
+- [ ] ndice: nom_calendarios_nomina(id_empresa, estado_calendario_nomina)
+- [ ] ndice: sys_auditoria_acciones(id_empresa_contexto_auditoria, fecha_creacion_auditoria)
+- [ ] Analyze query plans antes/despus
 
 ---
 
 ## ISSUE-052: Connection pooling optimization
 
-**Prioridad:** P1 | **Esfuerzo:** XS (medio día)
+**Prioridad:** P1 | **Esfuerzo:** XS (medio da)
 
-### Criterios de Aceptación
+### Criterios de Aceptacin
 - [ ] Pool size: min 5, max 20
 - [ ] Idle timeout: 30s
 - [ ] Acquire timeout: 10s
@@ -82,14 +82,14 @@ Queries lentos por falta de índices.
 
 ---
 
-## ISSUE-053: Paginación en endpoints sin límite
+## ISSUE-053: Paginacin en endpoints sin lmite
 
-**Prioridad:** P1 | **Esfuerzo:** S (1 día)
+**Prioridad:** P1 | **Esfuerzo:** S (1 da)
 
-### Descripción
-GET /api/employees retorna todos los empleados sin paginación.
+### Descripcin
+GET /api/employees retorna todos los empleados sin paginacin.
 
-### Criterios de Aceptación
+### Criterios de Aceptacin
 - [ ] Query param: ?page=1&limit=50
 - [ ] Default limit: 50
 - [ ] Max limit: 500
@@ -101,19 +101,19 @@ GET /api/employees retorna todos los empleados sin paginación.
 
 **Prioridad:** P2 | **Esfuerzo:** XS (1 hora)
 
-### Criterios de Aceptación
+### Criterios de Aceptacin
 - [ ] Gzip compression para responses > 1KB
-- [ ] Reducción bandwidth: ~60%
+- [ ] Reduccin bandwidth: ~60%
 
 ---
 
-## 📊 Progreso Performance
+##  Progreso Performance
 
 - [ ] ISSUE-049: N+1 queries
-- [ ] ISSUE-050: Caché Redis
-- [ ] ISSUE-051: Índices BD
+- [ ] ISSUE-050: Cach Redis
+- [ ] ISSUE-051: ndices BD
 - [ ] ISSUE-052: Connection pooling
-- [ ] ISSUE-053: Paginación
+- [ ] ISSUE-053: Paginacin
 - [ ] ISSUE-054: Compression
 
 **Total:** 0/6 completados (0%)

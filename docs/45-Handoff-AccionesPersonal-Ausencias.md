@@ -3,7 +3,7 @@
 Fecha: 2026-02-28  
 Objetivo: permitir retomar el desarrollo desde cero (nuevo chat / nuevo ingeniero) sin perdida de contexto.
 
-Etiqueta de continuidad (usar mañana):
+Etiqueta de continuidad (usar maana):
 
 `CONT-AP-2026-03-01-DESCUENTOS-CERRADO`
 
@@ -166,8 +166,8 @@ Regla de performance (obligatoria):
 
 Regla UX modal (create vs edit):
 
-1. En `create`, no se muestra la pestaña/sección `Informacion principal`.
-2. En `edit`, sí se muestra `Informacion principal` y (si aplica) `Bitacora`.
+1. En `create`, no se muestra la pestaa/seccin `Informacion principal`.
+2. En `edit`, s se muestra `Informacion principal` y (si aplica) `Bitacora`.
 3. Aplica igual para Ausencias y Licencias para mantener consistencia visual.
 
 ## 9. QA minimo para verificar al retomar

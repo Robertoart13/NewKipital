@@ -95,7 +95,8 @@ export async function fetchConfigPermissions(filters?: {
   if (filters?.modulo) params.set('modulo', filters.modulo);
   if (filters?.includeInactive !== undefined) params.set('includeInactive', String(filters.includeInactive));
 
-  const res = await httpFetch(`/config/permissions${params.toString() ? `?${params}` : ''}`);
+  const qs = params.toString();
+  const res = await httpFetch(`/config/permissions${qs ? `?${qs}` : ''}`);
   return ensureOk<SystemPermission[]>(res, 'Error al cargar permisos');
 }
 
@@ -108,7 +109,8 @@ export async function fetchPermissionsForRoles(filters?: {
   if (filters?.modulo) params.set('modulo', filters.modulo);
   if (filters?.includeInactive !== undefined) params.set('includeInactive', String(filters.includeInactive));
 
-  const res = await httpFetch(`/permissions${params.toString() ? `?${params}` : ''}`);
+  const qs = params.toString();
+  const res = await httpFetch(`/permissions${qs ? `?${qs}` : ''}`);
   return ensureOk<SystemPermission[]>(res, 'Error al cargar permisos para roles');
 }
 
@@ -449,3 +451,4 @@ export async function replaceUserPermissionOverrides(
   });
   return ensureOk(res, 'Error al guardar excepciones de permisos');
 }
+

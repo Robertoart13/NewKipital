@@ -130,3 +130,4 @@ export class SeedEmpresaSigmaYUsuarioDemo1708532900000 implements MigrationInter
     }
   }
 }
+

@@ -13,3 +13,4 @@ export interface DomainEvent<T = unknown> {
   occurredAt: Date;
   triggeredBy: string;
 }
+

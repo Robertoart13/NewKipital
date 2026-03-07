@@ -67,3 +67,4 @@ export function EmployeeFilters({ filters, onChange, departments = [] }: Employe
     </Space>
   );
 }
+

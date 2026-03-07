@@ -50,3 +50,4 @@ export class UserRoleExclusion {
   @Column({ name: 'modificado_por_usuario_rol_exclusion', type: 'int' })
   modificadoPor: number;
 }
+

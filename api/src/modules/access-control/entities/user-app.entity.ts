@@ -1,7 +1,7 @@
 import { Entity, PrimaryGeneratedColumn, Column, Index, CreateDateColumn } from 'typeorm';
 
 /**
- * sys_usuario_app — Tabla puente: Usuario ↔ App.
+ * sys_usuario_app — Tabla puente: Usuario â†” App.
  * Define si un usuario puede ingresar a una aplicación.
  * Aquí NO hay empresa. Solo acceso a la app.
  */
@@ -23,3 +23,4 @@ export class UserApp {
   @CreateDateColumn({ name: 'fecha_asignacion_usuario_app' })
   fechaAsignacion: Date;
 }
+

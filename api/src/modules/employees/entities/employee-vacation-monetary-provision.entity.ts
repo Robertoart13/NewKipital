@@ -1,4 +1,4 @@
-﻿import { Entity, PrimaryGeneratedColumn, Column, Index, CreateDateColumn } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, Index, CreateDateColumn } from 'typeorm';
 
 /**
  * sys_empleado_vacaciones_provision_monto — Historial monetario de provisiones de vacaciones.

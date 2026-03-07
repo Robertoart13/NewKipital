@@ -1,6 +1,6 @@
-# 📊 MONITORING - Issues Pendientes
+#  MONITORING - Issues Pendientes
 
-**Prioridad Global:** P0 (CRÍTICO)
+**Prioridad Global:** P0 (CRTICO)
 **Esfuerzo Total:** 1 semana
 **Asignado a:** [Sin asignar]
 
@@ -9,29 +9,29 @@
 ## ISSUE-019: Setup Elasticsearch + Kibana (ELK Stack)
 
 **Prioridad:** P0
-**Esfuerzo:** M (2-3 días)
+**Esfuerzo:** M (2-3 das)
 **Etiquetas:** [monitoring] [infrastructure] [elk]
 
-### 📝 Descripción
-Logs en archivos locales desaparecen y son difíciles de buscar. Necesitamos ELK para centralizar.
+###  Descripcin
+Logs en archivos locales desaparecen y son difciles de buscar. Necesitamos ELK para centralizar.
 
-### 🎯 Objetivo
+###  Objetivo
 Elasticsearch + Kibana funcionando con logs indexados en tiempo real.
 
-### 📁 Archivos Afectados
+###  Archivos Afectados
 - `docker-compose.monitoring.yml` (crear)
 - `api/src/common/logger/logger.config.ts` (modificar)
-- `api/package.json` (añadir winston-elasticsearch)
+- `api/package.json` (aadir winston-elasticsearch)
 
-### ✅ Criterios de Aceptación
+###  Criterios de Aceptacin
 - [ ] Docker compose con Elasticsearch + Kibana
 - [ ] Winston transport a Elasticsearch configurado
-- [ ] Índice `kpital-logs-*` se crea automáticamente
+- [ ] ndice `kpital-logs-*` se crea automticamente
 - [ ] Kibana accesible en `http://localhost:5601`
 - [ ] Logs se pueden buscar por correlationId, userId, level
-- [ ] Retention policy: 30 días (logs antiguos se borran)
+- [ ] Retention policy: 30 das (logs antiguos se borran)
 
-### 🔧 Implementación Sugerida
+###  Implementacin Sugerida
 
 ```yaml
 # docker-compose.monitoring.yml
@@ -74,7 +74,7 @@ networks:
 ```
 
 ```typescript
-// logger.config.ts (añadir transport)
+// logger.config.ts (aadir transport)
 import { ElasticsearchTransport } from 'winston-elasticsearch';
 
 const esTransport = new ElasticsearchTransport({
@@ -95,14 +95,14 @@ const esTransport = new ElasticsearchTransport({
   },
 });
 
-// Añadir a transports[]
+// Aadir a transports[]
 transports: [
   // ...otros transports
   esTransport,
 ],
 ```
 
-### 🧪 Cómo Verificar
+###  Cmo Verificar
 ```bash
 docker-compose -f docker-compose.monitoring.yml up -d
 # Esperar 30s
@@ -110,7 +110,7 @@ curl http://localhost:9200/_cat/indices?v
 # Debe mostrar: kpital-logs-2026.02.24
 
 # Abrir http://localhost:5601
-# Ir a Discover → crear index pattern: kpital-logs-*
+# Ir a Discover  crear index pattern: kpital-logs-*
 # Buscar logs por correlationId
 ```
 
@@ -119,26 +119,26 @@ curl http://localhost:9200/_cat/indices?v
 ## ISSUE-020: Implementar Prometheus metrics
 
 **Prioridad:** P0
-**Esfuerzo:** M (2 días)
+**Esfuerzo:** M (2 das)
 **Etiquetas:** [monitoring] [prometheus] [metrics]
 
-### 📝 Descripción
-Sin métricas no podemos saber request rate, latency, error rate (RED metrics).
+###  Descripcin
+Sin mtricas no podemos saber request rate, latency, error rate (RED metrics).
 
-### 🎯 Objetivo
-Prometheus scrapeando métricas de NestJS.
+###  Objetivo
+Prometheus scrapeando mtricas de NestJS.
 
-### 📁 Archivos Afectados
+###  Archivos Afectados
 - `api/src/modules/metrics/metrics.module.ts` (crear)
 - `api/src/app.module.ts`
-- `docker-compose.monitoring.yml` (añadir Prometheus)
+- `docker-compose.monitoring.yml` (aadir Prometheus)
 - `prometheus.yml` (crear)
-- `api/package.json` (añadir @willsoto/nestjs-prometheus)
+- `api/package.json` (aadir @willsoto/nestjs-prometheus)
 
-### ✅ Criterios de Aceptación
-- [ ] Endpoint `/metrics` expone métricas en formato Prometheus
-- [ ] Métricas:
-  - `http_requests_total` (counter por método, ruta, status)
+###  Criterios de Aceptacin
+- [ ] Endpoint `/metrics` expone mtricas en formato Prometheus
+- [ ] Mtricas:
+  - `http_requests_total` (counter por mtodo, ruta, status)
   - `http_request_duration_seconds` (histogram)
   - `http_requests_in_progress` (gauge)
   - `db_query_duration_seconds` (histogram)
@@ -146,7 +146,7 @@ Prometheus scrapeando métricas de NestJS.
 - [ ] Prometheus scrapeando cada 15s
 - [ ] Prometheus UI accesible en `http://localhost:9090`
 
-### 🔧 Implementación Sugerida
+###  Implementacin Sugerida
 
 ```typescript
 // metrics.module.ts
@@ -198,7 +198,7 @@ scrape_configs:
 ```
 
 ```yaml
-# Añadir a docker-compose.monitoring.yml
+# Aadir a docker-compose.monitoring.yml
   prometheus:
     image: prom/prometheus:latest
     container_name: kpital-prometheus
@@ -214,14 +214,14 @@ scrape_configs:
       - kpital-monitoring
 ```
 
-### 🧪 Cómo Verificar
+###  Cmo Verificar
 ```bash
 curl http://localhost:3000/metrics
-# Debe retornar métricas en formato Prometheus
+# Debe retornar mtricas en formato Prometheus
 
 # Abrir http://localhost:9090
 # Query: rate(http_requests_total[5m])
-# Debe mostrar gráfica de request rate
+# Debe mostrar grfica de request rate
 ```
 
 ---
@@ -229,23 +229,23 @@ curl http://localhost:3000/metrics
 ## ISSUE-021: Crear Grafana dashboards
 
 **Prioridad:** P0
-**Esfuerzo:** M (2 días)
+**Esfuerzo:** M (2 das)
 **Etiquetas:** [monitoring] [grafana] [dashboards]
 
-### 📝 Descripción
-Métricas sin visualización son inútiles. Necesitamos dashboards operativos.
+###  Descripcin
+Mtricas sin visualizacin son intiles. Necesitamos dashboards operativos.
 
-### 🎯 Objetivo
-3 dashboards básicos: Overview, Auth, Database.
+###  Objetivo
+3 dashboards bsicos: Overview, Auth, Database.
 
-### 📁 Archivos Afectados
-- `docker-compose.monitoring.yml` (añadir Grafana)
+###  Archivos Afectados
+- `docker-compose.monitoring.yml` (aadir Grafana)
 - `grafana/dashboards/overview.json` (crear)
 - `grafana/dashboards/auth.json` (crear)
 - `grafana/dashboards/database.json` (crear)
 - `grafana/provisioning/datasources/prometheus.yml` (crear)
 
-### ✅ Criterios de Aceptación
+###  Criterios de Aceptacin
 
 **Dashboard 1: API Overview**
 - [ ] Request rate (req/min)
@@ -268,15 +268,15 @@ Métricas sin visualización son inútiles. Necesitamos dashboards operativos.
 - [ ] Transaction errors
 
 **Dashboard 4: Business Metrics**
-- [ ] Empresas creadas (últimas 24h)
+- [ ] Empresas creadas (ltimas 24h)
 - [ ] Empleados activos
 - [ ] Planillas en estado Abierta/Verificada
 - [ ] Acciones de personal pendientes
 
-### 🔧 Implementación Sugerida
+###  Implementacin Sugerida
 
 ```yaml
-# Añadir a docker-compose.monitoring.yml
+# Aadir a docker-compose.monitoring.yml
   grafana:
     image: grafana/grafana:latest
     container_name: kpital-grafana
@@ -307,26 +307,26 @@ datasources:
     isDefault: true
 ```
 
-### 🧪 Cómo Verificar
+###  Cmo Verificar
 ```bash
 # Abrir http://localhost:3001
 # Login: admin / admin
-# Ir a Dashboards → debe mostrar 4 dashboards
-# Verificar que gráficas muestran datos
+# Ir a Dashboards  debe mostrar 4 dashboards
+# Verificar que grficas muestran datos
 ```
 
 ---
 
-## ISSUE-022: Configurar alertas básicas
+## ISSUE-022: Configurar alertas bsicas
 
 **Prioridad:** P1
-**Esfuerzo:** S (1 día)
+**Esfuerzo:** S (1 da)
 **Etiquetas:** [monitoring] [alerts]
 
-### 📝 Descripción
+###  Descripcin
 Dashboards son reactivos. Necesitamos alertas proactivas.
 
-### ✅ Criterios de Aceptación
+###  Criterios de Aceptacin
 - [ ] Alert: Error rate > 5% por 5 minutos
 - [ ] Alert: P95 latency > 2 segundos
 - [ ] Alert: Login failure rate > 50% por 5 minutos
@@ -334,7 +334,7 @@ Dashboards son reactivos. Necesitamos alertas proactivas.
 - [ ] Notificaciones por email/Slack
 - [ ] Documentar playbooks de respuesta
 
-### 🔧 Implementación Sugerida
+###  Implementacin Sugerida
 
 ```yaml
 # prometheus/alerts.yml
@@ -366,13 +366,13 @@ groups:
 ## ISSUE-023: Health checks mejorados
 
 **Prioridad:** P1
-**Esfuerzo:** S (1 día)
+**Esfuerzo:** S (1 da)
 **Etiquetas:** [monitoring] [health]
 
-### 📝 Descripción
-OpsController probablemente tiene health checks básicos, necesitamos más detalle.
+###  Descripcin
+OpsController probablemente tiene health checks bsicos, necesitamos ms detalle.
 
-### ✅ Criterios de Aceptación
+###  Criterios de Aceptacin
 - [ ] `/health` retorna status general (healthy/unhealthy)
 - [ ] `/health/live` para liveness probe (Kubernetes)
 - [ ] `/health/ready` para readiness probe
@@ -383,7 +383,7 @@ OpsController probablemente tiene health checks básicos, necesitamos más detal
   - Filesystem write (uploads/)
 - [ ] Formato JSON con detalles por componente
 
-### 🔧 Implementación Sugerida
+###  Implementacin Sugerida
 
 ```typescript
 // health.controller.ts
@@ -409,7 +409,7 @@ export class HealthController {
   @Get('live')
   @HealthCheck()
   live() {
-    // Solo verifica que el proceso está corriendo
+    // Solo verifica que el proceso est corriendo
     return { status: 'ok' };
   }
 
@@ -426,12 +426,12 @@ export class HealthController {
 
 ---
 
-## 📊 Progreso Monitoring
+##  Progreso Monitoring
 
 - [ ] ISSUE-019: ELK Stack
 - [ ] ISSUE-020: Prometheus metrics
 - [ ] ISSUE-021: Grafana dashboards
-- [ ] ISSUE-022: Alertas básicas
+- [ ] ISSUE-022: Alertas bsicas
 - [ ] ISSUE-023: Health checks mejorados
 
 **Total:** 0/5 completados (0%)

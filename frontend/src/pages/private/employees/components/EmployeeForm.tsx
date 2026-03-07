@@ -1,6 +1,8 @@
 import { Form, Input, Select, DatePicker, InputNumber, Switch } from 'antd';
 import dayjs from 'dayjs';
 
+import { buildEmployeeDisplayName, sortEmployeesByDisplayName } from '../../../../lib/employeeName';
+
 import {
   MAX_MONEY_AMOUNT,
   formatCurrencyInput,
@@ -48,9 +50,9 @@ export function EmployeeForm({
   readOnly = false,
   editMode = false,
 }: EmployeeFormProps) {
-  const crearAccesoTimewise = Form.useWatch('crearAccesoTimewise', form) ?? false;
-  const crearAccesoKpital = Form.useWatch('crearAccesoKpital', form) ?? false;
   const monedaSalarioSeleccionada = (Form.useWatch('monedaSalario', form) as string | undefined) ?? 'CRC';
+  const crearAccesoTimewise = Boolean(Form.useWatch('crearAccesoTimewise', form));
+  const crearAccesoKpital = Boolean(Form.useWatch('crearAccesoKpital', form));
   const currencySymbol = getCurrencySymbol(monedaSalarioSeleccionada);
   const crearAcceso = crearAccesoTimewise || crearAccesoKpital;
 
@@ -112,9 +114,9 @@ export function EmployeeForm({
         <Select
           allowClear
           placeholder="Seleccionar"
-          options={supervisors.map((e) => ({
+          options={sortEmployeesByDisplayName(supervisors).map((e) => ({
             value: e.id,
-            label: `${e.nombre} ${e.apellido1}`,
+            label: buildEmployeeDisplayName(e),
           }))}
         />
       </Form.Item>
@@ -234,3 +236,9 @@ export function EmployeeForm({
     </Form>
   );
 }
+
+
+
+
+
+

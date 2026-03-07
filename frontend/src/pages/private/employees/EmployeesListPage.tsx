@@ -10,6 +10,9 @@ import {
   UpOutlined,
 } from '@ant-design/icons';
 import { useQueryClient } from '@tanstack/react-query';
+
+import { sortEmployeesByDisplayName } from '../../../lib/employeeName';
+import { useSortableColumns } from '../../../hooks/useSortableColumns';
 import {
   Badge,
   Button,
@@ -28,6 +31,7 @@ import {
   Tag,
 } from 'antd';
 import { useCallback, useMemo, useState } from 'react';
+
 import { Link, useNavigate } from 'react-router-dom';
 
 import { employeeKeys } from '../../../queries/employees/keys';
@@ -71,7 +75,7 @@ function buildFullName(employee: EmployeeListItem): string {
 }
 
 function getPaneValue(employee: EmployeeListItem, key: PaneKey, companyNameById: Map<number, string>): string {
-  if (key === 'codigo') return employee.codigo ?? '';
+  if (key === 'correo') return employee.email ?? '';
   if (key === 'empresa') return companyNameById.get(employee.idEmpresa) ?? `Empresa #${employee.idEmpresa}`;
   if (key === 'nombreCompleto') return buildFullName(employee);
   if (key === 'cedula') return employee.cedula ?? '';
@@ -216,9 +220,9 @@ export function EmployeesListPage() {
     return result;
   }, [companyNameById, dataFilteredByPaneSelections, paneSearch]);
 
-  const filteredEmployees = useMemo(() => dataFilteredByPaneSelections(), [dataFilteredByPaneSelections]);
+  const filteredEmployees = useMemo(() => sortEmployeesByDisplayName(dataFilteredByPaneSelections()), [dataFilteredByPaneSelections]);
 
-  const columns: ColumnsType<EmployeeListItem> = [
+  const columns: ColumnsType<EmployeeListItem> = useSortableColumns([
     {
       title: 'Codigo empleado',
       dataIndex: 'codigo',
@@ -267,7 +271,7 @@ export function EmployeesListPage() {
           <Tag className={styles.tagInactivo}>Inactivo</Tag>
         ),
     },
-  ];
+  ]);
 
   const applyFilters = (next: Partial<EmployeeFiltersType>) => {
     setFilters((current) => ({
@@ -371,7 +375,7 @@ export function EmployeesListPage() {
                 <TeamOutlined className={styles.gestionIcon} />
               </div>
               <div>
-                <p className={styles.gestionTitle}>Gestion de Empleados</p>
+                <p className={styles.gestionTitle}>Gestión de Empleados</p>
                 <p className={styles.gestionDesc}>
                   Administre y consulte todos los empleados registrados en el sistema
                 </p>
@@ -620,3 +624,12 @@ export function EmployeesListPage() {
     </div>
   );
 }
+
+
+
+
+
+
+
+
+

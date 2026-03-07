@@ -35,6 +35,8 @@ import {
   Tooltip,
 } from 'antd';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+
+import { useSortableColumns } from '../../../hooks/useSortableColumns';
 import { Link } from 'react-router-dom';
 
 import {
@@ -101,7 +103,7 @@ function normalizePayload(values: ClassFormValues): ClassPayload {
 }
 
 function getPaneValue(row: ClassListItem, key: PaneKey): string {
-  if (key === 'nombre') return row.nombre ?? '';
+  if (key === 'idExterno') return row.idExterno ?? '';
   if (key === 'codigo') return row.codigo ?? '';
   if (key === 'idExterno') return row.idExterno ?? '';
   return row.esInactivo === 0 ? 'Inactivo' : 'Activo';
@@ -174,8 +176,8 @@ export function ClassesManagementPage() {
       const term = search.trim().toLowerCase();
       if (!term) return true;
       return (
-        (row.nombre ?? '').toLowerCase().includes(term) ||
-        (row.codigo ?? '').toLowerCase().includes(term) ||
+        (row.idExterno ?? '').toLowerCase().includes(term) ||
+        (row.descripcion ?? '').toLowerCase().includes(term)
         (row.idExterno ?? '').toLowerCase().includes(term) ||
         (row.descripcion ?? '').toLowerCase().includes(term)
       );
@@ -277,8 +279,8 @@ export function ClassesManagementPage() {
   const applyClassToForm = useCallback(
     (row: ClassListItem) => {
       form.setFieldsValue({
-        nombre: row.nombre ?? '',
-        descripcion: row.descripcion ?? '',
+        codigo: row.codigo ?? '',
+        idExterno: row.idExterno ?? '',
         codigo: row.codigo ?? '',
         idExterno: row.idExterno ?? '',
       });
@@ -410,7 +412,7 @@ export function ClassesManagementPage() {
     await loadRows();
   };
 
-  const columns: ColumnsType<ClassListItem> = [
+  const columns: ColumnsType<ClassListItem> = useSortableColumns([
     {
       title: 'Nombre',
       dataIndex: 'nombre',
@@ -458,7 +460,7 @@ export function ClassesManagementPage() {
       width: 220,
       render: (value) => formatDateTime12h(value),
     },
-  ];
+  ]);
 
   const auditColumns: ColumnsType<ClassAuditTrailItem> = [
     {
@@ -476,7 +478,7 @@ export function ClassesManagementPage() {
         const actorLabel =
           row.actorNombre?.trim() ||
           row.actorEmail?.trim() ||
-          (row.actorUserId ? `Usuario ID ${row.actorUserId}` : 'Sistema');
+          (row.actorUserId != null ? `Usuario ID ${row.actorUserId}` : 'Sistema');
         return (
           <div>
             <div style={{ fontWeight: 600, color: '#3d4f5c' }}>{actorLabel}</div>
@@ -518,7 +520,7 @@ export function ClassesManagementPage() {
                 ))}
               </div>
             ) : (
-              <div style={{ fontSize: 12 }}>Sin detalle de campos para esta accion.</div>
+              <div style={{ fontSize: 12 }}>Sin detalle de campos para esta acción.</div>
             )}
           </div>
         );
@@ -564,7 +566,7 @@ export function ClassesManagementPage() {
                 <AppstoreOutlined className={styles.gestionIcon} />
               </div>
               <div>
-                <h2 className={styles.gestionTitle}>Gestion de Clases</h2>
+                <h2 className={styles.gestionTitle}>Gestión de Clases</h2>
                 <p className={styles.gestionDesc}>Administre y consulte todas las clases registradas en el sistema</p>
               </div>
             </Flex>
@@ -888,3 +890,10 @@ export function ClassesManagementPage() {
     </div>
   );
 }
+
+
+
+
+
+
+

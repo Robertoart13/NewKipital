@@ -204,3 +204,4 @@ export async function fetchCompanyAuditTrail(companyId: number, limit = 200): Pr
   }
   return res.json();
 }
+

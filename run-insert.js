@@ -1,4 +1,4 @@
-﻿require('dotenv').config({ path: require('path').join(__dirname, 'api', '.env') });
+require('dotenv').config({ path: require('path').join(__dirname, 'api', '.env') });
 const mysql = require('mysql2/promise');
 
 const SQL = `INSERT INTO sys_roles (codigo_rol, nombre_rol, descripcion_rol, estado_rol, fecha_creacion_rol, fecha_modificacion_rol, creado_por_rol, modificado_por_rol) VALUES ('SUPERVISOR_TIMEWISE', 'Supervisor TimeWise', 'Supervisor en TimeWise. Gestiona empleados y asistencia en el contexto de la aplicacion TimeWise.', 1, NOW(), NOW(), 1, 1)`;

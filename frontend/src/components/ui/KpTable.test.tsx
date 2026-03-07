@@ -1,7 +1,7 @@
 import { render, screen } from '@testing-library/react';
 import { describe, it, expect, vi } from 'vitest';
 
-// ─── Lightweight antd mock ─────────────────────────────────────────────────
+// â”€â”€â”€ Lightweight antd mock â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 // Avoids loading the full antd bundle (~100 MB) in this worker.
 // The smoke test already validates that real antd Table imports cleanly.
 vi.mock('antd', () => ({
@@ -101,3 +101,4 @@ describe('KpTable', () => {
     expect(container.querySelector('.ant-spin')).toBeInTheDocument();
   });
 });
+

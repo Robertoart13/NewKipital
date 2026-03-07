@@ -12,3 +12,4 @@ export const employeeKeys = {
   detail: (id: number) => ['employee', id] as const,
   supervisors: () => ['employees', 'supervisors'] as const,
 };
+

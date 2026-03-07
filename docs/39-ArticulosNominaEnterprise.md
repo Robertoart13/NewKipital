@@ -1,4 +1,4 @@
-﻿# Articulos de Nomina — Guia Operativa (Enterprise)
+# Articulos de Nomina  Guia Operativa (Enterprise)
 
 **Documento:** 39
 **Ultima actualizacion:** 2026-02-27
@@ -135,7 +135,7 @@ Flujo actual:
 
 ### 6.4. Bitacora
 - Solo visible si existe permiso `config:payroll-articles:audit`.
-- Solo se carga al abrir la pestaña Bitacora (lazy load).
+- Solo se carga al abrir la pestaa Bitacora (lazy load).
 
 ---
 
@@ -329,9 +329,9 @@ Columnas:
 - Frontend implementado (API client, ruta, pagina, filtros, modal, bitacora).
 - Permisos creados y asignados a rol `MASTER`.
 - UX de guardado ajustada:
-  - En Editar/Crear Movimiento, el boton de guardar no depende de navegar por todas las pestañas.
+  - En Editar/Crear Movimiento, el boton de guardar no depende de navegar por todas las pestaas.
   - El boton se habilita por permiso (`create`/`edit`) y la validacion se ejecuta al enviar.
-  - Si falta un campo requerido, el formulario muestra error y cambia automaticamente a la pestaña correspondiente.
+  - Si falta un campo requerido, el formulario muestra error y cambia automaticamente a la pestaa correspondiente.
 - Nota operativa de migraciones:
   - El archivo de migracion existe en codigo.
   - En `hr_pro` se aplico SQL idempotente directo por desalineacion historica de migraciones legacy.
