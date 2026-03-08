@@ -951,7 +951,7 @@ export function PayrollCalendarPage() {
                     </Descriptions.Item>
                     <Descriptions.Item label="Moneda de planilla">{detail.moneda || '--'}</Descriptions.Item>
                     <Descriptions.Item label="Estado de la planilla">
-                    <Descriptions.Item label="Control de cambios">{detail.versionLock ?? '--'}</Descriptions.Item>
+                      <Tag icon={STATUS_VISUAL[detail.estado]?.icon}>
                         {STATUS_VISUAL[detail.estado]?.label || `Estado ${detail.estado}`}
                       </Tag>
                     </Descriptions.Item>

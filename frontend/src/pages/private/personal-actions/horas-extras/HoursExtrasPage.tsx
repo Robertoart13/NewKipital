@@ -940,7 +940,7 @@ export function HoursExtrasPage() {
 
           porcentaje: movement.porcentaje,
 
-          formulaAyuda: movement.formulaAyuda ? '--',
+          formulaAyuda: movement.formulaAyuda ?? '--',
 
           esInactivo: movement.esInactivo,
 
@@ -1958,7 +1958,7 @@ export function HoursExtrasPage() {
 
           mode === 'edit' && !!editingRow && !isOvertimeEditableState(editingRow.estado)
 
-            ? `Esta hora extra est? en estado "${ESTADO_LABEL[editingRow.estado]?.text ? editingRow.estado}" y solo se puede consultar.`
+            ? `Esta hora extra est? en estado "${ESTADO_LABEL[editingRow.estado]?.text ?? `Estado ${editingRow.estado}`}" y solo se puede consultar.`
 
             : undefined
 

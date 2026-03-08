@@ -358,8 +358,7 @@ export function PayrollMovementsManagementPage() {
         descripcion: row.descripcion ?? '--',
         esMontoFijo: row.esMontoFijo === 1 ? 1 : 0,
         formulaAyuda: row.formulaAyuda ?? '--',
-        porcentaje: row.porcentaje ? '0',
-        formulaAyuda: row.formulaAyuda ? '--',
+        porcentaje: row.porcentaje ?? '0',
       });
     },
     [form],
@@ -516,7 +515,6 @@ export function PayrollMovementsManagementPage() {
       if (!term) return true;
       const actionName = actionTypeMap.get(row.idTipoAccionPersonal)?.nombre ?? '';
       const articleName = articleMap.get(row.idArticuloNomina)?.nombre ?? '';
-      const actionName = actionTypeMap.get(row.idTipoAccionPersonal)?.nombre ?? '';
       return (
         row.nombre.toLowerCase().includes(term) ||
         companyName.toLowerCase().includes(term) ||

@@ -894,10 +894,9 @@ export function ProjectsManagementPage() {
                   <Spin spinning={loadingDetail}>
                     <div className={styles.companyFormGrid}>
                       {(() => {
-                          ? (companies.find((c) => c.id === editing.idEmpresa)?.nombre ??
+                        const editingCompanyActive = editing ? activeCompanyIds.has(editing.idEmpresa) : false;
                         const editingCompanyLabel = editing
-                          ? (companies.find((c) => c.id === editing.idEmpresa)?.nombre ?
-                            `Empresa #${editing.idEmpresa}`)
+                          ? (companies.find((c) => c.id === editing.idEmpresa)?.nombre ?? `Empresa #${editing.idEmpresa}`)
                           : '';
 
                         if (editing && !editingCompanyActive) {

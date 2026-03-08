@@ -725,8 +725,6 @@ export function BonusesPage() {
     [canApprove, canCancel, canEdit, canView, companies, loadRows, message, modal, openEditModal],
   );
 
-      fechaEfecto: line.fechaEfecto?.format('YYYY-MM-DD') ?? '',
-
   const mapDraftToPayload = (draft: BonusFormDraft) => ({
     idEmpresa: draft.idEmpresa,
     idEmpleado: draft.idEmpleado,
@@ -736,7 +734,6 @@ export function BonusesPage() {
       fechaEfecto: line.fechaEfecto?.format('YYYY-MM-DD') ?? '',
       movimientoId: Number(line.movimientoId),
       tipoBonificacion: line.tipoBonificacion,
-      monto: Number(line.monto ?? 0),
       monto: Number(line.monto ?? 0),
       remuneracion: Boolean(line.remuneracion),
       formula: line.formula?.trim() || undefined,

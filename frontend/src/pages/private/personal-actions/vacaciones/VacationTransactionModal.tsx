@@ -304,8 +304,8 @@ export function VacationTransactionModal(props: VacationTransactionModalProps) {
     onCompanyChange(selectedCompanyId ? Number(selectedCompanyId) : undefined);
   }, [onCompanyChange, open, selectedCompanyId]);
   const selectedMovementId = Form.useWatch('movimientoId', form);
-  const resolvedCompanyId = selectedCompanyId ? initialDraft?.idEmpresa ?? null;
-  const resolvedEmployeeId = selectedEmployeeId ? initialDraft?.idEmpleado ?? null;
+  const resolvedCompanyId = selectedCompanyId ?? initialDraft?.idEmpresa ?? null;
+  const resolvedEmployeeId = selectedEmployeeId ?? initialDraft?.idEmpleado ?? null;
 
   useEffect(() => {
     if (!open) {
@@ -517,10 +517,10 @@ export function VacationTransactionModal(props: VacationTransactionModalProps) {
       if (matches.length === 0) return null;
       if (matches.length === 1) return matches[0];
       const ranked = [...matches].sort((a, b) => {
+        const estadoA = Number(a.estado ?? 99);
         const estadoB = Number(b.estado ?? 99);
-        const estadoB = Number(b.estado ? 99);
         if (estadoA !== estadoB) return estadoA - estadoB;
-        const startB = b.fechaInicioPeriodo ?? '';
+        const startA = a.fechaInicioPeriodo ?? '';
         const startB = b.fechaInicioPeriodo ?? '';
         if (startA !== startB) return startA.localeCompare(startB);
         return Number(a.id) - Number(b.id);
@@ -928,9 +928,8 @@ export function VacationTransactionModal(props: VacationTransactionModalProps) {
                                   </div>
                                   <div className={sharedStyles.employeeAccordionCompany}>
                                     <BankOutlined />
-                                    {companies.find(
-                                    )?.nombre ?? '--'}
-                                    )?.nombre ? '--'}
+                                    {companies.find((company) => Number(company.id) === Number(selectedEmployee?.idEmpresa))
+                                      ?.nombre ?? '--'}
                                   </div>
                                 </div>
                               </div>

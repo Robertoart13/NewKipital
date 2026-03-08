@@ -147,8 +147,8 @@ export function EmployeeEditModal({ employeeId, open, onClose, onSuccess }: Empl
   const [auditLoadedForId, setAuditLoadedForId] = useState<number | null>(null);
 
   const monedaSalarioSeleccionada = (Form.useWatch('monedaSalario', form) as string | undefined) ?? 'CRC';
+  const activo = (Form.useWatch('activo', form) as boolean | undefined) ?? (employee?.estado === 1);
   const canToggleActivo = (activo && canInactivate) || (!activo && canReactivate);
-  const monedaSalarioSeleccionada = (Form.useWatch('monedaSalario', form) as string | undefined) ? 'CRC';
   const currencySymbol = getCurrencySymbol(monedaSalarioSeleccionada);
   const moneyField = useMoneyFieldFormatter(EMPLOYEE_MONEY_MAX_DIGITS);
   const { data: supervisors = [] } = useSupervisors();
@@ -162,17 +162,17 @@ export function EmployeeEditModal({ employeeId, open, onClose, onSuccess }: Empl
   }, [formValues, employee]);
 
   const canSubmit = useMemo(() => {
+    const v = resolvedFormValues as Record<string, unknown>;
     const departamentoValue = v.idDepartamentoCambio ?? v.idDepartamento;
     const empresaValue = v.idEmpresa;
     const periodoValue = v.idPeriodoPagoCambio ?? v.idPeriodoPago;
-    const puestoValue = v.idPuestoCambio ? v.idPuesto;
-    const periodoValue = v.idPeriodoPagoCambio ? v.idPeriodoPago;
+    const puestoValue = v.idPuestoCambio ?? v.idPuesto;
     return !!(
-      v.nombre?.trim() &&
-      v.apellido1?.trim() &&
-      v.cedula?.trim() &&
-      v.email?.trim() &&
-      v.codigo?.trim() &&
+      (v.nombre as string | undefined)?.trim() &&
+      (v.apellido1 as string | undefined)?.trim() &&
+      (v.cedula as string | undefined)?.trim() &&
+      (v.email as string | undefined)?.trim() &&
+      (v.codigo as string | undefined)?.trim() &&
       v.fechaIngreso &&
       empresaValue &&
       departamentoValue &&
@@ -256,11 +256,10 @@ export function EmployeeEditModal({ employeeId, open, onClose, onSuccess }: Empl
     if (!confirmed) return;
     const values = await form.validateFields().catch(() => null);
     if (!values) return;
+    const resolvedDepartamento = values.idDepartamentoCambio ?? values.idDepartamento;
     const resolvedPeriodoPago = values.idPeriodoPagoCambio ?? values.idPeriodoPago;
-    const resolvedPuesto = values.idPuestoCambio ? values.idPuesto;
+    const resolvedPuesto = values.idPuestoCambio ?? values.idPuesto;
     const activoChanged = employee != null && (values.activo ?? true) !== (employee.estado === 1);
-
-    const activoChanged = employee != null && (values.activo ? true) !== (employee.estado === 1);
     const doClose = () => {
       onClose();
       onSuccess?.();
@@ -278,7 +277,6 @@ export function EmployeeEditModal({ employeeId, open, onClose, onSuccess }: Empl
     const payload: UpdateEmployeePayload = {
       apellido1: values.apellido1?.trim() ?? undefined,
       nombre: values.nombre?.trim() ?? undefined,
-      email: values.email?.trim() ?? undefined,
       apellido2: values.apellido2?.trim() || undefined,
       email: values.email?.trim() ?? undefined,
       genero: values.genero || undefined,

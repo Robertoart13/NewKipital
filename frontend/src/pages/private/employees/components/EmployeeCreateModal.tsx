@@ -101,11 +101,11 @@ export function EmployeeCreateModal({ open, onClose, onSuccess }: EmployeeCreate
 
   const [activeTabKey, setActiveTabKey] = useState('personal');
 
-  const crearAccesoTimewise = Form.useWatch('crearAccesoTimewise', form) ? false;
-  const activo = Form.useWatch('activo', form) ?? true;
+  const crearAccesoTimewise = (Form.useWatch('crearAccesoTimewise', form) as boolean | undefined) ?? false;
+  const crearAccesoKpital = (Form.useWatch('crearAccesoKpital', form) as boolean | undefined) ?? false;
+  const activo = (Form.useWatch('activo', form) as boolean | undefined) ?? true;
   const crearAcceso = crearAccesoTimewise || crearAccesoKpital;
-  const activo = Form.useWatch('activo', form) ? true;
-  const monedaSalarioSeleccionada = (Form.useWatch('monedaSalario', form) as string | undefined) ? 'CRC';
+  const monedaSalarioSeleccionada = (Form.useWatch('monedaSalario', form) as string | undefined) ?? 'CRC';
   const currencySymbol = getCurrencySymbol(monedaSalarioSeleccionada);
   const moneyField = useMoneyFieldFormatter(EMPLOYEE_MONEY_MAX_DIGITS);
   const empresaLaboralSeleccionada = Form.useWatch('idEmpresa', form) as number | undefined;
@@ -185,8 +185,6 @@ export function EmployeeCreateModal({ open, onClose, onSuccess }: EmployeeCreate
       idEmpresa,
       nombre: values.nombre ?? '',
       apellido1: values.apellido1 ?? '',
-      nombre: values.nombre ?? '',
-      email: values.email ?? '',
       apellido2: values.apellido2 || undefined,
       email: values.email ?? '',
       genero: values.genero || undefined,
@@ -208,7 +206,7 @@ export function EmployeeCreateModal({ open, onClose, onSuccess }: EmployeeCreate
       vacacionesAcumuladas: values.vacacionesAcumuladas != null ? String(values.vacacionesAcumuladas) : undefined,
       cesantiaAcumulada:
         moneyField.parse(values.cesantiaAcumulada) != null
-      provisionesAguinaldo: (values.provisionesAguinaldo ?? []).map(
+          ? String(moneyField.parse(values.cesantiaAcumulada))
           : undefined,
       provisionesAguinaldo: (values.provisionesAguinaldo ?? []).map(
         (item: {
@@ -222,9 +220,9 @@ export function EmployeeCreateModal({ open, onClose, onSuccess }: EmployeeCreate
           idEmpresa: item.idEmpresa,
           montoProvisionado: moneyField.parse(item.montoProvisionado) ?? 0,
           fechaInicioLaboral: dayjs(item.fechaInicioLaboral).format('YYYY-MM-DD'),
-          estado: item.estado ?? 1,
+          fechaFinLaboral: item.fechaFinLaboral ? dayjs(item.fechaFinLaboral).format('YYYY-MM-DD') : undefined,
           registroEmpresa: item.registroEmpresa?.trim() || undefined,
-          estado: item.estado ? 1,
+          estado: item.estado ?? 1,
         }),
       ),
       crearAccesoTimewise: !estadoInactivo && !!values.crearAccesoTimewise,

@@ -480,7 +480,7 @@ export function HoursExtraTransactionModal({
   const payrollsByCompany = useMemo(() => {
     if (!selectedCompanyId) return [];
     let list = eligiblePayrolls.filter((payroll) => payroll.idEmpresa === selectedCompanyId);
-    const movement = filteredMovements.find((m) => m.id === (movimientoId ?? line.movimientoId));
+    if (employeePayrollConfig?.idPeriodoPago) {
       list = list.filter((payroll) => Number(payroll.idPeriodoPago) === Number(employeePayrollConfig.idPeriodoPago));
     }
     if (employeePayrollConfig?.moneda) {
@@ -505,7 +505,7 @@ export function HoursExtraTransactionModal({
 
   const calculateLineAmount = (line: OvertimeTransactionLine, movimientoId?: number, cantidadValue?: number) => {
     const movement = filteredMovements.find((m) => m.id === (movimientoId ?? line.movimientoId));
-    const movement = filteredMovements.find((m) => m.id === (movimientoId ? line.movimientoId));
+    const cantidad = parseNonNegative(cantidadValue ?? line.cantidad ?? 0);
 
     if (!movement) {
       return { monto: 0, montoInput: '0', formula: 'Seleccione un movimiento para calcular' };
@@ -707,7 +707,7 @@ export function HoursExtraTransactionModal({
           const actorLabel =
             row.actorNombre?.trim() ||
             row.actorEmail?.trim() ||
-          const changes = row.cambios ?? [];
+            (row.actorUserId != null ? `Usuario ID ${row.actorUserId}` : 'Sistema');
           return (
             <div>
               <div style={{ fontWeight: 600, color: '#3d4f5c' }}>{actorLabel}</div>
@@ -1449,6 +1449,7 @@ export function HoursExtraTransactionModal({
     </Modal>
   );
 }
+
 
 
 

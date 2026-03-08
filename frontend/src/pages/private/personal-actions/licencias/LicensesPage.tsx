@@ -725,8 +725,6 @@ export function LicensesPage() {
     [canApprove, canCancel, canEdit, canView, companies, loadRows, message, modal, openEditModal],
   );
 
-      fechaEfecto: line.fechaEfecto?.format('YYYY-MM-DD') ?? '',
-
   const mapDraftToPayload = (draft: LicenseFormDraft) => ({
     idEmpresa: draft.idEmpresa,
     idEmpleado: draft.idEmpleado,
@@ -736,7 +734,6 @@ export function LicensesPage() {
       fechaEfecto: line.fechaEfecto?.format('YYYY-MM-DD') ?? '',
       movimientoId: Number(line.movimientoId),
       tipoLicencia: line.tipoLicencia,
-      monto: Number(line.monto ?? 0),
       monto: Number(line.monto ?? 0),
       remuneracion: Boolean(line.remuneracion),
       formula: line.formula?.trim() || undefined,

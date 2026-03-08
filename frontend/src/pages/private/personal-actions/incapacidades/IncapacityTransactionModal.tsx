@@ -557,13 +557,12 @@ export function DisabilityTransactionModal({
     line: DisabilityTransactionLine,
     movimientoId?: number,
     cantidadValue?: number,
-    const periodoNombre = (selectedPayPeriod?.nombre ?? '').toLowerCase();
     tipoInstitucionValue?: DisabilityInstitutionType,
   ) => {
+    const periodoNombre = (selectedPayPeriod?.nombre ?? '').toLowerCase();
     const movement = filteredMovements.find((m) => m.id === (movimientoId ?? line.movimientoId));
-    const tipoInstitucion = tipoInstitucionValue ? line.tipoInstitucion;
-    const cantidad = parseNonNegative(cantidadValue ? line.cantidad ?? 0);
-    const movement = filteredMovements.find((m) => m.id === (movimientoId ? line.movimientoId));
+    const tipoInstitucion = tipoInstitucionValue ?? line.tipoInstitucion;
+    const cantidad = parseNonNegative(cantidadValue ?? line.cantidad ?? 0);
 
     if (!movement) {
       return { monto: 0, montoInput: '0', formula: 'Seleccione un movimiento para calcular' };
@@ -582,7 +581,6 @@ export function DisabilityTransactionModal({
       };
     }
 
-    const periodoNombre = (selectedPayPeriod?.nombre ?? '').toLowerCase();
     const esMensualOQuincenal = periodoNombre.includes('mensual') || periodoNombre.includes('quincenal');
     const valorUnitario = esMensualOQuincenal ? salarioBaseNum / 30 : salarioBaseNum;
 
@@ -778,7 +776,7 @@ export function DisabilityTransactionModal({
           const actorLabel =
             row.actorNombre?.trim() ||
             row.actorEmail?.trim() ||
-          const changes = row.cambios ?? [];
+            (row.actorUserId != null ? `Usuario ID ${row.actorUserId}` : 'Sistema');
           return (
             <div>
               <div style={{ fontWeight: 600, color: '#3d4f5c' }}>{actorLabel}</div>
@@ -1555,6 +1553,7 @@ export function DisabilityTransactionModal({
     </Modal>
   );
 }
+
 
 
 

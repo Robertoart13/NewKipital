@@ -474,7 +474,7 @@ export function BonusTransactionModal({
   const payrollsByCompany = useMemo(() => {
     if (!selectedCompanyId) return [];
     let list = eligiblePayrolls.filter((payroll) => payroll.idEmpresa === selectedCompanyId);
-    const cantidad = parseNonNegative(cantidadValue ?? line.cantidad ?? 0);
+    if (employeePayrollConfig?.idPeriodoPago) {
       list = list.filter((payroll) => Number(payroll.idPeriodoPago) === Number(employeePayrollConfig.idPeriodoPago));
     }
     if (employeePayrollConfig?.moneda) {
@@ -499,7 +499,7 @@ export function BonusTransactionModal({
 
   const calculateLineAmount = (line: BonusTransactionLine, movimientoId?: number, cantidadValue?: number) => {
     const movement = filteredMovements.find((m) => m.id === (movimientoId ?? line.movimientoId));
-    const movement = filteredMovements.find((m) => m.id === (movimientoId ? line.movimientoId));
+    const cantidad = parseNonNegative(cantidadValue ?? line.cantidad ?? 0);
 
     if (!movement) {
       return { monto: 0, montoInput: '0', formula: 'Seleccione un movimiento para calcular' };
@@ -518,9 +518,8 @@ export function BonusTransactionModal({
     }
 
     if (porcentaje > 0) {
-      payrollLabel: payroll?.nombrePlanilla ?? undefined,
       const baseCalculo = calculateSalaryByPeriod(
-        salarioBase,
+        salaryBase,
         selectedEmployee?.idPeriodoPago,
         selectedEmployee?.jornada,
       );
@@ -1194,7 +1193,7 @@ export function BonusTransactionModal({
                                                 disabled={readOnly || !line.movimientoId}
                                                 placeholder={
                                                   !line.movimientoId
-                                                onChange={(value) => handleCantidadChange(line.key, value ?? undefined)}
+                                                    ? 'Seleccione movimiento primero'
                                                     : 'Seleccione tipo'
                                                 }
                                                 value={line.tipoBonificacion}
@@ -1360,6 +1359,7 @@ export function BonusTransactionModal({
     </Modal>
   );
 }
+
 
 
 

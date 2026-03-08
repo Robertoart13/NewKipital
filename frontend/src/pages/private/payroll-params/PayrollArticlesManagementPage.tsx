@@ -252,7 +252,6 @@ export function PayrollArticlesManagementPage() {
         return;
       }
       const resolvedAccountIds = (accountIds ?? []).filter((value) => Number.isFinite(value) && value > 0);
-      const resolvedAccountIds = (accountIds ?? []).filter((value) => Number.isFinite(value) && value > 0);
       setLoadingFormAccounts(true);
       try {
         const accounts = await fetchPayrollArticleAccounts(
@@ -524,8 +523,7 @@ export function PayrollArticlesManagementPage() {
   const onFormValuesChange = (changed: Partial<PayrollArticleFormValues>) => {
     const nextEmpresa =
       form.getFieldValue('idEmpresaCambio') ??
-      changed.idEmpresa ?
-      form.getFieldValue('idEmpresaCambio') ?
+      changed.idEmpresa ??
       form.getFieldValue('idEmpresa');
     if (nextEmpresa !== undefined) {
       setResolvedCompanyId(nextEmpresa);
@@ -533,8 +531,7 @@ export function PayrollArticlesManagementPage() {
 
     const nextTipo =
       form.getFieldValue('idTipoArticuloNominaCambio') ??
-      changed.idTipoArticuloNomina ?
-      form.getFieldValue('idTipoArticuloNominaCambio') ?
+      changed.idTipoArticuloNomina ??
       form.getFieldValue('idTipoArticuloNomina');
     if (nextTipo !== undefined) {
       setResolvedTipoArticuloId(nextTipo);
@@ -589,13 +586,13 @@ export function PayrollArticlesManagementPage() {
       if (!confirmed) return;
 
       const values = await form.validateFields();
+      const resolvedEmpresa = values.idEmpresaCambio ?? values.idEmpresa ?? defaultCompanyId;
+      const resolvedTipoArticulo = values.idTipoArticuloNominaCambio ?? values.idTipoArticuloNomina;
+      const meta = resolvedTipoArticulo ? PAYROLL_ARTICLE_TYPE_META[resolvedTipoArticulo] : undefined;
       const resolvedCuentaGasto = values.idCuentaGastoCambio ?? values.idCuentaGasto;
       const resolvedCuentaPasivo = values.idCuentaPasivoCambio ?? values.idCuentaPasivo;
-      const resolvedTipoAccion = values.idTipoAccionPersonalCambio ? values.idTipoAccionPersonal;
+      const resolvedTipoAccion = values.idTipoAccionPersonalCambio ?? values.idTipoAccionPersonal;
       const allowsPasivo = meta?.allowsPasivo ?? false;
-      const resolvedCuentaPasivo = values.idCuentaPasivoCambio ? values.idCuentaPasivo;
-      const meta = resolvedTipoArticulo ? PAYROLL_ARTICLE_TYPE_META[resolvedTipoArticulo] : undefined;
-      const allowsPasivo = meta?.allowsPasivo ? false;
 
       if (!resolvedEmpresa) {
         message.error('Debe seleccionar una empresa activa para gestionar articulos de nomina.');
@@ -850,16 +847,14 @@ export function PayrollArticlesManagementPage() {
     );
   }
 
-  const secondaryLabel = resolvedMeta?.secondaryLabel ?? 'Cuenta Pasivo';
   const canLoadAccountOptions = Boolean(resolvedCompanyId && resolvedTipoArticuloId);
-  const primaryLabel = resolvedMeta?.primaryLabel ? 'Cuenta Principal';
-  const secondaryLabel = resolvedMeta?.secondaryLabel ? 'Cuenta Pasivo';
-  const allowsPasivo = resolvedMeta?.allowsPasivo ? false;
-
-    formAccounts.find((account) => account.id === selectedPrimaryAccountId) ??
+  const primaryLabel = resolvedMeta?.primaryLabel ?? 'Cuenta Principal';
+  const secondaryLabel = resolvedMeta?.secondaryLabel ?? 'Cuenta Pasivo';
+  const allowsPasivo = resolvedMeta?.allowsPasivo ?? false;
+  const selectedPrimaryAccountId = openModal ? form.getFieldValue('idCuentaGasto') : undefined;
   const selectedPasivoAccountId = openModal ? form.getFieldValue('idCuentaPasivo') : undefined;
   const currentPrimaryAccount =
-    formAccounts.find((account) => account.id === selectedPasivoAccountId) ???
+    formAccounts.find((account) => account.id === selectedPrimaryAccountId) ??
     formAccounts.find((account) => account.id === editing?.idCuentaGasto);
   const currentPasivoAccount =
     formAccounts.find((account) => account.id === selectedPasivoAccountId) ??

@@ -364,7 +364,6 @@ export function IncreaseTransactionModal({
   }, [payPeriods, selectedEmployee]);
 
   const salarioActual = Number(selectedEmployee?.salarioBase ?? line.salarioActual ?? 0);
-  const salarioActual = Number(selectedEmployee?.salarioBase ? line.salarioActual ?? 0);
   const salaryDisplay = canViewEmployeeSensitive ? formatMoney(salarioActual, employeeCurrency) : '***';
 
   const sensitiveMaskedValue = '***';
@@ -468,7 +467,7 @@ export function IncreaseTransactionModal({
   const payrollsByCompany = useMemo(() => {
     if (!selectedCompanyId) return [];
     let list = eligiblePayrolls.filter((payroll) => payroll.idEmpresa === selectedCompanyId);
-  const inputMonto = Number(line.monto ?? 0);
+    if (selectedEmployee?.idPeriodoPago) {
       list = list.filter((payroll) => Number(payroll.idPeriodoPago) === Number(selectedEmployee.idPeriodoPago));
     }
     if (selectedEmployee?.monedaSalario) {
@@ -493,7 +492,6 @@ export function IncreaseTransactionModal({
 
   const inputPorcentaje = Number(line.porcentaje ?? 0);
   const inputMonto = Number(line.monto ?? 0);
-  const inputPorcentaje = Number(line.porcentaje ?? 0);
 
   const calculated = useMemo(() => {
     if (!Number.isFinite(salarioActual) || salarioActual <= 0) {

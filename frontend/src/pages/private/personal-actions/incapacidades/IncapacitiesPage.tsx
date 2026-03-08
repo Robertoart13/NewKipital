@@ -735,8 +735,6 @@ export function IncapacitiesPage() {
     [canApprove, canCancel, canEdit, canView, companies, loadRows, message, modal, openEditModal],
   );
 
-      fechaEfecto: line.fechaEfecto?.format('YYYY-MM-DD') ?? '',
-
   const mapDraftToPayload = (draft: DisabilityFormDraft) => ({
     idEmpresa: draft.idEmpresa,
     idEmpleado: draft.idEmpleado,
@@ -751,8 +749,6 @@ export function IncapacitiesPage() {
       monto: Number(line.monto ?? 0),
       montoIns: Number(line.montoIns ?? 0),
       montoPatrono: Number(line.montoPatrono ?? 0),
-      subsidioCcss: Number(line.subsidioCcss ?? 0),
-      totalIncapacidad: Number(line.totalIncapacidad ? line.monto ?? 0),
       remuneracion: Boolean(line.remuneracion),
       formula: line.formula?.trim() || undefined,
     })),

@@ -357,7 +357,7 @@ export function IntercompanyTransferPage() {
       title: 'Periodo Pago',
       key: 'periodo',
       width: 140,
-      render: (_, record) => record.idPeriodoPago ? 'â',
+      render: (_, record) => (record.idPeriodoPago ? `#${record.idPeriodoPago}` : 'â'),
     },
     {
       title: 'Empresa destino',
@@ -366,7 +366,7 @@ export function IntercompanyTransferPage() {
       render: (_, record) => {
         if (applyAll) {
           const label = destinationCompanyOptions.find((c) => Number(c.value) === Number(globalDestinationId))?.label;
-          return <Tag color="blue">{label ? 'Sin destino'}</Tag>;
+          return <Tag color="blue">{label ?? 'Sin destino'}</Tag>;
         }
         return (
           <Select

@@ -489,7 +489,7 @@ export function LicenseTransactionModal({
   const payrollsByCompany = useMemo(() => {
     if (!selectedCompanyId) return [];
     let list = eligiblePayrolls.filter((payroll) => payroll.idEmpresa === selectedCompanyId);
-    const cantidad = parseNonNegative(cantidadValue ?? line.cantidad ?? 0);
+    if (employeePayrollConfig?.idPeriodoPago) {
       list = list.filter((payroll) => Number(payroll.idPeriodoPago) === Number(employeePayrollConfig.idPeriodoPago));
     }
     if (employeePayrollConfig?.moneda) {
@@ -514,7 +514,7 @@ export function LicenseTransactionModal({
 
   const calculateLineAmount = (line: LicenseTransactionLine, movimientoId?: number, cantidadValue?: number) => {
     const movement = filteredMovements.find((m) => m.id === (movimientoId ?? line.movimientoId));
-    const movement = filteredMovements.find((m) => m.id === (movimientoId ? line.movimientoId));
+    const cantidad = parseNonNegative(cantidadValue ?? line.cantidad ?? 0);
 
     if (!movement) {
       return { monto: 0, montoInput: '0', formula: 'Seleccione un movimiento para calcular' };
@@ -533,9 +533,8 @@ export function LicenseTransactionModal({
     }
 
     if (porcentaje > 0) {
-      payrollLabel: payroll?.nombrePlanilla ?? undefined,
       const baseCalculo = calculateSalaryByPeriod(
-        salarioBase,
+        salaryBase,
         selectedEmployee?.idPeriodoPago,
         selectedEmployee?.jornada,
       );
@@ -1056,7 +1055,7 @@ export function LicenseTransactionModal({
                         overflow: 'visible',
                       }}
                     >
-                                    label: `${line.payrollLabel ?? `Planilla #${line.payrollId}`} (No elegible hoy)`,
+                      {loading ? (
                         <Flex justify="center" align="center" style={{ minHeight: 220 }}>
                           <Spin size="large" description="Cargando líneas de transacción..." />
                         </Flex>
@@ -1236,7 +1235,7 @@ export function LicenseTransactionModal({
                                                 step={1}
                                                 style={{ width: '100%' }}
                                                 disabled={readOnly || !line.movimientoId}
-                                                        ? (moneyField.parse(onlyDigits) ?? 0)
+                                                placeholder={!line.movimientoId ? '-' : undefined}
                                                 value={line.cantidad}
                                                 onChange={(value) => handleCantidadChange(line.key, value ?? undefined)}
                                               />
@@ -1398,6 +1397,8 @@ export function LicenseTransactionModal({
     </Modal>
   );
 }
+
+
 
 
 

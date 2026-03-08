@@ -375,7 +375,7 @@ export function PayrollManagementPage() {
     const frequency = period && endDate ? getFrequencyCode(period.nombre, endDate) : '';
 
     const generatedName =
-      prefix && frequency && dateText && currency ?? `${prefix} - ${frequency} - ${dateText} - ${currency}` : '';
+      prefix && frequency && dateText && currency ? `${prefix} - ${frequency} - ${dateText} - ${currency}` : '';
 
     form.setFieldValue('nombrePlanilla', generatedName);
   }, [
@@ -406,7 +406,7 @@ export function PayrollManagementPage() {
     (row: PayrollListItem) => {
       const term = search.trim().toLowerCase();
       if (!term) return true;
-        (row.tipoPlanilla ?? '').toLowerCase().includes(term) ||
+      const stateText = STATE_LABEL[row.estado]?.text ?? `Estado ${row.estado}`;
       return (
         (row.nombrePlanilla ?? '').toLowerCase().includes(term) ||
         (row.tipoPlanilla ?? '').toLowerCase().includes(term) ||
@@ -510,10 +510,10 @@ export function PayrollManagementPage() {
     const values = await form.validateFields();
     setSavingCreate(true);
     try {
+      const periodoInicio = formatDateValue(values.periodoInicio ?? form.getFieldValue('periodoInicio'));
+      const periodoFin = formatDateValue(values.periodoFin ?? form.getFieldValue('periodoFin'));
+      const fechaInicioPago = formatDateValue(values.fechaInicioPago ?? form.getFieldValue('fechaInicioPago'));
       const fechaFinPago = formatDateValue(values.fechaFinPago ?? form.getFieldValue('fechaFinPago'));
-      const periodoFin = formatDateValue(values.periodoFin ? form.getFieldValue('periodoFin'));
-      const fechaInicioPago = formatDateValue(values.fechaInicioPago ? form.getFieldValue('fechaInicioPago'));
-      const fechaFinPago = formatDateValue(values.fechaFinPago ? form.getFieldValue('fechaFinPago'));
 
       if (!periodoInicio || !periodoFin || !fechaInicioPago || !fechaFinPago) {
         setActiveCreateTab('fechas');
@@ -564,14 +564,12 @@ export function PayrollManagementPage() {
         idEmpresa: row.idEmpresa,
         idPeriodoPago: row.idPeriodoPago,
         tipoPlanilla: (row.tipoPlanilla as CreatePayrollFormValues['tipoPlanilla']) ?? 'Regular',
-        tipoPlanilla: (row.tipoPlanilla as CreatePayrollFormValues['tipoPlanilla']) ? 'Regular',
         periodoInicio: row.fechaInicioPeriodo ? dayjs(row.fechaInicioPeriodo) : undefined,
         periodoFin: row.fechaFinPeriodo ? dayjs(row.fechaFinPeriodo) : undefined,
         fechaCorte: row.fechaCorte ? dayjs(row.fechaCorte) : undefined,
         moneda: (row.moneda as 'CRC' | 'USD') ?? 'CRC',
         fechaFinPago: row.fechaFinPago ? dayjs(row.fechaFinPago) : undefined,
         fechaPagoProgramada: row.fechaPagoProgramada ? dayjs(row.fechaPagoProgramada) : undefined,
-        moneda: (row.moneda as 'CRC' | 'USD') ?? 'CRC',
       });
       setCreateOpen(true);
 
@@ -589,14 +587,12 @@ export function PayrollManagementPage() {
         idEmpresa: detail.idEmpresa,
         idPeriodoPago: detail.idPeriodoPago,
         tipoPlanilla: (detail.tipoPlanilla as CreatePayrollFormValues['tipoPlanilla']) ?? 'Regular',
-        tipoPlanilla: (detail.tipoPlanilla as CreatePayrollFormValues['tipoPlanilla']) ? 'Regular',
         periodoInicio: detail.fechaInicioPeriodo ? dayjs(detail.fechaInicioPeriodo) : undefined,
         periodoFin: detail.fechaFinPeriodo ? dayjs(detail.fechaFinPeriodo) : undefined,
         fechaCorte: detail.fechaCorte ? dayjs(detail.fechaCorte) : undefined,
         moneda: (detail.moneda as 'CRC' | 'USD') ?? 'CRC',
         fechaFinPago: detail.fechaFinPago ? dayjs(detail.fechaFinPago) : undefined,
         fechaPagoProgramada: detail.fechaPagoProgramada ? dayjs(detail.fechaPagoProgramada) : undefined,
-        moneda: (detail.moneda as 'CRC' | 'USD') ?? 'CRC',
       });
     } catch (error) {
       message.error(error instanceof Error ? error.message : 'No se pudo abrir la planilla para edicion');

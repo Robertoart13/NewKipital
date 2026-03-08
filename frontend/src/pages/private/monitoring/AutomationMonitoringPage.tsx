@@ -630,8 +630,6 @@ export function AutomationMonitoringPage() {
     const stuckProcessing = summary?.stuckProcessing ?? 0;
     const errorsLast15m = summary?.errorsLast15m ?? 0;
 
-    const stuckProcessing = summary?.stuckProcessing ?? 0;
-
     if (oldest > 30 || stuckProcessing > 3) {
 
       return {
@@ -1124,9 +1122,9 @@ export function AutomationMonitoringPage() {
 
                       pagination={{
 
-                        current: filters.page ? 1,
+                        current: filters.page ?? 1,
 
-                        pageSize: filters.pageSize ? 25,
+                        pageSize: filters.pageSize ?? 25,
 
                         total: identityTotal,
 
@@ -1170,9 +1168,9 @@ export function AutomationMonitoringPage() {
 
                       pagination={{
 
-                        current: filters.page ? 1,
+                        current: filters.page ?? 1,
 
-                        pageSize: filters.pageSize ? 25,
+                        pageSize: filters.pageSize ?? 25,
 
                         total: encryptTotal,
 

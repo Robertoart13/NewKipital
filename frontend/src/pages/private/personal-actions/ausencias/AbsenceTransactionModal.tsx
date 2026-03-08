@@ -164,7 +164,7 @@ function toNumber(value: number | string | null | undefined): number {
   return Number.isFinite(parsed) ? parsed : 0;
 }
 
-  const isByHours = (jornada ?? '').trim().toLowerCase() === 'por horas';
+function calculateSalaryByPeriod(salaryBase: number, payPeriodId?: number | null, jornada?: string | null): number {
   const id = Number(payPeriodId);
   const isByHours = (jornada ?? '').trim().toLowerCase() === 'por horas';
   if (isByHours && (id === 8 || id === 11)) return 0;
@@ -191,14 +191,14 @@ function toNumber(value: number | string | null | undefined): number {
   }
 }
 
-  const isByHours = (jornada ?? '').trim().toLowerCase() === 'por horas';
+function calculateHourValue(salaryBase: number, payPeriodId?: number | null, jornada?: string | null): number {
   const id = Number(payPeriodId);
   const isByHours = (jornada ?? '').trim().toLowerCase() === 'por horas';
   if (isByHours && (id === 8 || id === 11)) return salaryBase;
   return salaryBase / 30 / 8;
 }
 
-  const isByHours = (jornada ?? '').trim().toLowerCase() === 'por horas';
+function calculatePeriodHours(payPeriodId?: number | null, jornada?: string | null): number {
   const id = Number(payPeriodId);
   const isByHours = (jornada ?? '').trim().toLowerCase() === 'por horas';
   if (isByHours && (id === 8 || id === 11)) return 0;
@@ -465,7 +465,7 @@ export function AbsenceTransactionModal({
   const payrollsByCompany = useMemo(() => {
     if (!selectedCompanyId) return [];
     let list = eligiblePayrolls.filter((payroll) => payroll.idEmpresa === selectedCompanyId);
-      list = list.filter((payroll) => (payroll.moneda ?? '').toUpperCase() === employeePayrollConfig.moneda);
+    if (employeePayrollConfig?.idPeriodoPago) {
       list = list.filter((payroll) => Number(payroll.idPeriodoPago) === Number(employeePayrollConfig.idPeriodoPago));
     }
     if (employeePayrollConfig?.moneda) {
@@ -490,13 +490,13 @@ export function AbsenceTransactionModal({
 
   const calculateLineAmount = (
     line: AbsenceTransactionLine,
+    movimientoId?: number,
+    cantidadValue?: number,
+    tipoAusenciaValue?: AbsenceType,
+  ) => {
     const tipoAusencia = tipoAusenciaValue ?? line.tipoAusencia;
     const cantidad = parseNonNegative(cantidadValue ?? line.cantidad ?? 0);
     const movement = filteredMovements.find((m) => m.id === (movimientoId ?? line.movimientoId));
-  ) => {
-    const tipoAusencia = tipoAusenciaValue ? line.tipoAusencia;
-    const cantidad = parseNonNegative(cantidadValue ? line.cantidad ?? 0);
-    const movement = filteredMovements.find((m) => m.id === (movimientoId ? line.movimientoId));
 
     if (!movement) {
       return { monto: 0, montoInput: '0', formula: 'Seleccione un movimiento para calcular' };
@@ -536,7 +536,7 @@ export function AbsenceTransactionModal({
     return { monto: 0, montoInput: '0', formula: 'Sin configuración de cálculo' };
   };
 
-      payrollLabel: payroll?.nombrePlanilla ?? undefined,
+  const handlePayrollChange = (lineKey: string, payrollId?: number) => {
     const payroll = payrollsByCompany.find((item) => item.id === payrollId);
     updateLine(lineKey, {
       payrollId,
@@ -1222,7 +1222,7 @@ export function AbsenceTransactionModal({
                                             <div className={sharedStyles.filterLabel}>4. Cantidad</div>
                                             <Tooltip
                                               title={
-                                                onChange={(value) => handleCantidadChange(line.key, value ?? undefined)}
+                                                !line.movimientoId ? 'Seleccione primero el movimiento' : undefined
                                               }
                                             >
                                               <InputNumber
@@ -1243,7 +1243,7 @@ export function AbsenceTransactionModal({
                                             </div>
                                             <Tooltip
                                               title={
-                                                  const raw = event.target.value ?? '';
+                                                !line.movimientoId ? 'Seleccione primero el movimiento' : undefined
                                               }
                                             >
                                               <Input

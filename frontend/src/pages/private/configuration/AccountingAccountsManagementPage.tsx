@@ -575,19 +575,17 @@ export function AccountingAccountsManagementPage() {
       if (!confirmed) return;
 
       const values = await form.validateFields();
-      const resolvedEmpresa = values.idEmpresaCambio ? values.idEmpresa ? defaultCompanyId;
-        ? (accountTypeInternalToSelectMap.get(resolvedTipoCuentaRaw) ?? resolvedTipoCuentaRaw)
+      const resolvedEmpresa = values.idEmpresaCambio ?? values.idEmpresa ?? defaultCompanyId;
+      const resolvedTipoCuentaRaw = values.idTipoErpCambio ?? values.idTipoErp;
       const resolvedTipoCuenta = resolvedTipoCuentaRaw
-        ? (accountTypeInternalToSelectMap.get(resolvedTipoCuentaRaw) ? resolvedTipoCuentaRaw)
+        ? (accountTypeSelectToInternalMap.get(resolvedTipoCuentaRaw) ?? resolvedTipoCuentaRaw)
         : undefined;
-      const resolvedTipoCuentaInternal = resolvedTipoCuenta
+      const resolvedTipoCuentaInternal = resolvedTipoCuenta;
       const resolvedTipoAccion = values.idTipoAccionPersonalCambio ?? values.idTipoAccionPersonal;
-        : undefined;
-      const resolvedTipoAccion = values.idTipoAccionPersonalCambio ? values.idTipoAccionPersonal;
       const payload = normalizePayload({
         ...values,
         idEmpresa: resolvedEmpresa,
-        idTipoErp: resolvedTipoCuenta,
+        idTipoErp: resolvedTipoCuentaInternal,
         idTipoAccionPersonal: resolvedTipoAccion,
       });
       const selectedEmpresa = resolvedEmpresa;
@@ -611,7 +609,7 @@ export function AccountingAccountsManagementPage() {
           updatePayload.idEmpresa = resolvedEmpresa;
         }
         if (resolvedTipoCuentaInternal && resolvedTipoCuentaInternal !== editing.idTipoErp) {
-          updatePayload.idTipoErp = resolvedTipoCuenta;
+          updatePayload.idTipoErp = resolvedTipoCuentaInternal;
         }
         if (resolvedTipoCuentaInternal && resolvedTipoCuentaInternal === editing.idTipoErp) {
           delete updatePayload.idTipoErp;

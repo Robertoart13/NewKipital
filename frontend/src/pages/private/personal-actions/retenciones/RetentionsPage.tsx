@@ -684,8 +684,6 @@ export function RetentionsPage() {
     [canApprove, canCancel, canEdit, canView, companies, loadRows, message, modal, openEditModal],
   );
 
-      fechaEfecto: line.fechaEfecto?.format('YYYY-MM-DD') ?? '',
-
   const mapDraftToPayload = (draft: RetentionFormDraft) => ({
     idEmpresa: draft.idEmpresa,
     idEmpleado: draft.idEmpleado,
@@ -694,7 +692,6 @@ export function RetentionsPage() {
       payrollId: Number(line.payrollId),
       fechaEfecto: line.fechaEfecto?.format('YYYY-MM-DD') ?? '',
       movimientoId: Number(line.movimientoId),
-      monto: Number(line.monto ?? 0),
       monto: Number(line.monto ?? 0),
       formula: line.formula?.trim() || undefined,
     })),
