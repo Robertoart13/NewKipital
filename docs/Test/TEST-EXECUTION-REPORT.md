@@ -733,3 +733,9 @@ Resultado:
 - Modulo Horas Extra aprobado en pruebas manuales de flujo principal.
 
 Estado de fase: Cerrada
+
+## Checkpoint estable remoto - 2026-03-08 (Horas Extra)
+- Rama: `main`
+- Commit push: `29197af`
+- Rango remoto: `8bc67de..29197af`
+- Estado: pruebas manuales de Horas Extra cerradas (crear, editar, bitacora, fechas).
