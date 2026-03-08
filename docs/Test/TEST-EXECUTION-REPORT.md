@@ -762,3 +762,9 @@ Cambios validados en esta fase:
 - API `PersonalActionsService` (Retenciones):
   - fechas con `parseDateOnlyLocal` en create/update (header, cuotas y lineas),
   - bitacora con `lineasDetalle` en create/update.
+
+## Checkpoint estable remoto - 2026-03-08 (Retenciones + Descuentos)
+- Rama: `main`
+- Commit push: `2455aec`
+- Rango remoto: `2311962..2455aec`
+- Estado: cierre funcional y de bitacora en Retenciones y Descuentos; lista de pruebas del dia actualizada.
