@@ -102,3 +102,15 @@ Regla transversal para todos los módulos de Acciones de Personal:
 3. Al cambiar empresa en el modal se recargan catálogos: empleados, planillas y movimientos.
 4. Cambios en filtros externos no deben resetear la empresa del modal.
 5. En edición, la empresa se fija al `idEmpresa` del registro (solo lectura).
+
+---
+
+## 9. Regla tecnica de fechas y bitacora en modales (Retenciones y paridad)
+
+1. Las fechas `YYYY-MM-DD` deben convertirse a fecha local en frontend usando:
+   - `dayjs(new Date(year, month - 1, day))`
+   - No usar parseo directo `dayjs('YYYY-MM-DD')` para evitar desfase por zona horaria.
+2. En modo edicion, `fechaEfecto` de cada linea debe mapearse desde `line.fechaEfecto` del detalle, con fallback al header solo si la linea no trae valor.
+3. En backend, persistencia de fechas de lineas debe usar `parseDateOnlyLocal(...)` y no `new Date('YYYY-MM-DD')`.
+4. Bitacora de Retenciones debe incluir `lineasDetalle` en create/update para registrar cambios con formato `Linea N - Campo`.
+5. El tab `Bitacora` no debe reiniciarse a `Informacion principal` por cambios transitorios de `Form.useWatch`; usar IDs normalizados (`selectedCompanyIdNum`, `selectedEmployeeIdNum`) y guardas en `onCompanyChange`.

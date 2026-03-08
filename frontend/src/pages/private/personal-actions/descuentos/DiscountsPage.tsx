@@ -186,6 +186,22 @@ function summarizeCell(value?: string | null) {
   );
 }
 
+function parseDateAsLocalDay(value?: string | null) {
+  if (!value) return undefined;
+  const raw = String(value).trim();
+  const match = raw.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (match) {
+    const year = Number(match[1]);
+    const month = Number(match[2]);
+    const day = Number(match[3]);
+    if (Number.isFinite(year) && Number.isFinite(month) && Number.isFinite(day)) {
+      return dayjs(new Date(year, month - 1, day));
+    }
+  }
+  const parsed = dayjs(raw);
+  return parsed.isValid() ? parsed : undefined;
+}
+
 function createDraftFromDiscountDetail(detail: DiscountDetailItem): DiscountFormDraft {
   const lines: DiscountTransactionLine[] =
     detail.lines?.length > 0
@@ -193,6 +209,7 @@ function createDraftFromDiscountDetail(detail: DiscountDetailItem): DiscountForm
           key: `${line.idLinea}-${line.orden}`,
           payrollId: line.payrollId,
           payrollLabel: line.payrollLabel ?? undefined,
+          fechaEfecto: parseDateAsLocalDay(line.fechaEfecto) ?? parseDateAsLocalDay(detail.fechaEfecto),
           movimientoId: line.movimientoId,
           cantidad: line.cantidad,
           monto: line.monto,
@@ -204,7 +221,7 @@ function createDraftFromDiscountDetail(detail: DiscountDetailItem): DiscountForm
           {
             key: `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
             monto: detail.monto ?? undefined,
-            fechaEfecto: detail.fechaEfecto ? dayjs(detail.fechaEfecto) : undefined,
+            fechaEfecto: parseDateAsLocalDay(detail.fechaEfecto),
           },
         ];
 
@@ -692,10 +709,12 @@ export function DiscountsPage() {
       payrollId: Number(line.payrollId),
       fechaEfecto: line.fechaEfecto?.format('YYYY-MM-DD') ?? '',
       movimientoId: Number(line.movimientoId),
+      cantidad: Number(line.cantidad ?? 0),
       monto: Number(line.monto ?? 0),
       formula: line.formula?.trim() || undefined,
     })),
   });
+  const modalTitle = mode === 'create' ? 'Crear descuento' : 'Editar descuento';
 
   return (
     <div className={styles.pageWrapper}>

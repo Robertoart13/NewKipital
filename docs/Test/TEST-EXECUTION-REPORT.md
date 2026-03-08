@@ -739,3 +739,26 @@ Estado de fase: Cerrada
 - Commit push: `29197af`
 - Rango remoto: `8bc67de..29197af`
 - Estado: pruebas manuales de Horas Extra cerradas (crear, editar, bitacora, fechas).
+
+## Fase 19 - 2026-03-08 02:20
+Alcance: Retenciones (edicion de fecha por linea + estabilidad de tab Bitacora + trazabilidad linea a linea)
+
+Comandos ejecutados:
+- `cd api && npm run build`
+- `cd frontend && npm run build`
+
+Resultados:
+- API: build en verde
+- Frontend: build con fallos de TypeScript preexistentes en modulos fuera del alcance de Retenciones
+- Estado de retenciones: fixes aplicados en frontend/api y listos para validacion funcional en UI
+
+Cambios validados en esta fase:
+- Frontend `RetentionsPage`: mapeo de `fechaEfecto` por linea usando parseo local para evitar campo vacio en editar.
+- Frontend `RetentionTransactionModal`:
+  - validacion de linea sin dependencia de `formula`,
+  - IDs normalizados (`selectedCompanyIdNum`, `selectedEmployeeIdNum`),
+  - control de tabs para que Bitacora no regrese sola a Informacion principal,
+  - parseo local de `fechaEfecto` al seleccionar planilla.
+- API `PersonalActionsService` (Retenciones):
+  - fechas con `parseDateOnlyLocal` en create/update (header, cuotas y lineas),
+  - bitacora con `lineasDetalle` en create/update.

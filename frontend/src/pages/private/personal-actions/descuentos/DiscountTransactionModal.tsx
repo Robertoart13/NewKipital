@@ -28,6 +28,7 @@ import {
   Input,
   InputNumber,
   Modal,
+  Result,
   Row,
   Select,
   Space,
@@ -349,11 +350,16 @@ export function DiscountTransactionModal({
 
   const selectedCompanyId = Form.useWatch('idEmpresa', form);
   const selectedEmployeeId = Form.useWatch('idEmpleado', form);
+  const selectedCompanyIdNum =
+    selectedCompanyId == null || Number.isNaN(Number(selectedCompanyId)) ? undefined : Number(selectedCompanyId);
+  const selectedEmployeeIdNum =
+    selectedEmployeeId == null || Number.isNaN(Number(selectedEmployeeId)) ? undefined : Number(selectedEmployeeId);
 
   useEffect(() => {
     if (!open || !onCompanyChange) return;
-    onCompanyChange(selectedCompanyId ? Number(selectedCompanyId) : undefined);
-  }, [onCompanyChange, open, selectedCompanyId]);
+    if (mode === 'edit' && selectedCompanyIdNum == null) return;
+    onCompanyChange(selectedCompanyIdNum);
+  }, [onCompanyChange, open, selectedCompanyIdNum, mode]);
 
   // Al cambiar de empleado se reinician las líneas porque cada empleado tiene planillas distintas
   useEffect(() => {
@@ -362,7 +368,7 @@ export function DiscountTransactionModal({
       return;
     }
     const prev = prevEmployeeIdRef.current;
-    const current = selectedEmployeeId;
+    const current = selectedEmployeeIdNum;
 
     // Evita reset por cambios transitorios de tabs (cuando el campo se desmonta temporalmente).
     // Solo resetea cuando realmente cambia de un empleado válido a otro empleado válido.
@@ -380,16 +386,18 @@ export function DiscountTransactionModal({
 
     prevEmployeeIdRef.current = current;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, selectedEmployeeId]);
+  }, [open, selectedEmployeeIdNum]);
 
   useEffect(() => {
-    if (!selectedEmployeeId || !selectedCompanyId) {
+    if (!selectedEmployeeIdNum || !selectedCompanyIdNum) {
       setEmployeePayrollConfig(null);
 
       setEligiblePayrolls([]);
       return;
     }
-    const employee = employees.find((item) => item.id === selectedEmployeeId && item.idEmpresa === selectedCompanyId);
+    const employee = employees.find(
+      (item) => Number(item.id) === selectedEmployeeIdNum && Number(item.idEmpresa) === selectedCompanyIdNum,
+    );
     if (!employee) {
       setEmployeePayrollConfig(null);
       return;
@@ -398,10 +406,10 @@ export function DiscountTransactionModal({
       idPeriodoPago: employee.idPeriodoPago ? Number(employee.idPeriodoPago) : undefined,
       moneda: (employee.monedaSalario ?? '').toUpperCase() || undefined,
     });
-  }, [selectedCompanyId, selectedEmployeeId, employees]);
+  }, [selectedCompanyIdNum, selectedEmployeeIdNum, employees]);
 
   useEffect(() => {
-    if (!selectedCompanyId || !selectedEmployeeId) {
+    if (!selectedCompanyIdNum || !selectedEmployeeIdNum) {
       setEligiblePayrolls([]);
 
       setLoadingPayrolls(false);
@@ -410,7 +418,7 @@ export function DiscountTransactionModal({
     let active = true;
 
     setLoadingPayrolls(true);
-    void fetchAbsencePayrollsCatalog(Number(selectedCompanyId), Number(selectedEmployeeId))
+    void fetchAbsencePayrollsCatalog(selectedCompanyIdNum, selectedEmployeeIdNum)
       .then((list) => {
         if (!active) return;
 
@@ -429,20 +437,25 @@ export function DiscountTransactionModal({
     return () => {
       active = false;
     };
-  }, [selectedCompanyId, selectedEmployeeId]);
+  }, [selectedCompanyIdNum, selectedEmployeeIdNum]);
 
   const employeesByCompany = useMemo(() => {
-    if (!selectedCompanyId) return [];
-    return sortEmployeesByDisplayName(employees.filter((employee) => employee.idEmpresa === selectedCompanyId));
-  }, [employees, selectedCompanyId]);
+    if (!selectedCompanyIdNum) return [];
+    return sortEmployeesByDisplayName(
+      employees.filter((employee) => Number(employee.idEmpresa) === selectedCompanyIdNum),
+    );
+  }, [employees, selectedCompanyIdNum]);
 
   const selectedEmployee = useMemo(() => {
-    if (!selectedCompanyId || !selectedEmployeeId) return null;
+    if (!selectedCompanyIdNum || !selectedEmployeeIdNum) return null;
     return (
-      employees.find((employee) => employee.idEmpresa === selectedCompanyId && employee.id === selectedEmployeeId) ??
+      employees.find(
+        (employee) =>
+          Number(employee.idEmpresa) === selectedCompanyIdNum && Number(employee.id) === selectedEmployeeIdNum,
+      ) ??
       null
     );
-  }, [employees, selectedCompanyId, selectedEmployeeId]);
+  }, [employees, selectedCompanyIdNum, selectedEmployeeIdNum]);
 
   const selectedPayPeriod = useMemo(() => {
     if (!selectedEmployee?.idPeriodoPago) return null;
@@ -461,8 +474,8 @@ export function DiscountTransactionModal({
   const periodHours = calculatePeriodHours(selectedEmployee?.idPeriodoPago, selectedEmployee?.jornada);
 
   const payrollsByCompany = useMemo(() => {
-    if (!selectedCompanyId) return [];
-    let list = eligiblePayrolls.filter((payroll) => payroll.idEmpresa === selectedCompanyId);
+    if (!selectedCompanyIdNum) return [];
+    let list = eligiblePayrolls.filter((payroll) => Number(payroll.idEmpresa) === selectedCompanyIdNum);
     if (employeePayrollConfig?.idPeriodoPago) {
       list = list.filter((payroll) => Number(payroll.idPeriodoPago) === Number(employeePayrollConfig.idPeriodoPago));
     }
@@ -470,11 +483,11 @@ export function DiscountTransactionModal({
       list = list.filter((payroll) => (payroll.moneda ?? '').toUpperCase() === employeePayrollConfig.moneda);
     }
     return list;
-  }, [eligiblePayrolls, selectedCompanyId, employeePayrollConfig]);
+  }, [eligiblePayrolls, selectedCompanyIdNum, employeePayrollConfig]);
 
   const filteredMovements = useMemo(() => {
-    if (!selectedCompanyId) return [];
-    let list = movements.filter((movement) => movement.idEmpresa === selectedCompanyId);
+    if (!selectedCompanyIdNum) return [];
+    let list = movements.filter((movement) => Number(movement.idEmpresa) === selectedCompanyIdNum);
 
     if (actionTypeIdForDiscount) {
       list = list.filter((movement) => movement.idTipoAccionPersonal === actionTypeIdForDiscount);
@@ -484,7 +497,7 @@ export function DiscountTransactionModal({
     list = list.filter((movement) => movement.esInactivo === 1 || selectedIds.has(movement.id));
 
     return list;
-  }, [movements, selectedCompanyId, actionTypeIdForDiscount, lines]);
+  }, [movements, selectedCompanyIdNum, actionTypeIdForDiscount, lines]);
 
   const calculateLineAmount = (line: DiscountTransactionLine, movimientoId?: number, cantidadValue?: number) => {
     const movement = filteredMovements.find((m) => m.id === (movimientoId ?? line.movimientoId));
@@ -601,15 +614,15 @@ export function DiscountTransactionModal({
   const canSubmit =
     !loading &&
     !readOnly &&
-    !!selectedCompanyId &&
-    !!selectedEmployeeId &&
+    !!selectedCompanyIdNum &&
+    !!selectedEmployeeIdNum &&
     lines.length > 0 &&
     lines.every(isLineComplete);
   const sensitiveMaskedValue = '***';
 
   const showGlobalPreload =
     loading ||
-    (!!selectedCompanyId && !!selectedEmployeeId && loadingPayrolls) ||
+    (!!selectedCompanyIdNum && !!selectedEmployeeIdNum && loadingPayrolls) ||
     (activeTab === 'bitacora' && loadingAuditTrail);
 
   const auditColumns: ColumnsType<PersonalActionAuditTrailItem> = useMemo(
@@ -839,7 +852,7 @@ export function DiscountTransactionModal({
                                   </div>
                                   <div className={sharedStyles.employeeAccordionCompany}>
                                     <BankOutlined />
-                                    {companies.find((c) => Number(c.id) === selectedCompanyId)?.nombre ?? '--'}
+                                    {companies.find((c) => Number(c.id) === selectedCompanyIdNum)?.nombre ?? '--'}
                                   </div>
                                 </div>
                               </div>
@@ -963,7 +976,7 @@ export function DiscountTransactionModal({
                         />
                       </Form.Item>
 
-                      {selectedCompanyId ? (
+                      {selectedCompanyIdNum ? (
                         <Form.Item
                           style={{ flex: '1 1 380px', marginBottom: 0 }}
                           name="idEmpleado"
@@ -998,7 +1011,7 @@ export function DiscountTransactionModal({
                 </Col>
 
                 <Col xs={24} lg={16} style={{ display: 'flex', flexDirection: 'column', minHeight: 0 }}>
-                  {selectedCompanyId && selectedEmployeeId ? (
+                  {selectedCompanyIdNum && selectedEmployeeIdNum ? (
                     <Card
                       size="small"
                       style={{
@@ -1269,7 +1282,26 @@ export function DiscountTransactionModal({
                         </>
                       )}
                     </Card>
-                  ) : null}
+                  ) : (
+                    <div
+                      style={{
+                        display: 'flex',
+                        flex: 1,
+                        minHeight: 260,
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        background: '#fafbfc',
+                        borderRadius: 8,
+                        border: '1px dashed #e8ecf0',
+                      }}
+                    >
+                      <Result
+                        status="info"
+                        title="Completar selección"
+                        subTitle="Seleccione empresa y empleado para agregar líneas de descuento por planilla."
+                      />
+                    </div>
+                  )}
                 </Col>
               </Row>
             ) : (

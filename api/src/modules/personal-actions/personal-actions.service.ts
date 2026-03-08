@@ -52,7 +52,7 @@ import type { UpsertDiscountDto } from './dto/upsert-discount.dto';
 import type { UpsertIncreaseDto } from './dto/upsert-increase.dto';
 import type { UpsertLicenseDto, UpsertLicenseLineDto } from './dto/upsert-license.dto';
 import type { UpsertOvertimeDto, UpsertOvertimeLineDto } from './dto/upsert-overtime.dto';
-import type { UpsertRetentionDto } from './dto/upsert-retention.dto';
+import type { UpsertRetentionDto, UpsertRetentionLineDto } from './dto/upsert-retention.dto';
 import type { UpsertVacationDto } from './dto/upsert-vacation.dto';
 
 type AbsenceAuditLinePayload = {
@@ -2832,14 +2832,17 @@ export class PersonalActionsService {
     );
 
     const created = await this.dataSource.transaction(async (trx) => {
-      const createdActions: Array<{ action: PersonalAction; linesCount: number }> = [];
+      const createdActions: Array<{
+        action: PersonalAction;
+        linesCount: number;
+        auditLines: AbsenceAuditLinePayload[];
+      }> = [];
 
       for (const group of groupedLines) {
         const totalMonto = group.lines.reduce((sum, line) => sum + Number(line.monto || 0), 0);
-        const firstDate = group.lines[0]?.fechaEfecto ? new Date(group.lines[0].fechaEfecto) : null;
-        const lastDate = group.lines[group.lines.length - 1]?.fechaEfecto
-          ? new Date(group.lines[group.lines.length - 1].fechaEfecto)
-          : firstDate;
+        const firstDate = this.parseDateOnlyLocal(group.lines[0]?.fechaEfecto);
+        const lastDate =
+          this.parseDateOnlyLocal(group.lines[group.lines.length - 1]?.fechaEfecto) ?? firstDate;
 
         const action = trx.create(PersonalAction, {
           idEmpresa: dto.idEmpresa,
@@ -2863,6 +2866,12 @@ export class PersonalActionsService {
         const quotas: ActionQuota[] = [];
         for (let i = 0; i < group.lines.length; i += 1) {
           const line = group.lines[i];
+          const cuotaFechaEfecto = this.parseDateOnlyLocal(line.fechaEfecto);
+          if (!cuotaFechaEfecto) {
+            throw new BadRequestException(
+              `La linea ${i + 1} no tiene una fecha de efecto valida para la retencion`,
+            );
+          }
           const quota = trx.create(ActionQuota, {
             idAccion: savedAction.id,
             idEmpresa: dto.idEmpresa,
@@ -2871,7 +2880,7 @@ export class PersonalActionsService {
             numeroCuota: i + 1,
             montoCuota: Number(line.monto),
             estado: EstadoCuota.PENDIENTE_APROBACION,
-            fechaEfecto: new Date(line.fechaEfecto),
+            fechaEfecto: cuotaFechaEfecto,
             motivoEstado: null,
           });
           quotas.push(await trx.save(quota));
@@ -2880,6 +2889,12 @@ export class PersonalActionsService {
         for (let i = 0; i < group.lines.length; i += 1) {
           const line = group.lines[i];
           const quota = quotas[i];
+          const fechaEfecto = this.parseDateOnlyLocal(line.fechaEfecto);
+          if (!fechaEfecto) {
+            throw new BadRequestException(
+              `La linea ${i + 1} no tiene una fecha de efecto valida para la retencion`,
+            );
+          }
           const retentionLine = trx.create(RetentionLine, {
             idAccion: savedAction.id,
             idCuota: quota.id,
@@ -2892,12 +2907,16 @@ export class PersonalActionsService {
             remuneracion: 0,
             formula: line.formula?.trim() || null,
             orden: i + 1,
-            fechaEfecto: new Date(line.fechaEfecto),
+            fechaEfecto,
           });
           await trx.save(retentionLine);
         }
 
-        createdActions.push({ action: savedAction, linesCount: group.lines.length });
+        createdActions.push({
+          action: savedAction,
+          linesCount: group.lines.length,
+          auditLines: this.mapRetentionLinesForAuditFromDto(group.lines),
+        });
       }
 
       return createdActions;
@@ -2925,7 +2944,7 @@ export class PersonalActionsService {
         actorUserId: userId,
         companyContextId: item.action.idEmpresa,
         descripcion: `Retencion creada para empleado #${item.action.idEmpleado}`,
-        payloadAfter: this.buildAbsenceAuditPayload(item.action, item.linesCount),
+        payloadAfter: this.buildAbsenceAuditPayload(item.action, item.linesCount, item.auditLines),
       });
     }
 
@@ -2973,12 +2992,11 @@ export class PersonalActionsService {
     const payloadBefore = this.buildAbsenceAuditPayload(
       action,
       await this.countRetentionLines(action.id),
+      await this.getRetentionLinesForAudit(action.id),
     );
     const totalMonto = dto.lines.reduce((sum, line) => sum + Number(line.monto || 0), 0);
-    const firstDate = dto.lines[0]?.fechaEfecto ? new Date(dto.lines[0].fechaEfecto) : null;
-    const lastDate = dto.lines[dto.lines.length - 1]?.fechaEfecto
-      ? new Date(dto.lines[dto.lines.length - 1].fechaEfecto)
-      : firstDate;
+    const firstDate = this.parseDateOnlyLocal(dto.lines[0]?.fechaEfecto);
+    const lastDate = this.parseDateOnlyLocal(dto.lines[dto.lines.length - 1]?.fechaEfecto) ?? firstDate;
 
     await this.dataSource.transaction(async (trx) => {
       await trx.delete(RetentionLine, { idAccion: id });
@@ -2996,6 +3014,12 @@ export class PersonalActionsService {
       const quotas: ActionQuota[] = [];
       for (let i = 0; i < dto.lines.length; i += 1) {
         const line = dto.lines[i];
+        const cuotaFechaEfecto = this.parseDateOnlyLocal(line.fechaEfecto);
+        if (!cuotaFechaEfecto) {
+          throw new BadRequestException(
+            `La linea ${i + 1} no tiene una fecha de efecto valida para la retencion`,
+          );
+        }
         const quota = trx.create(ActionQuota, {
           idAccion: action.id,
           idEmpresa: dto.idEmpresa,
@@ -3004,7 +3028,7 @@ export class PersonalActionsService {
           numeroCuota: i + 1,
           montoCuota: Number(line.monto),
           estado: EstadoCuota.PENDIENTE_APROBACION,
-          fechaEfecto: new Date(line.fechaEfecto),
+          fechaEfecto: cuotaFechaEfecto,
           motivoEstado: null,
         });
         quotas.push(await trx.save(quota));
@@ -3013,6 +3037,12 @@ export class PersonalActionsService {
       for (let i = 0; i < dto.lines.length; i += 1) {
         const line = dto.lines[i];
         const quota = quotas[i];
+        const fechaEfecto = this.parseDateOnlyLocal(line.fechaEfecto);
+        if (!fechaEfecto) {
+          throw new BadRequestException(
+            `La linea ${i + 1} no tiene una fecha de efecto valida para la retencion`,
+          );
+        }
         const retentionLine = trx.create(RetentionLine, {
           idAccion: action.id,
           idCuota: quota.id,
@@ -3025,7 +3055,7 @@ export class PersonalActionsService {
           remuneracion: 0,
           formula: line.formula?.trim() || null,
           orden: i + 1,
-          fechaEfecto: new Date(line.fechaEfecto),
+          fechaEfecto,
         });
         await trx.save(retentionLine);
       }
@@ -3040,7 +3070,11 @@ export class PersonalActionsService {
       companyContextId: action.idEmpresa,
       descripcion: `Retencion actualizada para empleado #${action.idEmpleado}`,
       payloadBefore,
-      payloadAfter: this.buildAbsenceAuditPayload(action, dto.lines.length),
+      payloadAfter: this.buildAbsenceAuditPayload(
+        action,
+        dto.lines.length,
+        this.mapRetentionLinesForAuditFromDto(dto.lines),
+      ),
     });
 
     return this.findOne(id, userId);
@@ -5075,6 +5109,54 @@ export class PersonalActionsService {
         subsidioCcss: null,
         totalIncapacidad: null,
         remuneracion: line.remuneracion,
+        fechaEfecto: line.fechaEfecto,
+        formula: line.formula ?? null,
+      })),
+    );
+  }
+
+  private async getRetentionLinesForAudit(idAccion: number): Promise<AbsenceAuditLinePayload[]> {
+    const rows = await this.repo.query(
+      `
+      SELECT
+        l.orden_linea AS orden,
+        l.id_calendario_nomina AS payrollId,
+        l.id_movimiento_nomina AS movimientoId,
+        l.cantidad_linea AS cantidad,
+        l.monto_linea AS monto,
+        l.remuneracion_linea AS remuneracion,
+        l.fecha_efecto_linea AS fechaEfecto,
+        l.formula_linea AS formula
+      FROM acc_retenciones_lineas l
+      WHERE l.id_accion = ?
+      ORDER BY l.orden_linea ASC, l.id_linea_retencion ASC
+      `,
+      [idAccion],
+    );
+
+    return this.normalizeAbsenceAuditLines(rows);
+  }
+
+  private mapRetentionLinesForAuditFromDto(
+    lines: UpsertRetentionLineDto[],
+  ): AbsenceAuditLinePayload[] {
+    return this.normalizeAbsenceAuditLines(
+      lines.map((line, index) => ({
+        orden: index + 1,
+        payrollId: line.payrollId,
+        movimientoId: line.movimientoId,
+        tipoAusencia: null,
+        tipoLicencia: null,
+        tipoBonificacion: null,
+        tipoIncapacidad: null,
+        tipoInstitucion: null,
+        cantidad: line.cantidad,
+        monto: line.monto,
+        montoIns: null,
+        montoPatrono: null,
+        subsidioCcss: null,
+        totalIncapacidad: null,
+        remuneracion: false,
         fechaEfecto: line.fechaEfecto,
         formula: line.formula ?? null,
       })),
