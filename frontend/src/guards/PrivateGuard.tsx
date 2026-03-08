@@ -1,15 +1,28 @@
+/* =============================================================================
+   GUARD: PrivateGuard
+   =============================================================================
+
+   Protege rutas privadas. Cascada:
+   1. No autenticado -> Navigate a /auth/login
+   2. Sin acceso a app activa -> Result 403
+   3. Permisos no cargados -> Spin
+   4. OK -> Outlet
+
+   ========================================================================== */
+
 import { Spin, Flex, Result } from 'antd';
 import { Navigate, Outlet, useLocation } from 'react-router-dom';
 
 import { useAppSelector } from '../store/hooks';
 
 /**
- * Guard para rutas privadas. Cascada enterprise:
+ * ============================================================================
+ * PrivateGuard
+ * ============================================================================
  *
- * 1. ¿Autenticado?  → No → /auth/login (guarda URL intentada)
- * 2. ¿Tiene acceso a la app activa? → No → Pantalla de acceso denegado
- * 3. ¿Permisos cargados? → No → Loading
- * 4. Todo OK → Renderizar ruta
+ * Guard para rutas privadas. Verifica auth, app activa y permisos cargados.
+ *
+ * ============================================================================
  */
 export function PrivateGuard() {
   const location = useLocation();

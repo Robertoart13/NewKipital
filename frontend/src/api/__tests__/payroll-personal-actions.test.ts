@@ -1,12 +1,12 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-vi.mock('../interceptors/httpInterceptor', () => ({
+vi.mock('../../interceptors/httpInterceptor', () => ({
   httpFetch: vi.fn(),
 }));
 
-import { httpFetch } from '../interceptors/httpInterceptor';
+import { httpFetch } from '../../interceptors/httpInterceptor';
 
-import { fetchPayroll, fetchPayrolls } from './payroll';
+import { fetchPayroll, fetchPayrolls } from '../payroll';
 import {
   advanceAbsenceState,
   advanceDiscountState,
@@ -28,7 +28,7 @@ import {
   invalidateRetention,
   invalidateAbsence,
   rejectPersonalAction,
-} from './personalActions';
+} from '../personalActions';
 
 const mockHttpFetch = vi.mocked(httpFetch);
 

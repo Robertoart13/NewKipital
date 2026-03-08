@@ -1,11 +1,42 @@
+/* =============================================================================
+   MODULE: currencyFormat
+   =============================================================================
+
+   Formateo y parseo de montos de dinero.
+
+   Responsabilidades:
+   - getCurrencySymbol
+   - formatCurrencyInput, parseCurrencyInput
+   - isMoneyOverMax
+
+   ========================================================================== */
+
 export const MAX_MONEY_AMOUNT = 999999999999.99;
 
 export type CurrencyCode = 'CRC' | 'USD';
 
+/**
+ * ============================================================================
+ * getCurrencySymbol
+ * ============================================================================
+ *
+ * Devuelve simbolo de moneda. USD -> $, resto -> CRC.
+ *
+ * ============================================================================
+ */
 export function getCurrencySymbol(currency?: string): string {
   return currency === 'USD' ? '$' : 'CRC';
 }
 
+/**
+ * ============================================================================
+ * formatCurrencyInput
+ * ============================================================================
+ *
+ * Formatea valor numerico como string de moneda.
+ *
+ * ============================================================================
+ */
 export function formatCurrencyInput(value: string | number | null | undefined, currencyOrSymbol?: string): string {
   if (value == null || value === '') return '';
   const numericValue = Number(value);
@@ -28,6 +59,15 @@ export function formatCurrencyInput(value: string | number | null | undefined, c
   })}`;
 }
 
+/**
+ * ============================================================================
+ * parseCurrencyInput
+ * ============================================================================
+ *
+ * Parsea string de moneda a numero.
+ *
+ * ============================================================================
+ */
 export function parseCurrencyInput(value?: string): number {
   const raw = String(value ?? '').trim();
   if (!raw) return 0;
@@ -71,6 +111,15 @@ export function parseCurrencyInput(value?: string): number {
   return Number.isNaN(numericValue) ? 0 : numericValue;
 }
 
+/**
+ * ============================================================================
+ * isMoneyOverMax
+ * ============================================================================
+ *
+ * Verifica si el valor excede MAX_MONEY_AMOUNT.
+ *
+ * ============================================================================
+ */
 export function isMoneyOverMax(value: unknown): boolean {
   const numericValue = Number(value);
   if (Number.isNaN(numericValue)) return false;

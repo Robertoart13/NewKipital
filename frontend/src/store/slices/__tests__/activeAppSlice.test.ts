@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import reducer, { setActiveApp } from './activeAppSlice';
+import reducer, { setActiveApp } from '../activeAppSlice';
 
 describe('activeAppSlice', () => {
   const initial = reducer(undefined, { type: '@@INIT' });

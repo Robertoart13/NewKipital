@@ -1,10 +1,41 @@
+/* =============================================================================
+   MODULE: moneyInputSanitizer
+   =============================================================================
+
+   Sanitizacion y formateo de input de montos (solo digitos).
+
+   Responsabilidades:
+   - sanitizeMoneyDigits
+   - parseSanitizedMoney
+   - formatGroupedIntegerDisplay
+
+   ========================================================================== */
+
 const DEFAULT_MAX_DIGITS = 10;
 
+/**
+ * ============================================================================
+ * sanitizeMoneyDigits
+ * ============================================================================
+ *
+ * Extrae solo digitos del valor. Limita longitud a maxDigits.
+ *
+ * ============================================================================
+ */
 export function sanitizeMoneyDigits(value: unknown, maxDigits = DEFAULT_MAX_DIGITS): string {
   const raw = String(value ?? '');
   return raw.replace(/\D+/g, '').slice(0, maxDigits);
 }
 
+/**
+ * ============================================================================
+ * parseSanitizedMoney
+ * ============================================================================
+ *
+ * Parsea valor sanitizado a numero entero.
+ *
+ * ============================================================================
+ */
 export function parseSanitizedMoney(value: unknown, maxDigits = DEFAULT_MAX_DIGITS): number | undefined {
   const sanitized = sanitizeMoneyDigits(value, maxDigits);
   if (!sanitized) return undefined;
@@ -13,6 +44,15 @@ export function parseSanitizedMoney(value: unknown, maxDigits = DEFAULT_MAX_DIGI
   return parsed;
 }
 
+/**
+ * ============================================================================
+ * formatGroupedIntegerDisplay
+ * ============================================================================
+ *
+ * Formatea numero con separador de miles (coma).
+ *
+ * ============================================================================
+ */
 export function formatGroupedIntegerDisplay(value: unknown, maxDigits = DEFAULT_MAX_DIGITS): string {
   const sanitized = sanitizeMoneyDigits(value, maxDigits);
   if (!sanitized) return '';

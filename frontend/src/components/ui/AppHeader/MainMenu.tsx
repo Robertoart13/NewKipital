@@ -1,3 +1,19 @@
+/* =============================================================================
+   COMPONENT: MainMenu
+   =============================================================================
+
+   Menu horizontal data-driven con soporte para submenus y grupos.
+
+   Responsabilidades:
+   - Renderizar menu horizontal desde items
+   - Soporte para submenus y grupos
+   - Navegacion via react-router
+   - Resaltar item activo segun pathname
+
+   Nota: No contiene logica de permisos; items vienen filtrados del selector.
+
+   ========================================================================== */
+
 import { Menu } from 'antd';
 import { useMemo } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
@@ -20,8 +36,17 @@ interface MainMenuProps {
 }
 
 /**
- * Menú horizontal data-driven con soporte para submenús.
- * Recibe items del selector (derivados de permisos). No contiene lógica de permisos.
+ * ============================================================================
+ * MainMenu
+ * ============================================================================
+ *
+ * Menu horizontal data-driven con submenus. Items vienen del selector (permisos).
+ *
+ * @param items - Configuracion del menu.
+ * @param iconMap - Mapa id -> icono.
+ * @param className - Clase CSS opcional.
+ *
+ * ============================================================================
  */
 export function MainMenu({ items, iconMap, className }: MainMenuProps) {
   const navigate = useNavigate();

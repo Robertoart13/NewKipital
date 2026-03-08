@@ -1,7 +1,7 @@
 import { Entity, PrimaryGeneratedColumn, Column, Index, CreateDateColumn } from 'typeorm';
 
 /**
- * sys_usuario_app — Tabla puente: Usuario â†” App.
+ * sys_usuario_app — Tabla puente: Usuario - App.
  * Define si un usuario puede ingresar a una aplicación.
  * Aquí NO hay empresa. Solo acceso a la app.
  */

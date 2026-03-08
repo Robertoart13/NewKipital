@@ -129,12 +129,12 @@ function CompanyLogoNameCell({ company }: { company: CompanyListItem }) {
 }
 
 function getPaneValue(company: CompanyListItem, key: PaneKey): string {
+  if (key === 'prefijo') return company.prefijo ?? '';
+  if (key === 'nombre') return company.nombre ?? '';
   if (key === 'cedula') return company.cedula ?? '';
   if (key === 'idExterno') return company.idExterno ?? '';
-  if (key === 'prefijo') return company.prefijo ?? '';
   if (key === 'telefono') return company.telefono ?? '';
-  return company.email ?? '';
-  if (key === 'telefono') return company.telefono ?? '';
+  if (key === 'estado') return company.estado === 0 ? 'Inactivo' : 'Activo';
   return company.email ?? '';
 }
 
@@ -298,11 +298,12 @@ export function CompaniesManagementPage() {
       const term = search.trim().toLowerCase();
       if (!term) return true;
       return (
+        (company.nombre ?? '').toLowerCase().includes(term) ||
+        (company.nombreLegal ?? '').toLowerCase().includes(term) ||
         (company.cedula ?? '').toLowerCase().includes(term) ||
         (company.idExterno ?? '').toLowerCase().includes(term) ||
         (company.email ?? '').toLowerCase().includes(term) ||
-        (company.prefijo ?? '').toLowerCase().includes(term)
-        (company.email ?? '').toLowerCase().includes(term) ||
+        (company.telefono ?? '').toLowerCase().includes(term) ||
         (company.prefijo ?? '').toLowerCase().includes(term)
       );
     },
@@ -469,14 +470,14 @@ export function CompaniesManagementPage() {
   const applyCompanyToForm = useCallback(
     (company: CompanyListItem) => {
       form.setFieldsValue({
+        nombre: company.nombre ?? '',
+        nombreLegal: company.nombreLegal ?? '',
         cedula: company.cedula ?? '',
         actividadEconomica: company.actividadEconomica ?? '',
         prefijo: company.prefijo ?? '',
         idExterno: company.idExterno ?? '',
         direccionExacta: company.direccionExacta ?? '',
         telefono: company.telefono ?? '',
-        email: company.email ?? '',
-        codigoPostal: company.codigoPostal ?? '',
         email: company.email ?? '',
         codigoPostal: company.codigoPostal ?? '',
       });

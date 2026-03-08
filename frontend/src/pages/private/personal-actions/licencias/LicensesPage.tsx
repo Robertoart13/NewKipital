@@ -749,7 +749,7 @@ export function LicensesPage() {
           </Link>
           <div className={styles.pageTitleBlock}>
             <h1 className={styles.pageTitle}>licencias</h1>
-            <p className={styles.pageSubtitle}>Gestione licencias por empresa con l\u00EDneas de transacci\u00F3n por per\u00EDodo</p>
+            <p className={styles.pageSubtitle}>Gestione licencias por empresa con lineas de transaccion por periodo</p>
           </div>
         </div>
       </div>
@@ -763,7 +763,7 @@ export function LicensesPage() {
               </div>
               <div>
                 <h2 className={styles.gestionTitle}>Gestión de licencias</h2>
-                <p className={styles.gestionDesc}>Encabezado de acci\u00F3n + m\u00FAltiples l\u00EDneas por planilla</p>
+                <p className={styles.gestionDesc}>Encabezado de accion + multiples lineas por planilla</p>
               </div>
             </Flex>
             <Button

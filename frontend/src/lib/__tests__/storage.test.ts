@@ -14,7 +14,7 @@ import {
   getMicrosoftAvatar,
   clearMicrosoftAvatar,
   STORAGE_KEYS,
-} from './storage';
+} from '../storage';
 
 function createFunctionalStorage(): Storage {
   const store: Record<string, string> = {};

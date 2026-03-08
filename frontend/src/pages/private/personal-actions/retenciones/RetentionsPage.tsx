@@ -196,17 +196,19 @@ function createDraftFromRetentionDetail(detail: RetentionDetailItem): RetentionF
           movimientoId: line.movimientoId,
           cantidad: line.cantidad,
           monto: line.monto,
+          formula: line.formula ?? undefined,
           movimientoLabel: line.movimientoLabel ?? undefined,
           payrollEstado: line.payrollEstado ?? undefined,
           movimientoInactivo: line.movimientoInactivo === true,
         }))
-      : [
-          {
-            key: `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
-            monto: detail.monto ?? undefined,
-            fechaEfecto: detail.fechaEfecto ? dayjs(detail.fechaEfecto) : undefined,
-          },
-        ];
+        : [
+            {
+              key: `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+              monto: detail.monto ?? undefined,
+              fechaEfecto: detail.fechaEfecto ? dayjs(detail.fechaEfecto) : undefined,
+              formula: '',
+            },
+          ];
 
   return {
     idEmpresa: detail.idEmpresa,
@@ -539,7 +541,7 @@ export function RetentionsPage() {
 
   const rowsFiltered = useMemo(() => dataFilteredByPaneSelections(), [dataFilteredByPaneSelections]);
 
-  const columns: ColumnsType<RetentionUiRow> = useSortableColumns(
+  const columns: ColumnsType<RetentionUiRow> = useSortableColumns<RetentionUiRow>(
     () => [
       {
         title: 'EMPRESA',
@@ -692,10 +694,12 @@ export function RetentionsPage() {
       payrollId: Number(line.payrollId),
       fechaEfecto: line.fechaEfecto?.format('YYYY-MM-DD') ?? '',
       movimientoId: Number(line.movimientoId),
+      cantidad: Number(line.cantidad ?? 0),
       monto: Number(line.monto ?? 0),
       formula: line.formula?.trim() || undefined,
     })),
   });
+  const modalTitle = mode === 'create' ? 'Crear retencion' : 'Editar retencion';
 
   return (
     <div className={styles.pageWrapper}>
@@ -944,7 +948,8 @@ export function RetentionsPage() {
         showAudit={mode === 'edit' && !!editingRow}
         auditTrail={auditTrail}
         loadingAuditTrail={loadingAuditTrail}
-        onLoadAuditTrail={mode === 'edit' && editingRow ? loadEditingRetentionAuditTrail : undefined}        initialCompanyId={modalCompanyId}
+        onLoadAuditTrail={mode === 'edit' && editingRow ? loadEditingRetentionAuditTrail : undefined}
+        initialCompanyId={modalCompanyId}
         initialDraft={editingDraft}
         onCompanyChange={(nextCompanyId) => {
           setModalCompanyId(nextCompanyId);

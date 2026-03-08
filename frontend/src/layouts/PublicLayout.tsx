@@ -1,3 +1,16 @@
+/* =============================================================================
+   LAYOUT: PublicLayout
+   =============================================================================
+
+   Layout para rutas publicas (login, forgot password).
+
+   Responsabilidades:
+   - Contenedor centrado y limpio
+   - Sin header, sin menu
+   - No consume Redux
+
+   ========================================================================== */
+
 import { Layout } from 'antd';
 
 interface PublicLayoutProps {
@@ -5,9 +18,15 @@ interface PublicLayoutProps {
 }
 
 /**
- * Layout para rutas públicas (login, forgot password, etc.).
- * No tiene header, no tiene menú, no consume Redux.
- * Es el "lobby" — limpio y aislado del dashboard.
+ * ============================================================================
+ * PublicLayout
+ * ============================================================================
+ *
+ * Layout para rutas publicas. Lobby limpio y aislado del dashboard.
+ *
+ * @param children - Contenido a renderizar.
+ *
+ * ============================================================================
  */
 export function PublicLayout({ children }: PublicLayoutProps) {
   return (

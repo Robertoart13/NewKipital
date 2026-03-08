@@ -1,14 +1,14 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-vi.mock('../interceptors/httpInterceptor', () => ({
+vi.mock('../../interceptors/httpInterceptor', () => ({
   httpFetch: vi.fn(),
 }));
 
-vi.mock('../config/api', () => ({
+vi.mock('../../config/api', () => ({
   API_URL: 'http://api.test',
 }));
 
-import { httpFetch } from '../interceptors/httpInterceptor';
+import { httpFetch } from '../../interceptors/httpInterceptor';
 
 import {
   commitCompanyLogo,
@@ -18,7 +18,7 @@ import {
   fetchCompanyLogoBlobUrl,
   getCompanyLogoUrl,
   uploadCompanyLogoTemp,
-} from './companies';
+} from '../companies';
 
 const mockHttpFetch = vi.mocked(httpFetch);
 

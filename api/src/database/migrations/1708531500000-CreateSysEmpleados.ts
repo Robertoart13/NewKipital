@@ -3,7 +3,7 @@ import { Table, TableIndex, TableForeignKey, MigrationInterface, QueryRunner } f
 /**
  * Directiva 16 — sys_empleados (registro laboral de RRHH).
  *
- * sys_empleados â‰  sys_usuarios.
+ * sys_empleados != sys_usuarios.
  * id_usuario es FK nullable: vinculación opcional con identidad digital.
  * id_empresa es FK NOT NULL: pertenece siempre a una empresa.
  *

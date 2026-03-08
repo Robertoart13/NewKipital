@@ -1,5 +1,38 @@
+/* =============================================================================
+   MODULE: employees
+   =============================================================================
+
+   Capa de acceso a datos para el modulo de Empleados.
+
+   Responsabilidades:
+   - Listar empleados con paginacion y filtros
+   - Obtener detalle de empleado
+   - Crear, actualizar, inactivar, liquidar y reactivar empleados
+   - Consultar supervisores elegibles
+   - Consultar bitacora de auditoria
+
+   Decisiones de diseno:
+   - Todas las solicitudes HTTP se canalizan mediante httpFetch
+   - Prioridad de filtros: companyIds (multiempresa) > companyId (individual)
+   - Errores de validacion del backend se propagan via message
+
+   ========================================================================== */
+
 import { httpFetch } from '../interceptors/httpInterceptor';
 
+/* =============================================================================
+   INTERFACES DE DOMINIO
+   ============================================================================= */
+
+/**
+ * ============================================================================
+ * Employee Filters
+ * ============================================================================
+ *
+ * Filtros opcionales para listar empleados.
+ *
+ * ============================================================================
+ */
 export interface EmployeeFilters {
   page?: number;
   pageSize?: number;
@@ -13,6 +46,15 @@ export interface EmployeeFilters {
   companyIds?: number[];
 }
 
+/**
+ * ============================================================================
+ * Paginated Response
+ * ============================================================================
+ *
+ * Respuesta paginada generica de la API.
+ *
+ * ============================================================================
+ */
 export interface PaginatedResponse<T> {
   data: T[];
   total: number;
@@ -36,6 +78,15 @@ export interface PayPeriodRef {
   dias: number;
 }
 
+/**
+ * ============================================================================
+ * Employee List Item
+ * ============================================================================
+ *
+ * Elemento de lista de empleados retornado por la API.
+ *
+ * ============================================================================
+ */
 export interface EmployeeListItem {
   id: number;
   idEmpresa: number;
@@ -53,6 +104,15 @@ export interface EmployeeListItem {
   puesto?: PositionRef | null;
 }
 
+/**
+ * ============================================================================
+ * Employee Detail
+ * ============================================================================
+ *
+ * Detalle completo de empleado con relaciones y datos extendidos.
+ *
+ * ============================================================================
+ */
 export interface EmployeeDetail extends EmployeeListItem {
   apellido2?: string | null;
   genero?: string | null;
@@ -84,6 +144,17 @@ export interface EmployeeDetail extends EmployeeListItem {
   modificadoPor?: number | null;
 }
 
+/**
+ * ============================================================================
+ * Create Employee Payload
+ * ============================================================================
+ *
+ * Payload para crear un empleado.
+ *
+ * El backend controla id, fechas de auditoria y flags de estado.
+ *
+ * ============================================================================
+ */
 export interface CreateEmployeePayload {
   idEmpresa: number;
   codigo: string;
@@ -127,6 +198,17 @@ export interface EmployeeAguinaldoProvisionPayload {
   estado?: 1 | 2;
 }
 
+/**
+ * ============================================================================
+ * Update Employee Payload
+ * ============================================================================
+ *
+ * Campos opcionales para actualizar un empleado.
+ *
+ * Solo se envian los campos modificados.
+ *
+ * ============================================================================
+ */
 export interface UpdateEmployeePayload {
   cedula?: string;
   nombre?: string;
@@ -161,6 +243,15 @@ export interface EmployeeAuditTrailChange {
   despues: string;
 }
 
+/**
+ * ============================================================================
+ * Employee Audit Trail Item
+ * ============================================================================
+ *
+ * Elemento del historial de auditoria del empleado.
+ *
+ * ============================================================================
+ */
 export interface EmployeeAuditTrailItem {
   id: string;
   modulo: string;
@@ -176,9 +267,22 @@ export interface EmployeeAuditTrailItem {
   cambios?: EmployeeAuditTrailChange[];
 }
 
+/* =============================================================================
+   API: OPERACIONES
+   ============================================================================= */
+
 /**
- * GET /employees/supervisors - Lista empleados elegibles como supervisores (rol Supervisor, Supervisor Global o Master en TimeWise).
- * Incluye todas las empresas a las que el usuario tiene acceso (un supervisor de otra subsidiaria puede asumir el rol).
+ * ============================================================================
+ * Fetch Supervisors
+ * ============================================================================
+ *
+ * Lista empleados elegibles como supervisores (rol Supervisor, Supervisor Global
+ * o Master en TimeWise). Incluye todas las empresas a las que el usuario tiene
+ * acceso.
+ *
+ * @returns Lista de supervisores o array vacio si la peticion falla.
+ *
+ * ============================================================================
  */
 export async function fetchSupervisors(): Promise<{ id: number; nombre: string; apellido1: string }[]> {
   const res = await httpFetch('/employees/supervisors');
@@ -187,7 +291,24 @@ export async function fetchSupervisors(): Promise<{ id: number; nombre: string; 
 }
 
 /**
- * GET /employees[?idEmpresa=N] - Lista empleados con paginación y filtros.
+ * ============================================================================
+ * Fetch Employees
+ * ============================================================================
+ *
+ * Lista empleados con paginacion y filtros.
+ *
+ * Prioridad de filtros:
+ * - companyIds para consulta multiempresa
+ * - companyId para consulta individual
+ *
+ * @param companyId - ID de empresa individual (opcional).
+ * @param filters - Filtros opcionales (pagina, busqueda, departamento, etc.).
+ *
+ * @returns Lista paginada de empleados.
+ *
+ * @throws {Error} Si la peticion falla.
+ *
+ * ============================================================================
  */
 export async function fetchEmployees(
   companyId?: string | null,
@@ -214,7 +335,19 @@ export async function fetchEmployees(
 }
 
 /**
- * GET /employees/:id - Detalle de empleado con relaciones.
+ * ============================================================================
+ * Fetch Employee
+ * ============================================================================
+ *
+ * Obtiene el detalle de un empleado con relaciones.
+ *
+ * @param id - ID del empleado.
+ *
+ * @returns Detalle completo del empleado.
+ *
+ * @throws {Error} Si la peticion falla.
+ *
+ * ============================================================================
  */
 export async function fetchEmployee(id: number): Promise<EmployeeDetail> {
   const res = await httpFetch(`/employees/${id}`);
@@ -223,7 +356,19 @@ export async function fetchEmployee(id: number): Promise<EmployeeDetail> {
 }
 
 /**
- * POST /employees - Crear empleado.
+ * ============================================================================
+ * Create Employee
+ * ============================================================================
+ *
+ * Crea un nuevo empleado.
+ *
+ * @param payload - Datos del empleado a crear.
+ *
+ * @returns Empleado creado y apps asignadas.
+ *
+ * @throws {Error} Si la peticion falla (incluye validaciones del backend).
+ *
+ * ============================================================================
  */
 export async function createEmployee(payload: CreateEmployeePayload): Promise<{
   success: boolean;
@@ -241,7 +386,20 @@ export async function createEmployee(payload: CreateEmployeePayload): Promise<{
 }
 
 /**
- * PUT /employees/:id - Actualizar empleado.
+ * ============================================================================
+ * Update Employee
+ * ============================================================================
+ *
+ * Actualiza los datos de un empleado.
+ *
+ * @param id - ID del empleado.
+ * @param payload - Campos a actualizar.
+ *
+ * @returns Empleado actualizado.
+ *
+ * @throws {Error} Si la peticion falla.
+ *
+ * ============================================================================
  */
 export async function updateEmployee(id: number, payload: UpdateEmployeePayload): Promise<EmployeeDetail> {
   const res = await httpFetch(`/employees/${id}`, {
@@ -256,7 +414,21 @@ export async function updateEmployee(id: number, payload: UpdateEmployeePayload)
 }
 
 /**
- * PATCH /employees/:id/inactivate - Inactivar empleado.
+ * ============================================================================
+ * Inactivate Employee
+ * ============================================================================
+ *
+ * Inactiva un empleado. El error puede incluir planillas o acciones bloqueantes.
+ *
+ * @param id - ID del empleado.
+ * @param motivo - Motivo de inactivacion (opcional).
+ *
+ * @returns Empleado inactivado.
+ *
+ * @throws {Error} Si la peticion falla. La propiedad response puede contener
+ *                 code, planillas o acciones para diagnostico.
+ *
+ * ============================================================================
  */
 export async function inactivateEmployee(id: number, motivo?: string): Promise<EmployeeDetail> {
   const res = await httpFetch(`/employees/${id}/inactivate`, {
@@ -276,7 +448,21 @@ export async function inactivateEmployee(id: number, motivo?: string): Promise<E
 }
 
 /**
- * PATCH /employees/:id/liquidar - Liquidar empleado.
+ * ============================================================================
+ * Liquidate Employee
+ * ============================================================================
+ *
+ * Liquida un empleado con fecha de salida.
+ *
+ * @param id - ID del empleado.
+ * @param fechaSalida - Fecha de salida.
+ * @param motivo - Motivo opcional.
+ *
+ * @returns Empleado liquidado.
+ *
+ * @throws {Error} Si la peticion falla.
+ *
+ * ============================================================================
  */
 export async function liquidateEmployee(id: number, fechaSalida: string, motivo?: string): Promise<EmployeeDetail> {
   const res = await httpFetch(`/employees/${id}/liquidar`, {
@@ -291,7 +477,19 @@ export async function liquidateEmployee(id: number, fechaSalida: string, motivo?
 }
 
 /**
- * PATCH /employees/:id/reactivate - Reactivar empleado.
+ * ============================================================================
+ * Reactivate Employee
+ * ============================================================================
+ *
+ * Reactiva un empleado previamente inactivado.
+ *
+ * @param id - ID del empleado.
+ *
+ * @returns Empleado reactivado.
+ *
+ * @throws {Error} Si la peticion falla.
+ *
+ * ============================================================================
  */
 export async function reactivateEmployee(id: number): Promise<EmployeeDetail> {
   const res = await httpFetch(`/employees/${id}/reactivate`, {
@@ -305,7 +503,20 @@ export async function reactivateEmployee(id: number): Promise<EmployeeDetail> {
 }
 
 /**
- * GET /employees/:id/audit-trail - Historial de cambios del empleado.
+ * ============================================================================
+ * Fetch Employee Audit Trail
+ * ============================================================================
+ *
+ * Obtiene el historial de cambios del empleado.
+ *
+ * @param id - ID del empleado.
+ * @param limit - Limite de registros (default 200).
+ *
+ * @returns Lista de eventos de auditoria.
+ *
+ * @throws {Error} Si la peticion falla.
+ *
+ * ============================================================================
  */
 export async function fetchEmployeeAuditTrail(id: number, limit = 200): Promise<EmployeeAuditTrailItem[]> {
   const params = new URLSearchParams();
@@ -317,4 +528,3 @@ export async function fetchEmployeeAuditTrail(id: number, limit = 200): Promise<
   }
   return res.json();
 }
-

@@ -1,3 +1,17 @@
+/* =============================================================================
+   HOOK: useNotificationSocket
+   =============================================================================
+
+   Conexion WebSocket para notificaciones en tiempo real.
+
+   Responsabilidades:
+   - Conectar a socket.io
+   - Escuchar notification:new, notification:count-update, notification:list-update
+   - Invalidar queries de notificaciones
+   - Mostrar mensaje al usuario en nuevo evento
+
+   ========================================================================== */
+
 import { useQueryClient } from '@tanstack/react-query';
 import { App as AntdApp } from 'antd';
 import { useEffect, useRef } from 'react';
@@ -8,6 +22,17 @@ import { notificationKeys } from '../queries/notifications/keys';
 
 const WS_BASE = API_URL.replace(/\/api$/, '');
 
+/**
+ * ============================================================================
+ * useNotificationSocket
+ * ============================================================================
+ *
+ * Conecta WebSocket para notificaciones. Invalida queries al recibir eventos.
+ *
+ * @param enabled - Si true, conecta; si false, no hace nada.
+ *
+ * ============================================================================
+ */
 export function useNotificationSocket(enabled: boolean) {
   const { message } = AntdApp.useApp();
   const queryClient = useQueryClient();

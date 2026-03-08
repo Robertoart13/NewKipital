@@ -1,8 +1,25 @@
+/* =============================================================================
+   MODULE: theme config
+   =============================================================================
+
+   Configuracion de tema Ant Design para KPITAL 360.
+
+   Responsabilidades:
+   - Tokens de color corporativos
+   - Configuracion de componentes (Button, Input, Table)
+
+   ========================================================================== */
+
 import type { ThemeConfig } from 'antd';
 
 /**
- * Colores corporativos KPITAL 360.
- * Paleta profesional para ERP empresarial.
+ * ============================================================================
+ * KPITAL_THEME
+ * ============================================================================
+ *
+ * Colores corporativos y tokens base.
+ *
+ * ============================================================================
  */
 export const KPITAL_THEME: ThemeConfig['token'] = {
   colorPrimary: '#20638d',
@@ -16,7 +33,13 @@ export const KPITAL_THEME: ThemeConfig['token'] = {
 };
 
 /**
+ * ============================================================================
+ * lightTheme
+ * ============================================================================
+ *
  * Tema light completo para ConfigProvider.
+ *
+ * ============================================================================
  */
 export const lightTheme: ThemeConfig = {
   token: KPITAL_THEME,

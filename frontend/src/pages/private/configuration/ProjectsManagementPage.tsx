@@ -113,11 +113,11 @@ function normalizePayload(values: ProjectFormValues): Omit<ProjectPayload, 'idEm
 function getPaneValue(row: ProjectListItem, key: PaneKey, companies: Array<{ id: number; nombre: string }>): string {
   if (key === 'empresa') {
     const company = companies.find((c) => c.id === row.idEmpresa);
-  if (key === 'nombre') return row.nombre ?? '';
+    return company?.nombre ?? `Empresa #${row.idEmpresa}`;
   }
+  if (key === 'nombre') return row.nombre ?? '';
   if (key === 'idExterno') return row.idExterno ?? '';
   if (key === 'codigo') return row.codigo ?? '';
-  if (key === 'idExterno') return row.idExterno ?? '';
   return row.esInactivo === 0 ? 'Inactivo' : 'Activo';
 }
 
@@ -143,7 +143,7 @@ export function ProjectsManagementPage() {
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [showInactive, setShowInactive] = useState(false);
-  const [listCompanyId, setListCompanyId] = useState<number | undefined>(undefined);
+  const [listCompanyId, setListCompanyId] = useState<number | undefined>(defaultCompanyId);
   const [openModal, setOpenModal] = useState(false);
   const [editing, setEditing] = useState<ProjectListItem | null>(null);
   const editingId = editing ? Number(editing.id) : null;
@@ -177,15 +177,15 @@ export function ProjectsManagementPage() {
     estado: false,
   });
 
-  /**
-   * La vista de proyectos muestra todos los registros por defecto.
-   * El filtro por empresa es opcional y solo se aplica si el usuario lo elige.
-   */
   const loadRows = useCallback(
     async (companyId?: number) => {
       setLoading(true);
       try {
-        const targetCompanyId = companyId ?? listCompanyId;
+        const targetCompanyId = companyId ?? listCompanyId ?? defaultCompanyId;
+        if (!targetCompanyId) {
+          setRows([]);
+          return;
+        }
         const data = await fetchProjects(targetCompanyId, showInactive);
         setRows(data);
       } catch (error) {
@@ -195,21 +195,26 @@ export function ProjectsManagementPage() {
         setLoading(false);
       }
     },
-    [listCompanyId, message, showInactive],
+    [defaultCompanyId, listCompanyId, message, showInactive],
   );
 
   useEffect(() => {
     void loadRows();
-  }, [loadRows, showInactive]);
+  }, [loadRows]);
+
+  useEffect(() => {
+    if (listCompanyId || !defaultCompanyId) return;
+    setListCompanyId(defaultCompanyId);
+  }, [defaultCompanyId, listCompanyId]);
 
   const matchesGlobalSearch = useCallback(
     (row: ProjectListItem) => {
       const term = search.trim().toLowerCase();
       if (!term) return true;
       return (
+        (row.nombre ?? '').toLowerCase().includes(term) ||
+        (row.codigo ?? '').toLowerCase().includes(term) ||
         (row.idExterno ?? '').toLowerCase().includes(term) ||
-        (companies.find((c) => c.id === row.idEmpresa)?.nombre ?? '').toLowerCase().includes(term) ||
-        (row.descripcion ?? '').toLowerCase().includes(term)
         (companies.find((c) => c.id === row.idEmpresa)?.nombre ?? '').toLowerCase().includes(term) ||
         (row.descripcion ?? '').toLowerCase().includes(term)
       );
@@ -314,16 +319,15 @@ export function ProjectsManagementPage() {
 
   const applyProjectToForm = useCallback(
     (row: ProjectListItem) => {
-      const isActiveCompany = activeCompanyIds.has(row.idEmpresa);
       form.setFieldsValue({
+        idEmpresa: row.idEmpresa,
+        nombre: row.nombre ?? '',
         descripcion: row.descripcion ?? '',
-        codigo: row.codigo ?? '',
-        idExterno: row.idExterno ?? '',
         codigo: row.codigo ?? '',
         idExterno: row.idExterno ?? '',
       });
     },
-    [form, activeCompanyIds],
+    [form],
   );
 
   const loadProjectDetail = useCallback(
@@ -669,17 +673,12 @@ export function ProjectsManagementPage() {
               <span style={{ color: '#6b7a85', fontSize: 14 }}>Mostrar inactivas</span>
               <Switch checked={showInactive} onChange={setShowInactive} size="small" />
               <Select
-                placeholder="Todas las empresas"
-                allowClear
+                placeholder="Filtrar por empresa"
                 value={listCompanyId}
                 onChange={(value) => {
                   const nextValue = value ?? undefined;
                   setListCompanyId(nextValue);
                   void loadRows(nextValue);
-                }}
-                onClear={() => {
-                  setListCompanyId(undefined);
-                  void loadRows(undefined);
                 }}
                 options={companies.map((c) => ({ value: Number(c.id), label: c.nombre }))}
                 showSearch

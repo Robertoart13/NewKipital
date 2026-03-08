@@ -7,6 +7,7 @@ import {
   FilterOutlined,
   PlusOutlined,
   QuestionCircleOutlined,
+  ReloadOutlined,
   SearchOutlined,
   SortAscendingOutlined,
   SortDescendingOutlined,
@@ -322,6 +323,10 @@ export function AccountingAccountsManagementPage() {
     void loadRows();
   }, [loadRows, selectedCompanyIds, showInactive]);
 
+  const handleRefreshRows = useCallback(() => {
+    void loadRows();
+  }, [loadRows]);
+
   const matchesGlobalSearch = useCallback(
     (row: AccountingAccountListItem) => {
       const term = search.trim().toLowerCase();
@@ -470,6 +475,8 @@ export function AccountingAccountsManagementPage() {
     (row: AccountingAccountListItem) => {
       form.setFieldsValue({
         idEmpresa: row.idEmpresa,
+        nombre: row.nombre ?? '',
+        descripcion: row.descripcion ?? '',
         codigo: row.codigo ?? '',
         idExternoNetsuite: row.idExternoNetsuite ?? '',
         codigoExterno: row.codigoExterno ?? '',
@@ -890,15 +897,12 @@ export function AccountingAccountsManagementPage() {
               <span style={{ color: '#6b7a85', fontSize: 14 }}>Mostrar inactivas</span>
               <Switch checked={showInactive} onChange={setShowInactive} size="small" />
               <Select
-                mode="multiple"
                 allowClear
-                placeholder="Filtrar por empresa(s)"
-                value={selectedCompanyIds}
-                onChange={(values) => {
-                  const next = (values as Array<string | number>)
-                    .map((value) => Number(value))
-                    .filter((value) => Number.isFinite(value));
-                  setSelectedCompanyIds(next);
+                placeholder="Filtrar por empresa"
+                value={selectedCompanyIds[0]}
+                onChange={(value) => {
+                  const parsed = Number(value);
+                  setSelectedCompanyIds(Number.isFinite(parsed) ? [parsed] : []);
                 }}
                 options={companies.map((company) => ({
                   value: Number(company.id),
@@ -906,6 +910,9 @@ export function AccountingAccountsManagementPage() {
                 }))}
                 style={{ minWidth: 220 }}
               />
+              <Button icon={<ReloadOutlined />} onClick={handleRefreshRows} loading={loading}>
+                Refrescar
+              </Button>
             </Flex>
           </Flex>
 

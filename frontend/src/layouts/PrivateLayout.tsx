@@ -1,3 +1,16 @@
+/* =============================================================================
+   LAYOUT: PrivateLayout
+   =============================================================================
+
+   Layout para rutas privadas (dashboard, modulos).
+
+   Responsabilidades:
+   - Header con menu dinamico
+   - Area de contenido
+   - Menu derivado de permisos via getVisibleMenuItems
+
+   ========================================================================== */
+
 import { Layout } from 'antd';
 
 import { AppHeader } from '../components/ui/AppHeader';
@@ -12,9 +25,15 @@ interface PrivateLayoutProps {
 }
 
 /**
- * Layout para rutas privadas (dashboard, módulos).
- * Header fijo con menú dinámico + área de contenido.
- * Solo se renderiza cuando auth + permisos + empresa están listos.
+ * ============================================================================
+ * PrivateLayout
+ * ============================================================================
+ *
+ * Layout para rutas privadas. Header + contenido. Requiere auth y permisos.
+ *
+ * @param children - Contenido de la pagina.
+ *
+ * ============================================================================
  */
 export function PrivateLayout({ children }: PrivateLayoutProps) {
   const menuItems = useAppSelector(getVisibleMenuItems);

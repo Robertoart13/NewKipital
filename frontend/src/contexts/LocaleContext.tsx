@@ -1,3 +1,15 @@
+/* =============================================================================
+   CONTEXT: LocaleContext
+   =============================================================================
+
+   Contexto para locale (es/en) con setter.
+
+   Responsabilidades:
+   - Proveer locale y setLocale a hijos
+   - useLocale debe usarse dentro de LocaleProvider
+
+   ========================================================================== */
+
 import { createContext, useContext, useState, useCallback, type ReactNode } from 'react';
 
 export type Locale = 'es' | 'en';
@@ -14,6 +26,15 @@ interface LocaleProviderProps {
   defaultLocale?: Locale;
 }
 
+/**
+ * ============================================================================
+ * LocaleProvider
+ * ============================================================================
+ *
+ * Provee locale y setLocale a la arbol de componentes.
+ *
+ * ============================================================================
+ */
 export function LocaleProvider({ children, defaultLocale = 'es' }: LocaleProviderProps) {
   const [locale, setLocaleState] = useState<Locale>(defaultLocale);
 
@@ -24,6 +45,11 @@ export function LocaleProvider({ children, defaultLocale = 'es' }: LocaleProvide
   return <LocaleContext.Provider value={{ locale, setLocale }}>{children}</LocaleContext.Provider>;
 }
 
+/**
+ * Hook para acceder al contexto de locale.
+ *
+ * @throws {Error} Si se usa fuera de LocaleProvider.
+ */
 // eslint-disable-next-line react-refresh/only-export-components
 export function useLocale() {
   const ctx = useContext(LocaleContext);

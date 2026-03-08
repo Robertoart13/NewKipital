@@ -1,3 +1,15 @@
+/* =============================================================================
+   HOOK: useActionAmountStrategy
+   =============================================================================
+
+   Estrategia para calcular monto de linea de accion segun movimiento.
+
+   Responsabilidades:
+   - Resolver movimiento por ID
+   - Invocar calculateWithMovement u onNoMovement
+
+   ========================================================================== */
+
 import { useCallback } from 'react';
 
 export interface AmountCalculationResult {
@@ -27,6 +39,17 @@ interface ResolveActionAmountArgs<TLine, TExtra> {
   extra?: TExtra;
 }
 
+/**
+ * ============================================================================
+ * useActionAmountStrategy
+ * ============================================================================
+ *
+ * Calcula monto de linea de accion segun movimiento seleccionado.
+ *
+ * @param config - Configuracion con movements, calculateWithMovement, onNoMovement.
+ *
+ * ============================================================================
+ */
 export function useActionAmountStrategy<TLine, TMovement, TExtra = undefined>(
   config: UseActionAmountStrategyConfig<TLine, TMovement, TExtra>,
 ) {

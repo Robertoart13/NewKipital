@@ -386,8 +386,6 @@ function createDraftFromOvertimeDetail(detail: OvertimeDetailItem): OvertimeForm
 
           remuneracion: line.remuneracion,
 
-          formula: line.formula ?? '',
-
           payrollLabel: line.payrollLabel ?? undefined,
 
           payrollEstado: line.payrollEstado ?? undefined,

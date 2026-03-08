@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import reducer, { setPermissions, clearPermissions } from './permissionsSlice';
+import reducer, { setPermissions, clearPermissions } from '../permissionsSlice';
 
 describe('permissionsSlice', () => {
   const initial = reducer(undefined, { type: '@@INIT' });

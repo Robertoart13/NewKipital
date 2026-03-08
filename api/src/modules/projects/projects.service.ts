@@ -206,8 +206,8 @@ export class ProjectsService {
     );
 
     return (rows ?? []).map((row: Record<string, unknown>) => {
-      const payloadBefore = (row.payloadBefore as Record<string, unknown> | null) ?? null;
-      const payloadAfter = (row.payloadAfter as Record<string, unknown> | null) ?? null;
+      const payloadBefore = this.parseAuditPayload(row.payloadBefore);
+      const payloadAfter = this.parseAuditPayload(row.payloadAfter);
       return {
         id: String(row.id ?? ''),
         modulo: String(row.modulo ?? ''),
@@ -223,6 +223,30 @@ export class ProjectsService {
         cambios: this.buildAuditChanges(payloadBefore, payloadAfter),
       };
     });
+  }
+
+  private parseAuditPayload(value: unknown): Record<string, unknown> | null {
+    if (!value) return null;
+    if (Buffer.isBuffer(value)) {
+      try {
+        const parsed = JSON.parse(value.toString('utf-8')) as Record<string, unknown>;
+        return parsed && typeof parsed === 'object' ? parsed : null;
+      } catch {
+        return null;
+      }
+    }
+    if (typeof value === 'string') {
+      try {
+        const parsed = JSON.parse(value) as Record<string, unknown>;
+        return parsed && typeof parsed === 'object' ? parsed : null;
+      } catch {
+        return null;
+      }
+    }
+    if (typeof value === 'object') {
+      return value as Record<string, unknown>;
+    }
+    return null;
   }
 
   private buildAuditPayload(entity: OrgProject): Record<string, unknown> {
@@ -248,13 +272,15 @@ export class ProjectsService {
     payloadBefore: Record<string, unknown> | null,
     payloadAfter: Record<string, unknown> | null,
   ): Array<{ campo: string; antes: string; despues: string }> {
-    if (!payloadBefore || !payloadAfter) return [];
-    const keys = new Set<string>([...Object.keys(payloadBefore), ...Object.keys(payloadAfter)]);
+    if (!payloadBefore && !payloadAfter) return [];
+    const beforePayload = payloadBefore ?? {};
+    const afterPayload = payloadAfter ?? {};
+    const keys = new Set<string>([...Object.keys(beforePayload), ...Object.keys(afterPayload)]);
     const changes: Array<{ campo: string; antes: string; despues: string }> = [];
     for (const key of keys) {
       if (!(key in this.auditFieldLabels)) continue;
-      const beforeValue = this.normalizeAuditValue(payloadBefore[key]);
-      const afterValue = this.normalizeAuditValue(payloadAfter[key]);
+      const beforeValue = this.normalizeAuditValue(beforePayload[key]);
+      const afterValue = this.normalizeAuditValue(afterPayload[key]);
       if (beforeValue === afterValue) continue;
       changes.push({
         campo: this.auditFieldLabels[key] ?? key,

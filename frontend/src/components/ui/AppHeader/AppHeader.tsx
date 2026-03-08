@@ -1,3 +1,15 @@
+/* =============================================================================
+   COMPONENT: AppHeader
+   =============================================================================
+
+   Header de dos niveles: Logo + acciones | Menu horizontal.
+
+   Responsabilidades:
+   - Nivel 1: Logo + HeaderActions (notificaciones, avatar, switch app)
+   - Nivel 2: MainMenu (menu horizontal data-driven)
+
+   ========================================================================== */
+
 import { Layout } from 'antd';
 
 import styles from './AppHeader.module.css';
@@ -7,6 +19,15 @@ import { MainMenu } from './MainMenu';
 
 const { Header } = Layout;
 
+/**
+ * ============================================================================
+ * MenuItemForHeader
+ * ============================================================================
+ *
+ * Item de menu para el header. Soporta hijos para submenus.
+ *
+ * ============================================================================
+ */
 export interface MenuItemForHeader {
   id: string;
   label: string;
@@ -22,9 +43,17 @@ interface AppHeaderProps {
 }
 
 /**
- * Header de dos niveles según mock:
- * Nivel 1: Logo + nombre | Notificaciones + Avatar
- * Nivel 2: Menú horizontal con iconos y dropdowns
+ * ============================================================================
+ * AppHeader
+ * ============================================================================
+ *
+ * Header de dos niveles: Nivel 1 = Logo + acciones; Nivel 2 = Menu horizontal.
+ *
+ * @param menuItems - Items del menu con iconos.
+ * @param iconMap - Mapa id -> icono para el menu.
+ * @param userName - Nombre del usuario (default: "Usuario").
+ *
+ * ============================================================================
  */
 export function AppHeader({ menuItems, iconMap, userName = 'Usuario' }: AppHeaderProps) {
   return (

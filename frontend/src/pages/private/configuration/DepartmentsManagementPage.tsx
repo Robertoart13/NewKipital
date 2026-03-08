@@ -98,7 +98,7 @@ function normalizePayload(values: DepartmentFormValues): DepartmentPayload {
 }
 
 function getPaneValue(row: DepartmentListItem, key: PaneKey): string {
-  if (key === 'idExterno') return row.idExterno ?? '';
+  if (key === 'nombre') return row.nombre ?? '';
   if (key === 'idExterno') return row.idExterno ?? '';
   return row.estado === 0 ? 'Inactivo' : 'Activo';
 }
@@ -263,7 +263,7 @@ export function DepartmentsManagementPage() {
   const applyDepartmentToForm = useCallback(
     (row: DepartmentListItem) => {
       form.setFieldsValue({
-        idExterno: row.idExterno ?? '',
+        nombre: row.nombre ?? '',
         idExterno: row.idExterno ?? '',
       });
     },
@@ -363,8 +363,14 @@ export function DepartmentsManagementPage() {
       closeModal();
       await loadRows();
     } catch (error) {
+      if (error && typeof error === 'object' && 'errorFields' in error) {
+        message.warning('Revise los campos obligatorios antes de guardar.');
+        return;
+      }
       if (error instanceof Error && error.message) {
         message.error(error.message);
+      } else {
+        message.error('No se pudo guardar el departamento.');
       }
     } finally {
       setSaving(false);

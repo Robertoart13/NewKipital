@@ -1,3 +1,11 @@
+/* =============================================================================
+   MODULE: menuIcons
+   =============================================================================
+
+   Mapeo id de item de menu -> icono. Centralizado para consistencia.
+
+   ========================================================================== */
+
 import {
   FileAddOutlined,
   FileTextOutlined,
@@ -29,8 +37,13 @@ import {
 } from '@ant-design/icons';
 
 /**
- * Mapeo id de ítem de menú → ícono.
- * Centralizado para mantener consistencia.
+ * ============================================================================
+ * menuIconMap
+ * ============================================================================
+ *
+ * Mapeo id de item de menu -> icono.
+ *
+ * ============================================================================
  */
 export const menuIconMap: Record<string, React.ReactNode> = {
   'personal-actions': <FileAddOutlined />,

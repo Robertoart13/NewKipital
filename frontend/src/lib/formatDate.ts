@@ -1,8 +1,23 @@
+/* =============================================================================
+   MODULE: formatDate
+   =============================================================================
+
+   Formato de fecha y hora para la aplicacion.
+
+   Responsabilidades:
+   - formatDateTime12h: formato 12h AM/PM, locale es-ES
+
+   ========================================================================== */
+
 /**
- * Formato de fecha y hora en 12 horas (AM/PM) para toda la aplicación.
- * Locale es-ES para consistencia en español.
+ * ============================================================================
+ * formatDateTime12h
+ * ============================================================================
  *
- * @see docs/05-IntegracionAntDesign.md — Formato de fecha y hora (obligatorio)
+ * Formato de fecha y hora en 12h (AM/PM). Locale es-ES.
+ * Devuelve "-" para null, undefined o fecha invalida.
+ *
+ * ============================================================================
  */
 export function formatDateTime12h(dateStr: string | Date | null | undefined): string {
   if (dateStr == null) return '-';

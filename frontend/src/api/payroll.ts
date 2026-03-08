@@ -1,5 +1,38 @@
+/* =============================================================================
+   MODULE: payroll
+   =============================================================================
+
+   Capa de acceso a datos para el modulo de Planillas (calendario nomina).
+
+   Responsabilidades:
+   - Listar planillas por empresa
+   - Crear, actualizar, procesar, verificar y aplicar planillas
+   - Inactivar planillas
+   - Consultar snapshot y bitacora de auditoria
+   - Simular y ejecutar traslados interempresas
+
+   Decisiones de diseno:
+   - Todas las solicitudes HTTP se canalizan mediante httpFetch
+   - Mensajes de error del backend se extraen via extractApiErrorMessage
+   - Estado 503 mapeado a mensaje amigable de desconexion temporal
+
+   ========================================================================== */
+
 import { httpFetch } from '../interceptors/httpInterceptor';
 
+/* =============================================================================
+   INTERFACES DE DOMINIO
+   ============================================================================= */
+
+/**
+ * ============================================================================
+ * Payroll List Item
+ * ============================================================================
+ *
+ * Elemento de lista de planillas retornado por la API.
+ *
+ * ============================================================================
+ */
 export interface PayrollListItem {
   id: number;
   idEmpresa: number;
@@ -19,6 +52,15 @@ export interface PayrollListItem {
   fechaAplicacion?: string | null;
 }
 
+/**
+ * ============================================================================
+ * Create Payroll Payload
+ * ============================================================================
+ *
+ * Payload para crear una planilla.
+ *
+ * ============================================================================
+ */
 export interface CreatePayrollPayload {
   idEmpresa: number;
   idPeriodoPago: number;
@@ -38,6 +80,15 @@ export interface CreatePayrollPayload {
 
 export type UpdatePayrollPayload = Partial<CreatePayrollPayload>;
 
+/**
+ * ============================================================================
+ * Payroll Snapshot Summary
+ * ============================================================================
+ *
+ * Resumen del snapshot de una planilla con totales.
+ *
+ * ============================================================================
+ */
 export interface PayrollSnapshotSummary {
   idNomina: number;
   empleados: number;
@@ -52,6 +103,15 @@ export interface PayrollSnapshotSummary {
   totalImpuestoRenta: string;
 }
 
+/**
+ * ============================================================================
+ * Payroll Audit Trail Item
+ * ============================================================================
+ *
+ * Elemento del historial de auditoria de una planilla.
+ *
+ * ============================================================================
+ */
 export interface PayrollAuditTrailItem {
   id: string;
   modulo: string;
@@ -92,6 +152,15 @@ export interface IntercompanyTransferActionPlan {
   }>;
 }
 
+/**
+ * ============================================================================
+ * Intercompany Transfer Simulation Result
+ * ============================================================================
+ *
+ * Resultado de simular un traslado interempresas por empleado.
+ *
+ * ============================================================================
+ */
 export interface IntercompanyTransferSimulationResult {
   employeeId: number;
   fromCompanyId: number;
@@ -130,6 +199,14 @@ export interface IntercompanyTransferExecutionResult {
   message: string;
 }
 
+/* =============================================================================
+   FUNCIONES AUXILIARES
+   ============================================================================= */
+
+/**
+ * Extrae mensaje de error del body JSON o devuelve fallback.
+ * Mapea 503 a mensaje amigable de desconexion temporal.
+ */
 async function extractApiErrorMessage(res: Response, fallback: string): Promise<string> {
   try {
     const body = (await res.json()) as { message?: string | string[] };
@@ -144,14 +221,34 @@ async function extractApiErrorMessage(res: Response, fallback: string): Promise<
   }
 
   if (res.status === 503) {
-    return 'No se pudo completar la acción por una desconexión temporal. Intente nuevamente en unos segundos.';
+    return 'No se pudo completar la accion por una desconexion temporal. Intente nuevamente en unos segundos.';
   }
 
   return fallback;
 }
 
+/* =============================================================================
+   API: OPERACIONES CRUD
+   ============================================================================= */
+
 /**
- * GET /payroll?idEmpresa=N - Lista planillas (calendario nómina).
+ * ============================================================================
+ * Fetch Payrolls
+ * ============================================================================
+ *
+ * Lista planillas de una empresa con filtros opcionales.
+ *
+ * @param companyId - ID de la empresa.
+ * @param includeInactive - Incluir planillas inactivas.
+ * @param fechaDesde - Fecha desde (filtro).
+ * @param fechaHasta - Fecha hasta (filtro).
+ * @param inactiveOnly - Solo planillas inactivas.
+ *
+ * @returns Lista de planillas.
+ *
+ * @throws {Error} Si la peticion falla.
+ *
+ * ============================================================================
  */
 export async function fetchPayrolls(
   companyId: string,
@@ -173,7 +270,19 @@ export async function fetchPayrolls(
 }
 
 /**
- * GET /payroll/:id - Detalle planilla.
+ * ============================================================================
+ * Fetch Payroll
+ * ============================================================================
+ *
+ * Obtiene el detalle de una planilla.
+ *
+ * @param id - ID de la planilla.
+ *
+ * @returns Planilla.
+ *
+ * @throws {Error} Si la peticion falla.
+ *
+ * ============================================================================
  */
 export async function fetchPayroll(id: number): Promise<PayrollListItem> {
   const res = await httpFetch(`/payroll/${id}`);
@@ -181,6 +290,21 @@ export async function fetchPayroll(id: number): Promise<PayrollListItem> {
   return res.json();
 }
 
+/**
+ * ============================================================================
+ * Create Payroll
+ * ============================================================================
+ *
+ * Crea una nueva planilla.
+ *
+ * @param payload - Datos de la planilla.
+ *
+ * @returns Planilla creada.
+ *
+ * @throws {Error} Si la peticion falla.
+ *
+ * ============================================================================
+ */
 export async function createPayroll(payload: CreatePayrollPayload): Promise<PayrollListItem> {
   const res = await httpFetch('/payroll', {
     method: 'POST',
@@ -191,6 +315,22 @@ export async function createPayroll(payload: CreatePayrollPayload): Promise<Payr
   return res.json();
 }
 
+/**
+ * ============================================================================
+ * Update Payroll
+ * ============================================================================
+ *
+ * Actualiza una planilla existente.
+ *
+ * @param id - ID de la planilla.
+ * @param payload - Campos a actualizar.
+ *
+ * @returns Planilla actualizada.
+ *
+ * @throws {Error} Si la peticion falla.
+ *
+ * ============================================================================
+ */
 export async function updatePayroll(id: number, payload: UpdatePayrollPayload): Promise<PayrollListItem> {
   const res = await httpFetch(`/payroll/${id}`, {
     method: 'PATCH',
@@ -201,18 +341,64 @@ export async function updatePayroll(id: number, payload: UpdatePayrollPayload): 
   return res.json();
 }
 
+/**
+ * ============================================================================
+ * Process Payroll
+ * ============================================================================
+ *
+ * Procesa una planilla (calcula inputs).
+ *
+ * @param id - ID de la planilla.
+ *
+ * @returns Planilla procesada.
+ *
+ * @throws {Error} Si la peticion falla.
+ *
+ * ============================================================================
+ */
 export async function processPayroll(id: number): Promise<PayrollListItem> {
   const res = await httpFetch(`/payroll/${id}/process`, { method: 'PATCH' });
   if (!res.ok) throw new Error(await extractApiErrorMessage(res, 'Error al procesar planilla'));
   return res.json();
 }
 
+/**
+ * ============================================================================
+ * Verify Payroll
+ * ============================================================================
+ *
+ * Verifica una planilla antes de aplicar.
+ *
+ * @param id - ID de la planilla.
+ *
+ * @returns Planilla verificada.
+ *
+ * @throws {Error} Si la peticion falla.
+ *
+ * ============================================================================
+ */
 export async function verifyPayroll(id: number): Promise<PayrollListItem> {
   const res = await httpFetch(`/payroll/${id}/verify`, { method: 'PATCH' });
   if (!res.ok) throw new Error(await extractApiErrorMessage(res, 'Error al verificar planilla'));
   return res.json();
 }
 
+/**
+ * ============================================================================
+ * Apply Payroll
+ * ============================================================================
+ *
+ * Aplica una planilla (version opcional).
+ *
+ * @param id - ID de la planilla.
+ * @param version - Version especifica (opcional).
+ *
+ * @returns Planilla aplicada.
+ *
+ * @throws {Error} Si la peticion falla.
+ *
+ * ============================================================================
+ */
 export async function applyPayroll(id: number, version?: number): Promise<PayrollListItem> {
   const res = await httpFetch(`/payroll/${id}/apply`, {
     method: 'PATCH',
@@ -223,6 +409,21 @@ export async function applyPayroll(id: number, version?: number): Promise<Payrol
   return res.json();
 }
 
+/**
+ * ============================================================================
+ * Inactivate Payroll
+ * ============================================================================
+ *
+ * Inactiva una planilla.
+ *
+ * @param id - ID de la planilla.
+ *
+ * @returns Planilla inactivada.
+ *
+ * @throws {Error} Si la peticion falla.
+ *
+ * ============================================================================
+ */
 export async function inactivatePayroll(id: number): Promise<PayrollListItem> {
   const res = await httpFetch(`/payroll/${id}/inactivate`, { method: 'PATCH' });
   if (!res.ok)
@@ -230,12 +431,47 @@ export async function inactivatePayroll(id: number): Promise<PayrollListItem> {
   return res.json();
 }
 
+/* =============================================================================
+   API: AUDITORIA Y SNAPSHOT
+   ============================================================================= */
+
+/**
+ * ============================================================================
+ * Fetch Payroll Snapshot Summary
+ * ============================================================================
+ *
+ * Obtiene el resumen del snapshot de una planilla.
+ *
+ * @param id - ID de la planilla.
+ *
+ * @returns Resumen con totales.
+ *
+ * @throws {Error} Si la peticion falla.
+ *
+ * ============================================================================
+ */
 export async function fetchPayrollSnapshotSummary(id: number): Promise<PayrollSnapshotSummary> {
   const res = await httpFetch(`/payroll/${id}/snapshot-summary`);
   if (!res.ok) throw new Error(await extractApiErrorMessage(res, 'Error al cargar resumen de snapshot'));
   return res.json();
 }
 
+/**
+ * ============================================================================
+ * Fetch Payroll Audit Trail
+ * ============================================================================
+ *
+ * Obtiene el historial de auditoria de una planilla.
+ *
+ * @param id - ID de la planilla.
+ * @param limit - Limite de registros (default 200).
+ *
+ * @returns Lista de eventos de auditoria.
+ *
+ * @throws {Error} Si la peticion falla.
+ *
+ * ============================================================================
+ */
 export async function fetchPayrollAuditTrail(id: number, limit = 200): Promise<PayrollAuditTrailItem[]> {
   const qs = new URLSearchParams({ limit: String(limit) });
   const res = await httpFetch(`/payroll/${id}/audit-trail?${qs}`);
@@ -243,6 +479,25 @@ export async function fetchPayrollAuditTrail(id: number, limit = 200): Promise<P
   return res.json();
 }
 
+/* =============================================================================
+   API: TRASLADO INTEREMPRESAS
+   ============================================================================= */
+
+/**
+ * ============================================================================
+ * Simulate Intercompany Transfer
+ * ============================================================================
+ *
+ * Simula un traslado de empleados entre empresas.
+ *
+ * @param payload - Empresa destino, fecha efectiva, lista de empleados.
+ *
+ * @returns Resultado de simulacion por empleado.
+ *
+ * @throws {Error} Si la peticion falla.
+ *
+ * ============================================================================
+ */
 export async function simulateIntercompanyTransfer(
   payload: IntercompanyTransferSimulationPayload,
 ): Promise<IntercompanyTransferSimulationResult[]> {
@@ -257,6 +512,21 @@ export async function simulateIntercompanyTransfer(
   return res.json();
 }
 
+/**
+ * ============================================================================
+ * Execute Intercompany Transfer
+ * ============================================================================
+ *
+ * Ejecuta los traslados previamente simulados.
+ *
+ * @param payload - Lista de IDs de traslado a ejecutar.
+ *
+ * @returns Resultado de ejecucion por traslado.
+ *
+ * @throws {Error} Si la peticion falla.
+ *
+ * ============================================================================
+ */
 export async function executeIntercompanyTransfer(
   payload: IntercompanyTransferExecutionPayload,
 ): Promise<IntercompanyTransferExecutionResult[]> {
@@ -270,4 +540,3 @@ export async function executeIntercompanyTransfer(
   }
   return res.json();
 }
-

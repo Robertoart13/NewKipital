@@ -222,7 +222,7 @@ function createDraftFromAbsenceDetail(detail: AbsenceDetailItem): AbsenceFormDra
             tipoAusencia: 'JUSTIFICADA',
             remuneracion: true,
             monto: detail.monto ?? undefined,
-            monto: detail.monto ?? undefined,
+            formula: '',
             fechaEfecto: detail.fechaEfecto ? dayjs(detail.fechaEfecto) : undefined,
           },
         ];
@@ -394,6 +394,10 @@ export function AbsencesPage() {
       setLoading(false);
     }
   }, [companyId, message, selectedEstados]);
+
+  const handleRefreshRows = useCallback(() => {
+    void loadRows();
+  }, [loadRows]);
 
   const openEditModal = useCallback(
     async (row: AbsenceUiRow) => {
@@ -762,7 +766,6 @@ export function AbsencesPage() {
       movimientoId: Number(line.movimientoId),
       tipoAusencia: line.tipoAusencia,
       monto: Number(line.monto ?? 0),
-      monto: Number(line.monto ?? 0),
       remuneracion: Boolean(line.remuneracion),
       formula: line.formula?.trim() || undefined,
     })),
@@ -777,7 +780,7 @@ export function AbsencesPage() {
           </Link>
           <div className={styles.pageTitleBlock}>
             <h1 className={styles.pageTitle}>Ausencias</h1>
-            <p className={styles.pageSubtitle}>Gestione ausencias por empresa con l\u00EDneas de transacci\u00F3n por per\u00EDodo</p>
+            <p className={styles.pageSubtitle}>Gestione ausencias por empresa con lineas de transaccion por periodo</p>
           </div>
         </div>
       </div>
@@ -791,7 +794,7 @@ export function AbsencesPage() {
               </div>
               <div>
                 <h2 className={styles.gestionTitle}>Gestión de Ausencias</h2>
-                <p className={styles.gestionDesc}>Encabezado de acci\u00F3n + m\u00FAltiples l\u00EDneas por planilla</p>
+                <p className={styles.gestionDesc}>Encabezado de accion + multiples lineas por planilla</p>
               </div>
             </Flex>
             <Button
@@ -859,10 +862,8 @@ export function AbsencesPage() {
               />
               <Button
                 icon={<ReloadOutlined />}
-                onClick={() => {
-                  bustApiCache();
-                  void loadRows();
-                }}
+                onClick={handleRefreshRows}
+                loading={loading}
               >
                 Refrescar
               </Button>

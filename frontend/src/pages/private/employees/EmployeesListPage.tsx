@@ -426,12 +426,12 @@ export function EmployeesListPage() {
                 size="small"
               />
               <Select
-                mode="multiple"
                 allowClear
-                placeholder="Filtrar por empresa(s)"
-                value={selectedCompanyIds}
-                onChange={(values) => {
-                  const next = values as number[];
+                placeholder="Filtrar por empresa"
+                value={selectedCompanyIds[0]}
+                onChange={(value) => {
+                  const parsed = Number(value);
+                  const next = Number.isFinite(parsed) ? [parsed] : [];
                   setSelectedCompanyIds(next);
                   setFilters((current) => ({
                     ...current,

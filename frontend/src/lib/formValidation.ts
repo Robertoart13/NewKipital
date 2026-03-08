@@ -1,3 +1,16 @@
+/* =============================================================================
+   MODULE: formValidation
+   =============================================================================
+
+   Validadores de formulario (Ant Design) y deteccion SQL injection.
+
+   Responsabilidades:
+   - hasSqlInjectionAttempt
+   - noSqlInjection, optionalNoSqlInjection
+   - textRules, emailRules
+
+   ========================================================================== */
+
 import validator from 'validator';
 
 const SQL_DANGER_PATTERN =

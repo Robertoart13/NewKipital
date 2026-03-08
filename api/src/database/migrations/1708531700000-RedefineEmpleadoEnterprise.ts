@@ -11,7 +11,7 @@ export class RedefineEmpleadoEnterprise1708531700000 implements MigrationInterfa
   public async up(queryRunner: QueryRunner): Promise<void> {
     const _now = new Date().toISOString().slice(0, 19).replace('T', ' ');
 
-    // â•â•â•â•â•â•â• 1. org_departamentos â•â•â•â•â•â•â•
+    // ------- 1. org_departamentos -------
     await queryRunner.createTable(
       new Table({
         name: 'org_departamentos',
@@ -73,7 +73,7 @@ export class RedefineEmpleadoEnterprise1708531700000 implements MigrationInterfa
       }),
     );
 
-    // â•â•â•â•â•â•â• 2. org_puestos â•â•â•â•â•â•â•
+    // ------- 2. org_puestos -------
     await queryRunner.createTable(
       new Table({
         name: 'org_puestos',
@@ -112,7 +112,7 @@ export class RedefineEmpleadoEnterprise1708531700000 implements MigrationInterfa
       }),
     );
 
-    // â•â•â•â•â•â•â• 3. nom_periodos_pago â•â•â•â•â•â•â•
+    // ------- 3. nom_periodos_pago -------
     await queryRunner.createTable(
       new Table({
         name: 'nom_periodos_pago',
@@ -156,7 +156,7 @@ export class RedefineEmpleadoEnterprise1708531700000 implements MigrationInterfa
       `INSERT INTO nom_periodos_pago (nombre_periodo_pago, dias_periodo_pago, es_inactivo) VALUES ('Semanal', 7, 1), ('Quincenal', 15, 1), ('Mensual', 30, 1)`,
     );
 
-    // â•â•â•â•â•â•â• 4. Drop sys_empleados vieja y recrear â•â•â•â•â•â•â•
+    // ------- 4. Drop sys_empleados vieja y recrear -------
     await queryRunner.dropTable('sys_empleados', true);
 
     await queryRunner.createTable(
@@ -312,7 +312,7 @@ export class RedefineEmpleadoEnterprise1708531700000 implements MigrationInterfa
       true,
     );
 
-    // â•â•â•â•â•â•â• 5. Índices â•â•â•â•â•â•â•
+    // ----- 5. Indices -----
     await queryRunner.createIndex(
       'sys_empleados',
       new TableIndex({
@@ -387,7 +387,7 @@ export class RedefineEmpleadoEnterprise1708531700000 implements MigrationInterfa
       }),
     );
 
-    // â•â•â•â•â•â•â• 6. Foreign Keys â•â•â•â•â•â•â•
+    // ------- 6. Foreign Keys -------
     await queryRunner.createForeignKey(
       'sys_empleados',
       new TableForeignKey({

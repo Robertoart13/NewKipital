@@ -694,3 +694,4 @@ Estado: Implementado (backend + frontend + BD en `hr_pro`).
 
 | 2026-03-06 | **Acciones de Personal (UI):** En creacin no se preselecciona empresa en modales; el usuario debe elegirla para cargar empleados, planillas y movimientos. |
 | 2026-03-06 | **Acciones de Personal (UI - modales):** Se estandariza `modalCompanyId` + `onCompanyChange` en Ausencias, Licencias, Incapacidades, Vacaciones, Bonificaciones, Horas Extra, Retenciones, Descuentos y Aumentos. Al cambiar empresa dentro del modal se recargan catálogos y no se resetea la selección por cambios en filtros externos. |
+| 2026-03-08 | **Cuentas Contables (Cache):** Se corrige la allowlist del scope accounting-accounts para incluir idEmpresa e idEmpresas, evitando colisiones de cache entre empresas que podian mostrar listados vacios al cambiar filtro. Tambien se mejora resolveCompanyKey para interpretar idEmpresas cuando llega un solo ID. |

@@ -750,7 +750,7 @@ export function BonusesPage() {
           <div className={styles.pageTitleBlock}>
             <h1 className={styles.pageTitle}>bonificaciones</h1>
             <p className={styles.pageSubtitle}>
-              Gestione bonificaciones por empresa con l\u00EDneas de transacci\u00F3n por per\u00EDodo
+              Gestione bonificaciones por empresa con lineas de transaccion por periodo
             </p>
           </div>
         </div>
@@ -765,7 +765,7 @@ export function BonusesPage() {
               </div>
               <div>
                 <h2 className={styles.gestionTitle}>Gestión de bonificaciones</h2>
-                <p className={styles.gestionDesc}>Encabezado de acci\u00F3n + m\u00FAltiples l\u00EDneas por planilla</p>
+                <p className={styles.gestionDesc}>Encabezado de accion + multiples lineas por planilla</p>
               </div>
             </Flex>
             <Button

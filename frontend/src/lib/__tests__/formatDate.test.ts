@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { formatDateTime12h } from './formatDate';
+import { formatDateTime12h } from '../formatDate';
 
 describe('formatDateTime12h', () => {
   it('should format a valid date string', () => {

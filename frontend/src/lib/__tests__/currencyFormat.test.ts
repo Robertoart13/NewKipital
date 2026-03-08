@@ -6,7 +6,7 @@ import {
   parseCurrencyInput,
   isMoneyOverMax,
   MAX_MONEY_AMOUNT,
-} from './currencyFormat';
+} from '../currencyFormat';
 
 describe('currencyFormat', () => {
   describe('getCurrencySymbol', () => {

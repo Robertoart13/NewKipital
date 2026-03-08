@@ -48,7 +48,7 @@ export enum MonedaSalarioEmpleado {
 /**
  * sys_empleados — Registro laboral de RRHH (entidad de negocio).
  *
- * REGLA: sys_empleados â‰  sys_usuarios.
+ * REGLA: sys_empleados != sys_usuarios.
  * - Empleado = persona contratada (salario, puesto, departamento).
  * - Usuario = identidad digital (login).
  * - Vínculo opcional: id_usuario (FK nullable), gestionado por workflow.
@@ -60,7 +60,7 @@ export enum MonedaSalarioEmpleado {
  */
 @Entity('sys_empleados')
 export class Employee {
-  // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• IDENTIDAD â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+  // ------------------------------- IDENTIDAD -------------------------------
 
   @PrimaryGeneratedColumn({ name: 'id_empleado' })
   id: number;
@@ -99,7 +99,7 @@ export class Employee {
   })
   apellido2: string | null;
 
-  // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• DATOS PERSONALES â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+  // ------------------------------- DATOS PERSONALES -----------------------
 
   @Column({
     name: 'genero_empleado',
@@ -131,7 +131,7 @@ export class Employee {
   @Column({ name: 'direccion_empleado', type: 'text', nullable: true })
   direccion: string | null;
 
-  // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• CONTACTO / LOGIN â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+  // ------------------------------- CONTACTO / LOGIN -----------------------
 
   @Index('IDX_empleado_email', { unique: true })
   @Column({
@@ -151,7 +151,7 @@ export class Employee {
   })
   emailHash: string | null;
 
-  // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• RELACIONES ORG â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+  // ------------------------------- RELACIONES ORG -------------------------
 
   @Index('IDX_empleado_departamento')
   @Column({ name: 'id_departamento', type: 'int', nullable: true })
@@ -177,7 +177,7 @@ export class Employee {
   @JoinColumn({ name: 'id_supervisor_empleado' })
   supervisor: Employee | null;
 
-  // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• CONTRATO / PAGO â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+  // ------------------------------- CONTRATO / PAGO ------------------------
 
   @Column({ name: 'fecha_ingreso_empleado', type: 'date' })
   fechaIngreso: Date;
@@ -244,7 +244,7 @@ export class Employee {
   })
   cuentaBanco: string | null;
 
-  // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• ACUMULADOS HR â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+  // ------------------------------- ACUMULADOS HR --------------------------
 
   @Column({
     name: 'vacaciones_acumuladas_empleado',
@@ -262,14 +262,14 @@ export class Employee {
   })
   cesantiaAcumulada: string | null;
 
-  // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• VÍNCULO IDENTIDAD â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+  // --- VINCULO IDENTIDAD ---
   // Gestionado por EmployeeCreationWorkflow. NO expuesto en DTOs.
 
   @Index('IDX_empleado_usuario')
   @Column({ name: 'id_usuario', type: 'int', nullable: true })
   idUsuario: number | null;
 
-  // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• ESTADO + AUDITORÍA â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+  // --- ESTADO + AUDITORIA ---
 
   @Index('IDX_empleado_estado')
   @Column({ name: 'estado_empleado', type: 'tinyint', width: 1, default: 1 })

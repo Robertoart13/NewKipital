@@ -1,3 +1,15 @@
+/* =============================================================================
+   MODULE: tableSorters
+   =============================================================================
+
+   Utilidades para ordenamiento de columnas de tabla Ant Design.
+
+   Responsabilidades:
+   - compareTableValues
+   - applyDefaultSorters (agrega sorter a columnas con dataIndex)
+
+   ========================================================================== */
+
 import type { ColumnsType } from 'antd/es/table';
 
 const collator = new Intl.Collator('es', { numeric: true, sensitivity: 'base' });
@@ -8,6 +20,15 @@ function normalizeValue(value: unknown): string {
   return String(value);
 }
 
+/**
+ * ============================================================================
+ * compareTableValues
+ * ============================================================================
+ *
+ * Compara valores para ordenamiento con locale es.
+ *
+ * ============================================================================
+ */
 export function compareTableValues(left: unknown, right: unknown): number {
   return collator.compare(normalizeValue(left), normalizeValue(right));
 }
@@ -22,6 +43,15 @@ function readDataIndexValue<T>(row: T, dataIndex: string | number | readonly (st
   return (row as Record<string | number, unknown>)[dataIndex];
 }
 
+/**
+ * ============================================================================
+ * applyDefaultSorters
+ * ============================================================================
+ *
+ * Aplica sorter por defecto a columnas con dataIndex (recursivo para children).
+ *
+ * ============================================================================
+ */
 export function applyDefaultSorters<T>(columns: ColumnsType<T>): ColumnsType<T> {
   return columns.map((column) => {
     if ('children' in column && column.children) {

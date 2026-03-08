@@ -764,7 +764,7 @@ export function IncapacitiesPage() {
           <div className={styles.pageTitleBlock}>
             <h1 className={styles.pageTitle}>incapacidades</h1>
             <p className={styles.pageSubtitle}>
-              Gestione incapacidades por empresa con l\u00EDneas de transacci\u00F3n por per\u00EDodo
+              Gestione incapacidades por empresa con lineas de transaccion por periodo
             </p>
           </div>
         </div>
@@ -779,7 +779,7 @@ export function IncapacitiesPage() {
               </div>
               <div>
                 <h2 className={styles.gestionTitle}>Gestión de incapacidades</h2>
-                <p className={styles.gestionDesc}>Encabezado de acci\u00F3n + m\u00FAltiples l\u00EDneas por planilla</p>
+                <p className={styles.gestionDesc}>Encabezado de accion + multiples lineas por planilla</p>
               </div>
             </Flex>
             <Button

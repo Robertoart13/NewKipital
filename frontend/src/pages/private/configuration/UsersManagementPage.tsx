@@ -1671,8 +1671,6 @@ export function UsersManagementPage() {
                       onChange={(val) => setSelectedApp(apps.find((a) => a.id === val) ?? null)}
                       options={appOptions}
 
-                      onChange={(val) => setSelectedApp(apps.find((a) => a.id === val) ?? null)}
-
                       style={{ width: '100%' }}
 
                       optionFilterProp="label"

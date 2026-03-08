@@ -1,9 +1,6 @@
 import { render, screen } from '@testing-library/react';
 import { describe, it, expect, vi } from 'vitest';
 
-// â”€â”€â”€ Lightweight antd mock â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-// Avoids loading the full antd bundle (~100 MB) in this worker.
-// The smoke test already validates that real antd Table imports cleanly.
 vi.mock('antd', () => ({
   Table: ({
     columns,
@@ -48,7 +45,7 @@ vi.mock('antd', () => ({
   },
 }));
 
-import { KpTable } from './KpTable';
+import { KpTable } from '../KpTable';
 
 interface Row {
   key: string;
@@ -58,12 +55,12 @@ interface Row {
 
 const columns = [
   { title: 'Nombre', dataIndex: 'nombre', key: 'nombre' },
-  { title: 'Código', dataIndex: 'codigo', key: 'codigo' },
+  { title: 'Codigo', dataIndex: 'codigo', key: 'codigo' },
 ];
 
 const data: Row[] = [
-  { key: '1', nombre: 'Juan Pérez', codigo: 'EMP-001' },
-  { key: '2', nombre: 'Ana García', codigo: 'EMP-002' },
+  { key: '1', nombre: 'Juan Perez', codigo: 'EMP-001' },
+  { key: '2', nombre: 'Ana Garcia', codigo: 'EMP-002' },
 ];
 
 describe('KpTable', () => {
@@ -75,13 +72,13 @@ describe('KpTable', () => {
   it('renders column headers', () => {
     render(<KpTable<Row> columns={columns} dataSource={[]} />);
     expect(screen.getByText('Nombre')).toBeInTheDocument();
-    expect(screen.getByText('Código')).toBeInTheDocument();
+    expect(screen.getByText('Codigo')).toBeInTheDocument();
   });
 
   it('renders data rows correctly', () => {
     render(<KpTable<Row> columns={columns} dataSource={data} />);
-    expect(screen.getByText('Juan Pérez')).toBeInTheDocument();
-    expect(screen.getByText('Ana García')).toBeInTheDocument();
+    expect(screen.getByText('Juan Perez')).toBeInTheDocument();
+    expect(screen.getByText('Ana Garcia')).toBeInTheDocument();
     expect(screen.getByText('EMP-001')).toBeInTheDocument();
     expect(screen.getByText('EMP-002')).toBeInTheDocument();
   });
@@ -101,4 +98,3 @@ describe('KpTable', () => {
     expect(container.querySelector('.ant-spin')).toBeInTheDocument();
   });
 });
-

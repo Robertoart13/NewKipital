@@ -309,7 +309,7 @@ export function IntercompanyTransferPage() {
 
     modal.confirm({
       title: 'Confirmar traslado interempresas',
-      content: `Se ejecutarÃ¡n ${transferIds.length} traslados. Esta acciÃ³n no se puede deshacer.`,
+      content: `Se ejecutaran ${transferIds.length} traslados. Esta accion no se puede deshacer.`,
       okText: 'Ejecutar',
       cancelText: 'Cancelar',
       onOk: async () => {
@@ -351,13 +351,13 @@ export function IntercompanyTransferPage() {
       dataIndex: 'cedula',
       key: 'cedula',
       width: 160,
-      render: (value) => value || 'â',
+      render: (value) => value || '-',
     },
     {
       title: 'Periodo Pago',
       key: 'periodo',
       width: 140,
-      render: (_, record) => (record.idPeriodoPago ? `#${record.idPeriodoPago}` : 'â'),
+      render: (_, record) => (record.idPeriodoPago ? `#${record.idPeriodoPago}` : '-'),
     },
     {
       title: 'Empresa destino',
@@ -476,7 +476,7 @@ export function IntercompanyTransferPage() {
                 <SwapOutlined className={styles.gestionIcon} />
               </div>
               <div>
-                <p className={styles.gestionTitle}>ConfiguraciÃ³n de traslado</p>
+                <p className={styles.gestionTitle}>Configuracion de traslado</p>
                 <p className={styles.gestionDesc}>
                   Seleccione periodo, empresa origen y fecha efectiva para iniciar la simulacion.
                 </p>

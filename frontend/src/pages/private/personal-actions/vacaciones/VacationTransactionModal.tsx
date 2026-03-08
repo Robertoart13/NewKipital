@@ -406,7 +406,6 @@ export function VacationTransactionModal(props: VacationTransactionModalProps) {
           fechaInicioPeriodo: item.fechaInicioPeriodo,
           fechaFinPeriodo: item.fechaFinPeriodo,
           tipoPlanilla: item.tipoPlanilla ?? null,
-          tipoPlanilla: item.tipoPlanilla ?? null,
           estado: item.estado,
         }));
         setPayrollOptions(options);
@@ -996,7 +995,7 @@ export function VacationTransactionModal(props: VacationTransactionModalProps) {
                                   <DollarCircleOutlined className={sharedStyles.employeeAccordionItemIcon} />
                                   <div>
                                     <div className={sharedStyles.employeeAccordionItemLabel}>
-                                      Salario {selectedPayPeriod?.nombre ?? 'PerÃ­odo'}
+                                      Salario {selectedPayPeriod?.nombre ?? 'Periodo'}
                                     </div>
                                     <div className={sharedStyles.employeeAccordionItemValue}>
                                       {canViewEmployeeSensitive

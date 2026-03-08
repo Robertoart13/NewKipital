@@ -1,3 +1,15 @@
+/* =============================================================================
+   HOOK: useMoneyFieldFormatter
+   =============================================================================
+
+   Formateo y sanitizacion de campos de dinero en formularios.
+
+   Responsabilidades:
+   - sanitize, parse, formatDisplay
+   - getFormValueFromEvent, getFormValueProps para Ant Design Form
+
+   ========================================================================== */
+
 import { useCallback } from 'react';
 
 import {
@@ -11,6 +23,17 @@ function resolveGroupedMaxLength(maxDigits: number): number {
   return maxDigits + Math.floor((maxDigits - 1) / 3);
 }
 
+/**
+ * ============================================================================
+ * useMoneyFieldFormatter
+ * ============================================================================
+ *
+ * Hook para formatear y sanitizar campos de dinero.
+ *
+ * @param maxDigits - Maximo de digitos permitidos (default: EMPLOYEE_MONEY_MAX_DIGITS).
+ *
+ * ============================================================================
+ */
 export function useMoneyFieldFormatter(maxDigits = EMPLOYEE_MONEY_MAX_DIGITS) {
   const maxInputLength = resolveGroupedMaxLength(maxDigits);
 

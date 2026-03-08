@@ -396,7 +396,6 @@ export function RetentionTransactionModal({
     }
     setEmployeePayrollConfig({
       moneda: (employee.monedaSalario ?? '').toUpperCase() || undefined,
-      moneda: (employee.monedaSalario ?? '').toUpperCase() || undefined,
     });
   }, [selectedCompanyId, selectedEmployeeId, employees]);
 

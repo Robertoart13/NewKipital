@@ -1,3 +1,20 @@
+/* =============================================================================
+   COMPONENT: NotificationBell
+   =============================================================================
+
+   Icono de campana con badge de no leidas y dropdown de lista.
+
+   Responsabilidades:
+   - Mostrar contador de no leidas
+   - Lista de notificaciones agrupadas por fecha
+   - Marcar como leida, eliminar, marcar todas como leidas
+
+   Decisiones de diseno:
+   - Usa useNotificationSocket para actualizacion en tiempo real
+   - Filtros por appCode y companyId del contexto activo
+
+   ========================================================================== */
+
 import { BellOutlined, DeleteOutlined, SafetyOutlined, MessageOutlined } from '@ant-design/icons';
 import { App as AntdApp, Badge, Dropdown, Space, Button, Typography, Empty } from 'antd';
 import { useState, useCallback, useMemo } from 'react';
@@ -50,6 +67,15 @@ function getIconForTipo(tipo: string): React.ReactNode {
   return <BellOutlined style={{ color: '#6b7280', fontSize: 18 }} />;
 }
 
+/**
+ * ============================================================================
+ * NotificationBell
+ * ============================================================================
+ *
+ * Campana de notificaciones con dropdown. Muestra contador de no leidas.
+ *
+ * ============================================================================
+ */
 export function NotificationBell() {
   const { message } = AntdApp.useApp();
   const [open, setOpen] = useState(false);

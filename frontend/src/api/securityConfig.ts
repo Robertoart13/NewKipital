@@ -1,7 +1,42 @@
+/* =============================================================================
+   MODULE: securityConfig
+   =============================================================================
+
+   Capa de acceso a datos para la configuracion de seguridad (usuarios,
+   roles, permisos, asignaciones, aplicaciones).
+
+   Responsabilidades:
+   - Consultar y gestionar permisos del catalogo
+   - Consultar y gestionar roles
+   - Consultar y gestionar usuarios
+   - Asignar apps, empresas y roles a usuarios
+   - Consultar bitacora de auditoria de usuario
+
+   Decisiones de diseno:
+   - Todas las solicitudes HTTP se canalizan mediante httpFetch
+   - parseErrorMessage y ensureOk centralizan el manejo de errores
+   - Los catalogos soportan filtros (modulo, includeInactive, appCode)
+
+   ========================================================================== */
+
 import { httpFetch } from '../interceptors/httpInterceptor';
 
+/* =============================================================================
+   TIPOS E INTERFACES DE DOMINIO
+   ============================================================================= */
+
+/** Modo del catalogo de permisos: migracion o UI. */
 export type PermissionCatalogMode = 'migration' | 'ui';
 
+/**
+ * ============================================================================
+ * System Permission
+ * ============================================================================
+ *
+ * Permiso del sistema en el catalogo de seguridad.
+ *
+ * ============================================================================
+ */
 export interface SystemPermission {
   id: number;
   codigo: string;
@@ -59,6 +94,11 @@ export interface UserCompanyAssignment {
   estado: number;
 }
 
+/* =============================================================================
+   FUNCIONES AUXILIARES
+   ============================================================================= */
+
+/** Extrae mensaje de error del payload; soporta message como string o string[]. */
 function parseErrorMessage(defaultMessage: string, payload: unknown): string {
   if (!payload || typeof payload !== 'object') return defaultMessage;
 
@@ -80,6 +120,23 @@ async function ensureOk<T>(res: Response, defaultMessage: string): Promise<T> {
   return res.json();
 }
 
+/* =============================================================================
+   API: PERMISOS Y ROLES
+   ============================================================================= */
+
+/**
+ * ============================================================================
+ * Fetch Permissions Catalog Mode
+ * ============================================================================
+ *
+ * Obtiene el modo actual del catalogo de permisos (migration | ui).
+ *
+ * @returns Modo del catalogo.
+ *
+ * @throws {Error} Si la peticion falla.
+ *
+ * ============================================================================
+ */
 export async function fetchPermissionsCatalogMode(): Promise<PermissionCatalogMode> {
   const res = await httpFetch('/config/permissions/mode');
   const data = await ensureOk<{ mode: PermissionCatalogMode }>(res, 'Error al cargar modo de catalogo');

@@ -1,3 +1,16 @@
+/* =============================================================================
+   HOOK: usePermissionsRealtimeSync
+   =============================================================================
+
+   Sincroniza permisos en tiempo real via SSE + polling de authz-token.
+
+   Responsabilidades:
+   - Escuchar SSE permissions.changed
+   - Polling de /auth/authz-token
+   - Refresh al recuperar foco/visibilidad
+
+   ========================================================================== */
+
 import { useEffect, useRef } from 'react';
 
 import { fetchPermissionsForApp, fetchPermissionsForCompany } from '../api/permissions';
@@ -11,10 +24,13 @@ const FOCUS_REFRESH_INTERVAL_MS = 60_000;
 const AUTHZ_TOKEN_POLL_INTERVAL_MS = 2500;
 
 /**
- * Sincroniza permisos en tiempo real usando SSE.
- * - Escucha eventos permissions.changed emitidos por backend.
- * - Refresca permisos sin recargar la pagina.
- * - Ejecuta refresh adicional al recuperar foco/visibilidad.
+ * ============================================================================
+ * usePermissionsRealtimeSync
+ * ============================================================================
+ *
+ * Sincroniza permisos via SSE + polling. Refresca al cambiar authz-token o foco.
+ *
+ * ============================================================================
  */
 export function usePermissionsRealtimeSync() {
   const dispatch = useAppDispatch();

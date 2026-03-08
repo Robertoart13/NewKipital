@@ -1,7 +1,42 @@
+/* =============================================================================
+   MODULE: personalActions
+   =============================================================================
+
+   Capa de acceso a datos para Acciones Personales (ausencias, vacaciones,
+   licencias, incapacidades, bonificaciones, horas extra, descuentos,
+   retenciones, aumentos).
+
+   Responsabilidades:
+   - Listar y filtrar acciones personales
+   - Crear acciones (ausencias, vacaciones, licencias, incapacidades, etc.)
+   - Avanzar estado e invalidar lineas
+   - Aprobar/rechazar acciones
+   - Consultar detalle por tipo de accion
+
+   Decisiones de diseno:
+   - Todas las solicitudes HTTP se canalizan mediante httpFetch
+   - Las acciones tienen flujo de estados por tipo (ausencia, retencion, etc.)
+   - idEmpresa se envia en body para endpoints que requieren contexto de empresa
+
+   ========================================================================== */
+
 import { httpFetch } from '../interceptors/httpInterceptor';
 
 import type { PayrollListItem } from './payroll';
 
+/* =============================================================================
+   INTERFACES DE DOMINIO
+   ============================================================================= */
+
+/**
+ * ============================================================================
+ * Personal Action List Item
+ * ============================================================================
+ *
+ * Elemento de lista de acciones personales retornado por la API.
+ *
+ * ============================================================================
+ */
 export interface PersonalActionListItem {
   id: number;
   idEmpresa: number;

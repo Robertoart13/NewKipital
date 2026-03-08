@@ -441,7 +441,6 @@ export function PayrollArticlesManagementPage() {
       form.setFieldsValue({
         idEmpresa: row.idEmpresa,
         descripcion: row.descripcion ?? '',
-        descripcion: row.descripcion ?? '',
         idTipoAccionPersonal: row.idTipoAccionPersonal,
         idTipoArticuloNomina: row.idTipoArticuloNomina,
         idCuentaGasto: row.idCuentaGasto,

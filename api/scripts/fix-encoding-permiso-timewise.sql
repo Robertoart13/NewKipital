@@ -1,4 +1,4 @@
--- Corregir encoding: distribuciÃ³n -> distribución
+-- Corregir encoding: distribucion (permiso timewise)
 -- Ejecutar con charset UTF-8: mysql ... --default-character-set=utf8mb4
 
 SET NAMES utf8mb4;

@@ -103,9 +103,9 @@ function normalizePayload(values: ClassFormValues): ClassPayload {
 }
 
 function getPaneValue(row: ClassListItem, key: PaneKey): string {
+  if (key === 'nombre') return row.nombre ?? '';
   if (key === 'idExterno') return row.idExterno ?? '';
   if (key === 'codigo') return row.codigo ?? '';
-  if (key === 'idExterno') return row.idExterno ?? '';
   return row.esInactivo === 0 ? 'Inactivo' : 'Activo';
 }
 
@@ -177,8 +177,8 @@ export function ClassesManagementPage() {
       if (!term) return true;
       return (
         (row.idExterno ?? '').toLowerCase().includes(term) ||
-        (row.descripcion ?? '').toLowerCase().includes(term)
-        (row.idExterno ?? '').toLowerCase().includes(term) ||
+        (row.nombre ?? '').toLowerCase().includes(term) ||
+        (row.codigo ?? '').toLowerCase().includes(term) ||
         (row.descripcion ?? '').toLowerCase().includes(term)
       );
     },
@@ -279,8 +279,8 @@ export function ClassesManagementPage() {
   const applyClassToForm = useCallback(
     (row: ClassListItem) => {
       form.setFieldsValue({
-        codigo: row.codigo ?? '',
-        idExterno: row.idExterno ?? '',
+        nombre: row.nombre ?? '',
+        descripcion: row.descripcion ?? '',
         codigo: row.codigo ?? '',
         idExterno: row.idExterno ?? '',
       });

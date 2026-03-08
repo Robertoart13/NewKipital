@@ -1,3 +1,16 @@
+/* =============================================================================
+   HOOK: useTransactionLines
+   =============================================================================
+
+   Gestion de lineas dinamicas en formularios de transaccion.
+
+   Responsabilidades:
+   - addLine, removeLine, updateLine
+   - activeLineKeys para UI
+   - Validar linea completa antes de agregar
+
+   ========================================================================== */
+
 import { useCallback, useState } from 'react';
 
 interface UseTransactionLinesConfig<TLine extends { key: string }> {
@@ -6,6 +19,17 @@ interface UseTransactionLinesConfig<TLine extends { key: string }> {
   onIncompleteLine?: () => void;
 }
 
+/**
+ * ============================================================================
+ * useTransactionLines
+ * ============================================================================
+ *
+ * Hook para gestionar lineas dinamicas en formularios (agregar, quitar, actualizar).
+ *
+ * @param config - buildEmptyLine, isLineComplete, onIncompleteLine.
+ *
+ * ============================================================================
+ */
 export function useTransactionLines<TLine extends { key: string }>(config: UseTransactionLinesConfig<TLine>) {
   const { buildEmptyLine, isLineComplete, onIncompleteLine } = config;
 

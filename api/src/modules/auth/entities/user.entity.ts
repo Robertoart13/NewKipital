@@ -14,7 +14,7 @@ import { UserStatus } from '../constants/user-status.enum';
  * Representa la persona digital. No contiene empresa, rol, ni permisos.
  * Eso vive en: sys_usuario_app, sys_usuario_empresa, sys_usuario_rol.
  *
- * IMPORTANTE: sys_usuarios â‰  sys_empleados.
+ * IMPORTANTE: sys_usuarios != sys_empleados.
  * Usuario = identidad digital (login). Empleado = registro laboral (RRHH).
  * Vinculación opcional vía sys_empleados.id_usuario (FK nullable).
  *

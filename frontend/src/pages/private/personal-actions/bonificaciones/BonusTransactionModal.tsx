@@ -406,7 +406,7 @@ export function BonusTransactionModal({
       return;
     }
     setEmployeePayrollConfig({
-      moneda: (employee.monedaSalario ?? '').toUpperCase() || undefined,
+      idPeriodoPago: employee.idPeriodoPago ? Number(employee.idPeriodoPago) : undefined,
       moneda: (employee.monedaSalario ?? '').toUpperCase() || undefined,
     });
   }, [selectedCompanyId, selectedEmployeeId, employees]);

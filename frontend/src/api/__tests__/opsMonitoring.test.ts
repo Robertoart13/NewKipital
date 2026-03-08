@@ -1,12 +1,12 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-vi.mock('../interceptors/httpInterceptor', () => ({
+vi.mock('../../interceptors/httpInterceptor', () => ({
   httpFetch: vi.fn(),
 }));
 
-import { httpFetch } from '../interceptors/httpInterceptor';
+import { httpFetch } from '../../interceptors/httpInterceptor';
 
-import { fetchQueuesSummary, fetchIdentityQueue, rescanQueues, releaseStuckQueues, requeueJob } from './opsMonitoring';
+import { fetchQueuesSummary, fetchIdentityQueue, rescanQueues, releaseStuckQueues, requeueJob } from '../opsMonitoring';
 
 const mockHttpFetch = vi.mocked(httpFetch);
 

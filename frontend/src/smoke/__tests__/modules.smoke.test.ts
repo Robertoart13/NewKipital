@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 describe('Project Smoke Imports', () => {
   it('loads API modules', () => {
-    const modules = import.meta.glob(['../api/*.{ts,tsx}', '!../api/*.{test,spec}.{ts,tsx}'], {
+    const modules = import.meta.glob(['../../api/*.{ts,tsx}', '!../../api/*.{test,spec}.{ts,tsx}'], {
       eager: true,
     });
     const keys = Object.keys(modules);
@@ -13,7 +13,7 @@ describe('Project Smoke Imports', () => {
   });
 
   it('loads query modules', () => {
-    const modules = import.meta.glob(['../queries/**/*.{ts,tsx}', '!../queries/**/*.{test,spec}.{ts,tsx}'], {
+    const modules = import.meta.glob(['../../queries/**/*.{ts,tsx}', '!../../queries/**/*.{test,spec}.{ts,tsx}'], {
       eager: true,
     });
     const keys = Object.keys(modules).filter((k) => !k.endsWith('.d.ts'));
@@ -24,10 +24,10 @@ describe('Project Smoke Imports', () => {
   });
 
   it('loads guards and hooks modules', () => {
-    const guardModules = import.meta.glob(['../guards/**/*.{ts,tsx}', '!../guards/**/*.{test,spec}.{ts,tsx}'], {
+    const guardModules = import.meta.glob(['../../guards/**/*.{ts,tsx}', '!../../guards/**/*.{test,spec}.{ts,tsx}'], {
       eager: true,
     });
-    const hookModules = import.meta.glob(['../hooks/**/*.{ts,tsx}', '!../hooks/**/*.{test,spec}.{ts,tsx}'], {
+    const hookModules = import.meta.glob(['../../hooks/**/*.{ts,tsx}', '!../../hooks/**/*.{test,spec}.{ts,tsx}'], {
       eager: true,
     });
     const combined = { ...guardModules, ...hookModules } as Record<string, unknown>;
@@ -39,14 +39,14 @@ describe('Project Smoke Imports', () => {
   });
 
   it('loads store, components and pages modules', () => {
-    const storeModules = import.meta.glob(['../store/**/*.{ts,tsx}', '!../store/**/*.{test,spec}.{ts,tsx}'], {
+    const storeModules = import.meta.glob(['../../store/**/*.{ts,tsx}', '!../../store/**/*.{test,spec}.{ts,tsx}'], {
       eager: true,
     });
     const componentModules = import.meta.glob(
-      ['../components/**/*.{ts,tsx}', '!../components/**/*.{test,spec}.{ts,tsx}'],
+      ['../../components/**/*.{ts,tsx}', '!../../components/**/*.{test,spec}.{ts,tsx}'],
       { eager: true },
     );
-    const pageModules = import.meta.glob(['../pages/**/*.{ts,tsx}', '!../pages/**/*.{test,spec}.{ts,tsx}'], {
+    const pageModules = import.meta.glob(['../../pages/**/*.{ts,tsx}', '!../../pages/**/*.{test,spec}.{ts,tsx}'], {
       eager: true,
     });
     const combined = {

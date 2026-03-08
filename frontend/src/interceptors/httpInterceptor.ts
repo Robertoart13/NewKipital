@@ -1,3 +1,22 @@
+/* =============================================================================
+   MODULE: httpInterceptor
+   =============================================================================
+
+   Interceptor global de HTTP para llamadas a la API.
+
+   Responsabilidades:
+   - Prefijar URL base
+   - Enviar credentials: 'include' (cookie httpOnly)
+   - Intentar refresh ante 401
+   - Logout + redirigir a /auth/login si 401 tras refresh
+   - Timeout configurable
+
+   Decisiones de diseno:
+   - JWT viaja en cookie; no usa Authorization header
+   - GET lleva cache buster opcional
+
+   ========================================================================== */
+
 import { API_URL } from '../config/api';
 import { performLogout } from '../lib/auth';
 import { getApiCacheBuster } from '../lib/apiCache';
@@ -7,10 +26,18 @@ const REQUEST_TIMEOUT_MS = 15000;
 const REFRESH_TIMEOUT_MS = 10000;
 
 /**
- * Interceptor global de HTTP.
- * Usa credentials: 'include' para enviar la cookie httpOnly automáticamente.
- * NO usa Authorization header — el JWT viaja en la cookie.
- * Cualquier response 401 → logout automático + redirige a /auth/login.
+ * ============================================================================
+ * httpFetch
+ * ============================================================================
+ *
+ * Wrapper de fetch con interceptores (credentials, CSRF, refresh, logout).
+ *
+ * @param path - Ruta relativa (ej: /employees) o URL absoluta.
+ * @param options - Opciones de fetch (method, body, headers).
+ *
+ * @returns Response. El consumidor debe verificar res.ok.
+ *
+ * ============================================================================
  */
 export async function httpFetch(path: string, options: RequestInit = {}): Promise<Response> {
   let url = path.startsWith('http') ? path : `${API_URL}${path}`;

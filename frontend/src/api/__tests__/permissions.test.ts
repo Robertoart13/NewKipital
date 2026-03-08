@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-vi.mock('../interceptors/httpInterceptor', () => ({
+vi.mock('../../interceptors/httpInterceptor', () => ({
   httpFetch: vi.fn(),
 }));
 
@@ -11,9 +11,9 @@ describe('permissions api', () => {
   });
 
   it('fetchPermissionsForCompany sends POST to /auth/switch-company', async () => {
-    const { httpFetch } = await import('../interceptors/httpInterceptor');
+    const { httpFetch } = await import('../../interceptors/httpInterceptor');
     const mockHttpFetch = vi.mocked(httpFetch);
-    const { fetchPermissionsForCompany } = await import('./permissions');
+    const { fetchPermissionsForCompany } = await import('../permissions');
 
     mockHttpFetch.mockResolvedValue({
       ok: true,
@@ -25,9 +25,9 @@ describe('permissions api', () => {
   });
 
   it('fetchPermissionsForCompany sends refreshAuthz when forced', async () => {
-    const { httpFetch } = await import('../interceptors/httpInterceptor');
+    const { httpFetch } = await import('../../interceptors/httpInterceptor');
     const mockHttpFetch = vi.mocked(httpFetch);
-    const { fetchPermissionsForCompany } = await import('./permissions');
+    const { fetchPermissionsForCompany } = await import('../permissions');
 
     mockHttpFetch.mockResolvedValue({
       ok: true,
@@ -40,18 +40,18 @@ describe('permissions api', () => {
   });
 
   it('fetchPermissionsForCompany throws on error', async () => {
-    const { httpFetch } = await import('../interceptors/httpInterceptor');
+    const { httpFetch } = await import('../../interceptors/httpInterceptor');
     const mockHttpFetch = vi.mocked(httpFetch);
-    const { fetchPermissionsForCompany } = await import('./permissions');
+    const { fetchPermissionsForCompany } = await import('../permissions');
 
     mockHttpFetch.mockResolvedValue({ ok: false } as any);
     await expect(fetchPermissionsForCompany('1')).rejects.toThrow('Error al cargar permisos');
   });
 
   it('fetchPermissionsForApp uses appCode param', async () => {
-    const { httpFetch } = await import('../interceptors/httpInterceptor');
+    const { httpFetch } = await import('../../interceptors/httpInterceptor');
     const mockHttpFetch = vi.mocked(httpFetch);
-    const { fetchPermissionsForApp } = await import('./permissions');
+    const { fetchPermissionsForApp } = await import('../permissions');
 
     mockHttpFetch.mockResolvedValue({
       ok: true,
@@ -63,9 +63,9 @@ describe('permissions api', () => {
   });
 
   it('fetchPermissionsForApp appends refreshAuthz query when forced', async () => {
-    const { httpFetch } = await import('../interceptors/httpInterceptor');
+    const { httpFetch } = await import('../../interceptors/httpInterceptor');
     const mockHttpFetch = vi.mocked(httpFetch);
-    const { fetchPermissionsForApp } = await import('./permissions');
+    const { fetchPermissionsForApp } = await import('../permissions');
 
     mockHttpFetch.mockResolvedValue({
       ok: true,
@@ -77,9 +77,9 @@ describe('permissions api', () => {
   });
 
   it('fetchPermissionsForApp returns empty arrays for missing data', async () => {
-    const { httpFetch } = await import('../interceptors/httpInterceptor');
+    const { httpFetch } = await import('../../interceptors/httpInterceptor');
     const mockHttpFetch = vi.mocked(httpFetch);
-    const { fetchPermissionsForApp } = await import('./permissions');
+    const { fetchPermissionsForApp } = await import('../permissions');
 
     mockHttpFetch.mockResolvedValue({ ok: true, json: vi.fn().mockResolvedValue({}) } as any);
     const result = await fetchPermissionsForApp();
@@ -88,9 +88,9 @@ describe('permissions api', () => {
   });
 
   it('fetchSystemPermissions builds query params', async () => {
-    const { httpFetch } = await import('../interceptors/httpInterceptor');
+    const { httpFetch } = await import('../../interceptors/httpInterceptor');
     const mockHttpFetch = vi.mocked(httpFetch);
-    const { fetchSystemPermissions } = await import('./permissions');
+    const { fetchSystemPermissions } = await import('../permissions');
 
     mockHttpFetch.mockResolvedValue({ ok: true, json: vi.fn().mockResolvedValue([]) } as any);
     await fetchSystemPermissions({ modulo: 'auth', includeInactive: true });

@@ -51,8 +51,13 @@ export const CACHE_QUERY_ALLOWLIST: Record<string, Set<string>> = {
   departments: new Set(['includeInactive', 'inactiveOnly']),
   positions: new Set(['includeInactive', 'inactiveOnly']),
   classes: new Set(['includeInactive', 'inactiveOnly']),
-  projects: new Set(['includeInactive', 'inactiveOnly']),
-  'accounting-accounts': new Set(['includeInactive', 'inactiveOnly']),
+  projects: new Set(['idEmpresa', 'includeInactive', 'inactiveOnly']),
+  'accounting-accounts': new Set([
+    'idEmpresa',
+    'idEmpresas',
+    'includeInactive',
+    'inactiveOnly',
+  ]),
 };
 
 export const CACHE_USER_SCOPED: Set<string> = new Set(['notifications']);

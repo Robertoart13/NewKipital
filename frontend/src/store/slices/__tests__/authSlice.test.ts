@@ -8,7 +8,7 @@ import authReducer, {
   type AuthState,
   type User,
   type UserCompanyInfo,
-} from './authSlice';
+} from '../authSlice';
 
 describe('authSlice', () => {
   const initialState: AuthState = {

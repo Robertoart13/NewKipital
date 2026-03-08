@@ -121,7 +121,27 @@ export class CacheResponseInterceptor implements NestInterceptor {
       body.idCompany ??
       body.empresaId;
 
-    if (candidate == null) return 'global';
+    if (candidate == null) {
+      const idEmpresasRaw = query.idEmpresas;
+      if (typeof idEmpresasRaw === 'string') {
+        const companyIds = idEmpresasRaw
+          .split(',')
+          .map((value) => Number.parseInt(value.trim(), 10))
+          .filter((value) => Number.isFinite(value) && value > 0);
+        if (companyIds.length === 1) {
+          return `empresa:${companyIds[0]}`;
+        }
+      }
+      if (Array.isArray(idEmpresasRaw)) {
+        const companyIds = idEmpresasRaw
+          .map((value) => Number.parseInt(String(value).trim(), 10))
+          .filter((value) => Number.isFinite(value) && value > 0);
+        if (companyIds.length === 1) {
+          return `empresa:${companyIds[0]}`;
+        }
+      }
+      return 'global';
+    }
     const parsed = Number.parseInt(String(candidate), 10);
     if (!Number.isFinite(parsed) || parsed <= 0) return 'global';
     return `empresa:${parsed}`;

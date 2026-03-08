@@ -1,15 +1,11 @@
 import { render, screen } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
-// ─── Mocks livianos (evitan imports pesados de antd + Redux + router en jsdom) ─
-
-vi.mock('../store/hooks', () => ({
+vi.mock('../../store/hooks', () => ({
   useAppSelector: vi.fn(),
   useAppDispatch: vi.fn(() => vi.fn()),
 }));
 
-// PermissionGuard only uses `Result` from antd — full lightweight mock,
-// no importActual so the entire ~100 MB antd bundle is never loaded.
 vi.mock('antd', () => ({
   Result: ({ title, subTitle }: { title?: string; subTitle?: string }) => (
     <div data-testid="result-403">
@@ -19,19 +15,15 @@ vi.mock('antd', () => ({
   ),
 }));
 
-// react-router-dom v7 pulls in server-side modules that are heavy in jsdom.
-// PermissionGuard only uses `Navigate` and `useLocation` — mock both.
 vi.mock('react-router-dom', () => ({
   Navigate: ({ to }: { to: string }) => <div data-testid={`navigate-${to.replace(/\//g, '-').replace(/^-/, '')}`} />,
   useLocation: () => ({ pathname: '/test' }),
 }));
 
-// ─── Imports reales DESPUÉS de los mocks ─────────────────────────────────────
-import { useAppSelector } from '../store/hooks';
+import { useAppSelector } from '../../store/hooks';
 
-import { PermissionGuard } from './PermissionGuard';
+import { PermissionGuard } from '../PermissionGuard';
 
-// ─── Helper ──────────────────────────────────────────────────────────────────
 const mockSelector = useAppSelector as ReturnType<typeof vi.fn>;
 
 function setup(isAuthenticated: boolean, loaded: boolean, permissions: string[]) {
@@ -48,7 +40,6 @@ function renderGuard(permission: string, children = <div>Contenido protegido</di
   return render(<PermissionGuard requiredPermission={permission}>{children}</PermissionGuard>);
 }
 
-// ─── Tests ───────────────────────────────────────────────────────────────────
 describe('PermissionGuard', () => {
   beforeEach(() => {
     vi.clearAllMocks();

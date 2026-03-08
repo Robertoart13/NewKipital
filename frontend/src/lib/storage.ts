@@ -1,8 +1,26 @@
+/* =============================================================================
+   MODULE: storage
+   =============================================================================
+
+   Persistencia de contexto de sesion (localStorage/sessionStorage).
+
+   Responsabilidades:
+   - companyId, activeApp
+   - skipRestore (evita /me tras logout)
+   - Token y avatar de Microsoft (sesion)
+
+   Nota: JWT viaja en cookie httpOnly, no se guarda aqui.
+
+   ========================================================================== */
+
 /**
- * Claves de localStorage.
- * El token JWT NO se guarda aquí — viaja en cookie httpOnly.
- * Solo se persisten: companyId y activeApp (contexto de sesión).
- * Permisos NUNCA se cachean — siempre del backend.
+ * ============================================================================
+ * STORAGE_KEYS
+ * ============================================================================
+ *
+ * Claves de localStorage y sessionStorage.
+ *
+ * ============================================================================
  */
 export const STORAGE_KEYS = {
   COMPANY_ID: 'platform_company_id',
@@ -14,6 +32,15 @@ export const STORAGE_KEYS = {
   MICROSOFT_AVATAR_URL: 'platform_ms_avatar_url',
 } as const;
 
+/**
+ * ============================================================================
+ * getStoredCompanyId
+ * ============================================================================
+ *
+ * Devuelve companyId almacenado o null.
+ *
+ * ============================================================================
+ */
 export function getStoredCompanyId(): string | null {
   return localStorage.getItem(STORAGE_KEYS.COMPANY_ID);
 }

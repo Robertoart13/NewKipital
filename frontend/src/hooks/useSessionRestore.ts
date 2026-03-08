@@ -1,3 +1,16 @@
+/* =============================================================================
+   HOOK: useSessionRestore
+   =============================================================================
+
+   Restaura sesion al cargar la app desde cookie httpOnly.
+
+   Responsabilidades:
+   - Llamar GET /auth/me si no hay sesion
+   - Actualizar Redux (credentials, permissions, activeApp)
+   - Marcar sessionLoaded si falla o no hay sesion
+
+   ========================================================================== */
+
 import { useEffect } from 'react';
 
 import { httpFetch } from '../interceptors/httpInterceptor';
@@ -10,9 +23,13 @@ import { setCredentials, setSessionLoaded } from '../store/slices/authSlice';
 import { setPermissions } from '../store/slices/permissionsSlice';
 
 /**
- * Al cargar la app, intenta restaurar la sesión desde la cookie httpOnly.
- * Si la cookie es válida, el backend retorna el usuario + empresas + permisos.
- * Si no, marca sessionLoading = false para que el router funcione.
+ * ============================================================================
+ * useSessionRestore
+ * ============================================================================
+ *
+ * Intenta restaurar sesion desde cookie. Actualiza Redux con user, companies, permissions.
+ *
+ * ============================================================================
  */
 export function useSessionRestore() {
   const dispatch = useAppDispatch();

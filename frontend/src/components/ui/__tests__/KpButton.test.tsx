@@ -1,9 +1,6 @@
 import { render, screen } from '@testing-library/react';
 import { describe, it, expect, vi } from 'vitest';
 
-// ─── Lightweight antd mock ─────────────────────────────────────────────────
-// Avoids loading the full antd bundle (~100 MB) in this worker.
-// The smoke test already validates that real antd components import cleanly.
 vi.mock('antd', () => ({
   Button: ({
     children,
@@ -31,7 +28,7 @@ vi.mock('antd', () => ({
   },
 }));
 
-import { KpButton } from './KpButton';
+import { KpButton } from '../KpButton';
 
 describe('KpButton', () => {
   it('renders with kp-button class', () => {

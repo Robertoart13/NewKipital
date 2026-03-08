@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import reducer, { setMenuConfig } from './menuSlice';
+import reducer, { setMenuConfig } from '../menuSlice';
 
 describe('menuSlice', () => {
   const initial = reducer(undefined, { type: '@@INIT' });

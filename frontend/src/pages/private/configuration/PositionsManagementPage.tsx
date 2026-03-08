@@ -263,7 +263,7 @@ export function PositionsManagementPage() {
   const applyPositionToForm = useCallback(
     (row: PositionListItem) => {
       form.setFieldsValue({
-        descripcion: row.descripcion ?? '',
+        nombre: row.nombre ?? '',
         descripcion: row.descripcion ?? '',
       });
     },

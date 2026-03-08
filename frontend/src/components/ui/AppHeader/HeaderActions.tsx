@@ -1,3 +1,16 @@
+/* =============================================================================
+   COMPONENT: HeaderActions
+   =============================================================================
+
+   Acciones del header: switch de app, notificaciones, dropdown de perfil.
+
+   Responsabilidades:
+   - Boton de cambio de app (kpital <-> timewise) si el usuario tiene ambas
+   - NotificationBell
+   - Dropdown con avatar, Mi Perfil, Cerrar sesion
+
+   ========================================================================== */
+
 import { SwapOutlined, UserOutlined, LogoutOutlined } from '@ant-design/icons';
 import { Avatar, Space, Tooltip, Button, Dropdown } from 'antd';
 import { useState } from 'react';
@@ -34,6 +47,17 @@ function formatRoleLabel(roles: string[]): string {
   return first ? (ROLE_LABELS[first] ?? first) : 'Usuario';
 }
 
+/**
+ * ============================================================================
+ * HeaderActions
+ * ============================================================================
+ *
+ * Acciones del header: switch de app, notificaciones, dropdown de perfil.
+ *
+ * @param userName - Nombre del usuario (default: "Usuario").
+ *
+ * ============================================================================
+ */
 export function HeaderActions({ userName = 'Usuario' }: HeaderActionsProps) {
   const dispatch = useAppDispatch();
   const navigate = useNavigate();

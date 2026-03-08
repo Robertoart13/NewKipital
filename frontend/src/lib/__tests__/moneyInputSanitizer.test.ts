@@ -5,7 +5,7 @@ import {
   formatGroupedIntegerDisplay,
   parseSanitizedMoney,
   sanitizeMoneyDigits,
-} from './moneyInputSanitizer';
+} from '../moneyInputSanitizer';
 
 describe('moneyInputSanitizer', () => {
   it('sanitizes malicious symbols and keeps only digits', () => {

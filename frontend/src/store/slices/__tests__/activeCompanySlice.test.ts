@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import reducer, { setActiveCompany, clearActiveCompany } from './activeCompanySlice';
+import reducer, { setActiveCompany, clearActiveCompany } from '../activeCompanySlice';
 
 describe('activeCompanySlice', () => {
   const initial = reducer(undefined, { type: '@@INIT' });

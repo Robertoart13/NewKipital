@@ -1,7 +1,7 @@
 import { Entity, PrimaryGeneratedColumn, Column, Index, CreateDateColumn } from 'typeorm';
 
 /**
- * sys_rol_permiso — Tabla puente: Rol â†” Permiso.
+ * sys_rol_permiso — Tabla puente: Rol - Permiso.
  * Define qué acciones puede ejecutar cada rol.
  * No depende de usuario ni de empresa.
  */

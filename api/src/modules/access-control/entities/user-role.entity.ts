@@ -10,7 +10,7 @@ import {
 /**
  * sys_usuario_rol — TABLA CORE DEL MODELO DE IDENTIDAD.
  *
- * Relación: Usuario â†” Rol â†” Empresa â†” App
+ * Relación: Usuario - Rol - Empresa - App
  * Define el scope real de cada usuario en el sistema.
  *
  * Permite:

@@ -895,8 +895,6 @@ export function AumentosPage() {
                   monto: Number(payload.line.monto ?? 0),
                   porcentaje: Number(payload.line.porcentaje ?? 0),
                   salarioActual: Number(payload.line.salarioActual ?? 0),
-                  fechaEfecto: payload.line.fechaEfecto?.format('YYYY-MM-DD') ?? '',
-                  formula: payload.line.formula ?? '',
                 },
               });
             } else {
@@ -913,7 +911,6 @@ export function AumentosPage() {
                   porcentaje: Number(payload.line.porcentaje ?? 0),
                   salarioActual: Number(payload.line.salarioActual ?? 0),
                   nuevoSalario: Number(payload.line.nuevoSalario ?? 0),
-                  formula: payload.line.formula ?? '',
                 },
               });
             }
