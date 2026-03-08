@@ -212,7 +212,7 @@ function createDraftFromLicenseDetail(detail: LicenseDetailItem): LicenseFormDra
           {
             key: `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
             tipoLicencia: 'permiso_con_goce',
-            remuneracion: true,
+            remuneracion: false,
             monto: detail.monto ?? undefined,
             fechaEfecto: detail.fechaEfecto ? dayjs(detail.fechaEfecto) : undefined,
           },
@@ -441,6 +441,10 @@ export function LicensesPage() {
     if (!editingRow?.id) return;
     await loadLicenseAuditTrail(editingRow.id);
   }, [editingRow?.id, loadLicenseAuditTrail]);
+
+  const handleModalCompanyChange = useCallback((nextCompanyId?: number) => {
+    setModalCompanyId(nextCompanyId);
+  }, []);
 
   const loadCatalogs = useCallback(async () => {
     const targetCompanyId = openModal ? modalCompanyId : companyId;
@@ -734,11 +738,13 @@ export function LicensesPage() {
       fechaEfecto: line.fechaEfecto?.format('YYYY-MM-DD') ?? '',
       movimientoId: Number(line.movimientoId),
       tipoLicencia: line.tipoLicencia,
+      cantidad: Number(line.cantidad ?? 0),
       monto: Number(line.monto ?? 0),
       remuneracion: Boolean(line.remuneracion),
       formula: line.formula?.trim() || undefined,
     })),
   });
+  const modalTitle = mode === 'create' ? 'Crear Licencia' : 'Editar Licencia';
 
   return (
     <div className={styles.pageWrapper}>
@@ -994,9 +1000,7 @@ export function LicensesPage() {
         onLoadAuditTrail={mode === 'edit' && editingRow ? loadEditingLicenseAuditTrail : undefined}
         initialCompanyId={modalCompanyId}
         initialDraft={editingDraft}
-        onCompanyChange={(nextCompanyId) => {
-          setModalCompanyId(nextCompanyId);
-        }}
+        onCompanyChange={handleModalCompanyChange}
         onCancel={() => {
           setOpenModal(false);
           setEditingDraft(undefined);

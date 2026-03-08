@@ -549,3 +549,187 @@ Checkpoint remoto confirmado:
 - Branch: `main`.
 
 Estado de fase: Cerrada
+
+## Fase 20 - 2026-03-08
+Alcance: Ajuste de regla transversal en Acciones de Personal (Ausencias)
+
+Pruebas ejecutadas:
+- Ausencias: catalogo de movimientos en crear (empresa Rocca) carga correctamente luego de normalizar IDs en modal.
+- Ausencias: `Remuneracion` por defecto en linea nueva = No.
+
+Correccion aplicada:
+- Normalizacion de `idEmpresa`/`idEmpleado` a numero en filtros de modal para evitar mismatch string/number.
+- Regla documental agregada en `docs/reglas/ReglasImportantes.md` para reutilizar la solucion en el resto de Acciones de Personal.
+
+Estado de fase: Cerrada
+
+## Fase 21 - 2026-03-08
+Alcance: Ausencias (bitacora clara + validacion de linea en edicion)
+
+Pruebas ejecutadas:
+- Bitacora Ausencias: update ahora reporta cambios por linea/campo (ej. `Linea 1 - Cantidad`, `Linea 1 - Monto`).
+- Editar Ausencia: boton `Agregar linea de transaccion` ya no bloquea cuando la linea esta completa aunque `formula` venga vacia por historial.
+
+Correccion aplicada:
+- Backend (`personal-actions.service`): payload de auditoria para ausencias incluye `lineasDetalle`; diff genera cambios por linea y campo.
+- Frontend (`AbsenceTransactionModal`): `isLineComplete` en Ausencias ya no exige `formula` para permitir agregar linea.
+
+Resultado:
+- Flujo de edicion de Ausencias mas claro para auditoria y sin falso bloqueo de UI.
+
+Estado de fase: Cerrada
+
+## Fase 22 - 2026-03-08
+Alcance: Licencias (paridad con Ausencias en bitacora de edicion)
+
+Pruebas ejecutadas:
+- Licencias: bitacora de update muestra cambios por linea/campo (no solo monto global).
+- Licencias: create/update persisten `lineasDetalle` para trazabilidad.
+
+Correccion aplicada:
+- Backend (`personal-actions.service`):
+  - Se agrego carga/mapeo de lineas de licencia para auditoria (`getLicenseLinesForAudit`, `mapLicenseLinesForAuditFromDto`).
+  - Se incluye `lineasDetalle` en payload de create/update de licencias.
+  - El diff de auditoria incluye `Tipo licencia` por linea.
+
+Resultado:
+- Bitacora de Licencias queda clara y alineada al estandar definido en Ausencias.
+
+Estado de fase: Cerrada
+
+## Fase 23 - 2026-03-08
+Alcance: Licencias (validacion de linea para agregar nueva linea en edicion)
+
+Pruebas ejecutadas:
+- Editar Licencia: con linea completa visible (`periodo`, `movimiento`, `tipo`, `cantidad`, `monto`, `fecha`), boton `Agregar linea de transaccion` permite crear nueva linea.
+
+Correccion aplicada:
+- Frontend (`LicenseTransactionModal`): `isLineComplete` ya no depende de `formula` ni `montoInput`; valida solo campos obligatorios reales del modulo.
+
+Resultado:
+- Se elimina falso bloqueo "Complete la linea actual..." en lineas historicas/derivadas.
+
+Estado de fase: Cerrada
+
+## Fase 24 - 2026-03-08
+Alcance: Incapacidades (paridad funcional con Ausencias/Licencias)
+
+Pruebas ejecutadas:
+- Carga de movimientos por empresa en modal (create/edit) con IDs normalizados.
+- Remuneracion por defecto en linea nueva = No.
+- Tab bitacora en editar no regresa solo a informacion principal.
+- Validacion de "agregar linea" no bloquea por campos derivados.
+- Payload frontend incluye `fechaEfecto` y `cantidad` en create/update.
+- Bitacora backend de incapacidad en create/update con detalle por linea/campo.
+
+Resultado:
+- Incapacidades queda alineado al estandar transversal aplicado en Acciones de Personal.
+
+Estado de fase: Cerrada
+
+## Fase 25 - 2026-03-08
+Alcance: Incapacidades (errores finales detectados en pruebas visuales)
+
+Errores encontrados:
+- Error runtime: `IncapacityTransactionModal.tsx:647 Uncaught ReferenceError: tipoIncapacidad is not defined` al editar `Cantidad`.
+- Error de UI: selector `Periodo de pago (Planilla)` mostraba etiquetas de `Movimiento` (ej. "Movimiento undefined").
+
+Causa raiz:
+- En `calculateLineAmount` se uso `tipoIncapacidad` sin declararlo como valor resuelto del contexto de linea.
+- En construccion de `payrollOptions` se uso por error `line.movimientoLabel` en lugar de `payroll.nombrePlanilla`.
+
+Solucion aplicada:
+- `calculateLineAmount` ahora recibe/resuelve `tipoIncapacidadValue` y usa `const tipoIncapacidad = ...` antes de construir formula.
+- `payrollOptions` ahora etiqueta correctamente con `nombrePlanilla + estado`.
+
+Validacion posterior:
+- Al cambiar `Cantidad`, ya no ocurre exception y la formula se calcula sin reventar.
+- El select de planilla muestra opciones de planilla correctas (sin mezclar movimiento).
+
+Estado de fase: Cerrada
+## Fase 26 - 2026-03-08
+Alcance: Bonificaciones (paridad funcional con Ausencias/Licencias/Incapacidades)
+
+Errores detectados y corregidos:
+- `modalTitle` no definido en `BonusesPage`.
+- En create/update no se estaba enviando `cantidad` por linea en payload.
+- `remuneracion` iniciaba en `true` en lineas nuevas (debia ser `false`).
+- Mismatch de tipos `string/number` en `idEmpresa`/`idEmpleado` dentro del modal afectaba filtros de catalogos.
+- Falso bloqueo de "Complete la linea actual..." por depender de `formula` en validacion de linea completa.
+- Bitacora de Bonificaciones sin detalle por linea/campo en create/update.
+
+Correcciones aplicadas:
+- Frontend `BonusesPage`:
+  - Se restauro `modalTitle`.
+  - `mapDraftToPayload` ahora incluye `cantidad`.
+  - Se corrigio wiring de props del modal (`onLoadAuditTrail` / `initialCompanyId`).
+  - En mapeo de detalle se hidrata `formula` por linea y fallback con `remuneracion: false`.
+- Frontend `BonusTransactionModal`:
+  - `buildEmptyLine` ahora inicia con `remuneracion: false`.
+  - IDs normalizados a numero (`selectedCompanyIdNum`, `selectedEmployeeIdNum`) para filtros/comparaciones.
+  - Validacion de linea completa alineada al estandar transversal (sin bloquear por `formula`).
+  - `handleTabChange` para carga estable de bitacora.
+- Backend `personal-actions.service`:
+  - Create/update de Bonificaciones publican `lineasDetalle` en auditoria.
+  - Se agregaron helpers:
+    - `getBonusLinesForAudit`
+    - `mapBonusLinesForAuditFromDto`
+  - Se extendio comparador de bitacora para incluir `Tipo bonificacion` por linea.
+
+Validacion tecnica:
+- `api`: `npm.cmd run build` OK.
+- `frontend`: build con errores globales preexistentes de tipado en modulos no relacionados (no bloqueante para este ajuste puntual de Bonificaciones en `vite dev`).
+
+Estado de fase: Cerrada
+## Fase 27 - 2026-03-08
+Alcance: Bonificaciones (validacion funcional final en UI)
+
+Pruebas ejecutadas:
+- Bonificaciones: crear OK.
+- Bonificaciones: editar OK.
+- Bonificaciones: bitacora OK (sin retorno automatico a Informacion Principal).
+
+Resultado:
+- Modulo Bonificaciones aprobado en pruebas manuales de flujo principal.
+
+Estado de fase: Cerrada
+## Fase 28 - 2026-03-08
+Alcance: Horas Extra (paridad tecnica con modulos de Acciones de Personal)
+
+Correcciones aplicadas:
+- Frontend `HoursExtraTransactionModal`:
+  - IDs normalizados a numero (`selectedCompanyIdNum`, `selectedEmployeeIdNum`).
+  - Tab Bitacora estabilizado (`handleTabChange`) para evitar retorno automatico a Informacion Principal.
+  - Inicializacion del modal ajustada con `justOpened` para evitar reseteos al cambiar tabs.
+  - `remuneracion` por defecto en linea nueva = `false`.
+  - Validacion de linea completa sin dependencia de `formula` (campo derivado).
+  - Fix de opciones en select de planilla: label desde `nombrePlanilla + estado` (no desde movimiento).
+  - Fix de `DatePicker` fecha fin (se restauro `handleFechaFinHoraExtraChange`).
+- Frontend `HoursExtrasPage`:
+  - Fallback de edicion sin lineas alineado (`remuneracion: false`, `formula: ''`).
+  - `onCompanyChange` del modal centralizado con bust de cache (`handleModalCompanyChange`).
+- Backend `personal-actions.service`:
+  - Create/update de Horas Extra ahora publican `lineasDetalle` en bitacora.
+  - Nuevos helpers: `getOvertimeLinesForAudit`, `mapOvertimeLinesForAuditFromDto`.
+  - Comparador de bitacora extendido con: `Fecha inicio hora extra`, `Fecha fin hora extra`, `Tipo jornada horas extra`.
+
+Validacion tecnica:
+- `api`: `npm.cmd run build` OK.
+- Pendiente validacion visual final de flujo (crear/editar/bitacora) en UI.
+
+Estado de fase: Implementado (pendiente validacion manual)
+## Fase 29 - 2026-03-08
+Alcance: Horas Extra (validacion funcional final en UI)
+
+Pruebas ejecutadas:
+- Horas Extra: crear OK.
+- Horas Extra: editar OK.
+- Horas Extra: bitacora OK.
+- Horas Extra: fecha fin hora extra carga correctamente en edicion.
+- Horas Extra: sin desfase de fecha (-1 dia) en crear/editar.
+- Horas Extra: tabla sin columna Remunerada (alineado a regla funcional del modulo).
+
+Resultado:
+- Modulo Horas Extra aprobado en pruebas manuales de flujo principal.
+
+Estado de fase: Cerrada

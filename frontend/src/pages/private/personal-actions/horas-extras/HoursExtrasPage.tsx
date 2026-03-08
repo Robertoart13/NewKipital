@@ -1,4 +1,4 @@
-import {
+﻿import {
 
   AppstoreOutlined,
 
@@ -160,23 +160,23 @@ const ESTADO_LABEL: Record<number, { text: string; tagClass: string }> = {
 
 const ESTADO_HELP: Record<number, string> = {
 
-  1: 'Borrador: acción en captura interna, aún no enviada al flujo de aprobación.',
+  1: 'Borrador: accion en captura interna, aun no enviada al flujo de aprobacion.',
 
-  2: 'Pendiente Supervisor: requiere revisión/aprobación del supervisor.',
+  2: 'Pendiente Supervisor: requiere revision/aprobacion del supervisor.',
 
-  3: 'Pendiente RRHH: aprobada por supervisor, pendiente validación final RRHH.',
+  3: 'Pendiente RRHH: aprobada por supervisor, pendiente validacion final RRHH.',
 
-  4: 'Aprobada: lista para consumo operativo en planilla según reglas.',
+  4: 'Aprobada: lista para consumo operativo en planilla segun reglas.',
 
   5: 'Consumida: ya fue aplicada/consumida por proceso de planilla.',
 
-  6: 'Cancelada: se detuvo la acción por decisión operativa.',
+  6: 'Cancelada: se detuvo la accion por decision operativa.',
 
-  7: 'Invalidada: acción anulada por inconsistencia o cambio de criterio.',
+  7: 'Invalidada: accion anulada por inconsistencia o cambio de criterio.',
 
-  8: 'Expirada: venció su vigencia operativa.',
+  8: 'Expirada: vencio su vigencia operativa.',
 
-  9: 'Rechazada: no fue aprobada en flujo de validación.',
+  9: 'Rechazada: no fue aprobada en flujo de validacion.',
 
 };
 
@@ -206,7 +206,7 @@ const NEXT_STATE_ACTION_CONFIG: Partial<Record<number, NextStateActionConfig>> =
 
     requiredPermission: 'edit',
 
-    confirmText: 'Esta acción se enviará a revisión de supervisor. ¿Desea continuar?',
+    confirmText: 'Esta accion se enviara a revision de supervisor. ?Desea continuar?',
 
     successText: 'La hora extra fue enviada a Supervisor.',
 
@@ -220,7 +220,7 @@ const NEXT_STATE_ACTION_CONFIG: Partial<Record<number, NextStateActionConfig>> =
 
     requiredPermission: 'approve',
 
-    confirmText: 'Esta acción se enviará a revisión final de RRHH. ¿Desea continuar?',
+    confirmText: 'Esta accion se enviara a revision final de RRHH. ?Desea continuar?',
 
     successText: 'La hora extra fue enviada a RRHH.',
 
@@ -234,7 +234,7 @@ const NEXT_STATE_ACTION_CONFIG: Partial<Record<number, NextStateActionConfig>> =
 
     requiredPermission: 'approve',
 
-    confirmText: 'La hora extra quedará APROBADA y lista para proceso operativo. ¿Desea continuar?',
+    confirmText: 'La hora extra quedara APROBADA y lista para proceso operativo. ?Desea continuar?',
 
     successText: 'La hora extra fue aprobada correctamente.',
 
@@ -246,7 +246,7 @@ const NEXT_STATE_ACTION_CONFIG: Partial<Record<number, NextStateActionConfig>> =
 
 
 
-type PaneKey = 'empresa' | 'empleado' | 'periodoPago' | 'movimiento' | 'remuneracion' | 'estado';
+type PaneKey = 'empresa' | 'empleado' | 'periodoPago' | 'movimiento' | 'estado';
 
 
 
@@ -280,9 +280,7 @@ const paneConfig: PaneConfig[] = [
 
   { key: 'movimiento', title: 'Movimiento' },
 
-  { key: 'remuneracion', title: 'Remunerada' },
-
-  { key: 'estado', title: 'Estado' },
+    { key: 'estado', title: 'Estado' },
 
 ];
 
@@ -311,15 +309,6 @@ function getPaneValue(row: OvertimeUiRow, key: PaneKey, companies: Array<{ id: n
   if (key === 'empleado') return (row.employeeLabel ?? `Empleado #${row.idEmpleado}`).trim() || '--';
   if (key === 'periodoPago') return (row.periodoPagoResumen ?? '').trim() || '--';
   if (key === 'movimiento') return (row.movimientoResumen ?? '').trim() || '--';
-  if (key === 'remuneracion') {
-    return row.remuneracionResumen === 'SI'
-      ? 'Si'
-      : row.remuneracionResumen === 'NO'
-        ? 'No'
-        : row.remuneracionResumen === 'MIXTA'
-          ? 'Mixta'
-          : '--';
-  }
   if (key === 'estado') return ESTADO_LABEL[row.estado]?.text ?? `Estado ${row.estado}`;
   return '--';
 }
@@ -359,6 +348,21 @@ function summarizeCell(value?: string | null) {
 
 
 
+function parseDateAsLocalDay(value?: string | null) {
+  if (!value) return undefined;
+  const raw = String(value).trim();
+  const match = raw.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (match) {
+    const year = Number(match[1]);
+    const month = Number(match[2]);
+    const day = Number(match[3]);
+    if (Number.isFinite(year) && Number.isFinite(month) && Number.isFinite(day)) {
+      return dayjs(new Date(year, month - 1, day));
+    }
+  }
+  const parsed = dayjs(raw);
+  return parsed.isValid() ? parsed : undefined;
+}
 function createDraftFromOvertimeDetail(detail: OvertimeDetailItem): OvertimeFormDraft {
 
   const lines: OvertimeTransactionLine[] =
@@ -371,11 +375,13 @@ function createDraftFromOvertimeDetail(detail: OvertimeDetailItem): OvertimeForm
 
           payrollId: line.payrollId,
 
-          fechaEfecto: line.fechaEfecto ? dayjs(line.fechaEfecto) : undefined,
+          fechaEfecto: parseDateAsLocalDay(line.fechaEfecto),
 
           movimientoId: line.movimientoId,
 
-          fechaInicioHoraExtra: line.fechaInicioHoraExtra ? dayjs(line.fechaInicioHoraExtra) : undefined,
+          fechaInicioHoraExtra: parseDateAsLocalDay(line.fechaInicioHoraExtra),
+
+          fechaFinHoraExtra: parseDateAsLocalDay(line.fechaFinHoraExtra),
 
           formula: line.formula ?? '',
           tipoJornadaHorasExtras: line.tipoJornadaHorasExtras,
@@ -404,13 +410,13 @@ function createDraftFromOvertimeDetail(detail: OvertimeDetailItem): OvertimeForm
 
             tipoJornadaHorasExtras: '8',
 
-            remuneracion: true,
+            remuneracion: false,
 
-            formula: detail.descripcion ?? '',
+            formula: '',
 
             monto: detail.monto ?? undefined,
 
-            fechaEfecto: detail.fechaEfecto ? dayjs(detail.fechaEfecto) : undefined,
+            fechaEfecto: parseDateAsLocalDay(detail.fechaEfecto),
 
           },
 
@@ -542,8 +548,6 @@ export function HoursExtrasPage() {
 
     movimiento: '',
 
-    remuneracion: '',
-
     estado: '',
 
   });
@@ -558,8 +562,6 @@ export function HoursExtrasPage() {
 
     movimiento: [],
 
-    remuneracion: [],
-
     estado: [],
 
   });
@@ -573,8 +575,6 @@ export function HoursExtrasPage() {
     periodoPago: false,
 
     movimiento: false,
-
-    remuneracion: false,
 
     estado: false,
 
@@ -626,8 +626,6 @@ export function HoursExtrasPage() {
 
       movimiento: '',
 
-      remuneracion: '',
-
       estado: '',
 
     });
@@ -642,8 +640,6 @@ export function HoursExtrasPage() {
 
       movimiento: [],
 
-      remuneracion: [],
-
       estado: [],
 
     });
@@ -657,8 +653,6 @@ export function HoursExtrasPage() {
       periodoPago: false,
 
       movimiento: false,
-
-      remuneracion: false,
 
       estado: false,
 
@@ -680,8 +674,6 @@ export function HoursExtrasPage() {
 
       movimiento: true,
 
-      remuneracion: true,
-
       estado: true,
 
     });
@@ -701,8 +693,6 @@ export function HoursExtrasPage() {
       periodoPago: false,
 
       movimiento: false,
-
-      remuneracion: false,
 
       estado: false,
 
@@ -1076,8 +1066,6 @@ export function HoursExtrasPage() {
 
       movimiento: [],
 
-      remuneracion: [],
-
       estado: [],
 
     };
@@ -1180,30 +1168,6 @@ export function HoursExtrasPage() {
 
       {
 
-        title: 'REMUNERADA',
-
-        dataIndex: 'remuneracionResumen',
-
-        key: 'remuneracionResumen',
-
-        width: 140,
-
-        render: (value: OvertimeUiRow['remuneracionResumen']) => {
-
-          if (value === 'SI') return <Tag color="green">S?</Tag>;
-
-          if (value === 'NO') return <Tag color="red">No</Tag>;
-
-          if (value === 'MIXTA') return <Tag color="gold">Mixta</Tag>;
-
-          return '--';
-
-        },
-
-      },
-
-      {
-
         title: 'ESTADO',
 
         dataIndex: 'estado',
@@ -1240,11 +1204,11 @@ export function HoursExtrasPage() {
 
             modal.confirm({
 
-              title: 'Confirmar invalidación',
+              title: 'Confirmar invalidacion',
 
-              content: 'Esta acción se marcará como invalidada y no seguirá su flujo operativo. ¿Desea continuar?',
+              content: 'Esta accion se marcara como invalidada y no seguira su flujo operativo. ?Desea continuar?',
 
-              okText: 'Sí, invalidar',
+              okText: 'Si, invalidar',
 
               cancelText: 'Cancelar',
 
@@ -1435,6 +1399,10 @@ export function HoursExtrasPage() {
 
 
   const modalTitle = mode === 'create' ? 'Crear hora extra' : 'Editar hora extra';
+  const handleModalCompanyChange = useCallback((nextCompanyId?: number) => {
+    bustApiCache();
+    setModalCompanyId(nextCompanyId);
+  }, []);
 
 
 
@@ -1494,7 +1462,7 @@ export function HoursExtrasPage() {
 
             <p className={styles.pageSubtitle}>
 
-              Gestión de horas extra: encabezado de acción + múltiples líneas por planilla
+              Gestion de horas extra: encabezado de accion + multiples Lineas por planilla
 
             </p>
 
@@ -1522,9 +1490,9 @@ export function HoursExtrasPage() {
 
               <div>
 
-                <h2 className={styles.gestionTitle}>Gestión de horas extra</h2>
+                <h2 className={styles.gestionTitle}>Gestion de horas extra</h2>
 
-                <p className={styles.gestionDesc}>Encabezado de acción + múltiples líneas por planilla</p>
+                <p className={styles.gestionDesc}>Encabezado de accion + multiples Lineas por planilla</p>
 
               </div>
 
@@ -1974,11 +1942,7 @@ export function HoursExtrasPage() {
 
         initialDraft={editingDraft}
 
-        onCompanyChange={(nextCompanyId) => {
-
-          setModalCompanyId(nextCompanyId);
-
-        }}
+        onCompanyChange={handleModalCompanyChange}
 
         onCancel={() => {
 
@@ -2000,7 +1964,7 @@ export function HoursExtrasPage() {
 
           if (mode === 'edit' && editingRow && !isOvertimeEditableState(editingRow.estado)) {
 
-            message.warning('Esta hora extra está en modo solo lectura.');
+            message.warning('Esta hora extra esta en modo solo lectura.');
 
             return;
 
@@ -2079,6 +2043,13 @@ export function HoursExtrasPage() {
   );
 
 }
+
+
+
+
+
+
+
 
 
 

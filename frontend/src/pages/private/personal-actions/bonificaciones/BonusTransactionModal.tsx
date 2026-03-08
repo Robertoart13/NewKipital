@@ -28,6 +28,7 @@ import {
   Input,
   InputNumber,
   Modal,
+  Result,
   Row,
   Select,
   Space,
@@ -48,7 +49,6 @@ import { useTransactionLines } from '../../../../hooks/useTransactionLines';
 import { formatDateTime12h } from '../../../../lib/formatDate';
 import { EMPLOYEE_MONEY_MAX_DIGITS } from '../../../../lib/moneyInputSanitizer';
 import sharedStyles from '../../configuration/UsersManagementPage.module.css';
-import { isCoreTransactionLineComplete } from '../shared/coreTransactionLine';
 import { formatEmployeeLabel } from '../shared/employeeLabel';
 
 import type { CatalogPayPeriod } from '../../../../api/catalogs';
@@ -149,7 +149,7 @@ function buildEmptyLine(): BonusTransactionLine {
   return {
     key: `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
     tipoBonificacion: 'ordinaria_salarial',
-    remuneracion: true,
+    remuneracion: false,
     formula: '',
     montoInput: '',
   };
@@ -278,7 +278,14 @@ export function BonusTransactionModal({
   const { message, modal } = AntdApp.useApp();
   const moneyField = useMoneyFieldFormatter(MAX_ABSENCE_MONTO_DIGITS);
   const [form] = Form.useForm<HeaderValues>();
-  const isLineComplete = (line: BonusTransactionLine): boolean => isCoreTransactionLineComplete(line);
+  const isLineComplete = (line: BonusTransactionLine): boolean => {
+    const hasPayroll = !!line.payrollId;
+    const hasFecha = !!line.fechaEfecto;
+    const hasMovement = !!line.movimientoId;
+    const hasCantidad = line.cantidad != null && Number(line.cantidad) > 0;
+    const hasMonto = line.monto != null && Number(line.monto) >= 0;
+    return hasPayroll && hasFecha && hasMovement && hasCantidad && hasMonto;
+  };
   const { lines, setLines, activeLineKeys, setActiveLineKeys, updateLine, addLine, removeLine } =
     useTransactionLines<BonusTransactionLine>({
       buildEmptyLine,
@@ -301,25 +308,19 @@ export function BonusTransactionModal({
 
   useEffect(() => {
     if (!open) {
-    initOnceRef.current = false;
-    return;
-  }
+      initOnceRef.current = false;
+      return;
+    }
 
-  if (!initialDraft && initOnceRef.current) {
-    return;
-  }
-
-  if (!initialDraft) {
-    initOnceRef.current = true;
-  }
-
-    setActiveTab('info');
-
-    setAuditLoaded(false);
-
-    form.resetFields();
+    const justOpened = !initOnceRef.current;
+    if (justOpened) {
+      setActiveTab('info');
+      setAuditLoaded(false);
+      initOnceRef.current = true;
+    }
 
     if (initialDraft) {
+      form.resetFields();
       form.setFieldsValue({
         idEmpresa: initialDraft.idEmpresa,
         idEmpleado: initialDraft.idEmpleado,
@@ -331,22 +332,27 @@ export function BonusTransactionModal({
       }));
 
       setLines(draftLines);
-
       setActiveLineKeys(mode === 'edit' ? [] : draftLines.map((l) => l.key));
       return;
     }
 
+    if (!justOpened) return;
+
     const nextCompanyId = mode === 'edit' ? initialCompanyId : undefined;
 
     // En creacion no se preselecciona empresa; el usuario debe elegirla.
+    form.resetFields();
     form.setFieldsValue({ idEmpresa: nextCompanyId });
+    if (onCompanyChange) {
+      onCompanyChange(nextCompanyId);
+    }
     const initialLine = buildEmptyLine();
 
     setLines([initialLine]);
 
     setActiveLineKeys([initialLine.key]);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, initialDraft, initialCompanyId, form, mode]);
+  }, [open, initialDraft, initialCompanyId, form, mode, onCompanyChange]);
 
   useEffect(() => {
     if (!open || !showAudit || activeTab !== 'bitacora' || auditLoaded) return;
@@ -360,11 +366,23 @@ export function BonusTransactionModal({
 
   const selectedCompanyId = Form.useWatch('idEmpresa', form);
   const selectedEmployeeId = Form.useWatch('idEmpleado', form);
+  const selectedCompanyIdNum =
+    selectedCompanyId == null || Number.isNaN(Number(selectedCompanyId)) ? undefined : Number(selectedCompanyId);
+  const selectedEmployeeIdNum =
+    selectedEmployeeId == null || Number.isNaN(Number(selectedEmployeeId)) ? undefined : Number(selectedEmployeeId);
+  const handleTabChange = (nextTab: string) => {
+    setActiveTab(nextTab);
+    if (nextTab !== 'bitacora' || !showAudit || auditLoaded) return;
+    void Promise.resolve(onLoadAuditTrail?.()).finally(() => {
+      setAuditLoaded(true);
+    });
+  };
 
   useEffect(() => {
     if (!open || !onCompanyChange) return;
-    onCompanyChange(selectedCompanyId ? Number(selectedCompanyId) : undefined);
-  }, [onCompanyChange, open, selectedCompanyId]);
+    if (mode === 'edit' && selectedCompanyIdNum == null) return;
+    onCompanyChange(selectedCompanyIdNum);
+  }, [onCompanyChange, open, selectedCompanyIdNum, mode]);
 
   // Al cambiar de empleado se reinician las líneas porque cada empleado tiene planillas distintas
   useEffect(() => {
@@ -373,7 +391,7 @@ export function BonusTransactionModal({
       return;
     }
     const prev = prevEmployeeIdRef.current;
-    const current = selectedEmployeeId;
+    const current = selectedEmployeeIdNum;
 
     // Evita reset por cambios transitorios de tabs (cuando el campo se desmonta temporalmente).
     // Solo resetea cuando realmente cambia de un empleado válido a otro empleado válido.
@@ -391,16 +409,18 @@ export function BonusTransactionModal({
 
     prevEmployeeIdRef.current = current;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, selectedEmployeeId]);
+  }, [open, selectedEmployeeIdNum]);
 
   useEffect(() => {
-    if (!selectedEmployeeId || !selectedCompanyId) {
+    if (!selectedEmployeeIdNum || !selectedCompanyIdNum) {
       setEmployeePayrollConfig(null);
 
       setEligiblePayrolls([]);
       return;
     }
-    const employee = employees.find((item) => item.id === selectedEmployeeId && item.idEmpresa === selectedCompanyId);
+    const employee = employees.find(
+      (item) => Number(item.id) === selectedEmployeeIdNum && Number(item.idEmpresa) === selectedCompanyIdNum,
+    );
     if (!employee) {
       setEmployeePayrollConfig(null);
       return;
@@ -409,10 +429,10 @@ export function BonusTransactionModal({
       idPeriodoPago: employee.idPeriodoPago ? Number(employee.idPeriodoPago) : undefined,
       moneda: (employee.monedaSalario ?? '').toUpperCase() || undefined,
     });
-  }, [selectedCompanyId, selectedEmployeeId, employees]);
+  }, [selectedCompanyIdNum, selectedEmployeeIdNum, employees]);
 
   useEffect(() => {
-    if (!selectedCompanyId || !selectedEmployeeId) {
+    if (!selectedCompanyIdNum || !selectedEmployeeIdNum) {
       setEligiblePayrolls([]);
 
       setLoadingPayrolls(false);
@@ -421,7 +441,7 @@ export function BonusTransactionModal({
     let active = true;
 
     setLoadingPayrolls(true);
-    void fetchAbsencePayrollsCatalog(Number(selectedCompanyId), Number(selectedEmployeeId))
+    void fetchAbsencePayrollsCatalog(selectedCompanyIdNum, selectedEmployeeIdNum)
       .then((list) => {
         if (!active) return;
 
@@ -440,20 +460,25 @@ export function BonusTransactionModal({
     return () => {
       active = false;
     };
-  }, [selectedCompanyId, selectedEmployeeId]);
+  }, [selectedCompanyIdNum, selectedEmployeeIdNum]);
 
   const employeesByCompany = useMemo(() => {
-    if (!selectedCompanyId) return [];
-    return sortEmployeesByDisplayName(employees.filter((employee) => employee.idEmpresa === selectedCompanyId));
-  }, [employees, selectedCompanyId]);
+    if (!selectedCompanyIdNum) return [];
+    return sortEmployeesByDisplayName(
+      employees.filter((employee) => Number(employee.idEmpresa) === selectedCompanyIdNum),
+    );
+  }, [employees, selectedCompanyIdNum]);
 
   const selectedEmployee = useMemo(() => {
-    if (!selectedCompanyId || !selectedEmployeeId) return null;
+    if (!selectedCompanyIdNum || !selectedEmployeeIdNum) return null;
     return (
-      employees.find((employee) => employee.idEmpresa === selectedCompanyId && employee.id === selectedEmployeeId) ??
+      employees.find(
+        (employee) =>
+          Number(employee.idEmpresa) === selectedCompanyIdNum && Number(employee.id) === selectedEmployeeIdNum,
+      ) ??
       null
     );
-  }, [employees, selectedCompanyId, selectedEmployeeId]);
+  }, [employees, selectedCompanyIdNum, selectedEmployeeIdNum]);
 
   const selectedPayPeriod = useMemo(() => {
     if (!selectedEmployee?.idPeriodoPago) return null;
@@ -472,8 +497,8 @@ export function BonusTransactionModal({
   const periodHours = calculatePeriodHours(selectedEmployee?.idPeriodoPago, selectedEmployee?.jornada);
 
   const payrollsByCompany = useMemo(() => {
-    if (!selectedCompanyId) return [];
-    let list = eligiblePayrolls.filter((payroll) => payroll.idEmpresa === selectedCompanyId);
+    if (!selectedCompanyIdNum) return [];
+    let list = eligiblePayrolls.filter((payroll) => Number(payroll.idEmpresa) === selectedCompanyIdNum);
     if (employeePayrollConfig?.idPeriodoPago) {
       list = list.filter((payroll) => Number(payroll.idPeriodoPago) === Number(employeePayrollConfig.idPeriodoPago));
     }
@@ -481,11 +506,11 @@ export function BonusTransactionModal({
       list = list.filter((payroll) => (payroll.moneda ?? '').toUpperCase() === employeePayrollConfig.moneda);
     }
     return list;
-  }, [eligiblePayrolls, selectedCompanyId, employeePayrollConfig]);
+  }, [eligiblePayrolls, selectedCompanyIdNum, employeePayrollConfig]);
 
   const filteredMovements = useMemo(() => {
-    if (!selectedCompanyId) return [];
-    let list = movements.filter((movement) => movement.idEmpresa === selectedCompanyId);
+    if (!selectedCompanyIdNum) return [];
+    let list = movements.filter((movement) => Number(movement.idEmpresa) === selectedCompanyIdNum);
 
     if (actionTypeIdForBonus) {
       list = list.filter((movement) => movement.idTipoAccionPersonal === actionTypeIdForBonus);
@@ -495,7 +520,7 @@ export function BonusTransactionModal({
     list = list.filter((movement) => movement.esInactivo === 1 || selectedIds.has(movement.id));
 
     return list;
-  }, [movements, selectedCompanyId, actionTypeIdForBonus, lines]);
+  }, [movements, selectedCompanyIdNum, actionTypeIdForBonus, lines]);
 
   const calculateLineAmount = (line: BonusTransactionLine, movimientoId?: number, cantidadValue?: number) => {
     const movement = filteredMovements.find((m) => m.id === (movimientoId ?? line.movimientoId));
@@ -619,15 +644,15 @@ export function BonusTransactionModal({
   const canSubmit =
     !loading &&
     !readOnly &&
-    !!selectedCompanyId &&
-    !!selectedEmployeeId &&
+    !!selectedCompanyIdNum &&
+    !!selectedEmployeeIdNum &&
     lines.length > 0 &&
     lines.every(isLineComplete);
   const sensitiveMaskedValue = '***';
 
   const showGlobalPreload =
     loading ||
-    (!!selectedCompanyId && !!selectedEmployeeId && loadingPayrolls) ||
+    (!!selectedCompanyIdNum && !!selectedEmployeeIdNum && loadingPayrolls) ||
     (activeTab === 'bitacora' && loadingAuditTrail);
 
   const auditColumns: ColumnsType<PersonalActionAuditTrailItem> = useMemo(
@@ -797,7 +822,7 @@ export function BonusTransactionModal({
             {mode === 'edit' ? (
               <Tabs
                 activeKey={activeTab}
-                onChange={setActiveTab}
+                onChange={handleTabChange}
                 className={`${sharedStyles.tabsWrapper} ${sharedStyles.companyModalTabs} ${sharedStyles.tabsBarOnly}`}
                 items={[
                   {
@@ -857,7 +882,7 @@ export function BonusTransactionModal({
                                   </div>
                                   <div className={sharedStyles.employeeAccordionCompany}>
                                     <BankOutlined />
-                                    {companies.find((c) => Number(c.id) === selectedCompanyId)?.nombre ?? '--'}
+                                    {companies.find((c) => Number(c.id) === selectedCompanyIdNum)?.nombre ?? '--'}
                                   </div>
                                 </div>
                               </div>
@@ -981,7 +1006,7 @@ export function BonusTransactionModal({
                         />
                       </Form.Item>
 
-                      {selectedCompanyId ? (
+                      {selectedCompanyIdNum ? (
                         <Form.Item
                           style={{ flex: '1 1 380px', marginBottom: 0 }}
                           name="idEmpleado"
@@ -1016,7 +1041,7 @@ export function BonusTransactionModal({
                 </Col>
 
                 <Col xs={24} lg={16} style={{ display: 'flex', flexDirection: 'column', minHeight: 0 }}>
-                  {selectedCompanyId && selectedEmployeeId ? (
+                  {selectedCompanyIdNum && selectedEmployeeIdNum ? (
                     <Card
                       size="small"
                       style={{
@@ -1308,7 +1333,26 @@ export function BonusTransactionModal({
                         </>
                       )}
                     </Card>
-                  ) : null}
+                  ) : (
+                    <div
+                      style={{
+                        display: 'flex',
+                        flex: 1,
+                        minHeight: 260,
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        background: '#fafbfc',
+                        borderRadius: 8,
+                        border: '1px dashed #e8ecf0',
+                      }}
+                    >
+                      <Result
+                        status="info"
+                        title="Completar selección"
+                        subTitle="Seleccione empresa y empleado para agregar líneas de bonificación por planilla."
+                      />
+                    </div>
+                  )}
                 </Col>
               </Row>
             ) : (

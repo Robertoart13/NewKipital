@@ -222,7 +222,7 @@ function createDraftFromDisabilityDetail(detail: DisabilityDetailItem): Disabili
             key: `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
             tipoIncapacidad: 'enfermedad_comun_ccss',
             tipoInstitucion: 'CCSS',
-            remuneracion: true,
+            remuneracion: false,
             monto: detail.monto ?? undefined,
             fechaEfecto: detail.fechaEfecto ? dayjs(detail.fechaEfecto) : undefined,
           },
@@ -451,6 +451,10 @@ export function IncapacitiesPage() {
     if (!editingRow?.id) return;
     await loadDisabilityAuditTrail(editingRow.id);
   }, [editingRow?.id, loadDisabilityAuditTrail]);
+
+  const handleModalCompanyChange = useCallback((nextCompanyId?: number) => {
+    setModalCompanyId(nextCompanyId);
+  }, []);
 
   const loadCatalogs = useCallback(async () => {
     const targetCompanyId = openModal ? modalCompanyId : companyId;
@@ -741,10 +745,12 @@ export function IncapacitiesPage() {
     observacion: draft.observacion,
     lines: draft.lines.map((line) => ({
       payrollId: Number(line.payrollId),
+      fechaEfecto: line.fechaEfecto?.format('YYYY-MM-DD') ?? '',
       subsidioCcss: Number(line.subsidioCcss ?? 0),
       movimientoId: Number(line.movimientoId),
       tipoIncapacidad: line.tipoIncapacidad,
       tipoInstitucion: line.tipoInstitucion,
+      cantidad: Number(line.cantidad ?? 0),
       totalIncapacidad: Number(line.totalIncapacidad ?? line.monto ?? 0),
       monto: Number(line.monto ?? 0),
       montoIns: Number(line.montoIns ?? 0),
@@ -753,6 +759,7 @@ export function IncapacitiesPage() {
       formula: line.formula?.trim() || undefined,
     })),
   });
+  const modalTitle = mode === 'create' ? 'Crear Incapacidad' : 'Editar Incapacidad';
 
   return (
     <div className={styles.pageWrapper}>
@@ -1004,9 +1011,7 @@ export function IncapacitiesPage() {
         onLoadAuditTrail={mode === 'edit' && editingRow ? loadEditingDisabilityAuditTrail : undefined}
         initialCompanyId={modalCompanyId}
         initialDraft={editingDraft}
-        onCompanyChange={(nextCompanyId) => {
-          setModalCompanyId(nextCompanyId);
-        }}
+        onCompanyChange={handleModalCompanyChange}
         onCancel={() => {
           setOpenModal(false);
           setEditingDraft(undefined);

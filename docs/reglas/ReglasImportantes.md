@@ -597,3 +597,77 @@ Todo lo que est en este documento **es regla** y **se debe cumplir**. No hay exc
 El objetivo de estas reglas es garantizar que el cdigo y la documentacin del proyecto sean:
 
 **limpios, consistentes, mantenibles y profesionales.**
+
+---
+
+## Regla transversal - Acciones de Personal (UI)
+
+Esta regla aplica a TODOS los modulos de Acciones de Personal (Ausencias, Licencias, Incapacidades, Bonificaciones, Horas Extra, Retenciones, Descuentos, Aumentos, Vacaciones).
+
+1. Selector de empresa del modal:
+- El modal de crear/editar NO debe heredar ni preseleccionar empresa desde filtros/listados externos.
+- Solo se permite autoseleccion si el usuario tiene una unica empresa disponible.
+
+2. Catalogos dependientes (empleados, movimientos, planillas):
+- Se cargan solamente con la empresa seleccionada en el formulario del modal.
+- Toda comparacion de IDs en frontend debe normalizarse a number para evitar mismatch string/number.
+
+3. Remuneracion por defecto:
+- En lineas nuevas de transaccion, `remuneracion` debe iniciar en `false` (No), salvo regla funcional explicita del modulo.
+- En fallback de edicion sin lineas, mantener el mismo default `false`.
+
+4. Regla de implementacion cuando falle catalogo visible pero hay datos en BD:
+- Verificar primero datos reales en `mysql_hr_pro`.
+- Verificar tipo de accion correcto por empresa.
+- Revisar filtros de frontend por `idEmpresa`/`idEmpleado` y normalizar tipos.
+- No asumir problema de BD sin validar el endpoint y los filtros del modal.
+
+## Regla transversal - Acciones de Personal (Bitacora y validacion de lineas)
+
+Esta extension aplica a TODOS los modulos de Acciones de Personal con lineas de transaccion.
+
+1. Bitacora en create/update:
+- El detalle de auditoria debe guardar cambios por linea y por campo.
+- Formato recomendado: `Linea N - Campo` (ejemplo: `Linea 1 - Cantidad`, `Linea 1 - Monto`, `Linea 1 - Remuneracion`).
+- No limitar la bitacora a solo `monto` o `lineas`; debe incluir campos operativos que expliquen el cambio real.
+
+2. Validacion de linea completa para permitir "Agregar linea":
+- Solo deben bloquearse campos realmente obligatorios del modulo.
+- En Ausencias, `formula` NO debe bloquear agregar linea cuando la linea viene de datos historicos o formula derivada.
+- Campos obligatorios base para Ausencias: `payrollId`, `fechaEfecto`, `movimientoId`, `cantidad > 0`, `monto >= 0`.
+
+3. Regla de mantenimiento:
+- Al implementar otro modulo (Licencias, Bonificaciones, etc.), revisar si `isLineComplete` depende de campos no obligatorios.
+- Si un campo es calculado/derivado o historicamente puede venir vacio, no usarlo como bloqueo para agregar nueva linea.
+
+4. Bitacora detallada por linea (aplica a Ausencias y Licencias, y replicable al resto):
+- En create/update se debe persistir `lineasDetalle` en `payloadAfter` (y en update tambien en `payloadBefore`).
+- El comparador de auditoria debe generar cambios por linea/campo con formato `Linea N - Campo`.
+- Campos minimos por linea a comparar: periodo de pago, movimiento, tipo (ausencia/licencia), cantidad, monto, remuneracion, fecha efecto y formula.
+- Objetivo: que el usuario de bitacora entienda claramente que edito, no solo cambios de monto global.
+
+5. Paridad Incapacidades con Ausencias/Licencias:
+- Aplicar normalizacion de IDs del modal (`selectedCompanyIdNum`, `selectedEmployeeIdNum`) para filtros de catalogos y comparaciones.
+- El tab de bitacora no debe resetearse a informacion principal al abrir/cambiar tabs.
+- `remuneracion` por defecto en lineas nuevas debe iniciar en `false`.
+- Validacion de linea completa para "Agregar linea" no debe depender de campos derivados (ej. formula).
+
+6. Validacion de origen de opciones en selects (Acciones de Personal):
+- Cada `Select` debe construir `options` desde su catalogo propio (ej. planilla desde `payrollsByCompany`, movimiento desde `filteredMovements`).
+- Nunca reutilizar labels de otro catalogo en fallback de "No elegible hoy".
+- Si aparece texto incoherente (ej. "Movimiento" en select de planilla), revisar mapeo `value/label` del bloque de opciones antes de depurar backend.
+
+7. Paridad Bonificaciones con Ausencias/Licencias/Incapacidades:
+- `remuneracion` por defecto en linea nueva y fallback de edicion sin lineas = `false`.
+- Validacion de "linea completa" para agregar nueva linea no debe depender de `formula` (campo derivado).
+- En edicion, cada linea debe hidratar `formula` desde detalle para evitar bloqueos/estado inconsistente.
+- En payload frontend de create/update de Bonificaciones, incluir `cantidad` siempre.
+- En backend de bitacora Bonificaciones, incluir `lineasDetalle` en create/update y comparar por campo con formato `Linea N - Campo`, incluyendo `Tipo bonificacion`.
+
+8. Paridad Horas Extra:
+- Aplicar normalizacion de IDs (`selectedCompanyIdNum`, `selectedEmployeeIdNum`) en modal para filtros de empleados, planillas y movimientos.
+- El tab Bitacora no debe resetearse a Informacion Principal por efectos secundarios del formulario.
+- `remuneracion` por defecto en linea nueva y fallback de edicion sin lineas = `false`.
+- Validacion de linea completa para agregar nueva linea: obligatorios reales (`payrollId`, `fechaEfecto`, `movimientoId`, `fechaInicioHoraExtra`, `fechaFinHoraExtra`, `tipoJornadaHorasExtras`, `cantidad > 0`, `monto >= 0`), sin bloquear por `formula`.
+- En select de Planilla, etiquetas deben salir del catalogo de planillas (`nombrePlanilla + estado`), nunca de datos de movimiento.
+- En backend, create/update de Horas Extra debe publicar `lineasDetalle` en auditoria incluyendo fechas y tipo de jornada por linea.

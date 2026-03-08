@@ -220,7 +220,7 @@ function createDraftFromAbsenceDetail(detail: AbsenceDetailItem): AbsenceFormDra
           {
             key: `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
             tipoAusencia: 'JUSTIFICADA',
-            remuneracion: true,
+            remuneracion: false,
             monto: detail.monto ?? undefined,
             formula: '',
             fechaEfecto: detail.fechaEfecto ? dayjs(detail.fechaEfecto) : undefined,
@@ -755,6 +755,10 @@ export function AbsencesPage() {
   );
 
   const modalTitle = mode === 'create' ? 'Crear Ausencia' : 'Editar Ausencia';
+  const handleModalCompanyChange = useCallback((nextCompanyId?: number) => {
+    bustApiCache();
+    setModalCompanyId(nextCompanyId);
+  }, []);
 
   const mapDraftToPayload = (draft: AbsenceFormDraft) => ({
     idEmpresa: draft.idEmpresa,
@@ -765,6 +769,7 @@ export function AbsencesPage() {
       fechaEfecto: line.fechaEfecto?.format('YYYY-MM-DD') ?? '',
       movimientoId: Number(line.movimientoId),
       tipoAusencia: line.tipoAusencia,
+      cantidad: Number(line.cantidad ?? 0),
       monto: Number(line.monto ?? 0),
       remuneracion: Boolean(line.remuneracion),
       formula: line.formula?.trim() || undefined,
@@ -1023,10 +1028,7 @@ export function AbsencesPage() {
         onLoadAuditTrail={mode === 'edit' && editingRow ? loadEditingAbsenceAuditTrail : undefined}
         initialCompanyId={modalCompanyId}
         initialDraft={editingDraft}
-        onCompanyChange={(nextCompanyId) => {
-          bustApiCache();
-          setModalCompanyId(nextCompanyId);
-        }}
+        onCompanyChange={handleModalCompanyChange}
         onCancel={() => {
           setOpenModal(false);
           setEditingDraft(undefined);

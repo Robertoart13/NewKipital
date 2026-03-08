@@ -1,4 +1,4 @@
-import {
+﻿import {
   CalendarOutlined,
   CloseOutlined,
   DeleteOutlined,
@@ -28,6 +28,7 @@ import {
   Input,
   InputNumber,
   Modal,
+  Result,
   Row,
   Select,
   Space,
@@ -48,7 +49,6 @@ import { useTransactionLines } from '../../../../hooks/useTransactionLines';
 import { formatDateTime12h } from '../../../../lib/formatDate';
 import { EMPLOYEE_MONEY_MAX_DIGITS } from '../../../../lib/moneyInputSanitizer';
 import sharedStyles from '../../configuration/UsersManagementPage.module.css';
-import { isCoreTransactionLineComplete } from '../shared/coreTransactionLine';
 import { formatEmployeeLabel } from '../shared/employeeLabel';
 
 import type { CatalogPayPeriod } from '../../../../api/catalogs';
@@ -150,7 +150,7 @@ function buildEmptyLine(): OvertimeTransactionLine {
   return {
     key: `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
     tipoJornadaHorasExtras: '8',
-    remuneracion: true,
+    remuneracion: false,
     formula: '',
     montoInput: '',
   };
@@ -230,6 +230,21 @@ function calculatePeriodHours(payPeriodId?: number | null, jornada?: string | nu
   }
 }
 
+function parseDateAsLocalDay(value?: string | null) {
+  if (!value) return undefined;
+  const raw = String(value).trim();
+  const match = raw.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (match) {
+    const year = Number(match[1]);
+    const month = Number(match[2]);
+    const day = Number(match[3]);
+    if (Number.isFinite(year) && Number.isFinite(month) && Number.isFinite(day)) {
+      return dayjs(new Date(year, month - 1, day));
+    }
+  }
+  const parsed = dayjs(raw);
+  return parsed.isValid() ? parsed : undefined;
+}
 function parseNonNegative(value: string | number | null | undefined): number {
   const parsed = Number(value);
   if (!Number.isFinite(parsed) || parsed < 0) return 0;
@@ -279,11 +294,17 @@ export function HoursExtraTransactionModal({
   const { message, modal } = AntdApp.useApp();
   const moneyField = useMoneyFieldFormatter(MAX_ABSENCE_MONTO_DIGITS);
   const [form] = Form.useForm<HeaderValues>();
-  const isLineComplete = (line: OvertimeTransactionLine): boolean =>
-    isCoreTransactionLineComplete(line) &&
-    !!line.fechaInicioHoraExtra &&
-    !!line.fechaFinHoraExtra &&
-    !!line.tipoJornadaHorasExtras;
+  const isLineComplete = (line: OvertimeTransactionLine): boolean => {
+    const hasPayroll = !!line.payrollId;
+    const hasFecha = !!line.fechaEfecto;
+    const hasMovement = !!line.movimientoId;
+    const hasCantidad = line.cantidad != null && Number(line.cantidad) > 0;
+    const hasMonto = line.monto != null && Number(line.monto) >= 0;
+    const hasFechaInicio = !!line.fechaInicioHoraExtra;
+    const hasFechaFin = !!line.fechaFinHoraExtra;
+    const hasTipoJornada = !!line.tipoJornadaHorasExtras;
+    return hasPayroll && hasFecha && hasMovement && hasCantidad && hasMonto && hasFechaInicio && hasFechaFin && hasTipoJornada;
+  };
   const { lines, setLines, activeLineKeys, setActiveLineKeys, updateLine, addLine, removeLine } =
     useTransactionLines<OvertimeTransactionLine>({
       buildEmptyLine,
@@ -306,25 +327,19 @@ export function HoursExtraTransactionModal({
 
   useEffect(() => {
     if (!open) {
-    initOnceRef.current = false;
-    return;
-  }
+      initOnceRef.current = false;
+      return;
+    }
 
-  if (!initialDraft && initOnceRef.current) {
-    return;
-  }
-
-  if (!initialDraft) {
-    initOnceRef.current = true;
-  }
-
-    setActiveTab('info');
-
-    setAuditLoaded(false);
-
-    form.resetFields();
+    const justOpened = !initOnceRef.current;
+    if (justOpened) {
+      setActiveTab('info');
+      setAuditLoaded(false);
+      initOnceRef.current = true;
+    }
 
     if (initialDraft) {
+      form.resetFields();
       form.setFieldsValue({
         idEmpresa: initialDraft.idEmpresa,
         idEmpleado: initialDraft.idEmpleado,
@@ -341,17 +356,23 @@ export function HoursExtraTransactionModal({
       return;
     }
 
+    if (!justOpened) return;
+
     const nextCompanyId = mode === 'edit' ? initialCompanyId : undefined;
 
     // En creacion no se preselecciona empresa; el usuario debe elegirla.
+    form.resetFields();
     form.setFieldsValue({ idEmpresa: nextCompanyId });
+    if (onCompanyChange) {
+      onCompanyChange(nextCompanyId);
+    }
     const initialLine = buildEmptyLine();
 
     setLines([initialLine]);
 
     setActiveLineKeys([initialLine.key]);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, initialDraft, initialCompanyId, form, mode]);
+  }, [open, initialDraft, initialCompanyId, form, mode, onCompanyChange]);
 
   useEffect(() => {
     if (!open || !showAudit || activeTab !== 'bitacora' || auditLoaded) return;
@@ -365,24 +386,36 @@ export function HoursExtraTransactionModal({
 
   const selectedCompanyId = Form.useWatch('idEmpresa', form);
   const selectedEmployeeId = Form.useWatch('idEmpleado', form);
+  const selectedCompanyIdNum =
+    selectedCompanyId == null || Number.isNaN(Number(selectedCompanyId)) ? undefined : Number(selectedCompanyId);
+  const selectedEmployeeIdNum =
+    selectedEmployeeId == null || Number.isNaN(Number(selectedEmployeeId)) ? undefined : Number(selectedEmployeeId);
+  const handleTabChange = (nextTab: string) => {
+    setActiveTab(nextTab);
+    if (nextTab !== 'bitacora' || !showAudit || auditLoaded) return;
+    void Promise.resolve(onLoadAuditTrail?.()).finally(() => {
+      setAuditLoaded(true);
+    });
+  };
 
   useEffect(() => {
     if (!open) return;
     if (!onCompanyChange) return;
-    onCompanyChange(selectedCompanyId ? Number(selectedCompanyId) : undefined);
-  }, [onCompanyChange, open, selectedCompanyId]);
+    if (mode === 'edit' && selectedCompanyIdNum == null) return;
+    onCompanyChange(selectedCompanyIdNum);
+  }, [onCompanyChange, open, selectedCompanyIdNum, mode]);
 
-  // Al cambiar de empleado se reinician las líneas porque cada empleado tiene planillas distintas
+  // Al cambiar de empleado se reinician las Lineas porque cada empleado tiene planillas distintas
   useEffect(() => {
     if (!open) {
       prevEmployeeIdRef.current = undefined;
       return;
     }
     const prev = prevEmployeeIdRef.current;
-    const current = selectedEmployeeId;
+    const current = selectedEmployeeIdNum;
 
     // Evita reset por cambios transitorios de tabs (cuando el campo se desmonta temporalmente).
-    // Solo resetea cuando realmente cambia de un empleado válido a otro empleado válido.
+    // Solo resetea cuando realmente cambia de un empleado valido a otro empleado valido.
     if (current == null) {
       return;
     }
@@ -397,16 +430,18 @@ export function HoursExtraTransactionModal({
 
     prevEmployeeIdRef.current = current;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, selectedEmployeeId]);
+  }, [open, selectedEmployeeIdNum]);
 
   useEffect(() => {
-    if (!selectedEmployeeId || !selectedCompanyId) {
+    if (!selectedEmployeeIdNum || !selectedCompanyIdNum) {
       setEmployeePayrollConfig(null);
 
       setEligiblePayrolls([]);
       return;
     }
-    const employee = employees.find((item) => item.id === selectedEmployeeId && item.idEmpresa === selectedCompanyId);
+    const employee = employees.find(
+      (item) => Number(item.id) === selectedEmployeeIdNum && Number(item.idEmpresa) === selectedCompanyIdNum,
+    );
     if (!employee) {
       setEmployeePayrollConfig(null);
       return;
@@ -415,10 +450,10 @@ export function HoursExtraTransactionModal({
       idPeriodoPago: employee.idPeriodoPago ? Number(employee.idPeriodoPago) : undefined,
       moneda: (employee.monedaSalario ?? '').toUpperCase() || undefined,
     });
-  }, [selectedCompanyId, selectedEmployeeId, employees]);
+  }, [selectedCompanyIdNum, selectedEmployeeIdNum, employees]);
 
   useEffect(() => {
-    if (!selectedCompanyId || !selectedEmployeeId) {
+    if (!selectedCompanyIdNum || !selectedEmployeeIdNum) {
       setEligiblePayrolls([]);
 
       setLoadingPayrolls(false);
@@ -427,7 +462,7 @@ export function HoursExtraTransactionModal({
     let active = true;
 
     setLoadingPayrolls(true);
-    void fetchAbsencePayrollsCatalog(Number(selectedCompanyId), Number(selectedEmployeeId))
+    void fetchAbsencePayrollsCatalog(selectedCompanyIdNum, selectedEmployeeIdNum)
       .then((list) => {
         if (!active) return;
 
@@ -446,20 +481,25 @@ export function HoursExtraTransactionModal({
     return () => {
       active = false;
     };
-  }, [selectedCompanyId, selectedEmployeeId]);
+  }, [selectedCompanyIdNum, selectedEmployeeIdNum]);
 
   const employeesByCompany = useMemo(() => {
-    if (!selectedCompanyId) return [];
-    return sortEmployeesByDisplayName(employees.filter((employee) => employee.idEmpresa === selectedCompanyId));
-  }, [employees, selectedCompanyId]);
+    if (!selectedCompanyIdNum) return [];
+    return sortEmployeesByDisplayName(
+      employees.filter((employee) => Number(employee.idEmpresa) === selectedCompanyIdNum),
+    );
+  }, [employees, selectedCompanyIdNum]);
 
   const selectedEmployee = useMemo(() => {
-    if (!selectedCompanyId || !selectedEmployeeId) return null;
+    if (!selectedCompanyIdNum || !selectedEmployeeIdNum) return null;
     return (
-      employees.find((employee) => employee.idEmpresa === selectedCompanyId && employee.id === selectedEmployeeId) ??
+      employees.find(
+        (employee) =>
+          Number(employee.idEmpresa) === selectedCompanyIdNum && Number(employee.id) === selectedEmployeeIdNum,
+      ) ??
       null
     );
-  }, [employees, selectedCompanyId, selectedEmployeeId]);
+  }, [employees, selectedCompanyIdNum, selectedEmployeeIdNum]);
 
   const selectedPayPeriod = useMemo(() => {
     if (!selectedEmployee?.idPeriodoPago) return null;
@@ -478,8 +518,8 @@ export function HoursExtraTransactionModal({
   const periodHours = calculatePeriodHours(selectedEmployee?.idPeriodoPago, selectedEmployee?.jornada);
 
   const payrollsByCompany = useMemo(() => {
-    if (!selectedCompanyId) return [];
-    let list = eligiblePayrolls.filter((payroll) => payroll.idEmpresa === selectedCompanyId);
+    if (!selectedCompanyIdNum) return [];
+    let list = eligiblePayrolls.filter((payroll) => Number(payroll.idEmpresa) === selectedCompanyIdNum);
     if (employeePayrollConfig?.idPeriodoPago) {
       list = list.filter((payroll) => Number(payroll.idPeriodoPago) === Number(employeePayrollConfig.idPeriodoPago));
     }
@@ -487,11 +527,11 @@ export function HoursExtraTransactionModal({
       list = list.filter((payroll) => (payroll.moneda ?? '').toUpperCase() === employeePayrollConfig.moneda);
     }
     return list;
-  }, [eligiblePayrolls, selectedCompanyId, employeePayrollConfig]);
+  }, [eligiblePayrolls, selectedCompanyIdNum, employeePayrollConfig]);
 
   const filteredMovements = useMemo(() => {
-    if (!selectedCompanyId) return [];
-    let list = movements.filter((movement) => movement.idEmpresa === selectedCompanyId);
+    if (!selectedCompanyIdNum) return [];
+    let list = movements.filter((movement) => Number(movement.idEmpresa) === selectedCompanyIdNum);
 
     if (actionTypeIdForOvertime) {
       list = list.filter((movement) => movement.idTipoAccionPersonal === actionTypeIdForOvertime);
@@ -501,7 +541,7 @@ export function HoursExtraTransactionModal({
     list = list.filter((movement) => movement.esInactivo === 1 || selectedIds.has(movement.id));
 
     return list;
-  }, [movements, selectedCompanyId, actionTypeIdForOvertime, lines]);
+  }, [movements, selectedCompanyIdNum, actionTypeIdForOvertime, lines]);
 
   const calculateLineAmount = (line: OvertimeTransactionLine, movimientoId?: number, cantidadValue?: number) => {
     const movement = filteredMovements.find((m) => m.id === (movimientoId ?? line.movimientoId));
@@ -519,7 +559,7 @@ export function HoursExtraTransactionModal({
       return {
         monto: montoCalculado,
         montoInput: String(montoCalculado),
-        formula: `Monto fijo: ${montoFijo} × ${cantidad}`,
+        formula: `Monto fijo: ${montoFijo} x ${cantidad}`,
       };
     }
 
@@ -536,7 +576,7 @@ export function HoursExtraTransactionModal({
         return {
           monto: montoCalculado,
           montoInput: String(montoCalculado),
-          formula: `${baseTxt} × ${porcentaje}% × ${cantidad}`,
+          formula: `${baseTxt} x ${porcentaje}% x ${cantidad}`,
         };
       }
 
@@ -548,11 +588,11 @@ export function HoursExtraTransactionModal({
       return {
         monto: montoCalculado,
         montoInput: String(montoCalculado),
-        formula: `(${baseTxt}/30)/${horas} × ${porcentaje}% × ${cantidad}`,
+        formula: `(${baseTxt}/30)/${horas} x ${porcentaje}% x ${cantidad}`,
       };
     }
 
-    return { monto: 0, montoInput: '0', formula: 'Sin configuración de cálculo' };
+    return { monto: 0, montoInput: '0', formula: 'Sin configuracion de calculo' };
   };
 
   const handlePayrollChange = (lineKey: string, payrollId?: number) => {
@@ -561,7 +601,7 @@ export function HoursExtraTransactionModal({
       payrollId,
       payrollLabel: payroll?.nombrePlanilla ?? undefined,
       payrollEstado: payroll?.estado,
-      fechaEfecto: payroll?.fechaFinPeriodo ? dayjs(payroll.fechaFinPeriodo) : undefined,
+      fechaEfecto: parseDateAsLocalDay(payroll?.fechaFinPeriodo),
     });
   };
 
@@ -634,7 +674,7 @@ export function HoursExtraTransactionModal({
     if (loading) return;
     const values = await form.validateFields();
     if (lines.length === 0 || !lines.every(isLineComplete)) {
-      message.error('Complete todas las líneas antes de crear/guardar la hora extra.');
+      message.error('Complete todas las Lineas antes de crear/guardar la hora extra.');
       return;
     }
 
@@ -646,13 +686,13 @@ export function HoursExtraTransactionModal({
     };
 
     modal.confirm({
-      title: mode === 'create' ? 'Confirmar creación de hora extra' : 'Confirmar actualización de hora extra',
+      title: mode === 'create' ? 'Confirmar creacion de hora extra' : 'Confirmar actualizacion de hora extra',
       content:
         mode === 'create'
-          ? '¿Está seguro de crear esta hora extra con las líneas capturadas?'
-          : '¿Está seguro de guardar los cambios de esta hora extra?',
+          ? '?esta seguro de crear esta hora extra con las Lineas capturadas?'
+          : '?esta seguro de guardar los cambios de esta hora extra?',
       icon: <QuestionCircleOutlined style={{ color: '#5a6c7d', fontSize: 40 }} />,
-      okText: mode === 'create' ? 'Sí, crear' : 'Sí, guardar',
+      okText: mode === 'create' ? 'Si, crear' : 'Si, guardar',
       cancelText: 'Cancelar',
       centered: true,
       width: 420,
@@ -668,15 +708,15 @@ export function HoursExtraTransactionModal({
   const canSubmit =
     !loading &&
     !readOnly &&
-    !!selectedCompanyId &&
-    !!selectedEmployeeId &&
+    !!selectedCompanyIdNum &&
+    !!selectedEmployeeIdNum &&
     lines.length > 0 &&
     lines.every(isLineComplete);
   const sensitiveMaskedValue = '***';
 
   const showGlobalPreload =
     loading ||
-    (!!selectedCompanyId && !!selectedEmployeeId && loadingPayrolls) ||
+    (!!selectedCompanyIdNum && !!selectedEmployeeIdNum && loadingPayrolls) ||
     (activeTab === 'bitacora' && loadingAuditTrail);
   const disableFutureDate = (current: Dayjs) => current.isAfter(dayjs().endOf('day'));
   const disableStartDate = (line: OvertimeTransactionLine) => (current: Dayjs) => {
@@ -749,7 +789,7 @@ export function HoursExtraTransactionModal({
                   ))}
                 </div>
               ) : (
-                <div style={{ fontSize: 12 }}>Sin detalle de campos para esta acción.</div>
+                <div style={{ fontSize: 12 }}>Sin detalle de campos para esta accion.</div>
               )}
             </div>
           );
@@ -848,7 +888,7 @@ export function HoursExtraTransactionModal({
               <Alert
                 type="warning"
                 showIcon
-                title={readOnlyMessage ?? 'Esta hora extra Está en modo solo lectura por su estado actual.'}
+                title={readOnlyMessage ?? 'Esta hora extra esta en modo solo lectura por su estado actual.'}
                 className={`${sharedStyles.infoBanner} ${sharedStyles.warningType}`}
                 style={{ marginBottom: 12 }}
               />
@@ -857,7 +897,7 @@ export function HoursExtraTransactionModal({
             {mode === 'edit' ? (
               <Tabs
                 activeKey={activeTab}
-                onChange={setActiveTab}
+                onChange={handleTabChange}
                 className={`${sharedStyles.tabsWrapper} ${sharedStyles.companyModalTabs} ${sharedStyles.tabsBarOnly}`}
                 items={[
                   {
@@ -917,7 +957,7 @@ export function HoursExtraTransactionModal({
                                   </div>
                                   <div className={sharedStyles.employeeAccordionCompany}>
                                     <BankOutlined />
-                                    {companies.find((c) => Number(c.id) === selectedCompanyId)?.nombre ?? '--'}
+                                    {companies.find((c) => Number(c.id) === selectedCompanyIdNum)?.nombre ?? '--'}
                                   </div>
                                 </div>
                               </div>
@@ -929,7 +969,7 @@ export function HoursExtraTransactionModal({
                                 <div className={sharedStyles.employeeAccordionItem}>
                                   <IdcardOutlined className={sharedStyles.employeeAccordionItemIcon} />
                                   <div>
-                                    <div className={sharedStyles.employeeAccordionItemLabel}>Cédula</div>
+                                    <div className={sharedStyles.employeeAccordionItemLabel}>Cedula</div>
                                     <div className={sharedStyles.employeeAccordionItemValue}>
                                       {canViewEmployeeSensitive
                                         ? (selectedEmployee.cedula ?? '--')
@@ -951,7 +991,7 @@ export function HoursExtraTransactionModal({
                                 <div className={sharedStyles.employeeAccordionItem}>
                                   <CalendarOutlined className={sharedStyles.employeeAccordionItemIcon} />
                                   <div>
-                                    <div className={sharedStyles.employeeAccordionItemLabel}>Período</div>
+                                    <div className={sharedStyles.employeeAccordionItemLabel}>Periodo</div>
                                     <div className={sharedStyles.employeeAccordionItemValue}>
                                       {selectedPayPeriod?.nombre ?? '--'}
                                     </div>
@@ -984,7 +1024,7 @@ export function HoursExtraTransactionModal({
                                   <DollarCircleOutlined className={sharedStyles.employeeAccordionItemIcon} />
                                   <div>
                                     <div className={sharedStyles.employeeAccordionItemLabel}>
-                                      Salario {selectedPayPeriod?.nombre ?? 'Período'}
+                                      Salario {selectedPayPeriod?.nombre ?? 'Periodo'}
                                     </div>
                                     <div className={sharedStyles.employeeAccordionItemValue}>
                                       {canViewEmployeeSensitive
@@ -1007,7 +1047,7 @@ export function HoursExtraTransactionModal({
                                 <div className={sharedStyles.employeeAccordionItem}>
                                   <ClockCircleOutlined className={sharedStyles.employeeAccordionItemIcon} />
                                   <div>
-                                    <div className={sharedStyles.employeeAccordionItemLabel}>Horas del Período</div>
+                                    <div className={sharedStyles.employeeAccordionItemLabel}>Horas del Periodo</div>
                                     <div
                                       className={sharedStyles.employeeAccordionItemValue}
                                     >{`${periodHours} horas`}</div>
@@ -1041,7 +1081,7 @@ export function HoursExtraTransactionModal({
                         />
                       </Form.Item>
 
-                      {selectedCompanyId ? (
+                      {selectedCompanyIdNum ? (
                         <Form.Item
                           style={{ flex: '1 1 380px', marginBottom: 0 }}
                           name="idEmpleado"
@@ -1076,7 +1116,7 @@ export function HoursExtraTransactionModal({
                 </Col>
 
                 <Col xs={24} lg={16} style={{ display: 'flex', flexDirection: 'column', minHeight: 0 }}>
-                  {selectedCompanyId && selectedEmployeeId ? (
+                  {selectedCompanyIdNum && selectedEmployeeIdNum ? (
                     <Card
                       size="small"
                       style={{
@@ -1097,7 +1137,7 @@ export function HoursExtraTransactionModal({
                     >
                       {loading && !showGlobalPreload ? (
                         <Flex justify="center" align="center" style={{ minHeight: 220 }}>
-                          <Spin size="large" description="Cargando líneas de transacción..." />
+                          <Spin size="large" description="Cargando Lineas de transaccion..." />
                         </Flex>
                       ) : (
                         <>
@@ -1115,7 +1155,7 @@ export function HoursExtraTransactionModal({
                                 );
                                 const payrollOptions = payrollsByCompany.map((payroll) => ({
                                   value: payroll.id,
-                                    label: `${line.movimientoLabel ?? `Movimiento #${line.movimientoId}`} (No elegible hoy)`,
+                                  label: `${payroll.nombrePlanilla ?? `Planilla #${payroll.id}`} (${getPayrollEstadoLabel(payroll.estado)})`,
                                   disabled: false,
                                 }));
                                 if (
@@ -1152,7 +1192,7 @@ export function HoursExtraTransactionModal({
                                       align="center"
                                       style={{ width: '100%', paddingRight: 8 }}
                                     >
-                                      <span style={{ fontWeight: 600, color: '#3d4f5c' }}>Línea {index + 1}</span>
+                                      <span style={{ fontWeight: 600, color: '#3d4f5c' }}>Linea {index + 1}</span>
                                       <Button
                                         danger
                                         size="small"
@@ -1286,7 +1326,7 @@ export function HoursExtraTransactionModal({
                                               disabled={readOnly || !line.movimientoId}
                                               disabledDate={disableEndDate(line)}
                                               onChange={(value) =>
-                                              {`7. Monto (${employeePayrollConfig?.moneda ?? 'MONEDA'})`}
+                                                handleFechaFinHoraExtraChange(line.key, value ?? undefined)
                                               }
                                             />
                                           </Col>
@@ -1362,7 +1402,7 @@ export function HoursExtraTransactionModal({
                                             </Col>
                                             <Col xs={24} md={16}>
                                               <div className={sharedStyles.filterLabel} style={{ color: '#94a3b8' }}>
-                                                Fórmula
+                                                Formula
                                               </div>
                                               <Input
                                                 value={line.formula}
@@ -1390,13 +1430,32 @@ export function HoursExtraTransactionModal({
                             }}
                           >
                             <Button type="dashed" icon={<PlusOutlined />} onClick={handleAddLine} disabled={readOnly}>
-                              Agregar línea de transacción
+                              Agregar Linea de transaccion
                             </Button>
                           </Flex>
                         </>
                       )}
                     </Card>
-                  ) : null}
+                  ) : (
+                    <div
+                      style={{
+                        display: 'flex',
+                        flex: 1,
+                        minHeight: 260,
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        background: '#fafbfc',
+                        borderRadius: 8,
+                        border: '1px dashed #e8ecf0',
+                      }}
+                    >
+                      <Result
+                        status="info"
+                        title="Completar seleccion"
+                        subTitle="Seleccione empresa y empleado para agregar Lineas de horas extra por planilla."
+                      />
+                    </div>
+                  )}
                 </Col>
               </Row>
             ) : null}
@@ -1421,7 +1480,7 @@ export function HoursExtraTransactionModal({
                   pageSizeOptions: [4, 8, 10],
                   showTotal: (total) => `${total} registro(s)`,
                 }}
-                locale={{ emptyText: 'No hay registros de bitácora para esta hora extra.' }}
+                locale={{ emptyText: 'No hay registros de bitacora para esta hora extra.' }}
               />
             </div>
           ) : null}
@@ -1449,6 +1508,10 @@ export function HoursExtraTransactionModal({
     </Modal>
   );
 }
+
+
+
+
 
 
 

@@ -33,8 +33,11 @@ export class UpsertLicenseLineDto {
   tipoLicencia: TipoLicenciaLinea;
 
   @Type(() => Number)
-  @IsNumber({ maxDecimalPlaces: 4 })
-  @Min(0.0001)
+  @IsNumber(
+    { maxDecimalPlaces: 4 },
+    { message: 'cantidad debe ser un numero valido con hasta 4 decimales' },
+  )
+  @Min(0.0001, { message: 'cantidad debe ser mayor o igual a 0.0001' })
   cantidad: number;
 
   @IsInt()

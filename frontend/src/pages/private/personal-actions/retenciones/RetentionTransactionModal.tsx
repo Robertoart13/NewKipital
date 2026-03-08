@@ -28,6 +28,7 @@ import {
   Input,
   InputNumber,
   Modal,
+  Result,
   Row,
   Select,
   Space,
@@ -1268,7 +1269,26 @@ export function RetentionTransactionModal({
                         </>
                       )}
                     </Card>
-                  ) : null}
+                  ) : (
+                    <div
+                      style={{
+                        display: 'flex',
+                        flex: 1,
+                        minHeight: 260,
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        background: '#fafbfc',
+                        borderRadius: 8,
+                        border: '1px dashed #e8ecf0',
+                      }}
+                    >
+                      <Result
+                        status="info"
+                        title="Completar selección"
+                        subTitle="Seleccione empresa y empleado para agregar líneas de retención por planilla."
+                      />
+                    </div>
+                  )}
                 </Col>
               </Row>
             ) : (

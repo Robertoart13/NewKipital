@@ -28,6 +28,7 @@ import {
   Input,
   InputNumber,
   Modal,
+  Result,
   Row,
   Select,
   Space,
@@ -49,7 +50,6 @@ import { useTransactionLines } from '../../../../hooks/useTransactionLines';
 import { formatDateTime12h } from '../../../../lib/formatDate';
 import { EMPLOYEE_MONEY_MAX_DIGITS } from '../../../../lib/moneyInputSanitizer';
 import sharedStyles from '../../configuration/UsersManagementPage.module.css';
-import { isCoreTransactionLineComplete } from '../shared/coreTransactionLine';
 import { formatEmployeeLabel } from '../shared/employeeLabel';
 
 import type { CatalogPayPeriod } from '../../../../api/catalogs';
@@ -164,7 +164,7 @@ function buildEmptyLine(): LicenseTransactionLine {
   return {
     key: `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
     tipoLicencia: 'permiso_con_goce',
-    remuneracion: true,
+    remuneracion: false,
     formula: '',
     montoInput: '',
   };
@@ -295,7 +295,16 @@ export function LicenseTransactionModal({
   const [form] = Form.useForm<HeaderValues>();
   const selectedCompanyId = Form.useWatch('idEmpresa', form);
   const selectedEmployeeId = Form.useWatch('idEmpleado', form);
-  const isLineComplete = (line: LicenseTransactionLine): boolean => isCoreTransactionLineComplete(line);
+  const selectedCompanyIdNum = selectedCompanyId == null ? undefined : Number(selectedCompanyId);
+  const selectedEmployeeIdNum = selectedEmployeeId == null ? undefined : Number(selectedEmployeeId);
+  const isLineComplete = (line: LicenseTransactionLine): boolean => {
+    const hasPayroll = !!line.payrollId;
+    const hasFecha = !!line.fechaEfecto;
+    const hasMovement = !!line.movimientoId;
+    const hasCantidad = line.cantidad != null && Number(line.cantidad) > 0;
+    const hasMonto = line.monto != null && Number(line.monto) >= 0;
+    return hasPayroll && hasFecha && hasMovement && hasCantidad && hasMonto;
+  };
   const { lines, setLines, activeLineKeys, setActiveLineKeys, updateLine, addLine, removeLine } =
     useTransactionLines<LicenseTransactionLine>({
       buildEmptyLine,
@@ -318,25 +327,19 @@ export function LicenseTransactionModal({
 
   useEffect(() => {
     if (!open) {
-    initOnceRef.current = false;
-    return;
-  }
+      initOnceRef.current = false;
+      return;
+    }
 
-  if (!initialDraft && initOnceRef.current) {
-    return;
-  }
-
-  if (!initialDraft) {
-    initOnceRef.current = true;
-  }
-
-    setActiveTab('info');
-
-    setAuditLoaded(false);
-
-    form.resetFields();
+    const justOpened = !initOnceRef.current;
+    if (justOpened) {
+      setActiveTab('info');
+      setAuditLoaded(false);
+      initOnceRef.current = true;
+    }
 
     if (initialDraft) {
+      form.resetFields();
       form.setFieldsValue({
         idEmpresa: initialDraft.idEmpresa,
         idEmpleado: initialDraft.idEmpleado,
@@ -353,17 +356,23 @@ export function LicenseTransactionModal({
       return;
     }
 
+    if (!justOpened) return;
+
     const nextCompanyId = mode === 'edit' ? initialCompanyId : undefined;
 
     // En creacion no se preselecciona empresa; el usuario debe elegirla.
+    form.resetFields();
     form.setFieldsValue({ idEmpresa: nextCompanyId });
+    if (onCompanyChange) {
+      onCompanyChange(nextCompanyId);
+    }
     const initialLine = buildEmptyLine();
 
     setLines([initialLine]);
 
     setActiveLineKeys([initialLine.key]);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, initialDraft, initialCompanyId, form, mode]);
+  }, [open, initialDraft, initialCompanyId, form, mode, onCompanyChange]);
 
   useEffect(() => {
     if (!open || !showAudit || activeTab !== 'bitacora' || auditLoaded) return;
@@ -375,11 +384,23 @@ export function LicenseTransactionModal({
     void load();
   }, [activeTab, auditLoaded, onLoadAuditTrail, open, showAudit]);
 
+  const handleTabChange = (nextTab: string) => {
+    setActiveTab(nextTab);
+    if (nextTab !== 'bitacora' || !showAudit || auditLoaded) return;
+    void Promise.resolve(onLoadAuditTrail?.()).finally(() => {
+      setAuditLoaded(true);
+    });
+  };
+
   useEffect(() => {
     if (!open) return;
     if (!onCompanyChange) return;
-    onCompanyChange(selectedCompanyId ? Number(selectedCompanyId) : undefined);
-  }, [onCompanyChange, open, selectedCompanyId]);
+    onCompanyChange(
+      selectedCompanyIdNum != null && Number.isFinite(selectedCompanyIdNum) && selectedCompanyIdNum > 0
+        ? selectedCompanyIdNum
+        : undefined,
+    );
+  }, [onCompanyChange, open, selectedCompanyIdNum]);
 
   // Al cambiar de empleado se reinician las líneas porque cada empleado tiene planillas distintas
   useEffect(() => {
@@ -388,7 +409,7 @@ export function LicenseTransactionModal({
       return;
     }
     const prev = prevEmployeeIdRef.current;
-    const current = selectedEmployeeId;
+    const current = selectedEmployeeIdNum;
 
     // Evita reset por cambios transitorios de tabs (cuando el campo se desmonta temporalmente).
     // Solo resetea cuando realmente cambia de un empleado válido a otro empleado válido.
@@ -406,16 +427,18 @@ export function LicenseTransactionModal({
 
     prevEmployeeIdRef.current = current;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, selectedEmployeeId]);
+  }, [open, selectedEmployeeIdNum]);
 
   useEffect(() => {
-    if (!selectedEmployeeId || !selectedCompanyId) {
+    if (!selectedEmployeeIdNum || !selectedCompanyIdNum) {
       setEmployeePayrollConfig(null);
 
       setEligiblePayrolls([]);
       return;
     }
-    const employee = employees.find((item) => item.id === selectedEmployeeId && item.idEmpresa === selectedCompanyId);
+    const employee = employees.find(
+      (item) => Number(item.id) === selectedEmployeeIdNum && Number(item.idEmpresa) === selectedCompanyIdNum,
+    );
     if (!employee) {
       setEmployeePayrollConfig(null);
       return;
@@ -424,10 +447,10 @@ export function LicenseTransactionModal({
       idPeriodoPago: employee.idPeriodoPago ? Number(employee.idPeriodoPago) : undefined,
       moneda: (employee.monedaSalario ?? '').toUpperCase() || undefined,
     });
-  }, [selectedCompanyId, selectedEmployeeId, employees]);
+  }, [selectedCompanyIdNum, selectedEmployeeIdNum, employees]);
 
   useEffect(() => {
-    if (!selectedCompanyId || !selectedEmployeeId) {
+    if (!selectedCompanyIdNum || !selectedEmployeeIdNum) {
       setEligiblePayrolls([]);
 
       setLoadingPayrolls(false);
@@ -436,7 +459,7 @@ export function LicenseTransactionModal({
     let active = true;
 
     setLoadingPayrolls(true);
-    void fetchAbsencePayrollsCatalog(Number(selectedCompanyId), Number(selectedEmployeeId))
+    void fetchAbsencePayrollsCatalog(selectedCompanyIdNum, selectedEmployeeIdNum)
       .then((list) => {
         if (!active) return;
 
@@ -455,20 +478,25 @@ export function LicenseTransactionModal({
     return () => {
       active = false;
     };
-  }, [selectedCompanyId, selectedEmployeeId]);
+  }, [selectedCompanyIdNum, selectedEmployeeIdNum]);
 
   const employeesByCompany = useMemo(() => {
-    if (!selectedCompanyId) return [];
-    return sortEmployeesByDisplayName(employees.filter((employee) => employee.idEmpresa === selectedCompanyId));
-  }, [employees, selectedCompanyId]);
+    if (!selectedCompanyIdNum) return [];
+    return sortEmployeesByDisplayName(
+      employees.filter((employee) => Number(employee.idEmpresa) === selectedCompanyIdNum),
+    );
+  }, [employees, selectedCompanyIdNum]);
 
   const selectedEmployee = useMemo(() => {
-    if (!selectedCompanyId || !selectedEmployeeId) return null;
+    if (!selectedCompanyIdNum || !selectedEmployeeIdNum) return null;
     return (
-      employees.find((employee) => employee.idEmpresa === selectedCompanyId && employee.id === selectedEmployeeId) ??
+      employees.find(
+        (employee) =>
+          Number(employee.idEmpresa) === selectedCompanyIdNum && Number(employee.id) === selectedEmployeeIdNum,
+      ) ??
       null
     );
-  }, [employees, selectedCompanyId, selectedEmployeeId]);
+  }, [employees, selectedCompanyIdNum, selectedEmployeeIdNum]);
 
   const selectedPayPeriod = useMemo(() => {
     if (!selectedEmployee?.idPeriodoPago) return null;
@@ -499,8 +527,8 @@ export function LicenseTransactionModal({
   }, [eligiblePayrolls, selectedCompanyId, employeePayrollConfig]);
 
   const filteredMovements = useMemo(() => {
-    if (!selectedCompanyId) return [];
-    let list = movements.filter((movement) => movement.idEmpresa === selectedCompanyId);
+    if (!selectedCompanyIdNum) return [];
+    let list = movements.filter((movement) => Number(movement.idEmpresa) === selectedCompanyIdNum);
 
     if (actionTypeIdForLicense) {
       list = list.filter((movement) => movement.idTipoAccionPersonal === actionTypeIdForLicense);
@@ -510,7 +538,7 @@ export function LicenseTransactionModal({
     list = list.filter((movement) => movement.esInactivo === 1 || selectedIds.has(movement.id));
 
     return list;
-  }, [movements, selectedCompanyId, actionTypeIdForLicense, lines]);
+  }, [movements, selectedCompanyIdNum, actionTypeIdForLicense, lines]);
 
   const calculateLineAmount = (line: LicenseTransactionLine, movimientoId?: number, cantidadValue?: number) => {
     const movement = filteredMovements.find((m) => m.id === (movimientoId ?? line.movimientoId));
@@ -639,15 +667,15 @@ export function LicenseTransactionModal({
   const canSubmit =
     !loading &&
     !readOnly &&
-    !!selectedCompanyId &&
-    !!selectedEmployeeId &&
+    !!selectedCompanyIdNum &&
+    !!selectedEmployeeIdNum &&
     lines.length > 0 &&
     lines.every(isLineComplete);
   const sensitiveMaskedValue = '***';
 
   const showGlobalPreload =
     loading ||
-    (!!selectedCompanyId && !!selectedEmployeeId && loadingPayrolls) ||
+    (!!selectedCompanyIdNum && !!selectedEmployeeIdNum && loadingPayrolls) ||
     (activeTab === 'bitacora' && loadingAuditTrail);
 
   const auditColumns: ColumnsType<PersonalActionAuditTrailItem> = useMemo(
@@ -817,7 +845,7 @@ export function LicenseTransactionModal({
             {mode === 'edit' ? (
               <Tabs
                 activeKey={activeTab}
-                onChange={setActiveTab}
+                onChange={handleTabChange}
                 className={`${sharedStyles.tabsWrapper} ${sharedStyles.companyModalTabs} ${sharedStyles.tabsBarOnly}`}
                 items={[
                   {
@@ -1346,7 +1374,26 @@ export function LicenseTransactionModal({
                         </>
                       )}
                     </Card>
-                  ) : null}
+                  ) : (
+                    <div
+                      style={{
+                        display: 'flex',
+                        flex: 1,
+                        minHeight: 260,
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        background: '#fafbfc',
+                        borderRadius: 8,
+                        border: '1px dashed #e8ecf0',
+                      }}
+                    >
+                      <Result
+                        status="info"
+                        title="Completar selección"
+                        subTitle="Seleccione empresa y empleado para agregar líneas de licencia por planilla."
+                      />
+                    </div>
+                  )}
                 </Col>
               </Row>
             ) : (

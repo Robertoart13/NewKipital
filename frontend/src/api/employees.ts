@@ -694,11 +694,7 @@ export async function createEmployee(payload: CreateEmployeePayload): Promise<{
   if (body?.success === false) {
     throw new Error(body.error || 'No se pudo crear empleado');
   }
-  return (body ?? { success: true }) as {
-    success: boolean;
-    data?: { employee: EmployeeDetail; appsAssigned: string[] };
-    error?: string;
-  };
+  return body ?? { success: true };
 }
 
 /**

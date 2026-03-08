@@ -45,15 +45,38 @@ import { RetentionLine } from './entities/retention-line.entity';
 import { VacationDate } from './entities/vacation-date.entity';
 
 import type { CreatePersonalActionDto } from './dto/create-personal-action.dto';
-import type { UpsertAbsenceDto } from './dto/upsert-absence.dto';
-import type { UpsertBonusDto } from './dto/upsert-bonus.dto';
-import type { UpsertDisabilityDto } from './dto/upsert-disability.dto';
+import type { UpsertAbsenceDto, UpsertAbsenceLineDto } from './dto/upsert-absence.dto';
+import type { UpsertBonusDto, UpsertBonusLineDto } from './dto/upsert-bonus.dto';
+import type { UpsertDisabilityDto, UpsertDisabilityLineDto } from './dto/upsert-disability.dto';
 import type { UpsertDiscountDto } from './dto/upsert-discount.dto';
 import type { UpsertIncreaseDto } from './dto/upsert-increase.dto';
-import type { UpsertLicenseDto } from './dto/upsert-license.dto';
-import type { UpsertOvertimeDto } from './dto/upsert-overtime.dto';
+import type { UpsertLicenseDto, UpsertLicenseLineDto } from './dto/upsert-license.dto';
+import type { UpsertOvertimeDto, UpsertOvertimeLineDto } from './dto/upsert-overtime.dto';
 import type { UpsertRetentionDto } from './dto/upsert-retention.dto';
 import type { UpsertVacationDto } from './dto/upsert-vacation.dto';
+
+type AbsenceAuditLinePayload = {
+  linea: number;
+  payrollId: number | null;
+  movimientoId: number | null;
+  tipoAusencia: string | null;
+  tipoLicencia: string | null;
+  tipoBonificacion: string | null;
+  tipoIncapacidad: string | null;
+  tipoInstitucion: string | null;
+  fechaInicioHoraExtra?: string | null;
+  fechaFinHoraExtra?: string | null;
+  tipoJornadaHorasExtras?: string | null;
+  cantidad: number | null;
+  monto: number | null;
+  montoIns: number | null;
+  montoPatrono: number | null;
+  subsidioCcss: number | null;
+  totalIncapacidad: number | null;
+  remuneracion: boolean | null;
+  fechaEfecto: string | null;
+  formula: string | null;
+};
 
 @Injectable()
 export class PersonalActionsService {
@@ -1231,14 +1254,16 @@ export class PersonalActionsService {
     );
 
     const created = await this.dataSource.transaction(async (trx) => {
-      const createdActions: Array<{ action: PersonalAction; linesCount: number }> = [];
+      const createdActions: Array<{
+        action: PersonalAction;
+        linesCount: number;
+        auditLines: AbsenceAuditLinePayload[];
+      }> = [];
 
       for (const group of groupedLines) {
         const totalMonto = group.lines.reduce((sum, line) => sum + Number(line.monto || 0), 0);
-        const firstDate = group.lines[0]?.fechaEfecto ? new Date(group.lines[0].fechaEfecto) : null;
-        const lastDate = group.lines[group.lines.length - 1]?.fechaEfecto
-          ? new Date(group.lines[group.lines.length - 1].fechaEfecto)
-          : firstDate;
+        const firstDate = this.parseDateOnlyLocal(group.lines[0]?.fechaEfecto);
+        const lastDate = this.parseDateOnlyLocal(group.lines[group.lines.length - 1]?.fechaEfecto) ?? firstDate;
 
         const action = trx.create(PersonalAction, {
           idEmpresa: dto.idEmpresa,
@@ -1270,7 +1295,7 @@ export class PersonalActionsService {
             numeroCuota: i + 1,
             montoCuota: Number(line.monto),
             estado: EstadoCuota.PENDIENTE_APROBACION,
-            fechaEfecto: new Date(line.fechaEfecto),
+            fechaEfecto: this.parseDateOnlyLocal(line.fechaEfecto),
             motivoEstado: null,
           });
           quotas.push(await trx.save(quota));
@@ -1297,7 +1322,11 @@ export class PersonalActionsService {
           await trx.save(absenceLine);
         }
 
-        createdActions.push({ action: savedAction, linesCount: group.lines.length });
+        createdActions.push({
+          action: savedAction,
+          linesCount: group.lines.length,
+          auditLines: this.mapAbsenceLinesForAuditFromDto(group.lines),
+        });
       }
 
       return createdActions;
@@ -1325,7 +1354,7 @@ export class PersonalActionsService {
         actorUserId: userId,
         companyContextId: item.action.idEmpresa,
         descripcion: `Ausencia creada para empleado #${item.action.idEmpleado}`,
-        payloadAfter: this.buildAbsenceAuditPayload(item.action, item.linesCount),
+        payloadAfter: this.buildAbsenceAuditPayload(item.action, item.linesCount, item.auditLines),
       });
     }
 
@@ -1373,6 +1402,7 @@ export class PersonalActionsService {
     const payloadBefore = this.buildAbsenceAuditPayload(
       action,
       await this.countAbsenceLines(action.id),
+      await this.getAbsenceLinesForAudit(action.id),
     );
 
     const totalMonto = dto.lines.reduce((sum, line) => sum + Number(line.monto || 0), 0);
@@ -1442,7 +1472,11 @@ export class PersonalActionsService {
       companyContextId: action.idEmpresa,
       descripcion: `Ausencia actualizada para empleado #${action.idEmpleado}`,
       payloadBefore,
-      payloadAfter: this.buildAbsenceAuditPayload(action, dto.lines.length),
+      payloadAfter: this.buildAbsenceAuditPayload(
+        action,
+        dto.lines.length,
+        this.mapAbsenceLinesForAuditFromDto(dto.lines),
+      ),
     });
 
     return this.findOne(id, userId);
@@ -1608,7 +1642,11 @@ export class PersonalActionsService {
     );
 
     const created = await this.dataSource.transaction(async (trx) => {
-      const createdActions: Array<{ action: PersonalAction; linesCount: number }> = [];
+      const createdActions: Array<{
+        action: PersonalAction;
+        linesCount: number;
+        auditLines: AbsenceAuditLinePayload[];
+      }> = [];
 
       for (const group of groupedLines) {
         const totalMonto = group.lines.reduce((sum, line) => sum + Number(line.monto || 0), 0);
@@ -1674,7 +1712,11 @@ export class PersonalActionsService {
           await trx.save(licenseLine);
         }
 
-        createdActions.push({ action: savedAction, linesCount: group.lines.length });
+        createdActions.push({
+          action: savedAction,
+          linesCount: group.lines.length,
+          auditLines: this.mapLicenseLinesForAuditFromDto(group.lines),
+        });
       }
 
       return createdActions;
@@ -1702,7 +1744,7 @@ export class PersonalActionsService {
         actorUserId: userId,
         companyContextId: item.action.idEmpresa,
         descripcion: `Licencia creada para empleado #${item.action.idEmpleado}`,
-        payloadAfter: this.buildAbsenceAuditPayload(item.action, item.linesCount),
+        payloadAfter: this.buildAbsenceAuditPayload(item.action, item.linesCount, item.auditLines),
       });
     }
 
@@ -1750,6 +1792,7 @@ export class PersonalActionsService {
     const payloadBefore = this.buildAbsenceAuditPayload(
       action,
       await this.countLicenseLines(action.id),
+      await this.getLicenseLinesForAudit(action.id),
     );
 
     const totalMonto = dto.lines.reduce((sum, line) => sum + Number(line.monto || 0), 0);
@@ -1819,7 +1862,11 @@ export class PersonalActionsService {
       companyContextId: action.idEmpresa,
       descripcion: `Licencia actualizada para empleado #${action.idEmpleado}`,
       payloadBefore,
-      payloadAfter: this.buildAbsenceAuditPayload(action, dto.lines.length),
+      payloadAfter: this.buildAbsenceAuditPayload(
+        action,
+        dto.lines.length,
+        this.mapLicenseLinesForAuditFromDto(dto.lines),
+      ),
     });
 
     return this.findOne(id, userId);
@@ -1985,7 +2032,11 @@ export class PersonalActionsService {
     );
 
     const created = await this.dataSource.transaction(async (trx) => {
-      const createdActions: Array<{ action: PersonalAction; linesCount: number }> = [];
+      const createdActions: Array<{
+        action: PersonalAction;
+        linesCount: number;
+        auditLines: AbsenceAuditLinePayload[];
+      }> = [];
 
       for (const group of groupedLines) {
         const totalMonto = group.lines.reduce((sum, line) => sum + Number(line.monto || 0), 0);
@@ -2051,7 +2102,11 @@ export class PersonalActionsService {
           await trx.save(bonusLine);
         }
 
-        createdActions.push({ action: savedAction, linesCount: group.lines.length });
+        createdActions.push({
+          action: savedAction,
+          linesCount: group.lines.length,
+          auditLines: this.mapBonusLinesForAuditFromDto(group.lines),
+        });
       }
 
       return createdActions;
@@ -2079,7 +2134,7 @@ export class PersonalActionsService {
         actorUserId: userId,
         companyContextId: item.action.idEmpresa,
         descripcion: `Bonificacion creada para empleado #${item.action.idEmpleado}`,
-        payloadAfter: this.buildAbsenceAuditPayload(item.action, item.linesCount),
+        payloadAfter: this.buildAbsenceAuditPayload(item.action, item.linesCount, item.auditLines),
       });
     }
 
@@ -2127,6 +2182,7 @@ export class PersonalActionsService {
     const payloadBefore = this.buildAbsenceAuditPayload(
       action,
       await this.countBonusLines(action.id),
+      await this.getBonusLinesForAudit(action.id),
     );
     const totalMonto = dto.lines.reduce((sum, line) => sum + Number(line.monto || 0), 0);
     const firstDate = dto.lines[0]?.fechaEfecto ? new Date(dto.lines[0].fechaEfecto) : null;
@@ -2195,7 +2251,11 @@ export class PersonalActionsService {
       companyContextId: action.idEmpresa,
       descripcion: `Bonificacion actualizada para empleado #${action.idEmpleado}`,
       payloadBefore,
-      payloadAfter: this.buildAbsenceAuditPayload(action, dto.lines.length),
+      payloadAfter: this.buildAbsenceAuditPayload(
+        action,
+        dto.lines.length,
+        this.mapBonusLinesForAuditFromDto(dto.lines),
+      ),
     });
 
     return this.findOne(id, userId);
@@ -2361,7 +2421,11 @@ export class PersonalActionsService {
     );
 
     const created = await this.dataSource.transaction(async (trx) => {
-      const createdActions: Array<{ action: PersonalAction; linesCount: number }> = [];
+      const createdActions: Array<{
+        action: PersonalAction;
+        linesCount: number;
+        auditLines: AbsenceAuditLinePayload[];
+      }> = [];
 
       for (const group of groupedLines) {
         const totalMonto = group.lines.reduce((sum, line) => sum + Number(line.monto || 0), 0);
@@ -2392,6 +2456,10 @@ export class PersonalActionsService {
         const quotas: ActionQuota[] = [];
         for (let i = 0; i < group.lines.length; i += 1) {
           const line = group.lines[i];
+          const cuotaFechaEfecto = this.parseDateOnlyLocal(line.fechaEfecto);
+          if (!cuotaFechaEfecto) {
+            throw new BadRequestException(`Linea ${i + 1}: fecha efecto invalida`);
+          }
           const quota = trx.create(ActionQuota, {
             idAccion: savedAction.id,
             idEmpresa: dto.idEmpresa,
@@ -2400,7 +2468,7 @@ export class PersonalActionsService {
             numeroCuota: i + 1,
             montoCuota: Number(line.monto),
             estado: EstadoCuota.PENDIENTE_APROBACION,
-            fechaEfecto: new Date(line.fechaEfecto),
+            fechaEfecto: cuotaFechaEfecto,
             motivoEstado: null,
           });
           quotas.push(await trx.save(quota));
@@ -2409,6 +2477,12 @@ export class PersonalActionsService {
         for (let i = 0; i < group.lines.length; i += 1) {
           const line = group.lines[i];
           const quota = quotas[i];
+          const fechaInicioHoraExtra = this.parseDateOnlyLocal(line.fechaInicioHoraExtra);
+          const fechaFinHoraExtra = this.parseDateOnlyLocal(line.fechaFinHoraExtra);
+          const fechaEfecto = this.parseDateOnlyLocal(line.fechaEfecto);
+          if (!fechaInicioHoraExtra || !fechaFinHoraExtra || !fechaEfecto) {
+            throw new BadRequestException(`Linea ${i + 1}: fechas de hora extra invalidas`);
+          }
           const overtimeLine = trx.create(OvertimeLine, {
             idAccion: savedAction.id,
             idCuota: quota.id,
@@ -2416,20 +2490,24 @@ export class PersonalActionsService {
             idEmpleado: dto.idEmpleado,
             idCalendarioNomina: line.payrollId,
             idMovimientoNomina: line.movimientoId,
-            fechaInicioHoraExtra: new Date(line.fechaInicioHoraExtra),
-            fechaFinHoraExtra: new Date(line.fechaFinHoraExtra),
+            fechaInicioHoraExtra,
+            fechaFinHoraExtra,
             tipoJornadaHorasExtras: line.tipoJornadaHorasExtras,
             cantidad: Number(line.cantidad),
             monto: Number(line.monto),
             remuneracion: line.remuneracion ? 1 : 0,
             formula: line.formula?.trim() || null,
             orden: i + 1,
-            fechaEfecto: new Date(line.fechaEfecto),
+            fechaEfecto,
           });
           await trx.save(overtimeLine);
         }
 
-        createdActions.push({ action: savedAction, linesCount: group.lines.length });
+        createdActions.push({
+          action: savedAction,
+          linesCount: group.lines.length,
+          auditLines: this.mapOvertimeLinesForAuditFromDto(group.lines),
+        });
       }
 
       return createdActions;
@@ -2457,7 +2535,7 @@ export class PersonalActionsService {
         actorUserId: userId,
         companyContextId: item.action.idEmpresa,
         descripcion: `Hora extra creada para empleado #${item.action.idEmpleado}`,
-        payloadAfter: this.buildAbsenceAuditPayload(item.action, item.linesCount),
+        payloadAfter: this.buildAbsenceAuditPayload(item.action, item.linesCount, item.auditLines),
       });
     }
 
@@ -2505,12 +2583,11 @@ export class PersonalActionsService {
     const payloadBefore = this.buildAbsenceAuditPayload(
       action,
       await this.countOvertimeLines(action.id),
+      await this.getOvertimeLinesForAudit(action.id),
     );
     const totalMonto = dto.lines.reduce((sum, line) => sum + Number(line.monto || 0), 0);
-    const firstDate = dto.lines[0]?.fechaEfecto ? new Date(dto.lines[0].fechaEfecto) : null;
-    const lastDate = dto.lines[dto.lines.length - 1]?.fechaEfecto
-      ? new Date(dto.lines[dto.lines.length - 1].fechaEfecto)
-      : firstDate;
+    const firstDate = this.parseDateOnlyLocal(dto.lines[0]?.fechaEfecto);
+    const lastDate = this.parseDateOnlyLocal(dto.lines[dto.lines.length - 1]?.fechaEfecto) ?? firstDate;
 
     await this.dataSource.transaction(async (trx) => {
       await trx.delete(OvertimeLine, { idAccion: id });
@@ -2528,6 +2605,10 @@ export class PersonalActionsService {
       const quotas: ActionQuota[] = [];
       for (let i = 0; i < dto.lines.length; i += 1) {
         const line = dto.lines[i];
+        const cuotaFechaEfecto = this.parseDateOnlyLocal(line.fechaEfecto);
+        if (!cuotaFechaEfecto) {
+          throw new BadRequestException(`Linea ${i + 1}: fecha efecto invalida`);
+        }
         const quota = trx.create(ActionQuota, {
           idAccion: action.id,
           idEmpresa: dto.idEmpresa,
@@ -2536,7 +2617,7 @@ export class PersonalActionsService {
           numeroCuota: i + 1,
           montoCuota: Number(line.monto),
           estado: EstadoCuota.PENDIENTE_APROBACION,
-          fechaEfecto: new Date(line.fechaEfecto),
+          fechaEfecto: cuotaFechaEfecto,
           motivoEstado: null,
         });
         quotas.push(await trx.save(quota));
@@ -2545,6 +2626,12 @@ export class PersonalActionsService {
       for (let i = 0; i < dto.lines.length; i += 1) {
         const line = dto.lines[i];
         const quota = quotas[i];
+        const fechaInicioHoraExtra = this.parseDateOnlyLocal(line.fechaInicioHoraExtra);
+        const fechaFinHoraExtra = this.parseDateOnlyLocal(line.fechaFinHoraExtra);
+        const fechaEfecto = this.parseDateOnlyLocal(line.fechaEfecto);
+        if (!fechaInicioHoraExtra || !fechaFinHoraExtra || !fechaEfecto) {
+          throw new BadRequestException(`Linea ${i + 1}: fechas de hora extra invalidas`);
+        }
         const overtimeLine = trx.create(OvertimeLine, {
           idAccion: action.id,
           idCuota: quota.id,
@@ -2552,15 +2639,15 @@ export class PersonalActionsService {
           idEmpleado: dto.idEmpleado,
           idCalendarioNomina: line.payrollId,
           idMovimientoNomina: line.movimientoId,
-          fechaInicioHoraExtra: new Date(line.fechaInicioHoraExtra),
-          fechaFinHoraExtra: new Date(line.fechaFinHoraExtra),
+          fechaInicioHoraExtra,
+          fechaFinHoraExtra,
           tipoJornadaHorasExtras: line.tipoJornadaHorasExtras,
           cantidad: Number(line.cantidad),
           monto: Number(line.monto),
           remuneracion: line.remuneracion ? 1 : 0,
           formula: line.formula?.trim() || null,
           orden: i + 1,
-          fechaEfecto: new Date(line.fechaEfecto),
+          fechaEfecto,
         });
         await trx.save(overtimeLine);
       }
@@ -2575,7 +2662,11 @@ export class PersonalActionsService {
       companyContextId: action.idEmpresa,
       descripcion: `Hora extra actualizada para empleado #${action.idEmpleado}`,
       payloadBefore,
-      payloadAfter: this.buildAbsenceAuditPayload(action, dto.lines.length),
+      payloadAfter: this.buildAbsenceAuditPayload(
+        action,
+        dto.lines.length,
+        this.mapOvertimeLinesForAuditFromDto(dto.lines),
+      ),
     });
 
     return this.findOne(id, userId);
@@ -4175,7 +4266,11 @@ export class PersonalActionsService {
     );
 
     const created = await this.dataSource.transaction(async (trx) => {
-      const createdActions: Array<{ action: PersonalAction; linesCount: number }> = [];
+      const createdActions: Array<{
+        action: PersonalAction;
+        linesCount: number;
+        auditLines: AbsenceAuditLinePayload[];
+      }> = [];
 
       for (const group of groupedLines) {
         const totalMonto = group.lines.reduce((sum, line) => sum + Number(line.monto || 0), 0);
@@ -4246,7 +4341,11 @@ export class PersonalActionsService {
           await trx.save(disabilityLine);
         }
 
-        createdActions.push({ action: savedAction, linesCount: group.lines.length });
+        createdActions.push({
+          action: savedAction,
+          linesCount: group.lines.length,
+          auditLines: this.mapDisabilityLinesForAuditFromDto(group.lines),
+        });
       }
 
       return createdActions;
@@ -4274,7 +4373,7 @@ export class PersonalActionsService {
         actorUserId: userId,
         companyContextId: item.action.idEmpresa,
         descripcion: `Incapacidad creada para empleado #${item.action.idEmpleado}`,
-        payloadAfter: this.buildAbsenceAuditPayload(item.action, item.linesCount),
+        payloadAfter: this.buildAbsenceAuditPayload(item.action, item.linesCount, item.auditLines),
       });
     }
 
@@ -4322,6 +4421,7 @@ export class PersonalActionsService {
     const payloadBefore = this.buildAbsenceAuditPayload(
       action,
       await this.countDisabilityLines(action.id),
+      await this.getDisabilityLinesForAudit(action.id),
     );
 
     const totalMonto = dto.lines.reduce((sum, line) => sum + Number(line.monto || 0), 0);
@@ -4396,7 +4496,11 @@ export class PersonalActionsService {
       companyContextId: action.idEmpresa,
       descripcion: `Incapacidad actualizada para empleado #${action.idEmpleado}`,
       payloadBefore,
-      payloadAfter: this.buildAbsenceAuditPayload(action, dto.lines.length),
+      payloadAfter: this.buildAbsenceAuditPayload(
+        action,
+        dto.lines.length,
+        this.mapDisabilityLinesForAuditFromDto(dto.lines),
+      ),
     });
 
     return this.findOne(id, userId);
@@ -4784,9 +4888,296 @@ export class PersonalActionsService {
     return this.vacationDateRepo.count({ where: { idAccion } });
   }
 
+  private async getAbsenceLinesForAudit(idAccion: number): Promise<AbsenceAuditLinePayload[]> {
+    const rows = await this.repo.query(
+      `
+      SELECT
+        l.orden_linea AS orden,
+        l.id_calendario_nomina AS payrollId,
+        l.id_movimiento_nomina AS movimientoId,
+        l.tipo_ausencia_linea AS tipoAusencia,
+        l.cantidad_linea AS cantidad,
+        l.monto_linea AS monto,
+        l.remuneracion_linea AS remuneracion,
+        l.fecha_efecto_linea AS fechaEfecto,
+        l.formula_linea AS formula
+      FROM acc_ausencias_lineas l
+      WHERE l.id_accion = ?
+      ORDER BY l.orden_linea ASC, l.id_linea_ausencia ASC
+      `,
+      [idAccion],
+    );
+
+    return this.normalizeAbsenceAuditLines(rows);
+  }
+
+  private mapAbsenceLinesForAuditFromDto(lines: UpsertAbsenceLineDto[]): AbsenceAuditLinePayload[] {
+    return this.normalizeAbsenceAuditLines(
+      lines.map((line, index) => ({
+        orden: index + 1,
+        payrollId: line.payrollId,
+        movimientoId: line.movimientoId,
+        tipoAusencia: line.tipoAusencia,
+        tipoLicencia: null,
+        tipoBonificacion: null,
+        tipoIncapacidad: null,
+        tipoInstitucion: null,
+        cantidad: line.cantidad,
+        monto: line.monto,
+        montoIns: null,
+        montoPatrono: null,
+        subsidioCcss: null,
+        totalIncapacidad: null,
+        remuneracion: line.remuneracion,
+        fechaEfecto: line.fechaEfecto,
+        formula: line.formula ?? null,
+      })),
+    );
+  }
+
+  private async getLicenseLinesForAudit(idAccion: number): Promise<AbsenceAuditLinePayload[]> {
+    const rows = await this.repo.query(
+      `
+      SELECT
+        l.orden_linea AS orden,
+        l.id_calendario_nomina AS payrollId,
+        l.id_movimiento_nomina AS movimientoId,
+        l.tipo_licencia_linea AS tipoLicencia,
+        l.cantidad_linea AS cantidad,
+        l.monto_linea AS monto,
+        l.remuneracion_linea AS remuneracion,
+        l.fecha_efecto_linea AS fechaEfecto,
+        l.formula_linea AS formula
+      FROM acc_licencias_lineas l
+      WHERE l.id_accion = ?
+      ORDER BY l.orden_linea ASC, l.id_linea_licencia ASC
+      `,
+      [idAccion],
+    );
+
+    return this.normalizeAbsenceAuditLines(rows);
+  }
+
+  private mapLicenseLinesForAuditFromDto(lines: UpsertLicenseLineDto[]): AbsenceAuditLinePayload[] {
+    return this.normalizeAbsenceAuditLines(
+      lines.map((line, index) => ({
+        orden: index + 1,
+        payrollId: line.payrollId,
+        movimientoId: line.movimientoId,
+        tipoAusencia: null,
+        tipoLicencia: line.tipoLicencia,
+        tipoBonificacion: null,
+        tipoIncapacidad: null,
+        tipoInstitucion: null,
+        cantidad: line.cantidad,
+        monto: line.monto,
+        montoIns: null,
+        montoPatrono: null,
+        subsidioCcss: null,
+        totalIncapacidad: null,
+        remuneracion: line.remuneracion,
+        fechaEfecto: line.fechaEfecto,
+        formula: line.formula ?? null,
+      })),
+    );
+  }
+
+  private async getBonusLinesForAudit(idAccion: number): Promise<AbsenceAuditLinePayload[]> {
+    const rows = await this.repo.query(
+      `
+      SELECT
+        l.orden_linea AS orden,
+        l.id_calendario_nomina AS payrollId,
+        l.id_movimiento_nomina AS movimientoId,
+        l.tipo_bonificacion_linea AS tipoBonificacion,
+        l.cantidad_linea AS cantidad,
+        l.monto_linea AS monto,
+        l.remuneracion_linea AS remuneracion,
+        l.fecha_efecto_linea AS fechaEfecto,
+        l.formula_linea AS formula
+      FROM acc_bonificaciones_lineas l
+      WHERE l.id_accion = ?
+      ORDER BY l.orden_linea ASC, l.id_linea_bonificacion ASC
+      `,
+      [idAccion],
+    );
+
+    return this.normalizeAbsenceAuditLines(rows);
+  }
+
+  private mapBonusLinesForAuditFromDto(lines: UpsertBonusLineDto[]): AbsenceAuditLinePayload[] {
+    return this.normalizeAbsenceAuditLines(
+      lines.map((line, index) => ({
+        orden: index + 1,
+        payrollId: line.payrollId,
+        movimientoId: line.movimientoId,
+        tipoAusencia: null,
+        tipoLicencia: null,
+        tipoBonificacion: line.tipoBonificacion,
+        tipoIncapacidad: null,
+        tipoInstitucion: null,
+        cantidad: line.cantidad,
+        monto: line.monto,
+        montoIns: null,
+        montoPatrono: null,
+        subsidioCcss: null,
+        totalIncapacidad: null,
+        remuneracion: line.remuneracion,
+        fechaEfecto: line.fechaEfecto,
+        formula: line.formula ?? null,
+      })),
+    );
+  }
+
+  private async getOvertimeLinesForAudit(idAccion: number): Promise<AbsenceAuditLinePayload[]> {
+    const rows = await this.repo.query(
+      `
+      SELECT
+        l.orden_linea AS orden,
+        l.id_calendario_nomina AS payrollId,
+        l.id_movimiento_nomina AS movimientoId,
+        l.fecha_inicio_hora_extra_linea AS fechaInicioHoraExtra,
+        l.fecha_fin_hora_extra_linea AS fechaFinHoraExtra,
+        l.tipo_jornada_horas_extras_linea AS tipoJornadaHorasExtras,
+        l.cantidad_linea AS cantidad,
+        l.monto_linea AS monto,
+        l.remuneracion_linea AS remuneracion,
+        l.fecha_efecto_linea AS fechaEfecto,
+        l.formula_linea AS formula
+      FROM acc_horas_extras_lineas l
+      WHERE l.id_accion = ?
+      ORDER BY l.orden_linea ASC, l.id_linea_hora_extra ASC
+      `,
+      [idAccion],
+    );
+
+    return this.normalizeAbsenceAuditLines(rows);
+  }
+
+  private mapOvertimeLinesForAuditFromDto(lines: UpsertOvertimeLineDto[]): AbsenceAuditLinePayload[] {
+    return this.normalizeAbsenceAuditLines(
+      lines.map((line, index) => ({
+        orden: index + 1,
+        payrollId: line.payrollId,
+        movimientoId: line.movimientoId,
+        tipoAusencia: null,
+        tipoLicencia: null,
+        tipoBonificacion: null,
+        tipoIncapacidad: null,
+        tipoInstitucion: null,
+        fechaInicioHoraExtra: line.fechaInicioHoraExtra,
+        fechaFinHoraExtra: line.fechaFinHoraExtra,
+        tipoJornadaHorasExtras: line.tipoJornadaHorasExtras,
+        cantidad: line.cantidad,
+        monto: line.monto,
+        montoIns: null,
+        montoPatrono: null,
+        subsidioCcss: null,
+        totalIncapacidad: null,
+        remuneracion: line.remuneracion,
+        fechaEfecto: line.fechaEfecto,
+        formula: line.formula ?? null,
+      })),
+    );
+  }
+
+  private async getDisabilityLinesForAudit(idAccion: number): Promise<AbsenceAuditLinePayload[]> {
+    const rows = await this.repo.query(
+      `
+      SELECT
+        l.orden_linea AS orden,
+        l.id_calendario_nomina AS payrollId,
+        l.id_movimiento_nomina AS movimientoId,
+        l.tipo_incapacidad_linea AS tipoIncapacidad,
+        l.tipo_institucion_linea AS tipoInstitucion,
+        l.cantidad_linea AS cantidad,
+        l.monto_linea AS monto,
+        l.monto_ins_linea AS montoIns,
+        l.monto_patrono_linea AS montoPatrono,
+        l.subsidio_ccss_linea AS subsidioCcss,
+        l.total_incapacidad_linea AS totalIncapacidad,
+        l.remuneracion_linea AS remuneracion,
+        l.fecha_efecto_linea AS fechaEfecto,
+        l.formula_linea AS formula
+      FROM acc_incapacidades_lineas l
+      WHERE l.id_accion = ?
+      ORDER BY l.orden_linea ASC, l.id_linea_incapacidad ASC
+      `,
+      [idAccion],
+    );
+
+    return this.normalizeAbsenceAuditLines(rows);
+  }
+
+  private mapDisabilityLinesForAuditFromDto(
+    lines: UpsertDisabilityLineDto[],
+  ): AbsenceAuditLinePayload[] {
+    return this.normalizeAbsenceAuditLines(
+      lines.map((line, index) => ({
+        orden: index + 1,
+        payrollId: line.payrollId,
+        movimientoId: line.movimientoId,
+        tipoAusencia: null,
+        tipoLicencia: null,
+        tipoBonificacion: null,
+        tipoIncapacidad: line.tipoIncapacidad,
+        tipoInstitucion: line.tipoInstitucion,
+        cantidad: line.cantidad,
+        monto: line.monto,
+        montoIns: line.montoIns ?? 0,
+        montoPatrono: line.montoPatrono ?? 0,
+        subsidioCcss: line.subsidioCcss ?? 0,
+        totalIncapacidad: line.totalIncapacidad ?? line.monto ?? 0,
+        remuneracion: line.remuneracion,
+        fechaEfecto: line.fechaEfecto,
+        formula: line.formula ?? null,
+      })),
+    );
+  }
+
+  private normalizeAbsenceAuditLines(raw: unknown): AbsenceAuditLinePayload[] {
+    if (!Array.isArray(raw)) return [];
+
+    return raw.map((row, index) => {
+      const item = (row as Record<string, unknown>) ?? {};
+      const cantidadRaw = item.cantidad;
+      const montoRaw = item.monto;
+      const lineaRaw = item.linea ?? item.orden;
+      const remuneracionRaw = item.remuneracion;
+
+      return {
+        linea: Number(lineaRaw ?? index + 1),
+        payrollId: item.payrollId == null ? null : Number(item.payrollId),
+        movimientoId: item.movimientoId == null ? null : Number(item.movimientoId),
+        tipoAusencia: item.tipoAusencia == null ? null : String(item.tipoAusencia),
+        tipoLicencia: item.tipoLicencia == null ? null : String(item.tipoLicencia),
+        tipoBonificacion: item.tipoBonificacion == null ? null : String(item.tipoBonificacion),
+        tipoIncapacidad: item.tipoIncapacidad == null ? null : String(item.tipoIncapacidad),
+        tipoInstitucion: item.tipoInstitucion == null ? null : String(item.tipoInstitucion),
+        fechaInicioHoraExtra: this.toYmd(item.fechaInicioHoraExtra as Date | string | null),
+        fechaFinHoraExtra: this.toYmd(item.fechaFinHoraExtra as Date | string | null),
+        tipoJornadaHorasExtras:
+          item.tipoJornadaHorasExtras == null ? null : String(item.tipoJornadaHorasExtras),
+        cantidad: cantidadRaw == null ? null : Number(cantidadRaw),
+        monto: montoRaw == null ? null : Number(montoRaw),
+        montoIns: item.montoIns == null ? null : Number(item.montoIns),
+        montoPatrono: item.montoPatrono == null ? null : Number(item.montoPatrono),
+        subsidioCcss: item.subsidioCcss == null ? null : Number(item.subsidioCcss),
+        totalIncapacidad: item.totalIncapacidad == null ? null : Number(item.totalIncapacidad),
+        remuneracion:
+          remuneracionRaw == null
+            ? null
+            : Number(remuneracionRaw) === 1 || String(remuneracionRaw).toLowerCase() === 'true',
+        fechaEfecto: this.toYmd(item.fechaEfecto as Date | string | null),
+        formula: item.formula == null ? null : String(item.formula).trim() || null,
+      };
+    });
+  }
+
   private buildAbsenceAuditPayload(
     action: PersonalAction,
     cantidadLineas: number,
+    lineasDetalle: AbsenceAuditLinePayload[] = [],
   ): Record<string, unknown> {
     return {
       idEmpresa: action.idEmpresa ?? null,
@@ -4801,6 +5192,7 @@ export class PersonalActionsService {
       monto: action.monto == null ? null : Number(action.monto),
       moneda: action.moneda ?? null,
       lineas: cantidadLineas,
+      lineasDetalle,
       invalidatedReason: action.invalidatedReason ?? null,
       motivoRechazo: action.motivoRechazo ?? null,
     };
@@ -4846,6 +5238,7 @@ export class PersonalActionsService {
     const output: Array<{ campo: string; antes: string; despues: string }> = [];
 
     keys.forEach((key) => {
+      if (key === 'lineasDetalle') return;
       const prev = before?.[key];
       const next = after?.[key];
       const prevText = this.stringifyAuditValue(prev);
@@ -4857,6 +5250,60 @@ export class PersonalActionsService {
         despues: nextText,
       });
     });
+
+    output.push(...this.buildAbsenceLineAuditChanges(before?.lineasDetalle, after?.lineasDetalle));
+
+    return output;
+  }
+
+  private buildAbsenceLineAuditChanges(
+    beforeValue: unknown,
+    afterValue: unknown,
+  ): Array<{ campo: string; antes: string; despues: string }> {
+    const beforeLines = this.normalizeAbsenceAuditLines(beforeValue);
+    const afterLines = this.normalizeAbsenceAuditLines(afterValue);
+    const maxLen = Math.max(beforeLines.length, afterLines.length);
+    if (maxLen === 0) return [];
+
+    const fieldDefs: Array<{ key: keyof AbsenceAuditLinePayload; label: string }> = [
+      { key: 'payrollId', label: 'Periodo pago' },
+      { key: 'movimientoId', label: 'Movimiento' },
+      { key: 'tipoAusencia', label: 'Tipo ausencia' },
+      { key: 'tipoLicencia', label: 'Tipo licencia' },
+      { key: 'tipoBonificacion', label: 'Tipo bonificacion' },
+      { key: 'tipoIncapacidad', label: 'Tipo incapacidad' },
+      { key: 'tipoInstitucion', label: 'Institucion' },
+      { key: 'fechaInicioHoraExtra', label: 'Fecha inicio hora extra' },
+      { key: 'fechaFinHoraExtra', label: 'Fecha fin hora extra' },
+      { key: 'tipoJornadaHorasExtras', label: 'Tipo jornada horas extra' },
+      { key: 'cantidad', label: 'Cantidad' },
+      { key: 'monto', label: 'Monto' },
+      { key: 'montoIns', label: 'Monto INS' },
+      { key: 'montoPatrono', label: 'Monto patrono' },
+      { key: 'subsidioCcss', label: 'Subsidio CCSS' },
+      { key: 'totalIncapacidad', label: 'Total incapacidad' },
+      { key: 'remuneracion', label: 'Remuneracion' },
+      { key: 'fechaEfecto', label: 'Fecha efecto' },
+      { key: 'formula', label: 'Formula' },
+    ];
+
+    const output: Array<{ campo: string; antes: string; despues: string }> = [];
+    for (let index = 0; index < maxLen; index += 1) {
+      const prev = beforeLines[index];
+      const next = afterLines[index];
+      const lineNumber = next?.linea ?? prev?.linea ?? index + 1;
+
+      for (const field of fieldDefs) {
+        const prevText = this.stringifyAuditValue(prev?.[field.key]);
+        const nextText = this.stringifyAuditValue(next?.[field.key]);
+        if (prevText === nextText) continue;
+        output.push({
+          campo: `Linea ${lineNumber} - ${field.label}`,
+          antes: prevText,
+          despues: nextText,
+        });
+      }
+    }
 
     return output;
   }
@@ -5602,11 +6049,11 @@ export class PersonalActionsService {
       if (line.monto < 0) {
         throw new BadRequestException(`Linea ${index + 1}: monto no puede ser negativo`);
       }
-      const inicio = new Date(line.fechaInicioHoraExtra);
-      const fin = new Date(line.fechaFinHoraExtra);
+      const inicio = this.parseDateOnlyLocal(line.fechaInicioHoraExtra);
+      const fin = this.parseDateOnlyLocal(line.fechaFinHoraExtra);
       const hoy = new Date();
       hoy.setHours(0, 0, 0, 0);
-      if (Number.isNaN(inicio.getTime()) || Number.isNaN(fin.getTime())) {
+      if (!inicio || !fin || Number.isNaN(inicio.getTime()) || Number.isNaN(fin.getTime())) {
         throw new BadRequestException(
           `Linea ${index + 1}: rango de fechas de horas extra invalido`,
         );
@@ -5849,6 +6296,14 @@ export class PersonalActionsService {
   private toYmdDateTime(value: Date): string {
     if (Number.isNaN(value.getTime())) return '';
     return value.toISOString().slice(0, 19).replace('T', ' ');
+  }
+
+  private parseDateOnlyLocal(value: unknown): Date | null {
+    const ymd = this.toYmdFlexible(value);
+    if (!ymd) return null;
+    const parsed = new Date(`${ymd}T00:00:00`);
+    if (Number.isNaN(parsed.getTime())) return null;
+    return parsed;
   }
 
   private formatDateOnly(value: Date): string {

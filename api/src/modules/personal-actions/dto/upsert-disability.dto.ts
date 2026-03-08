@@ -39,7 +39,10 @@ export class UpsertDisabilityLineDto {
   tipoInstitucion: TipoInstitucionIncapacidadLinea;
 
   @Type(() => Number)
-  @IsNumber({ maxDecimalPlaces: 4 })
+  @IsNumber(
+    { maxDecimalPlaces: 4 },
+    { message: 'cantidad debe ser un numero valido con hasta 4 decimales' },
+  )
   @Min(0.0001, { message: 'cantidad debe ser mayor a 0' })
   cantidad: number;
 

@@ -203,6 +203,7 @@ function createDraftFromBonusDetail(detail: BonusDetailItem): BonusFormDraft {
           cantidad: line.cantidad,
           monto: line.monto,
           remuneracion: line.remuneracion,
+          formula: line.formula ?? '',
           payrollLabel: line.payrollLabel ?? undefined,
           payrollEstado: line.payrollEstado ?? undefined,
           movimientoLabel: line.movimientoLabel ?? undefined,
@@ -212,7 +213,8 @@ function createDraftFromBonusDetail(detail: BonusDetailItem): BonusFormDraft {
           {
             key: `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
             tipoBonificacion: 'ordinaria_salarial',
-            remuneracion: true,
+            remuneracion: false,
+            formula: '',
             monto: detail.monto ?? undefined,
             fechaEfecto: detail.fechaEfecto ? dayjs(detail.fechaEfecto) : undefined,
           },
@@ -734,11 +736,13 @@ export function BonusesPage() {
       fechaEfecto: line.fechaEfecto?.format('YYYY-MM-DD') ?? '',
       movimientoId: Number(line.movimientoId),
       tipoBonificacion: line.tipoBonificacion,
+      cantidad: Number(line.cantidad ?? 0),
       monto: Number(line.monto ?? 0),
       remuneracion: Boolean(line.remuneracion),
       formula: line.formula?.trim() || undefined,
     })),
   });
+  const modalTitle = mode === 'create' ? 'Crear Bonificacion' : 'Editar Bonificacion';
 
   return (
     <div className={styles.pageWrapper}>
@@ -993,7 +997,8 @@ export function BonusesPage() {
         showAudit={mode === 'edit' && !!editingRow}
         auditTrail={auditTrail}
         loadingAuditTrail={loadingAuditTrail}
-        onLoadAuditTrail={mode === 'edit' && editingRow ? loadEditingBonusAuditTrail : undefined}        initialCompanyId={modalCompanyId}
+        onLoadAuditTrail={mode === 'edit' && editingRow ? loadEditingBonusAuditTrail : undefined}
+        initialCompanyId={modalCompanyId}
         initialDraft={editingDraft}
         onCompanyChange={(nextCompanyId) => {
           setModalCompanyId(nextCompanyId);
