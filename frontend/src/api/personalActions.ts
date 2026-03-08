@@ -38,83 +38,196 @@ import type { PayrollListItem } from './payroll';
  * ============================================================================
  */
 export interface PersonalActionListItem {
+  /** Identificador unico de la accion. */
   id: number;
+
+  /** ID de la empresa. */
   idEmpresa: number;
+
+  /** ID del empleado. */
   idEmpleado: number;
+
+  /** ID de la planilla ligada; nulo si no aplica. */
   idPlanilla?: number | null;
+
+  /** Codigo del tipo de accion. */
   tipoAccion: string;
+
+  /** Origen: RRHH, IMPORT, TIMEWISE; nulo si no aplica. */
   origen?: 'RRHH' | 'IMPORT' | 'TIMEWISE' | string | null;
+
+  /** Descripcion; nula si no aplica. */
   descripcion?: string | null;
+
+  /** Estado de la accion. */
   estado: number;
+
+  /** Fecha efecto (ISO); nula si no aplica. */
   fechaEfecto?: string | null;
+
+  /** Monto; nulo si no aplica. */
   monto?: number | null;
+
+  /** Moneda; nula si no aplica. */
   moneda?: string | null;
+
+  /** Fecha inicio efecto; nula si no aplica. */
   fechaInicioEfecto?: string | null;
+
+  /** Fecha fin efecto; nula si no aplica. */
   fechaFinEfecto?: string | null;
+
+  /** ID del grupo si es parte de un lote; nulo si no. */
   groupId?: string | null;
+
+  /** Resumen periodo pago; nulo si no aplica. */
   periodoPagoResumen?: string | null;
+
+  /** Resumen de movimiento; nulo si no aplica. */
   movimientoResumen?: string | null;
+
+  /** Resumen remuneracion: SI, NO, MIXTA; nulo si no aplica. */
   remuneracionResumen?: 'SI' | 'NO' | 'MIXTA' | null;
 }
 
 export interface PersonalActionCreateResult extends PersonalActionListItem {
+  /** Total de acciones creadas en lote; opcional. */
   totalCreated?: number;
+
+  /** IDs de acciones creadas en lote; opcional. */
   createdActionIds?: number[];
+
+  /** ID del grupo; opcional. */
   groupId?: string;
 }
 
 export interface CreatePersonalActionPayload {
+  /** ID de la empresa. */
   idEmpresa: number;
+
+  /** ID del empleado. */
   idEmpleado: number;
+
+  /** Codigo del tipo de accion. */
   tipoAccion: string;
+
+  /** Descripcion; opcional. */
   descripcion?: string;
+
+  /** Fecha efecto (ISO); opcional. */
   fechaEfecto?: string;
+
+  /** Monto; opcional. */
   monto?: number;
 }
 
 export interface AbsenceMovementCatalogItem {
+  /** ID del movimiento. */
   id: number;
+
+  /** ID de la empresa. */
   idEmpresa: number;
+
+  /** Nombre del movimiento. */
   nombre: string;
+
+  /** ID del tipo de accion personal. */
   idTipoAccionPersonal: number;
+
+  /** Descripcion; nula si no aplica. */
   descripcion?: string | null;
+
+  /** 1 = monto fijo, 0 = porcentaje. */
   esMontoFijo: number;
+
+  /** Monto fijo serializado como string decimal. */
   montoFijo: string;
+
+  /** Porcentaje serializado como string decimal. */
   porcentaje: string;
+
+  /** Ayuda de formula; nula si no aplica. */
   formulaAyuda?: string | null;
+
+  /** 0 activo, 1 inactivo. */
   esInactivo: number;
 }
 
 export interface AbsenceEmployeeCatalogItem {
+  /** ID del empleado. */
   id: number;
+
+  /** ID de la empresa. */
   idEmpresa: number;
+
+  /** Codigo interno. */
   codigo: string;
+
+  /** Nombre. */
   nombre: string;
+
+  /** Primer apellido. */
   apellido1: string;
+
+  /** Segundo apellido; nulo si no aplica. */
   apellido2?: string | null;
+
+  /** Cedula; nula si no aplica. */
   cedula?: string | null;
+
+  /** Email; nulo si no aplica. */
   email?: string | null;
+
+  /** Jornada; nula si no aplica. */
   jornada?: string | null;
+
+  /** ID periodo pago; nulo si no aplica. */
   idPeriodoPago?: number | null;
+
+  /** Salario base; nulo si no aplica. */
   salarioBase?: number | null;
+
+  /** Moneda salario; nula si no aplica. */
   monedaSalario?: string | null;
 }
 
 export interface UpsertAbsenceLinePayload {
+  /** ID de la planilla. */
   payrollId: number;
+
+  /** Fecha efecto (ISO). */
   fechaEfecto: string;
+
+  /** ID del movimiento de ausencia. */
   movimientoId: number;
+
+  /** Tipo de ausencia: justificada o no justificada. */
   tipoAusencia: 'JUSTIFICADA' | 'NO_JUSTIFICADA';
+
+  /** Cantidad (dias u horas). */
   cantidad: number;
+
+  /** Monto. */
   monto: number;
+
+  /** Si aplica remuneracion. */
   remuneracion: boolean;
+
+  /** Formula de calculo; opcional. */
   formula?: string;
 }
 
 export interface UpsertAbsencePayload {
+  /** ID de la empresa. */
   idEmpresa: number;
+
+  /** ID del empleado. */
   idEmpleado: number;
+
+  /** Observacion; opcional. */
   observacion?: string;
+
+  /** Lineas de ausencia. */
   lines: UpsertAbsenceLinePayload[];
 }
 
@@ -162,145 +275,318 @@ export type DisabilityType =
   | 'incapacidad_prolongada_ins';
 
 export interface UpsertLicenseLinePayload {
+  /** ID de la planilla. */
   payrollId: number;
+
+  /** Fecha efecto (ISO). */
   fechaEfecto: string;
+
+  /** ID del movimiento de licencia. */
   movimientoId: number;
+
+  /** Tipo de licencia. */
   tipoLicencia: LicenseType;
+
+  /** Cantidad (dias). */
   cantidad: number;
+
+  /** Monto. */
   monto: number;
+
+  /** Si aplica remuneracion. */
   remuneracion: boolean;
+
+  /** Formula; opcional. */
   formula?: string;
 }
 
 export interface UpsertLicensePayload {
+  /** ID de la empresa. */
   idEmpresa: number;
+
+  /** ID del empleado. */
   idEmpleado: number;
+
+  /** Observacion; opcional. */
   observacion?: string;
+
+  /** Lineas de licencia. */
   lines: UpsertLicenseLinePayload[];
 }
 
 export interface UpsertDisabilityLinePayload {
+  /** ID de la planilla. */
   payrollId: number;
+
+  /** Fecha efecto (ISO). */
   fechaEfecto: string;
+
+  /** ID del movimiento de incapacidad. */
   movimientoId: number;
+
+  /** Tipo de incapacidad (CCSS/INS). */
   tipoIncapacidad: DisabilityType;
+
+  /** Institucion: CCSS o INS. */
   tipoInstitucion: DisabilityInstitutionType;
+
+  /** Cantidad (dias). */
   cantidad: number;
+
+  /** Monto. */
   monto: number;
+
+  /** Si aplica remuneracion. */
   remuneracion: boolean;
+
+  /** Monto INS; opcional. */
   montoIns?: number;
+
+  /** Monto patrono; opcional. */
   montoPatrono?: number;
+
+  /** Subsidio CCSS; opcional. */
   subsidioCcss?: number;
+
+  /** Total incapacidad; opcional. */
   totalIncapacidad?: number;
+
+  /** Formula; opcional. */
   formula?: string;
 }
 
 export interface UpsertDisabilityPayload {
+  /** ID de la empresa. */
   idEmpresa: number;
+
+  /** ID del empleado. */
   idEmpleado: number;
+
+  /** Observacion; opcional. */
   observacion?: string;
+
+  /** Lineas de incapacidad. */
   lines: UpsertDisabilityLinePayload[];
 }
 
 export interface UpsertBonusLinePayload {
+  /** ID de la planilla. */
   payrollId: number;
+
+  /** Fecha efecto (ISO). */
   fechaEfecto: string;
+
+  /** ID del movimiento de bonificacion. */
   movimientoId: number;
+
+  /** Tipo de bonificacion. */
   tipoBonificacion: BonusType;
+
+  /** Cantidad. */
   cantidad: number;
+
+  /** Monto. */
   monto: number;
+
+  /** Si aplica remuneracion. */
   remuneracion: boolean;
+
+  /** Formula; opcional. */
   formula?: string;
 }
 
 export interface UpsertBonusPayload {
+  /** ID de la empresa. */
   idEmpresa: number;
+
+  /** ID del empleado. */
   idEmpleado: number;
+
+  /** Observacion; opcional. */
   observacion?: string;
+
+  /** Lineas de bonificacion. */
   lines: UpsertBonusLinePayload[];
 }
 
 export interface UpsertOvertimeLinePayload {
+  /** ID de la planilla. */
   payrollId: number;
+
+  /** Fecha efecto (ISO). */
   fechaEfecto: string;
+
+  /** ID del movimiento de horas extra. */
   movimientoId: number;
+
+  /** Fecha inicio hora extra (ISO). */
   fechaInicioHoraExtra: string;
+
+  /** Fecha fin hora extra (ISO). */
   fechaFinHoraExtra: string;
+
+  /** Tipo jornada: 6, 7 u 8 horas. */
   tipoJornadaHorasExtras: OvertimeShiftType;
+
+  /** Cantidad (horas). */
   cantidad: number;
+
+  /** Monto. */
   monto: number;
+
+  /** Si aplica remuneracion. */
   remuneracion: boolean;
+
+  /** Formula; opcional. */
   formula?: string;
 }
 
 export interface UpsertOvertimePayload {
+  /** ID de la empresa. */
   idEmpresa: number;
+
+  /** ID del empleado. */
   idEmpleado: number;
+
+  /** Observacion; opcional. */
   observacion?: string;
+
+  /** Lineas de horas extra. */
   lines: UpsertOvertimeLinePayload[];
 }
 
 export interface UpsertRetentionLinePayload {
+  /** ID de la planilla. */
   payrollId: number;
+
+  /** Fecha efecto (ISO). */
   fechaEfecto: string;
+
+  /** ID del movimiento de retencion. */
   movimientoId: number;
+
+  /** Cantidad. */
   cantidad: number;
+
+  /** Monto. */
   monto: number;
+
+  /** Formula; opcional. */
   formula?: string;
 }
 
 export interface UpsertRetentionPayload {
+  /** ID de la empresa. */
   idEmpresa: number;
+
+  /** ID del empleado. */
   idEmpleado: number;
+
+  /** Observacion; opcional. */
   observacion?: string;
+
+  /** Lineas de retencion. */
   lines: UpsertRetentionLinePayload[];
 }
 
 export interface UpsertDiscountLinePayload {
+  /** ID de la planilla. */
   payrollId: number;
+
+  /** Fecha efecto (ISO). */
   fechaEfecto: string;
+
+  /** ID del movimiento de descuento. */
   movimientoId: number;
+
+  /** Cantidad. */
   cantidad: number;
+
+  /** Monto. */
   monto: number;
+
+  /** Formula; opcional. */
   formula?: string;
 }
 
 export interface UpsertDiscountPayload {
+  /** ID de la empresa. */
   idEmpresa: number;
+
+  /** ID del empleado. */
   idEmpleado: number;
+
+  /** Observacion; opcional. */
   observacion?: string;
+
+  /** Lineas de descuento. */
   lines: UpsertDiscountLinePayload[];
 }
 
 export type IncreaseCalculationMethod = 'MONTO' | 'PORCENTAJE';
 
 export interface UpsertIncreaseLinePayload {
+  /** ID de la planilla. */
   payrollId: number;
+
+  /** Fecha efecto (ISO). */
   fechaEfecto: string;
+
+  /** ID del movimiento de aumento. */
   movimientoId: number;
+
+  /** Metodo de calculo: MONTO o PORCENTAJE. */
   metodoCalculo: IncreaseCalculationMethod;
+
+  /** Monto del aumento. */
   monto: number;
+
+  /** Porcentaje del aumento. */
   porcentaje: number;
+
+  /** Salario actual; opcional. */
   salarioActual?: number;
+
+  /** Nuevo salario calculado; opcional. */
   nuevoSalario?: number;
+
+  /** Formula; opcional. */
   formula?: string;
 }
 
 export interface UpsertIncreasePayload {
+  /** ID de la empresa. */
   idEmpresa: number;
+
+  /** ID del empleado. */
   idEmpleado: number;
+
+  /** Observacion; opcional. */
   observacion?: string;
+
+  /** Linea unica de aumento. */
   line: UpsertIncreaseLinePayload;
 }
+
 export interface UpsertVacationDatePayload {
+  /** Fecha de vacacion (ISO). */
   fecha: string;
 }
 
 export interface UpsertVacationPayload {
+  /** ID de la empresa. */
   idEmpresa: number;
+
+  /** ID del empleado. */
   idEmpleado: number;
+
+  /** ID del movimiento de vacaciones. */
   movimientoId: number;
+
+  /** Observacion; opcional. */
   observacion?: string;
+
+  /** Fechas de vacacion a registrar. */
   fechas: UpsertVacationDatePayload[];
 }
 

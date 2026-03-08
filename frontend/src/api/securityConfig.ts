@@ -38,59 +38,142 @@ export type PermissionCatalogMode = 'migration' | 'ui';
  * ============================================================================
  */
 export interface SystemPermission {
+  /** Identificador unico del permiso. */
   id: number;
+
+  /** Codigo unico del permiso (ej: "EMPLEADOS_CREAR"). */
   codigo: string;
+
+  /** Nombre legible del permiso. */
   nombre: string;
+
+  /** Descripcion del alcance; puede ser nula. */
   descripcion: string | null;
+
+  /** Modulo al que pertenece (ej: "EMPLEADOS", "NOMINA"). */
   modulo: string;
+
+  /** Estado: 1 activo, 0 inactivo. */
   estado: number;
+
+  /** Fecha de creacion (ISO). */
   fechaCreacion: string;
+
+  /** Fecha de ultima modificacion; nula si nunca. */
   fechaModificacion: string | null;
+
+  /** ID del usuario que creo; nulo si no aplica. */
   creadoPor: number | null;
+
+  /** ID del usuario que modifico; nulo si no aplica. */
   modificadoPor: number | null;
 }
 
+/**
+ * Rol del sistema en el catalogo de seguridad.
+ */
 export interface SystemRole {
+  /** Identificador unico del rol. */
   id: number;
+
+  /** Codigo unico del rol. */
   codigo: string;
+
+  /** Nombre legible del rol. */
   nombre: string;
+
+  /** Descripcion; puede ser nula. */
   descripcion: string | null;
+
+  /** Estado: 1 activo, 0 inactivo. */
   estado: number;
 }
 
+/**
+ * Usuario del sistema en la vista de configuracion.
+ */
 export interface SystemUser {
+  /** Identificador unico del usuario. */
   id: number;
+
+  /** Email del usuario. */
   email: string;
+
+  /** Nombre. */
   nombre: string;
+
+  /** Apellido. */
   apellido: string;
+
+  /** Estado: 1 activo, 0 inactivo. */
   estado: number;
 }
 
+/**
+ * Aplicacion registrada en el sistema.
+ */
 export interface SystemApp {
+  /** Identificador unico de la app. */
   id: number;
+
+  /** Codigo de la app (ej: "kpital", "timewise"). */
   codigo: string;
+
+  /** Nombre legible de la app. */
   nombre: string;
+
+  /** Estado: 1 activo, 0 inactivo. */
   estado: number;
 }
 
+/**
+ * Empresa en el selector de asignacion de usuarios.
+ */
 export interface ConfigCompanyItem {
+  /** ID de la empresa. */
   id: number;
+
+  /** Nombre de la empresa. */
   nombre: string;
+
+  /** Prefijo de codigos; opcional. */
   prefijo?: string | null;
+
+  /** Estado: 1 activo, 0 inactivo; opcional. */
   estado?: number;
 }
 
+/**
+ * Asignacion de rol a usuario en contexto empresa+app.
+ */
 export interface UserRoleAssignment {
+  /** ID del usuario. */
   idUsuario: number;
+
+  /** ID del rol. */
   idRol: number;
+
+  /** ID de la empresa. */
   idEmpresa: number;
+
+  /** ID de la aplicacion. */
   idApp: number;
+
+  /** Estado: 1 activo, 0 inactivo. */
   estado: number;
 }
 
+/**
+ * Asignacion de empresa a usuario.
+ */
 export interface UserCompanyAssignment {
+  /** ID del usuario. */
   idUsuario: number;
+
+  /** ID de la empresa. */
   idEmpresa: number;
+
+  /** Estado: 1 activo, 0 inactivo. */
   estado: number;
 }
 
@@ -98,25 +181,63 @@ export interface UserCompanyAssignment {
    FUNCIONES AUXILIARES
    ============================================================================= */
 
-/** Extrae mensaje de error del payload; soporta message como string o string[]. */
+/**
+ * ============================================================================
+ * Parse Error Message
+ * ============================================================================
+ *
+ * Extrae mensaje de error del payload de respuesta.
+ * Soporta message como string o string[] (validacion NestJS).
+ *
+ * @param defaultMessage - Mensaje de respaldo si el payload no contiene message.
+ * @param payload - Objeto JSON parseado de la respuesta.
+ *
+ * @returns Mensaje final listo para lanzar como excepcion.
+ *
+ * ============================================================================
+ */
 function parseErrorMessage(defaultMessage: string, payload: unknown): string {
+  /** Si no hay payload o no es objeto, retorna respaldo. */
   if (!payload || typeof payload !== 'object') return defaultMessage;
 
   const candidate = payload as { message?: string | string[] };
+
+  /** Soporta array de mensajes (class-validator). */
   if (Array.isArray(candidate.message)) {
     return candidate.message.join(', ');
   }
+
+  /** Soporta string no vacio. */
   if (typeof candidate.message === 'string' && candidate.message.trim()) {
     return candidate.message;
   }
+
   return defaultMessage;
 }
 
+/**
+ * ============================================================================
+ * Ensure Ok
+ * ============================================================================
+ *
+ * Valida que la respuesta HTTP sea exitosa y extrae el JSON.
+ *
+ * @param res - Respuesta HTTP.
+ * @param defaultMessage - Mensaje de respaldo si el body no contiene message.
+ *
+ * @returns Body parseado como JSON.
+ *
+ * @throws {Error} Si res.ok es false.
+ *
+ * ============================================================================
+ */
 async function ensureOk<T>(res: Response, defaultMessage: string): Promise<T> {
+  /** Valida status y extrae mensaje de error si falla. */
   if (!res.ok) {
     const payload = await res.json().catch(() => null);
     throw new Error(parseErrorMessage(defaultMessage, payload));
   }
+
   return res.json();
 }
 
@@ -233,17 +354,41 @@ export async function fetchRolesByApp(appCode: 'timewise' | 'kpital'): Promise<S
   return fetchRolesForUsers(false, appCode);
 }
 
+/**
+ * Elemento del historial de auditoria de un usuario.
+ */
 export interface UserAuditTrailItem {
+  /** ID del evento de auditoria. */
   id: string;
+
+  /** Modulo que origino el evento. */
   modulo: string;
+
+  /** Accion ejecutada. */
   accion: string;
+
+  /** Entidad afectada. */
   entidad: string;
+
+  /** ID de la entidad; nulo en eventos globales. */
   entidadId: string | null;
+
+  /** ID del usuario actor; nulo si no aplica. */
   actorUserId: number | null;
+
+  /** Nombre del actor; nulo si no aplica. */
   actorNombre: string | null;
+
+  /** Email del actor; nulo si no aplica. */
   actorEmail: string | null;
+
+  /** Descripcion textual del evento. */
   descripcion: string;
+
+  /** Fecha del evento (ISO); nula si no aplica. */
   fechaCreacion: string | null;
+
+  /** Metadata libre; nula si no aplica. */
   metadata: Record<string, unknown> | null;
 }
 
@@ -388,12 +533,26 @@ export async function replaceUserRolesInContext(
   return ensureOk<UserRoleAssignment[]>(res, 'Error al guardar roles por contexto');
 }
 
+/**
+ * Resumen de roles y permisos del usuario por contexto.
+ */
 export interface UserRolesSummary {
+  /** Codigo de la aplicacion. */
   appCode: string;
+
+  /** IDs de roles globales asignados. */
   globalRoleIds: number[];
+
+  /** Permisos denegados globalmente; opcional. */
   globalPermissionDeny?: string[];
+
+  /** Roles por empresa. */
   contextRoles: { companyId: number; roleIds: number[] }[];
+
+  /** Excepciones de rol por empresa. */
   exclusions: { companyId: number; roleIds: number[] }[];
+
+  /** Sobrescrituras de permisos por empresa. */
   permissionOverrides: { companyId: number; allow: string[]; deny: string[] }[];
 }
 

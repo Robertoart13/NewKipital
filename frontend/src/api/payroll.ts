@@ -34,21 +34,52 @@ import { httpFetch } from '../interceptors/httpInterceptor';
  * ============================================================================
  */
 export interface PayrollListItem {
+  /** Identificador unico de la planilla. */
   id: number;
+
+  /** ID de la empresa propietaria. */
   idEmpresa: number;
+
+  /** ID del periodo de pago. */
   idPeriodoPago: number;
+
+  /** ID del tipo de planilla; nulo si no aplica. */
   idTipoPlanilla?: number | null;
+
+  /** Nombre descriptivo de la planilla; nulo si no aplica. */
   nombrePlanilla?: string | null;
+
+  /** Codigo del tipo de planilla; opcional. */
   tipoPlanilla?: string;
+
+  /** Fecha inicio del periodo (ISO). */
   fechaInicioPeriodo: string;
+
+  /** Fecha fin del periodo (ISO). */
   fechaFinPeriodo: string;
+
+  /** Fecha de corte; nula si no aplica. */
   fechaCorte?: string | null;
+
+  /** Fecha inicio ventana de pago (ISO). */
   fechaInicioPago: string;
+
+  /** Fecha fin ventana de pago (ISO). */
   fechaFinPago: string;
+
+  /** Fecha programada de pago; nula si no aplica. */
   fechaPagoProgramada?: string | null;
+
+  /** Codigo moneda (ej: CRC, USD); opcional. */
   moneda?: string;
+
+  /** Estado: borrador, verificada, aplicada, etc. */
   estado: number;
+
+  /** Indica si requiere recalculo (0 o 1); opcional. */
   requiresRecalculation?: number;
+
+  /** Fecha de aplicacion contable; nula si no aplicada. */
   fechaAplicacion?: string | null;
 }
 
@@ -62,19 +93,46 @@ export interface PayrollListItem {
  * ============================================================================
  */
 export interface CreatePayrollPayload {
+  /** ID de la empresa. */
   idEmpresa: number;
+
+  /** ID del periodo de pago. */
   idPeriodoPago: number;
+
+  /** ID del tipo de planilla; opcional. */
   idTipoPlanilla?: number;
+
+  /** Nombre descriptivo; opcional. */
   nombrePlanilla?: string;
+
+  /** Codigo tipo planilla; opcional. */
   tipoPlanilla?: string;
+
+  /** Fecha inicio periodo (ISO). */
   periodoInicio: string;
+
+  /** Fecha fin periodo (ISO). */
   periodoFin: string;
+
+  /** Fecha de corte; opcional. */
   fechaCorte?: string;
+
+  /** Fecha inicio ventana de pago (ISO). */
   fechaInicioPago: string;
+
+  /** Fecha fin ventana de pago (ISO). */
   fechaFinPago: string;
+
+  /** Fecha programada de pago; opcional. */
   fechaPagoProgramada?: string;
+
+  /** Moneda CRC o USD; opcional. */
   moneda?: 'CRC' | 'USD';
+
+  /** Descripcion del evento; opcional. */
   descripcionEvento?: string;
+
+  /** Color de etiqueta en UI; opcional. */
   etiquetaColor?: string;
 }
 
@@ -90,16 +148,37 @@ export type UpdatePayrollPayload = Partial<CreatePayrollPayload>;
  * ============================================================================
  */
 export interface PayrollSnapshotSummary {
+  /** ID de la planilla. */
   idNomina: number;
+
+  /** Cantidad de empleados incluidos. */
   empleados: number;
+
+  /** Cantidad de inputs/registros. */
   inputs: number;
+
+  /** Cantidad de acciones personales ligadas. */
   accionesLigadas: number;
+
+  /** Si incluye cargas sociales. */
   hasSocialCharges: boolean;
+
+  /** Total bruto serializado como string decimal. */
   totalBruto: string;
+
+  /** Total deducciones serializado. */
   totalDeducciones: string;
+
+  /** Total neto serializado. */
   totalNeto: string;
+
+  /** Total devengado serializado. */
   totalDevengado: string;
+
+  /** Total cargas sociales serializado. */
   totalCargasSociales: string;
+
+  /** Total impuesto renta serializado. */
   totalImpuestoRenta: string;
 }
 
@@ -113,38 +192,95 @@ export interface PayrollSnapshotSummary {
  * ============================================================================
  */
 export interface PayrollAuditTrailItem {
+  /** ID del evento de auditoria. */
   id: string;
+
+  /** Modulo que origino el evento. */
   modulo: string;
+
+  /** Accion ejecutada. */
   accion: string;
+
+  /** Entidad afectada. */
   entidad: string;
+
+  /** ID de la entidad; nulo en eventos globales. */
   entidadId: string | null;
+
+  /** ID del usuario actor; nulo si no aplica. */
   actorUserId: number | null;
+
+  /** Nombre del actor; nulo si no aplica. */
   actorNombre: string | null;
+
+  /** Email del actor; nulo si no aplica. */
   actorEmail: string | null;
+
+  /** Descripcion textual del evento. */
   descripcion: string;
+
+  /** Fecha del evento (ISO); nula si no aplica. */
   fechaCreacion: string | null;
+
+  /** Metadata libre; nula si no aplica. */
   metadata: Record<string, unknown> | null;
+
+  /** Lista de cambios realizados. */
   cambios: Array<{ campo: string; antes: string; despues: string }>;
 }
 
+/**
+ * Motivo de bloqueo de traslado interempresas.
+ */
 export interface IntercompanyTransferBlockingReason {
+  /** Codigo del motivo. */
   code: string;
+
+  /** Mensaje legible. */
   message: string;
+
+  /** Metadata adicional; opcional. */
   metadata?: Record<string, unknown>;
 }
 
+/**
+ * Plan de accion para traslado interempresas.
+ */
 export interface IntercompanyTransferActionPlan {
+  /** ID de la accion personal. */
   idAccion: number;
+
+  /** Tipo de accion. */
   tipoAccion: string;
+
+  /** Estado de la accion. */
   estado: number;
+
+  /** Fecha efecto; nula si no aplica. */
   fechaEfecto?: string | null;
+
+  /** Fecha inicio efecto; nula si no aplica. */
   fechaInicioEfecto?: string | null;
+
+  /** Fecha fin efecto; nula si no aplica. */
   fechaFinEfecto?: string | null;
+
+  /** ID calendario origen; nulo si no aplica. */
   idCalendarioOrigen?: number | null;
+
+  /** Si la accion debe trasladarse. */
   shouldMove: boolean;
+
+  /** Si requiere particion. */
   requiresSplit: boolean;
+
+  /** Si cruza la fecha de traslado. */
   crossesTransfer: boolean;
+
+  /** Si ya esta asignada a una planilla destino. */
   assignedToPayroll: boolean;
+
+  /** Asignaciones a calendarios; opcional. */
   calendarAssignments?: Array<{
     date: string;
     calendarId: number;
@@ -162,19 +298,40 @@ export interface IntercompanyTransferActionPlan {
  * ============================================================================
  */
 export interface IntercompanyTransferSimulationResult {
+  /** ID del empleado. */
   employeeId: number;
+
+  /** ID empresa origen. */
   fromCompanyId: number;
+
+  /** ID empresa destino. */
   toCompanyId: number;
+
+  /** Fecha efectiva del traslado (ISO). */
   effectiveDate: string;
+
+  /** Si el empleado es elegible para traslado. */
   eligible: boolean;
+
+  /** ID del traslado si existe; nulo si no. */
   transferId: number | null;
+
+  /** Razones de bloqueo si no elegible. */
   blockingReasons: IntercompanyTransferBlockingReason[];
+
+  /** Acciones a trasladar. */
   actionsToMove: IntercompanyTransferActionPlan[];
+
+  /** Cantidad de acciones ignoradas. */
   actionsIgnored: number;
+
+  /** Provision de aguinaldo si aplica; opcional. */
   aguinaldoProvision?: {
     totalBruto: number;
     montoProvisionado: number;
   };
+
+  /** Balance de vacaciones si aplica; opcional. */
   vacationBalance?: {
     balance: number;
     movedDays: number;
@@ -182,20 +339,42 @@ export interface IntercompanyTransferSimulationResult {
   };
 }
 
+/**
+ * Payload para simular traslado interempresas.
+ */
 export interface IntercompanyTransferSimulationPayload {
+  /** ID de la empresa destino. */
   idEmpresaDestino: number;
+
+  /** Fecha efectiva del traslado (ISO). */
   fechaEfectiva: string;
+
+  /** Lista de empleados a simular. */
   empleados: Array<{ idEmpleado: number }>;
+
+  /** Motivo opcional. */
   motivo?: string;
 }
 
+/**
+ * Payload para ejecutar traslados interempresas.
+ */
 export interface IntercompanyTransferExecutionPayload {
+  /** IDs de traslados a ejecutar. */
   transferIds: number[];
 }
 
+/**
+ * Resultado de ejecucion de un traslado.
+ */
 export interface IntercompanyTransferExecutionResult {
+  /** ID del traslado. */
   transferId: number;
+
+  /** Estado: EXECUTED o FAILED. */
   status: 'EXECUTED' | 'FAILED';
+
+  /** Mensaje descriptivo. */
   message: string;
 }
 
