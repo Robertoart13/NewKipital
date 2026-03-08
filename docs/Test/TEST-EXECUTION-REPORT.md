@@ -528,3 +528,24 @@ Estado de fase: Cerrada
 - Commit local: `976eab4`
 - Push: `origin/main` actualizado de `6004a32` a `976eab4`
 - Objetivo: punto de regreso estable tras pruebas manuales de UI (planilla/parametros).
+
+## Fase 19 - 2026-03-08
+Alcance: Cierre manual UI de parametros y gestion planilla (iteracion final)
+
+Pruebas ejecutadas:
+- Movimientos de Nomina: crear y editar OK; bitacora OK.
+- Feriados: crear y editar OK.
+- Abrir Planilla: crear y editar OK; bitacora OK.
+
+Correcciones validadas en esta fase:
+- Abrir Planilla: empresa del modal de crear desacoplada del filtro de tabla.
+- Abrir Planilla: `Inicio Pago` replica en `Fin Pago` y `Fecha Pago Programada` con ajuste automatico para mantener rango valido.
+- Movimientos de Nomina: selector de empresa en crear desacoplado del filtro de tabla.
+- Movimientos de Nomina: persistencia de clase (`idClase`) y regla de tipo de calculo (campo opuesto forzado a `0`).
+
+Checkpoint remoto confirmado:
+- Commit funcional: `976eab4`.
+- Commit documental: `ba41355`.
+- Branch: `main`.
+
+Estado de fase: Cerrada

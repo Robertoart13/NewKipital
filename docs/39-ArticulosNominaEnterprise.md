@@ -336,3 +336,26 @@ Columnas:
   - El archivo de migracion existe en codigo.
   - En `hr_pro` se aplico SQL idempotente directo por desalineacion historica de migraciones legacy.
 
+
+## 15. Actualizacion 2026-03-08 (cierre operativo UI)
+
+### 15.1. Articulos de Nomina - ajustes validados
+- En crear modal, la empresa del formulario queda desacoplada del filtro de empresa del listado.
+- Solo se autoselecciona empresa cuando el usuario tiene una unica empresa.
+- Cuentas contables no se cargan hasta seleccionar Empresa + Tipo de Articulo en el formulario.
+- En editar modal se corrige preload del campo `nombre`.
+- Etiquetas de cuenta normalizadas para evitar fallback `Cuenta #id` por mismatch de tipo.
+
+### 15.2. Movimientos de Nomina - reglas finales UX/negocio
+- Mismo desacople listado/modal para selector de empresa en crear.
+- Persistencia de `idClase` incluida en payload create/update.
+- Regla de calculo reforzada:
+  - Si tipo calculo = Monto fijo -> `porcentaje = 0`.
+  - Si tipo calculo = Porcentaje -> `montoFijo = 0`.
+  - Cambio de switch actualiza inmediatamente ambos campos en UI.
+- Validacion funcional mantiene requerido el campo activo segun tipo de calculo.
+
+### 15.3. Estado de pruebas
+- Articulos de Nomina: crear, editar y bitacora OK.
+- Movimientos de Nomina: crear, editar y bitacora OK.
+- Evidencia consolidada en `docs/Test/TEST-EXECUTION-REPORT.md`.
