@@ -522,3 +522,9 @@ Resultado:
 - Ambos modulos quedan cerrados en pruebas manuales funcionales y de bitacora.
 
 Estado de fase: Cerrada
+
+## Checkpoint estable remoto - 2026-03-08
+- Branch: `main`
+- Commit local: `976eab4`
+- Push: `origin/main` actualizado de `6004a32` a `976eab4`
+- Objetivo: punto de regreso estable tras pruebas manuales de UI (planilla/parametros).
