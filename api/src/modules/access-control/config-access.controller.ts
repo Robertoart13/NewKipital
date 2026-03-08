@@ -20,6 +20,7 @@ import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { RequirePermissions } from '../../common/decorators/require-permissions.decorator';
 import { RequireAnyPermissions } from '../../common/decorators/require-any-permissions.decorator';
 import { CacheResponseInterceptor } from '../../common/interceptors/cache-response.interceptor';
+import { AppCacheService } from '../../common/services/app-cache.service';
 import { Company } from '../companies/entities/company.entity';
 import { NotificationsService } from '../notifications/notifications.service';
 
@@ -54,6 +55,7 @@ export class ConfigAccessController {
     private readonly rolesService: RolesService,
     private readonly userAssignmentService: UserAssignmentService,
     private readonly notificationsService: NotificationsService,
+    private readonly cacheService: AppCacheService,
     @InjectRepository(Company)
     private readonly companyRepo: Repository<Company>,
     @InjectRepository(Role)
@@ -265,6 +267,10 @@ export class ConfigAccessController {
         user.userId,
       );
     }
+
+    // La UI recarga empresas por /user-assignments/companies/:id (scope distinto a "config").
+    // Sin esta invalidacion cruzada puede mostrarse una respuesta stale.
+    await this.cacheService.invalidateScope('user-assignments', 'global');
 
     return result;
   }

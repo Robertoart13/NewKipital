@@ -183,6 +183,8 @@ export function EmployeeCreateModal({ open, onClose, onSuccess }: EmployeeCreate
 
     const payload = {
       idEmpresa,
+      codigo: values.codigo?.trim() ?? '',
+      cedula: values.cedula?.trim() ?? '',
       nombre: values.nombre ?? '',
       apellido1: values.apellido1 ?? '',
       apellido2: values.apellido2 || undefined,

@@ -128,6 +128,23 @@ export class UserAssignmentService {
     return roleIds.map((roleId) => byId.get(roleId) ?? `rol #${roleId}`);
   }
 
+  private async getPermissionLabelsByCodes(codes: string[]): Promise<string[]> {
+    const normalizedCodes = [
+      ...new Set(codes.map((value) => value.trim().toLowerCase()).filter(Boolean)),
+    ];
+    if (normalizedCodes.length === 0) return [];
+    const permissions = await this.permRepo.find({
+      where: { codigo: In(normalizedCodes) },
+    });
+    const byCode = new Map(
+      permissions.map((permission) => [
+        permission.codigo.toLowerCase(),
+        `${permission.nombre} (${permission.codigo})`,
+      ]),
+    );
+    return normalizedCodes.map((code) => byCode.get(code) ?? code);
+  }
+
   // --- Usuario <-> App ---
 
   async assignApp(dto: AssignUserAppDto, actorUserId?: number): Promise<UserApp> {
@@ -589,7 +606,7 @@ export class UserAssignmentService {
       entidad: 'user_role_global',
       entidadId: idUsuario,
       actorUserId: modifierId,
-      descripcion: `Roles globales modificados para ${userLabel} (app ${result.appCode}). Antes: ${antes}. Después: ${despues}.`,
+      descripcion: `Roles globales actualizados para ${userLabel} en app ${result.appCode.toUpperCase()}. Antes: ${antes}. Ahora: ${despues}.`,
       payloadBefore: {
         idUsuario,
         appCode: result.appCode,
@@ -927,15 +944,19 @@ export class UserAssignmentService {
 
     const result = (await this.getGlobalPermissionDenials(idUsuario, appCode)).deny;
     const response = { appCode: appCode.trim().toLowerCase(), deny: result };
-    const userLabel = await this.getUserLabel(idUsuario);
-    const antes = beforeDenyCodes.length > 0 ? this.formatList(beforeDenyCodes) : 'ninguno';
-    const despues = result.length > 0 ? this.formatList(result) : 'ninguno';
+    const [userLabel, beforeDenyLabels, afterDenyLabels] = await Promise.all([
+      this.getUserLabel(idUsuario),
+      this.getPermissionLabelsByCodes(beforeDenyCodes),
+      this.getPermissionLabelsByCodes(result),
+    ]);
+    const antes = beforeDenyLabels.length > 0 ? this.formatList(beforeDenyLabels) : 'ninguno';
+    const despues = afterDenyLabels.length > 0 ? this.formatList(afterDenyLabels) : 'ninguno';
     this.publishAudit({
       accion: 'replace_global_permission_denials',
       entidad: 'user_permission_global_deny',
       entidadId: idUsuario,
       actorUserId: modifierId,
-      descripcion: `Permisos denegados globalmente modificados para ${userLabel} (app ${response.appCode}). Antes: ${antes}. Después: ${despues}.`,
+      descripcion: `Permisos denegados globales actualizados para ${userLabel} en app ${response.appCode.toUpperCase()}. Antes: ${antes}. Ahora: ${despues}.`,
       payloadBefore: {
         idUsuario,
         appCode: response.appCode,

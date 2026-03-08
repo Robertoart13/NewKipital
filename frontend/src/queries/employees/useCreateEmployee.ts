@@ -13,11 +13,11 @@ export function useCreateEmployee() {
     mutationFn: (payload: CreateEmployeePayload) => createEmployee(payload),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['employees'] });
-      notification.success({ message: 'Empleado creado exitosamente' });
+      notification.success({ title: 'Empleado creado exitosamente' });
     },
     onError: (err: Error) => {
       notification.error({
-        message: 'Error al crear empleado',
+        title: 'Error al crear empleado',
         description: err.message,
       });
     },

@@ -464,3 +464,44 @@ SOLAPE-PLANILLAS-2026-03-02)
 - TimeWise: acciones de vacaciones se crean en estado Borrador sin planilla. RRHH completa fechas/movimiento en KPITAL; el sistema asigna planilla por fecha.
 - Planilla: al cargar una planilla se consumen las fechas cuyo `id_calendario_nomina` coincide con la planilla y estado aprobado. No se requiere que el header tenga planilla.
 ---
+
+## Fase 16 - 2026-03-08
+Alcance: Validacion manual UI + bitacora (Puestos, Departamentos, Proyectos, Cuentas Contables, Empleados)
+
+Comandos ejecutados:
+- `cd api && npm.cmd run build`
+- `cd frontend && npm.cmd run dev`
+
+Resultados:
+- Build API: OK
+- Frontend dev: OK (se corrigieron errores de compilacion previos)
+- Prueba manual: completada por modulo
+
+Pruebas manuales cerradas:
+- Puestos: crear, editar y bitacora funcionando.
+- Departamentos: crear, editar y bitacora funcionando tras correccion.
+- Proyectos: crear, editar y bitacora funcionando tras correccion.
+- Cuentas contables: crear, editar y bitacora funcionando tras correccion.
+- Empleados: crear y editar con bitacora funcionando tras correccion de auditoria create/update.
+
+Verificacion tecnica en DB (hr_pro):
+- Se confirmo que la auditoria de empleados no se estaba publicando para create.
+- Se aplico fix en backend para publicar `audit.employees.create`.
+- Se amplio lectura de bitacora para `entidad_auditoria IN ('employee','employees')` por compatibilidad historica.
+
+Estado de fase: Cerrada
+
+## Fase 17 - 2026-03-08
+Alcance: Validacion manual de permisos y asignaciones de usuario (UI)
+
+Pruebas ejecutadas:
+- Roles: asignar permiso y quitar permiso.
+- Usuario: aplicar cambios de permisos/roles y verificar persistencia.
+- Empresas por usuario: quitar empresa y agregar empresa.
+- Verificacion visual en pestaña Empresas: estado marcado correcto luego de guardar y recargar.
+
+Resultado:
+- Flujo validado OK en UI.
+- Persistencia de cambios confirmada.
+
+Estado de fase: Cerrada

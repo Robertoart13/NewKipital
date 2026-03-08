@@ -176,7 +176,25 @@ export class EmployeesService {
       }
     }
 
-    return this.creationWorkflow.execute(dto, creatorId);
+    const result = await this.creationWorkflow.execute(dto, creatorId);
+    if (result.success && result.data?.employee) {
+      const saved = result.data.employee;
+      const payloadAfter = this.buildAuditPayloadFromEncrypted(saved);
+      const employeeName = String(payloadAfter.nombre ?? saved.id);
+      this.auditOutbox.publish({
+        modulo: 'employees',
+        accion: 'create',
+        entidad: 'employee',
+        entidadId: saved.id,
+        actorUserId: creatorId ?? null,
+        companyContextId: saved.idEmpresa,
+        descripcion: `Empleado creado: ${employeeName}`,
+        payloadBefore: null,
+        payloadAfter,
+        metadata: { appsAssigned: result.data.appsAssigned ?? [] },
+      });
+    }
+    return result;
   }
 
   private assertAcumulados(dto: CreateEmployeeDto): void {
@@ -696,7 +714,7 @@ export class EmployeesService {
       FROM sys_auditoria_acciones a
       LEFT JOIN sys_usuarios actor
         ON actor.id_usuario = a.id_usuario_actor_auditoria
-      WHERE a.entidad_auditoria = 'employee'
+      WHERE a.entidad_auditoria IN ('employee', 'employees')
         AND a.id_entidad_auditoria = ?
       ORDER BY a.fecha_creacion_auditoria DESC
       LIMIT ?
