@@ -16,8 +16,8 @@ interface PayrollArticlesTableProps {
   onPageSizeChange: (value: number) => void;
   showInactive: boolean;
   onShowInactiveChange: (value: boolean) => void;
-  selectedCompanyIds: number[];
-  onCompanyIdsChange: (value: number[]) => void;
+  selectedCompanyId?: number;
+  onCompanyIdChange: (value?: number) => void;
   companies: Array<{ id: number; nombre: string }>;
   canEdit: boolean;
   onRowClick: (row: PayrollArticleListItem) => void;
@@ -28,7 +28,7 @@ interface PayrollArticlesTableProps {
 
 /**
  * @param props - Propiedades de la tabla de articulos.
- * @returns Tabla principal con selector multi-empresa.
+ * @returns Tabla principal con selector de empresa.
  */
 export function PayrollArticlesTable(props: PayrollArticlesTableProps) {
   const {
@@ -39,8 +39,8 @@ export function PayrollArticlesTable(props: PayrollArticlesTableProps) {
     onPageSizeChange,
     showInactive,
     onShowInactiveChange,
-    selectedCompanyIds,
-    onCompanyIdsChange,
+    selectedCompanyId,
+    onCompanyIdChange,
     companies,
     canEdit,
     onRowClick,
@@ -71,11 +71,10 @@ export function PayrollArticlesTable(props: PayrollArticlesTableProps) {
           <span style={{ color: '#6b7a85', fontSize: 14 }}>Mostrar inactivas</span>
           <Switch checked={showInactive} onChange={onShowInactiveChange} size="small" />
           <Select
-            mode="multiple"
             allowClear
-            placeholder="Filtrar por empresa(s)"
-            value={selectedCompanyIds}
-            onChange={(values) => onCompanyIdsChange(values as number[])}
+            placeholder="Filtrar por empresa"
+            value={selectedCompanyId}
+            onChange={(value) => onCompanyIdChange(value as number | undefined)}
             options={companies.map((company) => ({
               value: company.id,
               label: company.nombre,

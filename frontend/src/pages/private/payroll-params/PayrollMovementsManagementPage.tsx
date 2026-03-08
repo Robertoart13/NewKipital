@@ -133,6 +133,7 @@ function normalizePayload(values: PayrollMovementFormValues): PayrollMovementPay
     nombre,
     idArticuloNomina: values.idArticuloNomina!,
     idTipoAccionPersonal: values.idTipoAccionPersonal!,
+    idClase: values.idClase ?? null,
     idProyecto: values.idProyecto ?? null,
     descripcion: values.descripcion?.trim() || '--',
     esMontoFijo,
@@ -178,6 +179,7 @@ export function PayrollMovementsManagementPage() {
   const [form] = Form.useForm<PayrollMovementFormValues>();
   const esMontoFijo = Form.useWatch('esMontoFijo', form) ?? 1;
   const selectedEmpresa = Form.useWatch('idEmpresa', form);
+  const selectedEmpresaId = parseCompanyId(selectedEmpresa);
   const selectedArticulo = Form.useWatch('idArticuloNomina', form);
 
   const canView = useAppSelector(canViewPayrollMovements);
@@ -194,7 +196,7 @@ export function PayrollMovementsManagementPage() {
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [showInactive, setShowInactive] = useState(false);
-  const [selectedCompanyIds, setSelectedCompanyIds] = useState<number[]>(defaultCompanyId ? [defaultCompanyId] : []);
+  const [selectedCompanyId, setSelectedCompanyId] = useState<number | undefined>(defaultCompanyId);
   const [search, setSearch] = useState('');
   const [filtersExpanded, setFiltersExpanded] = useState(false);
   const [paneSearch, setPaneSearch] = useState<Record<PaneKey, string>>({
@@ -242,31 +244,15 @@ export function PayrollMovementsManagementPage() {
     [actionTypeOptions],
   );
   const loadRows = useCallback(
-    async (companyIds?: number[]) => {
+    async (companyId?: number) => {
       setLoading(true);
       try {
-        const targetCompanyIds =
-          companyIds && companyIds.length > 0
-            ? companyIds
-            : selectedCompanyIds.length > 0
-              ? selectedCompanyIds
-              : defaultCompanyId
-                ? [defaultCompanyId]
-                : [];
-        if (targetCompanyIds.length === 0) {
+        const targetCompanyId = companyId ?? selectedCompanyId ?? defaultCompanyId;
+        if (!targetCompanyId) {
           setRows([]);
           return;
         }
-        // DEBUG: diagnostico temporal de carga
-        console.log('payroll-movements:request', {
-          targetCompanyIds,
-          showInactive,
-        });
-        const data = await fetchPayrollMovements(targetCompanyIds[0], showInactive, targetCompanyIds);
-        console.log('payroll-movements:response', {
-          count: Array.isArray(data) ? data.length : null,
-          data,
-        });
+        const data = await fetchPayrollMovements(targetCompanyId, showInactive, [targetCompanyId]);
         setRows(data);
       } catch (error) {
         message.error(error instanceof Error ? error.message : 'Error al cargar movimientos de nomina');
@@ -275,7 +261,7 @@ export function PayrollMovementsManagementPage() {
         setLoading(false);
       }
     },
-    [defaultCompanyId, message, selectedCompanyIds, showInactive],
+    [defaultCompanyId, message, selectedCompanyId, showInactive],
   );
 
   const loadBaseCatalogs = useCallback(async (includeInactive = false) => {
@@ -324,7 +310,20 @@ export function PayrollMovementsManagementPage() {
 
   useEffect(() => {
     void loadRows();
-  }, [loadRows, showInactive, selectedCompanyIds]);
+  }, [loadRows, showInactive, selectedCompanyId]);
+
+  // Para el listado, necesitamos catálogos de etiquetas (artículo/tipo acción)
+  // desde el primer render, no solo al abrir el modal.
+  useEffect(() => {
+    const companyId = selectedCompanyId ?? defaultCompanyId;
+    void loadBaseCatalogs(showInactive);
+    if (companyId) {
+      void loadCompanyCatalogs(companyId, showInactive);
+    } else {
+      setArticleOptions([]);
+      setProjectOptions([]);
+    }
+  }, [defaultCompanyId, loadBaseCatalogs, loadCompanyCatalogs, selectedCompanyId, showInactive]);
 
   const openCreateModal = () => {
     setEditing(null);
@@ -332,18 +331,17 @@ export function PayrollMovementsManagementPage() {
     setAuditTrail([]);
     form.resetFields();
     form.setFieldsValue({
-      idEmpresa: defaultCompanyId,
       esMontoFijo: 1,
-      montoFijo: '0',
+      montoFijo: undefined,
       porcentaje: '0',
       formulaAyuda: '--',
       descripcion: '--',
     });
+    if (singleCompany?.id) {
+      form.setFieldValue('idEmpresa', singleCompany.id);
+    }
     setOpenModal(true);
     void loadBaseCatalogs(false);
-    if (defaultCompanyId) {
-      void loadCompanyCatalogs(defaultCompanyId, false);
-    }
   };
 
   const applyMovementToForm = useCallback(
@@ -358,6 +356,7 @@ export function PayrollMovementsManagementPage() {
         descripcion: row.descripcion ?? '--',
         esMontoFijo: row.esMontoFijo === 1 ? 1 : 0,
         formulaAyuda: row.formulaAyuda ?? '--',
+        montoFijo: row.montoFijo ?? '0',
         porcentaje: row.porcentaje ?? '0',
       });
     },
@@ -394,9 +393,8 @@ export function PayrollMovementsManagementPage() {
 
   useEffect(() => {
     if (!openModal) return;
-    const idEmpresa = parseCompanyId(selectedEmpresa);
-    void loadCompanyCatalogs(idEmpresa);
-  }, [loadCompanyCatalogs, openModal, selectedEmpresa]);
+    void loadCompanyCatalogs(selectedEmpresaId);
+  }, [loadCompanyCatalogs, openModal, selectedEmpresaId]);
 
   useEffect(() => {
     if (!selectedArticulo) return;
@@ -834,11 +832,10 @@ export function PayrollMovementsManagementPage() {
               <span style={{ color: '#6b7a85', fontSize: 14 }}>Mostrar inactivas</span>
               <Switch checked={showInactive} onChange={setShowInactive} size="small" />
               <Select
-                mode="multiple"
                 allowClear
-                placeholder="Filtrar por empresa(s)"
-                value={selectedCompanyIds}
-                onChange={(values) => setSelectedCompanyIds(values as number[])}
+                placeholder="Filtrar por empresa"
+                value={selectedCompanyId}
+                onChange={(value) => setSelectedCompanyId(parseCompanyId(value))}
                 options={companies.map((company) => ({ value: company.id, label: company.nombre }))}
                 style={{ minWidth: 220 }}
               />
@@ -1119,8 +1116,8 @@ export function PayrollMovementsManagementPage() {
                             showSearch
                             optionFilterProp="label"
                             filterOption={selectFilterByLabel}
-                            placeholder={selectedEmpresa ? 'Seleccionar' : 'Seleccione empresa primero'}
-                            disabled={!selectedEmpresa}
+                            placeholder={selectedEmpresaId ? 'Seleccionar' : 'Seleccione empresa primero'}
+                            disabled={!selectedEmpresaId}
                             options={articleOptions.map((article) => ({
                               value: article.id,
                               label: article.esInactivo === 0 ? `${article.nombre} (Inactivo)` : article.nombre,
@@ -1228,7 +1225,12 @@ export function PayrollMovementsManagementPage() {
                                 <Switch
                                   checked={esMontoFijo === 1}
                                   onChange={(checked) => {
-                                    form.setFieldValue('esMontoFijo', checked ? 1 : 0);
+                                    const nextEsMontoFijo = checked ? 1 : 0;
+                                    form.setFieldsValue({
+                                      esMontoFijo: nextEsMontoFijo,
+                                      montoFijo: nextEsMontoFijo === 1 ? form.getFieldValue('montoFijo') : '0',
+                                      porcentaje: nextEsMontoFijo === 1 ? '0' : form.getFieldValue('porcentaje'),
+                                    });
                                   }}
                                 />
                               </Flex>
@@ -1248,16 +1250,22 @@ export function PayrollMovementsManagementPage() {
                               validator: async (_, value) => {
                                 const esMontoFijoActual = Number(form.getFieldValue('esMontoFijo')) === 1;
                                 const raw = String(value ?? '').trim();
-                                if (!raw || !isNonNegativeNumeric(raw)) {
-                                  throw new Error('Monto fijo debe ser un numero no negativo');
-                                }
-                                const numericValue = Number(raw);
                                 if (esMontoFijoActual) {
+                                  if (!raw) {
+                                    throw new Error('Monto fijo es obligatorio');
+                                  }
+                                  if (!isNonNegativeNumeric(raw)) {
+                                    throw new Error('Monto fijo debe ser un numero no negativo');
+                                  }
+                                  const numericValue = Number(raw);
                                   if (numericValue <= 0) {
                                     throw new Error('Monto fijo debe ser mayor a 0');
                                   }
-                                } else if (numericValue !== 0) {
-                                  throw new Error('Monto fijo debe ser 0 cuando el calculo es porcentaje');
+                                  return;
+                                }
+                                if (!raw) return;
+                                if (!isNonNegativeNumeric(raw)) {
+                                  throw new Error('Monto fijo debe ser un numero no negativo');
                                 }
                               },
                             },
@@ -1275,16 +1283,22 @@ export function PayrollMovementsManagementPage() {
                               validator: async (_, value) => {
                                 const esMontoFijoActual = Number(form.getFieldValue('esMontoFijo')) === 1;
                                 const raw = String(value ?? '').trim();
-                                if (!raw || !isNonNegativeNumeric(raw)) {
-                                  throw new Error('Porcentaje debe ser un numero no negativo');
-                                }
-                                const numericValue = Number(raw);
                                 if (!esMontoFijoActual) {
+                                  if (!raw) {
+                                    throw new Error('Porcentaje es obligatorio');
+                                  }
+                                  if (!isNonNegativeNumeric(raw)) {
+                                    throw new Error('Porcentaje debe ser un numero no negativo');
+                                  }
+                                  const numericValue = Number(raw);
                                   if (numericValue <= 0) {
                                     throw new Error('Porcentaje debe ser mayor a 0');
                                   }
-                                } else if (numericValue !== 0) {
-                                  throw new Error('Porcentaje debe ser 0 cuando el calculo es monto fijo');
+                                  return;
+                                }
+                                if (!raw) return;
+                                if (!isNonNegativeNumeric(raw)) {
+                                  throw new Error('Porcentaje debe ser un numero no negativo');
                                 }
                               },
                             },

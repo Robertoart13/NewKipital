@@ -74,6 +74,15 @@ function normalizeCompanyId(value: number | string | null | undefined): number |
 }
 
 /**
+ * @returns Conjunto de idsReferencia por defecto para evitar consultas vacias
+ * cuando el tipo no tenga mapeo explicito.
+ */
+function getDefaultIdsReferencia(): number[] {
+  const allIds = Object.values(PAYROLL_ARTICLE_TYPE_META).flatMap((meta) => meta.idsReferencia);
+  return Array.from(new Set(allIds)).filter((id) => Number.isFinite(id) && id > 0);
+}
+
+/**
  * @returns Vista principal de articulos de nomina.
  */
 export function PayrollArticlesManagementPage() {
@@ -95,6 +104,7 @@ export function PayrollArticlesManagementPage() {
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [showInactive, setShowInactive] = useState(false);
+  const [selectedCompanyId, setSelectedCompanyId] = useState<number | undefined>(defaultCompanyId);
   const [openModal, setOpenModal] = useState(false);
   const [editing, setEditing] = useState<PayrollArticleListItem | null>(null);
   const editingId = editing?.id ?? null;
@@ -141,6 +151,7 @@ export function PayrollArticlesManagementPage() {
   const [resolvedCompanyId, setResolvedCompanyId] = useState<number | undefined>(defaultCompanyId);
   const [resolvedTipoArticuloId, setResolvedTipoArticuloId] = useState<number | undefined>(undefined);
   const [companyAccountMap, setCompanyAccountMap] = useState<Record<number, AccountingAccountOption[]>>({});
+  const defaultIdsReferencia = useMemo(() => getDefaultIdsReferencia(), []);
 
   const activeArticleTypeIds = useMemo(
     () => new Set(articleTypes.filter((t) => t.esInactivo === 1).map((t) => t.id)),
@@ -160,38 +171,44 @@ export function PayrollArticlesManagementPage() {
     const map = new Map<number, string>();
     Object.values(companyAccountMap).forEach((accounts) => {
       accounts.forEach((account) => {
-        if (!map.has(account.id)) {
-          map.set(account.id, formatAccountLabel(account));
+        const accountId = Number(account.id);
+        if (!Number.isFinite(accountId) || accountId <= 0) return;
+        if (!map.has(accountId)) {
+          map.set(accountId, formatAccountLabel(account));
         }
       });
     });
     formAccounts.forEach((account) => {
-      if (!map.has(account.id)) {
-        map.set(account.id, formatAccountLabel(account));
+      const accountId = Number(account.id);
+      if (!Number.isFinite(accountId) || accountId <= 0) return;
+      if (!map.has(accountId)) {
+        map.set(accountId, formatAccountLabel(account));
       }
     });
     return map;
   }, [companyAccountMap, formAccounts]);
 
+  const getAccountLabelById = useCallback(
+    (value: number | string | null | undefined) => {
+      const accountId = Number(value);
+      if (!Number.isFinite(accountId) || accountId <= 0) return '';
+      return accountLabelMap.get(accountId) ?? '';
+    },
+    [accountLabelMap],
+  );
+
   const activeFormAccounts = useMemo(() => formAccounts.filter((account) => account.esInactivo === 1), [formAccounts]);
 
   const loadRows = useCallback(
-    async (companyIds?: number[]) => {
+    async (companyId?: number) => {
       setLoading(true);
       try {
-        const targetCompanyIds =
-          companyIds && companyIds.length > 0
-            ? companyIds
-            : selectedCompanyIds.length > 0
-              ? selectedCompanyIds
-              : defaultCompanyId
-                ? [defaultCompanyId]
-                : [];
-        if (targetCompanyIds.length === 0) {
+        const targetCompanyId = companyId ?? selectedCompanyId ?? defaultCompanyId;
+        if (!targetCompanyId) {
           setRows([]);
           return;
         }
-        const data = await fetchPayrollArticles(targetCompanyIds[0], showInactive, targetCompanyIds);
+        const data = await fetchPayrollArticles(targetCompanyId, showInactive, [targetCompanyId]);
         setRows(data);
       } catch (error) {
         message.error(error instanceof Error ? error.message : 'Error al cargar articulos de nomina');
@@ -200,7 +217,7 @@ export function PayrollArticlesManagementPage() {
         setLoading(false);
       }
     },
-    [defaultCompanyId, message, selectedCompanyIds, showInactive],
+    [defaultCompanyId, message, selectedCompanyId, showInactive],
   );
 
   const loadCatalogs = useCallback(async () => {
@@ -219,7 +236,7 @@ export function PayrollArticlesManagementPage() {
   }, [message]);
 
   const loadAccountsForCompanies = useCallback(
-    async (companyIds: number[]) => {
+    async (companyIds: number[], accountIdsByCompany?: Record<number, number[]>) => {
       if (companyIds.length === 0) {
         setCompanyAccountMap({});
         return;
@@ -228,7 +245,12 @@ export function PayrollArticlesManagementPage() {
         const results = await Promise.all(
           companyIds.map(async (companyId) => ({
             companyId,
-            accounts: await fetchPayrollArticleAccounts(companyId, [], true),
+            accounts: await fetchPayrollArticleAccounts(
+              companyId,
+              [],
+              true,
+              accountIdsByCompany?.[companyId] ?? [],
+            ),
           })),
         );
         const nextMap: Record<number, AccountingAccountOption[]> = {};
@@ -252,6 +274,9 @@ export function PayrollArticlesManagementPage() {
         return;
       }
       const resolvedAccountIds = (accountIds ?? []).filter((value) => Number.isFinite(value) && value > 0);
+      const idsReferencia = tipoId
+        ? (PAYROLL_ARTICLE_TYPE_META[tipoId]?.idsReferencia ?? defaultIdsReferencia)
+        : defaultIdsReferencia;
       setLoadingFormAccounts(true);
       try {
         const accounts = await fetchPayrollArticleAccounts(
@@ -268,7 +293,7 @@ export function PayrollArticlesManagementPage() {
         setLoadingFormAccounts(false);
       }
     },
-    [message],
+    [defaultIdsReferencia, message],
   );
 
   useEffect(() => {
@@ -277,16 +302,34 @@ export function PayrollArticlesManagementPage() {
 
   useEffect(() => {
     if (!defaultCompanyId) return;
-    setSelectedCompanyIds((current) => (current.length > 0 ? current : [defaultCompanyId]));
+    setSelectedCompanyId((current) => current ?? defaultCompanyId);
   }, [defaultCompanyId]);
 
   useEffect(() => {
     void loadRows();
-  }, [loadRows, selectedCompanyIds, showInactive]);
+  }, [loadRows, selectedCompanyId, showInactive]);
+
+  const rowAccountIdsByCompany = useMemo(() => {
+    const result: Record<number, number[]> = {};
+    rows.forEach((row) => {
+      const companyId = Number(row.idEmpresa);
+      if (!Number.isFinite(companyId) || companyId <= 0) return;
+      const current = new Set(result[companyId] ?? []);
+      if (Number.isFinite(Number(row.idCuentaGasto)) && Number(row.idCuentaGasto) > 0) {
+        current.add(Number(row.idCuentaGasto));
+      }
+      if (row.idCuentaPasivo != null && Number.isFinite(Number(row.idCuentaPasivo)) && Number(row.idCuentaPasivo) > 0) {
+        current.add(Number(row.idCuentaPasivo));
+      }
+      result[companyId] = Array.from(current);
+    });
+    return result;
+  }, [rows]);
 
   useEffect(() => {
-    void loadAccountsForCompanies(selectedCompanyIds);
-  }, [loadAccountsForCompanies, selectedCompanyIds]);
+    const ids = selectedCompanyId ? [selectedCompanyId] : [];
+    void loadAccountsForCompanies(ids, rowAccountIdsByCompany);
+  }, [loadAccountsForCompanies, rowAccountIdsByCompany, selectedCompanyId]);
 
   useEffect(() => {
     const accountIds = editing
@@ -303,14 +346,11 @@ export function PayrollArticlesManagementPage() {
       if (!term) return true;
       return (
         (tipoAccionMap.get(row.idTipoAccionPersonal) ?? '').toLowerCase().includes(term) ||
-        (accountLabelMap.get(row.idCuentaGasto) ?? '').toLowerCase().includes(term) ||
-        (row.idCuentaPasivo ? (accountLabelMap.get(row.idCuentaPasivo) ?? '').toLowerCase().includes(term) : false)
-        (tipoAccionMap.get(row.idTipoAccionPersonal) ?? '').toLowerCase().includes(term) ||
-        (accountLabelMap.get(row.idCuentaGasto) ?? '').toLowerCase().includes(term) ||
-        (row.idCuentaPasivo ? (accountLabelMap.get(row.idCuentaPasivo) ?? '').toLowerCase().includes(term) : false)
+        getAccountLabelById(row.idCuentaGasto).toLowerCase().includes(term) ||
+        (row.idCuentaPasivo ? getAccountLabelById(row.idCuentaPasivo).toLowerCase().includes(term) : false)
       );
     },
-    [search, companies, tipoArticuloMap, tipoAccionMap, accountLabelMap],
+    [getAccountLabelById, search, tipoAccionMap],
   );
 
   const dataFilteredByPaneSelections = useCallback(
@@ -391,7 +431,7 @@ export function PayrollArticlesManagementPage() {
       cuentaPasivo: false,
       estado: false,
     });
-    setSelectedCompanyIds(defaultCompanyId ? [defaultCompanyId] : []);
+    setSelectedCompanyId(defaultCompanyId);
   };
 
   const clearPaneSelection = (key: PaneKey) => {
@@ -428,9 +468,10 @@ export function PayrollArticlesManagementPage() {
     setActiveTab('principal');
     setLoadingDetail(false);
     form.resetFields();
-    if (defaultCompanyId) {
-      form.setFieldsValue({ idEmpresa: defaultCompanyId });
-      setResolvedCompanyId(defaultCompanyId);
+    setResolvedCompanyId(undefined);
+    if (companies.length === 1 && companies[0]?.id) {
+      form.setFieldsValue({ idEmpresa: companies[0].id });
+      setResolvedCompanyId(companies[0].id);
     }
     setResolvedTipoArticuloId(undefined);
     setOpenModal(true);
@@ -440,6 +481,7 @@ export function PayrollArticlesManagementPage() {
     (row: PayrollArticleListItem) => {
       form.setFieldsValue({
         idEmpresa: row.idEmpresa,
+        nombre: row.nombre ?? '',
         descripcion: row.descripcion ?? '',
         idTipoAccionPersonal: row.idTipoAccionPersonal,
         idTipoArticuloNomina: row.idTipoArticuloNomina,
@@ -520,24 +562,29 @@ export function PayrollArticlesManagementPage() {
   }, [openModal, editingId, activeTab, canViewAudit, loadPayrollAuditTrail]);
 
   const onFormValuesChange = (changed: Partial<PayrollArticleFormValues>) => {
-    const nextEmpresa =
+    const nextEmpresaRaw =
       form.getFieldValue('idEmpresaCambio') ??
+      changed.idEmpresaCambio ??
       changed.idEmpresa ??
       form.getFieldValue('idEmpresa');
-    if (nextEmpresa !== undefined) {
-      setResolvedCompanyId(nextEmpresa);
-    }
+    const nextEmpresa = normalizeCompanyId(nextEmpresaRaw);
+    setResolvedCompanyId(nextEmpresa);
 
-    const nextTipo =
+    const nextTipoRaw =
       form.getFieldValue('idTipoArticuloNominaCambio') ??
+      changed.idTipoArticuloNominaCambio ??
       changed.idTipoArticuloNomina ??
       form.getFieldValue('idTipoArticuloNomina');
-    if (nextTipo !== undefined) {
+    const parsedTipo = Number(nextTipoRaw);
+    const nextTipo = Number.isFinite(parsedTipo) && parsedTipo > 0 ? parsedTipo : undefined;
+    if (nextTipo) {
       setResolvedTipoArticuloId(nextTipo);
       const meta = PAYROLL_ARTICLE_TYPE_META[nextTipo];
       if (!meta?.allowsPasivo) {
         form.setFieldsValue({ idCuentaPasivo: undefined, idCuentaPasivoCambio: undefined });
       }
+    } else {
+      setResolvedTipoArticuloId(undefined);
     }
 
     if (
@@ -661,12 +708,12 @@ export function PayrollArticlesManagementPage() {
       } else {
         await createPayrollArticle({ ...payload, idEmpresa: resolvedEmpresa });
         message.success('Articulo de nomina creado correctamente');
-        setSelectedCompanyIds([resolvedEmpresa]);
+        setSelectedCompanyId(resolvedEmpresa);
       }
 
       closeModal();
       setLoading(true);
-      await loadRows([resolvedEmpresa]);
+      await loadRows(resolvedEmpresa);
     } catch (error) {
       if (error instanceof Error && error.message) {
         message.error(error.message);
@@ -738,14 +785,14 @@ export function PayrollArticlesManagementPage() {
       dataIndex: 'idCuentaGasto',
       key: 'idCuentaGasto',
       width: 240,
-      render: (value: number) => accountLabelMap.get(value) ?? `Cuenta #${value}`,
+      render: (value: number) => getAccountLabelById(value) || `Cuenta #${value}`,
     },
     {
       title: 'Cuenta Pasivo',
       dataIndex: 'idCuentaPasivo',
       key: 'idCuentaPasivo',
       width: 240,
-      render: (value: number | null) => (value ? (accountLabelMap.get(value) ?? `Cuenta #${value}`) : '-'),
+      render: (value: number | null) => (value ? getAccountLabelById(value) || `Cuenta #${value}` : '-'),
     },
     {
       title: 'Estado',
@@ -846,6 +893,7 @@ export function PayrollArticlesManagementPage() {
     );
   }
 
+  const resolvedMeta = resolvedTipoArticuloId ? PAYROLL_ARTICLE_TYPE_META[resolvedTipoArticuloId] : undefined;
   const canLoadAccountOptions = Boolean(resolvedCompanyId && resolvedTipoArticuloId);
   const primaryLabel = resolvedMeta?.primaryLabel ?? 'Cuenta Principal';
   const secondaryLabel = resolvedMeta?.secondaryLabel ?? 'Cuenta Pasivo';
@@ -910,8 +958,8 @@ export function PayrollArticlesManagementPage() {
           onPageSizeChange={setPageSize}
           showInactive={showInactive}
           onShowInactiveChange={setShowInactive}
-          selectedCompanyIds={selectedCompanyIds}
-          onCompanyIdsChange={setSelectedCompanyIds}
+          selectedCompanyId={selectedCompanyId}
+          onCompanyIdChange={setSelectedCompanyId}
           companies={companies}
           canEdit={canEdit}
           onRowClick={openEditModal}

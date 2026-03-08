@@ -505,3 +505,20 @@ Resultado:
 - Persistencia de cambios confirmada.
 
 Estado de fase: Cerrada
+
+## Commit estable de referencia (2026-03-08)
+- Commit ID: `e5f9f8e`
+- Mensaje: `chore: commit remaining project changes`
+- Commit base de fixes clave previo: `feccf48` (`fix: stabilize employee audit, user-company cache refresh, and improve audit messages`)
+
+## Fase 18 - 2026-03-08
+Alcance: Validacion manual UI (Articulos de Nomina + Cuentas Contables)
+
+Pruebas ejecutadas:
+- Articulos de Nomina: crear, editar y bitacora OK.
+- Cuentas Contables: crear, editar y bitacora OK.
+
+Resultado:
+- Ambos modulos quedan cerrados en pruebas manuales funcionales y de bitacora.
+
+Estado de fase: Cerrada

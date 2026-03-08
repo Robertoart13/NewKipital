@@ -30,6 +30,12 @@ export function getPaneValue(
   tipoAccionMap: Map<number, string>,
   accountLabelMap: Map<number, string>,
 ): string {
+  const resolveAccountLabel = (value: number | string | null | undefined): string => {
+    const accountId = Number(value);
+    if (!Number.isFinite(accountId) || accountId <= 0) return '';
+    return accountLabelMap.get(accountId) ?? `Cuenta #${accountId}`;
+  };
+
   if (key === 'empresa') {
     const company = companies.find((c) => c.id === row.idEmpresa);
     return company?.nombre ?? `Empresa #${row.idEmpresa}`;
@@ -38,11 +44,9 @@ export function getPaneValue(
   if (key === 'tipoArticulo')
     return tipoArticuloMap.get(row.idTipoArticuloNomina) ?? `Tipo #${row.idTipoArticuloNomina}`;
   if (key === 'tipoAccion') return tipoAccionMap.get(row.idTipoAccionPersonal) ?? `Accion #${row.idTipoAccionPersonal}`;
-  if (key === 'cuentaPrincipal') return accountLabelMap.get(row.idCuentaGasto) ?? `Cuenta #${row.idCuentaGasto}`;
+  if (key === 'cuentaPrincipal') return resolveAccountLabel(row.idCuentaGasto);
   if (key === 'cuentaPasivo') {
-    return row.idCuentaPasivo
-      ? (accountLabelMap.get(row.idCuentaPasivo) ?? `Cuenta #${row.idCuentaPasivo}`)
-      : '(vacio)';
+    return row.idCuentaPasivo ? resolveAccountLabel(row.idCuentaPasivo) : '(vacio)';
   }
   return row.esInactivo === 0 ? 'Inactivo' : 'Activo';
 }

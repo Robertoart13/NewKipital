@@ -487,13 +487,13 @@ export function PayrollManagementPage() {
   };
 
   const resetCreateForm = useCallback(() => {
-    if (!selectedCompanyId) return;
+    const singleCompanyId = companies.length === 1 ? parseCompanyId(companies[0]?.id) : undefined;
     form.setFieldsValue({
-      idEmpresa: selectedCompanyId,
+      idEmpresa: singleCompanyId,
       tipoPlanilla: 'Regular',
       moneda: 'CRC',
     } as Partial<CreatePayrollFormValues>);
-  }, [form, selectedCompanyId]);
+  }, [companies, form]);
 
   const openCreateModal = () => {
     form.resetFields();
@@ -546,6 +546,52 @@ export function PayrollManagementPage() {
       message.error(error instanceof Error ? error.message : 'Error al guardar planilla');
     } finally {
       setSavingCreate(false);
+    }
+  };
+
+  const onCreateFormValuesChange = (changed: Partial<CreatePayrollFormValues>) => {
+    // Si cambia inicio de pago, se replica en fin/programada (regla UX solicitada).
+    if ('fechaInicioPago' in changed) {
+      const nextInicioPago = changed.fechaInicioPago;
+      form.setFieldsValue({
+        fechaFinPago: nextInicioPago,
+        fechaPagoProgramada: nextInicioPago,
+      } as Partial<CreatePayrollFormValues>);
+      return;
+    }
+
+    // Si el usuario define Fecha Corte y la ventana de pago aun no tiene datos,
+    // se inicializa con esa fecha para mantener consistencia.
+    if ('fechaCorte' in changed) {
+      const corte = toDayjs(changed.fechaCorte);
+      if (corte) {
+        const inicioPago = toDayjs(form.getFieldValue('fechaInicioPago'));
+        const finPago = toDayjs(form.getFieldValue('fechaFinPago'));
+        const programada = toDayjs(form.getFieldValue('fechaPagoProgramada'));
+        const updates: Partial<CreatePayrollFormValues> = {};
+        if (!inicioPago) updates.fechaInicioPago = corte;
+        if (!finPago) updates.fechaFinPago = corte;
+        if (!programada) updates.fechaPagoProgramada = corte;
+        if (Object.keys(updates).length > 0) {
+          form.setFieldsValue(updates);
+        }
+      }
+    }
+
+    // Hardening: garantizar que Fecha Pago Programada quede siempre dentro de la ventana.
+    if ('fechaFinPago' in changed || 'fechaInicioPago' in changed || 'fechaPagoProgramada' in changed) {
+      const inicioPago = toDayjs(form.getFieldValue('fechaInicioPago'));
+      const finPago = toDayjs(form.getFieldValue('fechaFinPago'));
+      const programada = toDayjs(form.getFieldValue('fechaPagoProgramada'));
+      if (!inicioPago || !finPago || !programada) return;
+
+      if (programada.isBefore(inicioPago, 'day')) {
+        form.setFieldValue('fechaPagoProgramada', inicioPago);
+        return;
+      }
+      if (programada.isAfter(finPago, 'day')) {
+        form.setFieldValue('fechaPagoProgramada', finPago);
+      }
     }
   };
 
@@ -1174,6 +1220,7 @@ export function PayrollManagementPage() {
             disabled={isReadOnlyModal}
             layout="vertical"
             onFinish={onCreate}
+            onValuesChange={onCreateFormValuesChange}
             onFinishFailed={(info) => {
               const firstField = String(info.errorFields?.[0]?.name?.[0] ?? '');
               const firstFieldPath = info.errorFields?.[0]?.name;
