@@ -1,4 +1,4 @@
-# KPITAL 360 — Estado Actual del Proyecto
+﻿# KPITAL 360 — Estado Actual del Proyecto
 
 **Documento:** 09  
 **Última actualización:** 2026-03-06  
@@ -700,3 +700,67 @@ Estado: Implementado (backend + frontend + BD en `hr_pro`).
 | 2026-03-08 | **Gestion Planilla (UI - Abrir Planilla):** En crear planilla, empresa ya no se preselecciona desde filtro de tabla (solo en escenario de empresa unica). Se agrega autofill de `Inicio Pago` -> `Fin Pago` y `Fecha Pago Programada` con hardening para mantener `Fecha Pago Programada` dentro de la ventana de pago. |
 | 2026-03-08 | **Validacion manual cerrada:** Modulos validados en UI: Puestos, Departamentos, Proyectos, Empleados, Configuracion de Usuario, Cuentas Contables, Articulos de Nomina, Movimientos de Nomina, Feriados y Abrir Planilla (crear/editar/bitacora segun corresponda). Evidencia en `docs/Test/TEST-EXECUTION-REPORT.md`. |
 | 2026-03-08 | **Checkpoint remoto estable:** Push en `main` con commits `976eab4` (checkpoint funcional) y `ba41355` (registro documental del checkpoint). |
+| 2026-03-08 | **Planillas (Inactivar/Reactivar + Cache):** Se implementa `PATCH /api/payroll/:id/reactivate` con reasociacion parcial de acciones desde snapshot (`acc_planilla_reactivation_items`) y fallback a `PENDING_RRHH` cuando una accion no es elegible. Se ajusta cache interceptor para que `cb` participe en la key y `Refrescar` fuerce datos frescos sin esperar TTL. |
+
+### Actualizacion worker de identidad (Rev. 9 - 2026-03-09)
+
+- Se corrige error de runtime en worker de automatizacion de empleados: `No metadata for "EmployeeIdentityQueue" was found`.
+- Ajuste aplicado en TypeORM: `autoLoadEntities: true` en `api/src/config/database.config.ts`.
+- Objetivo: asegurar que entidades registradas en `TypeOrmModule.forFeature(...)` queden cargadas en el datasource activo y evitar fallos de metadata en repositorios de colas.
+- Validacion tecnica: `npm run build` en `api` ejecutado correctamente.
+
+### Actualizacion planillas/traslado (Rev. 10 - 2026-03-09)
+
+- Reasociacion automatica de acciones huerfanas ahora exige compatibilidad estricta entre planilla origen del snapshot y planilla candidata: periodo de pago, tipo planilla (id/texto), moneda, inicio/fin de periodo, fecha corte, inicio/fin pago y pago programado.
+- Ejecucion de traslado interempresas invalida snapshots pendientes vinculados a acciones trasladadas (esultado_reactivacion = INVALIDATED_BY_TRANSFER) para evitar reprocesamiento posterior por reactivacion/cron.
+- Pruebas backend ejecutadas: payroll.service, intercompany-transfer.service y payroll-orphan-reassignment (16/16).
+
+### Actualizacion E2E controlado planillas/traslado (Rev. 11 - 2026-03-09)
+
+- Se ejecuto validacion robusta con datos reales en `mysql_hr_pro` para dos escenarios enterprise:
+  - Escenario A: inactivar planilla -> crear planilla exacta compatible -> reasignacion automatica.
+  - Escenario B: inactivar planilla -> traslado interempresa -> invalidacion de snapshots por traslado.
+- Evidencia Escenario A (real):
+  - Snapshot pendiente despues de inactivar: 9.
+  - Reasociados automaticamente (`REASSOCIATED_AUTO`): 45.
+  - Reasociados por flujo de reactivacion (`REASSOCIATED`): 9.
+- Evidencia Escenario B (real):
+  - La simulacion de traslado ya construye asignaciones de calendario por fecha correctamente.
+  - El execute quedo bloqueado por dos causas de negocio/tecnica detectadas:
+    1) acciones bloqueantes activas (licencia/incapacidad/aumento);
+    2) conflicto de unicidad en ledger de vacaciones (`UQ_vacaciones_ledger_source`) durante traslado.
+- Pruebas de modulo ejecutadas y pasando:
+  - `payroll.service.spec.ts`
+  - `intercompany-transfer.service.spec.ts`
+  - `payroll-orphan-reassignment.service.spec.ts`
+  - Resultado: 16/16.
+- Build API validado en verde.
+
+### Actualizacion compatibilidad de fechas (Rev. 12 - 2026-03-09)
+
+- Regla ajustada por negocio para compatibilidad de planillas en reasociacion/reactivacion:
+  - Se valida solo `fecha_inicio_periodo` y `fecha_fin_periodo`.
+  - No se bloquea por diferencias en `fecha_corte`, `fecha_inicio_pago`, `fecha_fin_pago`, `fecha_pago_programada`.
+- Se mantuvo validacion de empresa/perido de pago/tipo/moneda.
+- Prueba de modulo actualizada y ejecutada en verde.
+
+### Actualizacion traslado interempresa (Rev. 13 - 2026-03-09)
+
+- Se removio bloqueo por tipo de accion pendiente en simulacion de traslado (`licencia/incapacidad/aumento`) cuando la accion esta en estado trasladable.
+- Se corrigio conflicto tecnico en ledger de vacaciones durante execute de traslado separando source de movimiento:
+  - `TRANSFER_OUT` (origen)
+  - `TRANSFER_IN` (destino)
+- E2E real ejecutado sobre empleado `id=4`:
+  - Simulacion: elegible (sin bloqueos)
+  - Execute: exitoso (`transferId=3`, estado EXECUTED)
+  - Resultado en BD: empleado movido de empresa 1 -> 3, acciones movidas a empresa 3 con calendario 11, snapshots marcados `INVALIDATED_BY_TRANSFER` (6).
+
+### Actualizacion traslado interempresas UI (Rev. 14 - 2026-03-09 01:54:09 -06:00)
+
+- Se corrige refresco post-ejecucion en Traslado interempresas para evitar grilla desactualizada despues de mover empleado.
+- Ajustes: invalidacion de cache en execute y en boton Refrescar, remocion inmediata local de empleados ejecutados, recarga diferida para evitar carrera de lectura.
+- Archivo tocado: rontend/src/pages/private/payroll-management/IntercompanyTransferPage.tsx.
+- Estado de pruebas:
+  - Backend/E2E de traslado: documentado y validado en fases previas.
+  - QA funcional UI de este ajuste: pendiente de corrida manual final.
+- Handoff detallado de este corte: docs/50-Handoff-TrasladoInterempresas-20260309.md.

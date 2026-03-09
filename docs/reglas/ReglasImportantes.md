@@ -1,4 +1,4 @@
-# Coding Standards & Clean Code Rules
+﻿# Coding Standards & Clean Code Rules
 
 Este documento define las **reglas obligatorias de desarrollo** del proyecto.
 
@@ -671,3 +671,46 @@ Esta extension aplica a TODOS los modulos de Acciones de Personal con lineas de 
 - Validacion de linea completa para agregar nueva linea: obligatorios reales (`payrollId`, `fechaEfecto`, `movimientoId`, `fechaInicioHoraExtra`, `fechaFinHoraExtra`, `tipoJornadaHorasExtras`, `cantidad > 0`, `monto >= 0`), sin bloquear por `formula`.
 - En select de Planilla, etiquetas deben salir del catalogo de planillas (`nombrePlanilla + estado`), nunca de datos de movimiento.
 - En backend, create/update de Horas Extra debe publicar `lineasDetalle` en auditoria incluyendo fechas y tipo de jornada por linea.
+
+## Regla transversal - Planillas (Inactivar/Reactivar + Cache)
+
+1. Inactivar planilla solo puede desasociar acciones no finales y moverlas a `PENDING_RRHH` con snapshot de reactivacion.
+2. Reactivar planilla debe ser parcial: reasocia solo acciones elegibles; no elegibles se mantienen en `PENDING_RRHH` con motivo.
+3. Toda mutacion de planillas (`POST/PUT/PATCH/DELETE`) debe invalidar cache del scope `payroll`.
+4. Boton `Refrescar` en listado de planillas debe forzar recarga fresca (`bustApiCache()` + GET con `cb`).
+5. Si UI muestra estado anterior luego de mutar, validar primero key de cache y participacion de `cb` en `normalizeQuery`.
+
+6. Reasignacion automatica de huérfanas: al crear/reabrir/reactivar planilla debe ejecutarse reasignacion en lote; ademas debe existir job de reintento periodico (safety net).
+
+
+## Regla transversal - QA robusto para Planillas y Traslado Interempresa
+
+Cuando se toquen flujos de inactivar/reactivar/trasladar planillas:
+
+1. No cerrar cambio solo con UI; validar SQL before/after en `mysql_hr_pro`.
+2. Ejecutar siempre doble validacion:
+- prueba unitaria/integration del modulo;
+- escenario E2E controlado con datos reales.
+3. Marcar resultado por escenario:
+- Aprobado (flujo completo)
+- Bloqueado funcional (regla de negocio)
+- Bloqueado tecnico (bug)
+4. Si el execute de traslado falla, no declarar listo `INVALIDATED_BY_TRANSFER`; debe existir evidencia SQL del cambio.
+5. Todo hallazgo bloqueante debe quedar en `docs/Test/TEST-EXECUTION-REPORT.md` con causa exacta y estado.
+
+## Regla transversal - Compatibilidad de fechas en Planillas (definitiva)
+
+En comparaciones de compatibilidad entre planillas para reasociacion/reactivacion:
+
+1. Solo validar coincidencia de `Inicio Periodo` y `Fin Periodo`.
+2. No usar como bloqueo de compatibilidad: `Fecha Corte`, `Inicio Pago`, `Fin Pago`, `Fecha Pago Programada`.
+3. La variacion de ventana de pago por empresa es valida siempre que el periodo de nomina coincida.
+
+## Regla transversal - Traslado interempresa y acciones pendientes
+
+1. No bloquear traslado solo por tipo de accion (`licencia`, `incapacidad`, `aumento`) cuando la accion esta en estado trasladable.
+2. Bloquear solo por reglas reales de riesgo:
+- estado no trasladable/final,
+- incompatibilidad de planilla destino por fechas,
+- conflictos de integridad.
+3. Toda decision de bloqueo debe mostrar motivo exacto en simulacion para auditoria funcional.

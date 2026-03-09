@@ -8,7 +8,7 @@ import {
 } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { InjectRepository } from '@nestjs/typeorm';
-import { DataSource, EntityManager, Repository } from 'typeorm';
+import { DataSource, EntityManager, In, Repository } from 'typeorm';
 
 import { DOMAIN_EVENTS } from '../../common/events/event-names';
 import { UserCompany } from '../access-control/entities/user-company.entity';
@@ -40,6 +40,7 @@ import {
 import { PayrollPlanillaSnapshotJson } from './entities/payroll-planilla-snapshot.entity';
 import { PayrollResult } from './entities/payroll-result.entity';
 import { PayrollSocialCharge } from './entities/payroll-social-charge.entity';
+import { PayrollReactivationItem } from './entities/payroll-reactivation-item.entity';
 
 import type { CreatePayrollDto } from './dto/create-payroll.dto';
 import type { PayrollCalendarResponse } from './dto/payroll-response.dto';
@@ -65,9 +66,25 @@ export class PayrollService {
     porConyuge: 2600,
   };
 
+  private readonly personalActionFinalStates: PersonalActionEstado[] = [
+    PersonalActionEstado.CONSUMED,
+    PersonalActionEstado.CANCELLED,
+    PersonalActionEstado.INVALIDATED,
+    PersonalActionEstado.EXPIRED,
+    PersonalActionEstado.REJECTED,
+  ];
+
+  private readonly autoReassignmentEligiblePayrollStates: EstadoCalendarioNomina[] = [
+    EstadoCalendarioNomina.ABIERTA,
+    EstadoCalendarioNomina.EN_PROCESO,
+    EstadoCalendarioNomina.VERIFICADA,
+  ];
+
   constructor(
     @InjectRepository(PayrollCalendar)
     private readonly repo: Repository<PayrollCalendar>,
+    @InjectRepository(PayrollReactivationItem)
+    private readonly payrollReactivationRepo: Repository<PayrollReactivationItem>,
     @InjectRepository(UserCompany)
     private readonly userCompanyRepo: Repository<UserCompany>,
     @InjectRepository(PayrollEmployeeSnapshot)
@@ -211,11 +228,13 @@ export class PayrollService {
       );
     }
 
+    const basePayrollName = dto.nombrePlanilla?.trim() || `Planilla ${tipo} ${dto.periodoInicio}`;
+
     const planilla = this.repo.create({
       idEmpresa: dto.idEmpresa,
       idPeriodoPago: dto.idPeriodoPago,
       idTipoPlanilla: resolvedTipoPlanillaId,
-      nombrePlanilla: dto.nombrePlanilla?.trim() || `Planilla ${tipo} ${dto.periodoInicio}`,
+      nombrePlanilla: this.normalizePayrollNameBase(basePayrollName),
       tipoPlanilla: tipo,
       fechaInicioPeriodo: inicio,
       fechaFinPeriodo: fin,
@@ -237,7 +256,13 @@ export class PayrollService {
       isActiveSlot: 1,
     });
 
-    const saved = await this.repo.save(planilla);
+    let saved = await this.repo.save(planilla);
+    const finalizedPayrollName = this.buildPayrollNameWithConsecutiveSuffix(basePayrollName, saved.id);
+    if (saved.nombrePlanilla !== finalizedPayrollName) {
+      saved.nombrePlanilla = finalizedPayrollName;
+      saved.modificadoPor = userId ?? null;
+      saved = await this.repo.save(saved);
+    }
     this.auditOutbox.publish({
       modulo: 'payroll',
       accion: 'create',
@@ -265,6 +290,8 @@ export class PayrollService {
       createdBy: userId ?? null,
       idempotencyKey: `payroll.opened:${saved.id}:${saved.versionLock}`,
     });
+
+    await this.tryAutoReassociateSavedPayroll(saved, userId, 'create');
 
     return saved;
   }
@@ -1090,8 +1117,8 @@ export class PayrollService {
   }
 
   /**
-   * Registra provisión de aguinaldo por planilla aplicada.
-   * Fórmula base: total_bruto / 12 por empleado.
+   * Registra provisiÃ³n de aguinaldo por planilla aplicada.
+   * FÃ³rmula base: total_bruto / 12 por empleado.
    */
   private async createAguinaldoProvisionsFromPayroll(
     manager: EntityManager,
@@ -1179,27 +1206,95 @@ export class PayrollService {
       idempotencyKey: `payroll.reopened:${saved.id}:${saved.versionLock}`,
     });
 
+    await this.tryAutoReassociateSavedPayroll(saved, userId, 'reopen');
+
     return saved;
   }
 
   async inactivate(id: number, userId?: number): Promise<PayrollCalendar> {
-    const p = await this.findOne(id, userId);
-    const payloadBefore = this.buildAuditPayload(p);
+    const payroll = await this.findOne(id, userId);
+    const payloadBefore = this.buildAuditPayload(payroll);
+
     if (
-      p.estado === EstadoCalendarioNomina.APLICADA ||
-      p.estado === EstadoCalendarioNomina.CONTABILIZADA
+      payroll.estado === EstadoCalendarioNomina.APLICADA ||
+      payroll.estado === EstadoCalendarioNomina.CONTABILIZADA
     ) {
       throw new BadRequestException(
         'No se puede inactivar una planilla ya aplicada o contabilizada',
       );
     }
-    p.esInactivo = this.inactiveFlag;
-    p.estado = EstadoCalendarioNomina.INACTIVA;
-    p.isActiveSlot = 0;
-    p.modificadoPor = userId ?? null;
-    p.versionLock += 1;
+    if (payroll.estado === EstadoCalendarioNomina.INACTIVA) {
+      throw new BadRequestException('La planilla ya se encuentra inactiva.');
+    }
 
-    const saved = await this.repo.save(p);
+    let affectedActions = 0;
+    const saved = await this.dataSource.transaction(async (manager) => {
+      const payrollRepo = manager.getRepository(PayrollCalendar);
+      const actionRepo = manager.getRepository(PersonalAction);
+      const reactivationRepo = manager.getRepository(PayrollReactivationItem);
+
+      const actionsToDetach = await actionRepo.find({
+        where: {
+          idCalendarioNomina: payroll.id,
+          estado: In([
+            PersonalActionEstado.DRAFT,
+            PersonalActionEstado.PENDING_SUPERVISOR,
+            PersonalActionEstado.PENDING_RRHH,
+            PersonalActionEstado.APPROVED,
+          ] as PersonalActionEstado[]),
+        },
+      });
+
+      if (actionsToDetach.length > 0) {
+        affectedActions = actionsToDetach.length;
+
+        await reactivationRepo.save(
+          actionsToDetach.map((action) =>
+            reactivationRepo.create({
+              idCalendarioNomina: payroll.id,
+              idAccion: action.id,
+              estadoAnteriorAccion: action.estado,
+              estadoNuevoAccion: PersonalActionEstado.PENDING_RRHH,
+              esProcesadoReactivacion: 0,
+              resultadoReactivacion: null,
+              motivoResultadoReactivacion: null,
+              creadoPor: userId ?? null,
+              modificadoPor: userId ?? null,
+            }),
+          ),
+        );
+
+        await actionRepo
+          .createQueryBuilder()
+          .update(PersonalAction)
+          .set({
+            idCalendarioNomina: null,
+            estado: PersonalActionEstado.PENDING_RRHH,
+            modificadoPor: userId ?? null,
+            versionLock: () => 'version_lock_accion + 1',
+          })
+          .where('id_calendario_nomina = :payrollId', { payrollId: payroll.id })
+          .andWhere('estado_accion IN (:...statesToDetach)', {
+            statesToDetach: [
+              PersonalActionEstado.DRAFT,
+              PersonalActionEstado.PENDING_SUPERVISOR,
+              PersonalActionEstado.PENDING_RRHH,
+              PersonalActionEstado.APPROVED,
+            ],
+          })
+          .execute();
+      }
+
+      payroll.esInactivo = this.inactiveFlag;
+      payroll.estado = EstadoCalendarioNomina.INACTIVA;
+      payroll.isActiveSlot = 0;
+      payroll.slotKey = this.buildInactiveSlotKey(payroll.slotKey, payroll.id);
+      payroll.modificadoPor = userId ?? null;
+      payroll.versionLock += 1;
+
+      return payrollRepo.save(payroll);
+    });
+
     this.auditOutbox.publish({
       modulo: 'payroll',
       accion: 'inactivate',
@@ -1209,23 +1304,393 @@ export class PayrollService {
       descripcion: `Planilla inactivada: ${saved.nombrePlanilla ?? `#${saved.id}`}`,
       payloadBefore,
       payloadAfter: this.buildAuditPayload(saved),
+      metadata: {
+        accionesDesasociadas: affectedActions,
+        nuevoEstadoAcciones: 'PENDING_RRHH',
+      },
     });
+
     this.eventEmitter.emit(DOMAIN_EVENTS.PAYROLL.DEACTIVATED, {
       eventName: DOMAIN_EVENTS.PAYROLL.DEACTIVATED,
       occurredAt: new Date(),
-      payload: { payrollId: String(saved.id) },
+      payload: { payrollId: String(saved.id), accionesDesasociadas: affectedActions },
     });
 
     await this.domainEvents.record({
       aggregateType: 'payroll',
       aggregateId: String(saved.id),
       eventName: DOMAIN_EVENTS.PAYROLL.DEACTIVATED,
-      payload: { version: saved.versionLock },
+      payload: { version: saved.versionLock, accionesDesasociadas: affectedActions },
       createdBy: userId ?? null,
       idempotencyKey: `payroll.deactivated:${saved.id}:${saved.versionLock}`,
     });
 
     return saved;
+  }
+
+  async reactivate(id: number, userId?: number): Promise<PayrollCalendar> {
+    const payroll = await this.findOne(id, userId);
+    const payloadBefore = this.buildAuditPayload(payroll);
+
+    if (payroll.estado !== EstadoCalendarioNomina.INACTIVA) {
+      throw new BadRequestException('Solo se puede reactivar una planilla en estado Inactiva.');
+    }
+
+    const operationalSlotKey = this.buildSlotKey(
+      payroll.idEmpresa,
+      payroll.fechaInicioPeriodo,
+      payroll.fechaFinPeriodo,
+      payroll.idTipoPlanilla ?? null,
+      payroll.moneda,
+    );
+
+    const slotConflict = await this.repo
+      .createQueryBuilder('p')
+      .where('p.slotKey = :slotKey', { slotKey: operationalSlotKey })
+      .andWhere('p.isActiveSlot = 1')
+      .andWhere('p.id != :id', { id: payroll.id })
+      .getOne();
+
+    if (slotConflict) {
+      throw new ConflictException(
+        'No se puede reactivar porque existe otra planilla operativa para el mismo periodo/tipo/moneda.',
+      );
+    }
+
+    let reasociadas = 0;
+    let pendientes = 0;
+
+    const saved = await this.dataSource.transaction(async (manager) => {
+      const payrollRepo = manager.getRepository(PayrollCalendar);
+      const actionRepo = manager.getRepository(PersonalAction);
+      const reactivationRepo = manager.getRepository(PayrollReactivationItem);
+
+      const snapshots = await reactivationRepo.find({
+        where: { idCalendarioNomina: payroll.id, esProcesadoReactivacion: 0 },
+        order: { id: 'ASC' },
+      });
+
+      const sourcePayrollIds = Array.from(
+        new Set(snapshots.map((row) => Number(row.idCalendarioNomina)).filter((value) => value > 0)),
+      );
+      const sourcePayrollMap = new Map<number, PayrollCalendar>();
+      if (sourcePayrollIds.length > 0) {
+        const sourcePayrolls = await payrollRepo.find({ where: { id: In(sourcePayrollIds) } });
+        sourcePayrolls.forEach((item) => sourcePayrollMap.set(item.id, item));
+      }
+
+      const actionIds = Array.from(new Set(snapshots.map((row) => Number(row.idAccion))));
+      const actionMap = new Map<number, PersonalAction>();
+      if (actionIds.length > 0) {
+        const actions = await actionRepo.find({ where: { id: In(actionIds) } });
+        actions.forEach((action) => actionMap.set(action.id, action));
+      }
+
+      const eligibleActionIds: number[] = [];
+
+      for (const snapshot of snapshots) {
+        const action = actionMap.get(Number(snapshot.idAccion));
+        const reason = this.resolveReactivationIneligibilityReason(
+          action,
+          payroll,
+          snapshot,
+          sourcePayrollMap,
+        );
+
+        if (!reason) {
+          eligibleActionIds.push(Number(snapshot.idAccion));
+          snapshot.resultadoReactivacion = 'REASSOCIATED';
+          snapshot.motivoResultadoReactivacion = 'Reasociada a planilla reactivada.';
+          reasociadas += 1;
+        } else {
+          snapshot.resultadoReactivacion = 'PENDING_RRHH';
+          snapshot.motivoResultadoReactivacion = reason;
+          pendientes += 1;
+        }
+
+        snapshot.esProcesadoReactivacion = 1;
+        snapshot.modificadoPor = userId ?? null;
+      }
+
+      if (eligibleActionIds.length > 0) {
+        await actionRepo
+          .createQueryBuilder()
+          .update(PersonalAction)
+          .set({
+            idCalendarioNomina: payroll.id,
+            estado: PersonalActionEstado.PENDING_RRHH,
+            modificadoPor: userId ?? null,
+            versionLock: () => 'version_lock_accion + 1',
+          })
+          .where('id_accion IN (:...ids)', { ids: eligibleActionIds })
+          .execute();
+      }
+
+      if (snapshots.length > 0) {
+        await reactivationRepo.save(snapshots);
+      }
+
+      payroll.esInactivo = this.activeFlag;
+      payroll.estado = EstadoCalendarioNomina.ABIERTA;
+      payroll.isActiveSlot = 1;
+      payroll.slotKey = operationalSlotKey;
+      payroll.modificadoPor = userId ?? null;
+      payroll.versionLock += 1;
+
+      return payrollRepo.save(payroll);
+    });
+
+    this.auditOutbox.publish({
+      modulo: 'payroll',
+      accion: 'reactivate',
+      entidad: 'payroll',
+      entidadId: saved.id,
+      actorUserId: userId ?? null,
+      descripcion: `Planilla reactivada: ${saved.nombrePlanilla ?? `#${saved.id}`}`,
+      payloadBefore,
+      payloadAfter: this.buildAuditPayload(saved),
+      metadata: {
+        accionesReasociadas: reasociadas,
+        accionesPendientesRrhh: pendientes,
+      },
+    });
+
+    await this.domainEvents.record({
+      aggregateType: 'payroll',
+      aggregateId: String(saved.id),
+      eventName: DOMAIN_EVENTS.PAYROLL.REOPENED,
+      payload: {
+        version: saved.versionLock,
+        accionesReasociadas: reasociadas,
+        accionesPendientesRrhh: pendientes,
+      },
+      createdBy: userId ?? null,
+      idempotencyKey: `payroll.reactivated:${saved.id}:${saved.versionLock}`,
+    });
+
+    await this.tryAutoReassociateSavedPayroll(saved, userId, 'reactivate');
+
+    return saved;
+  }
+
+  async reassignOrphanActionsForPayroll(
+    payrollId: number,
+    userId?: number,
+    trigger: 'create' | 'reopen' | 'reactivate' | 'cron' | 'manual' = 'manual',
+  ): Promise<number> {
+    const payroll = await this.findOne(payrollId, userId);
+    if (
+      payroll.esInactivo === this.inactiveFlag ||
+      payroll.estado === EstadoCalendarioNomina.INACTIVA ||
+      !this.autoReassignmentEligiblePayrollStates.includes(payroll.estado)
+    ) {
+      return 0;
+    }
+
+    return this.dataSource.transaction(async (manager) => {
+      const actionRepo = manager.getRepository(PersonalAction);
+      const reactivationRepo = manager.getRepository(PayrollReactivationItem);
+
+      const pendingSnapshots = await reactivationRepo.find({
+        where: { esProcesadoReactivacion: 0 },
+        order: { id: 'ASC' },
+      });
+      if (pendingSnapshots.length === 0) return 0;
+
+      const sourcePayrollIds = Array.from(
+        new Set(
+          pendingSnapshots
+            .map((row) => Number(row.idCalendarioNomina))
+            .filter((value) => Number.isFinite(value) && value > 0),
+        ),
+      );
+      const sourcePayrollMap = new Map<number, PayrollCalendar>();
+      if (sourcePayrollIds.length > 0) {
+        const sourcePayrolls = await manager.getRepository(PayrollCalendar).find({
+          where: { id: In(sourcePayrollIds) },
+        });
+        sourcePayrolls.forEach((item) => sourcePayrollMap.set(item.id, item));
+      }
+
+      const actionIds = Array.from(new Set(pendingSnapshots.map((row) => Number(row.idAccion))));
+      const actions = actionIds.length > 0 ? await actionRepo.find({ where: { id: In(actionIds) } }) : [];
+      const actionMap = new Map<number, PersonalAction>();
+      actions.forEach((action) => actionMap.set(action.id, action));
+
+      const eligibleActionIds: number[] = [];
+      const terminalSnapshotIds: number[] = [];
+      const terminalReasonsBySnapshotId = new Map<number, string>();
+
+      for (const snapshot of pendingSnapshots) {
+        const action = actionMap.get(Number(snapshot.idAccion));
+        const reason = this.resolveReactivationIneligibilityReason(
+          action,
+          payroll,
+          snapshot,
+          sourcePayrollMap,
+        );
+
+        if (!reason) {
+          eligibleActionIds.push(Number(snapshot.idAccion));
+          continue;
+        }
+
+        if (this.isTerminalAutoReassignmentReason(reason)) {
+          terminalSnapshotIds.push(snapshot.id);
+          terminalReasonsBySnapshotId.set(snapshot.id, reason);
+        }
+      }
+
+      const uniqueEligibleActionIds = Array.from(new Set(eligibleActionIds));
+
+      if (uniqueEligibleActionIds.length > 0) {
+        await actionRepo
+          .createQueryBuilder()
+          .update(PersonalAction)
+          .set({
+            idCalendarioNomina: payroll.id,
+            estado: PersonalActionEstado.PENDING_RRHH,
+            modificadoPor: userId ?? null,
+            versionLock: () => 'version_lock_accion + 1',
+          })
+          .where('id_accion IN (:...ids)', { ids: uniqueEligibleActionIds })
+          .andWhere('id_calendario_nomina IS NULL')
+          .execute();
+
+        await reactivationRepo
+          .createQueryBuilder()
+          .update(PayrollReactivationItem)
+          .set({
+            esProcesadoReactivacion: 1,
+            resultadoReactivacion: 'REASSOCIATED_AUTO',
+            motivoResultadoReactivacion: `Reasociada automaticamente por ${trigger} a planilla #${payroll.id}.`,
+            modificadoPor: userId ?? null,
+          })
+          .where('id_accion IN (:...ids)', { ids: uniqueEligibleActionIds })
+          .andWhere('es_procesado_reactivacion = 0')
+          .execute();
+      }
+
+      if (terminalSnapshotIds.length > 0) {
+        const snapshotsToClose = pendingSnapshots
+          .filter((snapshot) => terminalSnapshotIds.includes(snapshot.id))
+          .map((snapshot) => {
+            snapshot.esProcesadoReactivacion = 1;
+            snapshot.resultadoReactivacion = 'PENDING_RRHH';
+            snapshot.motivoResultadoReactivacion =
+              terminalReasonsBySnapshotId.get(snapshot.id) ?? 'Requiere revision de RRHH.';
+            snapshot.modificadoPor = userId ?? null;
+            return snapshot;
+          });
+        await reactivationRepo.save(snapshotsToClose);
+      }
+
+      return uniqueEligibleActionIds.length;
+    });
+  }
+
+  private resolveReactivationIneligibilityReason(
+    action: PersonalAction | undefined,
+    payroll: PayrollCalendar,
+    snapshot: PayrollReactivationItem,
+    sourcePayrollMap: Map<number, PayrollCalendar>,
+  ): string | null {
+    if (!action) return 'La accion ya no existe.';
+
+    const sourcePayroll = sourcePayrollMap.get(Number(snapshot.idCalendarioNomina));
+    if (!sourcePayroll) {
+      return 'No existe planilla origen del snapshot para comparar compatibilidad.';
+    }
+
+    if (!this.arePayrollsStrictlyCompatible(sourcePayroll, payroll)) {
+      return 'La planilla destino no coincide exactamente con la planilla origen del snapshot.';
+    }
+
+    if (action.idCalendarioNomina != null && action.idCalendarioNomina !== payroll.id) {
+      return 'La accion ya esta ligada a otra planilla.';
+    }
+
+    if (action.idEmpresa !== payroll.idEmpresa) {
+      return 'La accion pertenece a otra empresa.';
+    }
+
+    if (action.moneda !== payroll.moneda) {
+      return 'Moneda de accion incompatible con la planilla.';
+    }
+
+    if (this.personalActionFinalStates.includes(action.estado)) {
+      return 'La accion esta en estado final y no puede reasociarse.';
+    }
+
+    const effectDate = action.fechaInicioEfecto ?? action.fechaEfecto;
+    if (effectDate) {
+      const effectYmd = this.toYmd(effectDate);
+      if (
+        effectYmd < this.toYmd(payroll.fechaInicioPeriodo) ||
+        effectYmd > this.toYmd(payroll.fechaFinPeriodo)
+      ) {
+        return 'Fecha de efecto fuera del periodo de la planilla.';
+      }
+    }
+
+    return null;
+  }
+
+  private arePayrollsStrictlyCompatible(
+    sourcePayroll: PayrollCalendar,
+    candidatePayroll: PayrollCalendar,
+  ): boolean {
+    return (
+      sourcePayroll.idPeriodoPago === candidatePayroll.idPeriodoPago &&
+      (sourcePayroll.idTipoPlanilla ?? null) === (candidatePayroll.idTipoPlanilla ?? null) &&
+      sourcePayroll.tipoPlanilla === candidatePayroll.tipoPlanilla &&
+      sourcePayroll.moneda === candidatePayroll.moneda &&
+      this.sameYmd(sourcePayroll.fechaInicioPeriodo, candidatePayroll.fechaInicioPeriodo) &&
+      this.sameYmd(sourcePayroll.fechaFinPeriodo, candidatePayroll.fechaFinPeriodo)
+    );
+  }
+
+  private sameYmd(left: Date, right: Date): boolean {
+    return this.toYmd(left) === this.toYmd(right);
+  }
+
+  private isTerminalAutoReassignmentReason(reason: string): boolean {
+    const terminalReasons = new Set<string>([
+      'La accion ya no existe.',
+      'La accion ya esta ligada a otra planilla.',
+      'La accion esta en estado final y no puede reasociarse.',
+    ]);
+
+    return terminalReasons.has(reason);
+  }
+
+  private async tryAutoReassociateSavedPayroll(
+    payroll: PayrollCalendar,
+    userId: number | undefined,
+    trigger: 'create' | 'reopen' | 'reactivate',
+  ): Promise<void> {
+    try {
+      const reassociated = await this.reassignOrphanActionsForPayroll(payroll.id, userId, trigger);
+      if (reassociated > 0) {
+        this.logger.log(
+          JSON.stringify({
+            operation: 'payroll-auto-reassociate',
+            trigger,
+            payrollId: payroll.id,
+            reassociated,
+          }),
+        );
+      }
+    } catch (error) {
+      this.logger.warn(
+        JSON.stringify({
+          operation: 'payroll-auto-reassociate-failed',
+          trigger,
+          payrollId: payroll.id,
+          error: error instanceof Error ? error.message : String(error),
+        }),
+      );
+    }
   }
 
   private async getUserCompanyIds(userId: number): Promise<number[]> {
@@ -1283,6 +1748,28 @@ export class PayrollService {
     const start = this.toYmd(startDate);
     const end = this.toYmd(endDate);
     return `${companyId}|${start}|${end}|${tipoPlanillaId ?? 0}|${moneda}`;
+  }
+
+  private normalizePayrollNameBase(name: string): string {
+    const compact = String(name ?? '').replace(/\\s+/g, ' ').trim();
+    const withoutSuffix = compact.replace(/-\\d{4}$/, '').trim();
+    const maxBaseLength = 145;
+    return withoutSuffix.slice(0, maxBaseLength).trim();
+  }
+
+  private buildPayrollNameWithConsecutiveSuffix(baseName: string, payrollId: number): string {
+    const normalizedBase = this.normalizePayrollNameBase(baseName);
+    const sequence = String(Math.max(1, Number(payrollId) || 1)).padStart(4, '0');
+    return `${normalizedBase}-${sequence}`;
+  }
+
+  private buildInactiveSlotKey(currentSlotKey: string | null | undefined, payrollId: number): string {
+    const baseSlotKey = String(currentSlotKey ?? '').trim() || ('inactive|' + String(payrollId));
+    const suffix = '|inactive|' + String(payrollId);
+    const maxLength = 255;
+    const maxBaseLength = Math.max(1, maxLength - suffix.length);
+    const trimmedBase = baseSlotKey.slice(0, maxBaseLength);
+    return `${trimmedBase}${suffix}`;
   }
 
   private toYmd(value: Date | string): string {
@@ -1615,7 +2102,7 @@ export class PayrollService {
   private isCivilStatusWithSpouse(status: string | null): boolean {
     if (!status) return false;
     const normalized = status.toLowerCase();
-    return normalized === 'casado' || normalized === 'unión libre';
+    return normalized === 'casado' || normalized === 'uniÃ³n libre';
   }
 
   private async getPreviousQuincenalTotals(
@@ -1694,4 +2181,12 @@ export class PayrollService {
     }
   }
 }
+
+
+
+
+
+
+
+
 

@@ -1,4 +1,4 @@
-# DIRECTIVA 20  Contratos del MVP (Fase 1)
+﻿# DIRECTIVA 20  Contratos del MVP (Fase 1)
 
 ## Objetivo
 
@@ -250,3 +250,11 @@ Reglas adicionales documentadas:
 Frontend (rutas operativas de planilla):
 - `/payroll-params/calendario/dias-pago` (listado y operacion de planillas)
 - `/payroll-params/calendario/ver` (calendario operativo mensual/timeline)
+
+## Actualizacion 2026-03-08 - Payroll inactivate/reactivate
+
+- Nuevo endpoint operativo: `PATCH /api/payroll/:id/reactivate`.
+- Permiso requerido: `payroll:cancel`.
+- Comportamiento esperado: reactivar planilla inactiva a estado Abierta y ejecutar reasociacion parcial de acciones elegibles.
+- Listado de planillas soporta filtro multi-estado en query (`estado=1&estado=2...`) y rango por `fechaDesde/fechaHasta`.
+

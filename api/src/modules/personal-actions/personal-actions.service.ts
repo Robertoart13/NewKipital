@@ -1,4 +1,4 @@
-import {
+﻿import {
   Injectable,
   NotFoundException,
   BadRequestException,
@@ -1268,7 +1268,7 @@ export class PersonalActionsService {
         const action = trx.create(PersonalAction, {
           idEmpresa: dto.idEmpresa,
           idEmpleado: dto.idEmpleado,
-          idCalendarioNomina: null,
+          idCalendarioNomina: group.payrollId,
           tipoAccion: 'ausencia',
           groupId,
           origen: 'RRHH',
@@ -1415,6 +1415,8 @@ export class PersonalActionsService {
       await trx.delete(AbsenceLine, { idAccion: id });
       await trx.delete(ActionQuota, { idAccion: id });
 
+      const headerPayrollId = Number(dto.lines[0]?.payrollId);
+      action.idCalendarioNomina = Number.isFinite(headerPayrollId) && headerPayrollId > 0 ? headerPayrollId : null;
       action.descripcion = dto.observacion ?? null;
       action.fechaEfecto = firstDate;
       action.fechaInicioEfecto = firstDate;
@@ -1658,7 +1660,7 @@ export class PersonalActionsService {
         const action = trx.create(PersonalAction, {
           idEmpresa: dto.idEmpresa,
           idEmpleado: dto.idEmpleado,
-          idCalendarioNomina: null,
+          idCalendarioNomina: group.payrollId,
           tipoAccion: 'licencia',
           groupId,
           origen: 'RRHH',
@@ -1805,6 +1807,8 @@ export class PersonalActionsService {
       await trx.delete(LicenseLine, { idAccion: id });
       await trx.delete(ActionQuota, { idAccion: id });
 
+      const headerPayrollId = Number(dto.lines[0]?.payrollId);
+      action.idCalendarioNomina = Number.isFinite(headerPayrollId) && headerPayrollId > 0 ? headerPayrollId : null;
       action.descripcion = dto.observacion ?? null;
       action.fechaEfecto = firstDate;
       action.fechaInicioEfecto = firstDate;
@@ -2048,7 +2052,7 @@ export class PersonalActionsService {
         const action = trx.create(PersonalAction, {
           idEmpresa: dto.idEmpresa,
           idEmpleado: dto.idEmpleado,
-          idCalendarioNomina: null,
+          idCalendarioNomina: group.payrollId,
           tipoAccion: 'bonificacion',
           groupId,
           origen: 'RRHH',
@@ -2194,6 +2198,8 @@ export class PersonalActionsService {
       await trx.delete(BonusLine, { idAccion: id });
       await trx.delete(ActionQuota, { idAccion: id });
 
+      const headerPayrollId = Number(dto.lines[0]?.payrollId);
+      action.idCalendarioNomina = Number.isFinite(headerPayrollId) && headerPayrollId > 0 ? headerPayrollId : null;
       action.descripcion = dto.observacion ?? null;
       action.fechaEfecto = firstDate;
       action.fechaInicioEfecto = firstDate;
@@ -2437,7 +2443,7 @@ export class PersonalActionsService {
         const action = trx.create(PersonalAction, {
           idEmpresa: dto.idEmpresa,
           idEmpleado: dto.idEmpleado,
-          idCalendarioNomina: null,
+          idCalendarioNomina: group.payrollId,
           tipoAccion: 'hora_extra',
           groupId,
           origen: 'RRHH',
@@ -2593,6 +2599,8 @@ export class PersonalActionsService {
       await trx.delete(OvertimeLine, { idAccion: id });
       await trx.delete(ActionQuota, { idAccion: id });
 
+      const headerPayrollId = Number(dto.lines[0]?.payrollId);
+      action.idCalendarioNomina = Number.isFinite(headerPayrollId) && headerPayrollId > 0 ? headerPayrollId : null;
       action.descripcion = dto.observacion ?? null;
       action.fechaEfecto = firstDate;
       action.fechaInicioEfecto = firstDate;
@@ -2847,7 +2855,7 @@ export class PersonalActionsService {
         const action = trx.create(PersonalAction, {
           idEmpresa: dto.idEmpresa,
           idEmpleado: dto.idEmpleado,
-          idCalendarioNomina: null,
+          idCalendarioNomina: group.payrollId,
           tipoAccion: 'deduccion_retencion',
           groupId,
           origen: 'RRHH',
@@ -3002,6 +3010,8 @@ export class PersonalActionsService {
       await trx.delete(RetentionLine, { idAccion: id });
       await trx.delete(ActionQuota, { idAccion: id });
 
+      const headerPayrollId = Number(dto.lines[0]?.payrollId);
+      action.idCalendarioNomina = Number.isFinite(headerPayrollId) && headerPayrollId > 0 ? headerPayrollId : null;
       action.descripcion = dto.observacion ?? null;
       action.fechaEfecto = firstDate;
       action.fechaInicioEfecto = firstDate;
@@ -3259,7 +3269,7 @@ export class PersonalActionsService {
         const action = trx.create(PersonalAction, {
           idEmpresa: dto.idEmpresa,
           idEmpleado: dto.idEmpleado,
-          idCalendarioNomina: null,
+          idCalendarioNomina: group.payrollId,
           tipoAccion: 'deduccion_descuento',
           groupId,
           origen: 'RRHH',
@@ -3403,6 +3413,8 @@ export class PersonalActionsService {
       await trx.delete(DiscountLine, { idAccion: id });
       await trx.delete(ActionQuota, { idAccion: id });
 
+      const headerPayrollId = Number(dto.lines[0]?.payrollId);
+      action.idCalendarioNomina = Number.isFinite(headerPayrollId) && headerPayrollId > 0 ? headerPayrollId : null;
       action.descripcion = dto.observacion ?? null;
       action.fechaEfecto = firstDate;
       action.fechaInicioEfecto = firstDate;
@@ -3720,7 +3732,7 @@ export class PersonalActionsService {
         const action = trx.create(PersonalAction, {
           idEmpresa: dto.idEmpresa,
           idEmpleado: dto.idEmpleado,
-          idCalendarioNomina: null,
+          idCalendarioNomina: group.payrollId,
           tipoAccion: 'vacaciones',
           groupId,
           origen: 'RRHH',
@@ -3845,7 +3857,7 @@ export class PersonalActionsService {
       const action = trx.create(PersonalAction, {
         idEmpresa: dto.idEmpresa,
         idEmpleado: dto.idEmpleado,
-        idCalendarioNomina: null,
+        idCalendarioNomina: line.payrollId,
         tipoAccion: 'aumento',
         groupId,
         origen: 'RRHH',
@@ -3956,6 +3968,7 @@ export class PersonalActionsService {
       await trx.delete(VacationDate, { idAccion: id });
       await trx.delete(ActionQuota, { idAccion: id });
 
+      action.idCalendarioNomina = targetPayrollId;
       action.descripcion = dto.observacion ?? null;
       action.fechaEfecto = (firstDate as unknown as Date) ?? null;
       action.fechaInicioEfecto = (firstDate as unknown as Date) ?? null;
@@ -4058,6 +4071,7 @@ export class PersonalActionsService {
     await this.dataSource.transaction(async (trx) => {
       await trx.delete(IncreaseLine, { idAccion: id });
 
+      action.idCalendarioNomina = line.payrollId;
       action.descripcion = dto.observacion ?? null;
       action.fechaEfecto = fecha;
       action.fechaInicioEfecto = fecha;
@@ -4350,7 +4364,7 @@ export class PersonalActionsService {
         const action = trx.create(PersonalAction, {
           idEmpresa: dto.idEmpresa,
           idEmpleado: dto.idEmpleado,
-          idCalendarioNomina: null,
+          idCalendarioNomina: group.payrollId,
           tipoAccion: 'incapacidad',
           groupId,
           origen: 'RRHH',
@@ -4502,6 +4516,8 @@ export class PersonalActionsService {
       await trx.delete(DisabilityLine, { idAccion: id });
       await trx.delete(ActionQuota, { idAccion: id });
 
+      const headerPayrollId = Number(dto.lines[0]?.payrollId);
+      action.idCalendarioNomina = Number.isFinite(headerPayrollId) && headerPayrollId > 0 ? headerPayrollId : null;
       action.descripcion = dto.observacion ?? null;
       action.fechaEfecto = firstDate;
       action.fechaInicioEfecto = firstDate;
@@ -6379,7 +6395,10 @@ export class PersonalActionsService {
       SELECT
         l.id_accion AS idAccion,
         GROUP_CONCAT(
-          DISTINCT COALESCE(c.nombre_planilla_calendario_nomina, CONCAT('Planilla #', l.id_calendario_nomina))
+          DISTINCT CASE
+            WHEN a.id_calendario_nomina IS NULL THEN NULL
+            ELSE COALESCE(c.nombre_planilla_calendario_nomina, CONCAT('Planilla #', a.id_calendario_nomina))
+          END
           ORDER BY c.fecha_inicio_periodo ASC
           SEPARATOR ', '
         ) AS periodos,
@@ -6391,8 +6410,10 @@ export class PersonalActionsService {
         MIN(l.remuneracion_linea) AS minRem,
         MAX(l.remuneracion_linea) AS maxRem
       FROM ${tableName} l
+      INNER JOIN acc_acciones_personal a
+        ON a.id_accion = l.id_accion
       LEFT JOIN nom_calendarios_nomina c
-        ON c.id_calendario_nomina = l.id_calendario_nomina
+        ON c.id_calendario_nomina = a.id_calendario_nomina
       LEFT JOIN nom_movimientos_nomina m
         ON m.id_movimiento_nomina = l.id_movimiento_nomina
       WHERE l.id_accion IN (?)
@@ -6442,7 +6463,10 @@ export class PersonalActionsService {
       SELECT
         l.id_accion AS idAccion,
         GROUP_CONCAT(
-          DISTINCT COALESCE(c.nombre_planilla_calendario_nomina, CONCAT('Planilla #', l.id_calendario_nomina))
+          DISTINCT CASE
+            WHEN a.id_calendario_nomina IS NULL THEN NULL
+            ELSE COALESCE(c.nombre_planilla_calendario_nomina, CONCAT('Planilla #', a.id_calendario_nomina))
+          END
           ORDER BY c.fecha_inicio_periodo ASC
           SEPARATOR ', '
         ) AS periodos,
@@ -6452,8 +6476,10 @@ export class PersonalActionsService {
           SEPARATOR ', '
         ) AS movimientos
       FROM acc_vacaciones_fechas l
+      INNER JOIN acc_acciones_personal a
+        ON a.id_accion = l.id_accion
       LEFT JOIN nom_calendarios_nomina c
-        ON c.id_calendario_nomina = l.id_calendario_nomina
+        ON c.id_calendario_nomina = a.id_calendario_nomina
       LEFT JOIN nom_movimientos_nomina m
         ON m.id_movimiento_nomina = l.id_movimiento_nomina
       WHERE l.id_accion IN (?)
@@ -6514,3 +6540,10 @@ export class PersonalActionsService {
     return `${year}-${month}-${day}`;
   }
 }
+
+
+
+
+
+
+

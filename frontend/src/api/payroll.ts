@@ -610,6 +610,12 @@ export async function inactivatePayroll(id: number): Promise<PayrollListItem> {
     throw new Error(await extractApiErrorMessage(res, 'No se pudo inactivar la planilla. Intente nuevamente.'));
   return res.json();
 }
+export async function reactivatePayroll(id: number): Promise<PayrollListItem> {
+  const res = await httpFetch(`/payroll/${id}/reactivate`, { method: 'PATCH' });
+  if (!res.ok)
+    throw new Error(await extractApiErrorMessage(res, 'No se pudo reactivar la planilla. Intente nuevamente.'));
+  return res.json();
+}
 
 /* =============================================================================
    API: AUDITORIA Y SNAPSHOT

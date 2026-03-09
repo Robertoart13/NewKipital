@@ -1,4 +1,4 @@
-# DIRECTIVA 21 — Tabla Maestra de Planillas + Políticas de Workflows Críticos
+﻿# DIRECTIVA 21 — Tabla Maestra de Planillas + Políticas de Workflows Críticos
 
 ## Objetivo
 
@@ -376,3 +376,91 @@ Default UI:
   - acciones `Procesar`, `Verificar`, `Aplicar` segun estado y permisos.
   - confirmacion obligatoria antes de ejecutar cada accion.
   - `Verificar` bloqueado si no existen movimientos procesados y no hay cargas sociales configuradas (snapshot inputs = 0 y cargas sociales = 0).
+
+## Actualizacion 2026-03-08 - Flujo operativo de Inactivar/Reactivar planilla
+
+### Inactivar planilla
+- No permite inactivar estados finales contables (Aplicada/Contabilizada).
+- Desasocia acciones no finales (`DRAFT`, `PENDING_SUPERVISOR`, `PENDING_RRHH`, `APPROVED`).
+- Las acciones desasociadas pasan a `PENDING_RRHH`.
+- Se persiste snapshot por accion en `acc_planilla_reactivation_items` para reactivacion posterior.
+
+### Reactivar planilla
+- Solo aplica para planilla en estado Inactiva.
+- La planilla vuelve a estado Abierta.
+- Reactivacion parcial: reasocia acciones elegibles; no elegibles se mantienen `PENDING_RRHH` con motivo.
+
+### Consistencia de datos en UI
+- Mutaciones invalidan cache server-side.
+- `Refrescar` usa cache-buster (`cb`) para forzar datos nuevos sin esperar TTL.
+
+- Disparadores automaticos de reasignacion: `payroll.create`, `payroll.reopen`, `payroll.reactivate`.
+- Safety net operativo: job programado cada 5 minutos que intenta reasignar huérfanas pendientes de snapshot a planillas operativas elegibles.
+
+
+### Nombre de Planilla con Consecutivo (2026-03-09)
+- Regla: al crear planilla, el nombre se persiste con sufijo consecutivo de 4 digitos: BASE-0001, BASE-0002, etc.
+- Implementacion: consecutivo basado en id_calendario_nomina para evitar colisiones en concurrencia.
+- Si el nombre enviado ya termina en -dddd, se normaliza la base y se vuelve a generar el sufijo oficial.
+
+## Actualizacion 2026-03-09 - Reasociacion estricta e invalidacion por traslado
+
+- Los snapshots de reactivacion (cc_planilla_reactivation_items) solo pueden reasociarse automaticamente cuando la planilla destino coincide exactamente con la planilla origen del snapshot en: periodo de pago, tipo de planilla, moneda, periodo nomina, fecha corte, ventana de pago y fecha de pago programada.
+- Al ejecutar traslado interempresas, los snapshots pendientes de las acciones trasladadas se marcan como INVALIDATED_BY_TRANSFER para que no vuelvan a entrar en flujo de reactivacion de la planilla anterior.
+- Si no existe planilla exacta compatible, la accion se mantiene en PENDING_RRHH para resolucion manual de RRHH.
+
+## Actualizacion 2026-03-09 - Validacion robusta E2E (datos reales)
+
+### Escenario A validado (inactivar -> planilla exacta -> reasignar)
+- Resultado: funcional y consistente.
+- Al inactivar, las acciones no finales quedan desasociadas y con snapshot pendiente.
+- Al existir planilla exacta compatible, la reasignacion automatica recupera las acciones huerfanas.
+
+### Escenario B validado (inactivar -> traslado -> invalidar snapshot)
+- Resultado: parcialmente validado.
+- Simulacion de traslado: ya identifica y asigna planillas destino por fecha cuando hay cobertura.
+- Execute: no completa si existen acciones bloqueantes o si ocurre conflicto tecnico en ledger de vacaciones.
+
+### Criterios operativos para que B complete
+1. El empleado no debe tener acciones bloqueantes en estados activos de bloqueo.
+2. Debe existir planilla destino compatible para todas las fechas requeridas.
+3. El flujo de traslado no debe colisionar en la tabla de ledger de vacaciones.
+
+### Regla de QA para reproduccion enterprise
+- Antes de afirmar "traslado completo", validar en SQL:
+  - estado final de transferencia;
+  - empresa del empleado;
+  - `id_calendario_nomina` en acciones trasladadas;
+  - snapshots en `acc_planilla_reactivation_items` (`INVALIDATED_BY_TRANSFER` cuando aplica).
+
+## Actualizacion 2026-03-09 - Criterio final de fechas para compatibilidad
+
+Regla operativa confirmada por negocio:
+- Para compatibilidad de planilla en reasociacion/reactivacion, solo se validan fechas de periodo:
+  - `Inicio Periodo`
+  - `Fin Periodo`
+
+No bloquean compatibilidad por variacion entre empresas:
+- `Fecha Corte`
+- `Inicio Pago`
+- `Fin Pago`
+- `Fecha Pago Programada`
+
+Se mantienen como obligatorios de compatibilidad:
+- empresa objetivo,
+- periodo de pago,
+- tipo de planilla,
+- moneda,
+- inicio/fin de periodo.
+
+## Actualizacion 2026-03-09 - Politica de bloqueo por tipo de accion (ajuste)
+
+Regla vigente:
+- No se bloquea traslado por tipo de accion (`licencia`, `incapacidad`, `aumento`) si la accion esta en estado trasladable.
+- El bloqueo se decide por:
+  1) estados finales/no trasladables,
+  2) falta de planilla destino para fechas requeridas,
+  3) validaciones estructurales del traslado.
+
+Objetivo:
+- Permitir continuidad operativa enterprise y evitar bloqueo innecesario de traslados cuando las acciones pendientes son trasladables por diseno.

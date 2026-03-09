@@ -157,6 +157,16 @@ export class PayrollController {
     return this.service.inactivate(id, user.userId).then((row) => this.service.toResponse(row));
   }
 
+
+
+  @RequirePermissions('payroll:cancel')
+  @Patch(':id/reactivate')
+  reactivate(
+    @Param('id', ParseIntPipe) id: number,
+    @CurrentUser() user: { userId: number },
+  ): Promise<PayrollCalendarResponse> {
+    return this.service.reactivate(id, user.userId).then((row) => this.service.toResponse(row));
+  }
   @RequirePermissions('payroll:view')
   @Get(':id/snapshot-summary')
   snapshotSummary(@Param('id', ParseIntPipe) id: number, @CurrentUser() user: { userId: number }) {

@@ -366,3 +366,16 @@ SOLAPE-PLANILLAS-2026-03-02)
 - TimeWise: acciones de vacaciones se crean en estado Borrador sin planilla. RRHH completa fechas/movimiento en KPITAL; el sistema asigna planilla por fecha.
 - Planilla: al cargar una planilla se consumen las fechas cuyo `id_calendario_nomina` coincide con la planilla y estado aprobado. No se requiere que el header tenga planilla.
 ---
+
+## Pendiente operativo agregado - 2026-03-09 01:54:09 -06:00
+
+Tema: Traslado interempresas - validacion funcional final de refresco UI.
+
+Pendiente:
+1. Ejecutar QA manual del flujo Simular -> Ejecutar traslado -> Refrescar.
+2. Confirmar que el empleado ejecutado no permanece en grilla de origen por estado stale.
+3. Confirmar consistencia en resimulacion posterior.
+
+Referencia:
+- docs/50-Handoff-TrasladoInterempresas-20260309.md
+- docs/Test/TEST-EXECUTION-REPORT.md (Fase 50)

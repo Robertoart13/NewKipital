@@ -1,4 +1,4 @@
-# Test Execution Report - KPITAL 360
+ï»¿# Test Execution Report - KPITAL 360
 
 Documento de control por fases de ejecucion de pruebas.
 
@@ -498,7 +498,7 @@ Pruebas ejecutadas:
 - Roles: asignar permiso y quitar permiso.
 - Usuario: aplicar cambios de permisos/roles y verificar persistencia.
 - Empresas por usuario: quitar empresa y agregar empresa.
-- Verificacion visual en pestaña Empresas: estado marcado correcto luego de guardar y recargar.
+- Verificacion visual en pestaï¿½a Empresas: estado marcado correcto luego de guardar y recargar.
 
 Resultado:
 - Flujo validado OK en UI.
@@ -973,3 +973,144 @@ Estado de fase: Cerrada
 - Valor por defecto del selector de estados: `Abierta (1)` y `En proceso (2)`.
 - Si el usuario limpia el selector de estados, se restaura automaticamente el default `[1, 2]`.
 
+
+## Fase 20 - 2026-03-08 22:10
+Alcance: Planillas - inactivar/reactivar con snapshot de acciones + refresh/cache consistente en listado
+
+Comandos ejecutados:
+- `cd api && npm.cmd run build`
+- `cd api && npm.cmd test -- src/modules/payroll/payroll.service.spec.ts --runInBand`
+
+Resultados:
+- Backend: build OK
+- PayrollService spec: 10/10
+- Fallos: 0
+
+Validaciones funcionales adicionales (manual + BD):
+- `PATCH /api/payroll/:id/inactivate` desasocia acciones no finales y las deja en `PENDING_RRHH`.
+- `PATCH /api/payroll/:id/reactivate` reabre a `Abierta` y reasocia parcialmente acciones elegibles.
+- Snapshot de reactivacion persistido en `acc_planilla_reactivation_items`.
+- Boton `Refrescar` forzado con cache-buster (`cb`) y recarga de datos frescos (sin esperar TTL).
+
+- Reasignacion automatica implementada con doble mecanismo: disparo inmediato en create/reopen/reactivate + job `payroll-orphan-reassignment` cada 5 minutos.
+
+
+## 2026-03-08 - Hallazgo Planilla Inactiva vs Acciones de Personal
+- Caso: Al inactivar planilla, en Ausencias se seguia mostrando Periodo de pago ligado.
+- Diagnostico: No era cache. El resumen del listado se construia desde lineas (cc_*_lineas.id_calendario_nomina). En BD ese campo es NOT NULL, por lo que no puede quedar en null al desasociar encabezado.
+- Ajuste aplicado: El resumen de periodo ahora se calcula desde encabezado cc_acciones_personal.id_calendario_nomina (fuente de verdad en inactivar/reactivar) y movimientos desde lineas.
+- Impacto esperado: Si una accion queda desasociada por inactivacion, la columna Periodo de pago ya no mostrara la planilla historica de linea.
+- Validacion tecnica: 
+pm run build en API exitoso.
+
+## Fase 46 - 2026-03-09
+Alcance: Revalidacion robusta planillas/traslado con datos reales en `mysql_hr_pro`.
+
+Comandos ejecutados:
+- `cd api && npm.cmd run test -- payroll.service.spec.ts intercompany-transfer.service.spec.ts payroll-orphan-reassignment.service.spec.ts --runInBand`
+- `cd api && npm.cmd run build`
+- `cd api && npx ts-node -r tsconfig-paths/register scripts/tmp-e2e-planilla-transfer.ts`
+- `cd api && npx ts-node -r tsconfig-paths/register scripts/tmp-e2e-transfer-invalidate-2.ts`
+
+Resultados unit/integration:
+- Suites: 3/3
+- Tests: 16/16
+- Build API: OK
+
+Resultados E2E reales:
+- Escenario A (inactivar -> planilla exacta -> reasignar): OK
+  - Pendientes luego de inactivar: 9
+  - Reasociados auto: 45
+  - Reasociados por flujo: 9
+- Escenario B (inactivar -> traslado -> invalidar snapshot): BLOQUEADO
+  - Simulacion: genera asignaciones por fecha correctamente.
+  - Execute: bloqueado por acciones bloqueantes activas y por conflicto de unicidad en ledger de vacaciones (`UQ_vacaciones_ledger_source`).
+  - `INVALIDATED_BY_TRANSFER` no incrementa mientras execute no cierre exitosamente.
+
+Hallazgos detectados en esta fase:
+1. El flujo de simulacion ya resuelve cobertura de fechas de planilla destino cuando hay compatibilidad.
+2. Persisten casos de bloqueo funcional por estados de acciones.
+3. Existe bug tecnico en traslado/vacaciones que impide cierre de execute en ciertos datos.
+
+Estado de fase: Parcialmente cerrada (A aprobado, B pendiente por bloqueo tecnico/funcional).
+
+## Fase 47 - 2026-03-09
+Alcance: Ajuste de criterio de compatibilidad de fechas por regla de negocio.
+
+Cambios validados:
+- Compatibilidad entre planillas para reasociacion/reactivacion valida solo `Inicio Periodo` y `Fin Periodo`.
+- Diferencias en `Fecha Corte` y `Ventana de Pago` no bloquean compatibilidad.
+
+Pruebas ejecutadas:
+- `payroll.service.spec.ts`
+- `intercompany-transfer.service.spec.ts`
+- `payroll-orphan-reassignment.service.spec.ts`
+
+Resultado:
+- 16/16 en verde.
+- Build API OK.
+
+## Fase 48 - 2026-03-09
+Alcance: Traslado interempresa E2E real con datos productivos de prueba (`mysql_hr_pro`).
+
+Ajustes aplicados antes de prueba:
+1. Se elimina bloqueo por tipo de accion pendiente en simulacion.
+2. Se corrige conflicto de unicidad en vacaciones ledger (`TRANSFER_OUT`/`TRANSFER_IN`).
+
+Bateria ejecutada:
+- `intercompany-transfer.service.spec.ts`
+- `payroll.service.spec.ts`
+- `payroll-orphan-reassignment.service.spec.ts`
+- Resultado: 17/17 en verde.
+- Build API: OK.
+
+E2E ejecutado:
+- Script: `api/scripts/tmp-e2e-transfer-invalidate-2.ts`
+- Empleado: `id=4`
+- Resultado:
+  - Simulate: `eligible=true`, `transferId=3`
+  - Execute: `EXECUTED`
+
+Evidencia SQL post-ejecucion:
+- `sys_empleados.id_empresa` empleado 4 = 3.
+- Acciones (8,11,12,13,14,15) en empresa 3 con `id_calendario_nomina=11`.
+- Snapshots de esas acciones: `INVALIDATED_BY_TRANSFER` = 6.
+- Transferencia `id=3` en estado ejecutado con `fecha_ejecucion_transferencia` informada.
+
+Estado de fase: Cerrada (aprobada).
+
+## Fase 49 - 2026-03-09
+Alcance: Correccion de refresco post-ejecucion en Traslado interempresas (UI).
+
+Sintoma reportado:
+- El traslado se ejecutaba, pero la tabla no se actualizaba en pantalla.
+- Al volver a simular, podia aparecer inconsistencia: empleado ya en destino + mensaje de bloqueo por planillas activas en origen.
+
+Ajustes aplicados (frontend):
+1. Se invalida cache GET al ejecutar traslado y al presionar Refrescar.
+2. Se elimina de inmediato del grid local a empleados con execute EXECUTED.
+3. Se recarga lista con retardo corto (300 ms) para evitar carrera de lectura post-commit.
+
+Archivo:
+- rontend/src/pages/private/payroll-management/IntercompanyTransferPage.tsx
+
+Estado:
+- Pendiente de validacion visual en navegador por parte de QA funcional.
+
+## Fase 50 - 2026-03-09 01:54:09 -06:00
+Alcance: cierre documental del ajuste UI en Traslado interempresas y checklist de validacion pendiente.
+
+Cambio aplicado:
+- Archivo: rontend/src/pages/private/payroll-management/IntercompanyTransferPage.tsx.
+- Invalidacion de cache en execute y en boton Refrescar.
+- Limpieza inmediata de empleados ejecutados en el grid local.
+- Recarga diferida de lista (300ms) para evitar lectura de estado viejo justo despues del execute.
+
+Pendiente de QA funcional manual:
+1. Ejecutar traslado apto y validar que el empleado sale del grid sin recargar pagina completa.
+2. Presionar Refrescar y validar que no reaparece en origen.
+3. Re-simular en origen y confirmar que no quede inconsistencia de validaciones.
+4. Confirmar presencia del empleado en destino y consistencia de acciones personales.
+
+Referencia principal del handoff:
+- docs/50-Handoff-TrasladoInterempresas-20260309.md

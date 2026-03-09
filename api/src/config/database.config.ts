@@ -9,6 +9,7 @@ export const databaseConfig: TypeOrmModuleAsyncOptions = {
     username: config.get<string>('DB_USERNAME', 'root'),
     password: config.get<string>('DB_PASSWORD', ''),
     database: config.get<string>('DB_DATABASE', 'kpital360'),
+    autoLoadEntities: true,
     entities: [__dirname + '/../modules/**/entities/*.entity{.ts,.js}'],
     migrations: [__dirname + '/../database/migrations/*{.ts,.js}'],
     synchronize: false,

@@ -71,6 +71,7 @@ Si ya ests en el proyecto y necesits referencia puntual, us esta tabla para ir d
 | 47 | [47-AccionesPersonal-HorasExtra-Implementacion-Operativa.md](./47-AccionesPersonal-HorasExtra-Implementacion-Operativa.md) | Cierre operativo de Horas Extra: vista/modal dedicados, tabla `acc_horas_extras_lineas`, fechas inicio/fin por lnea, tipo de jornada 6/7/8, clculo de monto y evidencia de migraciones/build/tests. | 42, 46 |
 | 48 | [48-AccionesPersonal-ModeloPorPeriodo-Linea.md](./48-AccionesPersonal-ModeloPorPeriodo-Linea.md) | Decision vigente de bajo riesgo: split por periodo al guardar (1 accion por periodo distinto, mismas lineas juntas por periodo), con `group_id` comun, transaccionalidad y guard de edicion mono-periodo para Ausencias, Licencias, Incapacidades, Bonificaciones, Horas Extra, Retenciones y Descuentos. | 42, 45, 46, 47 |
 | 49 | [49-AccionesPersonal-Descuentos-Implementacion-Operativa.md](./49-AccionesPersonal-Descuentos-Implementacion-Operativa.md) | Cierre operativo de Descuentos: vista/modal dedicados, tabla `acc_descuentos_lineas`, split por periodo al guardar, guard de edicion mono-periodo, permisos dedicados y evidencia de migraciones/tests/build. | 42, 48 |
+| 50 | [50-Handoff-TrasladoInterempresas-20260309.md](./50-Handoff-TrasladoInterempresas-20260309.md) | Handoff de corte operativo de traslado interempresas: ultimo cambio UI de refresco/cache, pruebas ejecutadas, pendientes, pasos de validacion y reglas aplicadas. | 21, 28, 40 |
 ---
 
 ## Estado del Proyecto
@@ -148,3 +149,4 @@ SOLAPE-PLANILLAS-2026-03-02)
 - TimeWise: acciones de vacaciones se crean en estado Borrador sin planilla. RRHH completa fechas/movimiento en KPITAL; el sistema asigna planilla por fecha.
 - Planilla: al cargar una planilla se consumen las fechas cuyo `id_calendario_nomina` coincide con la planilla y estado aprobado. No se requiere que el header tenga planilla.
 ---
+

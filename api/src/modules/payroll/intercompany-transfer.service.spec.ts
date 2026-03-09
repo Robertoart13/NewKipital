@@ -10,6 +10,7 @@ import { PersonalAction } from '../personal-actions/entities/personal-action.ent
 
 import { EmployeeTransfer } from './entities/employee-transfer.entity';
 import { PayrollCalendar } from './entities/payroll-calendar.entity';
+import { PayrollReactivationItem } from './entities/payroll-reactivation-item.entity';
 import { IntercompanyTransferService } from './intercompany-transfer.service';
 
 import type { SimulateIntercompanyTransferDto } from './dto/simulate-intercompany-transfer.dto';
@@ -39,6 +40,7 @@ describe('IntercompanyTransferService', () => {
         { provide: getRepositoryToken(PersonalAction), useValue: mockRepository() },
         { provide: getRepositoryToken(PayrollCalendar), useValue: mockRepository() },
         { provide: getRepositoryToken(EmployeeTransfer), useValue: mockRepository() },
+        { provide: getRepositoryToken(PayrollReactivationItem), useValue: mockRepository() },
         {
           provide: DataSource,
           useValue: { query: jest.fn().mockResolvedValue([{ total: 0 }]), transaction: jest.fn() },
@@ -155,4 +157,92 @@ describe('IntercompanyTransferService', () => {
     expect(result[0].eligible).toBe(true);
     expect(result[0].transferId).toBe(99);
   });
+  it('should allow simulation with licencia/incapacidad/aumento when states are transferable', async () => {
+    employeeRepo.findOne.mockResolvedValue({
+      id: 10,
+      idEmpresa: 1,
+      estado: 1,
+      idPeriodoPago: 1,
+      monedaSalario: 'CRC',
+    } as Employee);
+    personalActionRepo.find.mockResolvedValue([
+      {
+        id: 501,
+        idEmpleado: 10,
+        tipoAccion: 'licencia',
+        estado: 3,
+        fechaEfecto: new Date('2026-04-03T12:00:00'),
+        fechaInicioEfecto: new Date('2026-04-03T12:00:00'),
+        fechaFinEfecto: new Date('2026-04-04T12:00:00'),
+        idCalendarioNomina: null,
+      } as unknown as PersonalAction,
+    ]);
+    userCompanyRepo.findOne.mockResolvedValue({ idUsuario: 1 } as UserCompany);
+    transferRepo.create.mockImplementation((data) => data as EmployeeTransfer);
+    transferRepo.save.mockResolvedValue({ id: 150 } as EmployeeTransfer);
+
+    jest
+      .spyOn(
+        service as unknown as { findBlockingPayrolls: () => Promise<unknown[]> },
+        'findBlockingPayrolls',
+      )
+      .mockResolvedValue([]);
+    jest
+      .spyOn(
+        service as unknown as {
+          collectLineDatesByAction: () => Promise<Map<number, Array<Date | null>>>;
+        },
+        'collectLineDatesByAction',
+      )
+      .mockResolvedValue(
+        new Map([[501, [new Date('2026-04-03T12:00:00'), new Date('2026-04-04T12:00:00')]]]),
+      );
+    jest
+      .spyOn(
+        service as unknown as { findCalendarsForRange: () => Promise<PayrollCalendar[]> },
+        'findCalendarsForRange',
+      )
+      .mockResolvedValue([
+        {
+          id: 8,
+          idEmpresa: 2,
+          idPeriodoPago: 1,
+          moneda: 'CRC',
+          fechaInicioPeriodo: new Date('2026-04-01T12:00:00'),
+          fechaFinPeriodo: new Date('2026-04-15T12:00:00'),
+        } as unknown as PayrollCalendar,
+      ]);
+
+    const dto: SimulateIntercompanyTransferDto = {
+      idEmpresaDestino: 2,
+      fechaEfectiva: '2026-04-01',
+      empleados: [{ idEmpleado: 10 }],
+    };
+
+    const result = await service.simulate(dto, 1);
+
+    expect(result[0].eligible).toBe(true);
+    expect(result[0].transferId).toBe(150);
+    expect(result[0].blockingReasons.some((reason) => reason.code === 'ACCIONES_BLOQUEANTES')).toBe(
+      false,
+    );
+  });
+  it('invalidatePendingReactivationSnapshotsByTransfer marks pending snapshots as invalidated', async () => {
+    const qb = {
+      update: jest.fn().mockReturnThis(),
+      set: jest.fn().mockReturnThis(),
+      where: jest.fn().mockReturnThis(),
+      andWhere: jest.fn().mockReturnThis(),
+      execute: jest.fn().mockResolvedValue({ affected: 2 }),
+    };
+    const trx = { createQueryBuilder: jest.fn(() => qb) };
+
+    await (service as any).invalidatePendingReactivationSnapshotsByTransfer(trx, [10, 10, 11], 50, 3, 7);
+
+    expect(qb.update).toHaveBeenCalledWith(PayrollReactivationItem);
+    expect(qb.where).toHaveBeenCalledWith('id_accion IN (:...ids)', { ids: [10, 11] });
+    expect(qb.andWhere).toHaveBeenCalledWith('es_procesado_reactivacion = 0');
+    expect(qb.execute).toHaveBeenCalled();
+  });
 });
+

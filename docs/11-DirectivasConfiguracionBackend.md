@@ -1,4 +1,4 @@
-# KPITAL 360  Directivas de Configuracin Backend
+﻿# KPITAL 360  Directivas de Configuracin Backend
 
 **Documento:** 11
 **Para:** Ingeniero Backend
@@ -305,3 +305,10 @@ Por seguridad y frescura de datos **NO se cachean**:
 - **Redis HA** (Cluster/Sentinel/Managed service) habilitado en prod.
 - **Eviction policy** definida y documentada (recomendado `allkeys-lfu`) + `maxmemory`.
 - **Observabilidad externa**: exportar mtricas a Prometheus/Grafana (hit/miss/error/breaker/latencia).
+
+### Actualizacion cache (2026-03-08) - Refresco forzado en Planillas
+
+- Se confirma regla: toda mutacion (`POST/PUT/PATCH/DELETE`) invalida cache del scope correspondiente.
+- Se agrega soporte de `cb` (cache-buster) en la key de cache para GET cuando frontend requiere lectura fresca inmediata.
+- Regla UX: boton `Refrescar` debe ejecutar `bustApiCache()` y luego recargar el listado para evitar estado visual stale.
+

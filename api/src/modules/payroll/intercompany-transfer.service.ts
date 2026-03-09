@@ -24,6 +24,7 @@ import {
 
 import { EmployeeTransfer, EstadoTransferenciaEmpleado } from './entities/employee-transfer.entity';
 import { EstadoCalendarioNomina, PayrollCalendar } from './entities/payroll-calendar.entity';
+import { PayrollReactivationItem } from './entities/payroll-reactivation-item.entity';
 
 import type { ExecuteIntercompanyTransferDto } from './dto/execute-intercompany-transfer.dto';
 import type { SimulateIntercompanyTransferDto } from './dto/simulate-intercompany-transfer.dto';
@@ -91,15 +92,6 @@ const TRANSFERABLE_ACTION_STATES = [
   ...PERSONAL_ACTION_PENDING_STATES,
   ...PERSONAL_ACTION_APPROVED_STATES,
 ];
-
-const BLOCKING_ACTION_TYPES = new Set([
-  'licencia',
-  'licencias',
-  'incapacidad',
-  'incapacidades',
-  'aumento',
-  'aumentos',
-]);
 
 const LINE_TABLES: LineTableConfig[] = [
   {
@@ -278,24 +270,6 @@ export class IntercompanyTransferService {
         estado: In(TRANSFERABLE_ACTION_STATES),
       },
     });
-
-    const blockingActions = actions.filter((action) =>
-      this.isBlockingActionType(action.tipoAccion),
-    );
-    if (blockingActions.length > 0) {
-      blockingReasons.push({
-        code: 'ACCIONES_BLOQUEANTES',
-        message:
-          'Acciones bloqueantes pendientes. Apruebe/rechace/cancele esas acciones antes de trasladar.',
-        metadata: {
-          acciones: blockingActions.map((action) => ({
-            id: action.id,
-            tipo: action.tipoAccion,
-            estado: action.estado,
-          })),
-        },
-      });
-    }
 
     const actionPlans = this.buildActionPlans(actions, effectiveDate);
     const actionIdsToMove = actionPlans
@@ -498,6 +472,14 @@ export class IntercompanyTransferService {
 
       await this.moveActions(trx, actionPlans, transfer.idEmpresaDestino, effectiveDate, calendars);
 
+      await this.invalidatePendingReactivationSnapshotsByTransfer(
+        trx,
+        actionIds,
+        transfer.id,
+        transfer.idEmpresaDestino,
+        userId,
+      );
+
       const aguinaldoProvision = await this.createAguinaldoProvisionForTransfer(
         trx,
         employee,
@@ -546,6 +528,31 @@ export class IntercompanyTransferService {
       status: 'EXECUTED',
       message: 'Transferencia ejecutada correctamente.',
     };
+  }
+
+  private async invalidatePendingReactivationSnapshotsByTransfer(
+    trx: DataSource['manager'],
+    actionIds: number[],
+    transferId: number,
+    destinationCompanyId: number,
+    userId: number,
+  ): Promise<void> {
+    const uniqueActionIds = Array.from(new Set(actionIds.filter((id) => Number.isFinite(id) && id > 0)));
+    if (uniqueActionIds.length === 0) return;
+
+    await trx
+      .createQueryBuilder()
+      .update(PayrollReactivationItem)
+      .set({
+        esProcesadoReactivacion: 1,
+        resultadoReactivacion: 'INVALIDATED_BY_TRANSFER',
+        motivoResultadoReactivacion:
+          `Snapshot invalidado por traslado #${transferId} a empresa ${destinationCompanyId}.`,
+        modificadoPor: userId,
+      })
+      .where('id_accion IN (:...ids)', { ids: uniqueActionIds })
+      .andWhere('es_procesado_reactivacion = 0')
+      .execute();
   }
 
   private async moveActions(
@@ -836,11 +843,6 @@ export class IntercompanyTransferService {
     };
   }
 
-  private isBlockingActionType(actionType: string | null | undefined): boolean {
-    const normalized = (actionType ?? '').trim().toLowerCase();
-    return normalized.length > 0 && BLOCKING_ACTION_TYPES.has(normalized);
-  }
-
   private async collectLineDatesByAction(
     actionIds: number[],
   ): Promise<Map<number, Array<Date | null>>> {
@@ -855,7 +857,7 @@ export class IntercompanyTransferService {
       for (const row of rows) {
         const list = map.get(row.id_accion) ?? [];
         if (row.fecha) {
-          list.push(new Date(row.fecha));
+          list.push(this.parseDbDateValue(row.fecha));
         } else {
           list.push(null);
         }
@@ -996,8 +998,13 @@ export class IntercompanyTransferService {
   }
 
   private resolveCalendarForDate(date: Date, calendars: PayrollCalendar[]): PayrollCalendar | null {
+    const targetKey = this.toDateKey(date);
+    if (!targetKey) return null;
     for (const calendar of calendars) {
-      if (date >= calendar.fechaInicioPeriodo && date <= calendar.fechaFinPeriodo) {
+      const startKey = this.toDateKey(calendar.fechaInicioPeriodo as Date | string | null);
+      const endKey = this.toDateKey(calendar.fechaFinPeriodo as Date | string | null);
+      if (!startKey || !endKey) continue;
+      if (targetKey >= startKey && targetKey <= endKey) {
         return calendar;
       }
     }
@@ -1040,14 +1047,39 @@ export class IntercompanyTransferService {
     return normalized;
   }
 
-  private toDateKey(dateValue: Date | null): string | null {
-    if (!dateValue) return null;
-    const date = new Date(dateValue);
-    if (Number.isNaN(date.getTime())) return null;
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const day = String(date.getDate()).padStart(2, '0');
+  private toDateKey(dateValue: Date | string | null): string | null {
+    const date = this.parseDbDateValue(dateValue);
+    if (!date) return null;
+    const normalized = new Date(
+      date.getFullYear(),
+      date.getMonth(),
+      date.getDate(),
+      12,
+      0,
+      0,
+      0,
+    );
+    if (Number.isNaN(normalized.getTime())) return null;
+    const year = normalized.getFullYear();
+    const month = String(normalized.getMonth() + 1).padStart(2, '0');
+    const day = String(normalized.getDate()).padStart(2, '0');
     return `${year}-${month}-${day}`;
+  }
+
+  private parseDbDateValue(dateValue: Date | string | null | undefined): Date | null {
+    if (!dateValue) return null;
+    if (dateValue instanceof Date) {
+      return Number.isNaN(dateValue.getTime()) ? null : dateValue;
+    }
+    const raw = String(dateValue).trim();
+    if (!raw) return null;
+    const dateOnlyMatch = /^(\d{4}-\d{2}-\d{2})/.exec(raw);
+    if (dateOnlyMatch) {
+      const parsed = this.parseDateOnlyForDb(dateOnlyMatch[1]);
+      return Number.isNaN(parsed.getTime()) ? null : parsed;
+    }
+    const parsed = new Date(raw);
+    return Number.isNaN(parsed.getTime()) ? null : parsed;
   }
 
   private async calculateAguinaldoProvisionSnapshot(
@@ -1157,4 +1189,7 @@ export class IntercompanyTransferService {
     return Number.isNaN(total) ? 0 : total;
   }
 }
+
+
+
 

@@ -1,4 +1,4 @@
-import {
+﻿import {
   AppstoreOutlined,
   ArrowLeftOutlined,
   CheckCircleOutlined,
@@ -56,6 +56,7 @@ import {
   fetchPayrolls,
   inactivatePayroll,
   processPayroll,
+  reactivatePayroll,
   type PayrollAuditTrailItem,
   type PayrollListItem,
   updatePayroll,
@@ -670,7 +671,9 @@ export function PayrollManagementPage() {
       message.error('No tiene permiso para crear planillas.');
       return;
     }
-    const currentGeneratedName = String(form.getFieldValue('nombrePlanilla') ?? '').trim();
+    const currentGeneratedName = String(
+      form.getFieldValue('nombrePlanilla') ?? (isEditing ? editNamePreview : ''),
+    ).trim();
     if (!currentGeneratedName) {
       setActiveCreateTab('principal');
       message.error('Complete empresa, periodo de pago, fecha fin y moneda para generar el nombre de la planilla.');
@@ -703,8 +706,14 @@ export function PayrollManagementPage() {
   const runAction = async (id: number, operation: () => Promise<unknown>, successMessage: string) => {
     setProcessingId(id);
     try {
-      await operation();
+      const operationResult = await operation();
       message.success(successMessage);
+
+      if (operationResult && typeof operationResult === 'object' && 'id' in operationResult) {
+        const next = operationResult as Partial<PayrollListItem> & { id: number };
+        setRows((prev) => prev.map((row) => (row.id === next.id ? { ...row, ...next } : row)));
+      }
+
       bustApiCache();
       await loadRows();
     } catch (error) {
@@ -805,7 +814,7 @@ export function PayrollManagementPage() {
                     void confirmAndRunAction(
                       row,
                       'Confirmar proceso de planilla',
-                      'Esta acción procesará la planilla y generará snapshots. ¿Desea continuar?',
+                      'Esta acciÃ³n procesarÃ¡ la planilla y generarÃ¡ snapshots. Â¿Desea continuar?',
                       'Procesar',
                       () => processPayroll(row.id),
                       'Planilla procesada',
@@ -836,7 +845,7 @@ export function PayrollManagementPage() {
                 title={
                   row.requiresRecalculation === 1
                     ? 'Existen nuevas acciones aprobadas que requieren recalcular la planilla antes de aplicar.'
-                    : 'Aplica la planilla y bloquea sus resultados para operación final.'
+                    : 'Aplica la planilla y bloquea sus resultados para operaciÃ³n final.'
                 }
               >
                 <Button
@@ -853,8 +862,30 @@ export function PayrollManagementPage() {
                 </Button>
               </Tooltip>
             ) : null}
+            {canCancel && row.estado === 0 ? (
+              <Tooltip title="Reactivar: vuelve a abrir la planilla y reasocia acciones elegibles.">
+                <Button
+                  size="small"
+                  icon={<PlayCircleOutlined />}
+                  loading={processingId === row.id}
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    void confirmAndRunAction(
+                      row,
+                      'Confirmar reactivacion de planilla',
+                      'La planilla volvera a estado abierta. Se reasociaran acciones elegibles y el resto quedara pendiente RRHH. Â¿Desea continuar?',
+                      'Reactivar',
+                      () => reactivatePayroll(row.id),
+                      'Planilla reactivada',
+                    );
+                  }}
+                >
+                  Reactivar
+                </Button>
+              </Tooltip>
+            ) : null}
             {canCancel && row.estado !== 0 && row.estado !== 4 ? (
-              <Tooltip title="Inactivar: retira la planilla del flujo operativo. No se puede aplicar ni procesar después.">
+              <Tooltip title="Inactivar: retira la planilla del flujo operativo y reencola acciones en Pendiente RRHH.">
                 <Button
                   size="small"
                   danger
@@ -865,7 +896,7 @@ export function PayrollManagementPage() {
                     void confirmAndRunAction(
                       row,
                       'Confirmar inactivacion de planilla',
-                      'La planilla quedara inactiva y saldra del flujo operativo. ¿Desea continuar?',
+                      'La planilla quedara inactiva. Las acciones ligadas no finales se desasociaran y pasaran a Pendiente RRHH. Â¿Desea continuar?',
                       'Inactivar',
                       () => inactivatePayroll(row.id),
                       'Planilla inactivada',
@@ -946,7 +977,7 @@ export function PayrollManagementPage() {
                   ))}
                 </div>
               ) : (
-                <div style={{ fontSize: 12 }}>Sin detalle adicional para esta acción.</div>
+                <div style={{ fontSize: 12 }}>Sin detalle adicional para esta acciÃ³n.</div>
               )}
             </div>
           );
@@ -993,7 +1024,7 @@ export function PayrollManagementPage() {
                 <AppstoreOutlined className={styles.gestionIcon} />
               </div>
               <div>
-                <h2 className={styles.gestionTitle}>Gestión de Planillas</h2>
+                <h2 className={styles.gestionTitle}>GestiÃ³n de Planillas</h2>
                 <p className={styles.gestionDesc}>
                   Aperture, procese, verifique y aplique corridas de planilla por empresa
                 </p>
@@ -1283,7 +1314,7 @@ export function PayrollManagementPage() {
                   padding: '6px 10px',
                 }}
               >
-                <div style={{ fontSize: 11, color: '#6b7a85', marginBottom: 2 }}>Nombre planilla generado</div>
+                <div style={{ fontSize: 11, color: '#6b7a85', marginBottom: 2 }}>Nombre planilla generado (consecutivo 4 digitos al crear)</div>
                 <div style={{ fontSize: 12, fontWeight: 600, color: '#3d4f5c' }}>
                   {generatedPayrollName?.trim() || editNamePreview || 'Pendiente de completar datos'}
                 </div>
@@ -1634,6 +1665,8 @@ export function PayrollManagementPage() {
     </div>
   );
 }
+
+
 
 
 

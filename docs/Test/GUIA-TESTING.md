@@ -1,4 +1,4 @@
-# Guia de Testing - KPITAL 360
+﻿# Guia de Testing - KPITAL 360
 
 Fecha: 2026-03-05  
 Version: 11.1  
@@ -180,3 +180,59 @@ SOLAPE-PLANILLAS-2026-03-02)
 - Accion de personal `Despido`: pendiente de terminar.
 - Accion de personal `Renuncia`: pendiente de terminar.
 
+
+## Actualizacion 2026-03-08 - Planillas (inactivar/reactivar + cache)
+- Se valido flujo de inactivacion con desasociacion de acciones no finales y paso a `PENDING_RRHH`.
+- Se valido flujo de reactivacion con reasociacion parcial de acciones elegibles.
+- Se valido persistencia de snapshot en `acc_planilla_reactivation_items`.
+- Se valido que el boton `Refrescar` fuerce recarga de datos frescos (`cb` + recarga de listado).
+
+
+## 9. Playbook E2E controlado Planillas/Traslado (2026-03-09)
+
+Objetivo: validar comportamiento real de inactivar/reactivar/reasignar/trasladar con evidencia en BD.
+
+Secuencia recomendada:
+1. Levantar API en entorno de pruebas con acceso a `mysql_hr_pro`.
+2. Tomar baseline SQL de snapshots (pendientes/reasociados/invalidated_by_transfer).
+3. Ejecutar escenario A (inactivar -> crear planilla exacta -> reasignacion) y validar before/after.
+4. Ejecutar escenario B (inactivar -> simulate traslado -> execute traslado) y validar before/after.
+5. Si B no completa, registrar bloqueo exacto (negocio o tecnico) y no marcar fase como "completa".
+
+Criterios de exito:
+- A: acciones huerfanas reasociadas cuando existe planilla exacta.
+- B: snapshots del origen invalidos por traslado (`INVALIDATED_BY_TRANSFER`) solo cuando execute finaliza exitoso.
+
+Bateria minima robusta complementaria:
+- Unit/integration de modulo `payroll`: `payroll.service.spec.ts`, `intercompany-transfer.service.spec.ts`, `payroll-orphan-reassignment.service.spec.ts`.
+- Build de API en verde.
+
+## 10. Regla de ejecucion E2E para Traslado Interempresa (vigente)
+
+1. Simular traslado y exigir detalle de bloqueos por regla real.
+2. Si es elegible, ejecutar traslado y validar en SQL:
+- empresa del empleado,
+- empresa/calendario de acciones movidas,
+- estado de transferencia,
+- snapshots `INVALIDATED_BY_TRANSFER`.
+3. No cerrar prueba solo con respuesta API; siempre validar persistencia final en BD.
+
+## 11. Checklist rapido vigente - Traslado Interempresas (corte 2026-03-09 01:54:09 -06:00)
+
+Objetivo:
+- Validar refresco UI correcto despues de execute de traslado.
+
+Checklist:
+1. Simular y ejecutar traslado de un empleado apto.
+2. Verificar que el empleado no queda visible en el grid de origen.
+3. Presionar Refrescar y verificar consistencia.
+4. Re-simular y confirmar que no aparezca combinado de mensajes incompatibles.
+5. Revisar en destino que la data del empleado ya corresponde a la empresa destino.
+
+Evidencia esperada:
+- Captura de grilla origen sin empleado trasladado.
+- Captura de grilla destino con empleado trasladado.
+- Registro en docs/Test/TEST-EXECUTION-REPORT.md fase vigente.
+
+Referencia:
+- docs/50-Handoff-TrasladoInterempresas-20260309.md.

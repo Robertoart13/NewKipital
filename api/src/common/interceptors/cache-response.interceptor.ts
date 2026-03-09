@@ -1,4 +1,4 @@
-import { Injectable, Logger, CallHandler, ExecutionContext, NestInterceptor } from '@nestjs/common';
+﻿import { Injectable, Logger, CallHandler, ExecutionContext, NestInterceptor } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { defer, from, lastValueFrom, tap, Observable } from 'rxjs';
 
@@ -172,6 +172,15 @@ export class CacheResponseInterceptor implements NestInterceptor {
       }
     }
 
+    // Permite invalidacion explicita desde frontend (bustApiCache -> ?cb=timestamp)
+    // sin abrir toda la query al cache key.
+    const cacheBuster = query.cb;
+    if (cacheBuster != null) {
+      normalized.cb = Array.isArray(cacheBuster)
+        ? cacheBuster.map((value) => String(value)).sort()
+        : String(cacheBuster).trim();
+    }
+
     return normalized;
   }
 
@@ -188,3 +197,4 @@ export class CacheResponseInterceptor implements NestInterceptor {
     return true;
   }
 }
+
