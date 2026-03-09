@@ -241,22 +241,26 @@ export function IncreaseTransactionModal({
   const [auditLoaded, setAuditLoaded] = useState(false);
   const prevEmployeeIdRef = useRef<number | undefined>(undefined);
   const initOnceRef = useRef(false);
+  const justOpenedRef = useRef(false);
 
   useEffect(() => {
     if (!open) {
-    initOnceRef.current = false;
-    return;
-  }
+      initOnceRef.current = false;
+      justOpenedRef.current = false;
+      return;
+    }
 
-  if (!initialDraft && initOnceRef.current) {
-    return;
-  }
+    if (!initialDraft && initOnceRef.current) {
+      return;
+    }
 
-  if (!initialDraft) {
-    initOnceRef.current = true;
-  }
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setActiveTab('info');
+    if (!initialDraft) {
+      initOnceRef.current = true;
+    }
+    if (!justOpenedRef.current) {
+      setActiveTab('info');
+      justOpenedRef.current = true;
+    }
 
     setAuditLoaded(false);
     form.resetFields();
@@ -282,7 +286,7 @@ export function IncreaseTransactionModal({
     form.setFieldsValue({ idEmpresa: nextCompanyId });
 
     setLine(buildEmptyLine());
-  }, [open, initialDraft, initialCompanyId, form]);
+  }, [open, initialDraft, initialCompanyId, form, mode]);
 
   useEffect(() => {
     if (!open || !showAudit || activeTab !== 'bitacora' || auditLoaded) return;
@@ -296,11 +300,21 @@ export function IncreaseTransactionModal({
 
   const selectedCompanyId = Form.useWatch('idEmpresa', form);
   const selectedEmployeeId = Form.useWatch('idEmpleado', form);
+  const selectedCompanyIdNum =
+    selectedCompanyId == null || Number.isNaN(Number(selectedCompanyId)) ? undefined : Number(selectedCompanyId);
 
   useEffect(() => {
     if (!open || !onCompanyChange) return;
-    onCompanyChange(selectedCompanyId ? Number(selectedCompanyId) : undefined);
-  }, [onCompanyChange, open, selectedCompanyId]);
+    if (mode === 'edit' && selectedCompanyIdNum == null) return;
+    onCompanyChange(selectedCompanyIdNum);
+  }, [mode, onCompanyChange, open, selectedCompanyIdNum]);
+
+  const handleTabChange = (nextTab: string) => {
+    setActiveTab(nextTab);
+    if (nextTab !== 'bitacora' || auditLoaded) return;
+    if (!showAudit) return;
+    void Promise.resolve(onLoadAuditTrail?.()).then(() => setAuditLoaded(true));
+  };
 
   useEffect(() => {
     if (!open) {
@@ -363,6 +377,7 @@ export function IncreaseTransactionModal({
     return payPeriods.find((period) => period.id === Number(selectedEmployee.idPeriodoPago)) ?? null;
   }, [payPeriods, selectedEmployee]);
 
+  const employeeCurrency = (selectedEmployee?.monedaSalario ?? 'CRC').toUpperCase();
   const salarioActual = Number(selectedEmployee?.salarioBase ?? line.salarioActual ?? 0);
   const salaryDisplay = canViewEmployeeSensitive ? formatMoney(salarioActual, employeeCurrency) : '***';
 
@@ -492,6 +507,8 @@ export function IncreaseTransactionModal({
 
   const inputPorcentaje = Number(line.porcentaje ?? 0);
   const inputMonto = Number(line.monto ?? 0);
+  const metodoCalculo: IncreaseCalculationMethod =
+    line.metodoCalculo === 'MONTO' ? 'MONTO' : 'PORCENTAJE';
 
   const calculated = useMemo(() => {
     if (!Number.isFinite(salarioActual) || salarioActual <= 0) {
@@ -678,7 +695,7 @@ export function IncreaseTransactionModal({
             {mode === 'edit' ? (
               <Tabs
                 activeKey={activeTab}
-                onChange={setActiveTab}
+                onChange={handleTabChange}
                 className={`${sharedStyles.tabsWrapper} ${sharedStyles.companyModalTabs} ${sharedStyles.tabsBarOnly}`}
                 items={[
                   {
@@ -887,9 +904,6 @@ export function IncreaseTransactionModal({
                           />
                         </Form.Item>
                       ) : null}
-                      <Form.Item style={{ marginBottom: 12 }} name="observacion" label="Motivo de Aumento">
-                        <Input.TextArea rows={2} placeholder="Detalle del motivo" disabled={readOnly} />
-                      </Form.Item>
                       <Form.Item style={{ marginBottom: 12 }} label="Periodo de Planilla">
                         <Select
                           placeholder="Seleccione"
@@ -915,6 +929,9 @@ export function IncreaseTransactionModal({
                             label: movement.nombre,
                           }))}
                         />
+                      </Form.Item>
+                      <Form.Item style={{ marginBottom: 12 }} name="observacion" label="Motivo de Aumento">
+                        <Input.TextArea rows={2} placeholder="Detalle del motivo" disabled={readOnly} />
                       </Form.Item>
                       <Form.Item style={{ marginBottom: 0 }} label="Fecha de Efecto">
                         <DatePicker
@@ -943,99 +960,214 @@ export function IncreaseTransactionModal({
                     size="small"
                     className={sharedStyles.cardDefault}
                     style={{ border: '1px solid #e8ecf0', borderRadius: 8 }}
+                    bodyStyle={{ padding: 12 }}
                   >
-                    <div className={sharedStyles.filterLabel} style={{ marginBottom: 8, fontWeight: 600 }}>
-                      Método de Cálculo del Aumento
-                    </div>
-                    <Typography.Text type="secondary" style={{ display: 'block', marginBottom: 16 }}>
-                      {metodoCalculo === 'PORCENTAJE'
-                        ? 'El aumento se calculará por porcentaje'
-                        : 'El aumento se calculará por monto'}
-                    </Typography.Text>
-                    <Flex align="center" gap={12} wrap="wrap" style={{ marginBottom: 20 }}>
-                      <Typography.Text>Por Porcentaje</Typography.Text>
-                      <Switch checked={metodoCalculo === 'MONTO'} onChange={handleMethodChange} disabled={readOnly} />
-                      <Typography.Text>Por Monto</Typography.Text>
-                    </Flex>
-
-                    <div style={{ marginBottom: 20 }}>
-                      <div style={{ fontSize: 12, color: 'rgba(0,0,0,0.45)', marginBottom: 4 }}>
-                        Salario Actual (Referencia)
+                    {/* Método de Cálculo */}
+                    <div
+                      style={{
+                        marginBottom: 12,
+                        padding: 10,
+                        background: 'linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%)',
+                        borderRadius: 8,
+                        border: '1px solid #e2e8f0',
+                      }}
+                    >
+                      <div
+                        style={{
+                          fontSize: 12,
+                          fontWeight: 600,
+                          color: '#334155',
+                          marginBottom: 2,
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: 6,
+                        }}
+                      >
+                        <DollarCircleOutlined style={{ color: '#1677ff', fontSize: 12 }} />
+                        Método de Cálculo del Aumento
                       </div>
-                      <Input disabled value={salaryDisplay} style={{ maxWidth: 240 }} />
+                      <Typography.Text type="secondary" style={{ display: 'block', marginBottom: 8, fontSize: 12 }}>
+                        {metodoCalculo === 'PORCENTAJE'
+                          ? 'Por porcentaje sobre el salario actual'
+                          : 'Por monto fijo'}
+                      </Typography.Text>
+                      <Flex align="center" gap={10} wrap="wrap">
+                        <div
+                          style={{
+                            padding: '4px 10px',
+                            borderRadius: 6,
+                            background: metodoCalculo === 'PORCENTAJE' ? '#fff' : 'transparent',
+                            border: metodoCalculo === 'PORCENTAJE' ? '1px solid #1677ff' : '1px solid #e2e8f0',
+                            opacity: metodoCalculo === 'PORCENTAJE' ? 1 : 0.6,
+                          }}
+                        >
+                          <Typography.Text style={{ fontSize: 12 }}>Por Porcentaje</Typography.Text>
+                        </div>
+                        <Switch
+                          checked={metodoCalculo === 'MONTO'}
+                          onChange={handleMethodChange}
+                          disabled={readOnly}
+                          checkedChildren="Monto"
+                          unCheckedChildren="%"
+                          size="small"
+                        />
+                        <div
+                          style={{
+                            padding: '4px 10px',
+                            borderRadius: 6,
+                            background: metodoCalculo === 'MONTO' ? '#fff' : 'transparent',
+                            border: metodoCalculo === 'MONTO' ? '1px solid #1677ff' : '1px solid #e2e8f0',
+                            opacity: metodoCalculo === 'MONTO' ? 1 : 0.6,
+                          }}
+                        >
+                          <Typography.Text style={{ fontSize: 12 }}>Por Monto</Typography.Text>
+                        </div>
+                      </Flex>
+                      <div style={{ marginTop: 10, paddingTop: 8, borderTop: '1px dashed #e2e8f0' }}>
+                        <Typography.Text type="secondary" style={{ fontSize: 11, display: 'block', marginBottom: 4 }}>
+                          Salario Actual (Referencia)
+                        </Typography.Text>
+                        <Input
+                          disabled
+                          size="small"
+                          value={salaryDisplay}
+                          style={{
+                            maxWidth: 160,
+                            fontWeight: 600,
+                            fontSize: 12,
+                            backgroundColor: '#fff',
+                            borderColor: '#e2e8f0',
+                          }}
+                        />
+                      </div>
                     </div>
 
-                    <Divider style={{ margin: '16px 0' }} />
+                    {/* Datos del cálculo */}
+                    <div
+                      style={{
+                        marginBottom: 12,
+                        padding: 10,
+                        backgroundColor: '#fafafa',
+                        borderRadius: 8,
+                        border: '1px solid #f0f0f0',
+                      }}
+                    >
+                      <div
+                        style={{
+                          fontSize: 12,
+                          fontWeight: 600,
+                          color: '#334155',
+                          marginBottom: 10,
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: 6,
+                        }}
+                      >
+                        <CalendarOutlined style={{ color: '#64748b', fontSize: 12 }} />
+                        Datos del cálculo
+                      </div>
+                      <Row gutter={[12, 10]}>
+                        <Col xs={24} sm={12} md={8}>
+                          <Form.Item
+                            label="Monto del Aumento"
+                            style={{ marginBottom: 0 }}
+                            labelCol={{ style: { fontWeight: 500, color: '#475569', fontSize: 12 } }}
+                          >
+                            <Input
+                              size="small"
+                              prefix={employeeCurrency}
+                              placeholder="0"
+                              maxLength={moneyField.maxInputLength}
+                              inputMode="numeric"
+                              disabled={readOnly || metodoCalculo === 'PORCENTAJE'}
+                              value={moneyField.formatDisplay(montoDisplayValue)}
+                              onChange={(event) => {
+                                const raw = event.target.value ?? '';
+                                const onlyDigits = moneyField.sanitize(raw);
+                                setLine((prev) => ({
+                                  ...prev,
+                                  montoInput: onlyDigits,
+                                  monto: onlyDigits.length > 0 ? (moneyField.parse(onlyDigits) ?? 0) : 0,
+                                }));
+                              }}
+                              style={{ borderRadius: 6 }}
+                            />
+                          </Form.Item>
+                        </Col>
+                        <Col xs={24} sm={12} md={8}>
+                          <Form.Item
+                            label="Porcentaje del Aumento"
+                            style={{ marginBottom: 0 }}
+                            labelCol={{ style: { fontWeight: 500, color: '#475569', fontSize: 12 } }}
+                          >
+                            <InputNumber
+                              min={0}
+                              step={0.01}
+                              size="small"
+                              style={{ width: '100%', borderRadius: 6 }}
+                              placeholder="Ej. 10"
+                              disabled={readOnly || metodoCalculo === 'MONTO'}
+                              value={porcentajeDisplay === 0 ? undefined : porcentajeDisplay}
+                              onChange={(value) => setLine((prev) => ({ ...prev, porcentaje: Number(value ?? 0) }))}
+                              addonAfter="%"
+                            />
+                          </Form.Item>
+                        </Col>
+                        <Col xs={24} sm={12} md={8}>
+                          <Form.Item
+                            label="Nuevo Salario"
+                            style={{ marginBottom: 0 }}
+                            labelCol={{ style: { fontWeight: 500, color: '#475569', fontSize: 12 } }}
+                          >
+                            <Input
+                              disabled
+                              size="small"
+                              value={formatMoney(calculated.nuevoSalario, employeeCurrency)}
+                              style={{
+                                fontWeight: 600,
+                                fontSize: 12,
+                                color: '#1677ff',
+                                borderRadius: 6,
+                                backgroundColor: '#f0f9ff',
+                                borderColor: '#bae6fd',
+                              }}
+                            />
+                          </Form.Item>
+                        </Col>
+                      </Row>
+                    </div>
+
+                    {/* Resumen */}
                     <div
                       style={{
                         fontSize: 12,
-                        color: 'rgba(0,0,0,0.45)',
-                        marginBottom: 12,
-                        fontWeight: 500,
+                        fontWeight: 600,
+                        color: '#334155',
+                        marginBottom: 8,
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 6,
                       }}
                     >
-                      Datos del cálculo
+                      <ClockCircleOutlined style={{ color: '#64748b', fontSize: 12 }} />
+                      Resumen
                     </div>
-                    <Row gutter={[16, 16]}>
-                      <Col xs={24} sm={12} md={8}>
-                        <Form.Item label="Monto del Aumento" style={{ marginBottom: 0 }}>
-                          <Input
-                            prefix={employeeCurrency}
-                            placeholder="0"
-                            maxLength={moneyField.maxInputLength}
-                            inputMode="numeric"
-                            disabled={readOnly || metodoCalculo === 'PORCENTAJE'}
-                            value={moneyField.formatDisplay(montoDisplayValue)}
-                            onChange={(event) => {
-                              const raw = event.target.value ?? '';
-                              const onlyDigits = moneyField.sanitize(raw);
-                              setLine((prev) => ({
-                                ...prev,
-                                montoInput: onlyDigits,
-                                monto: onlyDigits.length > 0 ? (moneyField.parse(onlyDigits) ?? 0) : 0,
-                              }));
-                            }}
-                          />
-                        </Form.Item>
-                      </Col>
-                      <Col xs={24} sm={12} md={8}>
-                        <Form.Item label="Porcentaje del Aumento" style={{ marginBottom: 0 }}>
-                          <InputNumber
-                            min={0}
-                            step={0.01}
-                            style={{ width: '100%' }}
-                            placeholder="Ej. 10"
-                            disabled={readOnly || metodoCalculo === 'MONTO'}
-                            value={porcentajeDisplay === 0 ? undefined : porcentajeDisplay}
-                            onChange={(value) => setLine((prev) => ({ ...prev, porcentaje: Number(value ?? 0) }))}
-                            addonAfter="%"
-                          />
-                        </Form.Item>
-                      </Col>
-                      <Col xs={24} sm={12} md={8}>
-                        <Form.Item label="Nuevo Salario" style={{ marginBottom: 0 }}>
-                          <Input disabled value={formatMoney(calculated.nuevoSalario, employeeCurrency)} />
-                        </Form.Item>
-                      </Col>
-                    </Row>
-
-                    <Divider style={{ margin: '20px 0' }} />
-                    <div style={{ fontSize: 13, fontWeight: 600, color: '#262626', marginBottom: 16 }}>Resumen</div>
-
-                    <Row gutter={[20, 16]}>
+                    <Row gutter={[10, 10]} style={{ marginBottom: 12 }}>
                       <Col xs={24} sm={8}>
                         <div
                           style={{
-                            padding: '12px 16px',
-                            border: '1px solid #f0f0f0',
+                            padding: '10px 12px',
+                            border: '1px solid #e2e8f0',
                             borderRadius: 8,
-                            backgroundColor: '#fafafa',
+                            backgroundColor: '#fff',
+                            textAlign: 'center',
+                            boxShadow: '0 1px 2px rgba(0,0,0,0.03)',
                           }}
                         >
-                          <Typography.Text type="secondary" style={{ fontSize: 12, display: 'block', marginBottom: 6 }}>
+                          <Typography.Text type="secondary" style={{ fontSize: 11, display: 'block', marginBottom: 4 }}>
                             Salario Actual
                           </Typography.Text>
-                          <Typography.Text strong style={{ fontSize: 15 }}>
+                          <Typography.Text strong style={{ fontSize: 13, color: '#475569' }}>
                             {salaryDisplay}
                           </Typography.Text>
                         </div>
@@ -1043,16 +1175,18 @@ export function IncreaseTransactionModal({
                       <Col xs={24} sm={8}>
                         <div
                           style={{
-                            padding: '12px 16px',
-                            border: '1px solid #f0f0f0',
+                            padding: '10px 12px',
+                            border: '1px solid #bbf7d0',
                             borderRadius: 8,
-                            backgroundColor: '#fafafa',
+                            backgroundColor: '#f0fdf4',
+                            textAlign: 'center',
+                            boxShadow: '0 1px 2px rgba(0,0,0,0.03)',
                           }}
                         >
-                          <Typography.Text type="secondary" style={{ fontSize: 12, display: 'block', marginBottom: 6 }}>
+                          <Typography.Text type="secondary" style={{ fontSize: 11, display: 'block', marginBottom: 4 }}>
                             Aumento Aplicado
                           </Typography.Text>
-                          <Typography.Text strong style={{ fontSize: 15, color: '#389e0d' }}>
+                          <Typography.Text strong style={{ fontSize: 13, color: '#15803d' }}>
                             +{formatMoney(calculated.monto, employeeCurrency)}
                           </Typography.Text>
                         </div>
@@ -1060,38 +1194,45 @@ export function IncreaseTransactionModal({
                       <Col xs={24} sm={8}>
                         <div
                           style={{
-                            padding: '12px 16px',
-                            border: '1px solid #f0f0f0',
+                            padding: '10px 12px',
+                            border: '1px solid #e2e8f0',
                             borderRadius: 8,
-                            backgroundColor: '#fafafa',
+                            backgroundColor: '#fff',
+                            textAlign: 'center',
+                            boxShadow: '0 1px 2px rgba(0,0,0,0.03)',
                           }}
                         >
-                          <Typography.Text type="secondary" style={{ fontSize: 12, display: 'block', marginBottom: 6 }}>
+                          <Typography.Text type="secondary" style={{ fontSize: 11, display: 'block', marginBottom: 4 }}>
                             Equivalente
                           </Typography.Text>
-                          <Typography.Text strong style={{ fontSize: 15 }}>
+                          <Typography.Text strong style={{ fontSize: 13, color: '#475569' }}>
                             {round2(calculated.porcentaje).toFixed(2)}%
                           </Typography.Text>
                         </div>
                       </Col>
                     </Row>
 
-                    <Divider style={{ margin: '16px 0' }} />
+                    <Divider style={{ margin: '12px 0', borderColor: '#e2e8f0' }} />
 
-                    <Row gutter={[20, 16]}>
+                    {/* Resultado final */}
+                    <Row gutter={[12, 12]} align="middle">
                       <Col xs={24} md={12}>
                         <div
                           style={{
                             padding: '12px 16px',
-                            border: '1px solid #e6f7ff',
                             borderRadius: 8,
-                            backgroundColor: '#f6ffed',
+                            background: 'linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%)',
+                            border: '1px solid #86efac',
+                            boxShadow: '0 2px 8px rgba(34, 197, 94, 0.12)',
                           }}
                         >
-                          <Typography.Text type="secondary" style={{ fontSize: 12, display: 'block', marginBottom: 6 }}>
+                          <Typography.Text
+                            type="secondary"
+                            style={{ fontSize: 11, display: 'block', marginBottom: 4 }}
+                          >
                             Nuevo Salario
                           </Typography.Text>
-                          <Typography.Text strong style={{ fontSize: 16, color: '#1677ff' }}>
+                          <Typography.Text strong style={{ fontSize: 16, color: '#15803d' }}>
                             {formatMoney(calculated.nuevoSalario, employeeCurrency)}
                           </Typography.Text>
                         </div>
@@ -1099,26 +1240,32 @@ export function IncreaseTransactionModal({
                       <Col xs={24} md={12}>
                         <div
                           style={{
-                            padding: '12px 16px',
-                            border: '1px solid #f0f0f0',
+                            padding: '10px 14px',
+                            border: '1px solid #e2e8f0',
                             borderRadius: 8,
-                            backgroundColor: '#fafafa',
+                            backgroundColor: '#f8fafc',
                           }}
                         >
-                          <div style={{ marginBottom: 8 }}>
-                            <Flex align="center" gap={6}>
-                              <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-                                Fórmula
-                              </Typography.Text>
-                              <Tooltip title="La fórmula se recalcula automáticamente">
-                                <QuestionCircleOutlined style={{ fontSize: 12 }} />
-                              </Tooltip>
-                            </Flex>
-                          </div>
-                          <Typography.Paragraph style={{ marginBottom: 0, fontSize: 13, lineHeight: 1.5 }}>
+                          <Flex align="center" gap={6} style={{ marginBottom: 6 }}>
+                            <Typography.Text type="secondary" style={{ fontSize: 11 }}>
+                              Fórmula
+                            </Typography.Text>
+                            <Tooltip title="La fórmula se recalcula automáticamente según el método seleccionado">
+                              <QuestionCircleOutlined style={{ fontSize: 11, color: '#94a3b8' }} />
+                            </Tooltip>
+                          </Flex>
+                          <Typography.Paragraph
+                            style={{
+                              marginBottom: 0,
+                              fontSize: 12,
+                              lineHeight: 1.5,
+                              color: '#475569',
+                              fontFamily: 'monospace',
+                            }}
+                          >
                             {metodoCalculo === 'PORCENTAJE'
-                              ? `Nuevo salario = ${canViewEmployeeSensitive ? round2(salarioActual).toFixed(2) : '***'} + (${canViewEmployeeSensitive ? round2(salarioActual).toFixed(2) : '***'} x ${round2(calculated.porcentaje).toFixed(2)}%) = ${round2(calculated.nuevoSalario).toFixed(2)}`
-                              : `Nuevo salario = ${canViewEmployeeSensitive ? round2(salarioActual).toFixed(2) : '***'} + ${round2(calculated.monto).toFixed(2)} = ${round2(calculated.nuevoSalario).toFixed(2)}`}
+                              ? `Nuevo = ${canViewEmployeeSensitive ? round2(salarioActual).toFixed(2) : '***'} + (${canViewEmployeeSensitive ? round2(salarioActual).toFixed(2) : '***'} × ${round2(calculated.porcentaje).toFixed(2)}%) = ${round2(calculated.nuevoSalario).toFixed(2)}`
+                              : `Nuevo = ${canViewEmployeeSensitive ? round2(salarioActual).toFixed(2) : '***'} + ${round2(calculated.monto).toFixed(2)} = ${round2(calculated.nuevoSalario).toFixed(2)}`}
                           </Typography.Paragraph>
                         </div>
                       </Col>

@@ -214,13 +214,7 @@ function calculatePeriodHours(payPeriodId?: number | null, jornada?: string | nu
 }
 
 function buildDateKey(date: Dayjs) {
-  const raw = date.toDate();
-  const year = raw.getUTCFullYear();
-  const month = raw.getUTCMonth() + 1;
-  const day = raw.getUTCDate();
-  const monthText = String(month).padStart(2, '0');
-  const dayText = String(day).padStart(2, '0');
-  return `${year}-${monthText}-${dayText}`;
+  return date.format('YYYY-MM-DD');
 }
 
 function parseDateKey(key: string) {
@@ -229,9 +223,9 @@ function parseDateKey(key: string) {
   const month = Number(monthRaw);
   const day = Number(dayRaw);
   if (!Number.isFinite(year) || !Number.isFinite(month) || !Number.isFinite(day)) {
-    return dayjs(key);
+    return dayjs(key, 'YYYY-MM-DD');
   }
-  return dayjs(new Date(year, month - 1, day));
+  return dayjs(`${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`, 'YYYY-MM-DD');
 }
 
 function normalizeSelectionKey(rawKey: string, fecha: Dayjs) {
@@ -294,6 +288,7 @@ export function VacationTransactionModal(props: VacationTransactionModalProps) {
   const [warnedInvalidDates, setWarnedInvalidDates] = useState(false);
   const [lockedPayrollId, setLockedPayrollId] = useState<number | null>(null);
   const initOnceRef = useRef(false);
+  const justOpenedRef = useRef(false);
 
   const selectedCompanyId = Form.useWatch('idEmpresa', form);
   const selectedEmployeeId = Form.useWatch('idEmpleado', form);
@@ -309,19 +304,22 @@ export function VacationTransactionModal(props: VacationTransactionModalProps) {
 
   useEffect(() => {
     if (!open) {
-    initOnceRef.current = false;
-    return;
-  }
+      initOnceRef.current = false;
+      justOpenedRef.current = false;
+      return;
+    }
 
-  if (!initialDraft && initOnceRef.current) {
-    return;
-  }
+    if (!initialDraft && initOnceRef.current) {
+      return;
+    }
 
-  if (!initialDraft) {
-    initOnceRef.current = true;
-  }
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setActiveTab('info');
+    if (!initialDraft) {
+      initOnceRef.current = true;
+    }
+    if (!justOpenedRef.current) {
+      setActiveTab('info');
+      justOpenedRef.current = true;
+    }
 
     setAuditLoaded(false);
 
@@ -377,6 +375,13 @@ export function VacationTransactionModal(props: VacationTransactionModalProps) {
       form.setFieldsValue({ idEmpresa: nextCompanyId });
     }
   }, [excludeActionId, form, holidays, initialCompanyId, initialDraft, message, mode, open, warnedInvalidDates]);
+
+  const handleTabChange = (nextTab: string) => {
+    const resolved = nextTab === 'bitacora' ? 'bitacora' : 'info';
+    setActiveTab(resolved);
+    if (resolved !== 'bitacora' || auditLoaded || !showAudit || !onLoadAuditTrail) return;
+    void Promise.resolve(onLoadAuditTrail()).then(() => setAuditLoaded(true));
+  };
 
   useEffect(() => {
     if (!open || !showAudit || activeTab !== 'bitacora' || auditLoaded || !onLoadAuditTrail) return;
@@ -609,6 +614,11 @@ export function VacationTransactionModal(props: VacationTransactionModalProps) {
 
   const toggleDate = useCallback(
     (date: Dayjs) => {
+      const disableReason = getDateDisableReason(date);
+      if (disableReason) {
+        message.error(`No se puede seleccionar esta fecha: ${disableReason}`);
+        return;
+      }
       const key = buildDateKey(date);
       const existing = selectedDates.find((item) => item.key === key);
       if (existing) {
@@ -621,7 +631,7 @@ export function VacationTransactionModal(props: VacationTransactionModalProps) {
       }
       setSelectedDates((prev) => [...prev, { key, fecha: date }].sort((a, b) => (a.key < b.key ? -1 : 1)));
     },
-    [availableDays, message, selectedDates],
+    [availableDays, getDateDisableReason, message, selectedDates],
   );
 
   const canSubmit =
@@ -866,7 +876,7 @@ export function VacationTransactionModal(props: VacationTransactionModalProps) {
             {mode === 'edit' ? (
               <Tabs
                 activeKey={activeTab}
-                onChange={(key) => setActiveTab(key as 'info' | 'bitacora')}
+                onChange={handleTabChange}
                 className={`${sharedStyles.tabsWrapper} ${sharedStyles.companyModalTabs} ${sharedStyles.tabsBarOnly}`}
                 items={[
                   {

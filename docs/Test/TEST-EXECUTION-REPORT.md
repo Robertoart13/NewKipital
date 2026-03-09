@@ -803,3 +803,152 @@ Archivo:
 - `frontend/src/components/ui/AppHeader/AppHeader.module.css`
 
 Estado de fase: Cerrada
+
+## Fase 36 - 2026-03-08
+Alcance: Vacaciones (consistencia calendario vs validacion de fechas)
+
+Problema detectado:
+- En crear Vacaciones, algunas fechas quedaban corridas al generar la clave (`YYYY-MM-DD`) usando UTC.
+- El listado de fechas seleccionadas podia no coincidir con la validacion final (ej. se marcaba fin de semana en posicion inesperada).
+
+Correccion aplicada:
+- `buildDateKey` ahora usa fecha local (`date.format('YYYY-MM-DD')`) en lugar de componentes UTC.
+- `parseDateKey` se normalizo a parseo local del mismo formato.
+- Se blindo `toggleDate` para no agregar fechas con motivo de bloqueo (fin de semana, feriado, reservado o sin planilla).
+
+Archivo:
+- `frontend/src/pages/private/personal-actions/vacaciones/VacationTransactionModal.tsx`
+
+Estado de fase: Cerrada
+
+## Fase 37 - 2026-03-08
+Alcance: Vacaciones (estabilidad de pestana Bitacora en edicion)
+
+Problema detectado:
+- Al entrar a Bitacora en editar vacaciones, el modal regresaba automaticamente a Informacion principal.
+
+Correccion aplicada:
+- Se agrego control `justOpenedRef` para evitar reinicio de tab por re-renders del effect de inicializacion.
+- Se agrego `handleTabChange` para controlar carga de auditoria al entrar en Bitacora y mantener estado estable.
+
+Archivo:
+- `frontend/src/pages/private/personal-actions/vacaciones/VacationTransactionModal.tsx`
+
+Estado de fase: Cerrada
+
+## Fase 38 - 2026-03-08
+Alcance: Vacaciones (bitacora detallada de dias seleccionados)
+
+Mejora aplicada:
+- Bitacora de Vacaciones ahora incluye Cantidad de dias y Dias seleccionados (lista de fechas) en create/update.
+- Se incluyo lineasDetalle para Vacaciones con fecha por linea (Linea N - Fecha efecto) para mostrar cambios antes/despues de forma clara.
+- Se normalizo render de arreglos en cambios de auditoria para que se muestren legibles (lista separada por comas).
+
+Archivo:
+- pi/src/modules/personal-actions/personal-actions.service.ts
+
+Estado de fase: Cerrada
+
+## Fase 39 - 2026-03-08
+Alcance: Aumentos (fix runtime en modal)
+
+Error corregido:
+- IncreaseTransactionModal.tsx:367 Uncaught ReferenceError: employeeCurrency is not defined.
+
+Correccion aplicada:
+- Se definio employeeCurrency desde moneda del empleado seleccionado con fallback CRC.
+
+Archivo:
+- rontend/src/pages/private/personal-actions/aumentos/IncreaseTransactionModal.tsx
+
+Estado de fase: Cerrada
+
+## Fase 40 - 2026-03-08
+Alcance: Aumentos (fix runtime de metodo de calculo)
+
+Error corregido:
+- IncreaseTransactionModal.tsx:517 Uncaught ReferenceError: metodoCalculo is not defined.
+
+Correccion aplicada:
+- Se definio metodoCalculo normalizado desde line.metodoCalculo con fallback seguro a PORCENTAJE.
+
+Archivo:
+- rontend/src/pages/private/personal-actions/aumentos/IncreaseTransactionModal.tsx
+
+Estado de fase: Cerrada
+
+## Fase 41 - 2026-03-08
+Alcance: Aumentos (reordenamiento de campos en modal)
+
+Cambio aplicado en orden de campos:
+1. Empresa
+2. Empleado
+3. Periodo de Planilla
+4. Movimiento
+5. Motivo de Aumento
+6. Fecha de Efecto
+
+Archivo:
+- rontend/src/pages/private/personal-actions/aumentos/IncreaseTransactionModal.tsx
+
+Estado de fase: Cerrada
+
+## Fase 42 - 2026-03-08
+Alcance: Fix de tipado en auditoria (Descuentos/Vacaciones)
+
+Correccion aplicada:
+- Se alineo el tipado de createdActions para incluir uditLines donde corresponde.
+- Se agrego helper faltante mapDiscountLinesForAuditFromDto.
+- Se agrego import de UpsertDiscountLineDto.
+
+Validacion:
+- pi: 
+pm run build OK.
+
+Estado de fase: Cerrada
+
+## Fase 43 - 2026-03-08
+Alcance: Aumentos (payload metodoCalculo)
+
+Error corregido:
+- API rechazaba create/update de aumento con: metodoCalculo must be one of MONTO, PORCENTAJE.
+
+Correccion aplicada:
+- Se incluyo metodoCalculo en el payload de createIncrease y updateIncrease desde AumentosPage.
+- Se normaliza a texto valido: MONTO o PORCENTAJE.
+
+Archivo:
+- rontend/src/pages/private/personal-actions/aumentos/AumentosPage.tsx
+
+Estado de fase: Cerrada
+
+## Fase 44 - 2026-03-08
+Alcance: Aumentos (estabilidad de pestana Bitacora)
+
+Problema corregido:
+- En editar aumento, al entrar a Bitacora el modal regresaba automaticamente a Informacion principal.
+
+Correccion aplicada:
+- Se agrego control justOpenedRef para evitar reset de tab en re-renders.
+- Se agrego handleTabChange para carga estable de auditoria al abrir Bitacora.
+- Se protegio onCompanyChange en modo edit para evitar refresh con undefined transitorio.
+
+Archivo:
+- rontend/src/pages/private/personal-actions/aumentos/IncreaseTransactionModal.tsx
+
+Estado de fase: Cerrada
+
+## Fase 45 - 2026-03-08
+Alcance: Aumentos (validacion funcional final en UI)
+
+Pruebas ejecutadas:
+- Aumentos: crear OK.
+- Aumentos: editar OK.
+- Aumentos: bitacora OK (tab estable, sin retorno automatico a Informacion principal).
+- Aumentos: payload valido con metodoCalculo (MONTO/PORCENTAJE).
+- Aumentos: orden de campos del formulario ajustado segun flujo operativo.
+
+Resultado:
+- Modulo Aumentos aprobado en pruebas manuales de flujo principal.
+
+Estado de fase: Cerrada

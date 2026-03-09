@@ -48,7 +48,7 @@ import type { CreatePersonalActionDto } from './dto/create-personal-action.dto';
 import type { UpsertAbsenceDto, UpsertAbsenceLineDto } from './dto/upsert-absence.dto';
 import type { UpsertBonusDto, UpsertBonusLineDto } from './dto/upsert-bonus.dto';
 import type { UpsertDisabilityDto, UpsertDisabilityLineDto } from './dto/upsert-disability.dto';
-import type { UpsertDiscountDto } from './dto/upsert-discount.dto';
+import type { UpsertDiscountDto, UpsertDiscountLineDto } from './dto/upsert-discount.dto';
 import type { UpsertIncreaseDto } from './dto/upsert-increase.dto';
 import type { UpsertLicenseDto, UpsertLicenseLineDto } from './dto/upsert-license.dto';
 import type { UpsertOvertimeDto, UpsertOvertimeLineDto } from './dto/upsert-overtime.dto';
@@ -3243,7 +3243,11 @@ export class PersonalActionsService {
     );
 
     const created = await this.dataSource.transaction(async (trx) => {
-      const createdActions: Array<{ action: PersonalAction; linesCount: number }> = [];
+      const createdActions: Array<{
+        action: PersonalAction;
+        linesCount: number;
+        auditLines: AbsenceAuditLinePayload[];
+      }> = [];
 
       for (const group of groupedLines) {
         const totalMonto = group.lines.reduce((sum, line) => sum + Number(line.monto || 0), 0);
@@ -3308,7 +3312,11 @@ export class PersonalActionsService {
           await trx.save(discountLine);
         }
 
-        createdActions.push({ action: savedAction, linesCount: group.lines.length });
+        createdActions.push({
+          action: savedAction,
+          linesCount: group.lines.length,
+          auditLines: this.mapDiscountLinesForAuditFromDto(group.lines),
+        });
       }
 
       return createdActions;
@@ -3336,7 +3344,7 @@ export class PersonalActionsService {
         actorUserId: userId,
         companyContextId: item.action.idEmpresa,
         descripcion: `Descuento creado para empleado #${item.action.idEmpleado}`,
-        payloadAfter: this.buildAbsenceAuditPayload(item.action, item.linesCount),
+        payloadAfter: this.buildAbsenceAuditPayload(item.action, item.linesCount, item.auditLines),
       });
     }
 
@@ -3698,7 +3706,11 @@ export class PersonalActionsService {
     );
 
     const created = await this.dataSource.transaction(async (trx) => {
-      const createdActions: Array<{ action: PersonalAction; linesCount: number }> = [];
+      const createdActions: Array<{
+        action: PersonalAction;
+        linesCount: number;
+        auditLines: AbsenceAuditLinePayload[];
+      }> = [];
 
       for (const group of groupedDates) {
         const totalDays = group.fechas.length;
@@ -3757,7 +3769,15 @@ export class PersonalActionsService {
           await trx.save(vacationDate);
         }
 
-        createdActions.push({ action: savedAction, linesCount: group.fechas.length });
+        createdActions.push({
+          action: savedAction,
+          linesCount: group.fechas.length,
+          auditLines: this.mapVacationLinesForAuditFromDates(
+            group.fechas,
+            group.payrollId,
+            dto.movimientoId,
+          ),
+        });
       }
 
       return createdActions;
@@ -3785,7 +3805,7 @@ export class PersonalActionsService {
         actorUserId: userId,
         companyContextId: item.action.idEmpresa,
         descripcion: `Vacaciones creadas para empleado #${item.action.idEmpleado}`,
-        payloadAfter: this.buildAbsenceAuditPayload(item.action, item.linesCount),
+        payloadAfter: this.buildVacationAuditPayload(item.action, item.linesCount, item.auditLines),
       });
     }
 
@@ -3921,9 +3941,11 @@ export class PersonalActionsService {
       'vacaciones',
     );
 
-    const payloadBefore = this.buildAbsenceAuditPayload(
+    const beforeLines = await this.getVacationLinesForAudit(action.id);
+    const payloadBefore = this.buildVacationAuditPayload(
       action,
       await this.countVacationDates(action.id),
+      beforeLines,
     );
 
     const totalDays = dates.length;
@@ -3986,7 +4008,11 @@ export class PersonalActionsService {
       companyContextId: action.idEmpresa,
       descripcion: `Vacaciones actualizadas para empleado #${action.idEmpleado}`,
       payloadBefore,
-      payloadAfter: this.buildAbsenceAuditPayload(action, dates.length),
+      payloadAfter: this.buildVacationAuditPayload(
+        action,
+        dates.length,
+        this.mapVacationLinesForAuditFromDates(dates, targetPayrollId, dto.movimientoId),
+      ),
     });
 
     return this.findOne(id, userId);
@@ -4134,7 +4160,11 @@ export class PersonalActionsService {
       actorUserId: userId,
       companyContextId: saved.idEmpresa,
       descripcion: `Vacaciones movidas al estado ${this.getEstadoNombre(saved.estado)}`,
-      payloadAfter: this.buildAbsenceAuditPayload(saved, await this.countVacationDates(saved.id)),
+      payloadAfter: this.buildVacationAuditPayload(
+        saved,
+        await this.countVacationDates(saved.id),
+        await this.getVacationLinesForAudit(saved.id),
+      ),
     });
 
     return saved;
@@ -4279,7 +4309,11 @@ export class PersonalActionsService {
       actorUserId: userId,
       companyContextId: action.idEmpresa,
       descripcion: `Vacaciones invalidadas para empleado #${action.idEmpleado}`,
-      payloadAfter: this.buildAbsenceAuditPayload(action, await this.countVacationDates(action.id)),
+      payloadAfter: this.buildVacationAuditPayload(
+        action,
+        await this.countVacationDates(action.id),
+        await this.getVacationLinesForAudit(action.id),
+      ),
     });
 
     return this.findOne(action.id, userId);
@@ -4914,12 +4948,70 @@ export class PersonalActionsService {
     return this.discountLineRepo.count({ where: { idAccion } });
   }
 
+  private mapDiscountLinesForAuditFromDto(lines: UpsertDiscountLineDto[]): AbsenceAuditLinePayload[] {
+    return this.normalizeAbsenceAuditLines(
+      lines.map((line, index) => ({
+        orden: index + 1,
+        payrollId: line.payrollId,
+        movimientoId: line.movimientoId,
+        cantidad: line.cantidad,
+        monto: line.monto,
+        formula: line.formula,
+        fechaEfecto: line.fechaEfecto,
+      })),
+    );
+  }
+
   private async countIncreaseLines(idAccion: number): Promise<number> {
     return this.increaseLineRepo.count({ where: { idAccion } });
   }
 
   private async countVacationDates(idAccion: number): Promise<number> {
     return this.vacationDateRepo.count({ where: { idAccion } });
+  }
+
+  private async getVacationLinesForAudit(idAccion: number): Promise<AbsenceAuditLinePayload[]> {
+    const rows = await this.dataSource.query(
+      `
+      SELECT
+        v.id_vacacion_fecha AS idLinea,
+        v.orden_vacacion AS orden,
+        v.id_calendario_nomina AS payrollId,
+        p.nombre_planilla AS payrollLabel,
+        p.estado AS payrollEstado,
+        v.id_movimiento_nomina AS movimientoId,
+        m.nombre_movimiento AS movimientoLabel,
+        m.es_inactivo AS movimientoInactivo,
+        1 AS cantidad,
+        1 AS monto,
+        v.fecha_vacacion AS fechaEfecto
+      FROM acc_vacaciones_fechas v
+      LEFT JOIN nom_movimientos m ON m.id_movimiento = v.id_movimiento_nomina
+      LEFT JOIN nom_planillas p ON p.id_planilla = v.id_calendario_nomina
+      WHERE v.id_accion = ?
+      ORDER BY v.orden_vacacion ASC, v.id_vacacion_fecha ASC
+      `,
+      [idAccion],
+    );
+
+    return this.normalizeAbsenceAuditLines(rows);
+  }
+
+  private mapVacationLinesForAuditFromDates(
+    dates: string[],
+    payrollId: number,
+    movimientoId: number,
+  ): AbsenceAuditLinePayload[] {
+    return this.normalizeAbsenceAuditLines(
+      dates.map((date, index) => ({
+        orden: index + 1,
+        payrollId,
+        movimientoId,
+        cantidad: 1,
+        monto: 1,
+        fechaEfecto: date,
+      })),
+    );
   }
 
   private async getAbsenceLinesForAudit(idAccion: number): Promise<AbsenceAuditLinePayload[]> {
@@ -5280,6 +5372,24 @@ export class PersonalActionsService {
     };
   }
 
+  private buildVacationAuditPayload(
+    action: PersonalAction,
+    cantidadLineas: number,
+    lineasDetalle: AbsenceAuditLinePayload[] = [],
+  ): Record<string, unknown> {
+    const normalizedLines = this.normalizeAbsenceAuditLines(lineasDetalle);
+    const fechasSeleccionadas = normalizedLines
+      .map((line) => line.fechaEfecto)
+      .filter((value): value is string => !!value)
+      .sort((a, b) => a.localeCompare(b));
+
+    return {
+      ...this.buildAbsenceAuditPayload(action, cantidadLineas, normalizedLines),
+      diasSeleccionados: cantidadLineas,
+      fechasSeleccionadas,
+    };
+  }
+
   private getEstadoNombre(estado: PersonalActionEstado): string {
     const mapping: Record<number, string> = {
       [PersonalActionEstado.DRAFT]: 'Borrador',
@@ -5307,6 +5417,8 @@ export class PersonalActionsService {
     monto: 'Monto',
     moneda: 'Moneda',
     lineas: 'Lineas de transaccion',
+    diasSeleccionados: 'Cantidad de dias',
+    fechasSeleccionadas: 'Dias seleccionados',
     invalidatedReason: 'Motivo invalidacion',
     motivoRechazo: 'Motivo rechazo',
   };
@@ -5393,6 +5505,13 @@ export class PersonalActionsService {
   private stringifyAuditValue(value: unknown): string {
     if (value == null) return '--';
     if (typeof value === 'string') return value.trim() || '--';
+    if (Array.isArray(value)) {
+      if (value.length === 0) return '--';
+      return value
+        .map((item) => this.stringifyAuditValue(item))
+        .filter((item) => item !== '--')
+        .join(', ') || '--';
+    }
     if (typeof value === 'number' || typeof value === 'boolean') {
       return String(value);
     }
