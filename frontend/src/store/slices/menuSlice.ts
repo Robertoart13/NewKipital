@@ -41,7 +41,7 @@ const initialMenuConfig: MenuItem[] = [
         id: 'entradas-personal',
         label: 'Entradas de Personal',
         path: '/personal-actions/entradas',
-        requiredPermission: 'hr-action-entradas:view',
+        requiredPermission: 'employee:view',
       },
       {
         id: 'salidas-personal',

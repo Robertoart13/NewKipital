@@ -768,3 +768,38 @@ Cambios validados en esta fase:
 - Commit push: `2455aec`
 - Rango remoto: `2311962..2455aec`
 - Estado: cierre funcional y de bitacora en Retenciones y Descuentos; lista de pruebas del dia actualizada.
+
+## Fase 33 - 2026-03-08
+Alcance: Entradas de Personal (alineacion con modulo Empleados)
+
+Cambios aplicados:
+- Menu `Entradas de Personal` ahora usa ruta `/employees`.
+- Menu `Entradas de Personal` ahora usa permiso `employee:view` (mismo permiso que Empleados).
+- Ruta legacy `/personal-actions/entradas` redirige a `/employees` con guard `employee:view`.
+
+Resultado:
+- Entradas de Personal queda unificada funcionalmente con Empleados (misma pantalla y mismo control de permisos).
+
+Estado de fase: Cerrada
+
+## Fase 34 - 2026-03-08
+Alcance: Ajuste visual de branding (logo en header)
+
+Cambio aplicado:
+- Se aumento el tamano del logo del header de `64px` a `72px` para mejorar visibilidad.
+
+Archivo:
+- `frontend/src/components/ui/AppHeader/AppHeader.module.css`
+
+Estado de fase: Cerrada
+
+## Fase 35 - 2026-03-08
+Alcance: Ajuste de layout header tras aumento de logo
+
+Cambio aplicado:
+- Se aumento la altura de `level1` del header de `56px` a `80px` para que el menu quede visualmente debajo del logo sin solaparse.
+
+Archivo:
+- `frontend/src/components/ui/AppHeader/AppHeader.module.css`
+
+Estado de fase: Cerrada

@@ -222,14 +222,8 @@ export function AppRouter() {
           path="/personal-actions/entradas"
           element={
             <PrivateLayout>
-              <PermissionGuard requiredPermission="hr-action-entradas:view">
-                <PersonalActionsPage
-                  pageTitle="Entradas de Personal"
-                  pageSubtitle="Acciones de entrada de personal por empresa"
-                  fixedTipoAccion="ENTRADA"
-                  createPermission="hr-action-entradas:create"
-                  approvePermission="hr-action-entradas:approve"
-                />
+              <PermissionGuard requiredPermission="employee:view">
+                <Navigate to="/employees" replace />
               </PermissionGuard>
             </PrivateLayout>
           }
