@@ -116,6 +116,7 @@ export class PayrollService {
     idEmpresa?: number,
     includeInactive = false,
     inactiveOnly = false,
+    estados?: number[],
     fechaDesdeRaw?: string,
     fechaHastaRaw?: string,
   ): Promise<PayrollCalendar[]> {
@@ -136,7 +137,9 @@ export class PayrollService {
       qb.andWhere('p.idEmpresa IN (:...companyIds)', { companyIds });
     }
 
-    if (inactiveOnly) {
+    if (estados && estados.length > 0) {
+      qb.andWhere('p.estado IN (:...estados)', { estados });
+    } else if (inactiveOnly) {
       qb.andWhere('(p.esInactivo = :inactiveFlag OR p.estado = :inactiva)', {
         inactiveFlag: this.inactiveFlag,
         inactiva: EstadoCalendarioNomina.INACTIVA,

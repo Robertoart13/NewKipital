@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Controller,
   Get,
   Post,
@@ -40,24 +41,40 @@ export class PayrollController {
   findAll(
     @CurrentUser() user: { userId: number },
     @Query('idEmpresa') idEmpresaRaw?: string,
-    @Query('includeInactive', new ParseBoolPipe({ optional: true }))
-    includeInactive?: boolean,
-    @Query('inactiveOnly', new ParseBoolPipe({ optional: true }))
-    inactiveOnly?: boolean,
+    @Query('includeInactive', new ParseBoolPipe({ optional: true })) includeInactive?: boolean,
+    @Query('inactiveOnly', new ParseBoolPipe({ optional: true })) inactiveOnly?: boolean,
+    @Query('estado') estadoRaw?: string | string[],
     @Query('fechaDesde') fechaDesde?: string,
     @Query('fechaHasta') fechaHasta?: string,
   ): Promise<PayrollCalendarResponse[]> {
     const idEmpresa = idEmpresaRaw ? parseInt(idEmpresaRaw, 10) : undefined;
+    const estados = this.parseEstadoQuery(estadoRaw);
     return this.service
       .findAll(
         user.userId,
         Number.isNaN(idEmpresa!) ? undefined : idEmpresa,
         includeInactive ?? false,
         inactiveOnly ?? false,
+        estados,
         fechaDesde,
         fechaHasta,
       )
       .then((rows) => rows.map((row) => this.service.toResponse(row)));
+  }
+
+  private parseEstadoQuery(raw?: string | string[]): number[] | undefined {
+    if (raw == null) return undefined;
+    const values = (Array.isArray(raw) ? raw : [raw])
+      .map((item) => Number(item))
+      .filter((item) => Number.isInteger(item));
+    if (values.length === 0) {
+      throw new BadRequestException('Debe enviar al menos un estado valido.');
+    }
+    const invalid = values.find((value) => value < 0 || value > 6);
+    if (invalid != null) {
+      throw new BadRequestException(`Estado invalido: ${invalid}. Valores permitidos: 0 a 6.`);
+    }
+    return Array.from(new Set(values));
   }
 
   @RequirePermissions('payroll:view')

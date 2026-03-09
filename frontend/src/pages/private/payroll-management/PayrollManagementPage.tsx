@@ -34,7 +34,6 @@ import {
   Select,
   Space,
   Spin,
-  Switch,
   Table,
   Tag,
   Tabs,
@@ -258,7 +257,7 @@ export function PayrollManagementPage() {
   const [loading, setLoading] = useState(false);
   const [savingCreate, setSavingCreate] = useState(false);
   const [processingId, setProcessingId] = useState<number | null>(null);
-  const [showInactive, setShowInactive] = useState(false);
+  const [selectedEstados, setSelectedEstados] = useState<number[]>([1, 2]);
   const [selectedCompanyId, setSelectedCompanyId] = useState<number | undefined>(defaultCompanyId);
   const [listDateRange, setListDateRange] = useState<[Dayjs, Dayjs]>(() => {
     const today = dayjs().startOf('day');
@@ -312,6 +311,14 @@ export function PayrollManagementPage() {
     moneda: false,
     estado: false,
   });
+  const estadoFilterOptions = useMemo(
+    () =>
+      [0, 1, 2, 3, 4, 5, 6].map((value) => ({
+        label: STATE_LABEL[value]?.text ?? `Estado ${value}`,
+        value,
+      })),
+    [],
+  );
 
   const loadRows = useCallback(async () => {
     if (!selectedCompanyId || !canView) {
@@ -325,7 +332,8 @@ export function PayrollManagementPage() {
         false,
         formatDateValue(listDateRange[0]),
         formatDateValue(listDateRange[1]),
-        showInactive,
+        false,
+        selectedEstados,
       );
       setRows(data);
     } catch (error) {
@@ -334,7 +342,7 @@ export function PayrollManagementPage() {
     } finally {
       setLoading(false);
     }
-  }, [canView, listDateRange, message, selectedCompanyId, showInactive]);
+  }, [canView, listDateRange, message, selectedCompanyId, selectedEstados]);
 
   const loadPeriods = useCallback(async () => {
     try {
@@ -539,6 +547,7 @@ export function PayrollManagementPage() {
         await createPayroll(payload);
         message.success('Planilla creada correctamente');
       }
+      bustApiCache();
       setCreateOpen(false);
       setEditingPayrollId(null);
       await loadRows();
@@ -696,6 +705,7 @@ export function PayrollManagementPage() {
     try {
       await operation();
       message.success(successMessage);
+      bustApiCache();
       await loadRows();
     } catch (error) {
       message.error(error instanceof Error ? error.message : 'Operacion no completada');
@@ -1019,10 +1029,20 @@ export function PayrollManagementPage() {
             </Flex>
 
             <Flex align="center" gap={12} wrap="wrap">
-              <Space>
-                <Text style={{ color: '#6b7a85' }}>Mostrar inactivas</Text>
-                <Switch size="small" checked={showInactive} onChange={setShowInactive} />
-              </Space>
+              <Select
+                mode="multiple"
+                maxTagCount="responsive"
+                allowClear
+                placeholder="Estados"
+                style={{ minWidth: 220 }}
+                value={selectedEstados}
+                options={estadoFilterOptions}
+                onChange={(values) =>
+                  setSelectedEstados(
+                    values.length > 0 ? values.map((value) => Number(value)) : [1, 2],
+                  )
+                }
+              />
               <Select
                 style={{ minWidth: 230 }}
                 value={selectedCompanyId}

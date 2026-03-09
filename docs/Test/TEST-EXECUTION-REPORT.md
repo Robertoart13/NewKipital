@@ -952,3 +952,24 @@ Resultado:
 - Modulo Aumentos aprobado en pruebas manuales de flujo principal.
 
 Estado de fase: Cerrada
+## Pendientes activos (2026-03-08)
+- Accion de personal `Despido`: pendiente de terminar.
+- Accion de personal `Renuncia`: pendiente de terminar.
+
+## Actualizacion 2026-03-08 - Inactivar planilla (UI refresh)
+- Se corrigio la recarga del listado en `PayrollManagementPage` para invalidar cache API antes de consultar nuevamente.
+- Aplicado en acciones de guardado y acciones operativas (incluye inactivar planilla).
+- Objetivo: evitar que la fila se vea en estado antiguo por respuesta cacheada del GET.
+
+## Actualizacion 2026-03-08 - Listado de planillas por estado
+- Se reemplazo el switch `Mostrar inactivas` por un selector de estados (multi-select).
+- El listado ahora filtra por combinacion de: empresa + rango de fechas + estados.
+- API `GET /payroll` ahora acepta query repetido `estado` (ejemplo: `?estado=1&estado=3`).
+
+## Actualizacion 2026-03-08 - Filtro de estados en Listado de Planillas
+- Se elimino el switch `Mostrar inactivas` del encabezado del listado.
+- Se agrego selector de estados (multi-select) para filtrar por estado en conjunto con empresa y rango de fechas.
+- El listado consulta por `empresa + fechaDesde/fechaHasta + estados`.
+- Valor por defecto del selector de estados: `Abierta (1)` y `En proceso (2)`.
+- Si el usuario limpia el selector de estados, se restaura automaticamente el default `[1, 2]`.
+

@@ -418,10 +418,9 @@ async function extractApiErrorMessage(res: Response, fallback: string): Promise<
  * Lista planillas de una empresa con filtros opcionales.
  *
  * @param companyId - ID de la empresa.
- * @param includeInactive - Incluir planillas inactivas.
  * @param fechaDesde - Fecha desde (filtro).
  * @param fechaHasta - Fecha hasta (filtro).
- * @param inactiveOnly - Solo planillas inactivas.
+ * @param estados - Lista de estados a filtrar.
  *
  * @returns Lista de planillas.
  *
@@ -435,6 +434,7 @@ export async function fetchPayrolls(
   fechaDesde?: string,
   fechaHasta?: string,
   inactiveOnly = false,
+  estados?: number[],
 ): Promise<PayrollListItem[]> {
   const qs = new URLSearchParams({
     idEmpresa: companyId,
@@ -443,6 +443,7 @@ export async function fetchPayrolls(
     ...(fechaHasta ? { fechaHasta } : {}),
     ...(inactiveOnly ? { inactiveOnly: 'true' } : {}),
   });
+  (estados ?? []).forEach((estado) => qs.append('estado', String(estado)));
   const res = await httpFetch(`/payroll?${qs}`);
   if (!res.ok) throw new Error(await extractApiErrorMessage(res, 'Error al cargar planillas'));
   return res.json();

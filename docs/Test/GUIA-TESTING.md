@@ -176,3 +176,7 @@ SOLAPE-PLANILLAS-2026-03-02)
 - TimeWise: acciones de vacaciones se crean en estado Borrador sin planilla. RRHH completa fechas/movimiento en KPITAL; el sistema asigna planilla por fecha.
 - Planilla: al cargar una planilla se consumen las fechas cuyo `id_calendario_nomina` coincide con la planilla y estado aprobado. No se requiere que el header tenga planilla.
 ---
+## Pendientes activos (2026-03-08)
+- Accion de personal `Despido`: pendiente de terminar.
+- Accion de personal `Renuncia`: pendiente de terminar.
+
