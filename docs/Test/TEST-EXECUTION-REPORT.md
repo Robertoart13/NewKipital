@@ -739,3 +739,59 @@ Estado de fase: Cerrada
 - Commit push: `29197af`
 - Rango remoto: `8bc67de..29197af`
 - Estado: pruebas manuales de Horas Extra cerradas (crear, editar, bitacora, fechas).
+
+## Fase 30 - 2026-03-08
+Alcance: Retenciones (paridad tecnica con modulos previos)
+
+Correcciones aplicadas:
+- Frontend `RetentionTransactionModal`:
+  - Validacion de linea completa alineada a campos obligatorios reales (sin depender de `formula`).
+  - IDs normalizados a numero (`selectedCompanyIdNum`, `selectedEmployeeIdNum`) para evitar mismatch string/number.
+  - Tab Bitacora con `handleTabChange` para carga estable.
+  - `onCompanyChange` en edit protegido para evitar reset por `undefined` transitorio.
+  - `fechaEfecto` derivada de planilla con parseo local (`parseDateAsLocalDay`) para evitar desfase de zona horaria.
+  - Migracion de `Card bodyStyle` a `styles.body`.
+- Frontend `RetentionsPage`:
+  - Hidratacion de `fechaEfecto` en lineas de edit (`createDraftFromRetentionDetail`).
+  - Parseo local de fechas al abrir detalle (`parseDateAsLocalDay`).
+  - `onCompanyChange` del modal centralizado con `bustApiCache`.
+- Backend `personal-actions.service`:
+  - Create/update de Retenciones con parseo de fecha local (`parseDateOnlyLocal`) en accion, cuotas y lineas.
+  - Bitacora de Retenciones con detalle por linea/campo en create/update (`lineasDetalle`).
+  - Nuevos helpers: `getRetentionLinesForAudit`, `mapRetentionLinesForAuditFromDto`.
+
+Validacion tecnica:
+- En este entorno no se pudo ejecutar build completo (`tsc`/`nest` no disponibles por dependencias no instaladas en este worktree).
+
+Estado de fase: Implementado (pendiente validacion manual)
+
+## Fase 31 - 2026-03-08
+Alcance: Retenciones (validacion funcional final en UI)
+
+Pruebas ejecutadas:
+- Retenciones: crear OK.
+- Retenciones: editar OK.
+- Retenciones: bitacora OK (tab estable, sin retorno automatico a Informacion principal).
+- Retenciones: fechaEfecto visible y cargada correctamente en edicion.
+- Retenciones: detalle de bitacora por linea/campo (formato Linea N - Campo) claro para usuario.
+
+Resultado:
+- Modulo Retenciones aprobado en pruebas manuales de flujo principal.
+
+Estado de fase: Cerrada
+
+## Fase 32 - 2026-03-08
+Alcance: Descuentos (cierre funcional y de bitacora)
+
+Pruebas ejecutadas:
+- Descuentos: carga de movimientos por empresa en crear OK.
+- Descuentos: crear OK (sin error de validacion de cantidad con valor entero valido).
+- Descuentos: editar OK.
+- Descuentos: fechaEfecto cargada correctamente en edicion.
+- Descuentos: bitacora OK (tab estable, sin retorno automatico a Informacion principal).
+- Descuentos: detalle de bitacora por linea/campo (formato Linea N - Campo) en create/update.
+
+Resultado:
+- Modulo Descuentos aprobado en pruebas manuales de flujo principal.
+
+Estado de fase: Cerrada

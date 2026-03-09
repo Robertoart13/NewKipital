@@ -186,6 +186,22 @@ function summarizeCell(value?: string | null) {
   );
 }
 
+function parseDateAsLocalDay(value?: string | null) {
+  if (!value) return undefined;
+  const raw = String(value).trim();
+  const match = raw.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (match) {
+    const year = Number(match[1]);
+    const month = Number(match[2]);
+    const day = Number(match[3]);
+    if (Number.isFinite(year) && Number.isFinite(month) && Number.isFinite(day)) {
+      return dayjs(new Date(year, month - 1, day));
+    }
+  }
+  const parsed = dayjs(raw);
+  return parsed.isValid() ? parsed : undefined;
+}
+
 function createDraftFromRetentionDetail(detail: RetentionDetailItem): RetentionFormDraft {
   const lines: RetentionTransactionLine[] =
     detail.lines?.length > 0
@@ -193,6 +209,7 @@ function createDraftFromRetentionDetail(detail: RetentionDetailItem): RetentionF
           key: `${line.idLinea}-${line.orden}`,
           payrollId: line.payrollId,
           payrollLabel: line.payrollLabel ?? undefined,
+          fechaEfecto: parseDateAsLocalDay(line.fechaEfecto) ?? parseDateAsLocalDay(detail.fechaEfecto),
           movimientoId: line.movimientoId,
           cantidad: line.cantidad,
           monto: line.monto,
@@ -205,7 +222,7 @@ function createDraftFromRetentionDetail(detail: RetentionDetailItem): RetentionF
             {
               key: `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
               monto: detail.monto ?? undefined,
-              fechaEfecto: detail.fechaEfecto ? dayjs(detail.fechaEfecto) : undefined,
+              fechaEfecto: parseDateAsLocalDay(detail.fechaEfecto),
               formula: '',
             },
           ];
@@ -700,6 +717,10 @@ export function RetentionsPage() {
     })),
   });
   const modalTitle = mode === 'create' ? 'Crear retencion' : 'Editar retencion';
+  const handleModalCompanyChange = useCallback((nextCompanyId?: number) => {
+    bustApiCache();
+    setModalCompanyId(nextCompanyId);
+  }, []);
 
   return (
     <div className={styles.pageWrapper}>
@@ -711,7 +732,7 @@ export function RetentionsPage() {
           <div className={styles.pageTitleBlock}>
             <h1 className={styles.pageTitle}>retenciones</h1>
             <p className={styles.pageSubtitle}>
-              Gestione retenciones por empresa con líneas de transacción por período
+              Gestione retenciones por empresa con lineas de transaccion por periodo
             </p>
           </div>
         </div>
@@ -725,8 +746,8 @@ export function RetentionsPage() {
                 <AppstoreOutlined className={styles.gestionIcon} />
               </div>
               <div>
-                <h2 className={styles.gestionTitle}>Gestión de retenciones</h2>
-                <p className={styles.gestionDesc}>Encabezado de acción + múltiples líneas por planilla</p>
+                <h2 className={styles.gestionTitle}>Gestion de retenciones</h2>
+                <p className={styles.gestionDesc}>Encabezado de accion + multiples lineas por planilla</p>
               </div>
             </Flex>
             <Button
@@ -951,9 +972,7 @@ export function RetentionsPage() {
         onLoadAuditTrail={mode === 'edit' && editingRow ? loadEditingRetentionAuditTrail : undefined}
         initialCompanyId={modalCompanyId}
         initialDraft={editingDraft}
-        onCompanyChange={(nextCompanyId) => {
-          setModalCompanyId(nextCompanyId);
-        }}
+        onCompanyChange={handleModalCompanyChange}
         onCancel={() => {
           setOpenModal(false);
           setEditingDraft(undefined);
@@ -1004,6 +1023,7 @@ export function RetentionsPage() {
     </div>
   );
 }
+
 
 
 

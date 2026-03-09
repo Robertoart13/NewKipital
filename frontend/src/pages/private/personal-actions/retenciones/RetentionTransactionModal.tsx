@@ -49,7 +49,6 @@ import { useTransactionLines } from '../../../../hooks/useTransactionLines';
 import { formatDateTime12h } from '../../../../lib/formatDate';
 import { EMPLOYEE_MONEY_MAX_DIGITS } from '../../../../lib/moneyInputSanitizer';
 import sharedStyles from '../../configuration/UsersManagementPage.module.css';
-import { isCoreTransactionLineComplete } from '../shared/coreTransactionLine';
 import { formatEmployeeLabel } from '../shared/employeeLabel';
 
 import type { CatalogPayPeriod } from '../../../../api/catalogs';
@@ -225,6 +224,22 @@ function parseNonNegative(value: string | number | null | undefined): number {
   return parsed;
 }
 
+function parseDateAsLocalDay(value?: string | null) {
+  if (!value) return undefined;
+  const raw = String(value).trim();
+  const match = raw.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (match) {
+    const year = Number(match[1]);
+    const month = Number(match[2]);
+    const day = Number(match[3]);
+    if (Number.isFinite(year) && Number.isFinite(month) && Number.isFinite(day)) {
+      return dayjs(new Date(year, month - 1, day));
+    }
+  }
+  const parsed = dayjs(raw);
+  return parsed.isValid() ? parsed : undefined;
+}
+
 function round2(value: number): number {
   return Number(value.toFixed(2));
 }
@@ -268,7 +283,14 @@ export function RetentionTransactionModal({
   const { message, modal } = AntdApp.useApp();
   const moneyField = useMoneyFieldFormatter(MAX_ABSENCE_MONTO_DIGITS);
   const [form] = Form.useForm<HeaderValues>();
-  const isLineComplete = (line: RetentionTransactionLine): boolean => isCoreTransactionLineComplete(line);
+  const isLineComplete = (line: RetentionTransactionLine): boolean => {
+    const hasPayroll = Number.isFinite(Number(line.payrollId)) && Number(line.payrollId) > 0;
+    const hasFechaEfecto = !!line.fechaEfecto;
+    const hasMovimiento = Number.isFinite(Number(line.movimientoId)) && Number(line.movimientoId) > 0;
+    const hasCantidad = Number.isFinite(Number(line.cantidad)) && Number(line.cantidad) > 0;
+    const hasMonto = Number.isFinite(Number(line.monto)) && Number(line.monto) >= 0;
+    return hasPayroll && hasFechaEfecto && hasMovimiento && hasCantidad && hasMonto;
+  };
   const { lines, setLines, activeLineKeys, setActiveLineKeys, updateLine, addLine, removeLine } =
     useTransactionLines<RetentionTransactionLine>({
       buildEmptyLine,
@@ -288,10 +310,12 @@ export function RetentionTransactionModal({
   const lastLineRef = useRef<HTMLDivElement>(null);
   const prevEmployeeIdRef = useRef<number | undefined>(undefined);
   const initOnceRef = useRef(false);
+  const justOpenedRef = useRef(false);
 
   useEffect(() => {
-    if (!open) {
+  if (!open) {
     initOnceRef.current = false;
+    justOpenedRef.current = false;
     return;
   }
 
@@ -303,7 +327,10 @@ export function RetentionTransactionModal({
     initOnceRef.current = true;
   }
 
-    setActiveTab('info');
+    if (!justOpenedRef.current) {
+      setActiveTab('info');
+      justOpenedRef.current = true;
+    }
 
     setAuditLoaded(false);
 
@@ -350,23 +377,28 @@ export function RetentionTransactionModal({
 
   const selectedCompanyId = Form.useWatch('idEmpresa', form);
   const selectedEmployeeId = Form.useWatch('idEmpleado', form);
+  const selectedCompanyIdNum =
+    selectedCompanyId == null || Number.isNaN(Number(selectedCompanyId)) ? undefined : Number(selectedCompanyId);
+  const selectedEmployeeIdNum =
+    selectedEmployeeId == null || Number.isNaN(Number(selectedEmployeeId)) ? undefined : Number(selectedEmployeeId);
 
   useEffect(() => {
     if (!open || !onCompanyChange) return;
-    onCompanyChange(selectedCompanyId ? Number(selectedCompanyId) : undefined);
-  }, [onCompanyChange, open, selectedCompanyId]);
+    if (mode === 'edit' && selectedCompanyIdNum == null) return;
+    onCompanyChange(selectedCompanyIdNum);
+  }, [mode, onCompanyChange, open, selectedCompanyIdNum]);
 
-  // Al cambiar de empleado se reinician las líneas porque cada empleado tiene planillas distintas
+  // Al cambiar de empleado se reinician las lineas porque cada empleado tiene planillas distintas
   useEffect(() => {
     if (!open) {
       prevEmployeeIdRef.current = undefined;
       return;
     }
     const prev = prevEmployeeIdRef.current;
-    const current = selectedEmployeeId;
+    const current = selectedEmployeeIdNum;
 
     // Evita reset por cambios transitorios de tabs (cuando el campo se desmonta temporalmente).
-    // Solo resetea cuando realmente cambia de un empleado válido a otro empleado válido.
+    // Solo resetea cuando realmente cambia de un empleado valido a otro empleado valido.
     if (current == null) {
       return;
     }
@@ -381,16 +413,16 @@ export function RetentionTransactionModal({
 
     prevEmployeeIdRef.current = current;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, selectedEmployeeId]);
+  }, [open, selectedEmployeeIdNum]);
 
   useEffect(() => {
-    if (!selectedEmployeeId || !selectedCompanyId) {
+    if (!selectedEmployeeIdNum || !selectedCompanyIdNum) {
       setEmployeePayrollConfig(null);
 
       setEligiblePayrolls([]);
       return;
     }
-    const employee = employees.find((item) => item.id === selectedEmployeeId && item.idEmpresa === selectedCompanyId);
+    const employee = employees.find((item) => item.id === selectedEmployeeIdNum && item.idEmpresa === selectedCompanyIdNum);
     if (!employee) {
       setEmployeePayrollConfig(null);
       return;
@@ -398,10 +430,10 @@ export function RetentionTransactionModal({
     setEmployeePayrollConfig({
       moneda: (employee.monedaSalario ?? '').toUpperCase() || undefined,
     });
-  }, [selectedCompanyId, selectedEmployeeId, employees]);
+  }, [selectedCompanyIdNum, selectedEmployeeIdNum, employees]);
 
   useEffect(() => {
-    if (!selectedCompanyId || !selectedEmployeeId) {
+    if (!selectedCompanyIdNum || !selectedEmployeeIdNum) {
       setEligiblePayrolls([]);
 
       setLoadingPayrolls(false);
@@ -410,7 +442,7 @@ export function RetentionTransactionModal({
     let active = true;
 
     setLoadingPayrolls(true);
-    void fetchAbsencePayrollsCatalog(Number(selectedCompanyId), Number(selectedEmployeeId))
+    void fetchAbsencePayrollsCatalog(selectedCompanyIdNum, selectedEmployeeIdNum)
       .then((list) => {
         if (!active) return;
 
@@ -429,20 +461,20 @@ export function RetentionTransactionModal({
     return () => {
       active = false;
     };
-  }, [selectedCompanyId, selectedEmployeeId]);
+  }, [selectedCompanyIdNum, selectedEmployeeIdNum]);
 
   const employeesByCompany = useMemo(() => {
-    if (!selectedCompanyId) return [];
-    return sortEmployeesByDisplayName(employees.filter((employee) => employee.idEmpresa === selectedCompanyId));
-  }, [employees, selectedCompanyId]);
+    if (!selectedCompanyIdNum) return [];
+    return sortEmployeesByDisplayName(employees.filter((employee) => employee.idEmpresa === selectedCompanyIdNum));
+  }, [employees, selectedCompanyIdNum]);
 
   const selectedEmployee = useMemo(() => {
-    if (!selectedCompanyId || !selectedEmployeeId) return null;
+    if (!selectedCompanyIdNum || !selectedEmployeeIdNum) return null;
     return (
-      employees.find((employee) => employee.idEmpresa === selectedCompanyId && employee.id === selectedEmployeeId) ??
+      employees.find((employee) => employee.idEmpresa === selectedCompanyIdNum && employee.id === selectedEmployeeIdNum) ??
       null
     );
-  }, [employees, selectedCompanyId, selectedEmployeeId]);
+  }, [employees, selectedCompanyIdNum, selectedEmployeeIdNum]);
 
   const selectedPayPeriod = useMemo(() => {
     if (!selectedEmployee?.idPeriodoPago) return null;
@@ -461,8 +493,8 @@ export function RetentionTransactionModal({
   const periodHours = calculatePeriodHours(selectedEmployee?.idPeriodoPago, selectedEmployee?.jornada);
 
   const payrollsByCompany = useMemo(() => {
-    if (!selectedCompanyId) return [];
-    let list = eligiblePayrolls.filter((payroll) => payroll.idEmpresa === selectedCompanyId);
+    if (!selectedCompanyIdNum) return [];
+    let list = eligiblePayrolls.filter((payroll) => payroll.idEmpresa === selectedCompanyIdNum);
     if (employeePayrollConfig?.idPeriodoPago) {
       list = list.filter((payroll) => Number(payroll.idPeriodoPago) === Number(employeePayrollConfig.idPeriodoPago));
     }
@@ -470,11 +502,25 @@ export function RetentionTransactionModal({
       list = list.filter((payroll) => (payroll.moneda ?? '').toUpperCase() === employeePayrollConfig.moneda);
     }
     return list;
-  }, [eligiblePayrolls, selectedCompanyId, employeePayrollConfig]);
+  }, [eligiblePayrolls, selectedCompanyIdNum, employeePayrollConfig]);
+
+  useEffect(() => {
+    if (!open || payrollsByCompany.length === 0 || lines.length === 0) return;
+    let changed = false;
+    const nextLines = lines.map((line) => {
+      if (line.fechaEfecto || !line.payrollId) return line;
+      const payroll = payrollsByCompany.find((item) => item.id === line.payrollId);
+      const fechaEfecto = parseDateAsLocalDay(payroll?.fechaFinPeriodo);
+      if (!fechaEfecto) return line;
+      changed = true;
+      return { ...line, fechaEfecto };
+    });
+    if (changed) setLines(nextLines);
+  }, [lines, open, payrollsByCompany, setLines]);
 
   const filteredMovements = useMemo(() => {
-    if (!selectedCompanyId) return [];
-    let list = movements.filter((movement) => movement.idEmpresa === selectedCompanyId);
+    if (!selectedCompanyIdNum) return [];
+    let list = movements.filter((movement) => movement.idEmpresa === selectedCompanyIdNum);
 
     if (actionTypeIdForRetention) {
       list = list.filter((movement) => movement.idTipoAccionPersonal === actionTypeIdForRetention);
@@ -484,7 +530,7 @@ export function RetentionTransactionModal({
     list = list.filter((movement) => movement.esInactivo === 1 || selectedIds.has(movement.id));
 
     return list;
-  }, [movements, selectedCompanyId, actionTypeIdForRetention, lines]);
+  }, [movements, selectedCompanyIdNum, actionTypeIdForRetention, lines]);
 
   const calculateLineAmount = (line: RetentionTransactionLine, movimientoId?: number, cantidadValue?: number) => {
     const movement = filteredMovements.find((m) => m.id === (movimientoId ?? line.movimientoId));
@@ -502,7 +548,7 @@ export function RetentionTransactionModal({
       return {
         monto: montoCalculado,
         montoInput: String(montoCalculado),
-        formula: `Monto fijo: ${montoFijo} × ${cantidad}`,
+        formula: `Monto fijo: ${montoFijo} x ${cantidad}`,
       };
     }
 
@@ -519,11 +565,11 @@ export function RetentionTransactionModal({
       return {
         monto: montoCalculado,
         montoInput: String(montoCalculado),
-        formula: `${baseTxt} × ${porcentaje}% × ${cantidad}`,
+        formula: `${baseTxt} x ${porcentaje}% x ${cantidad}`,
       };
     }
 
-    return { monto: 0, montoInput: '0', formula: 'Sin configuración de cálculo' };
+    return { monto: 0, montoInput: '0', formula: 'Sin configuracion de calculo' };
   };
 
   const handlePayrollChange = (lineKey: string, payrollId?: number) => {
@@ -532,7 +578,7 @@ export function RetentionTransactionModal({
       payrollId,
       payrollLabel: payroll?.nombrePlanilla ?? undefined,
       payrollEstado: payroll?.estado,
-      fechaEfecto: payroll?.fechaFinPeriodo ? dayjs(payroll.fechaFinPeriodo) : undefined,
+      fechaEfecto: parseDateAsLocalDay(payroll?.fechaFinPeriodo),
     });
   };
 
@@ -567,7 +613,7 @@ export function RetentionTransactionModal({
     if (loading) return;
     const values = await form.validateFields();
     if (lines.length === 0 || !lines.every(isLineComplete)) {
-      message.error('Complete todas las líneas antes de crear/guardar la retención.');
+      message.error('Complete todas las lineas antes de crear/guardar la retencion.');
       return;
     }
 
@@ -579,13 +625,13 @@ export function RetentionTransactionModal({
     };
 
     modal.confirm({
-      title: mode === 'create' ? 'Confirmar creación de retención' : 'Confirmar actualización de retención',
+      title: mode === 'create' ? 'Confirmar creacion de retencion' : 'Confirmar actualizacion de retencion',
       content:
         mode === 'create'
-          ? '¿Está seguro de crear esta retención con las líneas capturadas?'
-          : '¿Está seguro de guardar los cambios de esta retención?',
+          ? '?Esta seguro de crear esta retencion con las lineas capturadas?'
+          : '?Esta seguro de guardar los cambios de esta retencion?',
       icon: <QuestionCircleOutlined style={{ color: '#5a6c7d', fontSize: 40 }} />,
-      okText: mode === 'create' ? 'Sí, crear' : 'Sí, guardar',
+      okText: mode === 'create' ? 'Si, crear' : 'Si, guardar',
       cancelText: 'Cancelar',
       centered: true,
       width: 420,
@@ -598,18 +644,25 @@ export function RetentionTransactionModal({
     });
   };
 
+  const handleTabChange = (nextTab: string) => {
+    setActiveTab(nextTab);
+    if (nextTab !== 'bitacora' || auditLoaded) return;
+    if (!showAudit) return;
+    void Promise.resolve(onLoadAuditTrail?.()).then(() => setAuditLoaded(true));
+  };
+
   const canSubmit =
     !loading &&
     !readOnly &&
-    !!selectedCompanyId &&
-    !!selectedEmployeeId &&
+    !!selectedCompanyIdNum &&
+    !!selectedEmployeeIdNum &&
     lines.length > 0 &&
     lines.every(isLineComplete);
   const sensitiveMaskedValue = '***';
 
   const showGlobalPreload =
     loading ||
-    (!!selectedCompanyId && !!selectedEmployeeId && loadingPayrolls) ||
+    (!!selectedCompanyIdNum && !!selectedEmployeeIdNum && loadingPayrolls) ||
     (activeTab === 'bitacora' && loadingAuditTrail);
 
   const auditColumns: ColumnsType<PersonalActionAuditTrailItem> = useMemo(
@@ -671,7 +724,7 @@ export function RetentionTransactionModal({
                   ))}
                 </div>
               ) : (
-                <div style={{ fontSize: 12 }}>Sin detalle de campos para esta acción.</div>
+                <div style={{ fontSize: 12 }}>Sin detalle de campos para esta accion.</div>
               )}
             </div>
           );
@@ -770,7 +823,7 @@ export function RetentionTransactionModal({
               <Alert
                 type="warning"
                 showIcon
-                title={readOnlyMessage ?? 'Esta retención está en modo solo lectura por su estado actual.'}
+                title={readOnlyMessage ?? 'Esta retencion esta en modo solo lectura por su estado actual.'}
                 className={`${sharedStyles.infoBanner} ${sharedStyles.warningType}`}
                 style={{ marginBottom: 12 }}
               />
@@ -779,7 +832,7 @@ export function RetentionTransactionModal({
             {mode === 'edit' ? (
               <Tabs
                 activeKey={activeTab}
-                onChange={setActiveTab}
+                onChange={handleTabChange}
                 className={`${sharedStyles.tabsWrapper} ${sharedStyles.companyModalTabs} ${sharedStyles.tabsBarOnly}`}
                 items={[
                   {
@@ -839,7 +892,7 @@ export function RetentionTransactionModal({
                                   </div>
                                   <div className={sharedStyles.employeeAccordionCompany}>
                                     <BankOutlined />
-                                    {companies.find((c) => Number(c.id) === selectedCompanyId)?.nombre ?? '--'}
+                                    {companies.find((c) => Number(c.id) === selectedCompanyIdNum)?.nombre ?? '--'}
                                   </div>
                                 </div>
                               </div>
@@ -851,7 +904,7 @@ export function RetentionTransactionModal({
                                 <div className={sharedStyles.employeeAccordionItem}>
                                   <IdcardOutlined className={sharedStyles.employeeAccordionItemIcon} />
                                   <div>
-                                    <div className={sharedStyles.employeeAccordionItemLabel}>Cédula</div>
+                                    <div className={sharedStyles.employeeAccordionItemLabel}>Cedula</div>
                                     <div className={sharedStyles.employeeAccordionItemValue}>
                                       {canViewEmployeeSensitive
                                         ? (selectedEmployee.cedula ?? '--')
@@ -873,7 +926,7 @@ export function RetentionTransactionModal({
                                 <div className={sharedStyles.employeeAccordionItem}>
                                   <CalendarOutlined className={sharedStyles.employeeAccordionItemIcon} />
                                   <div>
-                                    <div className={sharedStyles.employeeAccordionItemLabel}>Período</div>
+                                    <div className={sharedStyles.employeeAccordionItemLabel}>Periodo</div>
                                     <div className={sharedStyles.employeeAccordionItemValue}>
                                       {selectedPayPeriod?.nombre ?? '--'}
                                     </div>
@@ -906,7 +959,7 @@ export function RetentionTransactionModal({
                                   <DollarCircleOutlined className={sharedStyles.employeeAccordionItemIcon} />
                                   <div>
                                     <div className={sharedStyles.employeeAccordionItemLabel}>
-                                      Salario {selectedPayPeriod?.nombre ?? 'Período'}
+                                      Salario {selectedPayPeriod?.nombre ?? 'Periodo'}
                                     </div>
                                     <div className={sharedStyles.employeeAccordionItemValue}>
                                       {canViewEmployeeSensitive
@@ -929,7 +982,7 @@ export function RetentionTransactionModal({
                                 <div className={sharedStyles.employeeAccordionItem}>
                                   <ClockCircleOutlined className={sharedStyles.employeeAccordionItemIcon} />
                                   <div>
-                                    <div className={sharedStyles.employeeAccordionItemLabel}>Horas del Período</div>
+                                    <div className={sharedStyles.employeeAccordionItemLabel}>Horas del Periodo</div>
                                     <div
                                       className={sharedStyles.employeeAccordionItemValue}
                                     >{`${periodHours} horas`}</div>
@@ -963,7 +1016,7 @@ export function RetentionTransactionModal({
                         />
                       </Form.Item>
 
-                      {selectedCompanyId ? (
+                      {selectedCompanyIdNum ? (
                         <Form.Item
                           style={{ flex: '1 1 380px', marginBottom: 0 }}
                           name="idEmpleado"
@@ -998,7 +1051,7 @@ export function RetentionTransactionModal({
                 </Col>
 
                 <Col xs={24} lg={16} style={{ display: 'flex', flexDirection: 'column', minHeight: 0 }}>
-                  {selectedCompanyId && selectedEmployeeId ? (
+                  {selectedCompanyIdNum && selectedEmployeeIdNum ? (
                     <Card
                       size="small"
                       style={{
@@ -1010,16 +1063,18 @@ export function RetentionTransactionModal({
                         overflow: 'visible',
                         marginTop: 0,
                       }}
-                      bodyStyle={{
+                      styles={{
+                        body: {
                         display: 'flex',
                         flexDirection: 'column',
                         padding: 16,
                         overflow: 'visible',
+                        },
                       }}
                     >
                       {loading && !showGlobalPreload ? (
                         <Flex justify="center" align="center" style={{ minHeight: 220 }}>
-                          <Spin size="large" description="Cargando líneas de transacción..." />
+                          <Spin size="large" description="Cargando lineas de transaccion..." />
                         </Flex>
                       ) : (
                         <>
@@ -1074,7 +1129,7 @@ export function RetentionTransactionModal({
                                       align="center"
                                       style={{ width: '100%', paddingRight: 8 }}
                                     >
-                                      <span style={{ fontWeight: 600, color: '#3d4f5c' }}>Línea {index + 1}</span>
+                                      <span style={{ fontWeight: 600, color: '#3d4f5c' }}>Linea {index + 1}</span>
                                       <Button
                                         danger
                                         size="small"
@@ -1235,7 +1290,7 @@ export function RetentionTransactionModal({
                                             </Col>
                                             <Col xs={24} md={16}>
                                               <div className={sharedStyles.filterLabel} style={{ color: '#94a3b8' }}>
-                                                Fórmula
+                                                Formula
                                               </div>
                                               <Input
                                                 value={line.formula}
@@ -1263,7 +1318,7 @@ export function RetentionTransactionModal({
                             }}
                           >
                             <Button type="dashed" icon={<PlusOutlined />} onClick={handleAddLine} disabled={readOnly}>
-                              Agregar línea de transacción
+                              Agregar linea de transaccion
                             </Button>
                           </Flex>
                         </>
@@ -1284,8 +1339,8 @@ export function RetentionTransactionModal({
                     >
                       <Result
                         status="info"
-                        title="Completar selección"
-                        subTitle="Seleccione empresa y empleado para agregar líneas de retención por planilla."
+                        title="Completar seleccion"
+                        subTitle="Seleccione empresa y empleado para agregar lineas de retencion por planilla."
                       />
                     </div>
                   )}
@@ -1310,7 +1365,7 @@ export function RetentionTransactionModal({
                     pageSizeOptions: [4, 8, 10],
                     showTotal: (total) => `${total} registro(s)`,
                   }}
-                  locale={{ emptyText: 'No hay registros de bitácora para esta retención.' }}
+                  locale={{ emptyText: 'No hay registros de bitacora para esta retencion.' }}
                 />
               </div>
             )}
@@ -1339,6 +1394,7 @@ export function RetentionTransactionModal({
     </Modal>
   );
 }
+
 
 
 

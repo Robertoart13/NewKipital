@@ -123,3 +123,21 @@ Para evitar errores de "tabla no existe":
    - `SeedDiscountPayrollArticlesAndMovements1708538400000` aplicada
 3. Si API estaba ya levantada, reiniciar proceso despues de migrar.
 
+## 7. Correcciones operativas (2026-03-08)
+
+Se aplicaron correcciones de paridad con Ausencias/Licencias/Retenciones para estabilizar Bitacora en Descuentos:
+
+1. Frontend modal (`DiscountTransactionModal.tsx`):
+   - Se corrigio el cambio de tabs para que Bitacora no regrese sola a "Informacion principal".
+   - Se agrego `handleTabChange` con carga explicita de auditoria al entrar en la pestaña.
+   - Se normalizaron `idEmpresa` y `idEmpleado` a numero (`selectedCompanyIdNum`, `selectedEmployeeIdNum`) para evitar desincronizacion de estado.
+   - Se agrego guard en `onCompanyChange` durante edicion para no disparar refresh con `undefined` en cambios transitorios del formulario.
+
+2. Backend auditoria (`personal-actions.service.ts`):
+   - `createDiscount` y `updateDiscount` ahora publican `lineasDetalle` en payload de auditoria, no solo conteo de lineas.
+   - Se incorporaron helpers `getDiscountLinesForAudit` y `mapDiscountLinesForAuditFromDto`.
+   - Se mantiene el formato de cambios por linea en auditoria (`Linea N - Campo`), alineado a la regla transversal del proyecto.
+
+3. Fecha de efecto en lineas:
+   - Se homologo parseo con `parseDateOnlyLocal` al persistir cuotas y lineas de descuento para evitar drift de fecha por zona horaria.
+

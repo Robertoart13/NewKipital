@@ -287,22 +287,27 @@ export function DiscountTransactionModal({
   const lastLineRef = useRef<HTMLDivElement>(null);
   const prevEmployeeIdRef = useRef<number | undefined>(undefined);
   const initOnceRef = useRef(false);
+  const justOpenedRef = useRef(false);
 
   useEffect(() => {
     if (!open) {
-    initOnceRef.current = false;
-    return;
-  }
+      initOnceRef.current = false;
+      justOpenedRef.current = false;
+      return;
+    }
 
-  if (!initialDraft && initOnceRef.current) {
-    return;
-  }
+    if (!initialDraft && initOnceRef.current) {
+      return;
+    }
 
-  if (!initialDraft) {
-    initOnceRef.current = true;
-  }
+    if (!initialDraft) {
+      initOnceRef.current = true;
+    }
 
-    setActiveTab('info');
+    if (!justOpenedRef.current) {
+      setActiveTab('info');
+      justOpenedRef.current = true;
+    }
 
     setAuditLoaded(false);
 
@@ -349,11 +354,20 @@ export function DiscountTransactionModal({
 
   const selectedCompanyId = Form.useWatch('idEmpresa', form);
   const selectedEmployeeId = Form.useWatch('idEmpleado', form);
+  const selectedCompanyIdNum =
+    selectedCompanyId == null || Number.isNaN(Number(selectedCompanyId))
+      ? undefined
+      : Number(selectedCompanyId);
+  const selectedEmployeeIdNum =
+    selectedEmployeeId == null || Number.isNaN(Number(selectedEmployeeId))
+      ? undefined
+      : Number(selectedEmployeeId);
 
   useEffect(() => {
     if (!open || !onCompanyChange) return;
-    onCompanyChange(selectedCompanyId ? Number(selectedCompanyId) : undefined);
-  }, [onCompanyChange, open, selectedCompanyId]);
+    if (mode === 'edit' && selectedCompanyIdNum == null) return;
+    onCompanyChange(selectedCompanyIdNum);
+  }, [mode, onCompanyChange, open, selectedCompanyIdNum]);
 
   // Al cambiar de empleado se reinician las líneas porque cada empleado tiene planillas distintas
   useEffect(() => {
@@ -383,13 +397,15 @@ export function DiscountTransactionModal({
   }, [open, selectedEmployeeId]);
 
   useEffect(() => {
-    if (!selectedEmployeeId || !selectedCompanyId) {
+    if (!selectedEmployeeIdNum || !selectedCompanyIdNum) {
       setEmployeePayrollConfig(null);
 
       setEligiblePayrolls([]);
       return;
     }
-    const employee = employees.find((item) => item.id === selectedEmployeeId && item.idEmpresa === selectedCompanyId);
+    const employee = employees.find(
+      (item) => item.id === selectedEmployeeIdNum && item.idEmpresa === selectedCompanyIdNum,
+    );
     if (!employee) {
       setEmployeePayrollConfig(null);
       return;
@@ -398,10 +414,10 @@ export function DiscountTransactionModal({
       idPeriodoPago: employee.idPeriodoPago ? Number(employee.idPeriodoPago) : undefined,
       moneda: (employee.monedaSalario ?? '').toUpperCase() || undefined,
     });
-  }, [selectedCompanyId, selectedEmployeeId, employees]);
+  }, [selectedCompanyIdNum, selectedEmployeeIdNum, employees]);
 
   useEffect(() => {
-    if (!selectedCompanyId || !selectedEmployeeId) {
+    if (!selectedCompanyIdNum || !selectedEmployeeIdNum) {
       setEligiblePayrolls([]);
 
       setLoadingPayrolls(false);
@@ -410,7 +426,7 @@ export function DiscountTransactionModal({
     let active = true;
 
     setLoadingPayrolls(true);
-    void fetchAbsencePayrollsCatalog(Number(selectedCompanyId), Number(selectedEmployeeId))
+    void fetchAbsencePayrollsCatalog(selectedCompanyIdNum, selectedEmployeeIdNum)
       .then((list) => {
         if (!active) return;
 
@@ -429,20 +445,23 @@ export function DiscountTransactionModal({
     return () => {
       active = false;
     };
-  }, [selectedCompanyId, selectedEmployeeId]);
+  }, [selectedCompanyIdNum, selectedEmployeeIdNum]);
 
   const employeesByCompany = useMemo(() => {
-    if (!selectedCompanyId) return [];
-    return sortEmployeesByDisplayName(employees.filter((employee) => employee.idEmpresa === selectedCompanyId));
-  }, [employees, selectedCompanyId]);
+    if (!selectedCompanyIdNum) return [];
+    return sortEmployeesByDisplayName(
+      employees.filter((employee) => employee.idEmpresa === selectedCompanyIdNum),
+    );
+  }, [employees, selectedCompanyIdNum]);
 
   const selectedEmployee = useMemo(() => {
-    if (!selectedCompanyId || !selectedEmployeeId) return null;
+    if (!selectedCompanyIdNum || !selectedEmployeeIdNum) return null;
     return (
-      employees.find((employee) => employee.idEmpresa === selectedCompanyId && employee.id === selectedEmployeeId) ??
-      null
+      employees.find(
+        (employee) => employee.idEmpresa === selectedCompanyIdNum && employee.id === selectedEmployeeIdNum,
+      ) ?? null
     );
-  }, [employees, selectedCompanyId, selectedEmployeeId]);
+  }, [employees, selectedCompanyIdNum, selectedEmployeeIdNum]);
 
   const selectedPayPeriod = useMemo(() => {
     if (!selectedEmployee?.idPeriodoPago) return null;
@@ -461,8 +480,8 @@ export function DiscountTransactionModal({
   const periodHours = calculatePeriodHours(selectedEmployee?.idPeriodoPago, selectedEmployee?.jornada);
 
   const payrollsByCompany = useMemo(() => {
-    if (!selectedCompanyId) return [];
-    let list = eligiblePayrolls.filter((payroll) => payroll.idEmpresa === selectedCompanyId);
+    if (!selectedCompanyIdNum) return [];
+    let list = eligiblePayrolls.filter((payroll) => payroll.idEmpresa === selectedCompanyIdNum);
     if (employeePayrollConfig?.idPeriodoPago) {
       list = list.filter((payroll) => Number(payroll.idPeriodoPago) === Number(employeePayrollConfig.idPeriodoPago));
     }
@@ -470,11 +489,11 @@ export function DiscountTransactionModal({
       list = list.filter((payroll) => (payroll.moneda ?? '').toUpperCase() === employeePayrollConfig.moneda);
     }
     return list;
-  }, [eligiblePayrolls, selectedCompanyId, employeePayrollConfig]);
+  }, [eligiblePayrolls, selectedCompanyIdNum, employeePayrollConfig]);
 
   const filteredMovements = useMemo(() => {
-    if (!selectedCompanyId) return [];
-    let list = movements.filter((movement) => movement.idEmpresa === selectedCompanyId);
+    if (!selectedCompanyIdNum) return [];
+    let list = movements.filter((movement) => movement.idEmpresa === selectedCompanyIdNum);
 
     if (actionTypeIdForDiscount) {
       list = list.filter((movement) => movement.idTipoAccionPersonal === actionTypeIdForDiscount);
@@ -484,7 +503,14 @@ export function DiscountTransactionModal({
     list = list.filter((movement) => movement.esInactivo === 1 || selectedIds.has(movement.id));
 
     return list;
-  }, [movements, selectedCompanyId, actionTypeIdForDiscount, lines]);
+  }, [movements, selectedCompanyIdNum, actionTypeIdForDiscount, lines]);
+
+  const handleTabChange = (nextTab: string) => {
+    setActiveTab(nextTab);
+    if (nextTab !== 'bitacora' || auditLoaded) return;
+    if (!showAudit) return;
+    void Promise.resolve(onLoadAuditTrail?.()).then(() => setAuditLoaded(true));
+  };
 
   const calculateLineAmount = (line: DiscountTransactionLine, movimientoId?: number, cantidadValue?: number) => {
     const movement = filteredMovements.find((m) => m.id === (movimientoId ?? line.movimientoId));
@@ -601,15 +627,15 @@ export function DiscountTransactionModal({
   const canSubmit =
     !loading &&
     !readOnly &&
-    !!selectedCompanyId &&
-    !!selectedEmployeeId &&
+    !!selectedCompanyIdNum &&
+    !!selectedEmployeeIdNum &&
     lines.length > 0 &&
     lines.every(isLineComplete);
   const sensitiveMaskedValue = '***';
 
   const showGlobalPreload =
     loading ||
-    (!!selectedCompanyId && !!selectedEmployeeId && loadingPayrolls) ||
+    (!!selectedCompanyIdNum && !!selectedEmployeeIdNum && loadingPayrolls) ||
     (activeTab === 'bitacora' && loadingAuditTrail);
 
   const auditColumns: ColumnsType<PersonalActionAuditTrailItem> = useMemo(
@@ -779,7 +805,7 @@ export function DiscountTransactionModal({
             {mode === 'edit' ? (
               <Tabs
                 activeKey={activeTab}
-                onChange={setActiveTab}
+                onChange={handleTabChange}
                 className={`${sharedStyles.tabsWrapper} ${sharedStyles.companyModalTabs} ${sharedStyles.tabsBarOnly}`}
                 items={[
                   {
@@ -839,7 +865,7 @@ export function DiscountTransactionModal({
                                   </div>
                                   <div className={sharedStyles.employeeAccordionCompany}>
                                     <BankOutlined />
-                                    {companies.find((c) => Number(c.id) === selectedCompanyId)?.nombre ?? '--'}
+                                    {companies.find((c) => Number(c.id) === selectedCompanyIdNum)?.nombre ?? '--'}
                                   </div>
                                 </div>
                               </div>
@@ -963,7 +989,7 @@ export function DiscountTransactionModal({
                         />
                       </Form.Item>
 
-                      {selectedCompanyId ? (
+                      {selectedCompanyIdNum ? (
                         <Form.Item
                           style={{ flex: '1 1 380px', marginBottom: 0 }}
                           name="idEmpleado"
@@ -998,7 +1024,7 @@ export function DiscountTransactionModal({
                 </Col>
 
                 <Col xs={24} lg={16} style={{ display: 'flex', flexDirection: 'column', minHeight: 0 }}>
-                  {selectedCompanyId && selectedEmployeeId ? (
+                  {selectedCompanyIdNum && selectedEmployeeIdNum ? (
                     <Card
                       size="small"
                       style={{
