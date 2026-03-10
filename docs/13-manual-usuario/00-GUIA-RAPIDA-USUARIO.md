@@ -17,6 +17,7 @@ Lealo en este orden para configurar y luego operar planilla sin bloqueos.
 11. [Planilla operativa](./05-PLANILLA-OPERATIVA.md)
 12. [Traslado interempresa](./13-TRASLADO-INTEREMPRESA.md)
 13. [Flujos criticos y escenarios](./08-FLUJOS-CRITICOS-Y-ESCENARIOS.md)
+14. [Walkthroughs completos](./08-FLUJOS-CRITICOS-Y-ESCENARIOS.md)
 
 ## 🎯 Atajos rapidos
 - Quiero crear una empresa: [Empresas](./01-EMPRESAS.md)
@@ -45,5 +46,6 @@ Si el sistema bloquea una accion, revise siempre en este orden:
 ## 🔗 Ver tambien
 - [Indice principal de documentacion](../00-INDICE-CONSOLIDACION.md)
 - [Manual tecnico](../14-manual-tecnico/00-STACK-Y-ARQUITECTURA.md)
+
 
 

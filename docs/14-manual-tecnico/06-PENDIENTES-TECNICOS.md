@@ -12,6 +12,17 @@
 - Performance
 - Cobertura API/QA
 
+## 📊 Vista operativa recomendada
+Use como tablero oficial:
+- [Backlog consolidado (tablero vivo)](../12-backlog-pendientes/BACKLOG-CONSOLIDADO.md)
+
+Cada fila debe tener:
+1. Owner
+2. Estado
+3. Fecha objetivo
+4. Bloqueo actual
+5. Criterio de cierre
+
 ## 🎯 Regla de cierre de pendiente
 Un pendiente se cierra cuando:
 1. Existe cambio implementado.
@@ -21,5 +32,3 @@ Un pendiente se cierra cuando:
 ## 🔗 Ver tambien
 - [Backlog consolidado](../12-backlog-pendientes/BACKLOG-CONSOLIDADO.md)
 - [Gobierno de cambios](../15-enterprise-gobierno/03-GOBIERNO-CAMBIOS-DOCS.md)
-
-
