@@ -14,7 +14,17 @@
 | No permite inactivar empleado | Planillas activas o acciones pendientes | Revisar planillas + acciones sin planilla |
 | No permite verificar planilla | Sin snapshots o sin resultados | Revisar tablas snapshot/resultados |
 | Accion no impacta planilla | Estado no aprobado | Revisar estado de accion y avance |
+| `value.getUTCFullYear is not a function` en `load-table` | Fecha de accion en formato string no normalizada | Validar parseo `Date|string` antes de prorrateo/UTC |
 | Traslado interempresa falla | Destino incompatible | Ejecutar simulacion y revisar bloqueos |
+
+## 🎯 Caso resuelto: error de fecha en recarga de planilla
+- Endpoint afectado: `PATCH /api/payroll/:id/load-table`
+- Causa: el prorrateo asumia `Date` y recibia `string` en algunas acciones.
+- Correccion aplicada en backend:
+  - parseo flexible de fecha para `Date|string`,
+  - normalizacion segura a medianoche UTC,
+  - uso del parseo en prorrateo y metadata retro.
+- Validacion: compilacion de API exitosa y recarga de tabla sin excepcion de tipo.
 
 ## 🔄 Flujo de diagnostico
 ```mermaid

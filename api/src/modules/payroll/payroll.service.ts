@@ -48,6 +48,20 @@ import type { CreatePayrollDto } from './dto/create-payroll.dto';
 import type { PayrollCalendarResponse } from './dto/payroll-response.dto';
 import type { UpdatePayrollDto } from './dto/update-payroll.dto';
 
+interface ApprovedActionRuleData {
+  absenceNonRemDays: number;
+  licenseNonRemDays: number;
+  licenseRemAmount: number;
+  disabilityDays: number;
+  disabilityCcssAmount: number;
+  vacationDays: number;
+  increaseAmount: number;
+  bonusAmount: number;
+  overtimeAmount: number;
+  retentionAmount: number;
+  discountAmount: number;
+}
+
 @Injectable()
 export class PayrollService {
   private readonly logger = new Logger(PayrollService.name);
@@ -543,6 +557,7 @@ export class PayrollService {
         id_periodos_pago: number | null;
         cantidad_hijos_empleado: number | null;
         estado_civil_empleado: string | null;
+        fecha_ingreso_empleado: Date | string | null;
       }> = await queryRunner.manager.query(
         `
             SELECT
@@ -553,7 +568,8 @@ export class PayrollService {
               cuenta_banco_empleado,
               id_periodos_pago,
               cantidad_hijos_empleado,
-              estado_civil_empleado
+              estado_civil_empleado,
+              fecha_ingreso_empleado
             FROM sys_empleados
           WHERE id_empresa = ?
             AND estado_empleado = 1
@@ -652,7 +668,9 @@ export class PayrollService {
         .andWhere('a.estado = :approvedState', {
           approvedState: PersonalActionEstado.APPROVED,
         })
-        .andWhere('a.idCalendarioNomina IS NULL')
+        .andWhere('(a.idCalendarioNomina IS NULL OR a.idCalendarioNomina = :payrollId)', {
+          payrollId: payroll.id,
+        })
         .andWhere('COALESCE(a.fechaInicioEfecto, a.fechaEfecto) IS NOT NULL')
         .andWhere(
           `COALESCE(a.fechaInicioEfecto, a.fechaEfecto) <= :end
@@ -663,14 +681,37 @@ export class PayrollService {
         .getMany();
 
       const displayActionStates: PersonalActionEstado[] = [
-        PersonalActionEstado.DRAFT,
         PersonalActionEstado.PENDING_SUPERVISOR,
         PersonalActionEstado.PENDING_RRHH,
         PersonalActionEstado.APPROVED,
       ];
 
+      const approvedActionRuleMap = await this.loadApprovedActionRuleMap(
+        queryRunner.manager,
+        approvedActions.map((action) => action.id),
+      );
+      const employeeDaysAdjustmentMap = new Map<number, number>();
+      const employeeDaysOverrideMap = new Map<number, number>();
       const resultAccumulator = new Map<number, { gross: number; ded: number }>();
       const approvedActionAmountMap = new Map<number, number>();
+      const employeePayrollBasisMap = new Map<
+        number,
+        { salarioBase: number; diasPeriodo: number; isHourly: boolean }
+      >();
+
+      for (const employee of employees) {
+        const salarioBase = Number(this.toMoney(employee.salario_base_empleado));
+        const periodInfo = employee.id_periodos_pago
+          ? periodMap.get(employee.id_periodos_pago)
+          : null;
+        const diasPeriodo = periodInfo?.dias && periodInfo.dias > 0 ? periodInfo.dias : 30;
+        const isHourly = String(employee.jornada_empleado ?? '').toLowerCase() === 'por horas';
+        employeePayrollBasisMap.set(employee.id_empleado, {
+          salarioBase,
+          diasPeriodo,
+          isHourly,
+        });
+      }
 
       for (const action of approvedActions) {
         const amount = Number(action.monto ?? 0);
@@ -680,6 +721,35 @@ export class PayrollService {
           payroll.fechaFinPeriodo,
           amount,
         );
+        const actionRuleData = approvedActionRuleMap.get(action.id);
+        const employeePayrollBasis = employeePayrollBasisMap.get(action.idEmpleado);
+        const effectiveAmount = this.resolveApprovedActionAmountForPayroll(
+          action.tipoAccion,
+          prorated.montoFinal,
+          actionRuleData,
+          employeePayrollBasis?.salarioBase ?? 0,
+          employeePayrollBasis?.isHourly ?? false,
+        );
+        const daysToSubtract = this.resolveApprovedActionDaysImpact(
+          action.tipoAccion,
+          actionRuleData,
+        );
+        if (daysToSubtract > 0 && !(employeePayrollBasis?.isHourly ?? false)) {
+          const previousDays = employeeDaysAdjustmentMap.get(action.idEmpleado) ?? 0;
+          employeeDaysAdjustmentMap.set(action.idEmpleado, previousDays + daysToSubtract);
+        }
+        const terminationDays = this.resolveTerminationDaysImpact(
+          action,
+          payroll.fechaInicioPeriodo,
+          payroll.fechaFinPeriodo,
+        );
+        if (terminationDays != null && !(employeePayrollBasis?.isHourly ?? false)) {
+          const currentOverride = employeeDaysOverrideMap.get(action.idEmpleado);
+          employeeDaysOverrideMap.set(
+            action.idEmpleado,
+            currentOverride == null ? terminationDays : Math.min(currentOverride, terminationDays),
+          );
+        }
         const retroMeta = this.resolveRetroMetadata(action, payroll);
         const input = queryRunner.manager.create(PayrollInputSnapshot, {
           idNomina: payroll.id,
@@ -691,24 +761,24 @@ export class PayrollService {
           tipoAccion: action.tipoAccion,
           unidades: prorated.unidades.toFixed(4),
           montoBase: prorated.montoBase.toFixed(6),
-          montoFinal: prorated.montoFinal.toFixed(2),
+          montoFinal: effectiveAmount.toFixed(2),
           isRetro: retroMeta.isRetro ? 1 : 0,
           originalPeriod: retroMeta.originalPeriod,
-          monto: prorated.montoFinal.toFixed(4),
+          monto: effectiveAmount.toFixed(4),
         });
         await queryRunner.manager.save(PayrollInputSnapshot, input);
 
         action.idCalendarioNomina = payroll.id;
-        approvedActionAmountMap.set(action.id, prorated.montoFinal);
+        approvedActionAmountMap.set(action.id, effectiveAmount);
         action.modificadoPor = userId ?? null;
         await queryRunner.manager.save(PersonalAction, action);
 
         const key = action.idEmpleado;
         const prev = resultAccumulator.get(key) ?? { gross: 0, ded: 0 };
-        if (this.isDeductionAction(action.tipoAccion)) {
-          prev.ded += prorated.montoFinal;
+        if (this.isNetDeductionAction(action.tipoAccion)) {
+          prev.ded += effectiveAmount;
         } else {
-          prev.gross += prorated.montoFinal;
+          prev.gross += effectiveAmount;
         }
         resultAccumulator.set(key, prev);
       }
@@ -759,7 +829,9 @@ export class PayrollService {
           fechaEfecto: action.fechaEfecto ?? action.fechaInicioEfecto ?? null,
           estado: this.resolvePersonalActionStatusLabel(action.estado),
           estadoCodigo: Number(action.estado),
-          canApprove: action.estado === PersonalActionEstado.PENDING_SUPERVISOR,
+          canApprove:
+            action.estado === PersonalActionEstado.PENDING_SUPERVISOR ||
+            action.estado === PersonalActionEstado.PENDING_RRHH,
         });
         displayActionsByEmployee.set(action.idEmpleado, employeeActionRows);
       }
@@ -785,11 +857,35 @@ export class PayrollService {
         const diasPeriodo = periodInfo?.dias && periodInfo.dias > 0 ? periodInfo.dias : 30;
         const nombrePeriodo = periodInfo?.nombre ?? '';
         const isHourly = String(employee.jornada_empleado ?? '').toLowerCase() === 'por horas';
-        const devengadoDias = isHourly ? null : diasPeriodo;
+        const daysToSubtract = employeeDaysAdjustmentMap.get(employee.id_empleado) ?? 0;
+        let baseDiasLaborados = diasPeriodo;
+        if (!isHourly) {
+          const ingreso = this.parseFlexibleDate(employee.fecha_ingreso_empleado ?? null);
+          if (ingreso) {
+            const ingresoMidnight = this.toMidnightUtc(ingreso);
+            const startMidnight = this.toMidnightUtc(startDate);
+            const endMidnight = this.toMidnightUtc(endDate);
+            if (
+              ingresoMidnight.getTime() >= startMidnight.getTime() &&
+              ingresoMidnight.getTime() <= endMidnight.getTime()
+            ) {
+              const millisecondsPerDay = 1000 * 60 * 60 * 24;
+              baseDiasLaborados =
+                Math.floor((endMidnight.getTime() - ingresoMidnight.getTime()) / millisecondsPerDay) +
+                1;
+            }
+          }
+          const overrideDays = employeeDaysOverrideMap.get(employee.id_empleado);
+          if (overrideDays != null) {
+            baseDiasLaborados = Math.max(0, Math.min(baseDiasLaborados, overrideDays));
+          }
+        }
+        const diasLaborados = isHourly ? null : Math.max(0, baseDiasLaborados - daysToSubtract);
+        const devengadoDias = isHourly ? null : diasLaborados;
         const devengadoHoras = isHourly ? diasPeriodo * 8 : null;
         const salarioBrutoPeriodo = isHourly
           ? salarioBase * (devengadoHoras ?? 0)
-          : salarioBase * (diasPeriodo / 30);
+          : salarioBase * ((diasLaborados ?? diasPeriodo) / 30);
         const totalBruto = salarioBrutoPeriodo + totals.gross;
         const socialChargeDetail = this.calculateSocialCharges(totalBruto, socialChargeConfigs);
         const cargasSociales = socialChargeDetail.total;
@@ -2456,15 +2552,25 @@ export class PayrollService {
   }
 
   private isDeductionAction(actionType: string): boolean {
-    return actionType.toLowerCase().includes('deduc');
+    return this.isNetDeductionAction(actionType);
+  }
+
+  private isNetDeductionAction(actionType: string): boolean {
+    const normalized = this.normalizeActionType(actionType);
+    return (
+      normalized.includes('deduc') ||
+      normalized.includes('retencion') ||
+      normalized.includes('descuento')
+    );
   }
 
   private resolveRetroMetadata(
     action: PersonalAction,
     payroll: PayrollCalendar,
   ): { isRetro: boolean; originalPeriod: string | null } {
-    const effectStart = action.fechaInicioEfecto ?? action.fechaEfecto;
-    if (!effectStart || Number.isNaN(effectStart.getTime())) {
+    const effectStartRaw = action.fechaInicioEfecto ?? action.fechaEfecto;
+    const effectStart = this.parseFlexibleDate(effectStartRaw);
+    if (!effectStart) {
       return { isRetro: false, originalPeriod: null };
     }
 
@@ -2485,8 +2591,10 @@ export class PayrollService {
     periodoFin: Date,
     montoOriginal: number,
   ): { unidades: number; montoBase: number; montoFinal: number } {
-    const actionStart = action.fechaInicioEfecto ?? action.fechaEfecto;
-    const actionEnd = action.fechaFinEfecto ?? action.fechaInicioEfecto ?? action.fechaEfecto;
+    const actionStartRaw = action.fechaInicioEfecto ?? action.fechaEfecto;
+    const actionEndRaw = action.fechaFinEfecto ?? action.fechaInicioEfecto ?? action.fechaEfecto;
+    const actionStart = this.parseFlexibleDate(actionStartRaw);
+    const actionEnd = this.parseFlexibleDate(actionEndRaw);
 
     if (!actionStart || !actionEnd) {
       return { unidades: 1, montoBase: montoOriginal, montoFinal: montoOriginal };
@@ -2522,8 +2630,345 @@ export class PayrollService {
     };
   }
 
-  private toMidnightUtc(value: Date): Date {
-    return new Date(Date.UTC(value.getUTCFullYear(), value.getUTCMonth(), value.getUTCDate()));
+  private async loadApprovedActionRuleMap(
+    manager: EntityManager,
+    actionIds: number[],
+  ): Promise<Map<number, ApprovedActionRuleData>> {
+    const map = new Map<number, ApprovedActionRuleData>();
+    if (actionIds.length === 0) return map;
+
+    const placeholders = actionIds.map(() => '?').join(', ');
+
+    const absenceRows = (await manager.query(
+      `
+        SELECT
+          id_accion AS actionId,
+          COALESCE(SUM(CASE WHEN remuneracion_linea = 0 THEN cantidad_linea ELSE 0 END), 0) AS nonRemDays
+        FROM acc_ausencias_lineas
+        WHERE id_accion IN (${placeholders})
+        GROUP BY id_accion
+      `,
+      actionIds,
+    )) as Array<{ actionId: number; nonRemDays: number | string }>;
+
+    for (const row of absenceRows) {
+      const data = this.getOrInitActionRuleData(map, Number(row.actionId));
+      data.absenceNonRemDays = this.toSafeNumber(row.nonRemDays);
+    }
+
+    const licenseRows = (await manager.query(
+      `
+        SELECT
+          id_accion AS actionId,
+          COALESCE(SUM(CASE WHEN remuneracion_linea = 0 THEN cantidad_linea ELSE 0 END), 0) AS nonRemDays,
+          COALESCE(SUM(CASE WHEN remuneracion_linea = 1 THEN monto_linea ELSE 0 END), 0) AS remuneratedAmount
+        FROM acc_licencias_lineas
+        WHERE id_accion IN (${placeholders})
+        GROUP BY id_accion
+      `,
+      actionIds,
+    )) as Array<{ actionId: number; nonRemDays: number | string; remuneratedAmount: number | string }>;
+
+    for (const row of licenseRows) {
+      const data = this.getOrInitActionRuleData(map, Number(row.actionId));
+      data.licenseNonRemDays = this.toSafeNumber(row.nonRemDays);
+      data.licenseRemAmount = this.toSafeNumber(row.remuneratedAmount);
+    }
+
+    const disabilityRows = (await manager.query(
+      `
+        SELECT
+          id_accion AS actionId,
+          COALESCE(SUM(cantidad_linea), 0) AS disabilityDays,
+          COALESCE(SUM(CASE WHEN UPPER(tipo_institucion_linea) = 'CCSS' THEN monto_linea ELSE 0 END), 0) AS ccssAmount
+        FROM acc_incapacidades_lineas
+        WHERE id_accion IN (${placeholders})
+        GROUP BY id_accion
+      `,
+      actionIds,
+    )) as Array<{ actionId: number; disabilityDays: number | string; ccssAmount: number | string }>;
+
+    for (const row of disabilityRows) {
+      const data = this.getOrInitActionRuleData(map, Number(row.actionId));
+      data.disabilityDays = this.toSafeNumber(row.disabilityDays);
+      data.disabilityCcssAmount = this.toSafeNumber(row.ccssAmount);
+    }
+
+    const vacationRows = (await manager.query(
+      `
+        SELECT
+          id_accion AS actionId,
+          COUNT(*) AS vacationDays
+        FROM acc_vacaciones_fechas
+        WHERE id_accion IN (${placeholders})
+        GROUP BY id_accion
+      `,
+      actionIds,
+    )) as Array<{ actionId: number; vacationDays: number | string }>;
+
+    for (const row of vacationRows) {
+      const data = this.getOrInitActionRuleData(map, Number(row.actionId));
+      data.vacationDays = this.toSafeNumber(row.vacationDays);
+    }
+
+    const increaseRows = (await manager.query(
+      `
+        SELECT
+          id_accion AS actionId,
+          COALESCE(SUM(monto_linea), 0) AS amount
+        FROM acc_aumentos_lineas
+        WHERE id_accion IN (${placeholders})
+        GROUP BY id_accion
+      `,
+      actionIds,
+    )) as Array<{ actionId: number; amount: number | string }>;
+
+    for (const row of increaseRows) {
+      const data = this.getOrInitActionRuleData(map, Number(row.actionId));
+      data.increaseAmount = this.toSafeNumber(row.amount);
+    }
+
+    const bonusRows = (await manager.query(
+      `
+        SELECT
+          id_accion AS actionId,
+          COALESCE(SUM(monto_linea), 0) AS amount
+        FROM acc_bonificaciones_lineas
+        WHERE id_accion IN (${placeholders})
+        GROUP BY id_accion
+      `,
+      actionIds,
+    )) as Array<{ actionId: number; amount: number | string }>;
+
+    for (const row of bonusRows) {
+      const data = this.getOrInitActionRuleData(map, Number(row.actionId));
+      data.bonusAmount = this.toSafeNumber(row.amount);
+    }
+
+    const overtimeRows = (await manager.query(
+      `
+        SELECT
+          id_accion AS actionId,
+          COALESCE(SUM(monto_linea), 0) AS amount
+        FROM acc_horas_extras_lineas
+        WHERE id_accion IN (${placeholders})
+        GROUP BY id_accion
+      `,
+      actionIds,
+    )) as Array<{ actionId: number; amount: number | string }>;
+
+    for (const row of overtimeRows) {
+      const data = this.getOrInitActionRuleData(map, Number(row.actionId));
+      data.overtimeAmount = this.toSafeNumber(row.amount);
+    }
+
+    const retentionRows = (await manager.query(
+      `
+        SELECT
+          id_accion AS actionId,
+          COALESCE(SUM(monto_linea), 0) AS amount
+        FROM acc_retenciones_lineas
+        WHERE id_accion IN (${placeholders})
+        GROUP BY id_accion
+      `,
+      actionIds,
+    )) as Array<{ actionId: number; amount: number | string }>;
+
+    for (const row of retentionRows) {
+      const data = this.getOrInitActionRuleData(map, Number(row.actionId));
+      data.retentionAmount = this.toSafeNumber(row.amount);
+    }
+
+    const discountRows = (await manager.query(
+      `
+        SELECT
+          id_accion AS actionId,
+          COALESCE(SUM(monto_linea), 0) AS amount
+        FROM acc_descuentos_lineas
+        WHERE id_accion IN (${placeholders})
+        GROUP BY id_accion
+      `,
+      actionIds,
+    )) as Array<{ actionId: number; amount: number | string }>;
+
+    for (const row of discountRows) {
+      const data = this.getOrInitActionRuleData(map, Number(row.actionId));
+      data.discountAmount = this.toSafeNumber(row.amount);
+    }
+
+    return map;
+  }
+
+  private resolveApprovedActionDaysImpact(
+    actionType: string,
+    data?: ApprovedActionRuleData,
+  ): number {
+    if (!data) return 0;
+    const normalizedType = this.normalizeActionType(actionType);
+
+    if (normalizedType === 'ausencia') return data.absenceNonRemDays;
+    if (normalizedType === 'licencia') return data.licenseNonRemDays;
+    if (normalizedType === 'incapacidad') return data.disabilityDays;
+    if (normalizedType === 'vacaciones' || normalizedType === 'vacacion' || normalizedType === 'vacation') {
+      return data.vacationDays;
+    }
+    return 0;
+  }
+
+  private resolveApprovedActionAmountForPayroll(
+    actionType: string,
+    defaultAmount: number,
+    data: ApprovedActionRuleData | undefined,
+    salaryBase: number,
+    isHourly: boolean,
+  ): number {
+    const normalizedType = this.normalizeActionType(actionType);
+
+    if (normalizedType === 'ausencia') {
+      return 0;
+    }
+
+    if (normalizedType === 'licencia') {
+      return data ? data.licenseRemAmount : defaultAmount;
+    }
+
+    if (normalizedType === 'incapacidad') {
+      return data ? data.disabilityCcssAmount : defaultAmount;
+    }
+
+    if (normalizedType === 'aumento') {
+      return data && data.increaseAmount > 0 ? data.increaseAmount : defaultAmount;
+    }
+
+    if (normalizedType === 'bonificacion') {
+      return data && data.bonusAmount > 0 ? data.bonusAmount : defaultAmount;
+    }
+
+    if (normalizedType === 'hora_extra') {
+      return data && data.overtimeAmount > 0 ? data.overtimeAmount : defaultAmount;
+    }
+
+    if (normalizedType === 'retencion' || normalizedType === 'deduccion_retencion') {
+      return data && data.retentionAmount > 0 ? data.retentionAmount : defaultAmount;
+    }
+
+    if (normalizedType === 'descuento' || normalizedType === 'deduccion_descuento') {
+      return data && data.discountAmount > 0 ? data.discountAmount : defaultAmount;
+    }
+
+    if (normalizedType === 'vacaciones' || normalizedType === 'vacacion' || normalizedType === 'vacation') {
+      if (!data || data.vacationDays <= 0) return 0;
+      if (isHourly) return defaultAmount;
+      return Number(((salaryBase / 30) * data.vacationDays).toFixed(2));
+    }
+
+    return defaultAmount;
+  }
+
+  private getOrInitActionRuleData(
+    map: Map<number, ApprovedActionRuleData>,
+    actionId: number,
+  ): ApprovedActionRuleData {
+    const existing = map.get(actionId);
+    if (existing) return existing;
+    const created: ApprovedActionRuleData = {
+      absenceNonRemDays: 0,
+      licenseNonRemDays: 0,
+      licenseRemAmount: 0,
+      disabilityDays: 0,
+      disabilityCcssAmount: 0,
+      vacationDays: 0,
+      increaseAmount: 0,
+      bonusAmount: 0,
+      overtimeAmount: 0,
+      retentionAmount: 0,
+      discountAmount: 0,
+    };
+    map.set(actionId, created);
+    return created;
+  }
+
+  private resolveTerminationDaysImpact(
+    action: PersonalAction,
+    payrollStart: Date,
+    payrollEnd: Date,
+  ): number | null {
+    const normalizedType = this.normalizeActionType(action.tipoAccion);
+    if (!normalizedType.includes('renuncia') && !normalizedType.includes('despid')) {
+      return null;
+    }
+
+    const endRaw = action.fechaFinEfecto ?? action.fechaInicioEfecto ?? action.fechaEfecto;
+    const endDate = this.parseFlexibleDate(endRaw);
+    if (!endDate) return null;
+
+    const endMidnight = this.toMidnightUtc(endDate);
+    const periodStart = this.toMidnightUtc(payrollStart);
+    const periodEnd = this.toMidnightUtc(payrollEnd);
+    const clampedEnd = Math.min(endMidnight.getTime(), periodEnd.getTime());
+    if (clampedEnd < periodStart.getTime()) return 0;
+
+    const millisecondsPerDay = 1000 * 60 * 60 * 24;
+    return Math.floor((clampedEnd - periodStart.getTime()) / millisecondsPerDay) + 1;
+  }
+
+  private toSafeNumber(value: unknown): number {
+    const parsed = Number(value ?? 0);
+    if (Number.isNaN(parsed) || !Number.isFinite(parsed)) return 0;
+    return parsed;
+  }
+
+  private normalizeActionType(actionType: string): string {
+    return String(actionType ?? '').trim().toLowerCase();
+  }
+
+  private toMidnightUtc(value: Date | string): Date {
+    const parsed = this.parseFlexibleDate(value);
+    if (!parsed) {
+      throw new BadRequestException('Fecha invalida para normalizacion UTC.');
+    }
+    return new Date(Date.UTC(parsed.getUTCFullYear(), parsed.getUTCMonth(), parsed.getUTCDate()));
+  }
+
+  private parseFlexibleDate(value: Date | string | null | undefined): Date | null {
+    if (value == null) return null;
+
+    if (value instanceof Date) {
+      return Number.isNaN(value.getTime()) ? null : value;
+    }
+
+    if (typeof value !== 'string') return null;
+
+    const normalized = value.trim();
+    if (!normalized) return null;
+
+    const isoDateOnly = normalized.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+    if (isoDateOnly) {
+      const [, year, month, day] = isoDateOnly;
+      return new Date(Date.UTC(Number(year), Number(month) - 1, Number(day)));
+    }
+
+    const mysqlDateTime = normalized.match(
+      /^(\d{4})-(\d{2})-(\d{2})[ T](\d{2}):(\d{2}):(\d{2})(?:\.\d+)?$/,
+    );
+    if (mysqlDateTime) {
+      const [, year, month, day, hour, minute, second] = mysqlDateTime;
+      return new Date(
+        Date.UTC(
+          Number(year),
+          Number(month) - 1,
+          Number(day),
+          Number(hour),
+          Number(minute),
+          Number(second),
+        ),
+      );
+    }
+
+    const parsed = new Date(normalized);
+    if (!Number.isNaN(parsed.getTime())) return parsed;
+
+    return null;
   }
 
   private async loadSocialChargeConfigs(
@@ -2670,10 +3115,10 @@ export class PayrollService {
     ];
     const rows: Array<{
       id_empleado: number;
-      total_bruto_resultado: string;
+      salario_bruto_periodo_resultado: string;
     }> = await manager.query(
       `
-        SELECT r.id_empleado, r.total_bruto_resultado
+        SELECT r.id_empleado, r.salario_bruto_periodo_resultado
         FROM nomina_resultados r
         INNER JOIN nom_calendarios_nomina p
           ON p.id_calendario_nomina = r.id_nomina
@@ -2697,7 +3142,7 @@ export class PayrollService {
     );
     const map = new Map<number, number>();
     for (const row of rows) {
-      map.set(row.id_empleado, Number(row.total_bruto_resultado ?? 0));
+      map.set(row.id_empleado, Number(row.salario_bruto_periodo_resultado ?? 0));
     }
     return map;
   }

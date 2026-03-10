@@ -9,6 +9,7 @@ import {
   Select,
   Table,
   Tag,
+  Tooltip,
   Typography,
 } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
@@ -109,7 +110,112 @@ function isApprovedActionVisual(row: PayrollPreviewActionRow): boolean {
   const estado = String(row.estado ?? '').trim().toLowerCase();
   const categoria = String(row.categoria ?? '').trim().toLowerCase();
   if (categoria === 'carga social') return true;
+  if (categoria === 'impuesto renta') return true;
   return estado.includes('aprobad');
+}
+
+function normalizeText(value: unknown): string {
+  return String(value ?? '').trim().toLowerCase();
+}
+
+type ActionInterpretation = {
+  impactLabel: string;
+  impactColor: 'green' | 'red' | 'blue' | 'default';
+  affectsDaysLabel: string;
+  appliesToCalculation: boolean;
+  explanation: string;
+};
+
+function interpretActionRow(row: PayrollPreviewActionRow): ActionInterpretation {
+  const categoria = normalizeText(row.categoria);
+  const tipo = normalizeText(row.tipoAccion);
+  const isApplied = isApprovedActionVisual(row);
+
+  if (categoria === 'ausencias' || tipo.includes('ausencia')) {
+    return {
+      impactLabel: 'Solo días',
+      impactColor: 'blue',
+      affectsDaysLabel: 'Sí (si no remunerada)',
+      appliesToCalculation: isApplied,
+      explanation:
+        'La ausencia puede reducir días laborados. Solo impacta monto cuando está aprobada y la regla de remuneración lo permite.',
+    };
+  }
+
+  if (categoria === 'licencias' || tipo.includes('licencia')) {
+    return {
+      impactLabel: 'Mixto',
+      impactColor: 'blue',
+      affectsDaysLabel: 'Sí (si no remunerada)',
+      appliesToCalculation: isApplied,
+      explanation:
+        'La licencia no remunerada reduce días. La licencia remunerada suma monto en devengado cuando está aprobada.',
+    };
+  }
+
+  if (categoria === 'incapacidades' || tipo.includes('incapacidad')) {
+    return {
+      impactLabel: 'Mixto',
+      impactColor: 'blue',
+      affectsDaysLabel: 'Sí',
+      appliesToCalculation: isApplied,
+      explanation:
+        'La incapacidad reduce días y puede sumar monto según la regla de institución (CCSS) cuando está aprobada.',
+    };
+  }
+
+  if (categoria === 'vacaciones' || tipo.includes('vacacion')) {
+    return {
+      impactLabel: 'Mixto',
+      impactColor: 'blue',
+      affectsDaysLabel: 'Sí',
+      appliesToCalculation: isApplied,
+      explanation:
+        'Vacaciones restan días de labor y su monto se recalcula por días del período cuando la acción está aprobada.',
+    };
+  }
+
+  if (categoria === 'carga social' || tipo.includes('ccss')) {
+    return {
+      impactLabel: 'Resta',
+      impactColor: 'red',
+      affectsDaysLabel: 'No',
+      appliesToCalculation: true,
+      explanation:
+        'Carga social calculada automáticamente sobre el bruto/devengado del empleado.',
+    };
+  }
+
+  if (categoria === 'impuesto renta' || tipo.includes('renta')) {
+    return {
+      impactLabel: 'Resta',
+      impactColor: 'red',
+      affectsDaysLabel: 'No',
+      appliesToCalculation: true,
+      explanation:
+        'Impuesto de renta calculado por tramos fiscales y créditos aplicables.',
+    };
+  }
+
+  if (tipo.includes('retencion') || tipo.includes('descuento') || row.tipoSigno === '-') {
+    return {
+      impactLabel: 'Resta',
+      impactColor: 'red',
+      affectsDaysLabel: 'No',
+      appliesToCalculation: isApplied,
+      explanation:
+        'Deducción/retención que reduce el monto neto del empleado cuando está aprobada.',
+    };
+  }
+
+  return {
+    impactLabel: 'Suma',
+    impactColor: 'green',
+    affectsDaysLabel: 'No',
+    appliesToCalculation: isApplied,
+    explanation:
+      'Acción de ingreso que aumenta el devengado del empleado cuando está aprobada.',
+  };
 }
 
 
@@ -453,7 +559,30 @@ export function PayrollGeneratePage() {
   const actionColumns: ColumnsType<PayrollPreviewActionRow> = useMemo(
     () => [
       { title: 'Categoria', dataIndex: 'categoria' },
-      { title: 'Tipo de Accion', dataIndex: 'tipoAccion' },
+      {
+        title: 'Tipo de Accion',
+        dataIndex: 'tipoAccion',
+        render: (value: string, row) => {
+          const interpretation = interpretActionRow(row);
+          return (
+            <div className={genStyles.actionTypeCell}>
+              <span>{value}</span>
+              <Tooltip title={interpretation.explanation}>
+                <span className={genStyles.actionHelp}>¿Como impacta?</span>
+              </Tooltip>
+            </div>
+          );
+        },
+      },
+      {
+        title: 'Impacto',
+        key: 'impacto',
+        align: 'center',
+        render: (_, row) => {
+          const interpretation = interpretActionRow(row);
+          return <Tag color={interpretation.impactColor}>{interpretation.impactLabel}</Tag>;
+        },
+      },
       {
         title: 'Monto',
         dataIndex: 'monto',
@@ -461,9 +590,26 @@ export function PayrollGeneratePage() {
         render: (value: string) => (canViewSensitive ? formatMoney(value) : '***'),
       },
       {
-        title: 'Tipo (+/-)',
-        dataIndex: 'tipoSigno',
+        title: 'Afecta dias',
+        key: 'afecta-dias',
         align: 'center',
+        render: (_, row) => {
+          const interpretation = interpretActionRow(row);
+          return interpretation.affectsDaysLabel;
+        },
+      },
+      {
+        title: 'Aplicada al calculo',
+        key: 'aplicada-calculo',
+        align: 'center',
+        render: (_, row) => {
+          const interpretation = interpretActionRow(row);
+          return (
+            <Tag color={interpretation.appliesToCalculation ? 'green' : 'default'}>
+              {interpretation.appliesToCalculation ? 'Si' : 'No'}
+            </Tag>
+          );
+        },
       },
       {
         title: 'Estado',
@@ -752,6 +898,17 @@ export function PayrollGeneratePage() {
                     expandedRowRender: (row) => (
                       <div style={{ padding: 8 }}>
                         <div style={{ marginBottom: 8, fontWeight: 600 }}>Detalle de acciones de personal</div>
+                        <div className={genStyles.actionLegend}>
+                          <span>
+                            <strong>Si:</strong> ya impacta calculo del empleado.
+                          </span>
+                          <span>
+                            <strong>No:</strong> aun no impacta (pendiente de aprobacion).
+                          </span>
+                          <span>
+                            <strong>Impacto:</strong> Suma/Resta/Solo dias/Mixto.
+                          </span>
+                        </div>
                         <Table<PayrollPreviewActionRow>
                           rowKey={(action) => `${row.idEmpleado}-${action.idAccion ?? 'na'}-${action.categoria}-${action.tipoAccion}-${action.monto}-${action.estado}-${action.tipoSigno}`}
                           dataSource={row.acciones}

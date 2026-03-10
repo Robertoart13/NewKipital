@@ -411,3 +411,27 @@
   color: #15803d !important;
 }
 
+.actionTypeCell {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.actionHelp {
+  color: #246BA3;
+  font-size: 11px;
+  font-weight: 600;
+  width: fit-content;
+  cursor: help;
+  border-bottom: 1px dashed rgba(36, 107, 163, 0.45);
+}
+
+.actionLegend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  margin-bottom: 10px;
+  font-size: 12px;
+  color: #334155;
+}
+

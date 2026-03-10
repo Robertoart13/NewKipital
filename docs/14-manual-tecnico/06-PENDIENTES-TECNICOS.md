@@ -29,6 +29,14 @@ Un pendiente se cierra cuando:
 2. Existe evidencia de prueba.
 3. Se actualiza documento maestro correspondiente.
 
+## 📌 Pendientes finos de paridad legacy (planilla)
+| Prioridad | Pendiente | Estado |
+|---|---|---|
+| `P1` | Validar en ambiente corriendo (`PATCH /api/payroll/:id/load-table`) paridad exacta campo a campo para empleados quincenales con combinacion de acciones. | Pendiente de ejecucion |
+| `P1` | Confirmar regla de empleados por horas vs legacy (legacy usa flujo especifico de horas extras, distinto al flujo quincenal/mensual). | Pendiente de decision funcional |
+| `P1` | Confirmar fuente de `credito por conyuge`: legacy usa bandera booleana; modelo actual deriva desde estado civil. | Pendiente de confirmacion de negocio |
+| `P2` | Validar comportamiento de empleados `verificados` vs legacy (legacy conserva/rehidrata ciertos valores). | Pendiente de analisis final |
+
 ## 🔗 Ver tambien
 - [Backlog consolidado](../12-backlog-pendientes/BACKLOG-CONSOLIDADO.md)
 - [Gobierno de cambios](../15-enterprise-gobierno/03-GOBIERNO-CAMBIOS-DOCS.md)
