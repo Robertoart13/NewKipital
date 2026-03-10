@@ -9,7 +9,6 @@ import {
   Select,
   Table,
   Tag,
-  Tooltip,
   Typography,
 } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
@@ -113,111 +112,6 @@ function isApprovedActionVisual(row: PayrollPreviewActionRow): boolean {
   if (categoria === 'impuesto renta') return true;
   return estado.includes('aprobad');
 }
-
-function normalizeText(value: unknown): string {
-  return String(value ?? '').trim().toLowerCase();
-}
-
-type ActionInterpretation = {
-  impactLabel: string;
-  impactColor: 'green' | 'red' | 'blue' | 'default';
-  affectsDaysLabel: string;
-  appliesToCalculation: boolean;
-  explanation: string;
-};
-
-function interpretActionRow(row: PayrollPreviewActionRow): ActionInterpretation {
-  const categoria = normalizeText(row.categoria);
-  const tipo = normalizeText(row.tipoAccion);
-  const isApplied = isApprovedActionVisual(row);
-
-  if (categoria === 'ausencias' || tipo.includes('ausencia')) {
-    return {
-      impactLabel: 'Solo días',
-      impactColor: 'blue',
-      affectsDaysLabel: 'Sí (si no remunerada)',
-      appliesToCalculation: isApplied,
-      explanation:
-        'La ausencia puede reducir días laborados. Solo impacta monto cuando está aprobada y la regla de remuneración lo permite.',
-    };
-  }
-
-  if (categoria === 'licencias' || tipo.includes('licencia')) {
-    return {
-      impactLabel: 'Mixto',
-      impactColor: 'blue',
-      affectsDaysLabel: 'Sí (si no remunerada)',
-      appliesToCalculation: isApplied,
-      explanation:
-        'La licencia no remunerada reduce días. La licencia remunerada suma monto en devengado cuando está aprobada.',
-    };
-  }
-
-  if (categoria === 'incapacidades' || tipo.includes('incapacidad')) {
-    return {
-      impactLabel: 'Mixto',
-      impactColor: 'blue',
-      affectsDaysLabel: 'Sí',
-      appliesToCalculation: isApplied,
-      explanation:
-        'La incapacidad reduce días y puede sumar monto según la regla de institución (CCSS) cuando está aprobada.',
-    };
-  }
-
-  if (categoria === 'vacaciones' || tipo.includes('vacacion')) {
-    return {
-      impactLabel: 'Mixto',
-      impactColor: 'blue',
-      affectsDaysLabel: 'Sí',
-      appliesToCalculation: isApplied,
-      explanation:
-        'Vacaciones restan días de labor y su monto se recalcula por días del período cuando la acción está aprobada.',
-    };
-  }
-
-  if (categoria === 'carga social' || tipo.includes('ccss')) {
-    return {
-      impactLabel: 'Resta',
-      impactColor: 'red',
-      affectsDaysLabel: 'No',
-      appliesToCalculation: true,
-      explanation:
-        'Carga social calculada automáticamente sobre el bruto/devengado del empleado.',
-    };
-  }
-
-  if (categoria === 'impuesto renta' || tipo.includes('renta')) {
-    return {
-      impactLabel: 'Resta',
-      impactColor: 'red',
-      affectsDaysLabel: 'No',
-      appliesToCalculation: true,
-      explanation:
-        'Impuesto de renta calculado por tramos fiscales y créditos aplicables.',
-    };
-  }
-
-  if (tipo.includes('retencion') || tipo.includes('descuento') || row.tipoSigno === '-') {
-    return {
-      impactLabel: 'Resta',
-      impactColor: 'red',
-      affectsDaysLabel: 'No',
-      appliesToCalculation: isApplied,
-      explanation:
-        'Deducción/retención que reduce el monto neto del empleado cuando está aprobada.',
-    };
-  }
-
-  return {
-    impactLabel: 'Suma',
-    impactColor: 'green',
-    affectsDaysLabel: 'No',
-    appliesToCalculation: isApplied,
-    explanation:
-      'Acción de ingreso que aumenta el devengado del empleado cuando está aprobada.',
-  };
-}
-
 
 /**
  * Vista operativa para Cargar Planilla Regular:
@@ -450,6 +344,7 @@ export function PayrollGeneratePage() {
     });
   }, [previewTable, searchTerm]);
 
+  // Totales: sin filtro usa previewTable.totals; con filtro suma por empleado. Ver docs/08-planilla/CALCULOS-PLANILLA-CODIGO-COMENTADO.md
   const previewSummary = useMemo(() => {
     const parseDecimal = (value: string): number => {
       const parsed = Number(String(value ?? '').replace(/,/g, ''));
@@ -462,13 +357,21 @@ export function PayrollGeneratePage() {
     ).length;
     const pendingEmployees = Math.max(0, totalEmployees - verifiedEmployees);
 
-    const totalDevengado = filteredPreviewRows.reduce(
-      (sum, row) => sum + parseDecimal(row.salarioBrutoPeriodo),
-      0,
-    );
-    const totalCargas = filteredPreviewRows.reduce((sum, row) => sum + parseDecimal(row.cargasSociales), 0);
-    const totalRenta = filteredPreviewRows.reduce((sum, row) => sum + parseDecimal(row.impuestoRenta), 0);
-    const totalNeto = filteredPreviewRows.reduce((sum, row) => sum + parseDecimal(row.totalNeto), 0);
+    const hasSearchFilter = searchTerm.trim().length > 0;
+    const useApiTotals = previewTable?.totals && !hasSearchFilter;
+
+    const totalDevengado = useApiTotals
+      ? parseDecimal(previewTable!.totals.totalBruto)
+      : filteredPreviewRows.reduce((sum, row) => sum + parseDecimal(row.devengadoMonto), 0);
+    const totalCargas = useApiTotals
+      ? parseDecimal(previewTable!.totals.totalCargasSociales)
+      : filteredPreviewRows.reduce((sum, row) => sum + parseDecimal(row.cargasSociales), 0);
+    const totalRenta = useApiTotals
+      ? parseDecimal(previewTable!.totals.totalImpuestoRenta)
+      : filteredPreviewRows.reduce((sum, row) => sum + parseDecimal(row.impuestoRenta), 0);
+    const totalNeto = useApiTotals
+      ? parseDecimal(previewTable!.totals.totalNeto)
+      : filteredPreviewRows.reduce((sum, row) => sum + parseDecimal(row.totalNeto), 0);
 
     return {
       totalEmployees,
@@ -479,7 +382,7 @@ export function PayrollGeneratePage() {
       totalRenta,
       totalNeto,
     };
-  }, [filteredPreviewRows]);
+  }, [filteredPreviewRows, previewTable?.totals, searchTerm]);
 
   const employeeColumns: ColumnsType<PayrollPreviewEmployeeRow> = useMemo(
     () => [
@@ -502,37 +405,61 @@ export function PayrollGeneratePage() {
         title: 'Salario Base',
         dataIndex: 'salarioBase',
         align: 'right',
-        render: (value: string) => (canViewSensitive ? formatMoney(value) : '***'),
+        render: (value: string) => (
+          <span className={genStyles.employeeMonto}>
+            {canViewSensitive ? formatMoney(value) : '***'}
+          </span>
+        ),
       },
       {
         title: 'Salario Quincenal Bruto',
         dataIndex: 'salarioBrutoPeriodo',
         align: 'right',
-        render: (value: string) => (canViewSensitive ? formatMoney(value) : '***'),
+        render: (value: string) => (
+          <span className={genStyles.employeeMonto}>
+            {canViewSensitive ? formatMoney(value) : '***'}
+          </span>
+        ),
       },
       {
         title: 'Devengado',
         dataIndex: 'devengadoMonto',
         align: 'right',
-        render: (value: string) => (canViewSensitive ? formatMoney(value) : '***'),
+        render: (value: string) => (
+          <span className={genStyles.employeeMonto}>
+            {canViewSensitive ? formatMoney(value) : '***'}
+          </span>
+        ),
       },
       {
         title: 'Cargas Sociales',
         dataIndex: 'cargasSociales',
         align: 'right',
-        render: (value: string) => (canViewSensitive ? formatMoney(value) : '***'),
+        render: (value: string) => (
+          <span className={genStyles.employeeMonto}>
+            {canViewSensitive ? formatMoney(value) : '***'}
+          </span>
+        ),
       },
       {
         title: 'Impuesto Renta',
         dataIndex: 'impuestoRenta',
         align: 'right',
-        render: (value: string) => (canViewSensitive ? formatMoney(value) : '***'),
+        render: (value: string) => (
+          <span className={genStyles.employeeMonto}>
+            {canViewSensitive ? formatMoney(value) : '***'}
+          </span>
+        ),
       },
       {
         title: 'Monto Neto',
         dataIndex: 'totalNeto',
         align: 'right',
-        render: (value: string) => <strong>{canViewSensitive ? formatMoney(value) : '***'}</strong>,
+        render: (value: string) => (
+          <strong className={genStyles.employeeMonto}>
+            {canViewSensitive ? formatMoney(value) : '***'}
+          </strong>
+        ),
       },
       {
         title: 'Dias',
@@ -559,57 +486,34 @@ export function PayrollGeneratePage() {
   const actionColumns: ColumnsType<PayrollPreviewActionRow> = useMemo(
     () => [
       { title: 'Categoria', dataIndex: 'categoria' },
+      { title: 'Tipo de Accion', dataIndex: 'tipoAccion' },
       {
-        title: 'Tipo de Accion',
-        dataIndex: 'tipoAccion',
-        render: (value: string, row) => {
-          const interpretation = interpretActionRow(row);
-          return (
-            <div className={genStyles.actionTypeCell}>
-              <span>{value}</span>
-              <Tooltip title={interpretation.explanation}>
-                <span className={genStyles.actionHelp}>¿Como impacta?</span>
-              </Tooltip>
-            </div>
-          );
-        },
-      },
-      {
-        title: 'Impacto',
-        key: 'impacto',
+        title: 'Tipo (+/-)',
+        dataIndex: 'tipoSigno',
         align: 'center',
-        render: (_, row) => {
-          const interpretation = interpretActionRow(row);
-          return <Tag color={interpretation.impactColor}>{interpretation.impactLabel}</Tag>;
-        },
+        width: 90,
+        render: (value: string) => (
+          <span
+            className={
+              value === '+'
+                ? `${genStyles.tipoSignoBadge} ${genStyles.tipoSignoPlus}`
+                : `${genStyles.tipoSignoBadge} ${genStyles.tipoSignoMinus}`
+            }
+            title={value === '+' ? 'Suma al devengado' : 'Resta / deducción'}
+          >
+            {value === '+' ? '+' : '−'}
+          </span>
+        ),
       },
       {
         title: 'Monto',
         dataIndex: 'monto',
         align: 'right',
-        render: (value: string) => (canViewSensitive ? formatMoney(value) : '***'),
-      },
-      {
-        title: 'Afecta dias',
-        key: 'afecta-dias',
-        align: 'center',
-        render: (_, row) => {
-          const interpretation = interpretActionRow(row);
-          return interpretation.affectsDaysLabel;
-        },
-      },
-      {
-        title: 'Aplicada al calculo',
-        key: 'aplicada-calculo',
-        align: 'center',
-        render: (_, row) => {
-          const interpretation = interpretActionRow(row);
-          return (
-            <Tag color={interpretation.appliesToCalculation ? 'green' : 'default'}>
-              {interpretation.appliesToCalculation ? 'Si' : 'No'}
-            </Tag>
-          );
-        },
+        render: (value: string) => (
+          <span className={genStyles.actionsMonto}>
+            {canViewSensitive ? formatMoney(value) : '***'}
+          </span>
+        ),
       },
       {
         title: 'Estado',
@@ -626,7 +530,7 @@ export function PayrollGeneratePage() {
         ),
       },
       {
-        title: 'Accion',
+        title: 'Acción',
         key: 'approve-action',
         align: 'center',
         render: (_, row) => {
@@ -649,16 +553,12 @@ export function PayrollGeneratePage() {
   );
 
   return (
-    <div className={styles.pageWrapper}>
-      <div className={styles.pageHeader}>
-        <div className={styles.pageHeaderLeft}>
-          <div className={styles.pageTitleBlock}>
-            <h1 className={styles.pageTitle}>Cargar Planilla Regular</h1>
-            <p className={styles.pageSubtitle}>
-              Configure filtros, seleccione una planilla Regular y cargue la tabla de revision de empleados y acciones.
-            </p>
-          </div>
-        </div>
+    <div className={genStyles.payrollPageWrap}>
+      <div className={genStyles.payrollPageHeader}>
+        <h1 className={genStyles.payrollPageTitle}>Cargar Planilla Regular</h1>
+        <p className={genStyles.payrollPageSubtitle}>
+          Configure filtros, seleccione una planilla Regular y cargue la tabla de revision de empleados y acciones.
+        </p>
       </div>
 
       <Card className={`${styles.mainCard} ${genStyles.pageCard}`}>
@@ -850,8 +750,8 @@ export function PayrollGeneratePage() {
           <div className={styles.mainCardBody}>
             <div className={genStyles.sectionBlock} style={{ borderTop: 'none', marginTop: 0, paddingTop: 0 }}>
               <div className={genStyles.sectionLabel}>Carga de planilla</div>
-              <div className={genStyles.contentCard}>
-                <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'center' }}>
+              <div className={`${genStyles.contentCard} ${genStyles.loadPayrollCard}`}>
+                <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap', alignItems: 'center' }}>
                   <Button
                     type="primary"
                     className={genStyles.primaryBtn}
@@ -881,7 +781,8 @@ export function PayrollGeneratePage() {
                   placeholder="Buscar empleado por nombre o codigo..."
                   value={searchTerm}
                   onChange={(event) => setSearchTerm(event.target.value)}
-                  style={{ marginBottom: 12, maxWidth: 360 }}
+                  className={genStyles.searchInput}
+                  style={{ marginBottom: 14, maxWidth: 380 }}
                 />
                 <Table<PayrollPreviewEmployeeRow>
                   rowKey={(row) => row.idEmpleado}
@@ -896,25 +797,16 @@ export function PayrollGeneratePage() {
                   }}
                   expandable={{
                     expandedRowRender: (row) => (
-                      <div style={{ padding: 8 }}>
-                        <div style={{ marginBottom: 8, fontWeight: 600 }}>Detalle de acciones de personal</div>
-                        <div className={genStyles.actionLegend}>
-                          <span>
-                            <strong>Si:</strong> ya impacta calculo del empleado.
-                          </span>
-                          <span>
-                            <strong>No:</strong> aun no impacta (pendiente de aprobacion).
-                          </span>
-                          <span>
-                            <strong>Impacto:</strong> Suma/Resta/Solo dias/Mixto.
-                          </span>
+                      <div className={genStyles.actionsDetailWrap}>
+                        <div className={genStyles.actionsDetailTitle}>
+                          Detalle de acciones de personal
                         </div>
                         <Table<PayrollPreviewActionRow>
                           rowKey={(action) => `${row.idEmpleado}-${action.idAccion ?? 'na'}-${action.categoria}-${action.tipoAccion}-${action.monto}-${action.estado}-${action.tipoSigno}`}
                           dataSource={row.acciones}
                           columns={actionColumns}
                           size="small"
-                          className={genStyles.previewTable}
+                          className={`${genStyles.previewTable} ${genStyles.actionsTable}`}
                           rowClassName={(action) =>
                             isApprovedActionVisual(action) ? 'action-row-approved' : 'action-row-pending'
                           }
@@ -963,7 +855,7 @@ export function PayrollGeneratePage() {
                       </thead>
                       <tbody>
                         <tr>
-                          <td>Devengado (Quincenal)</td>
+                          <td>Devengado (Bruto total)</td>
                           <td>{canViewSensitive ? `CRC ${formatMoney(previewSummary.totalDevengado)}` : '***'}</td>
                         </tr>
                         <tr>

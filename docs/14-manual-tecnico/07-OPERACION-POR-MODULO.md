@@ -76,10 +76,11 @@ flowchart TD
 | `retencion`/`descuento` | No afecta dias | Va a deduccion, no a devengado |
 
 ### 🖥️ UX de trazabilidad en tabla de acciones
-En `PayrollGeneratePage` el detalle expandido agrega lectura funcional:
-- `Impacto` (Suma/Resta/Solo dias/Mixto).
-- `Afecta dias` (si modifica dias laborados).
-- `Aplicada al calculo` (si/no segun estado y tipo de fila).
-- Tooltip `Como impacta?` por cada tipo de accion para usuarios no tecnicos.
+En `PayrollGeneratePage` el detalle expandido se simplifica para operacion diaria:
+- `Categoria`
+- `Tipo de Accion`
+- `Estado`
+- `Accion`
+- `Monto` (ultima columna)
 
 

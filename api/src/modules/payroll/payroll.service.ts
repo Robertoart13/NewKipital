@@ -69,6 +69,10 @@ export class PayrollService {
   private readonly activeFlag = 1;
   private readonly inactiveFlag = 0;
 
+  /**
+   * Tramos de impuesto renta Costa Rica (base mensual CRC).
+   * Ver: docs/08-planilla/CALCULOS-PLANILLA-CODIGO-COMENTADO.md
+   */
   private readonly rentaTramos = [
     { limite: 922000, porcentaje: 0 },
     { limite: 1352000, porcentaje: 0.1 },
@@ -77,6 +81,7 @@ export class PayrollService {
     { limite: Infinity, porcentaje: 0.25 },
   ];
 
+  /** Créditos fiscales por hijo y cónyuge. Ver CALCULOS-PLANILLA-CODIGO-COMENTADO.md */
   private readonly creditosFiscales = {
     porHijo: 1720,
     porConyuge: 2600,
@@ -803,6 +808,24 @@ export class PayrollService {
         displayActions,
       );
 
+      const displayActionIds = displayActions.map((a) => Number(a.id)).filter((id) => Number.isFinite(id) && id > 0);
+      const vacationDaysByActionId = new Map<number, number>();
+      if (displayActionIds.length > 0) {
+        const placeholders = displayActionIds.map(() => '?').join(',');
+        const vacationRows = (await queryRunner.manager.query(
+          `
+          SELECT id_accion AS actionId, COUNT(*) AS vacationDays
+          FROM acc_vacaciones_fechas
+          WHERE id_accion IN (${placeholders})
+          GROUP BY id_accion
+          `,
+          displayActionIds,
+        )) as Array<{ actionId: number; vacationDays: number | string }>;
+        for (const row of vacationRows) {
+          vacationDaysByActionId.set(Number(row.actionId), this.toSafeNumber(row.vacationDays));
+        }
+      }
+
       const displayActionsByEmployee = new Map<
         number,
         Array<{
@@ -817,10 +840,25 @@ export class PayrollService {
       >();
 
       for (const action of displayActions) {
-        const actionAmount =
-          action.estado === PersonalActionEstado.APPROVED
-            ? (approvedActionAmountMap.get(action.id) ?? Number(action.monto ?? 0))
-            : Number(action.monto ?? 0);
+        const approved = action.estado === PersonalActionEstado.APPROVED; // Si aprobada: usa approvedActionAmountMap; si pendiente: usa action.monto o formula (vacaciones)
+        let actionAmount: number;
+        const actionCategory = this.resolveActionCategory(action.tipoAccion ?? '');
+        const isVacaciones = actionCategory === 'Vacaciones';
+        const vacationDays = isVacaciones ? vacationDaysByActionId.get(Number(action.id)) : undefined;
+        // Cálculo monto por acción: vacaciones=(salarioBase*dias)/30; aprobadas=approvedActionAmountMap; pendientes=action.monto. Ver CALCULOS-PLANILLA-CODIGO-COMENTADO.md
+        if (isVacaciones && vacationDays != null && vacationDays > 0) {
+          const salarioBase = employeePayrollBasisMap.get(action.idEmpleado)?.salarioBase ?? 0;
+          // Vacaciones: aprobada → monto efectivo; pendiente → (salarioBase*dias)/30. Nunca action.monto
+          actionAmount = approved
+            ? (approvedActionAmountMap.get(Number(action.id)) ?? (salarioBase * vacationDays) / 30)
+            : (salarioBase * vacationDays) / 30;
+        } else if (approved && approvedActionAmountMap.has(Number(action.id))) {
+          // Acción aprobada: monto efectivo aplicado al cálculo
+          actionAmount = approvedActionAmountMap.get(Number(action.id)) ?? Number(action.monto ?? 0);
+        } else {
+          // Acción pendiente u otra: monto capturado por RRHH (no afecta cálculo hasta aprobar)
+          actionAmount = Number(action.monto ?? 0);
+        }
         const employeeActionRows = displayActionsByEmployee.get(action.idEmpleado) ?? [];
         employeeActionRows.push({
           idAccion: action.id,
@@ -883,10 +921,11 @@ export class PayrollService {
         const diasLaborados = isHourly ? null : Math.max(0, baseDiasLaborados - daysToSubtract);
         const devengadoDias = isHourly ? null : diasLaborados;
         const devengadoHoras = isHourly ? diasPeriodo * 8 : null;
+        // salarioBrutoPeriodo: mensual = base*(dias/30), por horas = base*horas. Ver CALCULOS-PLANILLA-CODIGO-COMENTADO.md
         const salarioBrutoPeriodo = isHourly
           ? salarioBase * (devengadoHoras ?? 0)
           : salarioBase * ((diasLaborados ?? diasPeriodo) / 30);
-        const totalBruto = salarioBrutoPeriodo + totals.gross;
+        const totalBruto = salarioBrutoPeriodo + totals.gross; // gross = acciones aprobadas que suman (aumentos, bonos, vacaciones, etc.)
         const socialChargeDetail = this.calculateSocialCharges(totalBruto, socialChargeConfigs);
         const cargasSociales = socialChargeDetail.total;
         const impuestoRenta = this.calculateIncomeTax({
@@ -897,7 +936,7 @@ export class PayrollService {
           cantidadHijos: Number(employee.cantidad_hijos_empleado ?? 0),
           estadoCivil: employee.estado_civil_empleado ?? null,
         });
-        const totalDeducciones = totals.ded + cargasSociales + impuestoRenta;
+        const totalDeducciones = totals.ded + cargasSociales + impuestoRenta; // ded = retenciones + descuentos aprobados
         const totalNeto = totalBruto - totalDeducciones;
 
         totalBrutoPlanilla += totalBruto;
@@ -1465,6 +1504,20 @@ export class PayrollService {
         FROM acc_aumentos_lineas l
         LEFT JOIN nom_movimientos_nomina m ON m.id_movimiento_nomina = l.id_movimiento_nomina
         WHERE l.id_accion IN (${idsSql})
+        UNION ALL
+        -- Vacaciones: días desde acc_vacaciones_fechas (COUNT). Label "Vacaciones (n)". Ver CALCULOS-PLANILLA-CODIGO-COMENTADO.md
+        SELECT
+          v.id_accion AS idAccion,
+          v.cnt AS cantidad,
+          NULL AS movimiento,
+          NULL AS tipoDetalle,
+          NULL AS remuneracion
+        FROM (
+          SELECT id_accion, COUNT(*) AS cnt
+          FROM acc_vacaciones_fechas
+          WHERE id_accion IN (${idsSql})
+          GROUP BY id_accion
+        ) v
       ) x
       `
     );
@@ -1520,7 +1573,7 @@ export class PayrollService {
     if (category === 'Horas Extras') {
       return `${normalized} hrs`;
     }
-    return normalized;
+    return normalized; // Vacaciones y otros: "Vacaciones (n)" con n = cantidad de días
   }
 
   private resolveAbsenceTypeLabel(value: string): string {
@@ -2555,6 +2608,7 @@ export class PayrollService {
     return this.isNetDeductionAction(actionType);
   }
 
+  /** Retenciones y descuentos van a deducciones; el resto al bruto. Ver CALCULOS-PLANILLA-CODIGO-COMENTADO.md */
   private isNetDeductionAction(actionType: string): boolean {
     const normalized = this.normalizeActionType(actionType);
     return (
@@ -2630,6 +2684,13 @@ export class PayrollService {
     };
   }
 
+  /**
+   * Carga reglas por tipo de acción desde tablas:
+   * - acc_ausencias_lineas, acc_licencias_lineas, acc_incapacidades_lineas
+   * - acc_vacaciones_fechas (COUNT días), acc_aumentos_lineas, acc_bonificaciones_lineas
+   * - acc_horas_extras_lineas, acc_retenciones_lineas, acc_descuentos_lineas
+   * Ver: docs/08-planilla/CALCULOS-PLANILLA-CODIGO-COMENTADO.md
+   */
   private async loadApprovedActionRuleMap(
     manager: EntityManager,
     actionIds: number[],
@@ -2799,6 +2860,7 @@ export class PayrollService {
     return map;
   }
 
+  /** Días a restar del devengado: ausencias, licencias no rem, incapacidades, vacaciones. Ver CALCULOS-PLANILLA-CODIGO-COMENTADO.md */
   private resolveApprovedActionDaysImpact(
     actionType: string,
     data?: ApprovedActionRuleData,
@@ -2815,6 +2877,11 @@ export class PayrollService {
     return 0;
   }
 
+  /**
+   * Monto efectivo por tipo: ausencias=0, licencias=remAmount, incapacidades=ccssAmount,
+   * vacaciones=(salarioBase/30)*dias, aumentos/bonos/horas=monto_linea, ret/desc=monto_linea.
+   * Ver: docs/08-planilla/CALCULOS-PLANILLA-CODIGO-COMENTADO.md
+   */
   private resolveApprovedActionAmountForPayroll(
     actionType: string,
     defaultAmount: number,
@@ -3005,6 +3072,7 @@ export class PayrollService {
     return activeCharges > 0;
   }
 
+  /** Cargas = totalBruto * porcentaje por cada carga. Ver CALCULOS-PLANILLA-CODIGO-COMENTADO.md */
   private calculateSocialCharges(
     totalBruto: number,
     configs: Array<{
@@ -3041,6 +3109,7 @@ export class PayrollService {
     return { total: Number(total.toFixed(2)), items };
   }
 
+  /** Renta por tramos + créditos. Quincenal solo 2da quincena. Ver CALCULOS-PLANILLA-CODIGO-COMENTADO.md */
   private calculateIncomeTax(params: {
     totalBruto: number;
     periodName: string;

@@ -94,14 +94,16 @@ Regla funcional:
 - Si no tiene hijos/conyuge: no aplica esos creditos.
 
 ## 🧭 Como leer el detalle de acciones (tabla expandida)
-Nuevas columnas para lectura rapida:
-- `Impacto`: `Suma`, `Resta`, `Solo dias` o `Mixto`.
-- `Afecta dias`: indica si la accion cambia dias laborados.
-- `Aplicada al calculo`: `Si` cuando ya impacta calculo (aprobada o calculo automatico), `No` si sigue pendiente.
+Vista simplificada:
+- `Categoria`
+- `Tipo de Accion`
+- `Estado`
+- `Accion`
+- `Monto` (al final)
 
 Regla operativa:
-- Una accion pendiente puede verse en la lista, pero no siempre modifica montos hasta ser aprobada.
-- `Cargas Sociales` e `Impuesto Renta` son calculos automaticos del sistema y se muestran como aplicados.
+- El `Estado` indica si ya impacta calculo (`Aprobada`) o sigue pendiente.
+- El `Monto` se deja al final para lectura financiera rapida.
 
 ## 🎯 Permisos
 - Ver: `payroll:view`

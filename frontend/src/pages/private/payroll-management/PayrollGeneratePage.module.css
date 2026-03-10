@@ -1,16 +1,58 @@
 /* Estilo Old Kpital – Generar Planillas (paleta y patrones) */
 /* Acento: #246BA3 | Fondos: #f8fafc, #f5f7fa | Bordes: #e0e6ed | Texto: #1a202c, #64748b */
 
+/* ===================== Wrapper y header de página ===================== */
+.payrollPageWrap {
+  width: 100%;
+  min-height: 100%;
+  background: linear-gradient(180deg, #f1f5f9 0%, #f8fafc 100%);
+  padding: 0;
+}
+
+.payrollPageHeader {
+  margin-bottom: 20px;
+  padding-bottom: 16px;
+  border-bottom: 2px solid #246BA3;
+}
+
+.payrollPageTitle {
+  font-size: 22px;
+  font-weight: 700;
+  color: #1a202c;
+  margin: 0 0 4px 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.payrollPageTitle::before {
+  content: '';
+  display: inline-block;
+  width: 4px;
+  height: 26px;
+  background: #246BA3;
+  border-radius: 2px;
+}
+
+.payrollPageSubtitle {
+  font-size: 14px;
+  color: #64748b;
+  margin: 0;
+  font-weight: 500;
+}
+
+/* ===================== Cards principales ===================== */
 .pageCard {
-  background: #f8fafc !important;
+  background: #ffffff !important;
   border-radius: 12px !important;
   border: 1px solid #e0e6ed !important;
-  box-shadow: 0px 2px 8px rgba(27, 46, 94, 0.08) !important;
+  box-shadow: 0 2px 8px rgba(27, 46, 94, 0.06) !important;
 }
 
 .pageCard :global(.ant-card-body) {
-  background: #f8fafc !important;
+  background: #ffffff !important;
   border-radius: 0 0 12px 12px !important;
+  padding: 20px 24px !important;
 }
 
 .collapsePanel {
@@ -24,35 +66,38 @@
 }
 
 .collapsePanel :global(.ant-collapse-header) {
-  padding: 12px 20px !important;
+  padding: 14px 20px !important;
   min-height: 64px !important;
-  font-size: 16px !important;
+  font-size: 15px !important;
   font-weight: 600 !important;
   color: #1a202c !important;
-  background: #f5f7fa !important;
-  border-bottom: 2px solid #e0e6ed !important;
+  background: #f8fafc !important;
+  border-bottom: 2px solid #246BA3 !important;
+  border-radius: 12px 12px 0 0 !important;
   align-items: center !important;
 }
 
 .collapsePanel :global(.ant-collapse-header:hover) {
-  background: #f8fafc !important;
+  background: #f1f5f9 !important;
 }
 
 .collapsePanel :global(.ant-collapse-arrow) {
   color: #246BA3 !important;
-  font-size: 20px !important;
+  font-size: 18px !important;
 }
 
 .collapsePanel :global(.ant-collapse-content-box) {
   padding: 24px;
-  background: #ffffff;
-  border-top: 1px solid #e0e6ed;
+  background: #f8fafc;
+  border: 1px solid #e0e6ed;
+  border-top: none;
+  border-radius: 0 0 12px 12px;
 }
 
 .collapseLabel {
   color: #1a202c;
   font-weight: 600;
-  font-size: 16px;
+  font-size: 15px;
 }
 
 .panelContent {
@@ -61,32 +106,50 @@
   gap: 24px;
 }
 
+/* Títulos de sección con barra azul (mismo estilo que acciones) */
 .sectionLabel {
   font-size: 14px;
   font-weight: 600;
   color: #1a202c;
-  margin-bottom: 8px;
+  margin-bottom: 10px;
+  padding-bottom: 8px;
+  border-bottom: 2px solid #246BA3;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: fit-content;
 }
 
-/* Stats cards – Old Kpital: fondo blanco, borde #e0e6ed, hover #246BA3 */
+.sectionLabel::before {
+  content: '';
+  display: inline-block;
+  width: 4px;
+  height: 18px;
+  background: #246BA3;
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+
+/* Stats cards – mismo estilo que contentCard */
 .statsRow {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-  gap: 12px;
+  gap: 14px;
 }
 
 .statCard {
   background: #ffffff;
   border: 1px solid #e0e6ed;
-  border-radius: 8px;
-  padding: 14px 16px;
-  min-height: 72px;
+  border-radius: 10px;
+  padding: 16px 18px;
+  min-height: 76px;
   transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  box-shadow: 0 1px 3px rgba(27, 46, 94, 0.06);
 }
 
 .statCard:hover {
   border-color: #246BA3;
-  box-shadow: 0 2px 4px rgba(36, 107, 163, 0.1);
+  box-shadow: 0 2px 8px rgba(36, 107, 163, 0.12);
 }
 
 .statCardAction {
@@ -159,14 +222,14 @@
   border-top: 1px solid #e0e6ed;
 }
 
-/* Content card – Paper Old Kpital */
+/* Content card – mismo estilo que actionsDetailWrap */
 .contentCard {
   background: #ffffff;
   border: 1px solid #e0e6ed;
-  border-radius: 12px;
-  padding: 24px;
-  margin-top: 8px;
-  box-shadow: 0px 2px 8px rgba(27, 46, 94, 0.08);
+  border-radius: 10px;
+  padding: 20px 24px;
+  margin-top: 10px;
+  box-shadow: 0 1px 4px rgba(27, 46, 94, 0.06);
 }
 
 .contentCard :global(.ant-select-selector),
@@ -200,8 +263,10 @@
   align-items: center;
   justify-content: space-between;
   flex-wrap: wrap;
-  gap: 8px;
-  margin-bottom: 16px;
+  gap: 10px;
+  margin-bottom: 18px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #e0e6ed;
 }
 
 .detailTitle {
@@ -216,11 +281,12 @@
   font-weight: 600 !important;
   font-size: 12px !important;
   border-radius: 16px !important;
-  padding: 4px 12px !important;
+  padding: 5px 14px !important;
+  border: 1px solid transparent !important;
 }
 
 .descriptions {
-  margin-top: 8px;
+  margin-top: 12px;
 }
 
 .descriptions :global(.ant-descriptions-item-label) {
@@ -251,11 +317,20 @@
   font-weight: 500;
 }
 
-/* ===================== Tabla (Old Kpital) ===================== */
+/* ===================== Tabla principal empleados (mismo estilo que actionsTable) ===================== */
+
+.searchInput {
+  border-radius: 8px;
+}
+
+.previewTableWrap {
+  margin-top: 12px;
+}
 
 .previewTableWrap :global(.ant-input) {
   border-radius: 8px !important;
-  border-color: #e0e6ed !important;
+  border: 1px solid #e0e6ed !important;
+  font-size: 14px !important;
 }
 
 .previewTableWrap :global(.ant-input:hover),
@@ -266,17 +341,31 @@
 
 .previewTable :global(.ant-table) {
   background: #ffffff !important;
+  border: 1px solid #e0e6ed !important;
+  border-radius: 10px !important;
+  overflow: hidden;
 }
 
 .previewTable :global(.ant-table-thead > tr > th) {
-  background: #f5f7fa !important;
-  color: #64748b !important;
+  background: #f1f5f9 !important;
+  color: #475569 !important;
   font-weight: 600 !important;
-  border-bottom: 1px solid #e0e6ed !important;
+  font-size: 13px !important;
+  padding: 12px 14px !important;
+  border-bottom: 2px solid #e0e6ed !important;
+  border-right: 1px solid #e0e6ed !important;
 }
 
 .previewTable :global(.ant-table-tbody > tr > td) {
+  padding: 12px 14px !important;
+  font-size: 13px !important;
   border-bottom: 1px solid #e0e6ed !important;
+  border-right: 1px solid #e0e6ed !important;
+}
+
+.previewTable :global(.ant-table-thead > tr > th:last-child),
+.previewTable :global(.ant-table-tbody > tr > td:last-child) {
+  border-right: none !important;
 }
 
 .previewTable :global(.ant-table-tbody > tr:hover > td) {
@@ -284,62 +373,85 @@
 }
 
 .previewTable :global(.ant-pagination) {
-  margin-top: 14px !important;
+  margin-top: 16px !important;
 }
 
 .previewTable :global(.ant-table-expanded-row > td) {
-  background: #f8fafc !important;
+  background: #f1f5f9 !important;
+  padding: 12px 16px !important;
 }
 
 .tableStateTag {
-  background: #f5f7fa !important;
+  background: #f8fafc !important;
   border: 1px solid #e0e6ed !important;
   color: #475569 !important;
   font-weight: 600 !important;
+  font-size: 12px !important;
   border-radius: 16px !important;
-  padding-inline: 10px !important;
+  padding: 4px 12px !important;
 }
 
-/* ===================== Resúmenes (cards) – tamaño compacto ===================== */
+/* Montos en tabla principal */
+.employeeMonto {
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: #1a202c;
+}
+
+/* ===================== Resúmenes (cards) – mismo estilo que actionsDetailWrap ===================== */
 
 .summaryGrid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-  gap: 10px;
-  margin-top: 12px;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 14px;
+  margin-top: 16px;
 }
 
 .summaryCard {
   background: #ffffff;
   border: 1px solid #e0e6ed;
-  border-radius: 8px;
-  padding: 10px 12px;
-  box-shadow: 0px 2px 8px rgba(27, 46, 94, 0.08);
+  border-radius: 10px;
+  padding: 16px 18px;
+  box-shadow: 0 1px 4px rgba(27, 46, 94, 0.06);
 }
 
 .summaryTitle {
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 600;
   color: #1a202c;
-  margin-bottom: 6px;
+  margin-bottom: 12px;
+  padding-bottom: 10px;
+  border-bottom: 2px solid #246BA3;
+  display: flex;
+  align-items: center;
+  gap: 8px;
   line-height: 1.2;
+}
+
+.summaryTitle::before {
+  content: '';
+  display: inline-block;
+  width: 4px;
+  height: 18px;
+  background: #246BA3;
+  border-radius: 2px;
 }
 
 .summaryTable {
   width: 100%;
   border-collapse: collapse;
-  font-size: 12px;
+  font-size: 13px;
   table-layout: fixed;
 }
 
 .summaryTable thead th {
   text-align: left;
-  color: #64748b;
+  color: #475569;
   font-weight: 600;
-  font-size: 11px;
-  padding: 6px 8px;
-  background: #f8f9fa;
-  border-bottom: 1px solid #e0e6ed;
+  font-size: 12px;
+  padding: 10px 12px;
+  background: #f1f5f9;
+  border-bottom: 2px solid #e0e6ed;
 }
 
 .summaryTable thead th:last-child {
@@ -347,11 +459,11 @@
 }
 
 .summaryTable tbody td {
-  padding: 6px 8px;
-  border-bottom: 1px solid #e9ecef;
+  padding: 10px 12px;
+  border-bottom: 1px solid #e0e6ed;
   color: #1a202c;
   font-weight: 500;
-  font-size: 12px;
+  font-size: 13px;
 }
 
 .summaryTable tbody td:first-child {
@@ -361,6 +473,8 @@
 
 .summaryTable tbody td:last-child {
   text-align: right;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
 }
 
 .summaryTable tbody tr:last-child td {
@@ -372,15 +486,26 @@
 }
 
 .summaryTotalRow td {
-  background: #e6f2ff;
-  font-weight: 600;
+  background: #e8f4fd;
+  font-weight: 700;
+  font-size: 14px;
+  color: #1a202c;
 }
 
 .summaryHint {
-  margin-top: 6px;
+  margin-top: 10px;
   color: #64748b;
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 500;
+}
+
+/* Carga de planilla - card de acción */
+.loadPayrollCard {
+  background: #ffffff;
+  border: 1px solid #e0e6ed;
+  border-radius: 10px;
+  padding: 18px 24px;
+  box-shadow: 0 1px 4px rgba(27, 46, 94, 0.06);
 }
 
 @media (max-width: 900px) {
@@ -389,49 +514,147 @@
   }
 }
 
-.previewTable :global(.ant-table-tbody > tr.action-row-pending > td) {
-  background: #fff1f2 !important;
-  color: #9f1239 !important;
+/* ===================== Detalle de acciones de personal (expandido) ===================== */
+
+.actionsDetailWrap {
+  padding: 16px 20px;
+  background: #ffffff;
+  border: 1px solid #e0e6ed;
+  border-radius: 10px;
+  margin: 4px 0;
+  box-shadow: 0 1px 3px rgba(27, 46, 94, 0.06);
 }
 
+.actionsDetailTitle {
+  font-size: 14px;
+  font-weight: 600;
+  color: #1a202c;
+  margin-bottom: 12px;
+  padding-bottom: 10px;
+  border-bottom: 2px solid #246BA3;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.actionsDetailTitle::before {
+  content: '';
+  display: inline-block;
+  width: 4px;
+  height: 18px;
+  background: #246BA3;
+  border-radius: 2px;
+}
+
+/* Tabla anidada de acciones: cabecera más compacta y clara */
+.actionsTable :global(.ant-table-thead > tr > th) {
+  background: #f1f5f9 !important;
+  color: #475569 !important;
+  font-weight: 600 !important;
+  font-size: 12px !important;
+  padding: 10px 12px !important;
+  border-bottom: 2px solid #e0e6ed !important;
+}
+
+.actionsTable :global(.ant-table-tbody > tr > td) {
+  padding: 10px 12px !important;
+  font-size: 13px !important;
+  vertical-align: middle !important;
+}
+
+/* Filas pendientes: fondo rojizo suave, texto legible */
+.previewTable :global(.ant-table-tbody > tr.action-row-pending > td) {
+  background: #fff8f8 !important;
+}
+
+.previewTable :global(.ant-table-tbody > tr.action-row-pending:hover > td) {
+  background: #fff1f1 !important;
+}
+
+/* Filas aprobadas: fondo verdoso suave, texto legible */
 .previewTable :global(.ant-table-tbody > tr.action-row-approved > td) {
-  background: #f0fdf4 !important;
-  color: #166534 !important;
+  background: #f4fdf6 !important;
+}
+
+.previewTable :global(.ant-table-tbody > tr.action-row-approved:hover > td) {
+  background: #ecfdf3 !important;
+}
+
+/* Indicador circular Tipo (+/-) */
+.tipoSignoBadge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  font-weight: 700;
+  font-size: 14px;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.tipoSignoPlus {
+  background: #dcfce7;
+  color: #15803d;
+  border: 1px solid #86efac;
+}
+
+.tipoSignoMinus {
+  background: #fee2e2;
+  color: #b91c1c;
+  border: 1px solid #fca5a5;
+}
+
+/* Monto en acciones: número destacado */
+.actionsMonto {
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: #1a202c;
 }
 
 .statePendingReview {
   background: #fff1f2 !important;
-  border-color: #fecdd3 !important;
+  border: 1px solid #fecdd3 !important;
   color: #be123c !important;
+  font-weight: 600 !important;
 }
 
 .stateApproved {
   background: #ecfdf3 !important;
-  border-color: #bbf7d0 !important;
+  border: 1px solid #bbf7d0 !important;
   color: #15803d !important;
+  font-weight: 600 !important;
 }
 
-.actionTypeCell {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.actionHelp {
-  color: #246BA3;
-  font-size: 11px;
+.howApplyPositive {
+  color: #15803d;
   font-weight: 600;
-  width: fit-content;
-  cursor: help;
-  border-bottom: 1px dashed rgba(36, 107, 163, 0.45);
 }
 
-.actionLegend {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px 16px;
-  margin-bottom: 10px;
-  font-size: 12px;
-  color: #334155;
+.howApplyNegative {
+  color: #be123c;
+  font-weight: 600;
 }
+
+.howApplyMixed {
+  color: #1d4ed8;
+  font-weight: 600;
+}
+
+.howApplyDays {
+  color: #0369a1;
+  font-weight: 600;
+}
+
+.howApplyPending {
+  color: #92400e;
+  font-weight: 600;
+}
+
+.howApplyNeutral {
+  color: #475569;
+  font-weight: 600;
+}
+
 

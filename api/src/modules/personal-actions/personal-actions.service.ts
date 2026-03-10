@@ -4993,17 +4993,17 @@ export class PersonalActionsService {
         v.id_vacacion_fecha AS idLinea,
         v.orden_vacacion AS orden,
         v.id_calendario_nomina AS payrollId,
-        p.nombre_planilla AS payrollLabel,
-        p.estado AS payrollEstado,
+        p.nombre_planilla_calendario_nomina AS payrollLabel,
+        p.estado_calendario_nomina AS payrollEstado,
         v.id_movimiento_nomina AS movimientoId,
-        m.nombre_movimiento AS movimientoLabel,
-        m.es_inactivo AS movimientoInactivo,
+        m.nombre_movimiento_nomina AS movimientoLabel,
+        m.es_inactivo_movimiento_nomina AS movimientoInactivo,
         1 AS cantidad,
         1 AS monto,
         v.fecha_vacacion AS fechaEfecto
       FROM acc_vacaciones_fechas v
-      LEFT JOIN nom_movimientos m ON m.id_movimiento = v.id_movimiento_nomina
-      LEFT JOIN nom_planillas p ON p.id_planilla = v.id_calendario_nomina
+      LEFT JOIN nom_movimientos_nomina m ON m.id_movimiento_nomina = v.id_movimiento_nomina
+      LEFT JOIN nom_calendarios_nomina p ON p.id_calendario_nomina = v.id_calendario_nomina
       WHERE v.id_accion = ?
       ORDER BY v.orden_vacacion ASC, v.id_vacacion_fecha ASC
       `,
