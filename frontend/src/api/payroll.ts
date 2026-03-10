@@ -238,6 +238,8 @@ export interface PayrollPreviewActionRow {
   monto: string;
   tipoSigno: '+' | '-';
   estado: string;
+  estadoCodigo: number | null;
+  canApprove: boolean;
 }
 
 export interface PayrollPreviewEmployeeRow {
@@ -246,6 +248,7 @@ export interface PayrollPreviewEmployeeRow {
   nombreEmpleado: string;
   salarioBase: string;
   salarioBrutoPeriodo: string;
+  devengadoMonto: string;
   devengadoDias: string;
   cargasSociales: string;
   impuestoRenta: string;

@@ -714,3 +714,38 @@ En comparaciones de compatibilidad entre planillas para reasociacion/reactivacio
 - incompatibilidad de planilla destino por fechas,
 - conflictos de integridad.
 3. Toda decision de bloqueo debe mostrar motivo exacto en simulacion para auditoria funcional.
+
+---
+
+## Regla transversal - Generar/Cargar Planilla Regular (obligatoria)
+
+Aplica a: `Gestion Planilla > Planillas > Generar Planilla Regular`.
+
+1. Filtro y seleccion de planilla:
+- Mostrar solo planillas de tipo `Regular`.
+- No mezclar flujo de traslado interempresas con carga de planilla.
+
+2. Boton de carga:
+- `Cargar planilla` construye la tabla de revision (`Tabla de empleados y acciones`).
+- No debe ejecutar aplicacion final ni cierre de planilla.
+
+3. Regla de calculo financiero:
+- Los totales de planilla (devengado/cargas/renta/neto) se calculan con acciones en estado `APPROVED`.
+- Acciones en estados pendientes se muestran para revision, pero no afectan total financiero.
+
+4. Regla de visualizacion de acciones:
+- Mostrar todas las acciones elegibles en detalle del empleado con su estado real.
+- Formato de `Tipo de Accion` debe ser descriptivo y compatible con legacy:
+  - `Categoria (cantidad) - Movimiento - Detalle`.
+- Para Ausencias, agregar tipo de ausencia y condicion remunerada/no remunerada cuando exista.
+
+5. Aprobacion desde tabla:
+- Si una linea esta en `Pendiente Supervisor`, habilitar accion `Aprobar` desde la tabla.
+- Si no aplica accion manual, mostrar `--`.
+
+6. Cargas sociales por empresa:
+- Son lineas repetitivas por empresa y deben aparecer por defecto cuando la empresa tenga configuracion activa.
+- Si no hay configuracion activa de cargas sociales en BD, el valor esperado es 0 y debe documentarse como dato faltante, no bug de calculo.
+
+7. Consistencia de snapshot:
+- Cualquier cambio de filtros/planilla que reconstruya la carga debe rehacer tabla y resumen para evitar datos residuales.

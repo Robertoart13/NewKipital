@@ -150,3 +150,12 @@ SOLAPE-PLANILLAS-2026-03-02)
 - Planilla: al cargar una planilla se consumen las fechas cuyo `id_calendario_nomina` coincide con la planilla y estado aprobado. No se requiere que el header tenga planilla.
 ---
 
+
+## Actualizacion 2026-03-10 - Bloque Planilla Regular
+
+Se actualizo documentacion transversal del bloque `Generar/Cargar Planilla Regular` en:
+- `docs/40-BlueprintPlanillaV2Compatible.md` (reglas operativas, formato de tipo de accion, carga de tabla).
+- `docs/50-Handoff-TrasladoInterempresas-20260309.md` (continuidad operativa y dependencias).
+- `docs/reglas/ReglasImportantes.md` (regla transversal obligatoria para planilla regular).
+- `docs/Test/TEST-EXECUTION-REPORT.md` (fase 20).
+- `docs/Test/MANUAL-PRUEBAS.md` (escenarios manuales de validacion).

@@ -129,3 +129,34 @@ Una fase se considera cerrada cuando:
 - Guia vigente: `docs/Test/GUIA-TESTING.md`
 - Reporte por fases: `docs/Test/TEST-EXECUTION-REPORT.md`
 - Base historica inicial: `docs/Test/TESTING.md`
+
+## 10. Pruebas manuales - Generar/Cargar Planilla Regular (2026-03-10)
+
+Objetivo:
+Validar construccion de tabla por planilla, detalle de acciones y consistencia de calculo.
+
+Pasos:
+1. Ir a `Gestion Planilla > Planillas > Generar Planilla Regular`.
+2. Seleccionar Empresa, Moneda y planilla Regular.
+3. Ejecutar `Cargar planilla`.
+4. Verificar que se renderiza `Tabla de empleados y acciones`.
+5. Expandir un empleado y validar:
+   - Tipo de accion descriptivo con formato `Categoria (cantidad) - ...`.
+   - Estado real por linea.
+   - Boton `Aprobar` solo en lineas `Pendiente Supervisor`.
+6. Validar resumen por empleado:
+   - Salario Base
+   - Salario Quincenal Bruto
+   - Devengado
+   - Cargas Sociales
+   - Impuesto Renta
+   - Monto Neto
+7. Confirmar regla financiera:
+   - Lineas no aprobadas visibles pero sin impacto en total financiero.
+8. Validar cargas sociales:
+   - Si la empresa tiene cargas activas, deben mostrarse lineas repetitivas por empleado.
+9. Cambiar filtros/planilla y recargar:
+   - Verificar reconstruccion de tabla sin residuos visuales.
+
+Resultado esperado:
+- Tabla consistente, detalle con formato legible, estados claros y calculo financiero alineado con regla de aprobacion.

@@ -712,7 +712,8 @@ Estado: Implementado (backend + frontend + BD en `hr_pro`).
 ### Actualizacion planillas/traslado (Rev. 10 - 2026-03-09)
 
 - Reasociacion automatica de acciones huerfanas ahora exige compatibilidad estricta entre planilla origen del snapshot y planilla candidata: periodo de pago, tipo planilla (id/texto), moneda, inicio/fin de periodo, fecha corte, inicio/fin pago y pago programado.
-- Ejecucion de traslado interempresas invalida snapshots pendientes vinculados a acciones trasladadas (esultado_reactivacion = INVALIDATED_BY_TRANSFER) para evitar reprocesamiento posterior por reactivacion/cron.
+- Ejecucion de traslado interempresas invalida snapshots pendientes vinculados a acciones trasladadas (
+esultado_reactivacion = INVALIDATED_BY_TRANSFER) para evitar reprocesamiento posterior por reactivacion/cron.
 - Pruebas backend ejecutadas: payroll.service, intercompany-transfer.service y payroll-orphan-reassignment (16/16).
 
 ### Actualizacion E2E controlado planillas/traslado (Rev. 11 - 2026-03-09)
@@ -774,3 +775,58 @@ Estado: Implementado (backend + frontend + BD en `hr_pro`).
 
 
 - Ajuste UX puntual: en tabla de traslado, columna Periodo muestra etiqueta de catalogo (no solo ID).
+
+## Actualizacion 2026-03-10 - Cargar Planilla Regular
+
+Estado actual del modulo:
+- Calculo documentado y validado para columnas: salario base, salario quincenal bruto, devengado dias, cargas sociales, impuesto renta, monto neto y dias.
+- Cargas sociales por empresa verificadas en BD (`nom_cargas_sociales`):
+  - Se detecto falta de configuracion en empresa 3 y se corrigio con 3 cargas activas.
+- Vista de carga mejorada:
+  - boton de carga fuera del panel de detalle,
+  - colapso automatico del panel al cargar,
+  - seleccion por checkbox por empleado,
+  - cards de resumen al final de la tabla.
+
+Documentos fuente del corte:
+- docs/21-TablaMaestraPlanillasYWorkflows.md
+- docs/40-BlueprintPlanillaV2Compatible.md
+- docs/50-Handoff-TrasladoInterempresas-20260309.md
+- docs/Test/TEST-EXECUTION-REPORT.md
+
+## Actualizacion 2026-03-10 - Generar/Cargar Planilla (acciones pendientes visibles)
+
+Cambios aplicados:
+- Backend (`api/src/modules/payroll/payroll.service.ts`):
+  - En carga de tabla se incluyen acciones personales en estados operativos: Borrador, Pendiente Supervisor, Pendiente RRHH, Aprobada.
+  - Se muestran acciones tanto sin calendario como ya ligadas al calendario actual.
+  - Solo acciones Aprobada impactan acumulados monetarios (bruto/deducciones/neto).
+  - En snapshot se guarda estado legible por accion y banderas para aprobacion desde UI.
+- Frontend (`frontend/src/pages/private/payroll-management/PayrollGeneratePage.tsx`):
+  - En detalle por empleado se agrega columna Accion con boton Aprobar para filas en Pendiente Supervisor.
+  - Al aprobar, se recarga la tabla de planilla para reflejar estado y totales actualizados.
+  - Se respeta permiso `hr_action:approve` para habilitar la aprobacion.
+
+Validacion tecnica ejecutada:
+- `api`: build exitoso (`npm run build`).
+- `frontend`: build global sigue fallando por errores de tipado preexistentes en modulos no tocados; no se detecto error de sintaxis en los archivos modificados.
+
+### Actualizacion planilla regular y tabla de carga (Rev. 16 - 2026-03-10)
+
+- Se consolida la vista `Generar Planilla Regular` como flujo de carga operativa de tabla (no aplicacion final).
+- Se documenta regla de calculo: solo acciones aprobadas impactan totales financieros de planilla.
+- Se habilita visualizacion de acciones pendientes en detalle por empleado con estado real y accion de aprobacion cuando aplica.
+- Se ajusta formato enriquecido de `Tipo de Accion` para compatibilidad visual con sistema de referencia.
+- Se mantiene dependencia de cargas sociales por empresa; sin configuracion activa en BD, Cargas Sociales permanece en 0.
+- Se deja trazabilidad en docs 40, 50, reglas y bloque de pruebas/manual.
+
+### Acta de trabajo documentada (Rev. 17 - 2026-03-10)
+
+Se consolida en documentacion el bloque de trabajo de planilla regular con los siguientes ejes:
+- Conversacion funcional registrada (que se esperaba de la vista, que no debia hacer, y criterios de UX).
+- Analisis tecnico registrado (reglas de inclusion de acciones, calculo financiero, dependencia de cargas sociales por empresa).
+- Decisiones oficiales registradas (preview operativo, aprobacion directa en tabla, formato de tipo de accion, semaforo visual).
+- Proximo paso registrado (continuidad hacia fase de planilla aplicada).
+
+Documento base de acta:
+- `docs/50-Handoff-TrasladoInterempresas-20260309.md` (seccion "Acta de sesion consolidada").

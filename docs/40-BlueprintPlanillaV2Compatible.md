@@ -321,3 +321,113 @@ Regla de persistencia:
 - Regla de seguridad UX:
   - confirmacion antes de `Procesar`, `Verificar` y `Aplicar`.
   - `Verificar` se bloquea si no hay snapshot de inputs.
+
+## 11. Calculo operativo de montos en tabla de carga (vigente)
+
+Se oficializa este contrato de calculo para la vista de carga de planilla regular:
+
+Campos y formulas:
+- `salario_base`: dato base del empleado.
+- `salario_bruto_periodo`:
+  - quincenal: `salario_base / 2`
+  - mensual: `salario_base`
+  - proporcional si ingreso dentro del periodo.
+- `devengado_dias`: dias finales aplicados al calculo del periodo.
+- `cargas_sociales_resultado`: suma de cargas activas de empresa (`nom_cargas_sociales`) aplicadas al devengado.
+- `impuesto_renta_resultado`: calculo por tramo y regla de quincena/mensual segun calendario.
+- `total_neto_resultado`: `total_bruto - cargas_sociales - impuesto_renta - deducciones`.
+
+Reglas enterprise asociadas:
+1. Cargas sociales son configuracion de empresa y se aplican por defecto a todos los empleados elegibles de la corrida.
+2. Si empresa no tiene `nom_cargas_sociales`, resultado de cargas sera 0 hasta configurar catalogo.
+3. Acciones personales y cargas se guardan en snapshot de planilla para trazabilidad de detalle por fila.
+
+## 12. Operacion UI Cargar Planilla Regular (vigente)
+
+- El boton de carga vive fuera del panel de detalle para separar:
+  1) configuracion/seleccion,
+  2) ejecucion de carga.
+- Tras cargar exitosamente:
+  - se colapsa el panel de detalle,
+  - se muestra tabla de empleados y acciones,
+  - se muestran tarjetas de resumen al final de la tabla.
+- La tabla usa seleccion por checkbox por empleado para operaciones posteriores.
+
+## Actualizacion 2026-03-10 - Semaforo visual en detalle de acciones
+
+- En la vista de Generar/Cargar Planilla Regular se aplico semaforo visual por fila en el detalle de acciones.
+- Regla aplicada:
+  - Acciones no aprobadas (`Pendiente Supervisor`, `Pendiente RRHH`, etc.) se muestran en rojo.
+  - Acciones aprobadas se muestran en verde.
+  - `Carga Social` se considera aprobada por defecto para visualizacion y se muestra en verde.
+- El estado de la tabla principal de empleados no se altero; el semaforo aplica solo a la subtabla de `Detalle de acciones de personal`.
+- Se elimino el uso de `index` en `rowKey` de la subtabla (AntD deprecado) y se paso a llave compuesta estable por empleado + atributos de accion para evitar warnings y claves duplicadas.
+- Ajuste de compatibilidad con sistema de referencia (2026-03-10):
+  - En tabla de carga, columna `Devengado` muestra monto (`totalBruto`) y no cantidad de dias.
+  - `Dias` se mantiene como columna separada (`devengadoDias`).
+
+---
+
+## 12. Actualizacion operativa - Cargar Planilla Regular (2026-03-10)
+
+Alcance implementado:
+- La opcion funcional queda como "Generar Planilla Regular" y el flujo operativo real es "Cargar Planilla" para vista previa de tabla.
+- La pantalla muestra solo planillas de tipo Regular y estados operativos de trabajo.
+- Al seleccionar planilla, se renderiza resumen rapido de periodo/empresa/moneda/estado.
+- El boton de carga construye la "Tabla de empleados y acciones" y colapsa el panel de detalle para foco operativo.
+
+Reglas de carga de tabla:
+1. Empleados por empresa y contexto de planilla.
+2. Acciones de personal visibles en detalle por empleado para estados:
+   - Borrador
+   - Pendiente Supervisor
+   - Pendiente RRHH
+   - Aprobada
+3. Regla financiera se mantiene:
+   - Solo acciones Aprobadas impactan el calculo financiero de planilla (bruto, deducciones, neto).
+   - Acciones no aprobadas se muestran en detalle con su estado, pero no se consumen para total financiero.
+4. Cargas sociales por empresa:
+   - Si la empresa tiene configuracion activa en nom_cargas_sociales, se inyectan lineas repetitivas por empleado.
+   - Se consideran deduccion y se reflejan en Cargas Sociales.
+5. Impuesto renta:
+   - Se calcula por periodo con la regla vigente del motor y se refleja en columna dedicada.
+
+Formato de "Tipo de Accion" (compatibilidad visual legacy):
+- Se enriquecio el texto para detalle de acciones con formato:
+  - Categoria (cantidad) - Movimiento - Detalle
+- Ejemplos:
+  - Ausencias (3) - PA Ausencias-% - No Justificada - Remunerada
+  - Horas Extras (2 hrs) - BC Hora Extra Diurna
+  - Retenciones (2) - Retencion 10% BRK
+- Para Ausencias se agrega etiqueta de tipo y remuneracion cuando aplique.
+
+Regla UI de aprobacion en tabla:
+- Se agrega columna "Accion" en detalle por empleado.
+- Si la linea esta en Pendiente Supervisor, se habilita boton "Aprobar" (atajo de RRHH).
+- Si no aplica aprobacion manual (cargas sociales/impuesto), se muestra "--".
+
+Regla de color por estado en detalle:
+- Lineas no aprobadas: visual de riesgo (rojo).
+- Lineas aprobadas o repetitivas operativas (carga social): visual de aprobado (verde).
+
+Campos mostrados en resumen de planilla (minimo operativo):
+- Empresa
+- Tipo de periodo
+- Moneda
+- Fecha inicio periodo
+- Fecha fin periodo
+- Fecha corte
+- Fecha inicio pago
+- Fecha fin pago
+- Fecha pago programada
+- Tipo planilla
+- Estado
+
+Trazabilidad tecnica:
+- API: `api/src/modules/payroll/payroll.service.ts`
+- Frontend: `frontend/src/pages/private/payroll-management/PayrollGeneratePage.tsx`
+- Contrato frontend API: `frontend/src/api/payroll.ts`
+
+Estado:
+- Compilacion backend validada en este corte.
+- Flujo de tabla y formato de tipo de accion alineado al comportamiento esperado del usuario.

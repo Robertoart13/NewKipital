@@ -1,5 +1,17 @@
-/* Estilo sobrio y profesional – sistema de planilla para jefes */
-/* UX inspirado en dashboard: stats cards, secciones claras, paleta neutra */
+/* Estilo Old Kpital – Generar Planillas (paleta y patrones) */
+/* Acento: #246BA3 | Fondos: #f8fafc, #f5f7fa | Bordes: #e0e6ed | Texto: #1a202c, #64748b */
+
+.pageCard {
+  background: #f8fafc !important;
+  border-radius: 12px !important;
+  border: 1px solid #e0e6ed !important;
+  box-shadow: 0px 2px 8px rgba(27, 46, 94, 0.08) !important;
+}
+
+.pageCard :global(.ant-card-body) {
+  background: #f8fafc !important;
+  border-radius: 0 0 12px 12px !important;
+}
 
 .collapsePanel {
   margin-bottom: 0;
@@ -12,37 +24,51 @@
 }
 
 .collapsePanel :global(.ant-collapse-header) {
-  padding: 12px 16px !important;
-  font-size: 14px;
-  color: #3d4f5c !important;
-  font-weight: 500;
+  padding: 12px 20px !important;
+  min-height: 64px !important;
+  font-size: 16px !important;
+  font-weight: 600 !important;
+  color: #1a202c !important;
+  background: #f5f7fa !important;
+  border-bottom: 2px solid #e0e6ed !important;
+  align-items: center !important;
+}
+
+.collapsePanel :global(.ant-collapse-header:hover) {
+  background: #f8fafc !important;
+}
+
+.collapsePanel :global(.ant-collapse-arrow) {
+  color: #246BA3 !important;
+  font-size: 20px !important;
 }
 
 .collapsePanel :global(.ant-collapse-content-box) {
-  padding: 20px 24px;
-  background: #fafbfc;
-  border-top: 1px solid #e8ecf0;
+  padding: 24px;
+  background: #ffffff;
+  border-top: 1px solid #e0e6ed;
 }
 
 .collapseLabel {
-  color: #3d4f5c;
-  font-weight: 500;
+  color: #1a202c;
+  font-weight: 600;
+  font-size: 16px;
 }
 
 .panelContent {
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 24px;
 }
 
 .sectionLabel {
   font-size: 14px;
   font-weight: 600;
-  color: #3d4f5c;
-  margin-bottom: 4px;
+  color: #1a202c;
+  margin-bottom: 8px;
 }
 
-/* Stats cards: filtros en tarjetas horizontales (UX referencia) */
+/* Stats cards – Old Kpital: fondo blanco, borde #e0e6ed, hover #246BA3 */
 .statsRow {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
@@ -51,10 +77,16 @@
 
 .statCard {
   background: #ffffff;
-  border: 1px solid #e8ecf0;
+  border: 1px solid #e0e6ed;
   border-radius: 8px;
   padding: 14px 16px;
   min-height: 72px;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.statCard:hover {
+  border-color: #246BA3;
+  box-shadow: 0 2px 4px rgba(36, 107, 163, 0.1);
 }
 
 .statCardAction {
@@ -65,7 +97,7 @@
 .statLabel {
   font-size: 12px;
   font-weight: 500;
-  color: #6b7a85;
+  color: #64748b;
   margin-bottom: 8px;
 }
 
@@ -74,34 +106,93 @@
 }
 
 .statSelect :global(.ant-select-selector) {
-  border-radius: 6px !important;
-  border-color: #e0e4e8 !important;
+  border-radius: 8px !important;
+  border: 1px solid #e0e6ed !important;
+  background: #ffffff !important;
+  font-size: 14px !important;
+  font-weight: 500 !important;
+}
+
+.statSelect :global(.ant-select:hover .ant-select-selector) {
+  border-color: #246BA3 !important;
+}
+
+.statSelect :global(.ant-select-focused .ant-select-selector) {
+  border-color: #246BA3 !important;
+  border-width: 2px !important;
+  box-shadow: 0 0 0 2px rgba(36, 107, 163, 0.1) !important;
 }
 
 .refreshBtn {
   width: 100%;
 }
 
+/* Botón primario Old Kpital: #246BA3, hover #1e5a8a */
+.primaryBtn {
+  background-color: #246BA3 !important;
+  color: #ffffff !important;
+  font-weight: 600 !important;
+  font-size: 14px !important;
+  padding: 10px 32px !important;
+  border-radius: 8px !important;
+  border: none !important;
+  box-shadow: 0 2px 4px rgba(36, 107, 163, 0.2) !important;
+  transition: all 0.2s ease !important;
+}
+
+.primaryBtn:hover {
+  background-color: #1e5a8a !important;
+  box-shadow: 0 4px 8px rgba(36, 107, 163, 0.3) !important;
+  transform: translateY(-1px);
+}
+
+.primaryBtn:disabled {
+  background-color: #cbd5e1 !important;
+  color: #94a3b8 !important;
+  box-shadow: none !important;
+  transform: none !important;
+}
+
 .sectionBlock {
   padding-top: 20px;
   margin-top: 8px;
-  border-top: 1px solid #e8ecf0;
+  border-top: 1px solid #e0e6ed;
 }
 
+/* Content card – Paper Old Kpital */
 .contentCard {
   background: #ffffff;
-  border: 1px solid #e8ecf0;
-  border-radius: 8px;
-  padding: 16px;
+  border: 1px solid #e0e6ed;
+  border-radius: 12px;
+  padding: 24px;
   margin-top: 8px;
+  box-shadow: 0px 2px 8px rgba(27, 46, 94, 0.08);
+}
+
+.contentCard :global(.ant-select-selector),
+.contentCard :global(.ant-input) {
+  border-radius: 8px !important;
+  border-color: #e0e6ed !important;
+}
+
+.contentCard :global(.ant-select:hover .ant-select-selector),
+.contentCard :global(.ant-input:hover) {
+  border-color: #246BA3 !important;
+}
+
+.contentCard :global(.ant-select-focused .ant-select-selector),
+.contentCard :global(.ant-input:focus) {
+  border-color: #246BA3 !important;
+  box-shadow: 0 0 0 2px rgba(36, 107, 163, 0.1) !important;
 }
 
 .selectHint {
   font-size: 12px;
-  color: #6b7a85;
+  color: #64748b;
   margin-top: 8px;
   margin-bottom: 0;
   line-height: 1.4;
+  font-weight: 500;
 }
 
 .detailHeader {
@@ -114,15 +205,18 @@
 }
 
 .detailTitle {
-  font-size: 14px;
+  font-size: 16px;
   font-weight: 600;
-  color: #3d4f5c;
+  color: #1a202c;
+  line-height: 1.2;
 }
 
+/* Tags estado – colores suaves Old Kpital */
 .stateTag {
-  font-weight: 500;
-  border-color: #d9d9d9 !important;
-  color: #595959 !important;
+  font-weight: 600 !important;
+  font-size: 12px !important;
+  border-radius: 16px !important;
+  padding: 4px 12px !important;
 }
 
 .descriptions {
@@ -130,17 +224,19 @@
 }
 
 .descriptions :global(.ant-descriptions-item-label) {
-  color: #6b7a85;
+  color: #64748b;
   font-size: 13px;
+  font-weight: 500;
 }
 
 .descriptions :global(.ant-descriptions-item-content) {
-  color: #3d4f5c;
-  font-size: 13px;
+  color: #1a202c;
+  font-size: 14px;
+  font-weight: 600;
 }
 
 .descriptions :global(.ant-descriptions-row) {
-  border-bottom: 1px solid #f0f0f0;
+  border-bottom: 1px solid #e0e6ed;
 }
 
 .descriptions :global(.ant-descriptions-row:last-child) {
@@ -148,8 +244,170 @@
 }
 
 .emptyDetail {
-  color: #6b7a85;
+  color: #64748b;
   font-size: 13px;
   padding: 12px 0;
   margin: 0;
+  font-weight: 500;
 }
+
+/* ===================== Tabla (Old Kpital) ===================== */
+
+.previewTableWrap :global(.ant-input) {
+  border-radius: 8px !important;
+  border-color: #e0e6ed !important;
+}
+
+.previewTableWrap :global(.ant-input:hover),
+.previewTableWrap :global(.ant-input:focus) {
+  border-color: #246BA3 !important;
+  box-shadow: 0 0 0 2px rgba(36, 107, 163, 0.1) !important;
+}
+
+.previewTable :global(.ant-table) {
+  background: #ffffff !important;
+}
+
+.previewTable :global(.ant-table-thead > tr > th) {
+  background: #f5f7fa !important;
+  color: #64748b !important;
+  font-weight: 600 !important;
+  border-bottom: 1px solid #e0e6ed !important;
+}
+
+.previewTable :global(.ant-table-tbody > tr > td) {
+  border-bottom: 1px solid #e0e6ed !important;
+}
+
+.previewTable :global(.ant-table-tbody > tr:hover > td) {
+  background: #f8fafc !important;
+}
+
+.previewTable :global(.ant-pagination) {
+  margin-top: 14px !important;
+}
+
+.previewTable :global(.ant-table-expanded-row > td) {
+  background: #f8fafc !important;
+}
+
+.tableStateTag {
+  background: #f5f7fa !important;
+  border: 1px solid #e0e6ed !important;
+  color: #475569 !important;
+  font-weight: 600 !important;
+  border-radius: 16px !important;
+  padding-inline: 10px !important;
+}
+
+/* ===================== Resúmenes (cards) – tamaño compacto ===================== */
+
+.summaryGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.summaryCard {
+  background: #ffffff;
+  border: 1px solid #e0e6ed;
+  border-radius: 8px;
+  padding: 10px 12px;
+  box-shadow: 0px 2px 8px rgba(27, 46, 94, 0.08);
+}
+
+.summaryTitle {
+  font-size: 13px;
+  font-weight: 600;
+  color: #1a202c;
+  margin-bottom: 6px;
+  line-height: 1.2;
+}
+
+.summaryTable {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+  table-layout: fixed;
+}
+
+.summaryTable thead th {
+  text-align: left;
+  color: #64748b;
+  font-weight: 600;
+  font-size: 11px;
+  padding: 6px 8px;
+  background: #f8f9fa;
+  border-bottom: 1px solid #e0e6ed;
+}
+
+.summaryTable thead th:last-child {
+  text-align: right;
+}
+
+.summaryTable tbody td {
+  padding: 6px 8px;
+  border-bottom: 1px solid #e9ecef;
+  color: #1a202c;
+  font-weight: 500;
+  font-size: 12px;
+}
+
+.summaryTable tbody td:first-child {
+  color: #475569;
+  font-weight: 500;
+}
+
+.summaryTable tbody td:last-child {
+  text-align: right;
+}
+
+.summaryTable tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.summaryEmphasisRow td {
+  background: #f8fafc;
+}
+
+.summaryTotalRow td {
+  background: #e6f2ff;
+  font-weight: 600;
+}
+
+.summaryHint {
+  margin-top: 6px;
+  color: #64748b;
+  font-size: 11px;
+  font-weight: 500;
+}
+
+@media (max-width: 900px) {
+  .summaryGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.previewTable :global(.ant-table-tbody > tr.action-row-pending > td) {
+  background: #fff1f2 !important;
+  color: #9f1239 !important;
+}
+
+.previewTable :global(.ant-table-tbody > tr.action-row-approved > td) {
+  background: #f0fdf4 !important;
+  color: #166534 !important;
+}
+
+.statePendingReview {
+  background: #fff1f2 !important;
+  border-color: #fecdd3 !important;
+  color: #be123c !important;
+}
+
+.stateApproved {
+  background: #ecfdf3 !important;
+  border-color: #bbf7d0 !important;
+  color: #15803d !important;
+}
+

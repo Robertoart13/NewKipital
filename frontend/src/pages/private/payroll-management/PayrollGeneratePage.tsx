@@ -16,6 +16,7 @@ import dayjs from 'dayjs';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { fetchPayPeriods, type CatalogPayPeriod } from '../../../api/catalogs';
+import { approvePersonalAction } from '../../../api/personalActions';
 import {
   fetchPayroll,
   fetchPayrolls,
@@ -104,6 +105,14 @@ function formatMoney(value: string | number): string {
   }).format(numeric);
 }
 
+function isApprovedActionVisual(row: PayrollPreviewActionRow): boolean {
+  const estado = String(row.estado ?? '').trim().toLowerCase();
+  const categoria = String(row.categoria ?? '').trim().toLowerCase();
+  if (categoria === 'carga social') return true;
+  return estado.includes('aprobad');
+}
+
+
 /**
  * Vista operativa para Cargar Planilla Regular:
  * - Filtros de empresa, moneda y periodo.
@@ -114,6 +123,9 @@ export function PayrollGeneratePage() {
   const { message } = AntdApp.useApp();
   const canProcess = useAppSelector(canProcessPayroll);
   const canViewSensitive = useAppSelector((state) => state.permissions.permissions.includes('payroll:view_sensitive'));
+  const canApprovePersonalActions = useAppSelector((state) =>
+    state.permissions.permissions.includes('hr_action:approve'),
+  );
   const companies = useAppSelector((state) => state.auth.companies);
   const activeCompany = useAppSelector((state) => state.activeCompany.company);
 
@@ -128,13 +140,16 @@ export function PayrollGeneratePage() {
   const [payPeriods, setPayPeriods] = useState<CatalogPayPeriod[]>([]);
   const [selectedPayrollDetail, setSelectedPayrollDetail] = useState<PayrollListItem | null>(null);
   const [previewTable, setPreviewTable] = useState<PayrollPreviewTable | null>(null);
+  const [selectedEmployeeIds, setSelectedEmployeeIds] = useState<number[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [loading, setLoading] = useState(false);
   const [loadingProcess, setLoadingProcess] = useState(false);
   const [contentExpanded, setContentExpanded] = useState(true);
+  const [approvingActionId, setApprovingActionId] = useState<number | null>(null);
 
   const resetPreview = useCallback(() => {
     setPreviewTable(null);
+    setSelectedEmployeeIds([]);
     setSearchTerm('');
   }, []);
 
@@ -276,12 +291,39 @@ export function PayrollGeneratePage() {
       setSelectedPayrollDetail(detail);
       bustApiCache('/payroll');
       message.success('Tabla de planilla cargada correctamente.');
+      setContentExpanded(false);
     } catch (error) {
       message.error(error instanceof Error ? error.message : 'Error al cargar tabla de planilla');
     } finally {
       setLoadingProcess(false);
     }
   };
+
+  const refreshLoadedPayrollTable = useCallback(async () => {
+    if (!selectedPayrollId) return;
+    const table = await loadPayrollTable(selectedPayrollId);
+    setPreviewTable(table);
+    const detail = await fetchPayroll(selectedPayrollId);
+    setSelectedPayrollDetail(detail);
+    bustApiCache('/payroll');
+  }, [selectedPayrollId]);
+
+  const handleApproveAction = useCallback(
+    async (actionId: number | null) => {
+      if (!actionId || !selectedPayrollId) return;
+      setApprovingActionId(actionId);
+      try {
+        await approvePersonalAction(actionId);
+        await refreshLoadedPayrollTable();
+        message.success('Accion aprobada y tabla actualizada.');
+      } catch (error) {
+        message.error(error instanceof Error ? error.message : 'Error al aprobar la accion personal');
+      } finally {
+        setApprovingActionId(null);
+      }
+    },
+    [message, refreshLoadedPayrollTable, selectedPayrollId],
+  );
 
   const collapseLabel = (
     <span className={genStyles.collapseLabel}>
@@ -301,6 +343,37 @@ export function PayrollGeneratePage() {
       return byName || byCode;
     });
   }, [previewTable, searchTerm]);
+
+  const previewSummary = useMemo(() => {
+    const parseDecimal = (value: string): number => {
+      const parsed = Number(String(value ?? '').replace(/,/g, ''));
+      return Number.isFinite(parsed) ? parsed : 0;
+    };
+
+    const totalEmployees = filteredPreviewRows.length;
+    const verifiedEmployees = filteredPreviewRows.filter((row) =>
+      row.estado.toLowerCase().includes('verific'),
+    ).length;
+    const pendingEmployees = Math.max(0, totalEmployees - verifiedEmployees);
+
+    const totalDevengado = filteredPreviewRows.reduce(
+      (sum, row) => sum + parseDecimal(row.salarioBrutoPeriodo),
+      0,
+    );
+    const totalCargas = filteredPreviewRows.reduce((sum, row) => sum + parseDecimal(row.cargasSociales), 0);
+    const totalRenta = filteredPreviewRows.reduce((sum, row) => sum + parseDecimal(row.impuestoRenta), 0);
+    const totalNeto = filteredPreviewRows.reduce((sum, row) => sum + parseDecimal(row.totalNeto), 0);
+
+    return {
+      totalEmployees,
+      verifiedEmployees,
+      pendingEmployees,
+      totalDevengado,
+      totalCargas,
+      totalRenta,
+      totalNeto,
+    };
+  }, [filteredPreviewRows]);
 
   const employeeColumns: ColumnsType<PayrollPreviewEmployeeRow> = useMemo(
     () => [
@@ -332,10 +405,10 @@ export function PayrollGeneratePage() {
         render: (value: string) => (canViewSensitive ? formatMoney(value) : '***'),
       },
       {
-        title: 'Devengado (dias)',
-        dataIndex: 'devengadoDias',
+        title: 'Devengado',
+        dataIndex: 'devengadoMonto',
         align: 'right',
-        render: (value: string) => (canViewSensitive ? value : '***'),
+        render: (value: string) => (canViewSensitive ? formatMoney(value) : '***'),
       },
       {
         title: 'Cargas Sociales',
@@ -365,7 +438,7 @@ export function PayrollGeneratePage() {
         title: 'Estado',
         dataIndex: 'estado',
         align: 'center',
-        render: (value: string) => <Tag color="gold">{value}</Tag>,
+        render: (value: string) => <Tag className={genStyles.tableStateTag}>{value}</Tag>,
       },
       {
         title: 'Acciones',
@@ -396,10 +469,37 @@ export function PayrollGeneratePage() {
         title: 'Estado',
         dataIndex: 'estado',
         align: 'center',
-        render: (value: string) => <Tag color="gold">{value}</Tag>,
+        render: (value: string, row) => (
+          <Tag
+            className={`${genStyles.tableStateTag} ${
+              isApprovedActionVisual(row) ? genStyles.stateApproved : genStyles.statePendingReview
+            }`}
+          >
+            {isApprovedActionVisual(row) ? 'Aprobada' : value}
+          </Tag>
+        ),
+      },
+      {
+        title: 'Accion',
+        key: 'approve-action',
+        align: 'center',
+        render: (_, row) => {
+          if (!row.canApprove || !row.idAccion) return <Text type="secondary">--</Text>;
+          if (!canApprovePersonalActions) return <Text type="secondary">Sin permiso</Text>;
+          return (
+            <Button
+              size="small"
+              type="link"
+              onClick={() => void handleApproveAction(row.idAccion)}
+              loading={approvingActionId === row.idAccion}
+            >
+              Aprobar
+            </Button>
+          );
+        },
       },
     ],
-    [canViewSensitive],
+    [approvingActionId, canApprovePersonalActions, canViewSensitive, handleApproveAction],
   );
 
   return (
@@ -415,7 +515,7 @@ export function PayrollGeneratePage() {
         </div>
       </div>
 
-      <Card className={styles.mainCard}>
+      <Card className={`${styles.mainCard} ${genStyles.pageCard}`}>
         <div className={styles.mainCardBody}>
           <Collapse
             activeKey={contentExpanded ? ['content'] : []}
@@ -550,8 +650,6 @@ export function PayrollGeneratePage() {
                             column={{ xs: 1, sm: 2, md: 3 }}
                             size="small"
                             className={genStyles.descriptions}
-                            labelStyle={{ color: '#6b7a85', fontWeight: 500 }}
-                            contentStyle={{ color: '#3d4f5c' }}
                           >
                             <Descriptions.Item label="Empresa">{selectedCompanyName}</Descriptions.Item>
                             <Descriptions.Item label="Tipo de periodo">
@@ -586,22 +684,7 @@ export function PayrollGeneratePage() {
                             </Descriptions.Item>
                           </Descriptions>
 
-                          <div className={genStyles.sectionBlock} style={{ marginTop: 16, paddingTop: 16 }}>
-                            <div className={genStyles.sectionLabel}>Carga de planilla</div>
-                            <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'center' }}>
-                              <Button
-                                type="primary"
-                                onClick={() => void handleLoadPayroll()}
-                                loading={loadingProcess}
-                                disabled={!canProcess}
-                              >
-                                Cargar planilla
-                              </Button>
-                              {!canProcess ? (
-                                <Text type="secondary">No tiene permiso para cargar planilla.</Text>
-                              ) : null}
-                            </div>
-                          </div>
+
                         </div>
                       ) : (
                         <p className={genStyles.emptyDetail}>Seleccione una planilla para ver el detalle.</p>
@@ -616,12 +699,37 @@ export function PayrollGeneratePage() {
         </div>
       </Card>
 
+      {selectedPayroll ? (
+        <Card className={`${styles.mainCard} ${genStyles.pageCard}`} style={{ marginTop: 16 }}>
+          <div className={styles.mainCardBody}>
+            <div className={genStyles.sectionBlock} style={{ borderTop: 'none', marginTop: 0, paddingTop: 0 }}>
+              <div className={genStyles.sectionLabel}>Carga de planilla</div>
+              <div className={genStyles.contentCard}>
+                <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'center' }}>
+                  <Button
+                    type="primary"
+                    className={genStyles.primaryBtn}
+                    onClick={() => void handleLoadPayroll()}
+                    loading={loadingProcess}
+                    disabled={!canProcess}
+                  >
+                    Cargar planilla
+                  </Button>
+                  {!canProcess ? (
+                    <Text type="secondary">No tiene permiso para cargar planilla.</Text>
+                  ) : null}
+                </div>
+              </div>
+            </div>
+          </div>
+        </Card>
+      ) : null}
       {previewTable ? (
-        <Card className={styles.mainCard} style={{ marginTop: 16 }}>
+        <Card className={`${styles.mainCard} ${genStyles.pageCard}`} style={{ marginTop: 16 }}>
           <div className={styles.mainCardBody}>
             <div className={genStyles.sectionBlock}>
               <div className={genStyles.sectionLabel}>Tabla de empleados y acciones</div>
-              <div className={genStyles.contentCard}>
+              <div className={`${genStyles.contentCard} ${genStyles.previewTableWrap}`}>
                 <Input
                   prefix={<SearchOutlined />}
                   placeholder="Buscar empleado por nombre o codigo..."
@@ -633,22 +741,91 @@ export function PayrollGeneratePage() {
                   rowKey={(row) => row.idEmpleado}
                   dataSource={filteredPreviewRows}
                   columns={employeeColumns}
+                  className={genStyles.previewTable}
                   pagination={{ pageSize: 10, showSizeChanger: true }}
+                  rowSelection={{
+                    selectedRowKeys: selectedEmployeeIds,
+                    onChange: (keys) => setSelectedEmployeeIds(keys as number[]),
+                    preserveSelectedRowKeys: true,
+                  }}
                   expandable={{
                     expandedRowRender: (row) => (
                       <div style={{ padding: 8 }}>
                         <div style={{ marginBottom: 8, fontWeight: 600 }}>Detalle de acciones de personal</div>
                         <Table<PayrollPreviewActionRow>
-                          rowKey={(action, idx) => `${row.idEmpleado}-${action.idAccion ?? idx}`}
+                          rowKey={(action) => `${row.idEmpleado}-${action.idAccion ?? 'na'}-${action.categoria}-${action.tipoAccion}-${action.monto}-${action.estado}-${action.tipoSigno}`}
                           dataSource={row.acciones}
                           columns={actionColumns}
                           size="small"
+                          className={genStyles.previewTable}
+                          rowClassName={(action) =>
+                            isApprovedActionVisual(action) ? 'action-row-approved' : 'action-row-pending'
+                          }
                           pagination={false}
                         />
                       </div>
                     ),
                   }}
                 />
+
+                <div className={genStyles.summaryGrid}>
+                  <div className={genStyles.summaryCard}>
+                    <div className={genStyles.summaryTitle}>Informacion de Empleados</div>
+                    <table className={genStyles.summaryTable}>
+                      <thead>
+                        <tr>
+                          <th>Concepto</th>
+                          <th>Total</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr>
+                          <td>Total Empleados</td>
+                          <td>{previewSummary.totalEmployees}</td>
+                        </tr>
+                        <tr>
+                          <td>Empleados Verificados</td>
+                          <td>{previewSummary.verifiedEmployees}</td>
+                        </tr>
+                        <tr>
+                          <td>Pendientes de Verificar</td>
+                          <td>{previewSummary.pendingEmployees}</td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+
+                  <div className={genStyles.summaryCard}>
+                    <div className={genStyles.summaryTitle}>Totales Monetarios</div>
+                    <table className={genStyles.summaryTable}>
+                      <thead>
+                        <tr>
+                          <th>Concepto</th>
+                          <th>Total</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr>
+                          <td>Devengado (Quincenal)</td>
+                          <td>{canViewSensitive ? `CRC ${formatMoney(previewSummary.totalDevengado)}` : '***'}</td>
+                        </tr>
+                        <tr>
+                          <td>Cargas Sociales</td>
+                          <td>{canViewSensitive ? `CRC ${formatMoney(previewSummary.totalCargas)}` : '***'}</td>
+                        </tr>
+                        <tr>
+                          <td>Impuesto Renta</td>
+                          <td>{canViewSensitive ? `CRC ${formatMoney(previewSummary.totalRenta)}` : '***'}</td>
+                        </tr>
+                        <tr className={genStyles.summaryTotalRow}>
+                          <td>MONTO NETO TOTAL</td>
+                          <td>{canViewSensitive ? `CRC ${formatMoney(previewSummary.totalNeto)}` : '***'}</td>
+                        </tr>
+                      </tbody>
+                    </table>
+                    <div className={genStyles.summaryHint}>(Solo empleados verificados)</div>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -657,5 +834,21 @@ export function PayrollGeneratePage() {
     </div>
   );
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 

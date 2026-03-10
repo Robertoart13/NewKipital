@@ -379,3 +379,41 @@ Pendiente:
 Referencia:
 - docs/50-Handoff-TrasladoInterempresas-20260309.md
 - docs/Test/TEST-EXECUTION-REPORT.md (Fase 50)
+
+---
+
+## Completado / Actualizado (sesion 2026-03-10)
+
+### Bloque Planilla Regular - Cierre documental y operativo
+
+1. **Cargar Planilla Regular (UI/operacion) - completado**
+   - Flujo estabilizado para seleccionar planilla Regular y construir tabla de empleados/acciones.
+   - Boton `Cargar planilla` definido como accion de previsualizacion operativa (no aplica/cierra planilla).
+
+2. **Regla financiera documentada - completada**
+   - Solo acciones en estado `APPROVED` impactan totales financieros (devengado/cargas/renta/neto).
+   - Acciones pendientes se muestran para revision pero no alteran total financiero.
+
+3. **Detalle de acciones con formato legado - completado**
+   - `Tipo de Accion` enriquecido con formato:
+     - `Categoria (cantidad) - Movimiento - Detalle`.
+   - Incluye casos de Ausencias con `Justificada/No Justificada` y `Remunerada/No Remunerada` cuando aplique.
+
+4. **Aprobacion desde tabla - completado**
+   - Lineas en `Pendiente Supervisor` muestran accion `Aprobar`.
+   - Lineas sin accion manual muestran `--`.
+
+5. **Semaforo visual de estados - completado**
+   - Pendientes en rojo.
+   - Aprobadas y cargas sociales repetitivas en verde.
+
+6. **Cargas sociales por empresa - regla consolidada**
+   - Si la empresa no tiene `nom_cargas_sociales` activas, `Cargas Sociales = 0`.
+   - Esto se considera dato/configuracion faltante, no bug de calculo.
+
+7. **Documentacion transversal actualizada**
+   - Se actualizaron docs 40, 50, reglas importantes, indice y bloque de testing/manual.
+
+### Siguiente pendiente de continuidad
+
+- Continuar con cierre funcional de planilla aplicada (fase posterior), manteniendo trazabilidad entre preview, verificacion y aplicacion final.

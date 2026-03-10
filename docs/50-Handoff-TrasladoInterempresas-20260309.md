@@ -1,4 +1,4 @@
-﻿# 50 - Handoff Traslado Interempresas (2026-03-09)
+# 50 - Handoff Traslado Interempresas (2026-03-09)
 
 ## 1) Corte del handoff
 - Fecha: 2026-03-09
@@ -103,3 +103,101 @@ Se deja documentado ajuste final de menu en frontend:
 Incidencia resuelta:
 - Menu no visible por falta de permiso payroll:generate en BD.
 - Se ejecuto migracion y se confirmo alta/asignacion del permiso.
+
+## 13) Actualizacion operativa de planilla - 2026-03-10
+
+Alcance nuevo documentado:
+1. Se verifico calculo de campos de tabla de planilla en entorno real.
+2. Se confirmo que cargas sociales dependen de configuracion por empresa.
+3. Se insertaron cargas sociales faltantes para `Constructora BRK` (`id_empresa=3`) en `nom_cargas_sociales`.
+4. Se validaron resultados en tabla para empleado con formula completa:
+   - bruto quincenal,
+   - cargas,
+   - renta,
+   - neto.
+5. Se ajusto UX de pantalla "Cargar Planilla Regular":
+   - boton de carga fuera del panel de detalle,
+   - colapso automatico del panel al cargar,
+   - checkbox por empleado,
+   - cards de resumen al final de la tabla.
+
+Evidencia de datos (resumen):
+- Empresa 3 no tenia cargas sociales configuradas al inicio (causa de cargas=0).
+- Se crearon 3 cargas activas (IVM, Salud/Maternidad, Banco Popular).
+- Luego la corrida mostro cargas calculadas y neto ajustado correctamente.
+
+## 14) Actualizacion carga de acciones en tabla de planilla - 2026-03-10 02:10:04 -06:00
+
+Alcance:
+1. Se ajusto backend de load-table para mostrar en detalle de empleado las acciones de personal en estados: Borrador, Pendiente Supervisor, Pendiente RRHH y Aprobada.
+2. Se mantiene regla financiera: los montos de planilla (bruto/deducciones/neto) se calculan solo con acciones aprobadas.
+3. Se preserva orden de detalle solicitado: primero acciones de personal, luego cargas sociales e impuesto renta.
+4. Se expone estado real por linea (estado, estadoCodigo) y bandera canApprove para habilitar boton de aprobacion desde la UI.
+
+Archivo actualizado:
+- `api/src/modules/payroll/payroll.service.ts`
+
+Validacion tecnica:
+- Comando: cd api && npm.cmd run build
+- Resultado: OK (compila sin errores).
+
+
+## 15) Actualizacion planilla regular y tabla operativa - 2026-03-10 03:10:00 -06:00
+
+Se documenta continuidad del bloque funcional posterior al traslado interempresas:
+
+1. Vista de planilla regular ajustada para uso operativo real (carga de tabla por planilla seleccionada).
+2. Formato de detalle de acciones enriquecido en "Tipo de Accion" con patron legacy:
+   - Categoria (cantidad) - Movimiento - detalle.
+3. Se mantiene criterio de calculo:
+   - Totales financieros solo con acciones aprobadas.
+   - Visual de detalle incluye pendientes para revision/decision.
+4. Se habilita accion de aprobacion directa desde tabla para lineas en Pendiente Supervisor.
+5. Se confirma dependencias de cargas sociales por empresa:
+   - Si no existen cargas activas en nom_cargas_sociales, Cargas Sociales queda en 0.
+
+Nota operativa:
+- El estado de tabla y resumen puede requerir recarga de planilla (boton Cargar planilla) despues de cambios de configuracion/cargas para reconstruir snapshot visual.
+
+## 16) Acta de sesion consolidada - 2026-03-10 03:35:00 -06:00
+
+### 16.1 Que hablamos (resumen ejecutivo)
+1. Se confirmo que la vista de `Generar Planilla Regular` debe funcionar como carga operativa de tabla, no como aplicacion final.
+2. Se pidio alinear la UX con el sistema de referencia (legacy) para legibilidad y operacion RRHH.
+3. Se definio que el detalle de acciones debe mostrar estados reales y permitir aprobacion directa cuando aplique.
+4. Se discutio y ratifico que el calculo financiero no debe contaminarse con acciones no aprobadas.
+
+### 16.2 Que analizamos (tecnico-funcional)
+1. Flujo de datos API -> snapshot -> frontend para carga de tabla.
+2. Regla de inclusion de acciones por estado para vista de revision.
+3. Diferencia entre:
+   - visibilidad operativa (mostrar pendientes), y
+   - impacto financiero (solo aprobadas).
+4. Dependencia de cargas sociales por empresa (`nom_cargas_sociales`) como precondicion de calculo de deducciones recurrentes.
+5. Formato de `Tipo de Accion` para compatibilidad visual con legacy y lectura rapida por usuario.
+
+### 16.3 Decisiones tomadas
+1. Mantener `Cargar planilla` como previsualizacion operativa.
+2. Mostrar acciones en estados Borrador/Pendiente Supervisor/Pendiente RRHH/Aprobada.
+3. Mantener formula financiera estricta con acciones `APPROVED`.
+4. Permitir accion `Aprobar` desde tabla para estados `Pendiente Supervisor`.
+5. Aplicar semaforo visual de estado en detalle por linea.
+6. Estandarizar formato enriquecido de `Tipo de Accion`.
+
+### 16.4 Resultado actual del bloque
+1. Tabla de empleados y acciones funcional para revision.
+2. Detalle por empleado con estados y accion operativa.
+3. Calculo visible de salario/cargas/renta/neto con regla financiera vigente.
+4. Documentacion transversal actualizada en blueprint, reglas, pruebas, indice, estado y pendientes.
+
+### 16.5 Que sigue (siguiente bloque acordado)
+1. Continuar fase de planilla aplicada (de preview/verificacion hacia aplicacion final).
+2. Reforzar escenarios de QA funcional en empresas con catalogos completos e incompletos.
+3. Mantener trazabilidad de cambios en docs/test por fase antes de cerrar cada bloque.
+
+### 16.6 Como validar que este bloque quedo estable
+1. Cargar planilla regular y expandir detalle de al menos 1 empleado.
+2. Verificar formato de `Tipo de Accion` y estado por linea.
+3. Aprobar una linea pendiente de supervisor desde tabla.
+4. Recargar planilla y confirmar consistencia visual/financiera.
+5. Confirmar que cargas sociales aparecen solo si existe configuracion activa en empresa.

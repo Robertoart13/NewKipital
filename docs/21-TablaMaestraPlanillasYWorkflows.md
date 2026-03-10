@@ -662,3 +662,94 @@ Se corrige inconsistencia donde la tabla mostraba montos en 0.00 y detalle vacio
 Resultado esperado:
 - Columnas Salario Base, Salario Quincenal Bruto, Cargas Sociales, Impuesto Renta, Monto Neto dejan de salir en 0 cuando hay salario/cargas en BD.
 - Detalle de acciones de personal muestra al menos CCSS/renta generadas en corrida aunque no existan acciones de personal adicionales.
+
+## 2026-03-10 - Ajuste UI Cargar Planilla Regular
+
+- Se agrego seleccion por checkbox por empleado en la tabla principal de "Tabla de empleados y acciones".
+- Se agregaron dos tarjetas de resumen al final de la tabla:
+  - Informacion de Empleados (total, verificados, pendientes).
+  - Totales Monetarios (devengado, cargas, renta, neto total).
+- El boton "Cargar planilla" se movio fuera del bloque "Detalle de la planilla".
+- Al cargar la tabla exitosamente, el panel "Detalle de la planilla" se colapsa automaticamente para priorizar la visualizacion de la tabla.
+
+## 13. Formula operativa de tabla "Tabla de empleados y acciones" (vigente)
+
+Campos visibles en la tabla:
+- Salario Base
+- Salario Quincenal Bruto
+- Devengado (dias)
+- Cargas Sociales
+- Impuesto Renta
+- Monto Neto
+- Dias
+
+Reglas de calculo (compatibles con legacy `Planilla_empleados_cargar.js`):
+
+1) Salario Base
+- Fuente: salario base del empleado en su empresa actual.
+- Se muestra en moneda de la corrida.
+
+2) Salario Quincenal Bruto
+- Si periodo de pago es Quincenal: `salario_base / 2`.
+- Si periodo de pago es Mensual: `salario_base`.
+- Si empleado ingreso dentro del periodo, se recalcula proporcional por dias.
+
+3) Devengado (dias)
+- Base de dias:
+  - Quincenal: 15
+  - Mensual: 30
+- Se resta por acciones no remuneradas que descuentan dias (ausencias/licencias sin goce, vacaciones, incapacidades segun regla).
+- Nunca baja de 0.
+
+4) Cargas Sociales
+- Se calculan sobre el devengado del periodo.
+- Formula: `monto_carga = devengado * porcentaje_carga` por cada carga activa de la empresa.
+- Total Cargas Sociales = suma de todas las cargas configuradas.
+- Regla enterprise: las cargas sociales son de empresa (recurrentes), no dependen de que exista accion personal manual.
+
+5) Impuesto Renta
+- Mensual: tramo progresivo definido por regla de negocio.
+- Quincenal: se aplica cuando corresponde a segunda quincena (fecha fin del periodo en rango de segunda quincena), con logica de acumulacion definida en backend.
+- Si no aplica por periodo/tramo, valor = 0.
+
+6) Monto Neto
+- Formula: `neto = devengado - cargas_sociales - impuesto_renta - deducciones - retenciones`.
+
+7) Dias
+- Se muestra el total final de dias devengados para el calculo del empleado.
+
+Regla de precision:
+- Calculo interno con precision controlada.
+- Presentacion en UI con formato monetario local y redondeo de visualizacion.
+
+## 14. Reglas de carga de datos para el detalle por empleado
+
+Cuando se carga una planilla:
+- Si una accion personal cumple reglas de inclusion (estado, fecha efectiva, empresa, planilla), debe aparecer en "Detalle de acciones de personal".
+- Las cargas sociales tambien se reflejan como detalle por empleado cuando la empresa tiene `nom_cargas_sociales` activas.
+
+Diagnostico operativo documentado:
+- Si la empresa no tiene registros en `nom_cargas_sociales`, la tabla mostrara cargas en 0.
+- Si no hay acciones asociadas al calendario, el detalle por empleado mostrara "No hay datos".
+
+## 15. Cambios UI aplicados en Cargar Planilla Regular (2026-03-10)
+
+Cambios confirmados:
+1. Boton "Cargar planilla" movido fuera del panel de detalle (fuera del collapse completo).
+2. Al cargar tabla exitosamente, el panel de detalle se colapsa automaticamente para priorizar la tabla.
+3. Tabla principal con checkbox por empleado (seleccion por fila).
+4. Se agregan 2 tarjetas al final de la tabla:
+   - Informacion de Empleados.
+   - Totales Monetarios.
+
+Resumenes visibles agregados:
+- Total Empleados.
+- Empleados Verificados.
+- Pendientes de Verificar.
+- Devengado (Quincenal).
+- Cargas Sociales.
+- Impuesto Renta.
+- Monto Neto Total.
+
+Nota:
+- El resumen monetario respeta permiso sensible (`payroll:view_sensitive`): sin permiso, la UI enmascara valores.

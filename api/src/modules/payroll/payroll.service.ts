@@ -662,6 +662,13 @@ export class PayrollService {
         .andWhere('(a.fechaAprobacion IS NULL OR a.fechaAprobacion <= :cutoff)', { cutoff })
         .getMany();
 
+      const displayActionStates: PersonalActionEstado[] = [
+        PersonalActionEstado.DRAFT,
+        PersonalActionEstado.PENDING_SUPERVISOR,
+        PersonalActionEstado.PENDING_RRHH,
+        PersonalActionEstado.APPROVED,
+      ];
+
       const resultAccumulator = new Map<number, { gross: number; ded: number }>();
       const approvedActionAmountMap = new Map<number, number>();
 
@@ -704,6 +711,57 @@ export class PayrollService {
           prev.gross += prorated.montoFinal;
         }
         resultAccumulator.set(key, prev);
+      }
+
+      const displayActions = await queryRunner.manager
+        .createQueryBuilder(PersonalAction, 'a')
+        .where('a.idEmpresa = :companyId', { companyId: payroll.idEmpresa })
+        .andWhere('a.estado IN (:...displayStates)', { displayStates: displayActionStates })
+        .andWhere('(a.idCalendarioNomina IS NULL OR a.idCalendarioNomina = :payrollId)', {
+          payrollId: payroll.id,
+        })
+        .andWhere('COALESCE(a.fechaInicioEfecto, a.fechaEfecto) IS NOT NULL')
+        .andWhere(
+          `COALESCE(a.fechaInicioEfecto, a.fechaEfecto) <= :end
+           AND COALESCE(a.fechaFinEfecto, a.fechaInicioEfecto, a.fechaEfecto) >= :start`,
+          { start, end },
+        )
+        .getMany();
+
+      const actionDisplayLabelMap = await this.buildActionDisplayLabelMap(
+        queryRunner.manager,
+        displayActions,
+      );
+
+      const displayActionsByEmployee = new Map<
+        number,
+        Array<{
+          idAccion: number | null;
+          tipoAccion: string;
+          monto: number;
+          fechaEfecto: Date | null;
+          estado: string;
+          estadoCodigo: number | null;
+          canApprove: boolean;
+        }>
+      >();
+
+      for (const action of displayActions) {
+        const actionAmount =
+          action.estado === PersonalActionEstado.APPROVED
+            ? (approvedActionAmountMap.get(action.id) ?? Number(action.monto ?? 0))
+            : Number(action.monto ?? 0);
+        const employeeActionRows = displayActionsByEmployee.get(action.idEmpleado) ?? [];
+        employeeActionRows.push({
+          idAccion: action.id,
+          tipoAccion: actionDisplayLabelMap.get(action.id) ?? action.tipoAccion,
+          monto: actionAmount,
+          fechaEfecto: action.fechaEfecto ?? action.fechaInicioEfecto ?? null,
+          estado: this.resolvePersonalActionStatusLabel(action.estado),
+          estadoCodigo: Number(action.estado),
+          canApprove: action.estado === PersonalActionEstado.PENDING_SUPERVISOR,
+        });
+        displayActionsByEmployee.set(action.idEmpleado, employeeActionRows);
       }
 
       const snapshotEmployees: Array<Record<string, unknown>> = [];
@@ -818,19 +876,15 @@ export class PayrollService {
           totalNeto,
           cargasSocialesDetalle: socialChargeDetail.items,
           acciones: [
-            ...approvedActions
-              .filter((action) => action.idEmpleado === employee.id_empleado)
-              .map((action) => ({
-                idAccion: action.id,
-                tipoAccion: action.tipoAccion,
-                monto: approvedActionAmountMap.get(action.id) ?? Number(action.monto ?? 0),
-                fechaEfecto: action.fechaEfecto ?? action.fechaInicioEfecto ?? null,
-              })),
+            ...(displayActionsByEmployee.get(employee.id_empleado) ?? []),
             ...socialChargeDetail.items.map((charge) => ({
               idAccion: null,
               tipoAccion: `CCSS-${charge.nombre}`,
               monto: charge.monto,
               fechaEfecto: payroll.fechaPagoProgramada ?? payroll.fechaFinPeriodo ?? null,
+              estado: 'Pendiente',
+              estadoCodigo: null,
+              canApprove: false,
             })),
             ...(impuestoRenta > 0
               ? [
@@ -839,6 +893,9 @@ export class PayrollService {
                     tipoAccion: 'impuesto_renta',
                     monto: impuestoRenta,
                     fechaEfecto: payroll.fechaPagoProgramada ?? payroll.fechaFinPeriodo ?? null,
+                    estado: 'Pendiente',
+                    estadoCodigo: null,
+                    canApprove: false,
                   },
                 ]
               : []),
@@ -933,6 +990,7 @@ export class PayrollService {
       salarioBase: string;
       salarioBrutoPeriodo: string;
       devengadoDias: string;
+      devengadoMonto: string;
       cargasSociales: string;
       impuestoRenta: string;
       totalNeto: string;
@@ -945,6 +1003,8 @@ export class PayrollService {
         monto: string;
         tipoSigno: '+' | '-';
         estado: string;
+        estadoCodigo?: number | null;
+        canApprove?: boolean;
       }>;
     }>;
   }> {
@@ -983,6 +1043,7 @@ export class PayrollService {
       salarioBase: string;
       salarioBrutoPeriodo: string;
       devengadoDias: string;
+      devengadoMonto: string;
       cargasSociales: string;
       impuestoRenta: string;
       totalNeto: string;
@@ -995,6 +1056,8 @@ export class PayrollService {
         monto: string;
         tipoSigno: '+' | '-';
         estado: string;
+        estadoCodigo?: number | null;
+        canApprove?: boolean;
       }>;
     }>;
   }> {
@@ -1022,6 +1085,7 @@ export class PayrollService {
         idEmpleado?: number;
         salarioBase?: string | number;
         salarioBrutoPeriodo?: string | number;
+        totalBruto?: string | number;
         devengadoDias?: string | number | null;
         devengadoHoras?: string | number | null;
         cargasSociales?: string | number;
@@ -1031,6 +1095,9 @@ export class PayrollService {
           idAccion?: number;
           tipoAccion?: string;
           monto?: number | string;
+          estado?: string;
+          estadoCodigo?: number | null;
+          canApprove?: boolean;
         }>;
       }>;
       generatedAt?: string;
@@ -1105,6 +1172,7 @@ export class PayrollService {
           salarioBase: Number(row.salarioBase ?? 0).toFixed(2),
           salarioBrutoPeriodo: Number(row.salarioBrutoPeriodo ?? 0).toFixed(2),
           devengadoDias: Number(devengadoDias ?? 0).toFixed(4),
+          devengadoMonto: Number(row.totalBruto ?? 0).toFixed(2),
           cargasSociales: Number(row.cargasSociales ?? 0).toFixed(2),
           impuestoRenta: Number(row.impuestoRenta ?? 0).toFixed(2),
           totalNeto: Number(row.totalNeto ?? 0).toFixed(2),
@@ -1113,18 +1181,54 @@ export class PayrollService {
           acciones: actions.map((action) => {
             const tipoAccion = String(action.tipoAccion ?? 'Accion').trim() || 'Accion';
             const isDeduction = this.isDeductionAction(tipoAccion) || tipoAccion === 'carga_social' || tipoAccion === 'impuesto_renta' || tipoAccion.toLowerCase().includes('ccss') || tipoAccion.toLowerCase().includes('renta');
+            const estadoCodigo = Number.isFinite(Number(action.estadoCodigo))
+              ? Number(action.estadoCodigo)
+              : null;
             return {
               idAccion: Number.isFinite(Number(action.idAccion)) ? Number(action.idAccion) : null,
               categoria: this.resolveActionCategory(tipoAccion),
               tipoAccion,
               monto: Number(action.monto ?? 0).toFixed(2),
               tipoSigno: isDeduction ? '-' : '+',
-              estado: 'Pendiente',
+              estado:
+                typeof action.estado === 'string' && action.estado.trim().length > 0
+                  ? action.estado.trim()
+                  : this.resolvePersonalActionStatusLabel(estadoCodigo),
+              estadoCodigo,
+              canApprove: Boolean(action.canApprove),
             };
           }),
         };
       }),
     };
+  }
+
+  private resolvePersonalActionStatusLabel(
+    estadoRaw: PersonalActionEstado | number | null | undefined,
+  ): string {
+    const estado = Number(estadoRaw ?? 0);
+    switch (estado) {
+      case PersonalActionEstado.DRAFT:
+        return 'Borrador';
+      case PersonalActionEstado.PENDING_SUPERVISOR:
+        return 'Pendiente Supervisor';
+      case PersonalActionEstado.PENDING_RRHH:
+        return 'Pendiente RRHH';
+      case PersonalActionEstado.APPROVED:
+        return 'Aprobada';
+      case PersonalActionEstado.CONSUMED:
+        return 'Consumida';
+      case PersonalActionEstado.CANCELLED:
+        return 'Cancelada';
+      case PersonalActionEstado.INVALIDATED:
+        return 'Invalidada';
+      case PersonalActionEstado.EXPIRED:
+        return 'Expirada';
+      case PersonalActionEstado.REJECTED:
+        return 'Rechazada';
+      default:
+        return 'Pendiente';
+    }
   }
   private async canViewPayrollSensitiveData(
     userId: number | undefined,
@@ -1165,6 +1269,169 @@ export class PayrollService {
     if (tipoAccion.includes('retencion')) return 'Retenciones';
     if (tipoAccion.includes('descuento') || tipoAccion.includes('deduccion')) return 'Deducciones';
     return 'Accion Personal';
+  }
+  private async buildActionDisplayLabelMap(
+    manager: EntityManager,
+    actions: PersonalAction[],
+  ): Promise<Map<number, string>> {
+    const actionIds = actions
+      .map((action) => Number(action.id))
+      .filter((id) => Number.isFinite(id) && id > 0);
+    if (!actionIds.length) return new Map<number, string>();
+
+    const idsSql = actionIds.join(',');
+
+    const detailRows = await manager.query(
+      `
+      SELECT
+        x.idAccion,
+        x.cantidad,
+        x.movimiento,
+        x.tipoDetalle,
+        x.remuneracion
+      FROM (
+        SELECT
+          l.id_accion AS idAccion,
+          l.cantidad_linea AS cantidad,
+          m.nombre_movimiento_nomina AS movimiento,
+          l.tipo_ausencia_linea AS tipoDetalle,
+          l.remuneracion_linea AS remuneracion
+        FROM acc_ausencias_lineas l
+        LEFT JOIN nom_movimientos_nomina m ON m.id_movimiento_nomina = l.id_movimiento_nomina
+        WHERE l.id_accion IN (${idsSql})
+        UNION ALL
+        SELECT
+          l.id_accion AS idAccion,
+          l.cantidad_linea AS cantidad,
+          m.nombre_movimiento_nomina AS movimiento,
+          l.tipo_licencia_linea AS tipoDetalle,
+          l.remuneracion_linea AS remuneracion
+        FROM acc_licencias_lineas l
+        LEFT JOIN nom_movimientos_nomina m ON m.id_movimiento_nomina = l.id_movimiento_nomina
+        WHERE l.id_accion IN (${idsSql})
+        UNION ALL
+        SELECT
+          l.id_accion AS idAccion,
+          l.cantidad_linea AS cantidad,
+          m.nombre_movimiento_nomina AS movimiento,
+          l.tipo_incapacidad_linea AS tipoDetalle,
+          l.remuneracion_linea AS remuneracion
+        FROM acc_incapacidades_lineas l
+        LEFT JOIN nom_movimientos_nomina m ON m.id_movimiento_nomina = l.id_movimiento_nomina
+        WHERE l.id_accion IN (${idsSql})
+        UNION ALL
+        SELECT
+          l.id_accion AS idAccion,
+          l.cantidad_linea AS cantidad,
+          m.nombre_movimiento_nomina AS movimiento,
+          NULL AS tipoDetalle,
+          NULL AS remuneracion
+        FROM acc_bonificaciones_lineas l
+        LEFT JOIN nom_movimientos_nomina m ON m.id_movimiento_nomina = l.id_movimiento_nomina
+        WHERE l.id_accion IN (${idsSql})
+        UNION ALL
+        SELECT
+          l.id_accion AS idAccion,
+          l.cantidad_linea AS cantidad,
+          m.nombre_movimiento_nomina AS movimiento,
+          NULL AS tipoDetalle,
+          NULL AS remuneracion
+        FROM acc_descuentos_lineas l
+        LEFT JOIN nom_movimientos_nomina m ON m.id_movimiento_nomina = l.id_movimiento_nomina
+        WHERE l.id_accion IN (${idsSql})
+        UNION ALL
+        SELECT
+          l.id_accion AS idAccion,
+          l.cantidad_linea AS cantidad,
+          m.nombre_movimiento_nomina AS movimiento,
+          NULL AS tipoDetalle,
+          NULL AS remuneracion
+        FROM acc_retenciones_lineas l
+        LEFT JOIN nom_movimientos_nomina m ON m.id_movimiento_nomina = l.id_movimiento_nomina
+        WHERE l.id_accion IN (${idsSql})
+        UNION ALL
+        SELECT
+          l.id_accion AS idAccion,
+          l.cantidad_linea AS cantidad,
+          m.nombre_movimiento_nomina AS movimiento,
+          l.tipo_jornada_horas_extras_linea AS tipoDetalle,
+          l.remuneracion_linea AS remuneracion
+        FROM acc_horas_extras_lineas l
+        LEFT JOIN nom_movimientos_nomina m ON m.id_movimiento_nomina = l.id_movimiento_nomina
+        WHERE l.id_accion IN (${idsSql})
+        UNION ALL
+        SELECT
+          l.id_accion AS idAccion,
+          1 AS cantidad,
+          m.nombre_movimiento_nomina AS movimiento,
+          l.metodo_calculo_linea AS tipoDetalle,
+          l.remuneracion_linea AS remuneracion
+        FROM acc_aumentos_lineas l
+        LEFT JOIN nom_movimientos_nomina m ON m.id_movimiento_nomina = l.id_movimiento_nomina
+        WHERE l.id_accion IN (${idsSql})
+      ) x
+      `
+    );
+
+    const detailByAction = new Map<
+      number,
+      { cantidad: number; movimiento: string | null; tipoDetalle: string | null; remuneracion: number | null }
+    >();
+
+    for (const raw of detailRows as Array<Record<string, unknown>>) {
+      const idAccion = Number(raw.idAccion ?? 0);
+      if (!Number.isFinite(idAccion) || idAccion <= 0 || detailByAction.has(idAccion)) continue;
+      detailByAction.set(idAccion, {
+        cantidad: Number(raw.cantidad ?? 0),
+        movimiento: raw.movimiento ? String(raw.movimiento) : null,
+        tipoDetalle: raw.tipoDetalle ? String(raw.tipoDetalle) : null,
+        remuneracion: raw.remuneracion == null ? null : Number(raw.remuneracion),
+      });
+    }
+
+    const labelMap = new Map<number, string>();
+    for (const action of actions) {
+      const actionId = Number(action.id);
+      const category = this.resolveActionCategory(action.tipoAccion);
+      const detail = detailByAction.get(actionId);
+      if (!detail) {
+        labelMap.set(actionId, category);
+        continue;
+      }
+
+      const cantidad = Number.isFinite(detail.cantidad) ? detail.cantidad : 0;
+      const quantityLabel = this.formatActionQuantityLabel(category, cantidad);
+      const baseLabel = quantityLabel ? `${category} (${quantityLabel})` : category;
+      const detailParts: string[] = [];
+
+      if (detail.movimiento && detail.movimiento.trim().length > 0) {
+        detailParts.push(detail.movimiento.trim());
+      }
+      if (category === 'Ausencias' && detail.tipoDetalle) {
+        detailParts.push(this.resolveAbsenceTypeLabel(detail.tipoDetalle));
+        detailParts.push(detail.remuneracion === 1 ? 'Remunerada' : 'No Remunerada');
+      }
+
+      labelMap.set(actionId, detailParts.length ? `${baseLabel} - ${detailParts.join(' - ')}` : baseLabel);
+    }
+
+    return labelMap;
+  }
+
+  private formatActionQuantityLabel(category: string, quantity: number): string {
+    if (!Number.isFinite(quantity) || quantity <= 0) return '';
+    const normalized = Number(quantity.toFixed(4)).toString();
+    if (category === 'Horas Extras') {
+      return `${normalized} hrs`;
+    }
+    return normalized;
+  }
+
+  private resolveAbsenceTypeLabel(value: string): string {
+    const normalized = value.trim().toUpperCase();
+    if (normalized === 'JUSTIFICADA') return 'Justificada';
+    if (normalized === 'NO_JUSTIFICADA') return 'No Justificada';
+    return value;
   }
   async getSnapshotSummary(
     id: number,
@@ -2462,6 +2729,14 @@ export class PayrollService {
     }
   }
 }
+
+
+
+
+
+
+
+
 
 
 

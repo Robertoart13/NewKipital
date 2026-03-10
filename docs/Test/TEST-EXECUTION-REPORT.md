@@ -1,4 +1,4 @@
-﻿# Test Execution Report - KPITAL 360
+# Test Execution Report - KPITAL 360
 
 Documento de control por fases de ejecucion de pruebas.
 
@@ -1131,7 +1131,8 @@ Pendiente de QA funcional manual:
 4. Confirmar presencia del empleado en destino y consistencia de acciones personales.
 
 Referencia principal del handoff:
-- docs/50-Handoff-TrasladoInterempresas-20260309.md
+- docs/50-Handoff-TrasladoInterempresas-20260309.md
+
 
 ## Fase 51 - 2026-03-09
 Alcance: Mejora UX/UI en pantalla Traslado interempresas (frontend).
@@ -1230,3 +1231,65 @@ Nota de validacion tecnica:
 - Frontend mantiene errores de tipado preexistentes del proyecto (no originados por esta fase).
 
 Estado de fase: Implementada (lista para validacion funcional UI).
+
+## Fase 20 - 2026-03-10 11:40
+Alcance: validacion de calculo de tabla de planilla regular + carga de cargas sociales por empresa + UX de pantalla de carga
+
+Pruebas y validaciones ejecutadas:
+1. Verificacion de formulas sobre tabla de empleados:
+   - salario quincenal,
+   - cargas sociales por porcentaje,
+   - impuesto renta segun periodo,
+   - neto final.
+2. Validacion de causa de detalle vacio:
+   - sin acciones ligadas al calendario, detalle por fila queda vacio.
+3. Validacion de causa de cargas en cero:
+   - empresa sin `nom_cargas_sociales` activas.
+4. Insercion de cargas sociales faltantes para empresa 3 y revalidacion de montos.
+5. Validacion UI:
+   - boton de carga fuera del panel de detalle,
+   - cierre automatico del panel al cargar,
+   - checkbox por empleado,
+   - cards de resumen al final de la tabla.
+
+Resultado:
+- Reglas de calculo y visualizacion documentadas y consistentes con la logica operativa vigente.
+- Sin bloqueante funcional abierto en el flujo de carga de tabla para este alcance.
+
+## Fase 21 - 2026-03-10 12:25
+Alcance: mostrar acciones personales pendientes en tabla de Generar/Cargar Planilla y habilitar aprobacion directa desde la grilla.
+
+Pruebas ejecutadas:
+1. Build backend (`api`): `npm run build` => OK.
+2. Validacion de logica en `payroll.service.ts`:
+   - inclusion de estados operativos en carga de preview,
+   - inclusion de acciones ligadas al calendario actual,
+   - impacto monetario solo para acciones aprobadas.
+3. Validacion funcional de contrato frontend:
+   - el detalle de acciones ahora contempla `estado`, `estadoCodigo` y `canApprove`,
+   - se agrega accion UI `Aprobar` para `Pendiente Supervisor`.
+
+Observaciones:
+- Build global de `frontend` continua con errores TS heredados en otros modulos del proyecto (fuera de este alcance).
+- Este corte no altera reglas de calculo salarial; solo visibilidad/accion de estados de acciones personales en preview.
+
+## Fase 20 - 2026-03-10 03:20
+Alcance: Planilla regular (carga de tabla + detalle de acciones + formato de tipo de accion)
+
+Comandos ejecutados:
+- `cd api && npm.cmd run build`
+
+Resultados:
+- Backend build: OK
+- Fallos de compilacion: 0
+
+Validaciones funcionales documentadas en este corte:
+1. Se corrige flujo de carga de tabla para vista de revision por empleado.
+2. Se valida formato enriquecido de `Tipo de Accion` en detalle por empleado.
+3. Se mantiene regla de calculo financiero con acciones aprobadas.
+4. Se valida visual de estados (pendiente/aprobada) y disponibilidad de accion `Aprobar` en pendientes de supervisor.
+5. Se documenta dependencia de cargas sociales por empresa (si no existe configuracion activa, cargas=0).
+
+Estado de fase:
+- Cerrada para compilacion y trazabilidad documental.
+- QA visual/manual continua con escenarios de negocio por empresa.
