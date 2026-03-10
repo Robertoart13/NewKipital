@@ -1,22 +1,61 @@
 ﻿# Manual de Usuario - Acciones de Personal
 
-## Tipos
+## Para que sirve este modulo
+Permite registrar eventos de RRHH que impactan nomina por linea y por periodo.
+
+## Tipos operativos
 - Ausencias
+- Licencias
+- Incapacidades
 - Bonificaciones
 - Horas extra
+- Retenciones
 - Descuentos
+- Aumentos
+- Vacaciones
 
-## Estados
-- DRAFT
-- PENDING_RRHH
-- APPROVED
-- REJECTED
-- CONSUMED
-- INVALIDATED
+## Estados funcionales
+- `DRAFT`
+- `PENDING_SUPERVISOR`
+- `PENDING_RRHH`
+- `APPROVED`
+- `REJECTED`
+- `CONSUMED`
+- `INVALIDATED`
+- `CANCELLED`
+- `EXPIRED`
 
-## Regla clave
-Sin estado APPROVED no impacta planilla.
+## Regla principal
+Solo acciones aprobadas entran al consumo de planilla.
+
+## Flujo general
+```mermaid
+flowchart TD
+  A[Crear accion] --> B[Agregar lineas]
+  B --> C[Enviar avance de estado]
+  C --> D{Aprobada?}
+  D -- No --> E[No impacta planilla]
+  D -- Si --> F[Disponible para consumo]
+  F --> G[Consumida por planilla]
+```
+
+## Operaciones disponibles
+- Crear por tipo (`/personal-actions/{tipo}`)
+- Editar por tipo
+- Avanzar estado (`advance`)
+- Invalidar (`invalidate`)
+- Ver auditoria
+
+## Permisos por tipo
+Cada tipo tiene permisos propios `:view`, `:create`, `:edit` y control de avance/invalida por permiso.
+Ejemplo: `hr-action-ausencias:view`, `hr-action-bonificaciones:create`.
+
+## Errores comunes y solucion
+- No aparece planilla elegible: revise empresa, periodo y moneda del empleado.
+- No deja avanzar estado: revise permiso del usuario para ese paso.
+- No impacta planilla: revise que estado final sea `APPROVED`.
 
 ## Ver tambien
-- Impacto en calculos: [Planilla operativa](./05-PLANILLA-OPERATIVA.md)
-- Detalle por tipo de accion: [Indice tecnico de acciones](../09-acciones-personal/ACCIONES-PERSONAL-INDICE.md)
+- [Planilla operativa](./05-PLANILLA-OPERATIVA.md)
+- [Movimientos de nomina](./12-MOVIMIENTOS-NOMINA.md)
+- [Escenarios criticos](./08-FLUJOS-CRITICOS-Y-ESCENARIOS.md)

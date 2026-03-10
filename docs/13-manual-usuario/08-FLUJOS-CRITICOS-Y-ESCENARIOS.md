@@ -1,58 +1,61 @@
 ﻿# Manual de Usuario - Flujos Criticos y Escenarios
 
-## Objetivo
-Explicar escenarios clave de negocio y que hace el sistema en cada caso.
-
-## Escenario 1 - Crear empleado y prepararlo para planilla
-1. Crear empleado.
-2. Verificar empresa/departamento/puesto/salario.
-3. Confirmar estado Activo.
-4. Validar que quede visible para procesos de planilla.
+## Escenario 1 - Alta completa de empleado
+1. Crear empresa (si no existe).
+2. Configurar departamento/puesto.
+3. Crear empleado.
+4. Activar acceso digital (si aplica).
+5. Validar acceso de usuario y visibilidad en modulos.
 
 Resultado esperado:
-- Empleado listo para acciones de personal y nomina.
+- Empleado activo, visible en acciones y planilla.
+- Si tiene acceso digital, puede ingresar segun permisos.
 
-## Escenario 2 - Aplicar una accion de personal
-1. Crear accion.
-2. Completar lineas.
-3. Enviar a aprobacion.
-4. Aprobar.
-5. Consumir en planilla.
+## Escenario 2 - Bloqueo al inactivar empresa
+Situacion:
+- Se intenta inactivar empresa con planillas abiertas/en proceso/verificadas.
 
-Resultado esperado:
-- La accion solo impacta planilla si esta APPROVED.
+Comportamiento esperado:
+- El sistema bloquea y muestra planillas bloqueantes.
 
-## Escenario 3 - Cierre de planilla
-1. Planilla en ABIERTA.
-2. Cargar datos y revisar.
-3. Verificar.
-4. Aplicar.
+Accion recomendada:
+- Cerrar/aplicar planillas pendientes y volver a intentar.
 
-Resultado esperado:
-- Planilla queda APLICADA y no se modifica.
+## Escenario 3 - Accion de personal no impacta planilla
+Situacion:
+- Accion creada pero no aparece en calculo.
 
-## Que pasa si...
-| Situacion | Comportamiento esperado |
-|---|---|
-| Falta campo obligatorio en formulario | No permite guardar y muestra validacion |
-| Accion no aprobada | No se incluye en calculo de planilla |
-| Planilla ya aplicada | No permite modificaciones |
-| Traslado interempresa sin planilla compatible | Bloquea traslado y muestra motivo |
-| Intento de inactivar empresa con bloqueos | Rechaza operacion e indica causa |
+Causa mas comun:
+- Estado distinto de `APPROVED`.
 
-## Diagrama de control operativo
+Accion recomendada:
+- Revisar flujo de aprobacion y estado actual.
+
+## Escenario 4 - Usuario con menu incompleto
+Situacion:
+- Usuario reporta que no ve modulo esperado.
+
+Revision:
+1. Empresa activa.
+2. Rol en esa empresa/app.
+3. Overrides ALLOW/DENY.
+4. Denegaciones globales.
+
+## Matriz de diagnostico rapido
+| Sintoma | Causa probable | Donde revisar |
+|---|---|---|
+| 403 en API | Falta permiso efectivo | [Usuarios, roles y permisos](./10-USUARIOS-ROLES-PERMISOS.md) |
+| No deja aplicar planilla | Estado no valido o datos incompletos | [Planilla operativa](./05-PLANILLA-OPERATIVA.md) |
+| No deja inactivar empleado | Planillas o acciones pendientes | [Empleados](./02-EMPLEADOS.md) |
+| Traslado bloqueado | No hay planilla destino compatible | [Traslado interempresa](./13-TRASLADO-INTEREMPRESA.md) |
+
+## Diagrama de control
 ```mermaid
 flowchart TD
-  A[Operacion iniciada] --> B{Datos completos?}
-  B -- No --> C[Corregir formulario]
-  B -- Si --> D{Permiso valido?}
-  D -- No --> E[Acceso denegado]
-  D -- Si --> F{Estado permite accion?}
-  F -- No --> G[Mostrar bloqueo de negocio]
-  F -- Si --> H[Ejecutar y auditar]
+  A[Incidente funcional] --> B{Permiso correcto?}
+  B -- No --> C[Corregir rol/permiso]
+  B -- Si --> D{Estado permite accion?}
+  D -- No --> E[Corregir estado del flujo]
+  D -- Si --> F[Revisar datos requeridos]
+  F --> G[Resolver y reintentar]
 ```
-
-## Ver tambien
-- [Empleados](./02-EMPLEADOS.md)
-- [Acciones de personal](./06-ACCIONES-PERSONAL-OPERATIVO.md)
-- [Planilla operativa](./05-PLANILLA-OPERATIVA.md)

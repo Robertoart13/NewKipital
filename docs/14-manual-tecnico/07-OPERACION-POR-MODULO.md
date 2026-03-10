@@ -1,30 +1,29 @@
-﻿# Manual Tecnico - Operacion por Modulo (Vista Senior)
+﻿# Manual Tecnico - Operacion por Modulo
 
 ## Objetivo
-Dar a ingenieria una vista unificada de ownership tecnico por modulo y puntos de control.
+Dar a ingenieria una vista unificada de como opera cada modulo y donde tocar cuando hay incidentes.
 
-## Modulos y responsabilidad tecnica
-| Modulo | Documento tecnico principal | Riesgo principal | Control clave |
+| Modulo | Backend principal | Frontend principal | Riesgo operativo |
 |---|---|---|---|
-| Seguridad/Permisos | `../05-seguridad-identidad-permisos/SEGURIDAD-IDENTIDAD-PERMISOS-CONSOLIDADO.md` | Acceso indebido | Doble validacion FE/BE |
-| Backend/API/BD | `../06-backend-api-db/BACKEND-API-DB-CONSOLIDADO.md` | Inconsistencia de datos | Validacion DTO + reglas + auditoria |
-| Frontend/UX | `../07-frontend-ux/FRONTEND-UX-CONSOLIDADO.md` | Errores operativos de usuario | Validaciones y confirmaciones |
-| Planilla | `../08-planilla/PLANILLA-NOMINA-CONSOLIDADO.md` | Errores de cierre y calculo | Estados + inmutabilidad APLICADA |
-| Acciones personal | `../09-acciones-personal/ACCIONES-PERSONAL-INDICE.md` | Consumo indebido en nomina | Gate por estado APPROVED |
-| QA | `../10-testing-qa/TESTING-QA-CONSOLIDADO.md` | Liberacion sin evidencia | Gate de salida QA |
-| Operacion | `../11-operacion-automatizaciones/OPERACION-AUTOMATIZACIONES-CONSOLIDADO.md` | Degradacion silenciosa | Monitoreo y semaforo |
+| Auth/Sesion | `auth.controller.ts`, `auth.service.ts` | `LoginPage`, `useSessionRestore` | Sesiones invalidas/permisos stale |
+| Empresas | `companies.controller.ts`, `companies.service.ts` | `CompaniesManagementPage` | Bloqueos por planillas activas |
+| Empleados | `employees.controller.ts`, `employees.service.ts`, workflow creacion | `EmployeesListPage`, `EmployeeCreatePage` | Exposicion de datos sensibles |
+| Config acceso | `config-access.controller.ts` | `UsersManagementPage`, `RolesManagementPage`, `PermissionsAdminListPage` | Escalada de privilegios |
+| Planilla | `payroll.controller.ts`, `payroll.service.ts` | `PayrollGeneratePage` | Transiciones de estado invalidas |
+| Acciones personal | `personal-actions.controller.ts`, `personal-actions.service.ts` | Paginas por tipo de accion | Consumo incorrecto en nomina |
+| Parametros nomina | articulos/movimientos/feriados controllers | paginas payroll params | Configuracion inconsistente |
+| Traslado interempresa | `intercompany-transfer.controller.ts` | `IntercompanyTransferPage` | Reasociacion incompleta |
 
-## Flujo tecnico end-to-end
+## Cadena tecnica end-to-end
 ```mermaid
 flowchart LR
-  RQ[Requerimiento] --> DV[Diseno]
-  DV --> IM[Implementacion]
-  IM --> QA[Pruebas]
-  QA --> OP[Operacion]
-  OP --> FB[Feedback y mejora]
+  A[UI] --> B[Guard de permiso FE]
+  B --> C[API Controller]
+  C --> D[Service reglas negocio]
+  D --> E[Persistencia MySQL]
+  D --> F[Auditoria/Eventos]
 ```
 
 ## Ver tambien
-- [Stack y arquitectura](./00-STACK-Y-ARQUITECTURA.md)
-- [Reglas tecnicas](./01-REGLAS-TECNICAS.md)
-- [Pendientes tecnicos](./06-PENDIENTES-TECNICOS.md)
+- [Matriz CRUD por modulo](./08-MATRIZ-CRUD-POR-MODULO.md)
+- [Manejo de incidentes](./09-MANEJO-INCIDENTES-FUNCIONALES.md)

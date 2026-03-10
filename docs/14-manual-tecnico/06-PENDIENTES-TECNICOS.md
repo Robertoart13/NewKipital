@@ -1,9 +1,23 @@
 ﻿# Manual Tecnico - Pendientes Tecnicos
 
-## Contenido
-- Backlog consolidado.
-- Priorizacion P0/P1/P2.
-- Criterio de cierre.
+## Como leer pendientes
+- `P0`: afecta operacion o seguridad.
+- `P1`: mejora necesaria antes de escalar volumen.
+- `P2`: optimizacion o mejora incremental.
+
+## Bloques recomendados de seguimiento
+- Seguridad y cifrado
+- Logging y monitoreo
+- CI/CD
+- Performance
+- Cobertura API/QA
+
+## Regla de cierre de pendiente
+Un pendiente se cierra cuando:
+1. Existe cambio implementado.
+2. Existe evidencia de prueba.
+3. Se actualiza documento maestro correspondiente.
 
 ## Ver tambien
-- [Backlog y pendientes](../12-backlog-pendientes/BACKLOG-CONSOLIDADO.md)
+- [Backlog consolidado](../12-backlog-pendientes/BACKLOG-CONSOLIDADO.md)
+- [Gobierno de cambios](../15-enterprise-gobierno/03-GOBIERNO-CAMBIOS-DOCS.md)
