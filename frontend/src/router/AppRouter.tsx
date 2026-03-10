@@ -1,4 +1,4 @@
-import { Routes, Route, Navigate } from 'react-router-dom';
+﻿import { Routes, Route, Navigate } from 'react-router-dom';
 
 import { PermissionGuard, PublicGuard, PrivateGuard } from '../guards';
 import { PrivateLayout } from '../layouts/PrivateLayout';
@@ -20,7 +20,7 @@ import {
   AutomationMonitoringPage,
   PayrollArticlesManagementPage,
   PayrollMovementsManagementPage,
-  PayrollManagementPage,
+  PayrollGeneratePage,
   PayrollCalendarPage,
   PayrollHolidaysPage,
   IntercompanyTransferPage,
@@ -38,16 +38,16 @@ import {
 import { LoginPage } from '../pages/public';
 
 /**
- * Router principal — dos mundos separados.
+ * Router principal - dos mundos separados.
  *
- * Rutas públicas: PublicGuard → PublicLayout → páginas de auth
- * Rutas privadas: PrivateGuard → PrivateLayout → módulos de negocio
- * Selección de empresa: ruta intermedia (auth requerida pero sin layout completo)
+ * Rutas publicas: PublicGuard -> PublicLayout -> paginas de auth
+ * Rutas privadas: PrivateGuard -> PrivateLayout -> modulos de negocio
+ * Seleccion de empresa: ruta intermedia (auth requerida pero sin layout completo)
  */
 export function AppRouter() {
   return (
     <Routes>
-      {/* --- Rutas públicas --- */}
+      {/* --- Rutas publicas --- */}
       <Route element={<PublicGuard />}>
         <Route
           element={
@@ -386,23 +386,14 @@ export function AppRouter() {
         <Route
           element={
             <PrivateLayout>
-              <PermissionGuard requiredPermission="payroll:view">
-                <PayrollManagementPage />
+              <PermissionGuard requiredPermission="payroll:generate">
+                <PayrollGeneratePage />
               </PermissionGuard>
             </PrivateLayout>
           }
-          path="/payroll-params/calendario/dias-pago"
+          path="/payroll-management/planillas/generar"
         />
-        <Route
-          element={
-            <PrivateLayout>
-              <PermissionGuard requiredPermission="payroll:view">
-                <PayrollManagementPage />
-              </PermissionGuard>
-            </PrivateLayout>
-          }
-          path="/payroll-management/planillas"
-        />
+        <Route path="/payroll-management/planillas" element={<Navigate to="/payroll-management/planillas/generar" replace />} />
         <Route
           element={
             <PrivateLayout>
@@ -413,7 +404,7 @@ export function AppRouter() {
           }
           path="/payroll-management/traslado-interempresas"
         />
-        <Route path="/payroll-management" element={<Navigate to="/payroll-management/planillas" replace />} />
+        <Route path="/payroll-management" element={<Navigate to="/payroll-management/planillas/generar" replace />} />
         <Route
           element={
             <PrivateLayout>
@@ -432,4 +423,10 @@ export function AppRouter() {
     </Routes>
   );
 }
+
+
+
+
+
+
 

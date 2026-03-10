@@ -1,4 +1,4 @@
-import { Test } from '@nestjs/testing';
+﻿import { Test } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { DataSource } from 'typeorm';
 
@@ -228,21 +228,21 @@ describe('IntercompanyTransferService', () => {
     );
   });
   it('invalidatePendingReactivationSnapshotsByTransfer marks pending snapshots as invalidated', async () => {
-    const qb = {
-      update: jest.fn().mockReturnThis(),
-      set: jest.fn().mockReturnThis(),
-      where: jest.fn().mockReturnThis(),
-      andWhere: jest.fn().mockReturnThis(),
-      execute: jest.fn().mockResolvedValue({ affected: 2 }),
+    const trx = {
+      query: jest.fn().mockResolvedValue({ affectedRows: 2 }),
     };
-    const trx = { createQueryBuilder: jest.fn(() => qb) };
 
-    await (service as any).invalidatePendingReactivationSnapshotsByTransfer(trx, [10, 10, 11], 50, 3, 7);
+    await (service as any).invalidatePendingReactivationSnapshotsByTransfer(trx, 10, 1, 50, 3, 7);
 
-    expect(qb.update).toHaveBeenCalledWith(PayrollReactivationItem);
-    expect(qb.where).toHaveBeenCalledWith('id_accion IN (:...ids)', { ids: [10, 11] });
-    expect(qb.andWhere).toHaveBeenCalledWith('es_procesado_reactivacion = 0');
-    expect(qb.execute).toHaveBeenCalled();
+    expect(trx.query).toHaveBeenCalled();
+    const [sql, params] = (trx.query as jest.Mock).mock.calls[0];
+    expect(String(sql)).toContain('UPDATE acc_planilla_reactivation_items');
+    expect(params).toEqual([
+      'Snapshot invalidado por traslado #50 a empresa 3.',
+      7,
+      10,
+      1,
+    ]);
   });
 });
 

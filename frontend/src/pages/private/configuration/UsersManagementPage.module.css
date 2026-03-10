@@ -113,6 +113,39 @@
   border-radius: 0 0 8px 8px;
 }
 
+/* Campos dentro de filtros: estilo alineado con companyFormContent */
+.filtersCollapse :global(.ant-collapse-content-box .ant-select-selector),
+.filtersCollapse :global(.ant-collapse-content-box .ant-input),
+.filtersCollapse :global(.ant-collapse-content-box textarea.ant-input) {
+  border-radius: 8px !important;
+  border: 1px solid #e0e4e8 !important;
+  background: #fff !important;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.filtersCollapse :global(.ant-collapse-content-box .ant-select:not(.ant-select-disabled):hover .ant-select-selector),
+.filtersCollapse :global(.ant-collapse-content-box .ant-input:hover),
+.filtersCollapse :global(.ant-collapse-content-box textarea.ant-input:hover) {
+  border-color: #c5ccd4 !important;
+}
+
+.filtersCollapse :global(.ant-collapse-content-box .ant-select-focused .ant-select-selector),
+.filtersCollapse :global(.ant-collapse-content-box .ant-input:focus),
+.filtersCollapse :global(.ant-collapse-content-box textarea.ant-input:focus) {
+  border-color: #5a6c7d !important;
+  box-shadow: 0 0 0 2px rgba(90, 108, 125, 0.12) !important;
+}
+
+.filtersCollapse :global(.ant-collapse-content-box .ant-select-selector) {
+  min-height: 36px !important;
+  padding: 4px 11px !important;
+}
+
+.filtersCollapse :global(.ant-collapse-content-box textarea.ant-input) {
+  padding: 8px 11px !important;
+  resize: vertical;
+}
+
 .filtersCollapse {
   margin-bottom: 24px;
 }

@@ -1,4 +1,4 @@
-/* =============================================================================
+﻿/* =============================================================================
    MODULE: menuIcons
    =============================================================================
 
@@ -61,6 +61,7 @@ export const menuIconMap: Record<string, React.ReactNode> = {
   'articulos-nomina': <UnorderedListOutlined />,
   'movimientos-nomina': <RetweetOutlined />,
   planillas: <FileSearchOutlined />,
+  'generar-planilla': <FileAddOutlined />,
   'traslado-interempresas': <SwapRightOutlined />,
   permissions: <SafetyOutlined />,
   roles: <SafetyOutlined />,
@@ -76,4 +77,5 @@ export const menuIconMap: Record<string, React.ReactNode> = {
   monitoring: <DashboardOutlined />,
   'automation-monitor': <DashboardOutlined />,
 };
+
 

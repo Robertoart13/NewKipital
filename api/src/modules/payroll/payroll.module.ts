@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 
 import { UserCompany } from '../access-control/entities/user-company.entity';
+import { AuthModule } from '../auth/auth.module';
 import { EmployeesModule } from '../employees/employees.module';
 import { EmployeeAguinaldoProvision } from '../employees/entities/employee-aguinaldo-provision.entity';
 import { Employee } from '../employees/entities/employee.entity';
@@ -44,6 +45,7 @@ import { PayrollService } from './payroll.service';
       EmployeeAguinaldoProvision,
     ]),
     IntegrationModule,
+    AuthModule,
     EmployeesModule,
     PersonalActionsModule,
   ],
@@ -51,3 +53,4 @@ import { PayrollService } from './payroll.service';
   providers: [PayrollService, IntercompanyTransferService, PayrollOrphanReassignmentService],
 })
 export class PayrollModule {}
+

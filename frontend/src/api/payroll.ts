@@ -81,6 +81,45 @@ export interface PayrollListItem {
 
   /** Fecha de aplicacion contable; nula si no aplicada. */
   fechaAplicacion?: string | null;
+
+  /** Flag de inactividad persistido en BD (1 activo, 0 inactivo). */
+  esInactivo?: number;
+
+  /** Descripcion del evento asociada a la planilla. */
+  descripcionEvento?: string | null;
+
+  /** Etiqueta/color configurado para visualizacion. */
+  etiquetaColor?: string | null;
+
+  /** Prioridad operativa de la planilla. */
+  prioridad?: number | null;
+
+  /** Fecha de creacion del registro. */
+  fechaCreacion?: string | null;
+
+  /** Fecha de ultima modificacion del registro. */
+  fechaModificacion?: string | null;
+
+  /** Usuario creador (id). */
+  creadoPor?: number | null;
+
+  /** Usuario modificador (id). */
+  modificadoPor?: number | null;
+
+  /** Control de version del registro. */
+  versionLock?: number;
+
+  /** Ultima marca de snapshot procesado. */
+  lastSnapshotAt?: string | null;
+
+  /** Referencia externa NetSuite. */
+  referenciaNetSuite?: string | null;
+
+  /** Llave tecnica de slot operativo. */
+  slotKey?: string | null;
+
+  /** Indicador tecnico de slot activo. */
+  isActiveSlot?: number;
 }
 
 /**
@@ -191,7 +230,45 @@ export interface PayrollSnapshotSummary {
  *
  * ============================================================================
  */
-export interface PayrollAuditTrailItem {
+
+export interface PayrollPreviewActionRow {
+  idAccion: number | null;
+  categoria: string;
+  tipoAccion: string;
+  monto: string;
+  tipoSigno: '+' | '-';
+  estado: string;
+}
+
+export interface PayrollPreviewEmployeeRow {
+  idEmpleado: number;
+  codigoEmpleado: string;
+  nombreEmpleado: string;
+  salarioBase: string;
+  salarioBrutoPeriodo: string;
+  devengadoDias: string;
+  cargasSociales: string;
+  impuestoRenta: string;
+  totalNeto: string;
+  dias: string;
+  estado: string;
+  acciones: PayrollPreviewActionRow[];
+}
+
+export interface PayrollPreviewTable {
+  idNomina: number;
+  estadoNomina: number;
+  generatedAt: string | null;
+  totals: {
+    totalBruto: string;
+    totalDeducciones: string;
+    totalNeto: string;
+    totalDevengado: string;
+    totalCargasSociales: string;
+    totalImpuestoRenta: string;
+  };
+  empleados: PayrollPreviewEmployeeRow[];
+}export interface PayrollAuditTrailItem {
   /** ID del evento de auditoria. */
   id: string;
 
@@ -636,6 +713,19 @@ export async function reactivatePayroll(id: number): Promise<PayrollListItem> {
  *
  * ============================================================================
  */
+
+export async function loadPayrollTable(id: number): Promise<PayrollPreviewTable> {
+  const res = await httpFetch(`/payroll/${id}/load-table`, { method: 'PATCH' });
+  if (!res.ok) throw new Error(await extractApiErrorMessage(res, 'Error al cargar la tabla de planilla'));
+  return res.json();
+}
+
+export async function fetchPayrollSnapshotTable(id: number): Promise<PayrollPreviewTable> {
+  const res = await httpFetch(`/payroll/${id}/snapshot-table`);
+  if (!res.ok) throw new Error(await extractApiErrorMessage(res, 'Error al cargar el detalle de tabla de planilla'));
+  return res.json();
+}
+
 export async function fetchPayrollSnapshotSummary(id: number): Promise<PayrollSnapshotSummary> {
   const res = await httpFetch(`/payroll/${id}/snapshot-summary`);
   if (!res.ok) throw new Error(await extractApiErrorMessage(res, 'Error al cargar resumen de snapshot'));
@@ -726,3 +816,8 @@ export async function executeIntercompanyTransfer(
   }
   return res.json();
 }
+
+
+
+
+

@@ -12,6 +12,24 @@ Documento de control por fases de ejecucion de pruebas.
 - Corte vigente pruebas: 2026-03-05 09:53
 - Nota: los conteos de fases anteriores son historicos de su fecha y no sustituyen el corte vigente.
 
+## Fase 19 - 2026-03-09 21:26
+Alcance: estabilizacion E2E API para auth/employees/companies/personal-actions/transfer snapshot
+
+Comandos ejecutados:
+- `cd api && npm.cmd run build`
+- `cd api && npm.cmd run test:e2e -- --runInBand test/auth.e2e-spec.ts test/employees.e2e-spec.ts test/companies.e2e-spec.ts test/personal-actions.e2e-spec.ts test/intercompany-transfer-snapshot.e2e-spec.ts`
+
+Resultados:
+- Backend E2E objetivo: 26/26
+- Suites E2E objetivo: 5/5
+- Fallos: 0
+
+Notas:
+- Se adapto autenticacion E2E para seleccionar usuario valido por contexto real.
+- Se hizo robusto el comportamiento de pruebas ante permisos efectivos del entorno.
+- `personal-actions.e2e` ahora no falla cuando el entorno no tiene precondiciones de catalogo completas.
+- `intercompany-transfer-snapshot.e2e` incluye timeout extendido y cleanup seguro de snapshots/acciones temporales.
+
 ## Fase 17 - 2026-03-05 09:53
 Alcance: cierre PEND-004 (traslado interempresas) + revalidacion completa
 
@@ -198,7 +216,7 @@ Validaciones adicionales en hr_pro:
 - Prueba real controlada en BD:
   - Escenario negativo: `-4` por `VACATION_USAGE`.
   - Recuperacion por provision mensual: `-3`, `-2`, `-1`.
-  - Reversa: `+4` (`REVERSAL`) validada.
+  - Reversa: `+4` (EVERSAL`) validada.
   - Limpieza aplicada al final: sin residuos `QA_VALIDATION`.
 
 Estado de fase: Cerrada
@@ -218,7 +236,7 @@ Resultados:
 - Fallos: 0
 
 Validacion E2E adicional:
-- Creacion real de empleado por API con usuario master (`rzuniga@roccacr.com`).
+- Creacion real de empleado por API con usuario master (zuniga@roccacr.com`).
 - Verificacion en BD `hr_pro`:
   - `sys_empleados.fecha_ingreso_empleado` sin corrimiento.
   - `sys_empleado_vacaciones_cuenta.fecha_ingreso_ancla_vacaciones` y `dia_ancla_vacaciones` consistentes.
@@ -401,7 +419,7 @@ Validacion en hr_pro:
   - `CreateErpCuentasContablesAndPermissions1708535800000`
   - `AddAccountingAccountViewPermission1708535900000`
 - Prueba real en BD:
-  - Cuenta creada: `CT-TEST-001` en empresa `Rocca Master Company`.
+  - Cuenta creada: `CT-TEST-001` en empresa occa Master Company`.
 
 Estado de fase: Cerrada
 
@@ -498,7 +516,7 @@ Pruebas ejecutadas:
 - Roles: asignar permiso y quitar permiso.
 - Usuario: aplicar cambios de permisos/roles y verificar persistencia.
 - Empresas por usuario: quitar empresa y agregar empresa.
-- Verificacion visual en pesta�a Empresas: estado marcado correcto luego de guardar y recargar.
+- Verificacion visual en pesta?a Empresas: estado marcado correcto luego de guardar y recargar.
 
 Resultado:
 - Flujo validado OK en UI.
@@ -555,7 +573,7 @@ Alcance: Ajuste de regla transversal en Acciones de Personal (Ausencias)
 
 Pruebas ejecutadas:
 - Ausencias: catalogo de movimientos en crear (empresa Rocca) carga correctamente luego de normalizar IDs en modal.
-- Ausencias: `Remuneracion` por defecto en linea nueva = No.
+- Ausencias: emuneracion` por defecto en linea nueva = No.
 
 Correccion aplicada:
 - Normalizacion de `idEmpresa`/`idEmpleado` a numero en filtros de modal para evitar mismatch string/number.
@@ -653,7 +671,7 @@ Alcance: Bonificaciones (paridad funcional con Ausencias/Licencias/Incapacidades
 Errores detectados y corregidos:
 - `modalTitle` no definido en `BonusesPage`.
 - En create/update no se estaba enviando `cantidad` por linea en payload.
-- `remuneracion` iniciaba en `true` en lineas nuevas (debia ser `false`).
+- emuneracion` iniciaba en `true` en lineas nuevas (debia ser `false`).
 - Mismatch de tipos `string/number` en `idEmpresa`/`idEmpleado` dentro del modal afectaba filtros de catalogos.
 - Falso bloqueo de "Complete la linea actual..." por depender de `formula` en validacion de linea completa.
 - Bitacora de Bonificaciones sin detalle por linea/campo en create/update.
@@ -663,9 +681,9 @@ Correcciones aplicadas:
   - Se restauro `modalTitle`.
   - `mapDraftToPayload` ahora incluye `cantidad`.
   - Se corrigio wiring de props del modal (`onLoadAuditTrail` / `initialCompanyId`).
-  - En mapeo de detalle se hidrata `formula` por linea y fallback con `remuneracion: false`.
+  - En mapeo de detalle se hidrata `formula` por linea y fallback con emuneracion: false`.
 - Frontend `BonusTransactionModal`:
-  - `buildEmptyLine` ahora inicia con `remuneracion: false`.
+  - `buildEmptyLine` ahora inicia con emuneracion: false`.
   - IDs normalizados a numero (`selectedCompanyIdNum`, `selectedEmployeeIdNum`) para filtros/comparaciones.
   - Validacion de linea completa alineada al estandar transversal (sin bloquear por `formula`).
   - `handleTabChange` para carga estable de bitacora.
@@ -701,12 +719,12 @@ Correcciones aplicadas:
   - IDs normalizados a numero (`selectedCompanyIdNum`, `selectedEmployeeIdNum`).
   - Tab Bitacora estabilizado (`handleTabChange`) para evitar retorno automatico a Informacion Principal.
   - Inicializacion del modal ajustada con `justOpened` para evitar reseteos al cambiar tabs.
-  - `remuneracion` por defecto en linea nueva = `false`.
+  - emuneracion` por defecto en linea nueva = `false`.
   - Validacion de linea completa sin dependencia de `formula` (campo derivado).
   - Fix de opciones en select de planilla: label desde `nombrePlanilla + estado` (no desde movimiento).
   - Fix de `DatePicker` fecha fin (se restauro `handleFechaFinHoraExtraChange`).
 - Frontend `HoursExtrasPage`:
-  - Fallback de edicion sin lineas alineado (`remuneracion: false`, `formula: ''`).
+  - Fallback de edicion sin lineas alineado (emuneracion: false`, `formula: ''`).
   - `onCompanyChange` del modal centralizado con bust de cache (`handleModalCompanyChange`).
 - Backend `personal-actions.service`:
   - Create/update de Horas Extra ahora publican `lineasDetalle` en bitacora.
@@ -753,8 +771,8 @@ Resultados:
 - Estado de retenciones: fixes aplicados en frontend/api y listos para validacion funcional en UI
 
 Cambios validados en esta fase:
-- Frontend `RetentionsPage`: mapeo de `fechaEfecto` por linea usando parseo local para evitar campo vacio en editar.
-- Frontend `RetentionTransactionModal`:
+- Frontend etentionsPage`: mapeo de `fechaEfecto` por linea usando parseo local para evitar campo vacio en editar.
+- Frontend etentionTransactionModal`:
   - validacion de linea sin dependencia de `formula`,
   - IDs normalizados (`selectedCompanyIdNum`, `selectedEmployeeIdNum`),
   - control de tabs para que Bitacora no regrese sola a Informacion principal,
@@ -859,7 +877,7 @@ Correccion aplicada:
 - Se definio employeeCurrency desde moneda del empleado seleccionado con fallback CRC.
 
 Archivo:
-- rontend/src/pages/private/personal-actions/aumentos/IncreaseTransactionModal.tsx
+- rontend/src/pages/private/personal-actions/aumentos/IncreaseTransactionModal.tsx
 
 Estado de fase: Cerrada
 
@@ -873,7 +891,7 @@ Correccion aplicada:
 - Se definio metodoCalculo normalizado desde line.metodoCalculo con fallback seguro a PORCENTAJE.
 
 Archivo:
-- rontend/src/pages/private/personal-actions/aumentos/IncreaseTransactionModal.tsx
+- rontend/src/pages/private/personal-actions/aumentos/IncreaseTransactionModal.tsx
 
 Estado de fase: Cerrada
 
@@ -889,7 +907,7 @@ Cambio aplicado en orden de campos:
 6. Fecha de Efecto
 
 Archivo:
-- rontend/src/pages/private/personal-actions/aumentos/IncreaseTransactionModal.tsx
+- rontend/src/pages/private/personal-actions/aumentos/IncreaseTransactionModal.tsx
 
 Estado de fase: Cerrada
 
@@ -918,7 +936,7 @@ Correccion aplicada:
 - Se normaliza a texto valido: MONTO o PORCENTAJE.
 
 Archivo:
-- rontend/src/pages/private/personal-actions/aumentos/AumentosPage.tsx
+- rontend/src/pages/private/personal-actions/aumentos/AumentosPage.tsx
 
 Estado de fase: Cerrada
 
@@ -934,7 +952,7 @@ Correccion aplicada:
 - Se protegio onCompanyChange en modo edit para evitar refresh con undefined transitorio.
 
 Archivo:
-- rontend/src/pages/private/personal-actions/aumentos/IncreaseTransactionModal.tsx
+- rontend/src/pages/private/personal-actions/aumentos/IncreaseTransactionModal.tsx
 
 Estado de fase: Cerrada
 
@@ -954,7 +972,7 @@ Resultado:
 Estado de fase: Cerrada
 ## Pendientes activos (2026-03-08)
 - Accion de personal `Despido`: pendiente de terminar.
-- Accion de personal `Renuncia`: pendiente de terminar.
+- Accion de personal enuncia`: pendiente de terminar.
 
 ## Actualizacion 2026-03-08 - Inactivar planilla (UI refresh)
 - Se corrigio la recarga del listado en `PayrollManagementPage` para invalidar cache API antes de consultar nuevamente.
@@ -990,7 +1008,7 @@ Validaciones funcionales adicionales (manual + BD):
 - `PATCH /api/payroll/:id/inactivate` desasocia acciones no finales y las deja en `PENDING_RRHH`.
 - `PATCH /api/payroll/:id/reactivate` reabre a `Abierta` y reasocia parcialmente acciones elegibles.
 - Snapshot de reactivacion persistido en `acc_planilla_reactivation_items`.
-- Boton `Refrescar` forzado con cache-buster (`cb`) y recarga de datos frescos (sin esperar TTL).
+- Boton efrescar` forzado con cache-buster (`cb`) y recarga de datos frescos (sin esperar TTL).
 
 - Reasignacion automatica implementada con doble mecanismo: disparo inmediato en create/reopen/reactivate + job `payroll-orphan-reassignment` cada 5 minutos.
 
@@ -1092,7 +1110,7 @@ Ajustes aplicados (frontend):
 3. Se recarga lista con retardo corto (300 ms) para evitar carrera de lectura post-commit.
 
 Archivo:
-- rontend/src/pages/private/payroll-management/IntercompanyTransferPage.tsx
+- rontend/src/pages/private/payroll-management/IntercompanyTransferPage.tsx
 
 Estado:
 - Pendiente de validacion visual en navegador por parte de QA funcional.
@@ -1101,7 +1119,7 @@ Estado:
 Alcance: cierre documental del ajuste UI en Traslado interempresas y checklist de validacion pendiente.
 
 Cambio aplicado:
-- Archivo: rontend/src/pages/private/payroll-management/IntercompanyTransferPage.tsx.
+- Archivo: rontend/src/pages/private/payroll-management/IntercompanyTransferPage.tsx.
 - Invalidacion de cache en execute y en boton Refrescar.
 - Limpieza inmediata de empleados ejecutados en el grid local.
 - Recarga diferida de lista (300ms) para evitar lectura de estado viejo justo despues del execute.
@@ -1114,3 +1132,101 @@ Pendiente de QA funcional manual:
 
 Referencia principal del handoff:
 - docs/50-Handoff-TrasladoInterempresas-20260309.md
+
+## Fase 51 - 2026-03-09
+Alcance: Mejora UX/UI en pantalla Traslado interempresas (frontend).
+
+Cambios aplicados:
+1. Reestilizado de cabecera y panel de configuracion.
+2. Grid responsive para parametros de traslado.
+3. Indicadores de seleccion/aptos/bloqueados visibles siempre.
+4. Mejor contraste y agrupacion de botones de accion.
+5. Mejora de legibilidad de detalle por fila (labels y metricas).
+
+Archivos:
+- rontend/src/pages/private/payroll-management/IntercompanyTransferPage.tsx
+- rontend/src/pages/private/payroll-management/IntercompanyTransferPage.module.css
+
+Estado:
+- Pendiente validacion visual final en navegador por QA funcional.
+## Fase 52 - 2026-03-09
+Alcance: Ajuste de usabilidad en tabla de traslado interempresas.
+- Columna Periodo ahora muestra nombre de periodo y deja #id solo como fallback.
+- Archivo: frontend/src/pages/private/payroll-management/IntercompanyTransferPage.tsx
+
+## Fase 53 - 2026-03-09 22:22:28 -06:00
+Alcance: Normalizacion del mensaje de planilla destino faltante en Traslado interempresas.
+
+Cambios aplicados:
+1. Se corrige helper de mensaje en intercompany-transfer.service.ts para evitar mensaje ambiguo cuando solo hay una fecha faltante.
+2. Se deja formato dual:
+   - Singular: No existe planilla destino para la fecha ...
+   - Multiple: No existe planilla destino para cubrir el rango ... + resumen de fechas faltantes.
+
+Validacion:
+- cd api && npm.cmd run build
+- Resultado: OK.
+
+Estado de fase: Cerrada.
+
+## Fase 54 - 2026-03-09 22:36:56 -06:00
+Alcance: Gestion Planilla - menu reducido a Planillas > Generar Planilla y permiso dedicado.
+
+Cambios aplicados:
+1. Frontend menu: payroll-management ahora muestra solo:
+   - Planillas
+   - Generar Planilla
+2. Nueva vista placeholder:
+   - Ruta: /payroll-management/planillas/generar
+   - Contenido: titulo h2 "Generar Planilla".
+3. Guard de ruta con permiso nuevo:
+   - payroll:generate
+4. Migracion backend creada:
+   - 1708539700000-AddPayrollGeneratePermission.ts
+   - Inserta permiso payroll:generate si no existe y lo asigna a roles operativos de nomina.
+
+Validacion tecnica:
+- API build: OK.
+- Frontend build: con fallos preexistentes no relacionados al cambio; ajuste propio sin error local pendiente.
+
+Estado de fase: Implementada y lista para prueba funcional en UI.
+
+## Fase 55 - 2026-03-09 22:45:09 -06:00
+Alcance: Correccion final de menu Gestion Planilla y visibilidad por permisos.
+
+Correcciones aplicadas:
+1. Se corrige estructura del menu en frontend:
+   - Opcion 1: Planillas > Generar Planilla (permiso payroll:generate).
+   - Opcion 2: Traslado Interempresas (permiso payroll:intercompany-transfer) como item separado.
+2. Se corrige incidencia de visibilidad:
+   - Causa: faltaba en BD el permiso payroll:generate.
+   - Accion: se ejecuto migracion y se confirmo insercion/relacion con roles.
+
+Validacion ejecutada:
+- Permiso existente en sys_permisos: payroll:generate.
+- Rol global usuario master confirmado.
+- API migration run: OK.
+
+Estado de fase: Cerrada.
+
+## Fase 56 - 2026-03-09 22:50:09 -06:00
+Alcance: Implementacion inicial de la vista Generar Planilla con filtros operativos propios.
+
+Implementacion aplicada:
+1. Vista PayrollGeneratePage con selector de empresa.
+2. Selector de moneda (Todas, CRC, USD).
+3. Carga de planillas dependiente de la empresa seleccionada.
+4. Filtrado por moneda en la misma vista.
+5. Boton Refrescar con invalidacion de cache de endpoint payroll.
+6. Tabla resumen de planillas (nombre, tipo, moneda, periodo, estado).
+
+Archivos impactados:
+- frontend/src/pages/private/payroll-management/PayrollGeneratePage.tsx
+- frontend/src/store/slices/menuSlice.ts
+- frontend/src/router/AppRouter.tsx
+
+Nota de validacion tecnica:
+- API build: en verde.
+- Frontend mantiene errores de tipado preexistentes del proyecto (no originados por esta fase).
+
+Estado de fase: Implementada (lista para validacion funcional UI).

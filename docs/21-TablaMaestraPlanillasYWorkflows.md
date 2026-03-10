@@ -464,3 +464,201 @@ Regla vigente:
 
 Objetivo:
 - Permitir continuidad operativa enterprise y evitar bloqueo innecesario de traslados cuando las acciones pendientes son trasladables por diseno.
+
+## Actualizacion 2026-03-09 22:36:56 -06:00 - Menu y permiso Generar Planilla
+
+Se incorpora control dedicado para generacion de planilla en Gestion Planilla:
+- Menu habilitado: Planillas > Generar Planilla.
+- Se ocultan otras acciones de ese submenu para este flujo.
+- Permiso nuevo: payroll:generate.
+- Ruta dedicada: /payroll-management/planillas/generar.
+- Vista inicial: placeholder con encabezado "Generar Planilla" para continuar construccion funcional.
+
+## Actualizacion 2026-03-09 22:45:09 -06:00 - Ajuste final de navegacion Gestion Planilla
+
+Regla vigente de navegacion:
+- En Gestion Planilla deben coexistir dos opciones:
+  1. Planillas > Generar Planilla (flujo de generacion).
+  2. Traslado Interempresas (flujo de traslado).
+
+No son el mismo flujo ni una opcion reemplaza a la otra.
+
+Permisos operativos:
+- payroll:generate controla Generar Planilla.
+- payroll:intercompany-transfer controla Traslado Interempresas.
+
+Nota operativa:
+- Si no aparece Gestion Planilla tras deploy, validar migraciones y existencia de payroll:generate en BD.
+
+## Actualizacion 2026-03-09 22:50:09 -06:00 - Vista Generar Planilla (fase inicial)
+
+Se habilita flujo inicial en Gestion Planilla > Planillas > Generar Planilla:
+- Campo Empresa (fuente de verdad del filtro).
+- Campo Moneda.
+- Lista de planillas cargada por empresa seleccionada.
+- Moneda aplicada como filtro en la vista.
+
+Regla aplicada:
+- La carga depende de los campos del propio formulario/vista (empresa, moneda), no de filtros externos de otras pantallas.
+
+Alcance actual:
+- Fase de consulta y preparacion operativa para generar.
+- Pendiente siguiente fase: formulario completo de apertura de planilla + validaciones de creacion.
+
+## Actualizacion 2026-03-09 23:09:00 -06:00 - Generar Planilla: solo planillas procesables
+
+Ajuste funcional en la vista Generar Planilla:
+- Planillas por Empresa y Moneda se mantiene como Select.
+- Solo se listan planillas en estado Abierta (estado 1), porque el endpoint de proceso permite procesar exclusivamente planillas en ese estado.
+- Se excluyen inactivas y cualquier estado no procesable.
+
+Regla vigente:
+- Si el objetivo es **Procesar**, el estado aplicable es unicamente **Abierta**.
+
+## Actualizacion 2026-03-09 23:20:00 -06:00 - Generar Planilla: filtro por tipo de periodo
+
+Ajuste en la vista Generar Planilla:
+- Se agrega selector Tipo de periodo de pago (catalogo pay-periods).
+- El listado de planillas (Select) ahora se filtra por:
+  - Empresa
+  - Moneda
+  - Tipo de periodo de pago
+  - Estado Abierta
+- En cada opcion de planilla se muestra explicitamente el nombre del periodo de pago (ejemplo: Quincenal).
+
+Objetivo:
+- Evitar ambiguedad cuando existan multiples planillas abiertas por diferentes periodos de pago.
+
+## Actualizacion 2026-03-09 23:35:00 -06:00 - Generar Planilla: panel de detalle de seleccion
+
+Mejora UX en Generar Planilla:
+- Al seleccionar una planilla en el Select, se muestra un panel de detalle debajo con:
+  - Empresa
+  - Tipo de periodo de pago
+  - Moneda
+  - Fecha inicio/fin de periodo
+  - Inicio/fin de pago
+  - Fecha pago programada
+  - Tipo de planilla
+  - Estado visual
+
+Regla de limpieza de seleccion:
+- Si cambia Empresa, Moneda, Tipo de periodo o se pulsa Refrescar, se limpia la planilla seleccionada y su panel.
+- Si la planilla seleccionada deja de cumplir filtros, tambien se limpia automaticamente.
+
+## Actualizacion 2026-03-09 23:48:00 -06:00 - Generar Planilla Regular (alcance actual)
+
+Ajuste de nomenclatura y alcance de la vista:
+- Menu actualizado a Generar Planilla Regular.
+- Titulo de vista actualizado a Generar Planilla Regular.
+- El selector de planillas filtra unicamente planillas de tipo Regular.
+- Se mantiene filtro de estado Abierta para compatibilidad con proceso.
+
+Nota de alcance:
+- Liquidacion, Aguinaldo y otras variantes se trabajaran en vistas separadas.
+
+## Actualizacion 2026-03-10 00:05:00 -06:00 - Panel de detalle completo en Generar Planilla Regular
+
+Se corrige y amplifica el detalle de planilla seleccionada:
+- Fuente de detalle: GET /payroll/:id al seleccionar planilla.
+- Se corrige lectura de fechas de periodo usando echaInicioPeriodo y echaFinPeriodo.
+- El panel expone campos operativos y tecnicos disponibles desde BD/API (ids, estado, flags, fechas de creacion/modificacion, version, referencia externa, slot, descripcion de evento, etc.).
+
+Regla de consistencia UX:
+- Al cambiar filtros (empresa, moneda, periodo) o refrescar, se limpia la seleccion y su detalle para evitar datos cruzados.
+
+## Actualizacion 2026-03-10 00:20:00 -06:00 - Detalle de planilla simplificado para usuario
+
+Ajuste UX en Generar Planilla Regular:
+- Se reemplaza el panel tecnico amplio por un resumen funcional rapido.
+- Se muestran unicamente campos clave para identificacion y operacion de la planilla:
+  - Empresa
+  - Tipo de periodo
+  - Moneda
+  - Fecha inicio/fin periodo
+  - Fecha corte
+  - Fecha inicio/fin pago
+  - Fecha pago programada
+  - Tipo planilla
+  - Estado
+
+Se mantiene internamente la carga por GET /payroll/:id para consistencia de datos.
+
+## Actualizacion 2026-03-10 00:55:00 -06:00 - Flujo Cargar Planilla Regular
+
+Se actualiza la vista operativa para enfocarla en carga previa a revision:
+- Texto funcional de la vista: Cargar Planilla Regular.
+- Boton nuevo: Cargar planilla (sobre planilla seleccionada).
+- Al ejecutar, se llama al proceso backend de planilla para cargar empleados y acciones de personal elegibles.
+- Despues de cargar, se consulta y muestra resumen (snapshot-summary) con indicadores clave:
+  - Empleados cargados
+  - Acciones ligadas
+  - Inputs generados
+  - Total bruto / deducciones / neto
+
+Regla UX aplicada:
+- Si cambian filtros (empresa, moneda, periodo) o se refresca, se limpia seleccion, detalle y resumen para evitar mezcla de contexto.
+
+## Actualizacion 2026-03-10 01:25:00 -06:00 - Cargar Planilla Regular: conservar seleccion post-carga
+
+Correccion aplicada al flujo de Cargar Planilla Regular:
+- La vista ahora considera estados operativos Abierta y En Proceso para mantener visible la planilla luego de ejecutar Cargar planilla.
+- Se evita que la seleccion se limpie automaticamente al cambiar el estado desde Abierta hacia En Proceso.
+- Se actualiza el texto del selector para reflejar correctamente los estados visibles.
+
+Objetivo:
+- Mantener continuidad del flujo operativo (cargar -> revisar) sin perder la planilla seleccionada tras la carga.
+
+## Actualizacion 2026-03-10 01:40:00 -06:00 - Cargar Planilla Regular: sin modal ni resumen numerico
+
+Ajuste UX del boton de carga:
+- Se elimina modal de confirmacion al pulsar Cargar planilla.
+- La accion ejecuta precarga directa con estado loading en el boton.
+- Se elimina bloque de resumen numerico post-carga (Empleados cargados, Acciones ligadas, Inputs, Totales).
+
+Criterio funcional aplicado:
+- Esta vista queda enfocada en disparar precarga para construir tabla de revision, sin mostrar resumen intermedio en ese bloque.
+
+## Actualizacion 2026-03-10 02:10:00 -06:00 - Cargar Planilla: genera tabla de revision (no resumen)
+
+Cambio funcional en Gestion Planilla > Cargar Planilla Regular:
+- El boton Cargar planilla ahora ejecuta flujo de carga de tabla operativa por empleado.
+- Se elimina en la vista el bloque de resumen numerico (empleados/acciones/totales) como salida principal.
+- Se renderiza tabla con columnas de revision salarial y deducciones por empleado, con detalle expandible de acciones.
+
+Alineacion con legacy:
+- Patron equivalente a GenerarPlanillas_lista.jsx: el boton dispara carga y luego muestra componente/tabla de detalle.
+- Patron de calculo alineado a Planilla_empleados_cargar.js (devengado, cargas sociales, renta, neto y detalle de acciones).
+
+Endpoints nuevos de soporte:
+- PATCH /payroll/:id/load-table  -> carga/genera snapshot de tabla para vista de revision.
+- GET /payroll/:id/snapshot-table -> retorna tabla cargada (empleados + acciones).
+
+Regla de estado operativa para carga:
+- Carga permitida en estados Abierta o En Proceso.
+- Mensaje actualizado para evitar semantica de "procesar" en esta vista.
+
+## Actualizacion 2026-03-10 02:45:00 -06:00 - Cargar Planilla: datos sensibles en tabla de empleados
+
+Correccion aplicada para evitar mostrar valores cifrados (enc:v1:...) en el listado de empleados:
+- Backend (GET /payroll/:id/snapshot-table):
+  - Se desencriptan nombre y apellidos cuando el usuario tiene permiso sensible.
+  - Permisos evaluados por empresa de la planilla: payroll:view_sensitive (principal) y compatibilidad con employee:view-sensitive.
+  - Si no tiene permiso sensible, no se exponen nombres desencriptados y se mantiene fallback no sensible (Empleado #ID).
+- Frontend (Cargar Planilla Regular):
+  - Columnas monetarias y de devengado se enmascaran como *** cuando el usuario no tiene payroll:view_sensitive.
+
+Objetivo:
+- Mantener consistencia con la regla transversal del sistema: usuario con permiso sensible ve datos completos; sin permiso sensible ve datos protegidos.
+
+## Actualizacion 2026-03-10 03:20:00 -06:00 - Correccion de calculo y detalle en tabla de Cargar Planilla
+
+Se corrige inconsistencia donde la tabla mostraba montos en 0.00 y detalle vacio:
+- salario_base_empleado venia cifrado y se estaba parseando directo a Number, provocando 0.00.
+- Ahora el calculo de planilla desencripta salario base antes de convertir a monto.
+- El snapshot de tabla ahora incluye tambien deducciones generadas por planilla (CCSS e impuesto renta) dentro de cciones, no solo acciones de personal aprobadas.
+- Se normaliza 	ipoSigno para clasificar correctamente deducciones de CCSS/renta como -.
+
+Resultado esperado:
+- Columnas Salario Base, Salario Quincenal Bruto, Cargas Sociales, Impuesto Renta, Monto Neto dejan de salir en 0 cuando hay salario/cargas en BD.
+- Detalle de acciones de personal muestra al menos CCSS/renta generadas en corrida aunque no existan acciones de personal adicionales.

@@ -1,0 +1,107 @@
+.heroCard {
+  border-color: #dce7f2 !important;
+  background: linear-gradient(135deg, #f7fbff 0%, #ffffff 70%);
+}
+
+.heroBody {
+  position: relative;
+}
+
+.heroBody::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(circle at 85% 20%, rgba(32, 99, 141, 0.08), transparent 45%);
+}
+
+.heroTitle {
+  letter-spacing: 0.01em;
+}
+
+.paramsTitle {
+  font-weight: 600;
+  color: #2f4352;
+}
+
+.paramsGrid {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  gap: 14px;
+  align-items: start;
+}
+
+.paramsItem {
+  grid-column: span 3;
+  min-width: 220px;
+}
+
+.paramsItemWide {
+  grid-column: span 6;
+  min-width: 260px;
+}
+
+.summaryTag {
+  border-radius: 999px !important;
+  padding-inline: 10px !important;
+  font-weight: 600;
+}
+
+.actionGroup {
+  background: #f8fafc;
+  border: 1px solid #e6ebf1;
+  border-radius: 10px;
+  padding: 6px;
+}
+
+.simulateButton {
+  border-radius: 8px !important;
+}
+
+.executeButton {
+  border-radius: 8px !important;
+  font-weight: 600 !important;
+  box-shadow: 0 2px 8px rgba(196, 45, 66, 0.16);
+}
+
+.transferTable :global(.ant-table-thead > tr > th) {
+  background: #f3f6fa !important;
+}
+
+.detailMetrics {
+  font-size: 12px;
+  line-height: 1.5;
+  color: #415160;
+}
+
+.detailLabel {
+  color: #2f4352;
+  font-weight: 600;
+}
+
+@media (max-width: 1200px) {
+  .paramsItem {
+    grid-column: span 6;
+  }
+
+  .paramsItemWide {
+    grid-column: span 12;
+  }
+}
+
+@media (max-width: 768px) {
+  .paramsGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .paramsItem,
+  .paramsItemWide {
+    grid-column: auto;
+    min-width: 0;
+  }
+
+  .actionGroup {
+    width: 100%;
+    justify-content: flex-end;
+  }
+}

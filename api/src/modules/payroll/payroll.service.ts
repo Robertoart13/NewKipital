@@ -11,7 +11,9 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { DataSource, EntityManager, In, Repository } from 'typeorm';
 
 import { DOMAIN_EVENTS } from '../../common/events/event-names';
+import { EmployeeSensitiveDataService } from '../../common/services/employee-sensitive-data.service';
 import { UserCompany } from '../access-control/entities/user-company.entity';
+import { AuthService } from '../auth/auth.service';
 import {
   EmployeeAguinaldoProvision,
   EstadoProvisionAguinaldoEmpleado,
@@ -107,6 +109,8 @@ export class PayrollService {
     private readonly auditOutbox: AuditOutboxService,
     private readonly vacationService: EmployeeVacationService,
     private readonly autoInvalidationService: PersonalActionAutoInvalidationService,
+    private readonly authService: AuthService,
+    private readonly sensitiveDataService: EmployeeSensitiveDataService,
   ) {}
 
   private readonly auditFieldLabels: Record<string, string> = {
@@ -493,8 +497,8 @@ export class PayrollService {
   async process(id: number, userId?: number): Promise<PayrollCalendar> {
     const payroll = await this.findOne(id, userId);
     const payloadBefore = this.buildAuditPayload(payroll);
-    if (payroll.estado !== EstadoCalendarioNomina.ABIERTA) {
-      throw new BadRequestException('Solo se puede procesar una planilla en estado Abierta');
+    if (![EstadoCalendarioNomina.ABIERTA, EstadoCalendarioNomina.EN_PROCESO].includes(payroll.estado)) {
+      throw new BadRequestException('Solo se puede cargar una planilla en estado Abierta o En Proceso');
     }
     if (payroll.esInactivo === this.inactiveFlag) {
       throw new BadRequestException('No se puede procesar una planilla inactiva');
@@ -659,6 +663,7 @@ export class PayrollService {
         .getMany();
 
       const resultAccumulator = new Map<number, { gross: number; ded: number }>();
+      const approvedActionAmountMap = new Map<number, number>();
 
       for (const action of approvedActions) {
         const amount = Number(action.monto ?? 0);
@@ -687,6 +692,7 @@ export class PayrollService {
         await queryRunner.manager.save(PayrollInputSnapshot, input);
 
         action.idCalendarioNomina = payroll.id;
+        approvedActionAmountMap.set(action.id, prorated.montoFinal);
         action.modificadoPor = userId ?? null;
         await queryRunner.manager.save(PersonalAction, action);
 
@@ -811,14 +817,32 @@ export class PayrollService {
           totalDeducciones,
           totalNeto,
           cargasSocialesDetalle: socialChargeDetail.items,
-          acciones: approvedActions
-            .filter((action) => action.idEmpleado === employee.id_empleado)
-            .map((action) => ({
-              idAccion: action.id,
-              tipoAccion: action.tipoAccion,
-              monto: Number(action.monto ?? 0),
-              fechaEfecto: action.fechaEfecto ?? action.fechaInicioEfecto ?? null,
+          acciones: [
+            ...approvedActions
+              .filter((action) => action.idEmpleado === employee.id_empleado)
+              .map((action) => ({
+                idAccion: action.id,
+                tipoAccion: action.tipoAccion,
+                monto: approvedActionAmountMap.get(action.id) ?? Number(action.monto ?? 0),
+                fechaEfecto: action.fechaEfecto ?? action.fechaInicioEfecto ?? null,
+              })),
+            ...socialChargeDetail.items.map((charge) => ({
+              idAccion: null,
+              tipoAccion: `CCSS-${charge.nombre}`,
+              monto: charge.monto,
+              fechaEfecto: payroll.fechaPagoProgramada ?? payroll.fechaFinPeriodo ?? null,
             })),
+            ...(impuestoRenta > 0
+              ? [
+                  {
+                    idAccion: null,
+                    tipoAccion: 'impuesto_renta',
+                    monto: impuestoRenta,
+                    fechaEfecto: payroll.fechaPagoProgramada ?? payroll.fechaFinPeriodo ?? null,
+                  },
+                ]
+              : []),
+          ],
         });
       }
 
@@ -887,6 +911,261 @@ export class PayrollService {
     }
   }
 
+  async loadPayrollPreviewTable(
+    id: number,
+    userId?: number,
+  ): Promise<{
+    idNomina: number;
+    estadoNomina: number;
+    generatedAt: string | null;
+    totals: {
+      totalBruto: string;
+      totalDeducciones: string;
+      totalNeto: string;
+      totalDevengado: string;
+      totalCargasSociales: string;
+      totalImpuestoRenta: string;
+    };
+    empleados: Array<{
+      idEmpleado: number;
+      codigoEmpleado: string;
+      nombreEmpleado: string;
+      salarioBase: string;
+      salarioBrutoPeriodo: string;
+      devengadoDias: string;
+      cargasSociales: string;
+      impuestoRenta: string;
+      totalNeto: string;
+      dias: string;
+      estado: string;
+      acciones: Array<{
+        idAccion: number | null;
+        categoria: string;
+        tipoAccion: string;
+        monto: string;
+        tipoSigno: '+' | '-';
+        estado: string;
+      }>;
+    }>;
+  }> {
+    const payroll = await this.findOne(id, userId);
+
+    if (payroll.esInactivo === this.inactiveFlag) {
+      throw new BadRequestException('No se puede cargar una planilla inactiva');
+    }
+
+    if ([EstadoCalendarioNomina.ABIERTA, EstadoCalendarioNomina.EN_PROCESO].includes(payroll.estado)) {
+      await this.process(id, userId);
+    }
+
+    return this.getSnapshotTableDetail(id, userId);
+  }
+
+  async getSnapshotTableDetail(
+    id: number,
+    userId?: number,
+  ): Promise<{
+    idNomina: number;
+    estadoNomina: number;
+    generatedAt: string | null;
+    totals: {
+      totalBruto: string;
+      totalDeducciones: string;
+      totalNeto: string;
+      totalDevengado: string;
+      totalCargasSociales: string;
+      totalImpuestoRenta: string;
+    };
+    empleados: Array<{
+      idEmpleado: number;
+      codigoEmpleado: string;
+      nombreEmpleado: string;
+      salarioBase: string;
+      salarioBrutoPeriodo: string;
+      devengadoDias: string;
+      cargasSociales: string;
+      impuestoRenta: string;
+      totalNeto: string;
+      dias: string;
+      estado: string;
+      acciones: Array<{
+        idAccion: number | null;
+        categoria: string;
+        tipoAccion: string;
+        monto: string;
+        tipoSigno: '+' | '-';
+        estado: string;
+      }>;
+    }>;
+  }> {
+    const payroll = await this.findOne(id, userId);
+
+    const snapshot = await this.planillaSnapshotRepo.findOne({
+      where: { idNomina: id },
+      order: { id: 'DESC' },
+    });
+
+    if (!snapshot?.snapshot) {
+      throw new BadRequestException('La planilla aun no tiene datos cargados para mostrar en tabla.');
+    }
+
+    const snapshotPayload = snapshot.snapshot as {
+      totals?: {
+        totalBruto?: number;
+        totalDeducciones?: number;
+        totalNeto?: number;
+        totalDevengado?: number;
+        totalCargasSociales?: number;
+        totalImpuestoRenta?: number;
+      };
+      empleados?: Array<{
+        idEmpleado?: number;
+        salarioBase?: string | number;
+        salarioBrutoPeriodo?: string | number;
+        devengadoDias?: string | number | null;
+        devengadoHoras?: string | number | null;
+        cargasSociales?: string | number;
+        impuestoRenta?: string | number;
+        totalNeto?: string | number;
+        acciones?: Array<{
+          idAccion?: number;
+          tipoAccion?: string;
+          monto?: number | string;
+        }>;
+      }>;
+      generatedAt?: string;
+    };
+
+    const rows = Array.isArray(snapshotPayload.empleados) ? snapshotPayload.empleados : [];
+    const employeeIds = rows
+      .map((row) => Number(row.idEmpleado ?? 0))
+      .filter((value) => Number.isInteger(value) && value > 0);
+
+    const canViewSensitive = await this.canViewPayrollSensitiveData(userId, payroll.idEmpresa);
+    let employeeInfoMap = new Map<number, { codigo: string; nombre: string }>();
+    if (employeeIds.length > 0) {
+      const employeesRaw: Array<{
+        id_empleado: number;
+        codigo_empleado: string | null;
+        nombre_empleado: string | null;
+        apellido1_empleado: string | null;
+        apellido2_empleado: string | null;
+      }> = await this.dataSource.query(
+        `
+          SELECT id_empleado, codigo_empleado, nombre_empleado, apellido1_empleado, apellido2_empleado
+          FROM sys_empleados
+          WHERE id_empleado IN (${employeeIds.map(() => '?').join(',')})
+        `,
+        employeeIds,
+      );
+
+      employeeInfoMap = new Map(
+        employeesRaw.map((row) => {
+          const nombre = this.resolveEmployeeDisplayName(
+            row.nombre_empleado,
+            row.apellido1_empleado,
+            row.apellido2_empleado,
+            canViewSensitive,
+          );
+          return [
+            Number(row.id_empleado),
+            {
+              codigo: String(row.codigo_empleado ?? '').trim(),
+              nombre,
+            },
+          ];
+        }),
+      );
+    }
+
+    const totals = snapshotPayload.totals ?? {};
+
+    return {
+      idNomina: id,
+      estadoNomina: payroll.estado,
+      generatedAt: snapshotPayload.generatedAt ?? this.toYmd(snapshot.fechaCreacion),
+      totals: {
+        totalBruto: Number(totals.totalBruto ?? 0).toFixed(2),
+        totalDeducciones: Number(totals.totalDeducciones ?? 0).toFixed(2),
+        totalNeto: Number(totals.totalNeto ?? 0).toFixed(2),
+        totalDevengado: Number(totals.totalDevengado ?? 0).toFixed(2),
+        totalCargasSociales: Number(totals.totalCargasSociales ?? 0).toFixed(2),
+        totalImpuestoRenta: Number(totals.totalImpuestoRenta ?? 0).toFixed(2),
+      },
+      empleados: rows.map((row) => {
+        const employeeId = Number(row.idEmpleado ?? 0);
+        const employeeInfo = employeeInfoMap.get(employeeId);
+        const devengadoDias = row.devengadoDias ?? row.devengadoHoras ?? 0;
+        const actions = Array.isArray(row.acciones) ? row.acciones : [];
+
+        return {
+          idEmpleado: employeeId,
+          codigoEmpleado: employeeInfo?.codigo || ('KPid-' + employeeId),
+          nombreEmpleado: employeeInfo?.nombre || ('Empleado #' + employeeId),
+          salarioBase: Number(row.salarioBase ?? 0).toFixed(2),
+          salarioBrutoPeriodo: Number(row.salarioBrutoPeriodo ?? 0).toFixed(2),
+          devengadoDias: Number(devengadoDias ?? 0).toFixed(4),
+          cargasSociales: Number(row.cargasSociales ?? 0).toFixed(2),
+          impuestoRenta: Number(row.impuestoRenta ?? 0).toFixed(2),
+          totalNeto: Number(row.totalNeto ?? 0).toFixed(2),
+          dias: Number(devengadoDias ?? 0).toFixed(2),
+          estado: 'Pendiente',
+          acciones: actions.map((action) => {
+            const tipoAccion = String(action.tipoAccion ?? 'Accion').trim() || 'Accion';
+            const isDeduction = this.isDeductionAction(tipoAccion) || tipoAccion === 'carga_social' || tipoAccion === 'impuesto_renta' || tipoAccion.toLowerCase().includes('ccss') || tipoAccion.toLowerCase().includes('renta');
+            return {
+              idAccion: Number.isFinite(Number(action.idAccion)) ? Number(action.idAccion) : null,
+              categoria: this.resolveActionCategory(tipoAccion),
+              tipoAccion,
+              monto: Number(action.monto ?? 0).toFixed(2),
+              tipoSigno: isDeduction ? '-' : '+',
+              estado: 'Pendiente',
+            };
+          }),
+        };
+      }),
+    };
+  }
+  private async canViewPayrollSensitiveData(
+    userId: number | undefined,
+    companyId: number,
+  ): Promise<boolean> {
+    if (!userId) return false;
+    const resolved = await this.authService.resolvePermissions(userId, companyId, 'kpital');
+    return (
+      resolved.permissions.includes('payroll:view_sensitive') ||
+      resolved.permissions.includes('employee:view-sensitive')
+    );
+  }
+
+  private resolveEmployeeDisplayName(
+    nombreEncrypted: string | null,
+    apellido1Encrypted: string | null,
+    apellido2Encrypted: string | null,
+    canViewSensitive: boolean,
+  ): string {
+    if (!canViewSensitive) return '';
+    return [nombreEncrypted, apellido1Encrypted, apellido2Encrypted]
+      .map((part) => this.sensitiveDataService.decrypt(part) ?? '')
+      .map((part) => String(part).trim())
+      .filter((part) => part.length > 0)
+      .join(' ');
+  }
+  private resolveActionCategory(tipoAccionRaw: string): string {
+    const tipoAccion = tipoAccionRaw.toLowerCase();
+    if (tipoAccion.includes('carga_social') || tipoAccion.includes('ccss')) return 'Carga Social';
+    if (tipoAccion.includes('renta')) return 'Impuesto Renta';
+    if (tipoAccion.includes('incapacidad')) return 'Incapacidades';
+    if (tipoAccion.includes('ausencia')) return 'Ausencias';
+    if (tipoAccion.includes('licencia')) return 'Licencias';
+    if (tipoAccion.includes('vacacion')) return 'Vacaciones';
+    if (tipoAccion.includes('bonificacion')) return 'Bonificaciones';
+    if (tipoAccion.includes('aumento')) return 'Aumentos';
+    if (tipoAccion.includes('hora')) return 'Horas Extras';
+    if (tipoAccion.includes('retencion')) return 'Retenciones';
+    if (tipoAccion.includes('descuento') || tipoAccion.includes('deduccion')) return 'Deducciones';
+    return 'Accion Personal';
+  }
   async getSnapshotSummary(
     id: number,
     userId?: number,
@@ -1117,8 +1396,8 @@ export class PayrollService {
   }
 
   /**
-   * Registra provisiÃ³n de aguinaldo por planilla aplicada.
-   * FÃ³rmula base: total_bruto / 12 por empleado.
+   * Registra provision de aguinaldo por planilla aplicada.
+   * Formula base: total_bruto / 12 por empleado.
    */
   private async createAguinaldoProvisionsFromPayroll(
     manager: EntityManager,
@@ -1901,7 +2180,9 @@ export class PayrollService {
   }
 
   private toMoney(value: string | null): string {
-    const amount = Number(value ?? 0);
+    const decrypted = this.sensitiveDataService.decrypt(value);
+    const raw = String(decrypted ?? value ?? '0').replace(/,/g, '').trim();
+    const amount = Number(raw);
     if (Number.isNaN(amount)) return '0.00';
     if (amount < 0) return '0.00';
     return amount.toFixed(2);
@@ -2102,7 +2383,7 @@ export class PayrollService {
   private isCivilStatusWithSpouse(status: string | null): boolean {
     if (!status) return false;
     const normalized = status.toLowerCase();
-    return normalized === 'casado' || normalized === 'uniÃ³n libre';
+    return normalized === 'casado' || normalized === 'union libre';
   }
 
   private async getPreviousQuincenalTotals(
@@ -2181,6 +2462,17 @@ export class PayrollService {
     }
   }
 }
+
+
+
+
+
+
+
+
+
+
+
 
 
 

@@ -1,4 +1,4 @@
-# 50 - Handoff Traslado Interempresas (2026-03-09)
+﻿# 50 - Handoff Traslado Interempresas (2026-03-09)
 
 ## 1) Corte del handoff
 - Fecha: 2026-03-09
@@ -75,3 +75,31 @@ Se mantiene pendiente de terminar:
 - `docs/Test/GUIA-TESTING.md`
 - `docs/09-EstadoActualProyecto.md`
 - `docs/28-PendientesAccion.md`
+## 11) Actualizacion final - 2026-03-09 22:22:58 -06:00
+Alcance:
+- Correccion de mensaje UX para falta de planilla destino en traslado interempresas.
+
+Cambio aplicado:
+- Backend: api/src/modules/payroll/intercompany-transfer.service.ts
+- Metodo ajustado: formatMissingDestinationDatesMessage
+- Comportamiento:
+  1. Si falta una sola fecha: No existe planilla destino para la fecha YYYY-MM-DD.
+  2. Si faltan multiples fechas: No existe planilla destino para cubrir el rango AAAA-MM-DD a AAAA-MM-DD, con detalle resumido de faltantes.
+
+Validacion tecnica:
+- Comando ejecutado: cd api && npm.cmd run build
+- Resultado: OK (sin errores de compilacion).
+
+Estado para continuar:
+- Listo para continuar con modulo de planillas y siguiente bloque funcional.
+
+## 12) Actualizacion de navegacion y permisos - 2026-03-09 22:45:09 -06:00
+
+Se deja documentado ajuste final de menu en frontend:
+- Gestion Planilla muestra:
+  1. Planillas > Generar Planilla.
+  2. Traslado Interempresas como opcion separada.
+
+Incidencia resuelta:
+- Menu no visible por falta de permiso payroll:generate en BD.
+- Se ejecuto migracion y se confirmo alta/asignacion del permiso.

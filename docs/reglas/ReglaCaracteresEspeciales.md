@@ -2,7 +2,7 @@
 
 ## Propósito
 
-Evitar caracteres Unicode que, con codificación incorrecta (Latin-1, Windows-1252, etc.), se convierten en secuencias corruptas tipo `Ã³`, `â‰ `, `â"€`, etc. Esto genera texto ilegible y dificulta el mantenimiento del proyecto.
+Evitar caracteres Unicode que, con codificación incorrecta (Latin-1, Windows-1252, etc.), se convierten en secuencias corruptas (por ejemplo o con tilde, símbolos lógicos o de caja mal interpretados). Esto genera texto ilegible y dificulta el mantenimiento del proyecto.
 
 ## Regla obligatoria
 
@@ -97,9 +97,9 @@ En el proyecto se detectaron y corrigieron estos mojibake:
 | `â•â•â•â•`                 | `════`            | `-----`          |
 | `â†"`                     | `↔`               | `-`              |
 | `â€¢`                     | `•`               | `*` o `-`        |
-| `integraciÃ³n`            | `integración`     | `integracion`    |
-| `PerÃ­odo`                | `Período`         | `Periodo`        |
-| `distribuciÃ³n`           | `distribución`    | `distribucion`   |
+| integración (vista como corrupto) | `integración`     | `integracion`    |
+| Período (vista como corrupto)     | `Período`         | `Periodo`        |
+| distribución (vista como corrupto)| `distribución`    | `distribucion`   |
 | `l\u00EDneas`             | `líneas`          | `lineas`         |
 | `acci\u00F3n`             | `acción`          | `accion`         |
 | `m\u00FAltiples`          | `múltiples`       | `multiples`      |

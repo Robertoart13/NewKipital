@@ -1,4 +1,4 @@
-﻿import {
+import {
   AppstoreOutlined,
   ArrowLeftOutlined,
   CheckCircleOutlined,
@@ -814,7 +814,7 @@ export function PayrollManagementPage() {
                     void confirmAndRunAction(
                       row,
                       'Confirmar proceso de planilla',
-                      'Esta acciÃ³n procesarÃ¡ la planilla y generarÃ¡ snapshots. Â¿Desea continuar?',
+                      'Esta accion procesara la planilla y generara snapshots. Desea continuar?',
                       'Procesar',
                       () => processPayroll(row.id),
                       'Planilla procesada',
@@ -845,7 +845,7 @@ export function PayrollManagementPage() {
                 title={
                   row.requiresRecalculation === 1
                     ? 'Existen nuevas acciones aprobadas que requieren recalcular la planilla antes de aplicar.'
-                    : 'Aplica la planilla y bloquea sus resultados para operaciÃ³n final.'
+                    : 'Aplica la planilla y bloquea sus resultados para operacion final.'
                 }
               >
                 <Button
@@ -977,7 +977,7 @@ export function PayrollManagementPage() {
                   ))}
                 </div>
               ) : (
-                <div style={{ fontSize: 12 }}>Sin detalle adicional para esta acciÃ³n.</div>
+                <div style={{ fontSize: 12 }}>Sin detalle adicional para esta accion.</div>
               )}
             </div>
           );
@@ -1024,7 +1024,7 @@ export function PayrollManagementPage() {
                 <AppstoreOutlined className={styles.gestionIcon} />
               </div>
               <div>
-                <h2 className={styles.gestionTitle}>GestiÃ³n de Planillas</h2>
+                <h2 className={styles.gestionTitle}>Gestion de Planillas</h2>
                 <p className={styles.gestionDesc}>
                   Aperture, procese, verifique y aplique corridas de planilla por empresa
                 </p>

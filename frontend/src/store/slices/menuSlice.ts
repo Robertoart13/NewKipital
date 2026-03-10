@@ -1,10 +1,10 @@
-import { createSlice } from '@reduxjs/toolkit';
+﻿import { createSlice } from '@reduxjs/toolkit';
 
 import type { Permission } from './permissionsSlice';
 
 /**
- * Definición de un ítem de menú.
- * requiredPermission: si está definido, el usuario debe tenerlo para ver el ítem.
+ * Definicion de un item de menu.
+ * requiredPermission: si esta definido, el usuario debe tenerlo para ver el item.
  */
 export interface MenuItem {
   id: string;
@@ -13,22 +13,22 @@ export interface MenuItem {
   icon?: string;
   requiredPermission?: Permission;
   children?: MenuItem[];
-  /** Si true, se renderiza como título de grupo (no clickeable) en lugar de submenú */
+  /** Si true, se renderiza como titulo de grupo (no clickeable) en lugar de submenu */
   isGroup?: boolean;
 }
 
 /**
- * Configuración maestra del menú.
- * La visibilidad real se deriva en menu.selectors.ts según permisos.
+ * Configuracion maestra del menu.
+ * La visibilidad real se deriva en menu.selectors.ts segun permisos.
  */
 export interface MenuConfig {
   items: MenuItem[];
 }
 
 /**
- * Configuración maestra del menú. Data-driven.
- * Estructura: cada ítem puede tener children (submenú con dropdown).
- * requiredPermission: oculta la opción si el usuario no tiene el permiso.
+ * Configuracion maestra del menu. Data-driven.
+ * Estructura: cada item puede tener children (submenu con dropdown).
+ * requiredPermission: oculta la opcion si el usuario no tiene el permiso.
  */
 const initialMenuConfig: MenuItem[] = [
   {
@@ -142,7 +142,7 @@ const initialMenuConfig: MenuItem[] = [
     children: [
       {
         id: 'calendario-nomina',
-        label: 'Calendario de Nómina',
+        label: 'Calendario de Nomina',
         path: '/payroll-params/calendario',
         requiredPermission: 'payroll:view',
         children: [
@@ -160,7 +160,7 @@ const initialMenuConfig: MenuItem[] = [
           },
           {
             id: 'dias-pago-planilla',
-            label: 'Listado de Días de Pago de Planilla',
+            label: 'Listado de Dias de Pago de Planilla',
             path: '/payroll-params/calendario/dias-pago',
             requiredPermission: 'payroll:view',
           },
@@ -168,7 +168,7 @@ const initialMenuConfig: MenuItem[] = [
       },
       {
         id: 'articulos-nomina',
-        label: 'Artículos de Nomina',
+        label: 'Articulos de Nomina',
         path: '/payroll-params/articulos',
         requiredPermission: 'payroll-article:view',
       },
@@ -182,10 +182,23 @@ const initialMenuConfig: MenuItem[] = [
   },
   {
     id: 'payroll-management',
-    label: 'Gestión Planilla',
+    label: 'Gestion Planilla',
     path: '/payroll-management',
-    requiredPermission: 'payroll:view',
     children: [
+      {
+        id: 'planillas',
+        label: 'Planillas',
+        path: '/payroll-management/planillas',
+        requiredPermission: 'payroll:generate',
+        children: [
+          {
+            id: 'generar-planilla',
+            label: 'Cargar Planilla Regular',
+            path: '/payroll-management/planillas/generar',
+            requiredPermission: 'payroll:generate',
+          },
+        ],
+      },
       {
         id: 'traslado-interempresas',
         label: 'Traslado Interempresas',
@@ -227,13 +240,13 @@ const initialMenuConfig: MenuItem[] = [
       },
       {
         id: 'grp-gestion-org',
-        label: 'Gestión Organizacional',
+        label: 'Gestion Organizacional',
         path: '#',
         isGroup: true,
         children: [
           {
             id: 'reglas-distribucion',
-            label: 'Reglas de Distribución',
+            label: 'Reglas de Distribucion',
             path: '/configuration/reglas-distribucion',
             requiredPermission: 'config:reglas-distribucion',
           },
@@ -303,4 +316,10 @@ const menuSlice = createSlice({
 
 export const { setMenuConfig } = menuSlice.actions;
 export default menuSlice.reducer;
+
+
+
+
+
+
 

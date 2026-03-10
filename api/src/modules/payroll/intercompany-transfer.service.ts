@@ -158,7 +158,7 @@ export class IntercompanyTransferService {
 
   /**
    * Simula el traslado interempresas para una lista de empleados.
-   * No ejecuta cambios; registra simulaciones elegibles para ejecución posterior.
+   * No ejecuta cambios; registra simulaciones elegibles para ejecucion posterior.
    */
   async simulate(
     dto: SimulateIntercompanyTransferDto,
@@ -238,7 +238,7 @@ export class IntercompanyTransferService {
     if (employee.estado !== 1) {
       blockingReasons.push({
         code: 'EMPLEADO_INACTIVO',
-        message: 'El empleado está inactivo y no puede trasladarse.',
+        message: 'El empleado esta inactivo y no puede trasladarse.',
       });
     }
 
@@ -251,7 +251,7 @@ export class IntercompanyTransferService {
 
     const effectiveKey = this.toDateKey(effectiveDate);
     if (!effectiveKey) {
-      throw new BadRequestException('Fecha efectiva inválida.');
+      throw new BadRequestException('Fecha efectiva invalida.');
     }
 
     const blockingPayrolls = await this.findBlockingPayrolls(employee.idEmpresa, effectiveDate);
@@ -296,7 +296,7 @@ export class IntercompanyTransferService {
         if (!plan.fechaEfecto && !plan.fechaInicioEfecto && !plan.fechaFinEfecto) {
           blockingReasons.push({
             code: 'ACCION_SIN_FECHA',
-            message: 'La acción no tiene fechas definidas y no puede trasladarse.',
+            message: 'La accion no tiene fechas definidas y no puede trasladarse.',
             metadata: { idAccion: plan.idAccion },
           });
         }
@@ -305,7 +305,7 @@ export class IntercompanyTransferService {
       if (plan.crossesTransfer && plan.assignedToPayroll) {
         blockingReasons.push({
           code: 'ACCION_ASIGNADA_PLANILLA',
-          message: 'La acción cruza la fecha de traslado y ya está asociada a planilla.',
+          message: 'La accion cruza la fecha de traslado y ya esta asociada a planilla.',
           metadata: { idAccion: plan.idAccion },
         });
         continue;
@@ -334,7 +334,7 @@ export class IntercompanyTransferService {
       if (plan.requiresSplit && (lineDateMap.get(plan.idAccion) ?? []).some((date) => !date)) {
         blockingReasons.push({
           code: 'LINEA_SIN_FECHA',
-          message: 'La acción tiene líneas sin fecha; no es posible recalcular el traslado.',
+          message: 'La accion tiene lineas sin fecha; no es posible recalcular el traslado.',
           metadata: { idAccion: plan.idAccion },
         });
       }
@@ -417,7 +417,7 @@ export class IntercompanyTransferService {
       throw new NotFoundException(`Transferencia ${transferId} no encontrada.`);
     }
     if (transfer.estado !== EstadoTransferenciaEmpleado.SIMULATED) {
-      throw new ConflictException(`Transferencia ${transferId} no está en estado simulado.`);
+      throw new ConflictException(`Transferencia ${transferId} no esta en estado simulado.`);
     }
 
     await this.assertUserCompanyAccess(userId, transfer.idEmpresaOrigen);
@@ -456,7 +456,7 @@ export class IntercompanyTransferService {
       }
 
       if (employee.idEmpresa !== transfer.idEmpresaOrigen) {
-        throw new ConflictException('La empresa origen del empleado cambió desde la simulación.');
+        throw new ConflictException('La empresa origen del empleado cambio desde la simulacion.');
       }
 
       const actionPlans = simulation.actionsToMove;
@@ -908,13 +908,22 @@ export class IntercompanyTransferService {
     if (!missingDates.length) {
       return 'No existe planilla destino para fechas del traslado.';
     }
+
     const uniqueSorted = Array.from(new Set(missingDates)).sort();
+
+    if (uniqueSorted.length === 1) {
+      return `No existe planilla destino para la fecha ${uniqueSorted[0]}.`;
+    }
+
+    const firstDate = uniqueSorted[0];
+    const lastDate = uniqueSorted[uniqueSorted.length - 1];
     const maxPreview = 5;
     const preview = uniqueSorted.slice(0, maxPreview);
     const remaining = uniqueSorted.length - preview.length;
     const previewText = preview.join(', ');
-    const extraText = remaining > 0 ? ` y ${remaining} fechas más` : '';
-    return `Faltan planillas en empresa destino para ${uniqueSorted.length} fechas de acciones: ${previewText}${extraText}.`;
+    const extraText = remaining > 0 ? ' y ' + remaining + ' fechas mas' : '';
+
+    return `No existe planilla destino para cubrir el rango ${firstDate} a ${lastDate}. Fechas faltantes detectadas (${uniqueSorted.length}): ${previewText}${extraText}.`;
   }
 
   private getMaxActionDate(
@@ -1017,7 +1026,7 @@ export class IntercompanyTransferService {
     });
     if (!hasAccess) {
       throw new ForbiddenException(
-        `No tiene acceso a la empresa ${companyId} para esta operación.`,
+        `No tiene acceso a la empresa ${companyId} para esta operacion.`,
       );
     }
   }
@@ -1027,7 +1036,7 @@ export class IntercompanyTransferService {
     const onlyDate = raw.includes('T') ? raw.split('T')[0] : raw;
     const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(onlyDate);
     if (!match) {
-      throw new BadRequestException('Fecha inválida.');
+      throw new BadRequestException('Fecha invalida.');
     }
 
     const year = Number(match[1]);
@@ -1041,7 +1050,7 @@ export class IntercompanyTransferService {
       normalized.getMonth() !== month - 1 ||
       normalized.getDate() !== day
     ) {
-      throw new BadRequestException('Fecha inválida.');
+      throw new BadRequestException('Fecha invalida.');
     }
 
     return normalized;
@@ -1189,6 +1198,7 @@ export class IntercompanyTransferService {
     return Number.isNaN(total) ? 0 : total;
   }
 }
+
 
 
 

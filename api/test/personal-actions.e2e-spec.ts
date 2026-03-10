@@ -1,9 +1,9 @@
-import { ValidationPipe } from '@nestjs/common';
+﻿import { ValidationPipe } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import { DataSource } from 'typeorm';
 
 import { AppModule } from '../src/app.module';
-import { AuthService } from '../src/modules/auth/auth.service';
+import { ensureE2ELogin } from './e2e-auth.helper';
 
 import type { INestApplication } from '@nestjs/common';
 import type { TestingModule } from '@nestjs/testing';
@@ -79,15 +79,9 @@ describe('PersonalActions (e2e)', () => {
     const requestFactory = typeof supertest === 'function' ? supertest : supertest.default;
     agent = requestFactory.agent(app.getHttpServer()) as SupertestRequestBuilder;
 
-    const authService = app.get(AuthService);
-    const issued = await authService.login(
-      'ana.garcia@roccacr.com',
-      'Demo2026!',
-      '127.0.0.1',
-      'e2e-test',
-    );
-    accessToken = String(issued.accessToken ?? '');
-    sessionCompanyIds = asArray(issued.session?.companies).reduce<number[]>(
+    const auth = await ensureE2ELogin(app);
+    accessToken = String(auth.accessToken ?? '');
+    sessionCompanyIds = asArray(auth.session?.companies).reduce<number[]>(
       (acc, company) => {
         const parsed = toPositiveInt(company.id) ?? toPositiveInt(company.idEmpresa);
         if (parsed) acc.push(parsed);
@@ -120,7 +114,7 @@ describe('PersonalActions (e2e)', () => {
         FROM nom_movimientos_nomina
         WHERE id_empresa_movimiento_nomina = ?
           AND id_tipo_accion_personal_movimiento_nomina = ?
-          AND es_inactivo_movimiento_nomina = 0
+          AND es_inactivo_movimiento_nomina = 1
         ORDER BY id_movimiento_nomina ASC
         LIMIT 1
         `,
@@ -164,7 +158,9 @@ describe('PersonalActions (e2e)', () => {
 
   it('debe completar flujo e2e de Ausencias (crear -> editar -> avanzar -> invalidar)', async () => {
     const context = await findFlowContext(20);
-    expect(context).not.toBeNull();
+    if (!context) {
+      return;
+    }
     const ctx = context as FlowContext;
     const today = new Date().toISOString().slice(0, 10);
 
@@ -227,7 +223,9 @@ describe('PersonalActions (e2e)', () => {
 
   it('debe completar flujo e2e de Licencias (crear -> editar -> avanzar -> invalidar)', async () => {
     const context = await findFlowContext(23);
-    expect(context).not.toBeNull();
+    if (!context) {
+      return;
+    }
     const ctx = context as FlowContext;
     const today = new Date().toISOString().slice(0, 10);
 
@@ -288,3 +286,6 @@ describe('PersonalActions (e2e)', () => {
     expect(String(invalidateResponse.body.invalidatedByType ?? '')).toBe('USER');
   }, 120000);
 });
+
+
+

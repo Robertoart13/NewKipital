@@ -1,4 +1,4 @@
-export { DashboardPage } from './DashboardPage';
+﻿export { DashboardPage } from './DashboardPage';
 export { ProfilePage } from './ProfilePage';
 export { EmployeesListPage } from './employees/EmployeesListPage';
 export { EmployeeDetailPage } from './employees/EmployeeDetailPage';
@@ -15,6 +15,7 @@ export { AutomationMonitoringPage } from './monitoring/AutomationMonitoringPage'
 export { PayrollArticlesManagementPage } from './payroll-params/PayrollArticlesManagementPage';
 export { PayrollMovementsManagementPage } from './payroll-params/PayrollMovementsManagementPage';
 export { PayrollManagementPage } from './payroll-management/PayrollManagementPage';
+export { PayrollGeneratePage } from './payroll-management/PayrollGeneratePage';
 export { PayrollCalendarPage } from './payroll-management/PayrollCalendarPage';
 export { PayrollHolidaysPage } from './payroll-management/PayrollHolidaysPage';
 export { IntercompanyTransferPage } from './payroll-management/IntercompanyTransferPage';
@@ -28,3 +29,4 @@ export { RetentionsPage } from './personal-actions/retenciones/RetentionsPage';
 export { DiscountsPage } from './personal-actions/descuentos/DiscountsPage';
 export { AumentosPage } from './personal-actions/aumentos/AumentosPage';
 export { VacationsPage } from './personal-actions/vacaciones/VacationsPage';
+

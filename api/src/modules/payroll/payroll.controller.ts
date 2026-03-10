@@ -167,6 +167,24 @@ export class PayrollController {
   ): Promise<PayrollCalendarResponse> {
     return this.service.reactivate(id, user.userId).then((row) => this.service.toResponse(row));
   }
+
+  @RequirePermissions('payroll:process')
+  @Patch(':id/load-table')
+  loadTable(
+    @Param('id', ParseIntPipe) id: number,
+    @CurrentUser() user: { userId: number },
+  ) {
+    return this.service.loadPayrollPreviewTable(id, user.userId);
+  }
+
+  @RequirePermissions('payroll:view')
+  @Get(':id/snapshot-table')
+  snapshotTable(
+    @Param('id', ParseIntPipe) id: number,
+    @CurrentUser() user: { userId: number },
+  ) {
+    return this.service.getSnapshotTableDetail(id, user.userId);
+  }
   @RequirePermissions('payroll:view')
   @Get(':id/snapshot-summary')
   snapshotSummary(@Param('id', ParseIntPipe) id: number, @CurrentUser() user: { userId: number }) {
@@ -184,3 +202,4 @@ export class PayrollController {
     return this.service.getAuditTrail(id, user.userId, limit);
   }
 }
+
