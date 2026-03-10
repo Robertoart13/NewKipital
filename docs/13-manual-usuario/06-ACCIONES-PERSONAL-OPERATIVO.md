@@ -1,4 +1,4 @@
-﻿# 📘 Manual de Usuario - Acciones de Personal
+# 📘 Manual de Usuario - Acciones de Personal
 
 ## 🎯 Para que sirve este modulo
 Permite registrar eventos de RRHH que impactan nomina por linea y por periodo.
@@ -40,7 +40,7 @@ flowchart TD
 ```
 
 ## 🎯 Operaciones disponibles
-- Crear por tipo (`/personal-actions/{tipo}`)
+- Crear por tipo (`/personal-actions/{tipo}`). Ademas de las paginas dedicadas, Horas extras, Ausencias, Retenciones y Descuentos pueden crearse desde la pantalla de planilla (formularios inline en `Cargar Planilla Regular`). Ver [Planilla Operativa](./05-PLANILLA-OPERATIVA.md).
 - Editar por tipo
 - Avanzar estado (`advance`)
 - Invalidar (`invalidate`)

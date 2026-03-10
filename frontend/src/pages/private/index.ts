@@ -1,4 +1,4 @@
-﻿export { DashboardPage } from './DashboardPage';
+export { DashboardPage } from './DashboardPage';
 export { ProfilePage } from './ProfilePage';
 export { EmployeesListPage } from './employees/EmployeesListPage';
 export { EmployeeDetailPage } from './employees/EmployeeDetailPage';
@@ -29,4 +29,5 @@ export { RetentionsPage } from './personal-actions/retenciones/RetentionsPage';
 export { DiscountsPage } from './personal-actions/descuentos/DiscountsPage';
 export { AumentosPage } from './personal-actions/aumentos/AumentosPage';
 export { VacationsPage } from './personal-actions/vacaciones/VacationsPage';
+export { DocsBrowserPage } from './docs/DocsBrowserPage';
 

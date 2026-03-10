@@ -16,11 +16,40 @@ import dayjs from 'dayjs';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { fetchPayPeriods, type CatalogPayPeriod } from '../../../api/catalogs';
-import { approvePersonalAction } from '../../../api/personalActions';
+import {
+  approvePersonalAction,
+  createAbsence,
+  createDiscount,
+  createOvertime,
+  createRetention,
+  invalidateAbsence,
+  invalidateLicense,
+  invalidateDisability,
+  invalidateBonus,
+  invalidateOvertime,
+  invalidateRetention,
+  invalidateDiscount,
+  invalidateIncrease,
+  invalidateVacation,
+  fetchAbsenceMovementsCatalog,
+} from '../../../api/personalActions';
+import type {
+  AbsenceMovementCatalogItem,
+  UpsertAbsenceLinePayload,
+  UpsertDiscountLinePayload,
+  UpsertOvertimeLinePayload,
+  UpsertRetentionLinePayload,
+} from '../../../api/personalActions';
+
+import { AbsenceInlineForm } from './AbsenceInlineForm';
+import { DiscountInlineForm } from './DiscountInlineForm';
+import { OvertimeInlineForm } from './OvertimeInlineForm';
+import { RetentionInlineForm } from './RetentionInlineForm';
 import {
   fetchPayroll,
   fetchPayrolls,
   loadPayrollTable,
+  updatePayrollEmployeeSelection,
   type PayrollListItem,
   type PayrollPreviewActionRow,
   type PayrollPreviewEmployeeRow,
@@ -96,6 +125,16 @@ function formatPrimitive(value: unknown): string {
   return String(value);
 }
 
+function toBooleanFlag(value: unknown): boolean {
+  if (typeof value === 'boolean') return value;
+  if (typeof value === 'number') return value === 1;
+  if (typeof value === 'string') {
+    const normalized = value.trim().toLowerCase();
+    return normalized === '1' || normalized === 'true' || normalized === 'si' || normalized === 'yes';
+  }
+  return false;
+}
+
 function formatMoney(value: string | number): string {
   const numeric = typeof value === 'number' ? value : Number(value);
   if (!Number.isFinite(numeric)) return String(value);
@@ -119,8 +158,26 @@ function isApprovedActionVisual(row: PayrollPreviewActionRow): boolean {
  * - Seleccion de planilla regular.
  * - Boton de carga para generar tabla de revision por empleado y acciones.
  */
+const INVALIDATABLE_CATEGORIES = [
+  'Ausencias',
+  'Licencias',
+  'Incapacidades',
+  'Bonificaciones',
+  'Horas Extras',
+  'Retenciones',
+  'Deducciones',
+  'Aumentos',
+  'Vacaciones',
+] as const;
+
+function isInvalidatableAction(row: PayrollPreviewActionRow): boolean {
+  if (!row.idAccion) return false;
+  const cat = (row.categoria ?? '').trim();
+  return INVALIDATABLE_CATEGORIES.some((c) => cat.toLowerCase() === c.toLowerCase());
+}
+
 export function PayrollGeneratePage() {
-  const { message } = AntdApp.useApp();
+  const { message, modal } = AntdApp.useApp();
   const canProcess = useAppSelector(canProcessPayroll);
   const canViewSensitive = useAppSelector((state) => state.permissions.permissions.includes('payroll:view_sensitive'));
   const canApprovePersonalActions = useAppSelector((state) =>
@@ -140,16 +197,29 @@ export function PayrollGeneratePage() {
   const [payPeriods, setPayPeriods] = useState<CatalogPayPeriod[]>([]);
   const [selectedPayrollDetail, setSelectedPayrollDetail] = useState<PayrollListItem | null>(null);
   const [previewTable, setPreviewTable] = useState<PayrollPreviewTable | null>(null);
-  const [selectedEmployeeIds, setSelectedEmployeeIds] = useState<number[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [loading, setLoading] = useState(false);
   const [loadingProcess, setLoadingProcess] = useState(false);
   const [contentExpanded, setContentExpanded] = useState(true);
   const [approvingActionId, setApprovingActionId] = useState<number | null>(null);
+  const [invalidatingActionId, setInvalidatingActionId] = useState<number | null>(null);
+  const [addActionTypeByEmployee, setAddActionTypeByEmployee] = useState<Record<number, string>>({});
+  const [overtimeMovements, setOvertimeMovements] = useState<AbsenceMovementCatalogItem[]>([]);
+  const [absenceMovements, setAbsenceMovements] = useState<AbsenceMovementCatalogItem[]>([]);
+  const [retentionMovements, setRetentionMovements] = useState<AbsenceMovementCatalogItem[]>([]);
+  const [discountMovements, setDiscountMovements] = useState<AbsenceMovementCatalogItem[]>([]);
+  const [loadingMovements, setLoadingMovements] = useState(false);
+  const [loadingAbsenceMovements, setLoadingAbsenceMovements] = useState(false);
+  const [loadingRetentionMovements, setLoadingRetentionMovements] = useState(false);
+  const [loadingDiscountMovements, setLoadingDiscountMovements] = useState(false);
+  const [overtimeSubmitting, setOvertimeSubmitting] = useState<number | null>(null);
+  const [absenceSubmitting, setAbsenceSubmitting] = useState<number | null>(null);
+  const [retentionSubmitting, setRetentionSubmitting] = useState<number | null>(null);
+  const [discountSubmitting, setDiscountSubmitting] = useState<number | null>(null);
+  const [pendingSelectionByEmployee, setPendingSelectionByEmployee] = useState<Record<number, boolean>>({});
 
   const resetPreview = useCallback(() => {
     setPreviewTable(null);
-    setSelectedEmployeeIds([]);
     setSearchTerm('');
   }, []);
 
@@ -199,6 +269,100 @@ export function PayrollGeneratePage() {
   useEffect(() => {
     void loadPayrolls();
   }, [loadPayrolls]);
+
+  const companyIdForOvertime = selectedPayrollDetail?.idEmpresa ?? selectedCompanyId;
+
+  /** Carga movimientos de horas extras (tipo 11) cuando hay empresa/planilla. */
+  useEffect(() => {
+    if (!companyIdForOvertime) {
+      setOvertimeMovements([]);
+      return;
+    }
+    let cancelled = false;
+    setLoadingMovements(true);
+    fetchAbsenceMovementsCatalog(companyIdForOvertime, 11)
+      .then((list) => {
+        if (!cancelled) setOvertimeMovements(list);
+      })
+      .catch(() => {
+        if (!cancelled) setOvertimeMovements([]);
+      })
+      .finally(() => {
+        if (!cancelled) setLoadingMovements(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [companyIdForOvertime]);
+
+  /** Carga movimientos de ausencias (tipo 20) cuando hay empresa/planilla. */
+  useEffect(() => {
+    if (!companyIdForOvertime) {
+      setAbsenceMovements([]);
+      return;
+    }
+    let cancelled = false;
+    setLoadingAbsenceMovements(true);
+    fetchAbsenceMovementsCatalog(companyIdForOvertime, 20)
+      .then((list) => {
+        if (!cancelled) setAbsenceMovements(list);
+      })
+      .catch(() => {
+        if (!cancelled) setAbsenceMovements([]);
+      })
+      .finally(() => {
+        if (!cancelled) setLoadingAbsenceMovements(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [companyIdForOvertime]);
+
+  /** Carga movimientos de retenciones (tipo 5) cuando hay empresa/planilla. */
+  useEffect(() => {
+    if (!companyIdForOvertime) {
+      setRetentionMovements([]);
+      return;
+    }
+    let cancelled = false;
+    setLoadingRetentionMovements(true);
+    fetchAbsenceMovementsCatalog(companyIdForOvertime, 5)
+      .then((list) => {
+        if (!cancelled) setRetentionMovements(list);
+      })
+      .catch(() => {
+        if (!cancelled) setRetentionMovements([]);
+      })
+      .finally(() => {
+        if (!cancelled) setLoadingRetentionMovements(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [companyIdForOvertime]);
+
+  /** Carga movimientos de descuentos (tipo 6) cuando hay empresa/planilla. */
+  useEffect(() => {
+    if (!companyIdForOvertime) {
+      setDiscountMovements([]);
+      return;
+    }
+    let cancelled = false;
+    setLoadingDiscountMovements(true);
+    fetchAbsenceMovementsCatalog(companyIdForOvertime, 6)
+      .then((list) => {
+        if (!cancelled) setDiscountMovements(list);
+      })
+      .catch(() => {
+        if (!cancelled) setDiscountMovements([]);
+      })
+      .finally(() => {
+        if (!cancelled) setLoadingDiscountMovements(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [companyIdForOvertime]);
 
   const payPeriodNameById = useMemo(
     () => new Map(payPeriods.map((period) => [Number(period.id), period.nombre])),
@@ -313,7 +477,7 @@ export function PayrollGeneratePage() {
       if (!actionId || !selectedPayrollId) return;
       setApprovingActionId(actionId);
       try {
-        await approvePersonalAction(actionId);
+        await approvePersonalAction(actionId, { payrollId: selectedPayrollId });
         await refreshLoadedPayrollTable();
         message.success('Accion aprobada y tabla actualizada.');
       } catch (error) {
@@ -323,6 +487,224 @@ export function PayrollGeneratePage() {
       }
     },
     [message, refreshLoadedPayrollTable, selectedPayrollId],
+  );
+
+  const handleInvalidateAction = useCallback(
+    (row: PayrollPreviewActionRow) => {
+      const actionId = row.idAccion;
+      const idEmpresa = selectedPayrollDetail?.idEmpresa ?? selectedCompanyId;
+      if (!actionId || !idEmpresa) return;
+      if (!canApprovePersonalActions) {
+        message.warning('Sin permiso para invalidar acciones de personal.');
+        return;
+      }
+      modal.confirm({
+        title: 'Confirmar invalidación',
+        content:
+          'Esta acción de personal se marcará como invalidada y no afectará el cálculo de la planilla. ¿Está seguro de que desea invalidarla?',
+        okText: 'Sí, invalidar',
+        cancelText: 'Cancelar',
+        okButtonProps: { danger: true },
+        centered: true,
+        onOk: async () => {
+          setInvalidatingActionId(actionId);
+          const cat = (row.categoria ?? '').trim().toLowerCase();
+          try {
+            if (cat === 'ausencias') await invalidateAbsence(actionId, idEmpresa);
+            else if (cat === 'licencias') await invalidateLicense(actionId);
+            else if (cat === 'incapacidades') await invalidateDisability(actionId);
+            else if (cat === 'bonificaciones') await invalidateBonus(actionId);
+            else if (cat === 'horas extras') await invalidateOvertime(actionId);
+            else if (cat === 'retenciones') await invalidateRetention(actionId);
+            else if (cat === 'deducciones') await invalidateDiscount(actionId);
+            else if (cat === 'aumentos') await invalidateIncrease(actionId);
+            else if (cat === 'vacaciones') await invalidateVacation(actionId);
+            else {
+              message.error(`No se puede invalidar acciones de categoría: ${row.categoria}`);
+              return;
+            }
+            await refreshLoadedPayrollTable();
+            message.success('Acción invalidada y tabla actualizada.');
+          } catch (error) {
+            message.error(error instanceof Error ? error.message : 'Error al invalidar la acción de personal');
+          } finally {
+            setInvalidatingActionId(null);
+          }
+        },
+      });
+    },
+    [
+      canApprovePersonalActions,
+      message,
+      modal,
+      refreshLoadedPayrollTable,
+      selectedCompanyId,
+      selectedPayrollDetail?.idEmpresa,
+    ],
+  );
+
+  const handleAddActionTypeChange = useCallback((idEmpleado: number, value: string | undefined) => {
+    setAddActionTypeByEmployee((prev) => {
+      const next = { ...prev };
+      if (value) next[idEmpleado] = value;
+      else delete next[idEmpleado];
+      return next;
+    });
+  }, []);
+
+  const handleCreateOvertime = useCallback(
+    async (idEmpleado: number, payloadLines: UpsertOvertimeLinePayload[]) => {
+      const idEmpresa = selectedPayrollDetail?.idEmpresa ?? selectedCompanyId;
+      if (!idEmpresa || !selectedPayrollId || !selectedPayroll) {
+        message.warning('Falta empresa o planilla seleccionada.');
+        return;
+      }
+      setOvertimeSubmitting(idEmpleado);
+      try {
+        await createOvertime({
+          idEmpresa,
+          idEmpleado,
+          lines: payloadLines,
+        });
+        handleAddActionTypeChange(idEmpleado, undefined);
+        message.success('Hora extra guardada. Recalculando planilla en segundo plano...');
+        void refreshLoadedPayrollTable().catch(() => {
+          message.warning('La tabla se actualizara en unos segundos.');
+        });
+      } catch (error) {
+        message.error(
+          error instanceof Error ? error.message : 'Error al crear la hora extra',
+        );
+      } finally {
+        setOvertimeSubmitting(null);
+      }
+    },
+    [
+      selectedPayrollDetail?.idEmpresa,
+      selectedCompanyId,
+      selectedPayrollId,
+      selectedPayroll,
+      refreshLoadedPayrollTable,
+      message,
+      handleAddActionTypeChange,
+    ],
+  );
+
+  /** Crea ausencia con las líneas capturadas (mismo flujo que Acción de Personal). */
+  const handleCreateAbsence = useCallback(
+    async (idEmpleado: number, payloadLines: UpsertAbsenceLinePayload[]) => {
+      const idEmpresa = selectedPayrollDetail?.idEmpresa ?? selectedCompanyId;
+      if (!idEmpresa || !selectedPayrollId || !selectedPayroll) {
+        message.warning('Falta empresa o planilla seleccionada.');
+        return;
+      }
+      setAbsenceSubmitting(idEmpleado);
+      try {
+        await createAbsence({
+          idEmpresa,
+          idEmpleado,
+          lines: payloadLines,
+        });
+        handleAddActionTypeChange(idEmpleado, undefined);
+        message.success('Ausencia guardada. Recalculando planilla en segundo plano...');
+        void refreshLoadedPayrollTable().catch(() => {
+          message.warning('La tabla se actualizara en unos segundos.');
+        });
+      } catch (error) {
+        message.error(
+          error instanceof Error ? error.message : 'Error al crear la ausencia',
+        );
+      } finally {
+        setAbsenceSubmitting(null);
+      }
+    },
+    [
+      selectedPayrollDetail?.idEmpresa,
+      selectedCompanyId,
+      selectedPayrollId,
+      selectedPayroll,
+      refreshLoadedPayrollTable,
+      message,
+      handleAddActionTypeChange,
+    ],
+  );
+
+  /** Crea retención con las líneas capturadas (mismo flujo que Acción de Personal). */
+  const handleCreateRetention = useCallback(
+    async (idEmpleado: number, payloadLines: UpsertRetentionLinePayload[]) => {
+      const idEmpresa = selectedPayrollDetail?.idEmpresa ?? selectedCompanyId;
+      if (!idEmpresa || !selectedPayrollId || !selectedPayroll) {
+        message.warning('Falta empresa o planilla seleccionada.');
+        return;
+      }
+      setRetentionSubmitting(idEmpleado);
+      try {
+        await createRetention({
+          idEmpresa,
+          idEmpleado,
+          lines: payloadLines,
+        });
+        handleAddActionTypeChange(idEmpleado, undefined);
+        message.success('Retencion guardada. Recalculando planilla en segundo plano...');
+        void refreshLoadedPayrollTable().catch(() => {
+          message.warning('La tabla se actualizara en unos segundos.');
+        });
+      } catch (error) {
+        message.error(
+          error instanceof Error ? error.message : 'Error al crear la retención',
+        );
+      } finally {
+        setRetentionSubmitting(null);
+      }
+    },
+    [
+      selectedPayrollDetail?.idEmpresa,
+      selectedCompanyId,
+      selectedPayrollId,
+      selectedPayroll,
+      refreshLoadedPayrollTable,
+      message,
+      handleAddActionTypeChange,
+    ],
+  );
+
+  /** Crea descuento con las líneas capturadas (mismo flujo que Acción de Personal). */
+  const handleCreateDiscount = useCallback(
+    async (idEmpleado: number, payloadLines: UpsertDiscountLinePayload[]) => {
+      const idEmpresa = selectedPayrollDetail?.idEmpresa ?? selectedCompanyId;
+      if (!idEmpresa || !selectedPayrollId || !selectedPayroll) {
+        message.warning('Falta empresa o planilla seleccionada.');
+        return;
+      }
+      setDiscountSubmitting(idEmpleado);
+      try {
+        await createDiscount({
+          idEmpresa,
+          idEmpleado,
+          lines: payloadLines,
+        });
+        handleAddActionTypeChange(idEmpleado, undefined);
+        message.success('Descuento guardado. Recalculando planilla en segundo plano...');
+        void refreshLoadedPayrollTable().catch(() => {
+          message.warning('La tabla se actualizara en unos segundos.');
+        });
+      } catch (error) {
+        message.error(
+          error instanceof Error ? error.message : 'Error al crear el descuento',
+        );
+      } finally {
+        setDiscountSubmitting(null);
+      }
+    },
+    [
+      selectedPayrollDetail?.idEmpresa,
+      selectedCompanyId,
+      selectedPayrollId,
+      selectedPayroll,
+      refreshLoadedPayrollTable,
+      message,
+      handleAddActionTypeChange,
+    ],
   );
 
   const collapseLabel = (
@@ -344,37 +726,91 @@ export function PayrollGeneratePage() {
     });
   }, [previewTable, searchTerm]);
 
-  // Totales: sin filtro usa previewTable.totals; con filtro suma por empleado. Ver docs/08-planilla/CALCULOS-PLANILLA-CODIGO-COMENTADO.md
+  const selectedPreviewRowKeys = useMemo(
+    () =>
+      filteredPreviewRows
+        .filter((row) => toBooleanFlag(row.seleccionadoPlanilla))
+        .map((row) => row.idEmpleado),
+    [filteredPreviewRows],
+  );
+
+  const updateEmployeeSelectionForPayroll = useCallback(
+    async (employeeIds: number[], selected: boolean) => {
+      if (!selectedPayrollId) return;
+      const uniqueIds = Array.from(
+        new Set(employeeIds.map((id) => Number(id)).filter((id) => Number.isInteger(id) && id > 0)),
+      );
+      if (uniqueIds.length === 0) return;
+      setPendingSelectionByEmployee((prev) => {
+        const next = { ...prev };
+        for (const employeeId of uniqueIds) next[employeeId] = true;
+        return next;
+      });
+      setPreviewTable((prev) => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          empleados: prev.empleados.map((employee) => {
+            if (!uniqueIds.includes(employee.idEmpleado)) return employee;
+            return {
+              ...employee,
+              seleccionadoPlanilla: selected,
+              verificadoEmpleado: selected,
+              requiereRevalidacion: false,
+              estado: selected ? 'Verificado' : 'Excluido',
+            };
+          }),
+        };
+      });
+      try {
+        await updatePayrollEmployeeSelection(selectedPayrollId, uniqueIds, selected);
+        void refreshLoadedPayrollTable().catch(() => {
+          message.warning('La tabla se actualizara en unos segundos.');
+        });
+        message.success(
+          selected
+            ? 'Empleado(s) marcado(s) para incluir en planilla.'
+            : 'Empleado(s) desmarcado(s) de planilla.',
+        );
+      } catch (error) {
+        void refreshLoadedPayrollTable().catch(() => {
+          message.warning('La tabla se actualizara en unos segundos.');
+        });
+        message.error(
+          error instanceof Error ? error.message : 'No se pudo actualizar la seleccion de empleados',
+        );
+      } finally {
+        setPendingSelectionByEmployee((prev) => {
+          const next = { ...prev };
+          for (const employeeId of uniqueIds) delete next[employeeId];
+          return next;
+        });
+      }
+    },
+    [message, refreshLoadedPayrollTable, selectedPayrollId],
+  );
+
+  // Totales e info se calculan solo con empleados marcados para planilla (no depende del filtro de busqueda).
   const previewSummary = useMemo(() => {
     const parseDecimal = (value: string): number => {
       const parsed = Number(String(value ?? '').replace(/,/g, ''));
       return Number.isFinite(parsed) ? parsed : 0;
     };
 
-    const totalEmployees = filteredPreviewRows.length;
-    const verifiedEmployees = filteredPreviewRows.filter((row) =>
-      row.estado.toLowerCase().includes('verific'),
-    ).length;
-    const pendingEmployees = Math.max(0, totalEmployees - verifiedEmployees);
+    const allRows = previewTable?.empleados ?? [];
+    const totalEmployees = allRows.length;
+    const includedRows = allRows.filter((row) => toBooleanFlag(row.seleccionadoPlanilla));
+    const verifiedEmployees = includedRows.filter((row) => toBooleanFlag(row.verificadoEmpleado)).length;
+    const pendingEmployees = Math.max(0, includedRows.length - verifiedEmployees);
 
-    const hasSearchFilter = searchTerm.trim().length > 0;
-    const useApiTotals = previewTable?.totals && !hasSearchFilter;
-
-    const totalDevengado = useApiTotals
-      ? parseDecimal(previewTable!.totals.totalBruto)
-      : filteredPreviewRows.reduce((sum, row) => sum + parseDecimal(row.devengadoMonto), 0);
-    const totalCargas = useApiTotals
-      ? parseDecimal(previewTable!.totals.totalCargasSociales)
-      : filteredPreviewRows.reduce((sum, row) => sum + parseDecimal(row.cargasSociales), 0);
-    const totalRenta = useApiTotals
-      ? parseDecimal(previewTable!.totals.totalImpuestoRenta)
-      : filteredPreviewRows.reduce((sum, row) => sum + parseDecimal(row.impuestoRenta), 0);
-    const totalNeto = useApiTotals
-      ? parseDecimal(previewTable!.totals.totalNeto)
-      : filteredPreviewRows.reduce((sum, row) => sum + parseDecimal(row.totalNeto), 0);
+    const totalDevengado = includedRows.reduce((sum, row) => sum + parseDecimal(row.devengadoMonto), 0);
+    const totalCargas = includedRows.reduce((sum, row) => sum + parseDecimal(row.cargasSociales), 0);
+    const totalRenta = includedRows.reduce((sum, row) => sum + parseDecimal(row.impuestoRenta), 0);
+    const totalNeto = includedRows.reduce((sum, row) => sum + parseDecimal(row.totalNeto), 0);
 
     return {
       totalEmployees,
+      includedEmployees: includedRows.length,
       verifiedEmployees,
       pendingEmployees,
       totalDevengado,
@@ -382,7 +818,7 @@ export function PayrollGeneratePage() {
       totalRenta,
       totalNeto,
     };
-  }, [filteredPreviewRows, previewTable?.totals, searchTerm]);
+  }, [previewTable]);
 
   const employeeColumns: ColumnsType<PayrollPreviewEmployeeRow> = useMemo(
     () => [
@@ -534,22 +970,45 @@ export function PayrollGeneratePage() {
         key: 'approve-action',
         align: 'center',
         render: (_, row) => {
-          if (!row.canApprove || !row.idAccion) return <Text type="secondary">--</Text>;
-          if (!canApprovePersonalActions) return <Text type="secondary">Sin permiso</Text>;
+          const showApprove = row.canApprove && row.idAccion && canApprovePersonalActions;
+          const showInvalidate = isInvalidatableAction(row) && canApprovePersonalActions;
+          if (!showApprove && !showInvalidate) return <Text type="secondary">--</Text>;
           return (
-            <Button
-              size="small"
-              type="link"
-              onClick={() => void handleApproveAction(row.idAccion)}
-              loading={approvingActionId === row.idAccion}
-            >
-              Aprobar
-            </Button>
+            <span style={{ display: 'flex', gap: 8, justifyContent: 'center', flexWrap: 'wrap' }}>
+              {showApprove && (
+                <Button
+                  size="small"
+                  type="link"
+                  onClick={() => void handleApproveAction(row.idAccion)}
+                  loading={approvingActionId === row.idAccion}
+                >
+                  Aprobar
+                </Button>
+              )}
+              {showInvalidate && (
+                <Button
+                  size="small"
+                  danger
+                  type="link"
+                  onClick={() => handleInvalidateAction(row)}
+                  loading={invalidatingActionId === row.idAccion}
+                >
+                  Invalidar
+                </Button>
+              )}
+            </span>
           );
         },
       },
     ],
-    [approvingActionId, canApprovePersonalActions, canViewSensitive, handleApproveAction],
+    [
+      approvingActionId,
+      invalidatingActionId,
+      canApprovePersonalActions,
+      canViewSensitive,
+      handleApproveAction,
+      handleInvalidateAction,
+    ],
   );
 
   return (
@@ -742,34 +1201,26 @@ export function PayrollGeneratePage() {
               },
             ]}
           />
-        </div>
-      </Card>
-
-      {selectedPayroll ? (
-        <Card className={`${styles.mainCard} ${genStyles.pageCard}`} style={{ marginTop: 16 }}>
-          <div className={styles.mainCardBody}>
-            <div className={genStyles.sectionBlock} style={{ borderTop: 'none', marginTop: 0, paddingTop: 0 }}>
-              <div className={genStyles.sectionLabel}>Carga de planilla</div>
-              <div className={`${genStyles.contentCard} ${genStyles.loadPayrollCard}`}>
-                <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap', alignItems: 'center' }}>
-                  <Button
-                    type="primary"
-                    className={genStyles.primaryBtn}
-                    onClick={() => void handleLoadPayroll()}
-                    loading={loadingProcess}
-                    disabled={!canProcess}
-                  >
-                    Cargar planilla
-                  </Button>
-                  {!canProcess ? (
-                    <Text type="secondary">No tiene permiso para cargar planilla.</Text>
-                  ) : null}
-                </div>
+          {selectedPayroll ? (
+            <div className={genStyles.sectionBlock} style={{ marginTop: 16 }}>
+              <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap', alignItems: 'center' }}>
+                <Button
+                  type="primary"
+                  className={genStyles.primaryBtn}
+                  onClick={() => void handleLoadPayroll()}
+                  loading={loadingProcess}
+                  disabled={!canProcess}
+                >
+                  Cargar planilla
+                </Button>
+                {!canProcess ? (
+                  <Text type="secondary">No tiene permiso para cargar planilla.</Text>
+                ) : null}
               </div>
             </div>
-          </div>
-        </Card>
-      ) : null}
+          ) : null}
+        </div>
+      </Card>
       {previewTable ? (
         <Card className={`${styles.mainCard} ${genStyles.pageCard}`} style={{ marginTop: 16 }}>
           <div className={styles.mainCardBody}>
@@ -791,16 +1242,50 @@ export function PayrollGeneratePage() {
                   className={genStyles.previewTable}
                   pagination={{ pageSize: 10, showSizeChanger: true }}
                   rowSelection={{
-                    selectedRowKeys: selectedEmployeeIds,
-                    onChange: (keys) => setSelectedEmployeeIds(keys as number[]),
+                    selectedRowKeys: selectedPreviewRowKeys,
+                    onSelect: (record, selected) => {
+                      void updateEmployeeSelectionForPayroll([record.idEmpleado], selected);
+                    },
+                    onSelectAll: (selected, selectedRows, changeRows) => {
+                      const targetRows =
+                        changeRows.length > 0
+                          ? changeRows
+                          : selectedRows.length > 0
+                            ? selectedRows
+                            : filteredPreviewRows;
+                      void updateEmployeeSelectionForPayroll(
+                        targetRows.map((row) => row.idEmpleado),
+                        selected,
+                      );
+                    },
                     preserveSelectedRowKeys: true,
+                    getCheckboxProps: (record) => ({
+                      disabled: Boolean(pendingSelectionByEmployee[record.idEmpleado]) || loadingProcess,
+                    }),
                   }}
                   expandable={{
                     expandedRowRender: (row) => (
                       <div className={genStyles.actionsDetailWrap}>
+                        {(() => {
+                          const isEmployeeLockedForActions =
+                            toBooleanFlag(row.seleccionadoPlanilla) && toBooleanFlag(row.verificadoEmpleado);
+                          const isSavingPersonalAction =
+                            overtimeSubmitting === row.idEmpleado ||
+                            absenceSubmitting === row.idEmpleado ||
+                            retentionSubmitting === row.idEmpleado ||
+                            discountSubmitting === row.idEmpleado;
+                          const lockReason =
+                            'Empleado marcado para planilla: desmarquelo para crear o aprobar nuevas acciones.';
+                          return (
+                            <>
                         <div className={genStyles.actionsDetailTitle}>
                           Detalle de acciones de personal
                         </div>
+                        {isSavingPersonalAction ? (
+                          <div className={genStyles.addActionProgressHint}>
+                            Guardando accion de personal y recalculando planilla en segundo plano...
+                          </div>
+                        ) : null}
                         <Table<PayrollPreviewActionRow>
                           rowKey={(action) => `${row.idEmpleado}-${action.idAccion ?? 'na'}-${action.categoria}-${action.tipoAccion}-${action.monto}-${action.estado}-${action.tipoSigno}`}
                           dataSource={row.acciones}
@@ -812,6 +1297,110 @@ export function PayrollGeneratePage() {
                           }
                           pagination={false}
                         />
+                        <div className={genStyles.addActionSelectWrap}>
+                          <Select
+                            placeholder={
+                              isEmployeeLockedForActions
+                                ? 'Empleado bloqueado para nuevas acciones'
+                                : 'Agregar acciones de personal'
+                            }
+                            allowClear
+                            disabled={isEmployeeLockedForActions}
+                            value={addActionTypeByEmployee[row.idEmpleado]}
+                            onChange={(value) => handleAddActionTypeChange(row.idEmpleado, value)}
+                            options={[
+                              { value: 'horas_extras', label: 'Horas extras' },
+                              { value: 'ausencias', label: 'Ausencias' },
+                              { value: 'retenciones', label: 'Retenciones' },
+                              { value: 'deducciones', label: 'Deducciones' },
+                            ]}
+                            style={{ minWidth: 220 }}
+                          />
+                          {isEmployeeLockedForActions ? (
+                            <div className={genStyles.addActionLockHint}>
+                              {lockReason}
+                            </div>
+                          ) : null}
+                        </div>
+                        {!isEmployeeLockedForActions &&
+                        addActionTypeByEmployee[row.idEmpleado] === 'horas_extras' &&
+                        selectedPayroll &&
+                        selectedPayrollId ? (
+                          <OvertimeInlineForm
+                            idEmpresa={selectedPayrollDetail?.idEmpresa ?? selectedCompanyId ?? 0}
+                            idEmpleado={row.idEmpleado}
+                            payrollId={selectedPayrollId}
+                            employeeRow={row}
+                            selectedPayroll={selectedPayroll}
+                            movements={overtimeMovements}
+                            loadingMovements={loadingMovements}
+                            canViewSensitive={!!canViewSensitive}
+                            onSubmit={async (payloadLines) => {
+                              await handleCreateOvertime(row.idEmpleado, payloadLines);
+                            }}
+                            onSuccess={() => handleAddActionTypeChange(row.idEmpleado, undefined)}
+                          />
+                        ) : null}
+                        {!isEmployeeLockedForActions &&
+                        addActionTypeByEmployee[row.idEmpleado] === 'ausencias' &&
+                        selectedPayroll &&
+                        selectedPayrollId ? (
+                          <AbsenceInlineForm
+                            idEmpresa={selectedPayrollDetail?.idEmpresa ?? selectedCompanyId ?? 0}
+                            idEmpleado={row.idEmpleado}
+                            payrollId={selectedPayrollId}
+                            employeeRow={row}
+                            selectedPayroll={selectedPayroll}
+                            movements={absenceMovements}
+                            loadingMovements={loadingAbsenceMovements}
+                            canViewSensitive={!!canViewSensitive}
+                            onSubmit={async (payloadLines) => {
+                              await handleCreateAbsence(row.idEmpleado, payloadLines);
+                            }}
+                            onSuccess={() => handleAddActionTypeChange(row.idEmpleado, undefined)}
+                          />
+                        ) : null}
+                        {!isEmployeeLockedForActions &&
+                        addActionTypeByEmployee[row.idEmpleado] === 'retenciones' &&
+                        selectedPayroll &&
+                        selectedPayrollId ? (
+                          <RetentionInlineForm
+                            idEmpresa={selectedPayrollDetail?.idEmpresa ?? selectedCompanyId ?? 0}
+                            idEmpleado={row.idEmpleado}
+                            payrollId={selectedPayrollId}
+                            employeeRow={row}
+                            selectedPayroll={selectedPayroll}
+                            movements={retentionMovements}
+                            loadingMovements={loadingRetentionMovements}
+                            canViewSensitive={!!canViewSensitive}
+                            onSubmit={async (payloadLines) => {
+                              await handleCreateRetention(row.idEmpleado, payloadLines);
+                            }}
+                            onSuccess={() => handleAddActionTypeChange(row.idEmpleado, undefined)}
+                          />
+                        ) : null}
+                        {!isEmployeeLockedForActions &&
+                        addActionTypeByEmployee[row.idEmpleado] === 'deducciones' &&
+                        selectedPayroll &&
+                        selectedPayrollId ? (
+                          <DiscountInlineForm
+                            idEmpresa={selectedPayrollDetail?.idEmpresa ?? selectedCompanyId ?? 0}
+                            idEmpleado={row.idEmpleado}
+                            payrollId={selectedPayrollId}
+                            employeeRow={row}
+                            selectedPayroll={selectedPayroll}
+                            movements={discountMovements}
+                            loadingMovements={loadingDiscountMovements}
+                            canViewSensitive={!!canViewSensitive}
+                            onSubmit={async (payloadLines) => {
+                              await handleCreateDiscount(row.idEmpleado, payloadLines);
+                            }}
+                            onSuccess={() => handleAddActionTypeChange(row.idEmpleado, undefined)}
+                          />
+                        ) : null}
+                            </>
+                          );
+                        })()}
                       </div>
                     ),
                   }}
@@ -831,6 +1420,10 @@ export function PayrollGeneratePage() {
                         <tr>
                           <td>Total Empleados</td>
                           <td>{previewSummary.totalEmployees}</td>
+                        </tr>
+                        <tr>
+                          <td>Incluidos en Planilla</td>
+                          <td>{previewSummary.includedEmployees}</td>
                         </tr>
                         <tr>
                           <td>Empleados Verificados</td>
@@ -872,7 +1465,7 @@ export function PayrollGeneratePage() {
                         </tr>
                       </tbody>
                     </table>
-                    <div className={genStyles.summaryHint}>(Solo empleados verificados)</div>
+                    <div className={genStyles.summaryHint}>(Solo empleados marcados para planilla)</div>
                   </div>
                 </div>
               </div>
@@ -883,6 +1476,8 @@ export function PayrollGeneratePage() {
     </div>
   );
 }
+
+
 
 
 

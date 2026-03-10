@@ -1,4 +1,4 @@
-﻿import { Routes, Route, Navigate } from 'react-router-dom';
+import { Routes, Route, Navigate } from 'react-router-dom';
 
 import { PermissionGuard, PublicGuard, PrivateGuard } from '../guards';
 import { PrivateLayout } from '../layouts/PrivateLayout';
@@ -20,11 +20,13 @@ import {
   AutomationMonitoringPage,
   PayrollArticlesManagementPage,
   PayrollMovementsManagementPage,
+  PayrollManagementPage,
   PayrollGeneratePage,
   PayrollCalendarPage,
   PayrollHolidaysPage,
   IntercompanyTransferPage,
   PersonalActionsPage,
+  DocsBrowserPage,
   AbsencesPage,
   LicensesPage,
   IncapacitiesPage,
@@ -386,6 +388,26 @@ export function AppRouter() {
         <Route
           element={
             <PrivateLayout>
+              <PermissionGuard requiredPermission="payroll:view">
+                <PayrollManagementPage />
+              </PermissionGuard>
+            </PrivateLayout>
+          }
+          path="/payroll-params/calendario/dias-pago"
+        />
+        <Route
+          element={
+            <PrivateLayout>
+              <PermissionGuard requiredPermission="payroll:view">
+                <PayrollManagementPage />
+              </PermissionGuard>
+            </PrivateLayout>
+          }
+          path="/payroll-management/planillas/listado"
+        />
+        <Route
+          element={
+            <PrivateLayout>
               <PermissionGuard requiredPermission="payroll:generate">
                 <PayrollGeneratePage />
               </PermissionGuard>
@@ -416,6 +438,14 @@ export function AppRouter() {
           path="/monitoring/automation"
         />
         <Route path="/monitoring" element={<Navigate to="/monitoring/automation" replace />} />
+        <Route
+          element={
+            <PrivateLayout>
+              <DocsBrowserPage />
+            </PrivateLayout>
+          }
+          path="/docs"
+        />
       </Route>
 
       {/* --- Fallback --- */}

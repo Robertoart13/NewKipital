@@ -63,7 +63,7 @@ Analisis derivado de la comparacion con `Planilla_empleados_cargar.js` (HRK-Tale
 
 - Calculo quincenal/mensual (dias, salario proporcional, devengado).
 - Dias: ingreso en periodo, renuncia, despido, acciones que restan.
-- Devengado: acciones que suman (aumento, bonificacion, hora extra, incapacidad CCSS, licencia remunerada, vacaciones).
+- Devengado: acciones que suman (aumento, bonificacion, hora extra, incapacidad CCSS, licencia remunerada, ausencia remunerada, vacaciones). Licencias %: fallback (salarioBase/30)*dias. Ausencias rem: monto_linea.
 - Cargas sociales, impuesto renta, monto neto.
 - Acciones aprobadas vs pendientes.
 - Prorrateo por solapamiento de periodo.
@@ -72,6 +72,8 @@ Analisis derivado de la comparacion con `Planilla_empleados_cargar.js` (HRK-Tale
 
 - Codigo de ayuda: `Kpital App/HRK-TalentPay/src/modules/23-Planilla/Planilla_empleados_cargar.js`
 - Manual operativo: `docs/08-planilla/PLANILLA-NOMINA-CONSOLIDADO.md`
+- Calculos y formulas: `docs/08-planilla/CALCULOS-PLANILLA-CODIGO-COMENTADO.md`
+- Analisis migracion: `docs/08-planilla/ANALISIS-MIGRACION-PLANILLA.md`
 - Operacion por modulo: `docs/14-manual-tecnico/07-OPERACION-POR-MODULO.md`
 
 ---

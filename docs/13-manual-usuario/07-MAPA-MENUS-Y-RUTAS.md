@@ -21,6 +21,8 @@ Ubicar rapido donde ejecutar cada proceso en el sistema.
 | Movimientos nomina | `/payroll-params/movimientos` | `payroll-movement:view` |
 | Calendario nomina | `/payroll-params/calendario/ver` | `payroll:calendar:view` |
 | Feriados | `/payroll-params/calendario/feriados` | `payroll-holiday:view` |
+| Listado dias de pago de planilla | `/payroll-params/calendario/dias-pago` | `payroll:view` |
+| Listado de planillas (alias tecnico) | `/payroll-management/planillas/listado` | `payroll:view` |
 | Planilla generar | `/payroll-management/planillas/generar` | `payroll:generate` |
 | Traslado interempresas | `/payroll-management/traslado-interempresas` | `payroll:intercompany-transfer` |
 | Acciones de personal | `/personal-actions/*` | Permiso por tipo |

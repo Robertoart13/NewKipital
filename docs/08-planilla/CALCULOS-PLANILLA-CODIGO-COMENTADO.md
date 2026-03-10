@@ -13,12 +13,21 @@ Las acciones aprobadas obtienen sus datos de tablas específicas:
 
 // AUSENCIAS: acc_ausencias_lineas
 // - Días no remunerados: SUM(CASE WHEN remuneracion_linea = 0 THEN cantidad_linea ELSE 0 END)
-// - Afecta: resta días del devengado. No suma monto.
+// - Monto remunerado: SUM(CASE WHEN remuneracion_linea = 1 THEN monto_linea ELSE 0 END)
+// - Afecta: resta días si no remunerada. Suma monto si remunerada (absenceRemAmount > 0).
 
 // LICENCIAS: acc_licencias_lineas
 // - Días no remunerados: SUM(CASE WHEN remuneracion_linea = 0 THEN cantidad_linea ELSE 0 END)
+// - Días remunerados: SUM(CASE WHEN remuneracion_linea = 1 THEN cantidad_linea ELSE 0 END)
 // - Monto remunerado: SUM(CASE WHEN remuneracion_linea = 1 THEN monto_linea ELSE 0 END)
 // - Afecta: resta días si no remunerada. Suma monto si remunerada.
+// - Fallback (%): si licenseRemAmount = 0 pero licenseRemDays > 0, monto = (salarioBase/30)*licenseRemDays
+
+// ApprovedActionRuleData (campos por tipo):
+// - absenceNonRemDays, absenceRemAmount
+// - licenseNonRemDays, licenseRemDays, licenseRemAmount
+// - disabilityDays, disabilityCcssAmount
+// - vacationDays, increaseAmount, bonusAmount, overtimeAmount, retentionAmount, discountAmount
 
 // INCAPACIDADES: acc_incapacidades_lineas
 // - Días: SUM(cantidad_linea)
@@ -69,8 +78,8 @@ Las acciones aprobadas obtienen sus datos de tablas específicas:
 ## 3. Monto efectivo por tipo de acción (resolveApprovedActionAmountForPayroll)
 
 ```typescript
-// AUSENCIAS: siempre 0 (no suma monto).
-// LICENCIAS: licenseRemAmount (solo la parte remunerada).
+// AUSENCIAS: absenceRemAmount si > 0 (monto de líneas remuneradas). Si no, 0.
+// LICENCIAS: licenseRemAmount si > 0. Si no, fallback (salarioBase/30)*licenseRemDays cuando licenseRemDays > 0.
 // INCAPACIDADES: disabilityCcssAmount (solo monto CCSS).
 // VACACIONES: (salarioBase / 30) * vacationDays — RECALCULADO, no usa action.monto.
 // AUMENTOS: increaseAmount de acc_aumentos_lineas, o defaultAmount.
@@ -239,7 +248,50 @@ Las acciones aprobadas obtienen sus datos de tablas específicas:
 
 ---
 
-## 16. Archivos de referencia
+## 16. Monto en detalle de acciones (displayActionsByEmployee)
+
+```typescript
+// Regla: el monto mostrado en "Detalle de acciones de personal" debe ser el que hace efecto
+// en Salario Base, Salario Quincenal Bruto, Devengado, Cargas Sociales, Impuesto Renta, Monto Neto.
+
+// Por tipo:
+// - Vacaciones: (salarioBase * vacationDays) / 30. Nunca action.monto.
+// - Licencias aprobadas: approvedActionAmountMap (licenseRemAmount o fallback por días).
+// - Ausencias aprobadas: approvedActionAmountMap (absenceRemAmount si existe en líneas).
+// - Pendientes: action.monto para la mayoría; vacaciones usa fórmula.
+// - Carga Social / Impuesto Renta: montos calculados por el sistema (no idAccion).
+```
+
+---
+
+## 17. Columna Tipo (+/-) en detalle de acciones
+
+```typescript
+// tipoSigno = isNetDeductionAction(actionType) ? '-' : '+'
+// + (verde): suma al devengado bruto (aumentos, bonos, horas extras, vacaciones, licencias rem, incapacidades CCSS, ausencias rem).
+// - (rojo): resta del neto (retenciones, descuentos, cargas sociales, impuesto renta).
+```
+
+---
+
+## 18. Botón Invalidar en columna Acción (PayrollGeneratePage)
+
+```typescript
+// Se muestra para acciones con idAccion y categoría invalidable:
+// Ausencias, Licencias, Incapacidades, Bonificaciones, Horas Extras, Retenciones, Deducciones, Aumentos, Vacaciones.
+// NO para Carga Social ni Impuesto Renta (idAccion null).
+
+// Al hacer clic:
+// 1. Modal.confirm: "Esta acción se marcará como invalidada y no afectará el cálculo. ¿Está seguro?"
+// 2. okText: "Sí, invalidar", cancelText: "Cancelar"
+// 3. Llama a la API correspondiente según categoría (invalidateAbsence, invalidateLicense, etc.)
+// 4. Refresca tabla de planilla tras éxito.
+// Permiso: hr_action:approve (mismo que Aprobar).
+```
+
+---
+
+## 19. Archivos de referencia
 
 | Archivo | Sección / Líneas aprox. |
 |---------|---------|
@@ -250,3 +302,16 @@ Las acciones aprobadas obtienen sus datos de tablas específicas:
 | `api/src/modules/payroll/payroll.service.ts` | `calculateSocialCharges` ~3049 |
 | `api/src/modules/payroll/payroll.service.ts` | `calculateIncomeTax` ~3085 |
 | `frontend/.../PayrollGeneratePage.tsx` | `previewSummary` ~347 |
+| `frontend/.../PayrollGeneratePage.tsx` | `handleInvalidateAction`, `actionColumns` (Aprobar/Invalidar) |
+
+---
+
+## 20. Registro de actualizaciones
+
+| Fecha | Cambio |
+|-------|--------|
+| 2025-03 | Licencias: fallback `(salarioBase/30)*licenseRemDays` cuando `licenseRemAmount=0` (tipo %). |
+| 2025-03 | Ausencias remuneradas: uso de `absenceRemAmount` cuando `monto_linea` en líneas remuneradas. |
+| 2025-03 | Vacaciones: label "Vacaciones (n)", monto recalculado `(salarioBase*dias)/30`. |
+| 2025-03 | Columna "Cómo aplica" removida del detalle de acciones. |
+| 2025-03 | Botón Invalidar con confirmación en columna Acción. |

@@ -546,6 +546,42 @@
   border-radius: 2px;
 }
 
+.addActionSelectWrap {
+  margin-top: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+.addActionSelectWrap .addActionLockHint {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 10px 14px;
+  background: #fffbeb;
+  border: 1px solid #fcd34d;
+  border-radius: 8px;
+  color: #92400e;
+  font-size: 13px;
+  line-height: 1.5;
+  max-width: 100%;
+}
+
+.addActionProgressHint {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin-bottom: 10px;
+  padding: 10px 14px;
+  background: #eff6ff;
+  border: 1px solid #93c5fd;
+  border-radius: 8px;
+  color: #1e3a8a;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
 /* Tabla anidada de acciones: cabecera más compacta y clara */
 .actionsTable :global(.ant-table-thead > tr > th) {
   background: #f1f5f9 !important;

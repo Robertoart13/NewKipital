@@ -255,6 +255,9 @@ export interface PayrollPreviewEmployeeRow {
   totalNeto: string;
   dias: string;
   estado: string;
+  seleccionadoPlanilla: boolean;
+  verificadoEmpleado: boolean;
+  requiereRevalidacion: boolean;
   acciones: PayrollPreviewActionRow[];
 }
 
@@ -726,6 +729,29 @@ export async function loadPayrollTable(id: number): Promise<PayrollPreviewTable>
 export async function fetchPayrollSnapshotTable(id: number): Promise<PayrollPreviewTable> {
   const res = await httpFetch(`/payroll/${id}/snapshot-table`);
   if (!res.ok) throw new Error(await extractApiErrorMessage(res, 'Error al cargar el detalle de tabla de planilla'));
+  return res.json();
+}
+
+export async function updatePayrollEmployeeSelection(
+  payrollId: number,
+  employeeIds: number[],
+  selected: boolean,
+): Promise<{ updated: number; selected: boolean; employeeIds: number[] }> {
+  const res = await httpFetch(`/payroll/${payrollId}/employee-selection`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ employeeIds, selected }),
+  });
+  if (!res.ok) {
+    throw new Error(
+      await extractApiErrorMessage(
+        res,
+        selected
+          ? 'No se pudieron marcar empleados para planilla'
+          : 'No se pudieron desmarcar empleados de planilla',
+      ),
+    );
+  }
   return res.json();
 }
 

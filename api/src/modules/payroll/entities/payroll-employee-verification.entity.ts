@@ -24,9 +24,25 @@ export class PayrollEmployeeVerification {
     name: 'verificado_empleado',
     type: 'tinyint',
     width: 1,
-    default: 1,
+    default: 0,
   })
   verificado: number;
+
+  @Column({
+    name: 'incluido_planilla_empleado',
+    type: 'tinyint',
+    width: 1,
+    default: 0,
+  })
+  incluidoPlanilla: number;
+
+  @Column({
+    name: 'requiere_revalidacion_empleado',
+    type: 'tinyint',
+    width: 1,
+    default: 0,
+  })
+  requiereRevalidacion: number;
 
   @Column({
     name: 'verificado_por',

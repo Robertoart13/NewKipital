@@ -698,8 +698,12 @@ export class PersonalActionsController {
 
   @RequirePermissions('hr_action:approve')
   @Patch(':id/approve')
-  approve(@Param('id', ParseIntPipe) id: number, @CurrentUser() user: { userId: number }) {
-    return this.service.approve(id, user.userId);
+  approve(
+    @Param('id', ParseIntPipe) id: number,
+    @CurrentUser() user: { userId: number },
+    @Body('payrollId') payrollId?: number,
+  ) {
+    return this.service.approve(id, user.userId, payrollId);
   }
 
   @RequirePermissions('hr_action:approve')

@@ -1,4 +1,4 @@
-﻿# 🛠️ Manual Tecnico - Operacion por Modulo
+# 🛠️ Manual Tecnico - Operacion por Modulo
 
 ## 🎯 Objetivo
 Dar a ingenieria una vista unificada de como opera cada modulo y donde tocar cuando hay incidentes.
@@ -9,7 +9,7 @@ Dar a ingenieria una vista unificada de como opera cada modulo y donde tocar cua
 | Empresas | `companies.controller.ts`, `companies.service.ts` | `CompaniesManagementPage` | Bloqueos por planillas activas |
 | Empleados | `employees.controller.ts`, `employees.service.ts`, workflow creacion | `EmployeesListPage`, `EmployeeCreatePage` | Exposicion de datos sensibles |
 | Config acceso | `config-access.controller.ts` | `UsersManagementPage`, `RolesManagementPage`, `PermissionsAdminListPage` | Escalada de privilegios |
-| Planilla | `payroll.controller.ts`, `payroll.service.ts` | `PayrollGeneratePage` | Transiciones de estado invalidas |
+| Planilla | `payroll.controller.ts`, `payroll.service.ts` | `PayrollGeneratePage`, `OvertimeInlineForm`, `AbsenceInlineForm`, `RetentionInlineForm`, `DiscountInlineForm` | Transiciones de estado invalidas |
 | Acciones personal | `personal-actions.controller.ts`, `personal-actions.service.ts` | Paginas por tipo de accion | Consumo incorrecto en nomina |
 | Parametros nomina | articulos/movimientos/feriados controllers | paginas payroll params | Configuracion inconsistente |
 | Traslado interempresa | `intercompany-transfer.controller.ts` | `IntercompanyTransferPage` | Reasociacion incompleta |
@@ -75,12 +75,64 @@ flowchart TD
 | `hora_extra` | No afecta dias | Suma monto de lineas |
 | `retencion`/`descuento` | No afecta dias | Va a deduccion, no a devengado |
 
+### 🖥️ Formularios inline de acciones
+En `PayrollGeneratePage` el selector "Agregar acciones de personal" muestra cuatro formularios inline: Horas extras, Ausencias, Retenciones, Descuentos. Cada uno usa `useTransactionLines`, catalogo de movimientos por tipo y llama `createOvertime`/`createAbsence`/`createRetention`/`createDiscount`. Ver [Planilla Operativa](../13-manual-usuario/05-PLANILLA-OPERATIVA.md).
+
 ### 🖥️ UX de trazabilidad en tabla de acciones
 En `PayrollGeneratePage` el detalle expandido se simplifica para operacion diaria:
 - `Categoria`
 - `Tipo de Accion`
+- `Como aplica`
 - `Estado`
 - `Accion`
 - `Monto` (ultima columna)
 
+### 🧭 Rutas clave de planilla (router)
+- `Listado de Dias de Pago de Planilla`: `/payroll-params/calendario/dias-pago`
+- `Listado de Planillas` (alias): `/payroll-management/planillas/listado`
+- `Cargar Planilla Regular`: `/payroll-management/planillas/generar`
+
+Nota tecnica:
+- El menu de Parametros de Planilla usa la ruta `/payroll-params/calendario/dias-pago`.
+- Debe existir una ruta explicita en `AppRouter.tsx` para evitar que el click del submenu no navegue.
+
+
+
+### ? Seleccion persistente de empleados en planilla
+- Endpoint: PATCH /payroll/:id/employee-selection con body { employeeIds: number[], selected: boolean }.
+- Persistencia: 
+omina_empleado_verificado (campos incluido_planilla_empleado, erificado_empleado, equiere_revalidacion_empleado).
+- Al marcar (selected=true): incluido=1, erificado=1, equiere_revalidacion=0.
+- Al desmarcar (selected=false): incluido=0, erificado=0, equiere_revalidacion=0.
+
+### ? Reglas de calculo/aplicacion por seleccion
+- En process se calculan todos para vista, pero los totales y 
+omina_resultados solo incluyen empleados marcados.
+- erify y pply bloquean si no hay empleados marcados.
+- pply consume acciones aprobadas solo de empleados marcados.
+
+### ? Bloqueo de aprobacion tardia
+- PATCH /personal-actions/:id/approve acepta payrollId opcional para contexto de planilla.
+- Si empleado esta verificado en esa planilla: se bloquea aprobacion.
+
+- Comportamiento por defecto: sin registro en 
+omina_empleado_verificado => empleado NO incluido (checkbox desmarcado).
+- UX no bloqueante: seleccion de checkbox aplica optimistic update por empleado; solo se bloquea el checkbox del empleado en proceso, no toda la tabla.
+- Creacion de acciones inline dispara refresh en background y muestra hint operativo en detalle de acciones durante submit.
+
+### Contrato UX no bloqueante (estipulado)
+Implementacion esperada en `PayrollGeneratePage`:
+
+| Caso | Contrato tecnico |
+|---|---|
+| Seleccion por checkbox | Actualizacion optimista por fila, persistencia async, sin lock global de tabla |
+| Crear accion inline | `create*` primero, cierre de formulario inline, `refreshLoadedPayrollTable` en background |
+| Feedback visual | Hint visible en detalle: `Guardando accion de personal y recalculando planilla en segundo plano...` |
+| Error de persistencia | Toast/error contextual y rollback o reconciliacion con siguiente refresh |
+
+Notas de ingenieria:
+- Evitar estados globales de loading para operaciones por empleado.
+- Usar estado de pending por `idEmpleado` para limitar bloqueo a la fila afectada.
+- No esperar sincronamente el recalc para devolver control de UI al usuario.
+- El resumen monetario debe agregarse solo sobre filas con `seleccionadoPlanilla=true` (con normalizacion defensiva de flags `true/false`, `1/0`, `'1'/'0'`).
 

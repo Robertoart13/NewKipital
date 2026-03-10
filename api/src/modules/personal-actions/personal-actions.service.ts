@@ -953,10 +953,15 @@ export class PersonalActionsService {
     return saved;
   }
 
-  async approve(id: number, userId?: number): Promise<PersonalAction> {
+  async approve(id: number, userId?: number, payrollIdHint?: number): Promise<PersonalAction> {
     const action = await this.findOne(id, userId);
     if (!PERSONAL_ACTION_PENDING_STATES.includes(action.estado)) {
       throw new BadRequestException('Solo se puede aprobar una accion en estado pendiente');
+    }
+
+    const targetPayrollId = this.resolveTargetPayrollIdForApproval(action, payrollIdHint);
+    if (targetPayrollId) {
+      await this.assertEmployeeNotVerifiedForPayrolls(action.idEmpleado, [targetPayrollId], 'acciones');
     }
 
     action.estado = PersonalActionEstado.APPROVED;
@@ -966,6 +971,9 @@ export class PersonalActionsService {
     action.versionLock += 1;
 
     const saved = await this.repo.save(action);
+    if (targetPayrollId) {
+      await this.markPayrollEmployeeRevalidationRequired(targetPayrollId, action.idEmpleado);
+    }
     await this.flagRecalculationForOpenPayrolls(saved);
     this.eventEmitter.emit(DOMAIN_EVENTS.PERSONAL_ACTION.APPROVED, {
       eventName: DOMAIN_EVENTS.PERSONAL_ACTION.APPROVED,
@@ -6353,6 +6361,43 @@ export class PersonalActionsService {
         `No se pueden agregar acciones de ${modulo} porque el empleado ya fue verificado en la planilla seleccionada.`,
       );
     }
+  }
+
+  private resolveTargetPayrollIdForApproval(
+    action: PersonalAction,
+    payrollIdHint?: number,
+  ): number | null {
+    const headerPayrollId = Number(action.idCalendarioNomina ?? 0);
+    if (Number.isFinite(headerPayrollId) && headerPayrollId > 0) return headerPayrollId;
+    const hinted = Number(payrollIdHint ?? 0);
+    if (Number.isFinite(hinted) && hinted > 0) return hinted;
+    return null;
+  }
+
+  private async markPayrollEmployeeRevalidationRequired(
+    payrollId: number,
+    employeeId: number,
+  ): Promise<void> {
+    const verification = await this.payrollVerificationRepo.findOne({
+      where: { idNomina: payrollId, idEmpleado: employeeId },
+    });
+    if (!verification || Number(verification.incluidoPlanilla ?? 0) !== 1) {
+      return;
+    }
+
+    verification.requiereRevalidacion = 1;
+    verification.verificado = 0;
+    verification.verificadoPor = null;
+    await this.payrollVerificationRepo.save(verification);
+
+    await this.payrollRepo
+      .createQueryBuilder()
+      .update(PayrollCalendar)
+      .set({
+        requiresRecalculation: 1,
+      })
+      .where('id = :id', { id: payrollId })
+      .execute();
   }
 
   private assertSinglePayrollOnUpdate<T extends { payrollId: number }>(

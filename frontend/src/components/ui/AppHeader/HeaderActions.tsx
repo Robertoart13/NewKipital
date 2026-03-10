@@ -11,7 +11,7 @@
 
    ========================================================================== */
 
-import { SwapOutlined, UserOutlined, LogoutOutlined } from '@ant-design/icons';
+import { SwapOutlined, UserOutlined, LogoutOutlined, BookOutlined } from '@ant-design/icons';
 import { Avatar, Space, Tooltip, Button, Dropdown } from 'antd';
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
@@ -131,6 +131,24 @@ export function HeaderActions({ userName = 'Usuario' }: HeaderActionsProps) {
 
   return (
     <Space size="middle" align="center">
+      <Tooltip title="Manual del Usuario - Guía de operación">
+        <Link to="/docs">
+          <Button
+            type="text"
+            icon={<BookOutlined />}
+            style={{
+              fontSize: 13,
+              color: '#595959',
+              fontWeight: 500,
+              display: 'flex',
+              alignItems: 'center',
+              gap: 4,
+            }}
+          >
+            Ayuda
+          </Button>
+        </Link>
+      </Tooltip>
       {canSwitch && (
         <Tooltip title={`Ir a ${APP_LABELS[otherApp]}`}>
           <Button

@@ -1,4 +1,4 @@
-﻿# ⚙️ Catalogo API Funcional
+# ⚙️ Catalogo API Funcional
 
 ## 🎯 Objetivo
 Concentrar endpoints, permisos y contratos funcionales.
@@ -23,6 +23,17 @@ Concentrar endpoints, permisos y contratos funcionales.
 | Planilla | /payroll/:id/load-table | PATCH | payroll:process | 200 | 400, 403 |
 | Planilla | /payroll/:id/apply | PATCH | payroll:apply | 200 | 400, 409 |
 | Acciones | /personal-actions/:id/approve | PATCH | hr_action:approve | 200 | 400, 403 |
+| Acciones | /personal-actions/horas-extras | POST | hr-action-horas-extras:create | 201 | 400, 403 |
+| Acciones | /personal-actions/ausencias | POST | hr-action-ausencias:create | 201 | 400, 403 |
+| Acciones | /personal-actions/retenciones | POST | hr-action-retenciones:create | 201 | 400, 403 |
+| Acciones | /personal-actions/descuentos | POST | hr-action-descuentos:create | 201 | 400, 403 |
+
+## 🔄 Secuencia funcional - crear accion desde planilla
+Al usar formularios inline (Horas extras, Ausencias, Retenciones, Descuentos) en `PayrollGeneratePage`:
+1. UI llama POST al endpoint correspondiente con `idEmpresa`, `idEmpleado`, `lines`.
+2. Backend crea la accion en estado `PENDING_SUPERVISOR`.
+3. UI recarga tabla de planilla; la accion aparece en el detalle del empleado.
+4. Usuario aprueba desde el detalle o luego.
 
 ## 🔄 Secuencia funcional - aprobar accion en carga de planilla
 ```mermaid

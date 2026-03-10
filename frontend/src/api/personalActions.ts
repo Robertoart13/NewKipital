@@ -875,11 +875,14 @@ export async function createPersonalAction(payload: CreatePersonalActionPayload)
 /**
  * PATCH /personal-actions/:id/approve - Aprobar accion pendiente.
  */
-export async function approvePersonalAction(id: number): Promise<PersonalActionListItem> {
+export async function approvePersonalAction(
+  id: number,
+  options?: { payrollId?: number },
+): Promise<PersonalActionListItem> {
   const res = await httpFetch(`/personal-actions/${id}/approve`, {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({}),
+    body: JSON.stringify({ payrollId: options?.payrollId }),
   });
   if (!res.ok) throw new Error(await extractApiErrorMessage(res, 'Error al aprobar accion de personal'));
   return res.json();

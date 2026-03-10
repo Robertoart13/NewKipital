@@ -22,6 +22,7 @@ import { PayrollService } from './payroll.service';
 
 import { CreatePayrollDto } from './dto/create-payroll.dto';
 import type { PayrollCalendarResponse } from './dto/payroll-response.dto';
+import { UpdatePayrollEmployeeSelectionDto } from './dto/update-payroll-employee-selection.dto';
 import { UpdatePayrollDto } from './dto/update-payroll.dto';
 
 @CacheScope('payroll')
@@ -175,6 +176,16 @@ export class PayrollController {
     @CurrentUser() user: { userId: number },
   ) {
     return this.service.loadPayrollPreviewTable(id, user.userId);
+  }
+
+  @RequirePermissions('payroll:process')
+  @Patch(':id/employee-selection')
+  updateEmployeeSelection(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: UpdatePayrollEmployeeSelectionDto,
+    @CurrentUser() user: { userId: number },
+  ) {
+    return this.service.updateEmployeeSelection(id, dto.employeeIds, dto.selected, user.userId);
   }
 
   @RequirePermissions('payroll:view')

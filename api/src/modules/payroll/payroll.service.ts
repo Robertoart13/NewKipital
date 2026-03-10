@@ -43,6 +43,7 @@ import { PayrollPlanillaSnapshotJson } from './entities/payroll-planilla-snapsho
 import { PayrollResult } from './entities/payroll-result.entity';
 import { PayrollSocialCharge } from './entities/payroll-social-charge.entity';
 import { PayrollReactivationItem } from './entities/payroll-reactivation-item.entity';
+import { PayrollEmployeeVerification } from './entities/payroll-employee-verification.entity';
 
 import type { CreatePayrollDto } from './dto/create-payroll.dto';
 import type { PayrollCalendarResponse } from './dto/payroll-response.dto';
@@ -50,7 +51,9 @@ import type { UpdatePayrollDto } from './dto/update-payroll.dto';
 
 interface ApprovedActionRuleData {
   absenceNonRemDays: number;
+  absenceRemAmount: number;
   licenseNonRemDays: number;
+  licenseRemDays: number;
   licenseRemAmount: number;
   disabilityDays: number;
   disabilityCcssAmount: number;
@@ -118,6 +121,8 @@ export class PayrollService {
     private readonly planillaSnapshotRepo: Repository<PayrollPlanillaSnapshotJson>,
     @InjectRepository(PayrollSocialCharge)
     private readonly socialChargeRepo: Repository<PayrollSocialCharge>,
+    @InjectRepository(PayrollEmployeeVerification)
+    private readonly payrollVerificationRepo: Repository<PayrollEmployeeVerification>,
     @InjectRepository(EmployeeAguinaldoProvision)
     private readonly aguinaldoProvisionRepo: Repository<EmployeeAguinaldoProvision>,
     @InjectRepository(PersonalAction)
@@ -348,6 +353,32 @@ export class PayrollService {
     });
     if (resultCount === 0) {
       throw new BadRequestException('No se puede verificar la planilla sin resultados calculados');
+    }
+
+    const snapshotEmployeeRows = await this.snapshotRepo.find({
+      where: { idNomina: p.id },
+      select: ['idEmpleado'],
+    });
+    const selectionMap = await this.loadEmployeeSelectionMap(
+      this.dataSource.manager,
+      p.id,
+      snapshotEmployeeRows.map((row) => Number(row.idEmpleado)),
+    );
+    const includedEmployees = snapshotEmployeeRows.filter((row) =>
+      this.isEmployeeIncludedInPayroll(selectionMap.get(Number(row.idEmpleado))),
+    );
+    if (includedEmployees.length === 0) {
+      throw new BadRequestException(
+        'Debe marcar al menos un empleado para incluirlo en planilla antes de verificar.',
+      );
+    }
+    const requiresRevalidationIncluded = includedEmployees.some((row) =>
+      this.requiresEmployeeRevalidation(selectionMap.get(Number(row.idEmpleado))),
+    );
+    if (requiresRevalidationIncluded) {
+      throw new BadRequestException(
+        'Hay empleados incluidos que requieren revalidacion. Revise o desmarque esos empleados antes de verificar.',
+      );
     }
 
     if (p.esInactivo === this.inactiveFlag) {
@@ -584,6 +615,31 @@ export class PayrollService {
         [payroll.idEmpresa, end, start],
       );
 
+      const selectionMap = await this.loadEmployeeSelectionMap(
+        queryRunner.manager,
+        payroll.id,
+        employees.map((employee) => Number(employee.id_empleado)),
+      );
+      const excludedEmployeeIds = employees
+        .map((employee) => Number(employee.id_empleado))
+        .filter((employeeId) => !this.isEmployeeIncludedInPayroll(selectionMap.get(employeeId)));
+      if (excludedEmployeeIds.length > 0) {
+        await queryRunner.manager
+          .createQueryBuilder()
+          .update(PersonalAction)
+          .set({
+            idCalendarioNomina: null,
+            modificadoPor: userId ?? null,
+            versionLock: () => 'version_lock_accion + 1',
+          })
+          .where('id_calendario_nomina = :payrollId', { payrollId: payroll.id })
+          .andWhere('id_empleado IN (:...employeeIds)', { employeeIds: excludedEmployeeIds })
+          .andWhere('estado_accion IN (:...approvedStates)', {
+            approvedStates: PERSONAL_ACTION_APPROVED_STATES,
+          })
+          .execute();
+      }
+
       const periodIds = Array.from(
         new Set(
           employees.map((emp) => emp.id_periodos_pago).filter((idPeriod) => idPeriod != null),
@@ -719,6 +775,9 @@ export class PayrollService {
       }
 
       for (const action of approvedActions) {
+        if (!this.isEmployeeIncludedInPayroll(selectionMap.get(action.idEmpleado))) {
+          continue;
+        }
         const amount = Number(action.monto ?? 0);
         const prorated = this.calculateProratedAmountForPayroll(
           action,
@@ -938,64 +997,68 @@ export class PayrollService {
         });
         const totalDeducciones = totals.ded + cargasSociales + impuestoRenta; // ded = retenciones + descuentos aprobados
         const totalNeto = totalBruto - totalDeducciones;
+        const employeeSelection = selectionMap.get(Number(employee.id_empleado));
+        const isIncludedInPayroll = this.isEmployeeIncludedInPayroll(employeeSelection);
 
-        totalBrutoPlanilla += totalBruto;
-        totalDeduccionesPlanilla += totalDeducciones;
-        totalNetoPlanilla += totalNeto;
-        totalDevengadoPlanilla += salarioBrutoPeriodo;
-        totalCargasPlanilla += cargasSociales;
-        totalImpuestoPlanilla += impuestoRenta;
+        if (isIncludedInPayroll) {
+          totalBrutoPlanilla += totalBruto;
+          totalDeduccionesPlanilla += totalDeducciones;
+          totalNetoPlanilla += totalNeto;
+          totalDevengadoPlanilla += salarioBrutoPeriodo;
+          totalCargasPlanilla += cargasSociales;
+          totalImpuestoPlanilla += impuestoRenta;
 
-        const result = queryRunner.manager.create(PayrollResult, {
-          idNomina: payroll.id,
-          idEmpleado: employee.id_empleado,
-          totalBruto: totalBruto.toFixed(2),
-          salarioBrutoPeriodo: salarioBrutoPeriodo.toFixed(2),
-          devengadoDias: devengadoDias != null ? devengadoDias.toFixed(4) : null,
-          devengadoHoras: devengadoHoras != null ? devengadoHoras.toFixed(4) : null,
-          cargasSociales: cargasSociales.toFixed(2),
-          impuestoRenta: impuestoRenta.toFixed(2),
-          totalDeducciones: totalDeducciones.toFixed(2),
-          totalNeto: totalNeto.toFixed(2),
-        });
-        await queryRunner.manager.save(PayrollResult, result);
-
-        for (const charge of socialChargeDetail.items) {
-          const chargeInput = queryRunner.manager.create(PayrollInputSnapshot, {
+          const result = queryRunner.manager.create(PayrollResult, {
             idNomina: payroll.id,
             idEmpleado: employee.id_empleado,
-            sourceType: PayrollInputSourceType.MANUAL,
-            sourceId: charge.idCargaSocial,
-            movementId: charge.idMovimiento,
-            conceptoCodigo: 'CCSS',
-            tipoAccion: 'carga_social',
-            unidades: '1.0000',
-            montoBase: totalBruto.toFixed(6),
-            montoFinal: charge.monto.toFixed(2),
-            isRetro: 0,
-            originalPeriod: null,
-            monto: charge.monto.toFixed(4),
+            totalBruto: totalBruto.toFixed(2),
+            salarioBrutoPeriodo: salarioBrutoPeriodo.toFixed(2),
+            devengadoDias: devengadoDias != null ? devengadoDias.toFixed(4) : null,
+            devengadoHoras: devengadoHoras != null ? devengadoHoras.toFixed(4) : null,
+            cargasSociales: cargasSociales.toFixed(2),
+            impuestoRenta: impuestoRenta.toFixed(2),
+            totalDeducciones: totalDeducciones.toFixed(2),
+            totalNeto: totalNeto.toFixed(2),
           });
-          await queryRunner.manager.save(PayrollInputSnapshot, chargeInput);
-        }
+          await queryRunner.manager.save(PayrollResult, result);
 
-        if (impuestoRenta > 0) {
-          const rentaInput = queryRunner.manager.create(PayrollInputSnapshot, {
-            idNomina: payroll.id,
-            idEmpleado: employee.id_empleado,
-            sourceType: PayrollInputSourceType.MANUAL,
-            sourceId: null,
-            movementId: null,
-            conceptoCodigo: 'RENTA',
-            tipoAccion: 'impuesto_renta',
-            unidades: '1.0000',
-            montoBase: totalBruto.toFixed(6),
-            montoFinal: impuestoRenta.toFixed(2),
-            isRetro: 0,
-            originalPeriod: null,
-            monto: impuestoRenta.toFixed(4),
-          });
-          await queryRunner.manager.save(PayrollInputSnapshot, rentaInput);
+          for (const charge of socialChargeDetail.items) {
+            const chargeInput = queryRunner.manager.create(PayrollInputSnapshot, {
+              idNomina: payroll.id,
+              idEmpleado: employee.id_empleado,
+              sourceType: PayrollInputSourceType.MANUAL,
+              sourceId: charge.idCargaSocial,
+              movementId: charge.idMovimiento,
+              conceptoCodigo: 'CCSS',
+              tipoAccion: 'carga_social',
+              unidades: '1.0000',
+              montoBase: totalBruto.toFixed(6),
+              montoFinal: charge.monto.toFixed(2),
+              isRetro: 0,
+              originalPeriod: null,
+              monto: charge.monto.toFixed(4),
+            });
+            await queryRunner.manager.save(PayrollInputSnapshot, chargeInput);
+          }
+
+          if (impuestoRenta > 0) {
+            const rentaInput = queryRunner.manager.create(PayrollInputSnapshot, {
+              idNomina: payroll.id,
+              idEmpleado: employee.id_empleado,
+              sourceType: PayrollInputSourceType.MANUAL,
+              sourceId: null,
+              movementId: null,
+              conceptoCodigo: 'RENTA',
+              tipoAccion: 'impuesto_renta',
+              unidades: '1.0000',
+              montoBase: totalBruto.toFixed(6),
+              montoFinal: impuestoRenta.toFixed(2),
+              isRetro: 0,
+              originalPeriod: null,
+              monto: impuestoRenta.toFixed(4),
+            });
+            await queryRunner.manager.save(PayrollInputSnapshot, rentaInput);
+          }
         }
 
         snapshotEmployees.push({
@@ -1131,6 +1194,9 @@ export class PayrollService {
       totalNeto: string;
       dias: string;
       estado: string;
+      seleccionadoPlanilla: boolean;
+      verificadoEmpleado: boolean;
+      requiereRevalidacion: boolean;
       acciones: Array<{
         idAccion: number | null;
         categoria: string;
@@ -1184,6 +1250,9 @@ export class PayrollService {
       totalNeto: string;
       dias: string;
       estado: string;
+      seleccionadoPlanilla: boolean;
+      verificadoEmpleado: boolean;
+      requiereRevalidacion: boolean;
       acciones: Array<{
         idAccion: number | null;
         categoria: string;
@@ -1226,6 +1295,10 @@ export class PayrollService {
         cargasSociales?: string | number;
         impuestoRenta?: string | number;
         totalNeto?: string | number;
+        estado?: string;
+        seleccionadoPlanilla?: boolean;
+        verificadoEmpleado?: boolean;
+        requiereRevalidacion?: boolean;
         acciones?: Array<{
           idAccion?: number;
           tipoAccion?: string;
@@ -1280,6 +1353,7 @@ export class PayrollService {
       );
     }
 
+    const selectionMap = await this.loadEmployeeSelectionMap(this.dataSource.manager, id, employeeIds);
     const totals = snapshotPayload.totals ?? {};
 
     return {
@@ -1297,6 +1371,8 @@ export class PayrollService {
       empleados: rows.map((row) => {
         const employeeId = Number(row.idEmpleado ?? 0);
         const employeeInfo = employeeInfoMap.get(employeeId);
+        const employeeSelection = selectionMap.get(employeeId);
+        const isIncludedInPayroll = this.isEmployeeIncludedInPayroll(employeeSelection);
         const devengadoDias = row.devengadoDias ?? row.devengadoHoras ?? 0;
         const actions = Array.isArray(row.acciones) ? row.acciones : [];
 
@@ -1312,7 +1388,22 @@ export class PayrollService {
           impuestoRenta: Number(row.impuestoRenta ?? 0).toFixed(2),
           totalNeto: Number(row.totalNeto ?? 0).toFixed(2),
           dias: Number(devengadoDias ?? 0).toFixed(2),
-          estado: 'Pendiente',
+          estado:
+            typeof row.estado === 'string' && row.estado.trim().length > 0
+              ? row.estado.trim()
+              : this.resolvePayrollEmployeeReviewStatus(employeeSelection),
+          seleccionadoPlanilla:
+            typeof row.seleccionadoPlanilla === 'boolean'
+              ? row.seleccionadoPlanilla
+              : isIncludedInPayroll,
+          verificadoEmpleado:
+            typeof row.verificadoEmpleado === 'boolean'
+              ? row.verificadoEmpleado
+              : this.isEmployeeVerifiedForPayroll(employeeSelection),
+          requiereRevalidacion:
+            typeof row.requiereRevalidacion === 'boolean'
+              ? row.requiereRevalidacion
+              : this.requiresEmployeeRevalidation(employeeSelection),
           acciones: actions.map((action) => {
             const tipoAccion = String(action.tipoAccion ?? 'Accion').trim() || 'Accion';
             const isDeduction = this.isDeductionAction(tipoAccion) || tipoAccion === 'carga_social' || tipoAccion === 'impuesto_renta' || tipoAccion.toLowerCase().includes('ccss') || tipoAccion.toLowerCase().includes('renta');
@@ -1335,6 +1426,66 @@ export class PayrollService {
           }),
         };
       }),
+    };
+  }
+
+  async updateEmployeeSelection(
+    payrollId: number,
+    employeeIds: number[],
+    selected: boolean,
+    userId?: number,
+  ): Promise<{ updated: number; selected: boolean; employeeIds: number[] }> {
+    const payroll = await this.findOne(payrollId, userId);
+    if (payroll.esInactivo === this.inactiveFlag || payroll.estado === EstadoCalendarioNomina.APLICADA) {
+      throw new BadRequestException(
+        'No se puede actualizar seleccion de empleados en una planilla inactiva o aplicada.',
+      );
+    }
+
+    const uniqueEmployeeIds = Array.from(
+      new Set(employeeIds.map((id) => Number(id)).filter((id) => Number.isInteger(id) && id > 0)),
+    );
+    if (uniqueEmployeeIds.length === 0) {
+      throw new BadRequestException('Debe enviar al menos un empleado valido.');
+    }
+
+    const validRows: Array<{ id_empleado: number }> = await this.dataSource.query(
+      `
+        SELECT id_empleado
+        FROM sys_empleados
+        WHERE id_empresa = ?
+          AND id_empleado IN (${uniqueEmployeeIds.map(() => '?').join(',')})
+      `,
+      [payroll.idEmpresa, ...uniqueEmployeeIds],
+    );
+    const validEmployeeIds = new Set(validRows.map((row) => Number(row.id_empleado)));
+    if (validEmployeeIds.size !== uniqueEmployeeIds.length) {
+      throw new BadRequestException(
+        'Algunos empleados no pertenecen a la empresa de la planilla seleccionada.',
+      );
+    }
+
+    const rows = uniqueEmployeeIds.map((employeeId) =>
+      this.payrollVerificationRepo.create({
+        idNomina: payrollId,
+        idEmpleado: employeeId,
+        incluidoPlanilla: selected ? 1 : 0,
+        verificado: selected ? 1 : 0,
+        requiereRevalidacion: 0,
+        verificadoPor: selected ? (userId ?? null) : null,
+      }),
+    );
+    await this.payrollVerificationRepo.upsert(rows, ['idNomina', 'idEmpleado']);
+
+    payroll.requiresRecalculation = 1;
+    payroll.modificadoPor = userId ?? null;
+    payroll.versionLock += 1;
+    await this.repo.save(payroll);
+
+    return {
+      updated: uniqueEmployeeIds.length,
+      selected,
+      employeeIds: uniqueEmployeeIds,
     };
   }
 
@@ -1727,6 +1878,26 @@ export class PayrollService {
       );
     }
 
+    const selectedEmployees = await this.getSelectedEmployeeIdsForPayroll(id);
+    if (selectedEmployees.length === 0) {
+      throw new BadRequestException(
+        'No se puede aplicar: no hay empleados marcados para incluir en la planilla.',
+      );
+    }
+    const blockedForRevalidation = await this.payrollVerificationRepo.count({
+      where: {
+        idNomina: id,
+        idEmpleado: In(selectedEmployees),
+        incluidoPlanilla: 1,
+        requiereRevalidacion: 1,
+      },
+    });
+    if (blockedForRevalidation > 0) {
+      throw new BadRequestException(
+        'No se puede aplicar: existen empleados incluidos que requieren revalidacion.',
+      );
+    }
+
     const nextVersion = p.versionLock + 1;
     await this.dataSource.transaction(async (manager) => {
       const updateResult = await manager
@@ -1764,6 +1935,7 @@ export class PayrollService {
           versionLock: () => 'version_lock_accion + 1',
         })
         .where('id_calendario_nomina = :id', { id })
+        .andWhere('id_empleado IN (:...selectedEmployees)', { selectedEmployees })
         .andWhere('estado_accion IN (:...approvedStates)', {
           approvedStates: PERSONAL_ACTION_APPROVED_STATES,
         })
@@ -2704,17 +2876,19 @@ export class PayrollService {
       `
         SELECT
           id_accion AS actionId,
-          COALESCE(SUM(CASE WHEN remuneracion_linea = 0 THEN cantidad_linea ELSE 0 END), 0) AS nonRemDays
+          COALESCE(SUM(CASE WHEN remuneracion_linea = 0 THEN cantidad_linea ELSE 0 END), 0) AS nonRemDays,
+          COALESCE(SUM(CASE WHEN remuneracion_linea = 1 THEN monto_linea ELSE 0 END), 0) AS remAmount
         FROM acc_ausencias_lineas
         WHERE id_accion IN (${placeholders})
         GROUP BY id_accion
       `,
       actionIds,
-    )) as Array<{ actionId: number; nonRemDays: number | string }>;
+    )) as Array<{ actionId: number; nonRemDays: number | string; remAmount: number | string }>;
 
     for (const row of absenceRows) {
       const data = this.getOrInitActionRuleData(map, Number(row.actionId));
       data.absenceNonRemDays = this.toSafeNumber(row.nonRemDays);
+      data.absenceRemAmount = this.toSafeNumber(row.remAmount);
     }
 
     const licenseRows = (await manager.query(
@@ -2722,17 +2896,24 @@ export class PayrollService {
         SELECT
           id_accion AS actionId,
           COALESCE(SUM(CASE WHEN remuneracion_linea = 0 THEN cantidad_linea ELSE 0 END), 0) AS nonRemDays,
+          COALESCE(SUM(CASE WHEN remuneracion_linea = 1 THEN cantidad_linea ELSE 0 END), 0) AS remDays,
           COALESCE(SUM(CASE WHEN remuneracion_linea = 1 THEN monto_linea ELSE 0 END), 0) AS remuneratedAmount
         FROM acc_licencias_lineas
         WHERE id_accion IN (${placeholders})
         GROUP BY id_accion
       `,
       actionIds,
-    )) as Array<{ actionId: number; nonRemDays: number | string; remuneratedAmount: number | string }>;
+    )) as Array<{
+      actionId: number;
+      nonRemDays: number | string;
+      remDays: number | string;
+      remuneratedAmount: number | string;
+    }>;
 
     for (const row of licenseRows) {
       const data = this.getOrInitActionRuleData(map, Number(row.actionId));
       data.licenseNonRemDays = this.toSafeNumber(row.nonRemDays);
+      data.licenseRemDays = this.toSafeNumber(row.remDays);
       data.licenseRemAmount = this.toSafeNumber(row.remuneratedAmount);
     }
 
@@ -2892,11 +3073,16 @@ export class PayrollService {
     const normalizedType = this.normalizeActionType(actionType);
 
     if (normalizedType === 'ausencia') {
-      return 0;
+      return data && data.absenceRemAmount > 0 ? data.absenceRemAmount : 0;
     }
 
     if (normalizedType === 'licencia') {
-      return data ? data.licenseRemAmount : defaultAmount;
+      if (!data) return defaultAmount;
+      if (data.licenseRemAmount > 0) return data.licenseRemAmount;
+      if (data.licenseRemDays > 0) return Number(((salaryBase / 30) * data.licenseRemDays).toFixed(2));
+      const totalDays = data.licenseNonRemDays + data.licenseRemDays;
+      if (totalDays > 0) return Number(((salaryBase / 30) * totalDays).toFixed(2));
+      return 0;
     }
 
     if (normalizedType === 'incapacidad') {
@@ -2940,7 +3126,9 @@ export class PayrollService {
     if (existing) return existing;
     const created: ApprovedActionRuleData = {
       absenceNonRemDays: 0,
+      absenceRemAmount: 0,
       licenseNonRemDays: 0,
+      licenseRemDays: 0,
       licenseRemAmount: 0,
       disabilityDays: 0,
       disabilityCcssAmount: 0,
@@ -3214,6 +3402,62 @@ export class PayrollService {
       map.set(row.id_empleado, Number(row.salario_bruto_periodo_resultado ?? 0));
     }
     return map;
+  }
+
+  private async loadEmployeeSelectionMap(
+    manager: EntityManager,
+    payrollId: number,
+    employeeIds: number[],
+  ): Promise<Map<number, PayrollEmployeeVerification>> {
+    const uniqueEmployeeIds = Array.from(
+      new Set(employeeIds.map((id) => Number(id)).filter((id) => Number.isInteger(id) && id > 0)),
+    );
+    if (uniqueEmployeeIds.length === 0) return new Map();
+    const rows = await manager.find(PayrollEmployeeVerification, {
+      where: {
+        idNomina: payrollId,
+        idEmpleado: In(uniqueEmployeeIds),
+      },
+    });
+    return new Map(rows.map((row) => [Number(row.idEmpleado), row]));
+  }
+
+  private isEmployeeIncludedInPayroll(selection: PayrollEmployeeVerification | undefined): boolean {
+    if (!selection) return false;
+    return Number(selection.incluidoPlanilla ?? 0) === 1;
+  }
+
+  private isEmployeeVerifiedForPayroll(selection: PayrollEmployeeVerification | undefined): boolean {
+    if (!selection) return false;
+    return Number(selection.verificado ?? 0) === 1;
+  }
+
+  private requiresEmployeeRevalidation(selection: PayrollEmployeeVerification | undefined): boolean {
+    if (!selection) return false;
+    return Number(selection.requiereRevalidacion ?? 0) === 1;
+  }
+
+  private resolvePayrollEmployeeReviewStatus(
+    selection: PayrollEmployeeVerification | undefined,
+  ): string {
+    if (!this.isEmployeeIncludedInPayroll(selection)) return 'Excluido';
+    if (this.requiresEmployeeRevalidation(selection)) return 'Requiere revalidacion';
+    if (this.isEmployeeVerifiedForPayroll(selection)) return 'Verificado';
+    return 'Pendiente';
+  }
+
+  private async getSelectedEmployeeIdsForPayroll(payrollId: number): Promise<number[]> {
+    const results = await this.payrollResultRepo.find({
+      where: { idNomina: payrollId },
+      select: ['idEmpleado'],
+    });
+    return Array.from(
+      new Set(
+        results
+          .map((row) => Number(row.idEmpleado))
+          .filter((id) => Number.isInteger(id) && id > 0),
+      ),
+    );
   }
 
   private validateDateRules(

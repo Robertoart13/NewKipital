@@ -13,6 +13,7 @@ import { databaseConfig } from './config/database.config';
 import { AccessControlModule } from './modules/access-control/access-control.module';
 import { AccountingAccountsModule } from './modules/accounting-accounts/accounting-accounts.module';
 import { AuthModule } from './modules/auth/auth.module';
+import { DocsModule } from './modules/docs/docs.module';
 import { ClassesModule } from './modules/classes/classes.module';
 import { CompaniesModule } from './modules/companies/companies.module';
 import { DepartmentsModule } from './modules/departments/departments.module';
@@ -37,6 +38,7 @@ import { ProjectsModule } from './modules/projects/projects.module';
     ScheduleModule.forRoot(),
     AppCacheModule,
     AuthModule,
+    DocsModule,
     CompaniesModule,
     ClassesModule,
     ProjectsModule,

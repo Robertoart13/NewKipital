@@ -1,4 +1,4 @@
-﻿# 📘 Manual de Usuario - Planilla Operativa
+# 📘 Manual de Usuario - Planilla Operativa
 
 ## 🎯 Objetivo
 Explicar el ciclo real de planilla: creacion, carga, verificacion, aplicacion, reapertura e inactivacion.
@@ -61,6 +61,18 @@ stateDiagram-v2
 - Se publican eventos de dominio.
 - Se actualiza auditoria y control de version.
 
+## 🎯 Agregar acciones de personal desde planilla
+En el detalle expandido de cada empleado hay un selector **"Agregar acciones de personal"** con cuatro opciones. Al elegir una, aparece un formulario inline para capturar la accion sin salir de la planilla:
+
+| Opcion | Campos principales | Comportamiento |
+|---|---|---|
+| **Horas extras** | Movimiento, Tipo de jornada, Fechas inicio/fin, Cantidad, Monto | Permite varias lineas; calculo automatico segun movimiento. |
+| **Ausencias** | Movimiento, Tipo de ausencia, Cantidad, Monto, Remuneracion, Formula | Mismo patron; varias lineas; formula derivada del movimiento. |
+| **Retenciones** | Movimiento, Cantidad, Monto, Formula | Monto fijo × cantidad o base × porcentaje. |
+| **Deducciones** (Descuentos) | Movimiento, Cantidad, Monto, Formula | Mismo patron que retenciones. |
+
+Flujo: completar linea(s) → **Agregar Transaccion** → la accion queda en estado pendiente → aprobar desde el detalle del empleado. Tambien puede crearse desde el modulo Accion de Personal.
+
 ## 🔄 Aprobacion de accion personal dentro de planilla
 Cuando aprueba una accion en la tabla de detalle del empleado:
 1. El estado de la accion cambia de `Pendiente Supervisor` a `Aprobada`.
@@ -119,4 +131,38 @@ Regla operativa:
 - [Calendario y feriados](./11-CALENDARIO-NOMINA-Y-FERIADOS.md)
 - [Traslado interempresa](./13-TRASLADO-INTEREMPRESA.md)
 
+
+
+## ? Seleccion por Empleado (Checkbox) - Regla Operativa
+- Marcado: el empleado se incluye en la planilla y queda verificado para esa planilla.
+- Desmarcado: el empleado se excluye de la planilla (no entra en totales ni aplicacion).
+- Solo empleados marcados entran a Verify y Apply.
+- Si no hay empleados marcados, Verify/Apply se bloquea.
+
+## ?? Control de Cambios Tardios
+- Si un empleado esta marcado/verificado, no se permite crear ni aprobar nuevas acciones de personal en esa planilla.
+- Si se necesita ajustar acciones, primero desmarcar al empleado en la tabla de planilla, luego ajustar y volver a marcar.
+
+- Por defecto los empleados aparecen desmarcados: RRHH marca explicitamente quienes van en la planilla.
+- La marca del checkbox es persistente: si sale y vuelve a entrar, el empleado permanece marcado o desmarcado segun ultimo guardado.
+- Cuando un empleado esta marcado para planilla, el selector 'Agregar acciones de personal' queda bloqueado y muestra el motivo en pantalla.
+
+- Al guardar una accion desde la planilla, el formulario confirma guardado y el recalculo corre en segundo plano (sin bloquear toda la tabla).
+- En el bloque 'Detalle de acciones de personal' aparece aviso: 'Guardando accion de personal y recalculando planilla en segundo plano...'.
+
+## Operacion no bloqueante (estipulado)
+Reglas oficiales de uso en la tabla de planilla:
+
+| Evento | Que ve el usuario | Que hace el sistema |
+|---|---|---|
+| Marcar/desmarcar empleado | El checkbox del empleado queda temporalmente bloqueado | Guarda en segundo plano solo ese empleado; la tabla completa sigue operativa |
+| Guardar accion de personal inline | Mensaje: `Guardando accion de personal y recalculando planilla en segundo plano...` | Crea la accion y luego recalcula la tabla en background |
+| Recalculo finalizado | Se refrescan montos del empleado y detalle de acciones | Actualiza bruto, devengado, deducciones, neto y dias segun estado aprobado |
+| Error en guardado/recalculo | Notificacion de error en pantalla | Mantiene datos anteriores y permite reintentar |
+
+Reglas de experiencia:
+- No se bloquea toda la tabla durante guardados puntuales.
+- Se debe poder seguir navegando, expandiendo filas y revisando otros empleados.
+- Si falla una operacion, solo falla esa operacion, no todo el flujo de planilla.
+- Los totales de resumen (`Devengado`, `Cargas Sociales`, `Impuesto Renta`, `Monto Neto`) suman unicamente empleados marcados para planilla.
 
