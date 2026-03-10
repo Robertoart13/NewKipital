@@ -1,4 +1,4 @@
-﻿# Estructura Destino de Consolidacion
+﻿# 📊 Estructura Destino de Consolidacion
 
 Principios:
 - Fuente de verdad unica por dominio.
@@ -38,3 +38,5 @@ Regla especifica para Acciones de Personal:
 Regla especifica para Planilla:
 - Documento maestro: 08-planilla/PLANILLA-NOMINA-CONSOLIDADO.md.
 - Se admiten anexos tecnicos de calculo/QA solo si estan enlazados desde el maestro.
+
+

@@ -1,6 +1,6 @@
-﻿# Manual Maestro - KPITAL 360
+﻿# 🎯 Manual Maestro - KPITAL 360
 
-## Ruta 1: Usuario operativo
+## 🔗 Ruta 1: Usuario operativo
 1. [Guia rapida de usuario](./13-manual-usuario/00-GUIA-RAPIDA-USUARIO.md)
 2. [Mapa de menus y rutas](./13-manual-usuario/07-MAPA-MENUS-Y-RUTAS.md)
 3. [Empresas](./13-manual-usuario/01-EMPRESAS.md)
@@ -16,7 +16,7 @@
 13. [Traslado interempresa](./13-manual-usuario/13-TRASLADO-INTEREMPRESA.md)
 14. [Escenarios criticos](./13-manual-usuario/08-FLUJOS-CRITICOS-Y-ESCENARIOS.md)
 
-## Ruta 2: Ingenieria tecnica
+## 🔗 Ruta 2: Ingenieria tecnica
 1. [Stack y arquitectura](./14-manual-tecnico/00-STACK-Y-ARQUITECTURA.md)
 2. [Reglas tecnicas](./14-manual-tecnico/01-REGLAS-TECNICAS.md)
 3. [Seguridad y permisos](./14-manual-tecnico/02-SEGURIDAD-PERMISOS.md)
@@ -29,7 +29,7 @@
 10. [Manejo de incidentes funcionales](./14-manual-tecnico/09-MANEJO-INCIDENTES-FUNCIONALES.md)
 11. [Herramientas y estandares](./14-manual-tecnico/10-HERRAMIENTAS-Y-ESTANDARES.md)
 
-## Capas enterprise de gobierno y operacion
+## 🎯 Capas enterprise de gobierno y operacion
 1. [RACI documental](./15-enterprise-gobierno/01-RACI-DOCUMENTAL.md)
 2. [Politica de versionado](./15-enterprise-gobierno/02-POLITICA-VERSIONADO.md)
 3. [Gobierno de cambios docs](./15-enterprise-gobierno/03-GOBIERNO-CAMBIOS-DOCS.md)
@@ -41,3 +41,15 @@
 9. [Playbook de incidentes](./16-enterprise-operacion/05-PLAYBOOK-INCIDENTES.md)
 10. [SLO y KPI de operacion](./16-enterprise-operacion/06-SLO-KPI-OPERACION.md)
 11. [Trazabilidad negocio-tecnico-QA](./16-enterprise-operacion/07-TRAZABILIDAD-NEGOCIO-TECNICO-QA.md)
+
+
+
+## 📊 Leyenda Visual (Estandar Enterprise)
+- 📘 Manual de Usuario
+- 🛠️ Manual Tecnico / dominios de implementacion
+- 🏛️ Gobierno documental
+- ⚙️ Operacion enterprise
+- 🎯 Objetivo, decisiones, contenido clave
+- 📊 Tablas, matrices, campos y metricas
+- 🔄 Flujos, estados, ciclos y diagramas
+- 🔗 Navegacion y referencias cruzadas

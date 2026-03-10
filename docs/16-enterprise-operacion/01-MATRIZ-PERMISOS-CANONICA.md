@@ -1,9 +1,9 @@
-﻿# Matriz Canonica de Permisos
+﻿# ⚙️ Matriz Canonica de Permisos
 
-## Objetivo
+## 🎯 Objetivo
 Centralizar permisos efectivos por rol, modulo, accion, app y empresa.
 
-## Estructura canonica
+## 🎯 Estructura canonica
 | App | Modulo | Accion | Permiso | Rol base | Override usuario | Empresa scope |
 |---|---|---|---|---|---|---|
 | kpital | empleados | crear | employee:create | RRHH Admin | Allow/Deny | Empresa activa |
@@ -13,11 +13,13 @@ Centralizar permisos efectivos por rol, modulo, accion, app y empresa.
 | kpital | acciones | aprobar | hr-action:approve | RRHH Admin | Allow/Deny | Empresa activa |
 | kpital | configuracion | empresas | company:manage | Config Admin | Allow/Deny | Multiempresa |
 
-## Regla de resolución
+## 🎯 Regla de resolución
 1. Deny explícito de usuario.
 2. Allow explícito de usuario.
 3. Permiso por rol.
 4. Si no existe permiso -> denegar.
 
-## Uso
+## 🎯 Uso
 - Esta matriz es referencia de negocio y seguridad para UI, API y QA.
+
+

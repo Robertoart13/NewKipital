@@ -1,6 +1,6 @@
-﻿# Manual Tecnico - Operacion por Modulo
+﻿# 🛠️ Manual Tecnico - Operacion por Modulo
 
-## Objetivo
+## 🎯 Objetivo
 Dar a ingenieria una vista unificada de como opera cada modulo y donde tocar cuando hay incidentes.
 
 | Modulo | Backend principal | Frontend principal | Riesgo operativo |
@@ -14,7 +14,7 @@ Dar a ingenieria una vista unificada de como opera cada modulo y donde tocar cua
 | Parametros nomina | articulos/movimientos/feriados controllers | paginas payroll params | Configuracion inconsistente |
 | Traslado interempresa | `intercompany-transfer.controller.ts` | `IntercompanyTransferPage` | Reasociacion incompleta |
 
-## Cadena tecnica end-to-end
+## 🎯 Cadena tecnica end-to-end
 ```mermaid
 flowchart LR
   A[UI] --> B[Guard de permiso FE]
@@ -24,6 +24,8 @@ flowchart LR
   D --> F[Auditoria/Eventos]
 ```
 
-## Ver tambien
+## 🔗 Ver tambien
 - [Matriz CRUD por modulo](./08-MATRIZ-CRUD-POR-MODULO.md)
 - [Manejo de incidentes](./09-MANEJO-INCIDENTES-FUNCIONALES.md)
+
+

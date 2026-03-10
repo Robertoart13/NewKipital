@@ -1,4 +1,4 @@
-﻿# Indice de Diagramas
+﻿# 📊 Indice de Diagramas
 
 Objetivo:
 - Centralizar los diagramas de flujo de la documentacion consolidada.
@@ -16,7 +16,7 @@ Ubicacion de diagramas por dominio:
 - 11-operacion-automatizaciones/OPERACION-AUTOMATIZACIONES-CONSOLIDADO.md
 - 12-backlog-pendientes/BACKLOG-CONSOLIDADO.md
 
-## Mapa rapido del sistema
+## 🔗 Mapa rapido del sistema
 ```mermaid
 flowchart LR
   U[Usuario RRHH] --> FE[Frontend React]
@@ -27,3 +27,5 @@ flowchart LR
   WK --> DB
   API --> AUD[Bitacora y Auditoria]
 ```
+
+

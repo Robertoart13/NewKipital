@@ -1,6 +1,6 @@
-﻿# Accion de Personal - Ausencias
+﻿# 🛠️ Accion de Personal - Ausencias
 
-## Flujo
+## 🔄 Flujo
 1. Seleccionar empresa y empleado.
 2. Definir tipo de ausencia y fechas.
 3. Validar lineas.
@@ -15,6 +15,8 @@ flowchart TD
   D --> E[Consumo en planilla]
 ```
 
-## Que pasa si...
+## 🎯 Que pasa si...
 - Linea incompleta: no permite guardar.
 - Estado no aprobado: no impacta planilla.
+
+

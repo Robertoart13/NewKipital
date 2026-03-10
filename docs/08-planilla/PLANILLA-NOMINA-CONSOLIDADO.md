@@ -1,9 +1,9 @@
-﻿# Planilla y Nomina - Manual Operativo
+﻿# 🛠️ Planilla y Nomina - Manual Operativo
 
-## Objetivo
+## 🎯 Objetivo
 Explicar el ciclo completo de una planilla: estados, orden de ejecucion y comportamiento ante casos especiales.
 
-## Ciclo de vida oficial de planilla
+## 🔄 Ciclo de vida oficial de planilla
 Estados operativos:
 - ABIERTA
 - EN_PROCESO
@@ -22,7 +22,7 @@ stateDiagram-v2
   APLICADA --> [*]
 ```
 
-## Orden recomendado de ejecucion
+## 🎯 Orden recomendado de ejecucion
 1. Seleccionar planilla procesable.
 2. Cargar empleados elegibles.
 3. Cargar acciones de personal aprobadas.
@@ -31,7 +31,7 @@ stateDiagram-v2
 6. Verificar planilla.
 7. Aplicar planilla.
 
-## Flujo operativo
+## 🔄 Flujo operativo
 ```mermaid
 flowchart TD
   A[Seleccion planilla] --> B[Carga de empleados]
@@ -42,17 +42,19 @@ flowchart TD
   F --> G[Aplicar]
 ```
 
-## Reglas criticas
+## 🎯 Reglas criticas
 - Planilla APLICADA es inmutable.
 - Solo acciones aprobadas afectan calculo financiero.
 - Inactivar planilla no elimina historial.
 
-## Que pasa si...
+## 🎯 Que pasa si...
 - Planilla inactiva con acciones pendientes: quedan en estado pendiente o invalidadas segun regla de compatibilidad.
 - Traslado interempresa: se valida planilla destino compatible; si no hay, se bloquea traslado.
 - Error detectado despues de aplicar: se corrige en planilla futura mediante accion de personal.
 
-## Como leer resultados
+## 🎯 Como leer resultados
 - Bruto: salario base + ingresos aplicables.
 - Deducciones: retenciones y descuentos validos.
 - Neto: bruto - deducciones.
+
+

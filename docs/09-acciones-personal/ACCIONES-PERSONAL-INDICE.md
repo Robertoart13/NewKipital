@@ -1,16 +1,16 @@
-﻿# Acciones de Personal - Indice Operativo
+﻿# 🛠️ Acciones de Personal - Indice Operativo
 
-## Que son
+## 🎯 Que son
 Cambios de personal que impactan nomina y deben pasar por flujo de estado y aprobacion.
 
-## Documentos por tipo de accion
+## 🎯 Documentos por tipo de accion
 - `ACCION-AUSENCIAS.md`
 - `ACCION-BONIFICACIONES.md`
 - `ACCION-HORAS-EXTRA.md`
 - `ACCION-DESCUENTOS.md`
 - `ACCIONES-MODELO-POR-PERIODO.md`
 
-## Flujo transversal
+## 🔄 Flujo transversal
 Estados:
 - DRAFT
 - PENDING_RRHH
@@ -29,5 +29,7 @@ stateDiagram-v2
   APPROVED --> INVALIDATED
 ```
 
-## Regla general
+## 🎯 Regla general
 Sin estado APPROVED no impacta planilla.
+
+

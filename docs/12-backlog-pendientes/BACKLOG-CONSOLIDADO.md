@@ -1,9 +1,9 @@
-﻿# Backlog y Pendientes
+﻿# 🛠️ Backlog y Pendientes
 
-## Objetivo
+## 🎯 Objetivo
 Priorizar trabajo pendiente sin perder visibilidad de riesgo.
 
-## Flujo de gestion
+## 🔄 Flujo de gestion
 1. Registrar issue.
 2. Clasificar prioridad (P0/P1/P2).
 3. Asignar responsable.
@@ -20,5 +20,7 @@ flowchart TD
   E --> F[Cierre]
 ```
 
-## Regla
+## 🎯 Regla
 Todo pendiente debe tener estado, owner y criterio de salida.
+
+

@@ -1,9 +1,9 @@
-﻿# Modelo por Periodo - Acciones de Personal
+﻿# 🛠️ Modelo por Periodo - Acciones de Personal
 
-## Objetivo
+## 🎯 Objetivo
 Explicar como una accion se divide y persiste por periodo/linea.
 
-## Flujo
+## 🔄 Flujo
 ```mermaid
 flowchart LR
   A[Input accion] --> B[Normalizar fechas]
@@ -12,5 +12,7 @@ flowchart LR
   D --> E[Relacionar con planilla]
 ```
 
-## Regla
+## 🎯 Regla
 Cada linea debe ser completa y consistente con su fecha de efecto.
+
+

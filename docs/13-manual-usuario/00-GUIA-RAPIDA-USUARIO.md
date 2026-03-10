@@ -1,6 +1,6 @@
-﻿# Manual Maestro de Usuario - KPITAL 360
+﻿# 📘 Manual Maestro de Usuario - KPITAL 360
 
-## Como usar esta guia
+## 🎯 Como usar esta guia
 Este manual esta escrito para operar KPITAL 360 sin asumir conocimiento tecnico.
 Lealo en este orden para configurar y luego operar planilla sin bloqueos.
 
@@ -18,13 +18,13 @@ Lealo en este orden para configurar y luego operar planilla sin bloqueos.
 12. [Traslado interempresa](./13-TRASLADO-INTEREMPRESA.md)
 13. [Flujos criticos y escenarios](./08-FLUJOS-CRITICOS-Y-ESCENARIOS.md)
 
-## Atajos rapidos
+## 🎯 Atajos rapidos
 - Quiero crear una empresa: [Empresas](./01-EMPRESAS.md)
 - Quiero crear un empleado y acceso digital: [Empleados](./02-EMPLEADOS.md)
 - Quiero dar o quitar permisos: [Usuarios, roles y permisos](./10-USUARIOS-ROLES-PERMISOS.md)
 - Quiero abrir, verificar y aplicar planilla: [Planilla operativa](./05-PLANILLA-OPERATIVA.md)
 
-## Flujo de operacion completo
+## 🔄 Flujo de operacion completo
 ```mermaid
 flowchart TD
   A[Login] --> B[Seleccionar empresa activa]
@@ -35,13 +35,15 @@ flowchart TD
   F --> G[Procesar, verificar y aplicar planilla]
 ```
 
-## Regla de oro de operacion
+## 🎯 Regla de oro de operacion
 Si el sistema bloquea una accion, revise siempre en este orden:
 1. Empresa activa correcta.
 2. Permiso requerido para la accion.
 3. Estado del registro (activo/inactivo o estado de flujo).
 4. Reglas de negocio del modulo.
 
-## Ver tambien
+## 🔗 Ver tambien
 - [Indice principal de documentacion](../00-INDICE-CONSOLIDACION.md)
 - [Manual tecnico](../14-manual-tecnico/00-STACK-Y-ARQUITECTURA.md)
+
+

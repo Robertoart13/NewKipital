@@ -1,9 +1,9 @@
-﻿# Manual de Usuario - Acciones de Personal
+﻿# 📘 Manual de Usuario - Acciones de Personal
 
-## Para que sirve este modulo
+## 🎯 Para que sirve este modulo
 Permite registrar eventos de RRHH que impactan nomina por linea y por periodo.
 
-## Tipos operativos
+## 🎯 Tipos operativos
 - Ausencias
 - Licencias
 - Incapacidades
@@ -14,7 +14,7 @@ Permite registrar eventos de RRHH que impactan nomina por linea y por periodo.
 - Aumentos
 - Vacaciones
 
-## Estados funcionales
+## 🔄 Estados funcionales
 - `DRAFT`
 - `PENDING_SUPERVISOR`
 - `PENDING_RRHH`
@@ -25,10 +25,10 @@ Permite registrar eventos de RRHH que impactan nomina por linea y por periodo.
 - `CANCELLED`
 - `EXPIRED`
 
-## Regla principal
+## 🎯 Regla principal
 Solo acciones aprobadas entran al consumo de planilla.
 
-## Flujo general
+## 🔄 Flujo general
 ```mermaid
 flowchart TD
   A[Crear accion] --> B[Agregar lineas]
@@ -39,23 +39,25 @@ flowchart TD
   F --> G[Consumida por planilla]
 ```
 
-## Operaciones disponibles
+## 🎯 Operaciones disponibles
 - Crear por tipo (`/personal-actions/{tipo}`)
 - Editar por tipo
 - Avanzar estado (`advance`)
 - Invalidar (`invalidate`)
 - Ver auditoria
 
-## Permisos por tipo
+## 🎯 Permisos por tipo
 Cada tipo tiene permisos propios `:view`, `:create`, `:edit` y control de avance/invalida por permiso.
 Ejemplo: `hr-action-ausencias:view`, `hr-action-bonificaciones:create`.
 
-## Errores comunes y solucion
+## 🎯 Errores comunes y solucion
 - No aparece planilla elegible: revise empresa, periodo y moneda del empleado.
 - No deja avanzar estado: revise permiso del usuario para ese paso.
 - No impacta planilla: revise que estado final sea `APPROVED`.
 
-## Ver tambien
+## 🔗 Ver tambien
 - [Planilla operativa](./05-PLANILLA-OPERATIVA.md)
 - [Movimientos de nomina](./12-MOVIMIENTOS-NOMINA.md)
 - [Escenarios criticos](./08-FLUJOS-CRITICOS-Y-ESCENARIOS.md)
+
+

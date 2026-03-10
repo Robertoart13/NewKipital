@@ -1,6 +1,6 @@
-﻿# Manual Tecnico - Matriz CRUD por Modulo
+﻿# 🛠️ Manual Tecnico - Matriz CRUD por Modulo
 
-## Matriz canonica de operaciones
+## 📊 Matriz canonica de operaciones
 | Modulo | Create | Read | Update | Delete/Inactivar | Permisos clave | Regla critica |
 |---|---|---|---|---|---|---|
 | Empresas | Si | Si | Si | Inactivar/Reactivar | `company:*` | Bloquea inactivar con planillas activas |
@@ -22,6 +22,7 @@
 | Acciones personal | Si | Si | Si | Invalidar | `hr-action-*` | Solo aprobadas consumen planilla |
 | Traslado interempresa | Simular/Ejecutar | N/A | N/A | N/A | `payroll:intercompany-transfer` | Requiere compatibilidad destino |
 
-## Ver tambien
+## 🔗 Ver tambien
 - [API y contratos](./04-API-CONTRATOS.md)
 - [Manual usuario](../13-manual-usuario/00-GUIA-RAPIDA-USUARIO.md)
+

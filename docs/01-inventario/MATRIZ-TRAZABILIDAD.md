@@ -1,4 +1,4 @@
-﻿# Matriz de Trazabilidad Origen a Destino
+﻿# 📊 Matriz de Trazabilidad Origen a Destino
 
 Fecha de corte: 2026-03-10 09:52:28
 Alcance: todos los .md bajo docs/ (excluye docs/Consolidacion/ como fuente).
@@ -6,7 +6,7 @@ Alcance: todos los .md bajo docs/ (excluye docs/Consolidacion/ como fuente).
 Campos de auditoria:
 - archivo_origen, ruta_origen, tipo, archivo_destino_principal, rutas_destino_secundarias, accion, estado, responsable, comentarios.
 
-| archivo_origen | ruta_origen | tipo | archivo_destino_principal | rutas_destino_secundarias | accion | estado | responsable | comentarios |
+| archivo_origen | ruta_origen | tipo | archivo_destino_principal | rutas_destino_secundarias | accion | 📊 Estado | responsable | comentarios |
 |---|---|---|---|---|---|---|---|---|
 | 00-Indice.md | docs/00-Indice.md | arquitectura | 04-arquitectura/ARQUITECTURA-GOBIERNO-CONSOLIDADO.md | - | consolidado_en | finalizado | Codex+Equipo | Fuente integrada completa en maestro y trazabilidad cerrada. |
 | 01-EnfoqueSistema.md | docs/01-EnfoqueSistema.md | arquitectura | 04-arquitectura/ARQUITECTURA-GOBIERNO-CONSOLIDADO.md | - | consolidado_en | finalizado | Codex+Equipo | Fuente integrada completa en maestro y trazabilidad cerrada. |
@@ -93,3 +93,5 @@ Campos de auditoria:
 | MANUAL-PRUEBAS.md | docs/Test/MANUAL-PRUEBAS.md | testing | 10-testing-qa/TESTING-QA-CONSOLIDADO.md | - | consolidado_en | finalizado | Codex+Equipo | Fuente integrada completa en maestro y trazabilidad cerrada. |
 | TEST-EXECUTION-REPORT.md | docs/Test/TEST-EXECUTION-REPORT.md | testing | 10-testing-qa/TESTING-QA-CONSOLIDADO.md | - | movido_a_historico | finalizado | Codex+Equipo | Fuente integrada completa en maestro y trazabilidad cerrada. |
 | TESTING.md | docs/Test/TESTING.md | testing | 10-testing-qa/TESTING-QA-CONSOLIDADO.md | - | consolidado_en | finalizado | Codex+Equipo | Fuente integrada completa en maestro y trazabilidad cerrada. |
+
+

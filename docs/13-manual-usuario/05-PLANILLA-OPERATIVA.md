@@ -1,9 +1,9 @@
-﻿# Manual de Usuario - Planilla Operativa
+﻿# 📘 Manual de Usuario - Planilla Operativa
 
-## Objetivo
+## 🎯 Objetivo
 Explicar el ciclo real de planilla: creacion, carga, verificacion, aplicacion, reapertura e inactivacion.
 
-## Estados de planilla
+## 🔄 Estados de planilla
 - `ABIERTA`
 - `EN_PROCESO`
 - `VERIFICADA`
@@ -12,7 +12,7 @@ Explicar el ciclo real de planilla: creacion, carga, verificacion, aplicacion, r
 - `NOTIFICADA`
 - `INACTIVA`
 
-## Ciclo principal
+## 🔄 Ciclo principal
 ```mermaid
 stateDiagram-v2
   [*] --> ABIERTA
@@ -26,13 +26,13 @@ stateDiagram-v2
   INACTIVA --> ABIERTA: Reactivate
 ```
 
-## Crear planilla
+## 🎯 Crear planilla
 1. Ir a `Gestion Planilla > Generar`.
 2. Completar empresa, periodo, tipo y fechas.
 3. Guardar.
 
-### Campos clave
-| Campo | Para que sirve |
+### 📊 Campos clave
+| 📊 Campo | Para que sirve |
 |---|---|
 | `idEmpresa` | Empresa de la planilla |
 | `idPeriodoPago` | Periodicidad (quincenal, mensual, etc.) |
@@ -43,25 +43,25 @@ stateDiagram-v2
 | `fechaPagoProgramada` | Fecha objetivo de pago |
 | `moneda` | CRC/USD |
 
-## Reglas que bloquean
+## 🎯 Reglas que bloquean
 - No permite crear duplicado del mismo slot (empresa + periodo + tipo + moneda).
 - No permite verificar si no hay snapshot de empleados.
 - No permite verificar si no hay resultados calculados.
 - No permite editar si esta en proceso, verificada, aplicada o inactiva.
 
-## Flujo recomendado de cierre
+## 🔄 Flujo recomendado de cierre
 1. `Crear` planilla.
 2. `Process` para cargar tabla/snapshot.
 3. Revisar detalle por empleado.
 4. `Verify`.
 5. `Apply`.
 
-## Que pasa al aplicar
+## 🎯 Que pasa al aplicar
 - Se consolida resultado de nomina para el periodo.
 - Se publican eventos de dominio.
 - Se actualiza auditoria y control de version.
 
-## Permisos
+## 🎯 Permisos
 - Ver: `payroll:view`
 - Crear: `payroll:create`
 - Editar/Reabrir: `payroll:edit`
@@ -70,7 +70,9 @@ stateDiagram-v2
 - Aplicar: `payroll:apply`
 - Inactivar/Reactivar: `payroll:cancel`
 
-## Ver tambien
+## 🔗 Ver tambien
 - [Acciones de personal](./06-ACCIONES-PERSONAL-OPERATIVO.md)
 - [Calendario y feriados](./11-CALENDARIO-NOMINA-Y-FERIADOS.md)
 - [Traslado interempresa](./13-TRASLADO-INTEREMPRESA.md)
+
+

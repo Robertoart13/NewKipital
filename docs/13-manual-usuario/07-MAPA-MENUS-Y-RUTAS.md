@@ -1,9 +1,9 @@
-﻿# Manual de Usuario - Mapa de Menus y Rutas
+﻿# 📘 Manual de Usuario - Mapa de Menus y Rutas
 
-## Objetivo
+## 🎯 Objetivo
 Ubicar rapido donde ejecutar cada proceso en el sistema.
 
-## Rutas principales
+## 🔗 Rutas principales
 | Modulo | Ruta | Permiso minimo |
 |---|---|---|
 | Dashboard | `/dashboard` | Sesion iniciada |
@@ -25,7 +25,7 @@ Ubicar rapido donde ejecutar cada proceso en el sistema.
 | Traslado interempresas | `/payroll-management/traslado-interempresas` | `payroll:intercompany-transfer` |
 | Acciones de personal | `/personal-actions/*` | Permiso por tipo |
 
-## Flujo de navegacion recomendado
+## 🔄 Flujo de navegacion recomendado
 ```mermaid
 flowchart LR
   A[Login] --> B[Empresa activa]
@@ -35,11 +35,13 @@ flowchart LR
   E --> F[Planilla]
 ```
 
-## Si no ve un menu
+## 🎯 Si no ve un menu
 1. Verifique empresa activa.
 2. Verifique permiso en su rol.
 3. Verifique que no tenga denegacion explicita (`deny`) en configuracion de usuario.
 
-## Ver tambien
+## 🔗 Ver tambien
 - [Usuarios, roles y permisos](./10-USUARIOS-ROLES-PERMISOS.md)
 - [Guia maestra](./00-GUIA-RAPIDA-USUARIO.md)
+
+

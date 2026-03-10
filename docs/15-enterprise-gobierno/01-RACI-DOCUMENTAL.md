@@ -1,9 +1,9 @@
-﻿# RACI Documental Enterprise
+﻿# 🏛️ RACI Documental Enterprise
 
-## Objetivo
+## 🎯 Objetivo
 Definir responsabilidades formales de mantenimiento documental.
 
-## Roles
+## 🎯 Roles
 - Product Owner (PO)
 - Tech Lead (TL)
 - Engineering Team (ENG)
@@ -11,7 +11,7 @@ Definir responsabilidades formales de mantenimiento documental.
 - Security Lead (SEC)
 - Operations Lead (OPS)
 
-## Matriz RACI por documento maestro
+## 📊 Matriz RACI por documento maestro
 | Documento | R | A | C | I |
 |---|---|---|---|---|
 | 03-reglas/REGLAS-MAESTRAS-CANONICAS.md | TL | TL | SEC, QA | PO, OPS |
@@ -28,6 +28,8 @@ Definir responsabilidades formales de mantenimiento documental.
 | 14-manual-tecnico/* | TL | TL | ENG, QA | PO |
 | 16-enterprise-operacion/* | TL | TL | SEC, QA, OPS | PO |
 
-## Reglas
+## 🎯 Reglas
 - Ningun documento maestro se considera vigente sin `A` aprobado.
 - Todo cambio funcional requiere actualizar al menos un documento `R`.
+
+

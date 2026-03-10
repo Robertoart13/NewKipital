@@ -1,6 +1,6 @@
-﻿# Gobierno de Cambios en Documentacion
+﻿# 🏛️ Gobierno de Cambios en Documentacion
 
-## Flujo obligatorio
+## 🔄 Flujo obligatorio
 1. Identificar documento afectado.
 2. Actualizar contenido.
 3. Actualizar indice maestro si aplica.
@@ -8,13 +8,15 @@
 5. Validar enlaces.
 6. Aprobar por RACI.
 
-## Checklist de PR documental
+## 🎯 Checklist de PR documental
 - Regla/proceso actualizado donde corresponde.
 - Enlaces internos validos.
 - Sin duplicacion textual innecesaria.
 - Sin referencias obsoletas.
 - Trazabilidad de cambio registrada.
 
-## Prohibiciones
+## 🎯 Prohibiciones
 - No crear documentos sueltos fuera de carpetas oficiales.
 - No eliminar documentos vigentes sin decisión explícita y registro.
+
+

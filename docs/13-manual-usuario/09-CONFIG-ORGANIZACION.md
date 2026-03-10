@@ -1,18 +1,18 @@
-﻿# Manual de Usuario - Configuracion Organizacional
+﻿# 📘 Manual de Usuario - Configuracion Organizacional
 
-## Modulos incluidos
+## 🎯 Modulos incluidos
 - Departamentos
 - Puestos
 - Clases
 - Proyectos
 
-## Orden recomendado
+## 🎯 Orden recomendado
 1. Departamentos
 2. Puestos
 3. Clases
 4. Proyectos
 
-## Departamentos
+## 🎯 Departamentos
 Ruta: `Configuracion > Departamentos`
 
 Campos:
@@ -25,7 +25,7 @@ Permisos:
 - Editar: `department:edit`
 - Inactivar/Reactivar: `department:inactivate`, `department:reactivate`
 
-## Puestos
+## 🎯 Puestos
 Ruta: `Configuracion > Puestos`
 
 Campos:
@@ -38,7 +38,7 @@ Permisos:
 - Editar: `position:edit`
 - Inactivar/Reactivar: `position:inactivate`, `position:reactivate`
 
-## Clases
+## 🎯 Clases
 Ruta: `Configuracion > Clases`
 
 Campos:
@@ -53,7 +53,7 @@ Permisos:
 - Editar: `class:edit`
 - Inactivar/Reactivar: `class:inactivate`, `class:reactivate`
 
-## Proyectos
+## 🎯 Proyectos
 Ruta: `Configuracion > Proyectos`
 
 Campos:
@@ -69,9 +69,11 @@ Permisos:
 - Editar: `project:edit`
 - Inactivar/Reactivar: `project:inactivate`, `project:reactivate`
 
-## Regla operativa
+## 🎯 Regla operativa
 No se recomienda eliminar contexto organizacional en uso. Use inactivacion controlada para mantener trazabilidad historica.
 
-## Ver tambien
+## 🔗 Ver tambien
 - [Empleados](./02-EMPLEADOS.md)
 - [Movimientos de nomina](./12-MOVIMIENTOS-NOMINA.md)
+
+

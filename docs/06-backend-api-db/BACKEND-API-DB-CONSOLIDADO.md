@@ -1,9 +1,9 @@
-﻿# Backend, API y Base de Datos
+﻿# 🛠️ Backend, API y Base de Datos
 
-## Objetivo
+## 🎯 Objetivo
 Definir como se ejecuta una operacion desde API hasta persistencia.
 
-## Flujo estandar de una operacion
+## 🔄 Flujo estandar de una operacion
 1. Entra request.
 2. Guard de seguridad valida sesion y permiso.
 3. DTO valida formato de datos.
@@ -22,13 +22,15 @@ flowchart TD
   F --> G[Response]
 ```
 
-## Reglas de datos
+## 🎯 Reglas de datos
 - Sin `SELECT *` en consultas criticas.
 - FK e indices en columnas de cruce.
 - No modificar datos aplicados de planilla.
 
-## Que pasa si...
+## 🎯 Que pasa si...
 - Datos invalidos: error 400/422 con mensaje claro.
 - Recurso no existe: 404.
 - Conflicto de negocio: 409.
 - Error interno: 500 sin exponer detalle sensible.
+
+

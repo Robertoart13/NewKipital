@@ -1,9 +1,9 @@
-﻿# Catalogo API Funcional
+﻿# ⚙️ Catalogo API Funcional
 
-## Objetivo
+## 🎯 Objetivo
 Concentrar endpoints, permisos y contratos funcionales.
 
-## Formato de respuesta canonico
+## 🎯 Formato de respuesta canonico
 ```json
 {
   "success": true,
@@ -13,7 +13,7 @@ Concentrar endpoints, permisos y contratos funcionales.
 }
 ```
 
-## Endpoints clave
+## 🎯 Endpoints clave
 | Modulo | Endpoint | Metodo | Permiso | Exito | Errores comunes |
 |---|---|---|---|---|---|
 | Auth | /auth/login | POST | publico | 200 | 401 |
@@ -24,5 +24,7 @@ Concentrar endpoints, permisos y contratos funcionales.
 | Planilla | /payroll/apply | POST | payroll:apply | 200 | 400, 409 |
 | Acciones | /personal-actions/:id/approve | POST | hr-action:approve | 200 | 400, 403 |
 
-## Regla
+## 🎯 Regla
 - Todo endpoint productivo debe estar documentado aquí antes de release.
+
+

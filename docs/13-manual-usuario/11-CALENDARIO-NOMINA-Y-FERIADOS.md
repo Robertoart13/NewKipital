@@ -1,9 +1,9 @@
-﻿# Manual de Usuario - Calendario de Nomina y Feriados
+﻿# 📘 Manual de Usuario - Calendario de Nomina y Feriados
 
-## Calendario de nomina
+## 🎯 Calendario de nomina
 Ruta: `Parametros de Planilla > Calendario`
 
-### Crear calendario/planilla base
+### 🎯 Crear calendario/planilla base
 Complete:
 - `idEmpresa`
 - `idPeriodoPago`
@@ -14,14 +14,14 @@ Complete:
 - `fechaPagoProgramada`
 - `moneda`
 
-### Validaciones de fecha
+### 🎯 Validaciones de fecha
 - Inicio periodo <= fin periodo.
 - Fecha corte dentro del periodo.
 - Inicio pago <= fin pago.
 - Fecha pago programada dentro de ventana de pago.
 - Fecha pago programada no menor que fecha corte.
 
-## Feriados
+## 🎯 Feriados
 Ruta: `Parametros de Planilla > Calendario > Feriados`
 
 Campos:
@@ -31,11 +31,11 @@ Campos:
 - `fechaFin`
 - `descripcion` (opcional)
 
-## Permisos
+## 🎯 Permisos
 - Calendario planilla: `payroll:calendar:view`, `payroll:create`, `payroll:edit`
 - Feriados: `payroll-holiday:view`, `payroll-holiday:create`, `payroll-holiday:edit`, `payroll-holiday:delete`
 
-## Flujo recomendado
+## 🔄 Flujo recomendado
 ```mermaid
 flowchart LR
   A[Definir periodo] --> B[Configurar fechas de pago]
@@ -44,6 +44,8 @@ flowchart LR
   D --> E[Procesar y aplicar]
 ```
 
-## Ver tambien
+## 🔗 Ver tambien
 - [Planilla operativa](./05-PLANILLA-OPERATIVA.md)
 - [Movimientos de nomina](./12-MOVIMIENTOS-NOMINA.md)
+
+

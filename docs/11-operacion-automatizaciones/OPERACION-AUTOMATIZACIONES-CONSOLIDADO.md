@@ -1,9 +1,9 @@
-﻿# Operacion y Automatizaciones
+﻿# 🛠️ Operacion y Automatizaciones
 
-## Objetivo
+## 🎯 Objetivo
 Mostrar como funcionan workers, colas y monitoreo para mantener estabilidad operativa.
 
-## Flujo general
+## 🔄 Flujo general
 ```mermaid
 flowchart TB
   A[Scheduler] --> B[Cola identidad]
@@ -15,11 +15,13 @@ flowchart TB
   F --> G[Dashboard y semaforo]
 ```
 
-## Semaforo operativo
+## 🎯 Semaforo operativo
 - Verde: estable.
 - Amarillo: revisar.
 - Rojo: intervencion inmediata.
 
-## Que pasa si...
+## 🎯 Que pasa si...
 - Job falla terminal: queda en failed y requiere accion controlada.
 - Job no terminal: entra en reintento segun politica.
+
+

@@ -1,13 +1,13 @@
-﻿# Manual Tecnico - Stack y Arquitectura
+﻿# 🛠️ Manual Tecnico - Stack y Arquitectura
 
-## Stack base
+## 🎯 Stack base
 - Frontend: React + Vite + TypeScript + Ant Design
 - Estado FE: Redux Toolkit + TanStack Query
 - Backend: NestJS + TypeORM
 - Base de datos: MySQL
 - Seguridad: JWT + cookies httpOnly + CSRF token + control de permisos por app/empresa
 
-## Arquitectura funcional
+## 🎯 Arquitectura funcional
 ```mermaid
 flowchart LR
   FE[Frontend React] --> API[NestJS API]
@@ -17,14 +17,14 @@ flowchart LR
   API --> EVT[Domain events]
 ```
 
-## Flujo de autenticacion y autorizacion
+## 🔄 Flujo de autenticacion y autorizacion
 1. Login (`/auth/login` o Microsoft).
 2. API emite access token + refresh token + csrf.
 3. FE consulta `/auth/me` para sesion y permisos.
 4. FE cambia contexto con `/auth/switch-company`.
 5. Backend resuelve permisos efectivos por usuario+empresa+app.
 
-## Rutas de este manual tecnico
+## 🔗 Rutas de este manual tecnico
 1. [Reglas tecnicas](./01-REGLAS-TECNICAS.md)
 2. [Seguridad y permisos](./02-SEGURIDAD-PERMISOS.md)
 3. [Datos y BD](./03-DATOS-Y-BD.md)
@@ -35,3 +35,5 @@ flowchart LR
 8. [Matriz CRUD por modulo](./08-MATRIZ-CRUD-POR-MODULO.md)
 9. [Manejo de incidentes](./09-MANEJO-INCIDENTES-FUNCIONALES.md)
 10. [Herramientas y estandares](./10-HERRAMIENTAS-Y-ESTANDARES.md)
+
+

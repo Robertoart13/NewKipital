@@ -1,6 +1,6 @@
-﻿# Accion de Personal - Bonificaciones
+﻿# 🛠️ Accion de Personal - Bonificaciones
 
-## Flujo
+## 🔄 Flujo
 1. Registrar bonificacion.
 2. Definir monto o porcentaje.
 3. Validar reglas.
@@ -14,3 +14,5 @@ flowchart TD
   C --> D[Aprobar]
   D --> E[Aplicar en planilla]
 ```
+
+

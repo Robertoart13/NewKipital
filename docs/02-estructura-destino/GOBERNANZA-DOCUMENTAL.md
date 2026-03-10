@@ -1,4 +1,4 @@
-﻿# Gobernanza Documental de Consolidacion
+﻿# 📊 Gobernanza Documental de Consolidacion
 
 Nombrado estandar:
 - Formato recomendado: NN-TEMA-RESUMIDO.md (sin espacios).
@@ -26,3 +26,5 @@ Estados permitidos en matriz:
 - vigente
 - historico
 - pendiente_decision
+
+

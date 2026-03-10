@@ -1,9 +1,9 @@
-﻿# Testing y QA - Manual de Validacion
+﻿# 🛠️ Testing y QA - Manual de Validacion
 
-## Objetivo
+## 🎯 Objetivo
 Asegurar que cada cambio sea valido funcional, tecnico y operativamente.
 
-## Flujo de QA
+## 🔄 Flujo de QA
 1. Pruebas unitarias.
 2. Pruebas de integracion.
 3. Pruebas E2E.
@@ -19,6 +19,8 @@ flowchart TD
   E --> F[Reporte]
 ```
 
-## Reglas de salida
+## 🎯 Reglas de salida
 - No hay cierre sin evidencia.
 - No hay evidencia sin escenarios de error.
+
+

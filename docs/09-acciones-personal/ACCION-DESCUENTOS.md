@@ -1,6 +1,6 @@
-﻿# Accion de Personal - Descuentos
+﻿# 🛠️ Accion de Personal - Descuentos
 
-## Flujo
+## 🔄 Flujo
 1. Registrar descuento.
 2. Definir monto o porcentaje.
 3. Validar.
@@ -14,3 +14,5 @@ flowchart TD
   C --> D[Aprobar]
   D --> E[Aplicar en planilla]
 ```
+
+
