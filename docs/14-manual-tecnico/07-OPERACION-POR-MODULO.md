@@ -135,4 +135,5 @@ Notas de ingenieria:
 - Usar estado de pending por `idEmpleado` para limitar bloqueo a la fila afectada.
 - No esperar sincronamente el recalc para devolver control de UI al usuario.
 - El resumen monetario debe agregarse solo sobre filas con `seleccionadoPlanilla=true` (con normalizacion defensiva de flags `true/false`, `1/0`, `'1'/'0'`).
+- Si `seleccionadoPlanilla && verificadoEmpleado`, la columna de accion de la tabla expandida no debe permitir `Aprobar` ni `Invalidar`.
 

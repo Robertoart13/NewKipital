@@ -165,4 +165,7 @@ Reglas de experiencia:
 - Se debe poder seguir navegando, expandiendo filas y revisando otros empleados.
 - Si falla una operacion, solo falla esa operacion, no todo el flujo de planilla.
 - Los totales de resumen (`Devengado`, `Cargas Sociales`, `Impuesto Renta`, `Monto Neto`) suman unicamente empleados marcados para planilla.
+- Si el empleado ya esta marcado y verificado, en el detalle de acciones se bloquean `Aprobar` e `Invalidar` para evitar cambios tardios.
+- En la tabla de empleados solo puede haber un detalle expandido a la vez (modo acordeon).
+- El detalle se puede abrir/cerrar haciendo click en cualquier parte de la fila del empleado (no solo en el icono + / -).
 
