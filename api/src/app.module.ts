@@ -17,6 +17,7 @@ import { DocsModule } from './modules/docs/docs.module';
 import { ClassesModule } from './modules/classes/classes.module';
 import { CompaniesModule } from './modules/companies/companies.module';
 import { DepartmentsModule } from './modules/departments/departments.module';
+import { DistributionRulesModule } from './modules/distribution-rules/distribution-rules.module';
 import { EmployeesModule } from './modules/employees/employees.module';
 import { HealthModule } from './modules/health/health.module';
 import { IntegrationModule } from './modules/integration/integration.module';
@@ -43,6 +44,7 @@ import { ProjectsModule } from './modules/projects/projects.module';
     ClassesModule,
     ProjectsModule,
     AccountingAccountsModule,
+    DistributionRulesModule,
     PayrollArticlesModule,
     PayrollMovementsModule,
     PayrollHolidaysModule,

@@ -30,6 +30,22 @@
 | `PATCH /companies/:id/inactivate` | `company:inactivate` |
 | `PATCH /companies/:id/reactivate` | `company:reactivate` |
 
+### 🎯 Reglas de distribucion
+| Endpoint | Permiso |
+|---|---|
+| `GET /distribution-rules` | `config:reglas-distribucion` |
+| `GET /distribution-rules/:publicId` | `config:reglas-distribucion:view` |
+| `POST /distribution-rules` | `config:reglas-distribucion:edit` |
+| `PUT /distribution-rules/:publicId` | `config:reglas-distribucion:edit` |
+| `PATCH /distribution-rules/:publicId/inactivate` | `config:reglas-distribucion:edit` |
+| `PATCH /distribution-rules/:publicId/reactivate` | `config:reglas-distribucion:edit` |
+| `GET /distribution-rules/:publicId/audit-trail` | `config:reglas-distribucion:audit` |
+
+Notas tecnicas:
+- `publicId` usa firma HMAC (`dr1_<payload>.<signature>`), no expone ID interno en URL.
+- Scope de unicidad de regla activa se valida en servicio (empresa + global/departamento/puesto).
+- `GET /distribution-rules` acepta `cb` como query tecnica de cache-buster (inyectada por interceptor HTTP del frontend). Ejemplo: `?idEmpresa=1&esActivo=1&cb=<token>`.
+
 ### 🎯 Empleados
 | Endpoint | Permiso |
 |---|---|

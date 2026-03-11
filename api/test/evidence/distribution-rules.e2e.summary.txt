@@ -1,0 +1,14 @@
+﻿E2E Evidence - Distribution Rules
+Date: 2026-03-11 13:56:12 -06:00
+Status: True
+Suites: 1 passed / 1 total
+Tests: 6 passed / 6 total
+RuntimeMs: 46924
+Spec: C:\Users\RobertoCarlosZuÃ±igaA\Documents\ROCCA ARCHIVOS\Desarrollo\PROYECTOS DESAROLLOS\KPITAL 360\NewKipital\api\test\distribution-rules.e2e-spec.ts
+Assertions:
+- [passed] health endpoint responde OK (33 ms)
+- [passed] crea regla global y valida seguridad de publicId (9447 ms)
+- [passed] bloquea duplicado de regla global activa por empresa (1193 ms)
+- [passed] crea regla especifica, actualiza scope y prueba inactivar/reactivar (22174 ms)
+- [passed] bloquea lineas duplicadas por tipo de accion personal (994 ms)
+- [passed] bitacora devuelve eventos para regla existente (3526 ms)

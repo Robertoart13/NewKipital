@@ -12,6 +12,9 @@ Ubicar rapido donde ejecutar cada proceso en el sistema.
 | Usuarios | `/configuration/users` | `config:users` |
 | Roles | `/configuration/roles` | `config:roles` |
 | Permisos | `/configuration/permissions` | `config:permissions` |
+| Regla de distribucion (listado) | `/configuration/reglas-distribucion` | `config:reglas-distribucion` |
+| Regla de distribucion (crear) | `/configuration/reglas-distribucion/crear` | `config:reglas-distribucion:edit` |
+| Regla de distribucion (editar) | `/configuration/reglas-distribucion/editar/:publicId` | `config:reglas-distribucion:view` |
 | Departamentos | `/configuration/departamentos` | `department:view` |
 | Puestos | `/configuration/puestos` | `position:view` |
 | Clases | `/configuration/clases` | `class:view` |

@@ -82,3 +82,19 @@ Analisis derivado de la comparacion con `Planilla_empleados_cargar.js` (HRK-Tale
 ## 🔗 Ver tambien
 - [Backlog consolidado](../12-backlog-pendientes/BACKLOG-CONSOLIDADO.md)
 - [Gobierno de cambios](../15-enterprise-gobierno/03-GOBIERNO-CAMBIOS-DOCS.md)
+
+---
+
+## Pendientes especificos - Modulo Reglas de distribucion
+
+Estado del modulo:
+- Backend y frontend principal completos (listar, crear, editar, inactivar, reactivar, bitacora, `publicId` firmado).
+- Contratos API y datos de BD documentados.
+- E2E backend ejecutado con evidencia (`6/6` pass).
+
+Pendientes para continuar:
+| Prioridad | Pendiente | Estado |
+|---|---|---|
+| `P1` | Implementar funcionalmente la vista `Distribucion de la planilla` (`/payroll-management/planillas/aplicadas/distribucion/:publicId`) para cierre del flujo contable. | Pendiente |
+| `P2` | Definir con negocio si se requiere exportacion de reglas de distribucion (CSV/PDF) para auditoria operativa. | Pendiente de decision |
+| `P2` | Agregar E2E de UI (Playwright) para crear/editar/inactivar/reactivar reglas desde pantalla. | Pendiente |

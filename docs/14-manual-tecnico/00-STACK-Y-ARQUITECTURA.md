@@ -100,3 +100,4 @@ flowchart LR
 8. [Matriz CRUD por modulo](./08-MATRIZ-CRUD-POR-MODULO.md)
 9. [Manejo de incidentes](./09-MANEJO-INCIDENTES-FUNCIONALES.md)
 10. [Herramientas y estandares](./10-HERRAMIENTAS-Y-ESTANDARES.md)
+11. [Modulo Reglas de Distribucion](./11-MODULO-REGLAS-DISTRIBUCION.md)

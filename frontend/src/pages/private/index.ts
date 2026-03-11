@@ -6,6 +6,8 @@ export { PermissionsAdminListPage } from './configuration/PermissionsAdminListPa
 export { RolesManagementPage } from './configuration/RolesManagementPage';
 export { UsersManagementPage } from './configuration/UsersManagementPage';
 export { DistributionRulesPage } from './configuration/DistributionRulesPage';
+export { DistributionRuleCreatePage } from './configuration/DistributionRuleCreatePage';
+export { DistributionRuleEditPage } from './configuration/DistributionRuleEditPage';
 export { CompaniesManagementPage } from './configuration/CompaniesManagementPage';
 export { ClassesManagementPage } from './configuration/ClassesManagementPage';
 export { ProjectsManagementPage } from './configuration/ProjectsManagementPage';

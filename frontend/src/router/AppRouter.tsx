@@ -12,6 +12,8 @@ import {
   RolesManagementPage,
   UsersManagementPage,
   DistributionRulesPage,
+  DistributionRuleCreatePage,
+  DistributionRuleEditPage,
   CompaniesManagementPage,
   ClassesManagementPage,
   ProjectsManagementPage,
@@ -142,6 +144,26 @@ export function AppRouter() {
             </PrivateLayout>
           }
           path="/configuration/reglas-distribucion"
+        />
+        <Route
+          element={
+            <PrivateLayout>
+              <PermissionGuard requiredPermission="config:reglas-distribucion:edit">
+                <DistributionRuleCreatePage />
+              </PermissionGuard>
+            </PrivateLayout>
+          }
+          path="/configuration/reglas-distribucion/crear"
+        />
+        <Route
+          element={
+            <PrivateLayout>
+              <PermissionGuard requiredPermission="config:reglas-distribucion:view">
+                <DistributionRuleEditPage />
+              </PermissionGuard>
+            </PrivateLayout>
+          }
+          path="/configuration/reglas-distribucion/editar/:publicId"
         />
         <Route
           element={

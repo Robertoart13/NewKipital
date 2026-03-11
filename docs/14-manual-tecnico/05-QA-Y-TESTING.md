@@ -34,6 +34,32 @@ Validar por modulo cuatro capas:
 - Usuario/permiso de prueba.
 - Fecha y build validado.
 
+## 🎯 Evidencia E2E - Modulo Reglas de distribucion
+Suite ejecutada:
+- `api/test/distribution-rules.e2e-spec.ts`
+
+Comando:
+```bash
+cd api
+npm run test:e2e -- distribution-rules.e2e-spec.ts
+```
+
+Resultado actual:
+- `6/6` pruebas en verde.
+
+Artefactos de evidencia:
+- `api/test/evidence/distribution-rules.e2e.log`
+- `api/test/evidence/distribution-rules.e2e.result.json`
+- `api/test/evidence/distribution-rules.e2e.summary.txt`
+
+Cobertura validada en esa suite:
+1. Health endpoint.
+2. Crear regla global.
+3. Conflicto por duplicado global activo.
+4. Crear/editar/inactivar/reactivar regla especifica.
+5. Bloqueo de lineas duplicadas por tipo de accion.
+6. Consulta de bitacora (`audit-trail`).
+
 ## 🔗 Ver tambien
 - [Testing QA consolidado](../10-testing-qa/TESTING-QA-CONSOLIDADO.md)
 - [Manejo de incidentes](./09-MANEJO-INCIDENTES-FUNCIONALES.md)

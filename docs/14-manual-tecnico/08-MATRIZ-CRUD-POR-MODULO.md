@@ -11,6 +11,7 @@
 | Asignacion usuario-empresa | Reemplazo | Si | Reemplazo | N/A | `config:users:assign-companies` | Sin empresa no hay operacion |
 | Asignacion roles usuario | Reemplazo | Si | Reemplazo | N/A | `config:users:assign-roles` | Exclusion/override altera resultado |
 | Cuentas contables | Si | Si | Si | Inactivar/Reactivar | `accounting-account:*` | Integridad con articulos |
+| Reglas de distribucion | Si | Si | Si | Inactivar/Reactivar | `config:reglas-distribucion*` | Global no usa depto/puesto; especifica exige depto y evita duplicados |
 | Articulos nomina | Si | Si | Si | Inactivar/Reactivar | `payroll-article:*` | Cuenta contable valida |
 | Movimientos nomina | Si | Si | Si | Inactivar/Reactivar | `payroll-movement:*` | Monto fijo vs porcentaje |
 | Departamentos | Si | Si | Si | Inactivar/Reactivar | `department:*` | No romper referencias activas |
