@@ -68,6 +68,7 @@ import {
 import { AbsenceInlineForm } from './AbsenceInlineForm';
 import { DiscountInlineForm } from './DiscountInlineForm';
 import { OvertimeInlineForm } from './OvertimeInlineForm';
+import { resolveAccordionExpandedKeys, sanitizeAccordionExpandedKeys } from './payrollAccordion';
 import { RetentionInlineForm } from './RetentionInlineForm';
 import { EmployeePayrollPreviewModal } from './EmployeePayrollPreviewModal';
 
@@ -557,7 +558,12 @@ export function PayrollGeneratePage() {
   useEffect(() => {
     if (expandedEmployeeRowKeys.length === 0) return;
     const visibleEmployeeIds = new Set(filteredPreviewRows.map((row) => row.idEmpleado));
-    setExpandedEmployeeRowKeys((prev) => prev.filter((id) => visibleEmployeeIds.has(id)).slice(0, 1));
+    setExpandedEmployeeRowKeys((prev) =>
+      sanitizeAccordionExpandedKeys(
+        prev,
+        Array.from(visibleEmployeeIds.values()),
+      ),
+    );
   }, [expandedEmployeeRowKeys.length, filteredPreviewRows]);
 
   /** Ids de empleados actualmente marcados para planilla (para `rowSelection`). */
@@ -1372,7 +1378,9 @@ export function PayrollGeneratePage() {
                     expandRowByClick: true,
                     expandedRowKeys: expandedEmployeeRowKeys,
                     onExpand: (expanded, record) => {
-                      setExpandedEmployeeRowKeys(expanded ? [record.idEmpleado] : []);
+                      setExpandedEmployeeRowKeys(
+                        resolveAccordionExpandedKeys(expanded, record.idEmpleado),
+                      );
                     },
                   }}
                 />

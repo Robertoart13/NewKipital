@@ -141,6 +141,7 @@ Regla operativa:
 
 ## ?? Control de Cambios Tardios
 - Si un empleado esta marcado/verificado, no se permite crear ni aprobar nuevas acciones de personal en esa planilla.
+- Si un empleado esta marcado/verificado, tampoco se permite invalidar acciones en esa planilla.
 - Si se necesita ajustar acciones, primero desmarcar al empleado en la tabla de planilla, luego ajustar y volver a marcar.
 
 - Por defecto los empleados aparecen desmarcados: RRHH marca explicitamente quienes van en la planilla.

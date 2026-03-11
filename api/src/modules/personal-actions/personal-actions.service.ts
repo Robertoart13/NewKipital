@@ -1567,6 +1567,7 @@ export class PersonalActionsService {
     if (action.tipoAccion.trim().toLowerCase() !== 'ausencia') {
       throw new BadRequestException('La accion no corresponde al modulo de ausencias');
     }
+    await this.assertActionNotLockedForPayrollMutation(action, 'ausencias');
 
     if (
       ![
@@ -1959,6 +1960,7 @@ export class PersonalActionsService {
     if (action.tipoAccion.trim().toLowerCase() !== 'licencia') {
       throw new BadRequestException('La accion no corresponde al modulo de licencias');
     }
+    await this.assertActionNotLockedForPayrollMutation(action, 'licencias');
 
     if (
       ![
@@ -2350,6 +2352,7 @@ export class PersonalActionsService {
     if (action.tipoAccion.trim().toLowerCase() !== 'bonificacion') {
       throw new BadRequestException('La accion no corresponde al modulo de bonificaciones');
     }
+    await this.assertActionNotLockedForPayrollMutation(action, 'bonificaciones');
 
     if (
       ![
@@ -2763,6 +2766,7 @@ export class PersonalActionsService {
     if (action.tipoAccion.trim().toLowerCase() !== 'hora_extra') {
       throw new BadRequestException('La accion no corresponde al modulo de horas extras');
     }
+    await this.assertActionNotLockedForPayrollMutation(action, 'horas extras');
 
     if (
       ![
@@ -3173,6 +3177,7 @@ export class PersonalActionsService {
     if (!['retencion', 'deduccion_retencion'].includes(action.tipoAccion.trim().toLowerCase())) {
       throw new BadRequestException('La accion no corresponde al modulo de retenciones');
     }
+    await this.assertActionNotLockedForPayrollMutation(action, 'retenciones');
 
     if (
       ![
@@ -3560,6 +3565,7 @@ export class PersonalActionsService {
     if (!['descuento', 'deduccion_descuento'].includes(action.tipoAccion.trim().toLowerCase())) {
       throw new BadRequestException('La accion no corresponde al modulo de descuentos');
     }
+    await this.assertActionNotLockedForPayrollMutation(action, 'descuentos');
 
     if (
       ![
@@ -3640,6 +3646,7 @@ export class PersonalActionsService {
     if (action.tipoAccion.trim().toLowerCase() !== 'aumento') {
       throw new BadRequestException('La accion no corresponde al modulo de aumentos');
     }
+    await this.assertActionNotLockedForPayrollMutation(action, 'aumentos');
 
     if (
       ![
@@ -4267,6 +4274,7 @@ export class PersonalActionsService {
     if (!['vacaciones', 'vacacion', 'vacation'].includes(action.tipoAccion.trim().toLowerCase())) {
       throw new BadRequestException('La accion no corresponde al modulo de vacaciones');
     }
+    await this.assertActionNotLockedForPayrollMutation(action, 'vacaciones');
 
     if (
       ![
@@ -4673,6 +4681,7 @@ export class PersonalActionsService {
     if (action.tipoAccion.trim().toLowerCase() !== 'incapacidad') {
       throw new BadRequestException('La accion no corresponde al modulo de incapacidades');
     }
+    await this.assertActionNotLockedForPayrollMutation(action, 'incapacidades');
 
     if (
       ![
@@ -6372,6 +6381,15 @@ export class PersonalActionsService {
     const hinted = Number(payrollIdHint ?? 0);
     if (Number.isFinite(hinted) && hinted > 0) return hinted;
     return null;
+  }
+
+  private async assertActionNotLockedForPayrollMutation(
+    action: PersonalAction,
+    modulo: string,
+  ): Promise<void> {
+    const payrollId = this.resolveTargetPayrollIdForApproval(action);
+    if (!payrollId) return;
+    await this.assertEmployeeNotVerifiedForPayrolls(action.idEmpleado, [payrollId], modulo);
   }
 
   private async markPayrollEmployeeRevalidationRequired(

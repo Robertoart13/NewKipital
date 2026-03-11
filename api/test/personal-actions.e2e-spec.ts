@@ -57,6 +57,13 @@ function extractActionId(payload: unknown): number {
   return actionId;
 }
 
+function parseMoney(value: unknown): number {
+  if (value == null) return 0;
+  const parsed = Number(String(value).replace(/,/g, ''));
+  if (!Number.isFinite(parsed)) return 0;
+  return Number(parsed.toFixed(2));
+}
+
 describe('PersonalActions (e2e)', () => {
   let app: INestApplication;
   let agent: SupertestRequestBuilder;
@@ -284,6 +291,161 @@ describe('PersonalActions (e2e)', () => {
     expect(invalidateResponse.status).toBe(200);
     expect(toPositiveInt(invalidateResponse.body.estado)).toBe(7);
     expect(String(invalidateResponse.body.invalidatedByType ?? '')).toBe('USER');
+  }, 120000);
+
+  it('bloquea create/approve/invalidate cuando empleado esta marcado+verificado en planilla', async () => {
+    const context = await findFlowContext(20);
+    if (!context) return;
+
+    const ctx = context as FlowContext;
+    const today = new Date().toISOString().slice(0, 10);
+
+    const createPendingResponse = await withAuth(agent.post('/personal-actions/ausencias')).send({
+      idEmpresa: ctx.companyId,
+      idEmpleado: ctx.employeeId,
+      observacion: 'E2E lock baseline action',
+      lines: [
+        {
+          payrollId: ctx.payrollId,
+          fechaEfecto: today,
+          movimientoId: ctx.movementId,
+          tipoAusencia: 'JUSTIFICADA',
+          cantidad: 1,
+          monto: 1000,
+          remuneracion: true,
+          formula: 'E2E lock baseline formula',
+        },
+      ],
+    });
+    expect([200, 201]).toContain(createPendingResponse.status);
+    const actionId = extractActionId(createPendingResponse.body);
+
+    await dataSource.query(
+      `
+      INSERT INTO nomina_empleado_verificado
+        (id_verificacion, id_nomina, id_empleado, verificado_empleado, incluido_planilla_empleado, requiere_revalidacion_empleado, verificado_por, fecha_verificacion, fecha_modificacion_verificacion)
+      VALUES
+        (NULL, ?, ?, 1, 1, 0, NULL, NOW(), NOW())
+      ON DUPLICATE KEY UPDATE
+        verificado_empleado = 1,
+        incluido_planilla_empleado = 1,
+        requiere_revalidacion_empleado = 0,
+        fecha_modificacion_verificacion = NOW()
+      `,
+      [ctx.payrollId, ctx.employeeId],
+    );
+
+    const approveResponse = await withAuth(agent.patch(`/personal-actions/${actionId}/approve`)).send({
+      payrollId: ctx.payrollId,
+    });
+    expect(approveResponse.status).toBe(400);
+    expect(String(approveResponse.body?.message ?? '')).toContain(
+      'No se pueden agregar acciones',
+    );
+
+    const invalidateResponse = await withAuth(
+      agent.patch(`/personal-actions/ausencias/${actionId}/invalidate`),
+    ).send({
+      motivo: 'E2E lock invalidate check',
+    });
+    expect(invalidateResponse.status).toBe(400);
+    expect(String(invalidateResponse.body?.message ?? '')).toContain(
+      'No se pueden agregar acciones',
+    );
+
+    const createBlockedResponse = await withAuth(agent.post('/personal-actions/ausencias')).send({
+      idEmpresa: ctx.companyId,
+      idEmpleado: ctx.employeeId,
+      observacion: 'E2E lock create blocked',
+      lines: [
+        {
+          payrollId: ctx.payrollId,
+          fechaEfecto: today,
+          movimientoId: ctx.movementId,
+          tipoAusencia: 'JUSTIFICADA',
+          cantidad: 1,
+          monto: 1000,
+          remuneracion: true,
+          formula: 'E2E lock create formula',
+        },
+      ],
+    });
+    expect(createBlockedResponse.status).toBe(400);
+    expect(String(createBlockedResponse.body?.message ?? '')).toContain(
+      'No se pueden agregar acciones',
+    );
+  }, 120000);
+
+  it('recalcula montos exactos tras aprobar descuento en planilla', async () => {
+    const context = await findFlowContext(6);
+    if (!context) return;
+
+    const ctx = context as FlowContext;
+    const today = new Date().toISOString().slice(0, 10);
+    const descuentoMonto = 1234.0;
+
+    await dataSource.query(
+      `
+      INSERT INTO nomina_empleado_verificado
+        (id_verificacion, id_nomina, id_empleado, verificado_empleado, incluido_planilla_empleado, requiere_revalidacion_empleado, verificado_por, fecha_verificacion, fecha_modificacion_verificacion)
+      VALUES
+        (NULL, ?, ?, 0, 0, 0, NULL, NOW(), NOW())
+      ON DUPLICATE KEY UPDATE
+        verificado_empleado = 0,
+        incluido_planilla_empleado = 0,
+        requiere_revalidacion_empleado = 0,
+        fecha_modificacion_verificacion = NOW()
+      `,
+      [ctx.payrollId, ctx.employeeId],
+    );
+
+    const beforeLoad = await withAuth(agent.patch(`/payroll/${ctx.payrollId}/load-table`)).send({});
+    expect([200, 201]).toContain(beforeLoad.status);
+    const beforeRows = asArray(beforeLoad.body?.empleados);
+    const beforeRow = beforeRows.find((row) => toPositiveInt(row.idEmpleado) === ctx.employeeId);
+    expect(beforeRow).toBeDefined();
+    const netoBefore = parseMoney(beforeRow?.totalNeto);
+
+    const createDiscountResponse = await withAuth(agent.post('/personal-actions/descuentos')).send({
+      idEmpresa: ctx.companyId,
+      idEmpleado: ctx.employeeId,
+      observacion: 'E2E descuento exacto',
+      lines: [
+        {
+          payrollId: ctx.payrollId,
+          fechaEfecto: today,
+          movimientoId: ctx.movementId,
+          cantidad: 1,
+          monto: descuentoMonto,
+          formula: 'E2E descuento exacto',
+        },
+      ],
+    });
+    expect([200, 201]).toContain(createDiscountResponse.status);
+    const discountActionId = extractActionId(createDiscountResponse.body);
+
+    const approveResponse = await withAuth(
+      agent.patch(`/personal-actions/${discountActionId}/approve`),
+    ).send({ payrollId: ctx.payrollId });
+    expect(approveResponse.status).toBe(200);
+
+    const afterLoad = await withAuth(agent.patch(`/payroll/${ctx.payrollId}/load-table`)).send({});
+    expect([200, 201]).toContain(afterLoad.status);
+    const afterRows = asArray(afterLoad.body?.empleados);
+    const afterRow = afterRows.find((row) => toPositiveInt(row.idEmpleado) === ctx.employeeId);
+    expect(afterRow).toBeDefined();
+    const netoAfter = parseMoney(afterRow?.totalNeto);
+
+    expect(Number((netoBefore - descuentoMonto).toFixed(2))).toBe(netoAfter);
+
+    const acciones = asArray(afterRow?.acciones);
+    const approvedDiscount = acciones.find(
+      (row) =>
+        String(row.tipoAccion ?? '').trim().toLowerCase() === 'descuento' &&
+        parseMoney(row.monto) === Number(descuentoMonto.toFixed(2)) &&
+        String(row.estado ?? '').trim().toLowerCase().includes('aprobad'),
+    );
+    expect(approvedDiscount).toBeDefined();
   }, 120000);
 });
 

@@ -114,6 +114,7 @@ omina_resultados solo incluyen empleados marcados.
 ### ? Bloqueo de aprobacion tardia
 - PATCH /personal-actions/:id/approve acepta payrollId opcional para contexto de planilla.
 - Si empleado esta verificado en esa planilla: se bloquea aprobacion.
+- PATCH `invalidate*` (ausencias/licencias/incapacidades/bonificaciones/horas extra/retenciones/descuentos/aumentos/vacaciones) tambien bloquea si empleado esta verificado en esa planilla.
 
 - Comportamiento por defecto: sin registro en 
 omina_empleado_verificado => empleado NO incluido (checkbox desmarcado).
