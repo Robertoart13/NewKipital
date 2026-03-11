@@ -64,11 +64,12 @@ import {
   type PayrollPreviewTable,
 } from '../../../api/payroll';
 
-// ─── Formularios inline ───────────────────────────────────────────────────────
+// ─── Formularios inline y modales auxiliares ─────────────────────────────────
 import { AbsenceInlineForm } from './AbsenceInlineForm';
 import { DiscountInlineForm } from './DiscountInlineForm';
 import { OvertimeInlineForm } from './OvertimeInlineForm';
 import { RetentionInlineForm } from './RetentionInlineForm';
+import { EmployeePayrollPreviewModal } from './EmployeePayrollPreviewModal';
 
 // ─── Store / Permisos ─────────────────────────────────────────────────────────
 import { bustApiCache } from '../../../lib/apiCache';
@@ -277,6 +278,9 @@ export function PayrollGeneratePage() {
 
   // ── Estado: selección de planilla ───────────────────────────────────────────
   const [selectedPayrollId,     setSelectedPayrollId]     = useState<number | undefined>(undefined);
+
+  // ── Estado: modal de previsualización de pago por empleado ──────────────────
+  const [previewEmployee,       setPreviewEmployee]       = useState<PayrollPreviewEmployeeRow | null>(null);
   const [selectedPayrollDetail, setSelectedPayrollDetail] = useState<PayrollListItem | null>(null);
 
   // ── Estado: datos de catálogos ──────────────────────────────────────────────
@@ -917,7 +921,13 @@ export function PayrollGeneratePage() {
         title: 'Acciones',
         key: 'ver',
         align: 'center',
-        render: () => <EyeOutlined />,
+        render: (_, row) => (
+          <Button
+            type="text"
+            icon={<EyeOutlined />}
+            onClick={() => setPreviewEmployee(row)}
+          />
+        ),
       },
     ],
     [canViewSensitive],
@@ -1280,20 +1290,32 @@ export function PayrollGeneratePage() {
             ]}
           />
 
-          {/* Botón de carga */}
+          {/* Botón de carga – centrado y con card propia, similar a GenerarPlanillas_lista */}
           {selectedPayroll && (
             <div className={genStyles.sectionBlock} style={{ marginTop: 16 }}>
-              <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap', alignItems: 'center' }}>
-                <Button
-                  type="primary"
-                  className={genStyles.primaryBtn}
-                  onClick={() => void handleLoadPayroll()}
-                  loading={loadingProcess}
-                  disabled={!canProcess}
+              <div className={genStyles.loadPayrollCard}>
+                <div
+                  style={{
+                    display: 'flex',
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                    gap: 14,
+                    flexWrap: 'wrap',
+                  }}
                 >
-                  Cargar planilla
-                </Button>
-                {!canProcess && <Text type="secondary">No tiene permiso para cargar planilla.</Text>}
+                  <Button
+                    type="primary"
+                    className={genStyles.primaryBtn}
+                    onClick={() => void handleLoadPayroll()}
+                    loading={loadingProcess}
+                    disabled={!canProcess}
+                  >
+                    Cargar planilla
+                  </Button>
+                  {!canProcess && (
+                    <Text type="secondary">No tiene permiso para cargar planilla.</Text>
+                  )}
+                </div>
               </div>
             </div>
           )}
@@ -1408,6 +1430,14 @@ export function PayrollGeneratePage() {
         </Card>
       )}
 
+      <EmployeePayrollPreviewModal
+        open={!!previewEmployee}
+        onClose={() => setPreviewEmployee(null)}
+        employee={previewEmployee}
+        payroll={selectedPayroll}
+        companyName={selectedCompanyName}
+        canViewSensitive={!!canViewSensitive}
+      />
     </div>
   );
 }

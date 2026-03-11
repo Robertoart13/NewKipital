@@ -598,22 +598,16 @@
   vertical-align: middle !important;
 }
 
-/* Filas pendientes: fondo rojizo suave, texto legible */
-.previewTable :global(.ant-table-tbody > tr.action-row-pending > td) {
-  background: #fff8f8 !important;
-}
-
-.previewTable :global(.ant-table-tbody > tr.action-row-pending:hover > td) {
-  background: #fff1f1 !important;
-}
-
-/* Filas aprobadas: fondo verdoso suave, texto legible */
+/* Filas aprobadas/pendientes: mantener fondo blanco como en diseño de referencia.
+   Solo los chips/Tags de estado muestran color. */
+.previewTable :global(.ant-table-tbody > tr.action-row-pending > td),
 .previewTable :global(.ant-table-tbody > tr.action-row-approved > td) {
-  background: #f4fdf6 !important;
+  background: #ffffff !important;
 }
 
+.previewTable :global(.ant-table-tbody > tr.action-row-pending:hover > td),
 .previewTable :global(.ant-table-tbody > tr.action-row-approved:hover > td) {
-  background: #ecfdf3 !important;
+  background: #f8fafc !important;
 }
 
 /* Indicador circular Tipo (+/-) */
@@ -691,6 +685,133 @@
 .howApplyNeutral {
   color: #475569;
   font-weight: 600;
+}
+
+/* ===================== Modal de previsualización de empleado ===================== */
+
+.employeePreviewModal {
+  font-size: 13px;
+  color: #1a202c;
+}
+
+.employeePreviewTopBar {
+  width: 100%;
+  padding: 10px 16px;
+  margin: -16px -24px 12px -24px;
+  background: #f5f5f5;
+  border-bottom: 1px solid #e0e6ed;
+  font-weight: 600;
+  font-size: 15px;
+  text-align: center;
+}
+
+.employeePreviewHeaderRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  margin-bottom: 8px;
+}
+
+.employeePreviewHeaderLeft {
+  font-weight: 700;
+  font-size: 15px;
+}
+
+.employeePreviewHeaderRight {
+  text-align: right;
+}
+
+.employeePreviewHeaderRightTitle {
+  font-weight: 700;
+  font-size: 15px;
+}
+
+.employeePreviewPayrollInline {
+  font-size: 12px;
+  color: #64748b;
+}
+
+.employeePreviewDivider {
+  width: 100%;
+  height: 1px;
+  background: #e0e6ed;
+  margin: 12px 0 16px 0;
+}
+
+.employeePreviewInfoGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.employeePreviewInfoCol {
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.employeePreviewInfoCol > div {
+  margin-bottom: 4px;
+}
+
+.employeePreviewSection {
+  margin-top: 10px;
+}
+
+.employeePreviewSectionTitle {
+  font-size: 14px;
+  font-weight: 600;
+  margin-bottom: 10px;
+}
+
+.employeePreviewSummaryTable {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.employeePreviewSummaryTable thead th {
+  padding: 8px 10px;
+  background: #f5f5f5;
+  border: 1px solid #e0e6ed;
+  font-weight: 600;
+  text-align: left;
+}
+
+.employeePreviewSummaryTable tbody td {
+  padding: 8px 10px;
+  border: 1px solid #e0e6ed;
+}
+
+.employeePreviewSummaryNetHeader {
+  background: #e3f2fd;
+}
+
+.employeePreviewSummaryNetCell {
+  background: #e3f2fd;
+  font-weight: 700;
+}
+
+.employeePreviewFooter {
+  margin-top: 18px;
+  text-align: center;
+}
+
+.employeePreviewFooterTitle {
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+
+.employeePreviewFooterHint {
+  font-size: 11px;
+  color: #64748b;
+  font-style: italic;
+  margin-bottom: 12px;
+}
+
+.employeePreviewFooterActions {
+  text-align: center;
 }
 
 
