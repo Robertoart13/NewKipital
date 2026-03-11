@@ -24,6 +24,8 @@ Ubicar rapido donde ejecutar cada proceso en el sistema.
 | Listado dias de pago de planilla | `/payroll-params/calendario/dias-pago` | `payroll:view` |
 | Listado de planillas (alias tecnico) | `/payroll-management/planillas/listado` | `payroll:view` |
 | Planilla generar | `/payroll-management/planillas/generar` | `payroll:generate` |
+| Lista de planillas aplicadas | `/payroll-management/planillas/aplicadas` | `payroll:verify` o `payroll:apply` o `payroll:netsuite:send` |
+| Distribucion de la planilla (detalle) | `/payroll-management/planillas/aplicadas/distribucion/:publicId` | Mismos permisos de lista aplicada |
 | Traslado interempresas | `/payroll-management/traslado-interempresas` | `payroll:intercompany-transfer` |
 | Acciones de personal | `/personal-actions/*` | Permiso por tipo |
 

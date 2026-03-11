@@ -12,6 +12,7 @@ export interface MenuItem {
   path: string;
   icon?: string;
   requiredPermission?: Permission;
+  requiredAnyPermissions?: Permission[];
   children?: MenuItem[];
   /** Si true, se renderiza como titulo de grupo (no clickeable) en lugar de submenu */
   isGroup?: boolean;
@@ -189,13 +190,23 @@ const initialMenuConfig: MenuItem[] = [
         id: 'planillas',
         label: 'Planillas',
         path: '/payroll-management/planillas',
-        requiredPermission: 'payroll:generate',
         children: [
           {
             id: 'generar-planilla',
             label: 'Cargar Planilla Regular',
             path: '/payroll-management/planillas/generar',
             requiredPermission: 'payroll:generate',
+          },
+          {
+            id: 'lista-planillas-aplicadas',
+            label: 'Lista de Planillas Aplicadas',
+            path: '/payroll-management/planillas/aplicadas',
+            requiredAnyPermissions: [
+              'payroll:verify',
+              'payroll:apply',
+              'payroll:netsuite:send',
+              'payroll:send_netsuite',
+            ],
           },
         ],
       },
@@ -246,7 +257,7 @@ const initialMenuConfig: MenuItem[] = [
         children: [
           {
             id: 'reglas-distribucion',
-            label: 'Reglas de Distribucion',
+            label: 'Regla de Distribucion',
             path: '/configuration/reglas-distribucion',
             requiredPermission: 'config:reglas-distribucion',
           },

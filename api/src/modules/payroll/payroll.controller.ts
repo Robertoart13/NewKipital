@@ -79,6 +79,17 @@ export class PayrollController {
   }
 
   @RequirePermissions('payroll:view')
+  @Get('public/:publicId')
+  findOneByPublicId(
+    @Param('publicId') publicId: string,
+    @CurrentUser() user: { userId: number },
+  ): Promise<PayrollCalendarResponse> {
+    return this.service
+      .findOneByPublicId(publicId, user.userId)
+      .then((row) => this.service.toResponse(row));
+  }
+
+  @RequirePermissions('payroll:view')
   @Get(':id')
   findOne(
     @Param('id', ParseIntPipe) id: number,
@@ -137,7 +148,7 @@ export class PayrollController {
       .then((row) => this.service.toResponse(row));
   }
 
-  @RequirePermissions('payroll:edit')
+  @RequirePermissions('payroll:reopen')
   @Patch(':id/reopen')
   reopen(
     @Param('id', ParseIntPipe) id: number,

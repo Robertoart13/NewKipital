@@ -23,6 +23,18 @@ export const canVerifyPayroll = (state: RootState) => selectPermissions(state).i
 
 export const canApplyPayroll = (state: RootState) => selectPermissions(state).includes('payroll:apply');
 
+export const canReopenPayroll = (state: RootState) => selectPermissions(state).includes('payroll:reopen');
+
+export const canAccessAppliedPayrollList = (state: RootState) => {
+  const permissions = selectPermissions(state);
+  return (
+    permissions.includes('payroll:verify') ||
+    permissions.includes('payroll:apply') ||
+    permissions.includes('payroll:netsuite:send') ||
+    permissions.includes('payroll:send_netsuite')
+  );
+};
+
 export const canCancelPayroll = (state: RootState) => selectPermissions(state).includes('payroll:cancel');
 
 export const canViewPayroll = (state: RootState) => selectPermissions(state).includes('payroll:view');

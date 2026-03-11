@@ -308,6 +308,30 @@
   margin: 16px 0 !important;
 }
 
+.mermaidContainer {
+  margin: 16px 0;
+  padding: 12px;
+  border: 1px solid #e8e8e8;
+  border-radius: 8px;
+  background: #fff;
+  overflow-x: auto;
+}
+
+.mermaidContainer :global(svg) {
+  max-width: 100%;
+  height: auto;
+  display: block;
+  margin: 0 auto;
+}
+
+.mermaidError {
+  margin: 16px 0;
+  border: 1px solid #ffccc7;
+  border-radius: 8px;
+  background: #fff2f0;
+  padding: 12px;
+}
+
 .spin {
   display: flex;
   justify-content: center;

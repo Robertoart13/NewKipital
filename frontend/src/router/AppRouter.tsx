@@ -11,6 +11,7 @@ import {
   PermissionsAdminListPage,
   RolesManagementPage,
   UsersManagementPage,
+  DistributionRulesPage,
   CompaniesManagementPage,
   ClassesManagementPage,
   ProjectsManagementPage,
@@ -21,6 +22,8 @@ import {
   PayrollArticlesManagementPage,
   PayrollMovementsManagementPage,
   PayrollManagementPage,
+  AppliedPayrollManagementPage,
+  PayrollDistributionPage,
   PayrollGeneratePage,
   PayrollCalendarPage,
   PayrollHolidaysPage,
@@ -129,6 +132,16 @@ export function AppRouter() {
             </PrivateLayout>
           }
           path="/configuration/users"
+        />
+        <Route
+          element={
+            <PrivateLayout>
+              <PermissionGuard requiredPermission="config:reglas-distribucion">
+                <DistributionRulesPage />
+              </PermissionGuard>
+            </PrivateLayout>
+          }
+          path="/configuration/reglas-distribucion"
         />
         <Route
           element={
@@ -404,6 +417,22 @@ export function AppRouter() {
             </PrivateLayout>
           }
           path="/payroll-management/planillas/listado"
+        />
+        <Route
+          element={
+            <PrivateLayout>
+              <AppliedPayrollManagementPage />
+            </PrivateLayout>
+          }
+          path="/payroll-management/planillas/aplicadas"
+        />
+        <Route
+          element={
+            <PrivateLayout>
+              <PayrollDistributionPage />
+            </PrivateLayout>
+          }
+          path="/payroll-management/planillas/aplicadas/distribucion/:publicId"
         />
         <Route
           element={

@@ -43,4 +43,22 @@ Acciones:
 3. Si falla recalculo, notificar error al usuario y forzar refresh controlado.
 4. Registrar incidente con modulo, endpoint, empleado afectado y correlation ID.
 
+## Runbook 6 - Planilla verificada con error funcional
+Sintoma:
+- La planilla ya esta `VERIFICADA`, pero negocio detecta datos incorrectos.
+
+Acciones:
+1. Ir a `Gestion Planilla > Planillas`.
+2. (Opcional) Si esta en etapa final, usar `Gestion Planilla > Planillas > Lista de Planillas Aplicadas`.
+3. Ejecutar `Reabrir` sobre la planilla verificada.
+4. Corregir seleccion de empleados y/o acciones de personal.
+5. Ejecutar nuevamente `Procesar`.
+6. Ejecutar nuevamente `Verificar`.
+7. Ejecutar `Aplicar` solo cuando el control final este conforme.
+
+Reglas:
+- `Reabrir` solo aplica para estado `VERIFICADA`.
+- Planillas `APLICADA` o `CONTABILIZADA` no se reabren.
+- Las acciones pendientes no se consumen al verificar; el consumo ocurre en `Aplicar`.
+
 

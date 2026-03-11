@@ -57,7 +57,9 @@ import {
   fetchPayroll,
   fetchPayrolls,
   loadPayrollTable,
+  processPayroll,
   updatePayrollEmployeeSelection,
+  verifyPayroll,
   type PayrollListItem,
   type PayrollPreviewActionRow,
   type PayrollPreviewEmployeeRow,
@@ -75,7 +77,10 @@ import { EmployeePayrollPreviewModal } from './EmployeePayrollPreviewModal';
 // ─── Store / Permisos ─────────────────────────────────────────────────────────
 import { bustApiCache } from '../../../lib/apiCache';
 import { useAppSelector } from '../../../store/hooks';
-import { canProcessPayroll } from '../../../store/selectors/permissions.selectors';
+import {
+  canProcessPayroll,
+  canVerifyPayroll,
+} from '../../../store/selectors/permissions.selectors';
 
 // ─── Estilos ──────────────────────────────────────────────────────────────────
 import styles from '../configuration/UsersManagementPage.module.css';
@@ -264,6 +269,7 @@ export function PayrollGeneratePage() {
 
   // ── Permisos desde Redux ────────────────────────────────────────────────────
   const canProcess           = useAppSelector(canProcessPayroll);
+  const canVerify            = useAppSelector(canVerifyPayroll);
   const canViewSensitive     = useAppSelector((s) => s.permissions.permissions.includes('payroll:view_sensitive'));
   const canApproveActions    = useAppSelector((s) => s.permissions.permissions.includes('hr_action:approve'));
   const companies            = useAppSelector((s) => s.auth.companies);
@@ -295,6 +301,7 @@ export function PayrollGeneratePage() {
   // ── Estado: indicadores de carga globales ───────────────────────────────────
   const [loadingPayrolls, setLoadingPayrolls] = useState(false);
   const [loadingProcess,  setLoadingProcess]  = useState(false);
+  const [loadingVerify,   setLoadingVerify]   = useState(false);
 
   // ── Estado: UI ──────────────────────────────────────────────────────────────
   const [contentExpanded, setContentExpanded] = useState(true);
@@ -598,6 +605,35 @@ export function PayrollGeneratePage() {
     };
   }, [previewTable]);
 
+  const hasIncludedEmployees = previewSummary.includedEmployees > 0;
+  const hasIncludedWithRevalidation = useMemo(
+    () =>
+      (previewTable?.empleados ?? []).some(
+        (row) =>
+          toBooleanFlag(row.seleccionadoPlanilla) &&
+          toBooleanFlag(row.requiereRevalidacion),
+      ),
+    [previewTable],
+  );
+  const hasPendingEmployeeSelection = useMemo(
+    () => Object.keys(pendingSelectionByEmployee).length > 0,
+    [pendingSelectionByEmployee],
+  );
+  const hasPendingInlineAction =
+    overtimeSubmitting !== null ||
+    absenceSubmitting !== null ||
+    retentionSubmitting !== null ||
+    discountSubmitting !== null;
+  const hasPendingActionStatusChange = approvingActionId !== null || invalidatingActionId !== null;
+  const hasPendingPayrollOperation =
+    hasPendingEmployeeSelection ||
+    hasPendingInlineAction ||
+    hasPendingActionStatusChange ||
+    loadingProcess;
+
+  const canRenderVerifyButton =
+    !!selectedPayroll && !!previewTable && [1, 2].includes(Number(selectedPayroll.estado));
+
   // ==========================================================================
   // HANDLERS: CARGA DE PLANILLA
   // ==========================================================================
@@ -625,6 +661,77 @@ export function PayrollGeneratePage() {
     } finally {
       setLoadingProcess(false);
     }
+  };
+
+  /** Ejecuta la verificacion de planilla desde la tabla de empleados y acciones. */
+  const executeVerifyPayrollFromPreview = async () => {
+    if (!selectedPayrollId) {
+      message.warning('Seleccione una planilla.');
+      return;
+    }
+    if (hasPendingPayrollOperation) {
+      message.warning('Hay operaciones en curso. Espere a que termine la seleccion o guardado antes de verificar.');
+      return;
+    }
+    if (!hasIncludedEmployees) {
+      message.warning('Debe marcar al menos un empleado para incluirlo en planilla antes de verificar.');
+      return;
+    }
+    if (hasIncludedWithRevalidation) {
+      message.warning('Hay empleados incluidos que requieren revalidacion. Revise o desmarque antes de verificar.');
+      return;
+    }
+
+    setLoadingVerify(true);
+    try {
+      // Si estaba Abierta, primero se procesa para cumplir precondiciones de verificacion.
+      if (selectedPayroll?.estado === 1) {
+        await processPayroll(selectedPayrollId);
+      }
+      await verifyPayroll(selectedPayrollId);
+
+      const [detail, list] = await Promise.all([
+        fetchPayroll(selectedPayrollId),
+        (selectedCompanyId
+          ? fetchPayrolls(
+              String(selectedCompanyId),
+              false,
+              getPayrollDateRange().from,
+              getPayrollDateRange().to,
+              false,
+              [...OPERATIONAL_STATES],
+            )
+          : Promise.resolve([])),
+      ]);
+      setSelectedPayrollDetail(detail);
+      if (selectedCompanyId) setPayrolls(list);
+      await refreshPreviewTable();
+      bustApiCache('/payroll');
+      message.success('Planilla verificada correctamente.');
+    } catch (err) {
+      message.error(err instanceof Error ? err.message : 'Error al verificar planilla');
+    } finally {
+      setLoadingVerify(false);
+    }
+  };
+
+  /** Pide confirmacion antes de verificar la planilla. */
+  const handleVerifyPayrollFromPreview = () => {
+    modal.confirm({
+      title: 'Verificar planilla',
+      content:
+        'Esta accion cambia el estado a Verificada y deja la planilla lista para aplicar. ¿Desea continuar?',
+      okText: 'Si, verificar',
+      cancelText: 'Cancelar',
+      centered: true,
+      width: 420,
+      rootClassName: styles.companyConfirmModal,
+      okButtonProps: { className: styles.companyConfirmOk },
+      cancelButtonProps: { className: styles.companyConfirmCancel },
+      onOk: async () => {
+        await executeVerifyPayrollFromPreview();
+      },
+    });
   };
 
   // ==========================================================================
@@ -1395,10 +1502,10 @@ export function PayrollGeneratePage() {
                         <tr><th>Concepto</th><th>Total</th></tr>
                       </thead>
                       <tbody>
-                        <tr><td>Total Empleados</td>           <td>{previewSummary.totalEmployees}</td></tr>
-                        <tr><td>Incluidos en Planilla</td>     <td>{previewSummary.includedEmployees}</td></tr>
-                        <tr><td>Empleados Verificados</td>     <td>{previewSummary.verifiedEmployees}</td></tr>
-                        <tr><td>Pendientes de Verificar</td>   <td>{previewSummary.pendingEmployees}</td></tr>
+                        <tr><td>Total Empleados</td><td>{previewSummary.totalEmployees}</td></tr>
+                        <tr><td>Incluidos en Planilla</td><td>{previewSummary.includedEmployees}</td></tr>
+                        <tr><td>Empleados Verificados</td><td>{previewSummary.verifiedEmployees}</td></tr>
+                        <tr><td>Pendientes de Verificar</td><td>{previewSummary.pendingEmployees}</td></tr>
                       </tbody>
                     </table>
                   </div>
@@ -1432,6 +1539,43 @@ export function PayrollGeneratePage() {
                   </div>
 
                 </div>
+
+                {canRenderVerifyButton && (
+                  <div style={{ marginTop: 16, display: 'flex', justifyContent: 'center', gap: 12, flexWrap: 'wrap' }}>
+                    <Button
+                      type="primary"
+                      className={genStyles.primaryBtn}
+                      onClick={() => void handleVerifyPayrollFromPreview()}
+                      loading={loadingVerify}
+                      disabled={
+                        !canVerify ||
+                        hasPendingPayrollOperation ||
+                        loadingProcess ||
+                        loadingVerify ||
+                        !hasIncludedEmployees ||
+                        hasIncludedWithRevalidation
+                      }
+                    >
+                      Verificar planilla
+                    </Button>
+                    {!canVerify && (
+                      <Text type="secondary">No tiene permiso para verificar planilla.</Text>
+                    )}
+                    {canVerify && !hasIncludedEmployees && (
+                      <Text type="secondary">Marque empleados para habilitar la verificacion.</Text>
+                    )}
+                    {canVerify && hasIncludedWithRevalidation && (
+                      <Text type="secondary">
+                        Hay empleados incluidos que requieren revalidacion.
+                      </Text>
+                    )}
+                    {canVerify && hasPendingPayrollOperation && (
+                      <Text type="secondary">
+                        Espere: hay cambios en curso (seleccion o acciones de personal).
+                      </Text>
+                    )}
+                  </div>
+                )}
               </div>
             </div>
           </div>

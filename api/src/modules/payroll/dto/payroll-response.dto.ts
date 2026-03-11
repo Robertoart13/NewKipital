@@ -4,6 +4,7 @@
  */
 export interface PayrollCalendarResponse {
   id: number;
+  publicId: string;
   idEmpresa: number;
   idPeriodoPago: number;
   idTipoPlanilla: number | null;
@@ -22,4 +23,9 @@ export interface PayrollCalendarResponse {
   fechaAplicacion: string | null;
   descripcionEvento: string | null;
   etiquetaColor: string | null;
+  fechaCreacion: string | null;
+  fechaModificacion: string | null;
+  creadoPor: number | null;
+  modificadoPor: number | null;
+  versionLock: number;
 }

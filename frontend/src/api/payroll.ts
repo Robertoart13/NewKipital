@@ -36,6 +36,8 @@ import { httpFetch } from '../interceptors/httpInterceptor';
 export interface PayrollListItem {
   /** Identificador unico de la planilla. */
   id: number;
+  /** Identificador publico firmado para rutas externas (no secuencial). */
+  publicId?: string;
 
   /** ID de la empresa propietaria. */
   idEmpresa: number;
@@ -697,6 +699,24 @@ export async function reactivatePayroll(id: number): Promise<PayrollListItem> {
   const res = await httpFetch(`/payroll/${id}/reactivate`, { method: 'PATCH' });
   if (!res.ok)
     throw new Error(await extractApiErrorMessage(res, 'No se pudo reactivar la planilla. Intente nuevamente.'));
+  return res.json();
+}
+
+export async function fetchPayrollByPublicId(publicId: string): Promise<PayrollListItem> {
+  const res = await httpFetch(`/payroll/public/${encodeURIComponent(publicId)}`);
+  if (!res.ok) throw new Error(await extractApiErrorMessage(res, 'Error al cargar planilla'));
+  return res.json();
+}
+
+export async function reopenPayroll(id: number, motivo?: string): Promise<PayrollListItem> {
+  const payload = { motivo: motivo?.trim() || 'Reapertura manual desde Gestion Planilla' };
+  const res = await httpFetch(`/payroll/${id}/reopen`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+  if (!res.ok)
+    throw new Error(await extractApiErrorMessage(res, 'No se pudo reabrir la planilla. Intente nuevamente.'));
   return res.json();
 }
 

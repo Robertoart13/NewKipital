@@ -36,6 +36,7 @@ Un pendiente se cierra cuando:
 | `P1` | Confirmar regla de empleados por horas vs legacy (legacy usa flujo especifico de horas extras, distinto al flujo quincenal/mensual). | Pendiente de decision funcional |
 | `P1` | Confirmar fuente de `credito por conyuge`: legacy usa bandera booleana; modelo actual deriva desde estado civil. | Pendiente de confirmacion de negocio |
 | `P2` | Validar comportamiento de empleados `verificados` vs legacy (legacy conserva/rehidrata ciertos valores). | Pendiente de analisis final |
+| `P1` | Completar `Distribucion de la planilla` (ruta `/payroll-management/planillas/aplicadas/distribucion/:publicId`) con detalle funcional final. | Pendiente de implementacion completa |
 
 ---
 

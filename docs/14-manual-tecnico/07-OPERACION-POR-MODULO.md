@@ -91,6 +91,13 @@ En `PayrollGeneratePage` el detalle expandido se simplifica para operacion diari
 - `Listado de Dias de Pago de Planilla`: `/payroll-params/calendario/dias-pago`
 - `Listado de Planillas` (alias): `/payroll-management/planillas/listado`
 - `Cargar Planilla Regular`: `/payroll-management/planillas/generar`
+- `Lista de Planillas Aplicadas`: `/payroll-management/planillas/aplicadas`
+- `Distribucion de la planilla`: `/payroll-management/planillas/aplicadas/distribucion/:publicId`
+
+Seguridad de identificador publico:
+- `publicId` firmado en backend (`p1_<payload>.<signature>`).
+- Endpoint de resolucion: `GET /payroll/public/:publicId`.
+- Validacion obligatoria: firma valida + acceso de usuario a `idEmpresa` de la planilla.
 
 Nota tecnica:
 - El menu de Parametros de Planilla usa la ruta `/payroll-params/calendario/dias-pago`.
@@ -138,3 +145,46 @@ Notas de ingenieria:
 - El resumen monetario debe agregarse solo sobre filas con `seleccionadoPlanilla=true` (con normalizacion defensiva de flags `true/false`, `1/0`, `'1'/'0'`).
 - Si `seleccionadoPlanilla && verificadoEmpleado`, la columna de accion de la tabla expandida no debe permitir `Aprobar` ni `Invalidar`.
 
+## Verificar y reabrir planilla (tecnico)
+### Verificar (`PATCH /payroll/:id/verify`)
+Precondiciones:
+- Planilla en `EN_PROCESO`.
+- Existe snapshot de empleados.
+- Existen inputs o cargas sociales configuradas.
+- Existen resultados calculados.
+- Hay al menos un empleado incluido.
+- Ningun empleado incluido con `requiereRevalidacion=1`.
+
+Persistencia al verificar:
+- `nom_calendarios_nomina`: estado -> `VERIFICADA`, `version_lock`++, `modificado_por`.
+- Auditoria de accion y evento de dominio.
+- No consume acciones en este paso.
+
+### Reabrir (`PATCH /payroll/:id/reopen`)
+Precondiciones:
+- Solo permitido desde `VERIFICADA`.
+- `APLICADA/CONTABILIZADA` no son reabribles.
+
+Persistencia al reabrir:
+- `nom_calendarios_nomina`: estado -> `ABIERTA`, `version_lock`++, `modificado_por`.
+- Se agrega motivo en `descripcionEvento`.
+- Auditoria de accion y evento de dominio.
+
+### Tablas clave para soporte
+- `nom_calendarios_nomina` (estado/version/actor).
+- `nomina_planilla_snapshot_json` (snapshot integral de planilla).
+- `nomina_resultados` (resultado por empleado).
+- `nomina_empleado_verificado` (incluido/verificado/revalidacion por empleado).
+- `nomina_inputs_snapshot` (inputs de calculo por empleado/accion).
+
+
+## Vista dedicada: planillas aplicadas
+- Ruta nueva: `/payroll-management/planillas/aplicadas`.
+- Renderiza `PayrollManagementPage` en modo `applied`.
+- Filtros por defecto en estado: `[3, 4, 5]` => Verificada, Aplicada, Enviada NetSuite.
+- Sin filtro de `DateRange` en UI y sin envio de `dateFrom/dateTo` al `fetchPayrolls`.
+- Texto de cabecera ajustado a finalizacion de proceso.
+
+Control de acceso (OR):
+- `payroll:verify` OR `payroll:apply` OR `payroll:netsuite:send` OR `payroll:send_netsuite`.
+- Implementado en selector `canAccessAppliedPayrollList` y en menu `requiredAnyPermissions`.

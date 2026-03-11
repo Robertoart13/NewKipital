@@ -42,10 +42,7 @@ import {
 } from 'antd';
 import dayjs, { type Dayjs } from 'dayjs';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-
-import { useSortableColumns } from '../../../hooks/useSortableColumns';
-import { bustApiCache } from '../../../lib/apiCache';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 
 import { fetchPayPeriods, type CatalogPayPeriod } from '../../../api/catalogs';
 import {
@@ -57,11 +54,14 @@ import {
   inactivatePayroll,
   processPayroll,
   reactivatePayroll,
+  reopenPayroll,
   type PayrollAuditTrailItem,
   type PayrollListItem,
   updatePayroll,
   verifyPayroll,
 } from '../../../api/payroll';
+import { useSortableColumns } from '../../../hooks/useSortableColumns';
+import { bustApiCache } from '../../../lib/apiCache';
 import { formatDateTime12h } from '../../../lib/formatDate';
 import { useAppSelector } from '../../../store/hooks';
 import {
@@ -70,12 +70,11 @@ import {
   canCreatePayroll,
   canEditPayroll,
   canProcessPayroll,
+  canReopenPayroll,
   canVerifyPayroll,
   canViewPayroll,
 } from '../../../store/selectors/permissions.selectors';
 import styles from '../configuration/UsersManagementPage.module.css';
-
-import type { ColumnsType } from 'antd/es/table';
 
 const { Text } = Typography;
 
@@ -91,6 +90,12 @@ interface CreatePayrollFormValues {
   fechaFinPago: Dayjs | string;
   fechaPagoProgramada: Dayjs | string;
   moneda: 'CRC' | 'USD';
+}
+
+type PayrollManagementMode = 'default' | 'applied';
+
+interface PayrollManagementPageProps {
+  mode?: PayrollManagementMode;
 }
 
 type PaneKey = 'empresa' | 'nombre' | 'tipo' | 'moneda' | 'estado';
@@ -118,6 +123,8 @@ const STATE_LABEL: Record<number, { text: string; color: string }> = {
   6: { text: 'Error Envio', color: 'red' },
   7: { text: 'Inactiva', color: 'default' },
 };
+
+const APPLIED_VIEW_ALLOWED_STATES = [3, 4, 5] as const;
 
 const TIPO_PLANILLA_TO_ID: Record<CreatePayrollFormValues['tipoPlanilla'], number> = {
   Regular: 1,
@@ -239,9 +246,11 @@ function toDayjs(value: Dayjs | string | undefined): Dayjs | null {
   return value.startOf('day');
 }
 
-export function PayrollManagementPage() {
+export function PayrollManagementPage({ mode = 'default' }: PayrollManagementPageProps) {
   const { modal, message } = AntdApp.useApp();
   const [form] = Form.useForm<CreatePayrollFormValues>();
+  const isAppliedMode = mode === 'applied';
+  const navigate = useNavigate();
 
   const canView = useAppSelector(canViewPayroll);
   const canCreate = useAppSelector(canCreatePayroll);
@@ -249,6 +258,7 @@ export function PayrollManagementPage() {
   const canProcess = useAppSelector(canProcessPayroll);
   const canVerify = useAppSelector(canVerifyPayroll);
   const canApply = useAppSelector(canApplyPayroll);
+  const canReopen = useAppSelector(canReopenPayroll);
   const canCancel = useAppSelector(canCancelPayroll);
   const companies = useAppSelector((state) => state.auth.companies);
   const activeCompany = useAppSelector((state) => state.activeCompany.company);
@@ -258,7 +268,8 @@ export function PayrollManagementPage() {
   const [loading, setLoading] = useState(false);
   const [savingCreate, setSavingCreate] = useState(false);
   const [processingId, setProcessingId] = useState<number | null>(null);
-  const [selectedEstados, setSelectedEstados] = useState<number[]>([1, 2]);
+  const defaultEstadoFilter = isAppliedMode ? [...APPLIED_VIEW_ALLOWED_STATES] : [1, 2];
+  const [selectedEstados, setSelectedEstados] = useState<number[]>(defaultEstadoFilter);
   const [selectedCompanyId, setSelectedCompanyId] = useState<number | undefined>(defaultCompanyId);
   const [listDateRange, setListDateRange] = useState<[Dayjs, Dayjs]>(() => {
     const today = dayjs().startOf('day');
@@ -314,12 +325,23 @@ export function PayrollManagementPage() {
   });
   const estadoFilterOptions = useMemo(
     () =>
-      [0, 1, 2, 3, 4, 5, 6].map((value) => ({
+      (isAppliedMode ? [...APPLIED_VIEW_ALLOWED_STATES] : [0, 1, 2, 3, 4, 5, 6]).map((value) => ({
         label: STATE_LABEL[value]?.text ?? `Estado ${value}`,
         value,
       })),
-    [],
+    [isAppliedMode],
   );
+
+  useEffect(() => {
+    if (!isAppliedMode) return;
+
+    setSelectedEstados((current) => {
+      const allowed = current.filter((state) =>
+        APPLIED_VIEW_ALLOWED_STATES.includes(state as (typeof APPLIED_VIEW_ALLOWED_STATES)[number]),
+      );
+      return allowed.length > 0 ? allowed : [...APPLIED_VIEW_ALLOWED_STATES];
+    });
+  }, [isAppliedMode]);
 
   const loadRows = useCallback(async () => {
     if (!selectedCompanyId || !canView) {
@@ -331,8 +353,8 @@ export function PayrollManagementPage() {
       const data = await fetchPayrolls(
         String(selectedCompanyId),
         false,
-        formatDateValue(listDateRange[0]),
-        formatDateValue(listDateRange[1]),
+        isAppliedMode ? undefined : formatDateValue(listDateRange[0]),
+        isAppliedMode ? undefined : formatDateValue(listDateRange[1]),
         false,
         selectedEstados,
       );
@@ -343,7 +365,7 @@ export function PayrollManagementPage() {
     } finally {
       setLoading(false);
     }
-  }, [canView, listDateRange, message, selectedCompanyId, selectedEstados]);
+  }, [canView, isAppliedMode, listDateRange, message, selectedCompanyId, selectedEstados]);
 
   const loadPeriods = useCallback(async () => {
     try {
@@ -862,6 +884,28 @@ export function PayrollManagementPage() {
                 </Button>
               </Tooltip>
             ) : null}
+            {canReopen && row.estado === 3 ? (
+              <Tooltip title="Reabrir: devuelve la planilla a Abierta para corregir acciones o seleccion de empleados.">
+                <Button
+                  size="small"
+                  icon={<ReloadOutlined />}
+                  loading={processingId === row.id}
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    void confirmAndRunAction(
+                      row,
+                      'Confirmar reapertura de planilla',
+                      'La planilla volvera a estado Abierta para permitir correcciones. Desea continuar?',
+                      'Reabrir',
+                      () => reopenPayroll(row.id, 'Reapertura manual desde Gestion Planilla'),
+                      'Planilla reabierta',
+                    );
+                  }}
+                >
+                  Reabrir
+                </Button>
+              </Tooltip>
+            ) : null}
             {canCancel && row.estado === 0 ? (
               <Tooltip title="Reactivar: vuelve a abrir la planilla y reasocia acciones elegibles.">
                 <Button
@@ -911,8 +955,7 @@ export function PayrollManagementPage() {
         ),
       },
     ],
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [canApply, canCancel, canProcess, canVerify, companies, processingId],
+    [canApply, canCancel, canProcess, canReopen, canVerify, companies, processingId],
   );
 
   const auditColumns = useSortableColumns<PayrollAuditTrailItem>(
@@ -1010,8 +1053,14 @@ export function PayrollManagementPage() {
             <ArrowLeftOutlined />
           </Link>
           <div className={styles.pageTitleBlock}>
-            <h1 className={styles.pageTitle}>Listado de Planillas</h1>
-            <p className={styles.pageSubtitle}>Visualice y gestione aperturas de planilla por empresa</p>
+            <h1 className={styles.pageTitle}>
+              {isAppliedMode ? 'Lista de Planillas Aplicadas' : 'Listado de Planillas'}
+            </h1>
+            <p className={styles.pageSubtitle}>
+              {isAppliedMode
+                ? 'Visualice planillas en finalizacion de proceso (Verificada, Aplicada y Enviada NetSuite)'
+                : 'Visualice y gestione aperturas de planilla por empresa'}
+            </p>
           </div>
         </div>
       </div>
@@ -1026,11 +1075,13 @@ export function PayrollManagementPage() {
               <div>
                 <h2 className={styles.gestionTitle}>Gestion de Planillas</h2>
                 <p className={styles.gestionDesc}>
-                  Aperture, procese, verifique y aplique corridas de planilla por empresa
+                  {isAppliedMode
+                    ? 'Aqui solo se visualizan planillas aplicadas y en finalizacion de proceso'
+                    : 'Aperture, procese, verifique y aplique corridas de planilla por empresa'}
                 </p>
               </div>
             </Flex>
-            {canCreate ? (
+            {!isAppliedMode && canCreate ? (
               <Button
                 type="primary"
                 icon={<PlusOutlined />}
@@ -1070,7 +1121,19 @@ export function PayrollManagementPage() {
                 options={estadoFilterOptions}
                 onChange={(values) =>
                   setSelectedEstados(
-                    values.length > 0 ? values.map((value) => Number(value)) : [1, 2],
+                    values.length > 0
+                      ? values
+                          .map((value) => Number(value))
+                          .filter((value) =>
+                            isAppliedMode
+                              ? APPLIED_VIEW_ALLOWED_STATES.includes(
+                                  value as (typeof APPLIED_VIEW_ALLOWED_STATES)[number],
+                                )
+                              : true,
+                          )
+                      : isAppliedMode
+                        ? [...APPLIED_VIEW_ALLOWED_STATES]
+                        : [1, 2],
                   )
                 }
               />
@@ -1080,15 +1143,17 @@ export function PayrollManagementPage() {
                 onChange={(value: number) => setSelectedCompanyId(value)}
                 options={companies.map((company) => ({ label: company.nombre, value: company.id }))}
               />
-              <DatePicker.RangePicker
-                value={listDateRange}
-                allowClear={false}
-                format="YYYY-MM-DD"
-                onChange={(range) => {
-                  if (!range || !range[0] || !range[1]) return;
-                  setListDateRange([range[0].startOf('day'), range[1].startOf('day')]);
-                }}
-              />
+              {!isAppliedMode ? (
+                <DatePicker.RangePicker
+                  value={listDateRange}
+                  allowClear={false}
+                  format="YYYY-MM-DD"
+                  onChange={(range) => {
+                    if (!range || !range[0] || !range[1]) return;
+                    setListDateRange([range[0].startOf('day'), range[1].startOf('day')]);
+                  }}
+                />
+              ) : null}
               <Button icon={<ReloadOutlined />} onClick={() => { bustApiCache(); void loadRows(); }}>
                 Refrescar
               </Button>
@@ -1217,6 +1282,11 @@ export function PayrollManagementPage() {
             }}
             onRow={(record) => ({
               onClick: () => {
+                if (isAppliedMode) {
+                  const routeId = record.publicId?.trim() || String(record.id);
+                  navigate(`/payroll-management/planillas/aplicadas/distribucion/${encodeURIComponent(routeId)}`);
+                  return;
+                }
                 void openEditModal(record);
               },
               style: { cursor: 'pointer' },

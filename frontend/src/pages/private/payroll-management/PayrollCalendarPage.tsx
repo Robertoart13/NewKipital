@@ -97,7 +97,6 @@ interface CalendarEvent {
 
 interface PayrollDetails extends PayrollListItem {
   versionLock?: number;
-  createdBy?: number;
 }
 
 const TYPE_COLOR: Record<string, string> = {
@@ -141,9 +140,49 @@ function hasOverlap(a: PayrollListItem, b: PayrollListItem): boolean {
   return !aEnd.isBefore(bStart, 'day') && !bEnd.isBefore(aStart, 'day');
 }
 
+function formatPayrollAmount(value?: string | number | null, currency?: string | null): string {
+  const n = Number(value ?? 0);
+  if (!Number.isFinite(n)) return '--';
+  const normalizedCurrency = (currency ?? 'CRC').toUpperCase();
+  const locale = normalizedCurrency === 'USD' ? 'en-US' : 'es-CR';
+  return new Intl.NumberFormat(locale, {
+    style: 'currency',
+    currency: normalizedCurrency === 'USD' ? 'USD' : 'CRC',
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(n);
+}
+
+function formatPayrollVersion(version?: number | null): string {
+  const parsed = Number(version);
+  if (!Number.isFinite(parsed) || parsed < 0) return '--';
+  return sanitizeDisplayText(`v${Math.trunc(parsed)}`);
+}
+
+function sanitizeDisplayText(value: string): string {
+  return value
+    .replace(/`r`n/g, ' ')
+    .replace(/\\r\\n/g, ' ')
+    .replace(/[\r\n]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function formatPayrollActor(userId?: number | null, currentUser?: { id: string; name: string } | null): string {
+  const parsed = Number(userId);
+  if (!Number.isInteger(parsed) || parsed <= 0) return '--';
+  if (currentUser && Number(currentUser.id) === parsed) {
+    return sanitizeDisplayText(
+      currentUser.name ? `${currentUser.name} (tu usuario)` : `Usuario #${parsed}`,
+    );
+  }
+  return sanitizeDisplayText(`Usuario #${parsed}`);
+}
+
 export function PayrollCalendarPage() {
   const { modal, message } = AntdApp.useApp();
   const companies = useAppSelector((state) => state.auth.companies);
+  const currentUser = useAppSelector((state) => state.auth.user);
   const activeCompany = useAppSelector((state) => state.activeCompany.company);
   const canProcess = useAppSelector((state) => state.permissions.permissions.includes('payroll:process'));
   const canVerify = useAppSelector((state) => state.permissions.permissions.includes('payroll:verify'));
@@ -329,7 +368,7 @@ export function PayrollCalendarPage() {
       }
 
       modal.confirm({
-        title: 'Confirmar acción',
+        title: 'Confirmar acciÃ³n',
         content: `Esta seguro de ${actionLabel} esta planilla?`,
         okText: `Si, ${actionLabel}`,
         cancelText: 'Cancelar',
@@ -479,9 +518,9 @@ export function PayrollCalendarPage() {
         {events.length > 2 ? (
           <li className={styles.eventMore}>
             <Tooltip
-              title={`${events.length - 2} evento(s) más en este día. Pulse en un evento arriba para ver detalle.`}
+              title={`${events.length - 2} evento(s) mÃ¡s en este dÃ­a. Pulse en un evento arriba para ver detalle.`}
             >
-              <span>+{events.length - 2} más</span>
+              <span>+{events.length - 2} mÃ¡s</span>
             </Tooltip>
           </li>
         ) : null}
@@ -538,7 +577,7 @@ export function PayrollCalendarPage() {
         </Button>
       </div>
 
-      {/* ----- Sección: Panel Calendario de Nómina ----- */}
+      {/* ----- SecciÃ³n: Panel Calendario de NÃ³mina ----- */}
       <Card className={sharedStyles.mainCard} style={{ marginBottom: 20 }}>
         <div className={sharedStyles.mainCardBody}>
           <Flex align="center" gap={16}>
@@ -621,7 +660,7 @@ export function PayrollCalendarPage() {
                       { label: 'Verificada', value: 3 },
                       { label: 'Aplicada', value: 4 },
                       { label: 'Enviada NetSuite', value: 5 },
-                      { label: 'Error de envío', value: 6 },
+                      { label: 'Error de envÃ­o', value: 6 },
                       { label: 'Inactiva', value: 7 },
                     ]}
                   />
@@ -672,7 +711,7 @@ export function PayrollCalendarPage() {
 
         {/* Columna derecha: Indicadores arriba, Calendario abajo */}
         <div className={styles.contentCol}>
-          {/* Indicadores (contraíble, cerrado por defecto) */}
+          {/* Indicadores (contraÃ­ble, cerrado por defecto) */}
           <Card className={sharedStyles.mainCard}>
             <Collapse
               defaultActiveKey={[]}
@@ -786,7 +825,7 @@ export function PayrollCalendarPage() {
                             ),
                           },
                           {
-                            title: 'Línea de tiempo',
+                            title: 'LÃ­nea de tiempo',
                             render: (_, row) => (
                               <Space>
                                 <Tag>{toDate(row.fechaInicioPeriodo)?.format('YYYY-MM-DD')}</Tag>
@@ -955,9 +994,11 @@ export function PayrollCalendarPage() {
                         {STATUS_VISUAL[detail.estado]?.label || `Estado ${detail.estado}`}
                       </Tag>
                     </Descriptions.Item>
-                    <Descriptions.Item label="Control de cambios">{detail.versionLock ?? '--'}</Descriptions.Item>
-                    <Descriptions.Item label="Persona que creó la planilla">
-                      {detail.createdBy ?? '--'}
+                    <Descriptions.Item label="Control de cambios">
+                      {formatPayrollVersion(detail.versionLock)}
+                    </Descriptions.Item>
+                    <Descriptions.Item label="Persona que creo la planilla">
+                      {formatPayrollActor(detail.creadoPor, currentUser)}
                     </Descriptions.Item>
                   </Descriptions>
                 </div>
@@ -970,19 +1011,19 @@ export function PayrollCalendarPage() {
                     <div className={styles.drawerTotalItem}>
                       <div className={styles.drawerTotalLabel}>Bruto</div>
                       <div className={styles.drawerTotalValue}>
-                        {canViewSensitive ? (detailTotals?.bruto ?? '--') : '***'}
+                        {canViewSensitive ? formatPayrollAmount(detailTotals?.bruto, detail?.moneda) : '***'}
                       </div>
                     </div>
                     <div className={styles.drawerTotalItem}>
                       <div className={styles.drawerTotalLabel}>Deducciones</div>
                       <div className={styles.drawerTotalValue}>
-                        {canViewSensitive ? (detailTotals?.deducciones ?? '--') : '***'}
+                        {canViewSensitive ? formatPayrollAmount(detailTotals?.deducciones, detail?.moneda) : '***'}
                       </div>
                     </div>
                     <div className={styles.drawerTotalItem}>
                       <div className={styles.drawerTotalLabel}>Neto</div>
                       <div className={styles.drawerTotalValue}>
-                        {canViewSensitive ? (detailTotals?.neto ?? '--') : '***'}
+                        {canViewSensitive ? formatPayrollAmount(detailTotals?.neto, detail?.moneda) : '***'}
                       </div>
                     </div>
                   </div>
@@ -1000,9 +1041,9 @@ export function PayrollCalendarPage() {
                   </p>
                   <ul className={styles.drawerActionsList}>
                     <li>Procesar: prepara la planilla del periodo y genera los movimientos a pagar.</li>
-                    <li>Verificar: revisa que la planilla procesada esté completa y lista para aprobar.</li>
+                    <li>Verificar: revisa que la planilla procesada estÃ© completa y lista para aprobar.</li>
                     <li>Aplicar: confirma oficialmente la planilla y deja los resultados en firme.</li>
-                    <li>Enviar a NetSuite: envía el asiento contable de la planilla aplicada.</li>
+                    <li>Enviar a NetSuite: envÃ­a el asiento contable de la planilla aplicada.</li>
                   </ul>
                   <div className={styles.drawerActionsButtons}>
                     <Tooltip title="Genera los movimientos de la planilla para este periodo.">
@@ -1067,4 +1108,5 @@ export function PayrollCalendarPage() {
     </div>
   );
 }
+
 

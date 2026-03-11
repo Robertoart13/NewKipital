@@ -5,6 +5,7 @@ export { EmployeeDetailPage } from './employees/EmployeeDetailPage';
 export { PermissionsAdminListPage } from './configuration/PermissionsAdminListPage';
 export { RolesManagementPage } from './configuration/RolesManagementPage';
 export { UsersManagementPage } from './configuration/UsersManagementPage';
+export { DistributionRulesPage } from './configuration/DistributionRulesPage';
 export { CompaniesManagementPage } from './configuration/CompaniesManagementPage';
 export { ClassesManagementPage } from './configuration/ClassesManagementPage';
 export { ProjectsManagementPage } from './configuration/ProjectsManagementPage';
@@ -15,6 +16,8 @@ export { AutomationMonitoringPage } from './monitoring/AutomationMonitoringPage'
 export { PayrollArticlesManagementPage } from './payroll-params/PayrollArticlesManagementPage';
 export { PayrollMovementsManagementPage } from './payroll-params/PayrollMovementsManagementPage';
 export { PayrollManagementPage } from './payroll-management/PayrollManagementPage';
+export { AppliedPayrollManagementPage } from './payroll-management/AppliedPayrollManagementPage';
+export { PayrollDistributionPage } from './payroll-management/PayrollDistributionPage';
 export { PayrollGeneratePage } from './payroll-management/PayrollGeneratePage';
 export { PayrollCalendarPage } from './payroll-management/PayrollCalendarPage';
 export { PayrollHolidaysPage } from './payroll-management/PayrollHolidaysPage';

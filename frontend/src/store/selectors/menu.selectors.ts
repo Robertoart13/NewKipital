@@ -20,6 +20,12 @@ const hasPermissionForMenu = (permissions: string[], required: string): boolean 
 const filterMenuByPermissions = (items: MenuItem[], permissions: string[]): MenuItem[] => {
   return items
     .map((item) => {
+      if (item.requiredAnyPermissions?.length) {
+        const hasAnyPermission = item.requiredAnyPermissions.some((permission) =>
+          hasPermissionForMenu(permissions, permission),
+        );
+        if (!hasAnyPermission) return null;
+      }
       if (!item.requiredPermission) return item;
       return hasPermissionForMenu(permissions, item.requiredPermission) ? item : null;
     })

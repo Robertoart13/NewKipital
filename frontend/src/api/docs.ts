@@ -38,11 +38,10 @@ export interface DocsSearchResponse {
   data: DocsSearchResult[];
 }
 
-/** Carpeta del Manual del Usuario (solo esta se muestra). */
-const MANUAL_USUARIO_ROOT = '13-manual-usuario';
-
-export async function fetchDocsFullTree(root = MANUAL_USUARIO_ROOT): Promise<DocsNode[]> {
-  const res = await httpFetch(`/docs/tree/full?root=${encodeURIComponent(root)}`);
+/** Si root es null, el backend devuelve todo docs/. */
+export async function fetchDocsFullTree(root: string | null = null): Promise<DocsNode[]> {
+  const url = root ? `/docs/tree/full?root=${encodeURIComponent(root)}` : '/docs/tree/full';
+  const res = await httpFetch(url);
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
     throw new Error(err?.message ?? 'Error al cargar la estructura');
@@ -51,9 +50,11 @@ export async function fetchDocsFullTree(root = MANUAL_USUARIO_ROOT): Promise<Doc
   return json.data;
 }
 
-export async function fetchDocsSearch(q: string, root = MANUAL_USUARIO_ROOT): Promise<DocsSearchResult[]> {
+export async function fetchDocsSearch(q: string, root: string | null = null): Promise<DocsSearchResult[]> {
   if (!q || q.trim().length < 2) return [];
-  const res = await httpFetch(`/docs/search?q=${encodeURIComponent(q.trim())}&root=${encodeURIComponent(root)}`);
+  const base = `/docs/search?q=${encodeURIComponent(q.trim())}`;
+  const url = root ? `${base}&root=${encodeURIComponent(root)}` : base;
+  const res = await httpFetch(url);
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
     throw new Error(err?.message ?? 'Error en la búsqueda');

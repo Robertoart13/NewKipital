@@ -1,3 +1,5 @@
+import { useMemo } from 'react';
+
 import { Button, Modal, Table } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import dayjs from 'dayjs';
@@ -53,6 +55,22 @@ const PAYROLL_STATE_LABEL: Record<number, string> = {
   7: 'Inactiva',
 };
 
+function normalizeText(value?: string | null): string {
+  return (value ?? '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .trim()
+    .toLowerCase();
+}
+
+function isApprovedStatus(status?: string | null): boolean {
+  return normalizeText(status).includes('aprob');
+}
+
+function isCcssCategory(category?: string | null): boolean {
+  return normalizeText(category).includes('carga social');
+}
+
 const actionColumnsForModal = (
   canViewSensitive: boolean,
 ): ColumnsType<PayrollPreviewActionRow> => [
@@ -87,6 +105,31 @@ export function EmployeePayrollPreviewModal({
   canViewSensitive,
 }: Props) {
   const visible = open && !!employee && !!payroll;
+  const approvedActions = useMemo(() => {
+    if (!employee?.acciones?.length) return [];
+
+    return employee.acciones
+      .map((action) =>
+        isCcssCategory(action.categoria)
+          ? { ...action, estado: 'Aprobada' }
+          : action,
+      )
+      .filter(
+        (action) => isApprovedStatus(action.estado) || isCcssCategory(action.categoria),
+      )
+      .sort((a, b) => {
+        const categoryDiff = normalizeText(a.categoria).localeCompare(
+          normalizeText(b.categoria),
+          'es',
+        );
+        if (categoryDiff !== 0) return categoryDiff;
+
+        return normalizeText(a.tipoAccion).localeCompare(
+          normalizeText(b.tipoAccion),
+          'es',
+        );
+      });
+  }, [employee?.acciones]);
 
   return (
     <Modal
@@ -220,7 +263,7 @@ export function EmployeePayrollPreviewModal({
               rowKey={(a) =>
                 `${employee.idEmpleado}-${a.idAccion ?? 'na'}-${a.categoria}-${a.tipoAccion}-${a.monto}-${a.estado}-${a.tipoSigno}`
               }
-              dataSource={employee.acciones}
+              dataSource={approvedActions}
               columns={actionColumnsForModal(canViewSensitive)}
               size="small"
               pagination={false}

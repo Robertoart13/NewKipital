@@ -1,9 +1,8 @@
 import { FileTextOutlined, FolderOutlined } from '@ant-design/icons';
 import { Col, Input, Row, Spin, Tree, Typography } from 'antd';
-
-const { Search } = Input;
-import type { DataNode } from 'antd/es/tree';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import mermaid from 'mermaid';
+import { isValidElement, useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
+import ReactMarkdown from 'react-markdown';
 
 import {
   fetchDocsFile,
@@ -13,9 +12,67 @@ import {
   type DocsSearchResult,
 } from '../../../api/docs';
 
-import ReactMarkdown from 'react-markdown';
-
 import styles from './DocsBrowserPage.module.css';
+
+import type { DataNode } from 'antd/es/tree';
+
+const { Search } = Input;
+let mermaidInitialized = false;
+
+function ensureMermaidInitialized() {
+  if (mermaidInitialized) return;
+  mermaid.initialize({
+    startOnLoad: false,
+    securityLevel: 'strict',
+    theme: 'default',
+  });
+  mermaidInitialized = true;
+}
+
+function MermaidDiagram({ chart }: { chart: string }) {
+  const containerRef = useRef<HTMLDivElement | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const reactId = useId();
+  const diagramId = useMemo(
+    () => `mermaid-${reactId.replace(/[^a-zA-Z0-9_-]/g, '')}`,
+    [reactId],
+  );
+
+  useEffect(() => {
+    let cancelled = false;
+    const renderDiagram = async () => {
+      if (!containerRef.current) return;
+      try {
+        ensureMermaidInitialized();
+        const { svg, bindFunctions } = await mermaid.render(diagramId, chart.trim());
+        if (cancelled || !containerRef.current) return;
+        containerRef.current.innerHTML = svg;
+        bindFunctions?.(containerRef.current);
+        setError(null);
+      } catch (e) {
+        if (cancelled) return;
+        setError(e instanceof Error ? e.message : 'No se pudo renderizar el diagrama');
+      }
+    };
+    void renderDiagram();
+    return () => {
+      cancelled = true;
+    };
+  }, [chart, diagramId]);
+
+  if (error) {
+    return (
+      <div className={styles.mermaidError}>
+        <p className={styles.mdP}>No se pudo renderizar el diagrama Mermaid: {error}</p>
+        <pre className={styles.mdPre}>
+          <code>{chart}</code>
+        </pre>
+      </div>
+    );
+  }
+
+  return <div ref={containerRef} className={styles.mermaidContainer} />;
+}
 
 /** Parsea tablas GFM (|col1|col2|) sin dependencia remark-gfm. */
 function preprocessTables(md: string): Array<{ type: 'md' | 'table'; content: string; rows?: string[][] }> {
@@ -58,7 +115,7 @@ function preprocessTables(md: string): Array<{ type: 'md' | 'table'; content: st
 const { Title, Text } = Typography;
 
 const MANUAL_USUARIO_ROOT = '13-manual-usuario';
-const GUIA_RAPIDA_PATH = `${MANUAL_USUARIO_ROOT}/00-GUIA-RAPIDA-USUARIO.md`;
+const GUIA_RAPIDA_PATH = `${MANUAL_USUARIO_ROOT}/14-MANUAL-USUARIO-ENTERPRISE-KPITAL360.md`;
 
 function resolveDocPath(href: string, currentPath: string | null): string | null {
   if (!href || !href.toLowerCase().endsWith('.md')) return null;
@@ -96,13 +153,13 @@ function nodeToTreeData(nodes: DocsNode[]): DataNode[] {
   }));
 }
 
-const WELCOME_CONTENT = `# Manual del Usuario - Guía KPITAL 360
+const WELCOME_CONTENT = `# Manual del Usuario - Guia KPITAL 360
 
-Bienvenido a la guía del usuario. Aquí encontrarás las instrucciones de operación para usar el sistema.
+Bienvenido a la guia del usuario. Aqui encontraras las instrucciones de operacion para usar el sistema.
 
-## Cómo usar
+## Como usar
 
-1. **Buscar**: Usa el buscador superior para encontrar temas (ej: "crear empleado", "planilla", "vacaciones"). Los resultados indicarán en qué documento está la información.
+1. **Buscar**: Usa el buscador superior para encontrar temas (ej: "crear empleado", "planilla", "vacaciones"). Los resultados indicaran en que documento esta la informacion.
 2. **Navegar**: Usa la tabla de contenidos a la izquierda para explorar los documentos del manual.
 3. **Leer**: Selecciona un documento para ver su contenido en el panel principal.
 `;
@@ -126,7 +183,7 @@ export function DocsBrowserPage() {
       const data = await fetchDocsFullTree();
       setTree(data);
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Error al cargar la documentación');
+      setError(e instanceof Error ? e.message : 'Error al cargar la documentacion');
     } finally {
       setTreeLoading(false);
     }
@@ -170,7 +227,7 @@ export function DocsBrowserPage() {
       const results = await fetchDocsSearch(q);
       setSearchResults(results);
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Error en la búsqueda');
+      setError(e instanceof Error ? e.message : 'Error en la busqueda');
       setSearchResults(null);
     } finally {
       setSearching(false);
@@ -221,7 +278,7 @@ export function DocsBrowserPage() {
           {searching ? (
             <Spin />
           ) : searchResults.length === 0 ? (
-            <Text type="secondary">No se encontraron documentos con ese término.</Text>
+            <Text type="secondary">No se encontraron documentos con ese termino.</Text>
           ) : (
             <div className={styles.searchList}>
               {searchResults.map((r) => (
@@ -365,8 +422,26 @@ export function DocsBrowserPage() {
                     ),
                     th: ({ children }) => <th className={styles.mdTh}>{children}</th>,
                     td: ({ children }) => <td className={styles.mdTd}>{children}</td>,
-                    code: ({ children }) => <code className={styles.mdCode}>{children}</code>,
-                    pre: ({ children }) => <pre className={styles.mdPre}>{children}</pre>,
+                    pre: ({ children }) => {
+                      if (isValidElement(children)) {
+                        const props = children.props as { className?: string };
+                        if (props.className?.includes('language-mermaid')) {
+                          return <>{children}</>;
+                        }
+                      }
+                      return <pre className={styles.mdPre}>{children}</pre>;
+                    },
+                    code: ({ children, className }) => {
+                      const match = /language-(\w+)/.exec(className || '');
+                      if (match?.[1] === 'mermaid') {
+                        return <MermaidDiagram chart={String(children).replace(/\n$/, '')} />;
+                      }
+                      return (
+                        <code className={className ?? styles.mdCode}>
+                          {children}
+                        </code>
+                      );
+                    },
                   }}
                 >
                   {seg.content}

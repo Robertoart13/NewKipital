@@ -6,6 +6,7 @@ import {
   BadRequestException,
   ForbiddenException,
 } from '@nestjs/common';
+import { createHmac, timingSafeEqual } from 'crypto';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { InjectRepository } from '@nestjs/typeorm';
 import { DataSource, EntityManager, In, Repository } from 'typeorm';
@@ -71,6 +72,8 @@ export class PayrollService {
   // Regla global: 1 = Activo, 0 = Inactivo.
   private readonly activeFlag = 1;
   private readonly inactiveFlag = 0;
+  private readonly publicIdSecret =
+    process.env.PAYROLL_PUBLIC_ID_SECRET?.trim() || 'kpital-payroll-public-id-secret-v1';
 
   /**
    * Tramos de impuesto renta Costa Rica (base mensual CRC).
@@ -1429,6 +1432,11 @@ export class PayrollService {
     };
   }
 
+  async findOneByPublicId(publicId: string, userId?: number): Promise<PayrollCalendar> {
+    const id = this.decodePayrollPublicId(publicId);
+    return this.findOne(id, userId);
+  }
+
   async updateEmployeeSelection(
     payrollId: number,
     employeeIds: number[],
@@ -2573,6 +2581,7 @@ export class PayrollService {
   toResponse(entity: PayrollCalendar): PayrollCalendarResponse {
     return {
       id: entity.id,
+      publicId: this.encodePayrollPublicId(entity.id),
       idEmpresa: entity.idEmpresa,
       idPeriodoPago: entity.idPeriodoPago,
       idTipoPlanilla: entity.idTipoPlanilla ?? null,
@@ -2593,7 +2602,52 @@ export class PayrollService {
       fechaAplicacion: entity.fechaAplicacion ? this.toYmd(entity.fechaAplicacion) : null,
       descripcionEvento: entity.descripcionEvento ?? null,
       etiquetaColor: entity.etiquetaColor ?? null,
+      fechaCreacion: entity.fechaCreacion ? this.toYmd(entity.fechaCreacion) : null,
+      fechaModificacion: entity.fechaModificacion ? this.toYmd(entity.fechaModificacion) : null,
+      creadoPor: entity.creadoPor ?? null,
+      modificadoPor: entity.modificadoPor ?? null,
+      versionLock: entity.versionLock,
     };
+  }
+
+  private encodePayrollPublicId(id: number): string {
+    const payload = Buffer.from(String(id), 'utf8').toString('base64url');
+    const signature = createHmac('sha256', this.publicIdSecret)
+      .update(payload)
+      .digest('base64url')
+      .slice(0, 16);
+    return `p1_${payload}.${signature}`;
+  }
+
+  private decodePayrollPublicId(publicId: string): number {
+    const raw = String(publicId ?? '').trim();
+    const match = /^p1_([A-Za-z0-9_-]+)\.([A-Za-z0-9_-]+)$/.exec(raw);
+    if (!match) {
+      throw new NotFoundException('Planilla no encontrada');
+    }
+
+    const [, payload, signature] = match;
+    const expectedSignature = createHmac('sha256', this.publicIdSecret)
+      .update(payload)
+      .digest('base64url')
+      .slice(0, 16);
+
+    const receivedBuffer = Buffer.from(signature, 'utf8');
+    const expectedBuffer = Buffer.from(expectedSignature, 'utf8');
+    if (
+      receivedBuffer.length !== expectedBuffer.length ||
+      !timingSafeEqual(receivedBuffer, expectedBuffer)
+    ) {
+      throw new NotFoundException('Planilla no encontrada');
+    }
+
+    const decoded = Buffer.from(payload, 'base64url').toString('utf8');
+    const id = Number(decoded);
+    if (!Number.isInteger(id) || id <= 0) {
+      throw new NotFoundException('Planilla no encontrada');
+    }
+
+    return id;
   }
 
   private async assertUserCompanyAccess(userId: number, companyId: number): Promise<void> {

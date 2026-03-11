@@ -33,6 +33,7 @@ flowchart TD
 | PEND-008 | Operacion | Runbooks de incidente nivel 1 y 2 completos | P1 | En curso | Operaciones | 2026-03-26 | Falta validacion cruzada con soporte | Runbooks probados en simulacro |
 | PEND-009 | Datos | Diccionario de datos con campos obligatorios por modulo | P2 | Pendiente | Data Steward | 2026-04-02 | Revisar modulos secundarios | Diccionario actualizado + versionado |
 | PEND-010 | Producto | Capacitacion usuario final basada en walkthroughs | P2 | Pendiente | Product Ops | 2026-04-05 | Agenda de capacitacion | Sesion impartida + feedback documentado |
+| PEND-011 | Planilla | Terminar vista `Distribucion de la planilla` (detalle funcional completo) | P1 | Pendiente | Frontend + Backend | 2026-03-31 | Vista actual aun en construccion (placeholder parcial) | Vista final con detalle completo + QA funcional + doc actualizada |
 
 ## 📊 Definicion de estado del tablero
 - `Pendiente`: no iniciado.
