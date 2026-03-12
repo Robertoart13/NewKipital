@@ -27,6 +27,7 @@ import {
   AppliedPayrollManagementPage,
   PayrollDistributionPage,
   PayrollGeneratePage,
+  PayrollOvertimeBulkUploadPage,
   PayrollCalendarPage,
   PayrollHolidaysPage,
   IntercompanyTransferPage,
@@ -465,6 +466,16 @@ export function AppRouter() {
             </PrivateLayout>
           }
           path="/payroll-management/planillas/generar"
+        />
+        <Route
+          element={
+            <PrivateLayout>
+              <PermissionGuard requiredPermission="payroll:overtime:bulk-upload">
+                <PayrollOvertimeBulkUploadPage />
+              </PermissionGuard>
+            </PrivateLayout>
+          }
+          path="/payroll-management/planillas/carga-masiva-horas-extras"
         />
         <Route path="/payroll-management/planillas" element={<Navigate to="/payroll-management/planillas/generar" replace />} />
         <Route

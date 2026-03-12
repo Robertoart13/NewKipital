@@ -208,6 +208,12 @@ const initialMenuConfig: MenuItem[] = [
               'payroll:send_netsuite',
             ],
           },
+          {
+            id: 'carga-masiva-horas-extras',
+            label: 'Carga Masiva de Horas Extras',
+            path: '/payroll-management/planillas/carga-masiva-horas-extras',
+            requiredPermission: 'payroll:overtime:bulk-upload',
+          },
         ],
       },
       {

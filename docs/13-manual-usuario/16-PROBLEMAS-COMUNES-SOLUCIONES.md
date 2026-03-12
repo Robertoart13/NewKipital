@@ -16,6 +16,8 @@ Fecha: 2026-03-11
 | Error de permisos | Rol sin permiso operativo | Revisar matriz de permisos | Solicitar ajuste de rol/permisos |
 | Lentitud al guardar accion | Recalculo completo en curso | Revisar spinner/estado y network | Esperar finalizacion, verificar conectividad y reintentar |
 | Error de API al editar vacaciones | Tabla/campo no disponible o mismatch de esquema | Revisar log backend y SQL de referencia | Corregir consulta/entidad conforme a esquema actual |
+| En Reglas de Distribucion el listado muestra menos `Asignaciones` que la pantalla de edicion | Listado desactualizado por cache | Abrir regla en `Editar` y validar lineas reales | Usar `Refrescar` en listado para forzar recarga y limpiar cache de consulta |
+| En edicion de Regla de Distribucion aparece una linea vacia aunque API trae datos | Rehidratacion incompleta del formulario en frontend | Validar respuesta `GET /distribution-rules/:publicId` y campos `detalles` | Recargar vista y confirmar que `Tipo de Accion` y `Cuenta Contable` se visualizan en cada linea |
 
 ## Escalamiento
 1. Reproducir con evidencia (captura + hora + usuario + empresa + planilla).

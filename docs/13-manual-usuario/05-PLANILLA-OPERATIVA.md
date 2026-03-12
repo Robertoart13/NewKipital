@@ -31,6 +31,11 @@ stateDiagram-v2
 2. Completar empresa, periodo, tipo y fechas.
 3. Guardar.
 
+## Carga masiva de horas extras
+- Ruta: Gestion Planilla > Planillas > Carga Masiva de Horas Extras.
+- Permiso requerido: payroll:overtime:bulk-upload.
+- Estado actual: vista base con encabezado Vista de carga masiva de horas extras (pendiente implementacion funcional de carga).
+
 ### Campos clave
 | Campo | Para qué sirve |
 |---|---|
@@ -251,3 +256,4 @@ Permisos para ver esta vista (cualquiera de estos):
 - `payroll:verify`
 - `payroll:apply`
 - `payroll:netsuite:send` (o alias legacy `payroll:send_netsuite`)
+

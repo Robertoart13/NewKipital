@@ -91,6 +91,7 @@ En `PayrollGeneratePage` el detalle expandido se simplifica para operacion diari
 - `Listado de Dias de Pago de Planilla`: `/payroll-params/calendario/dias-pago`
 - `Listado de Planillas` (alias): `/payroll-management/planillas/listado`
 - `Cargar Planilla Regular`: `/payroll-management/planillas/generar`
+- `Carga Masiva de Horas Extras`: `/payroll-management/planillas/carga-masiva-horas-extras`
 - `Lista de Planillas Aplicadas`: `/payroll-management/planillas/aplicadas`
 - `Distribucion de la planilla`: `/payroll-management/planillas/aplicadas/distribucion/:publicId`
 
@@ -102,6 +103,7 @@ Seguridad de identificador publico:
 Nota tecnica:
 - El menu de Parametros de Planilla usa la ruta `/payroll-params/calendario/dias-pago`.
 - Debe existir una ruta explicita en `AppRouter.tsx` para evitar que el click del submenu no navegue.
+- La ruta de carga masiva de horas extras requiere permiso `payroll:overtime:bulk-upload`.
 
 
 
@@ -188,3 +190,20 @@ Persistencia al reabrir:
 Control de acceso (OR):
 - `payroll:verify` OR `payroll:apply` OR `payroll:netsuite:send` OR `payroll:send_netsuite`.
 - Implementado en selector `canAccessAppliedPayrollList` y en menu `requiredAnyPermissions`.
+
+## Modulo: Reglas de Distribucion (operacion tecnica)
+- Rutas:
+  - Listado: `/configuration/reglas-distribucion`
+  - Crear: `/configuration/reglas-distribucion/crear`
+  - Editar: `/configuration/reglas-distribucion/editar/:publicId`
+- Lectura por detalle:
+  - `publicId` se decodifica a `id_regla_distribucion` en backend.
+  - Las lineas (`detalles`) se resuelven por ID interno de regla.
+- Cache y refresco:
+  - El boton `Refrescar` del listado ejecuta bust de cache (`cb`) y recarga real.
+  - En mutaciones (`create/update/inactivate/reactivate`) se invalida cache de scope `distribution-rules` para:
+    - `empresa:{idEmpresa}`
+    - `global`
+- Estado de regla:
+  - `1 = Activa`
+  - `0 = Inactiva`

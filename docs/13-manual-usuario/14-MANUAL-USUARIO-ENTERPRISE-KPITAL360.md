@@ -1,7 +1,7 @@
 ﻿# Manual de Usuario Enterprise - KPITAL 360
 
-Version: 1.2  
-Fecha: 2026-03-11  
+Version: 1.3  
+Fecha: 2026-03-12  
 Autor: Equipo KPITAL 360
 
 ## Control de versiones
@@ -10,6 +10,8 @@ Autor: Equipo KPITAL 360
 | 1.0 | 2026-03-11 | Equipo KPITAL 360 | Primera version enterprise del manual |
 | 1.1 | 2026-03-11 | Equipo KPITAL 360 | Se agrega cobertura, catalogo de campos, validacion y checklist de auditoria |
 | 1.2 | 2026-03-11 | Equipo KPITAL 360 | Se agrega mapa del sistema, politica de mantenimiento, metricas y anexos visuales |
+| 1.3 | 2026-03-12 | Equipo KPITAL 360 | Se agrega operacion de Reglas de Distribucion, estados 1/0, uso de Refrescar y validacion de asignaciones |
+| 1.4 | 2026-03-12 | Equipo KPITAL 360 | Se agrega acceso de Carga Masiva de Horas Extras en Gestion Planilla > Planillas |
 
 ## 1. Introduccion
 KPITAL 360 es un sistema de gestion de RRHH y planilla para operar el ciclo completo de pago de empleados.
@@ -70,6 +72,15 @@ Documentos:
 - [Empleados](./02-EMPLEADOS.md)
 - [Configuracion organizacional](./09-CONFIG-ORGANIZACION.md)
 - [Usuarios, roles y permisos](./10-USUARIOS-ROLES-PERMISOS.md)
+- Reglas de Distribucion:
+  - Ruta: `Configuracion > Reglas de Distribucion`
+  - Objetivo: mapear `Tipo de Accion Personal` -> `Cuenta Contable` por empresa
+  - Modos: global (toda empresa) y especifica (departamento/puesto)
+  - Estado de regla:
+    - `1 = Activa`
+    - `0 = Inactiva`
+  - Operacion recomendada:
+    - despues de crear/editar/inactivar/reactivar, usar `Refrescar` para ver conteo actualizado de `Asignaciones`
 
 ### 5.2 Parametros de planilla
 Documentos:
@@ -85,6 +96,11 @@ Documento:
 ### 5.4 Gestion de planilla
 Documento:
 - [Planilla operativa](./05-PLANILLA-OPERATIVA.md)
+
+Vista disponible:
+- `Gestion Planilla > Planillas > Carga Masiva de Horas Extras`.
+- Permiso requerido: `payroll:overtime:bulk-upload`.
+- Estado actual: pantalla base de entrada para futura operacion de carga masiva.
 
 ### 5.5 Traslado interempresas
 Documento:
@@ -195,6 +211,7 @@ Si empleado esta `marcado + verificado`:
 | No hay empleados marcados | Verify/Apply bloqueado | Marcar empleados a incluir |
 | Planilla requiere recalculo | Apply bloqueado | Procesar/cargar de nuevo |
 | Planilla aplicada | Edicion bloqueada | Crear nueva planilla o ejecutar proceso de ajuste posterior (no reapertura) |
+| Conteo de `Asignaciones` en Reglas de Distribucion no coincide con pantalla de edicion | Vista de listado desactualizada | Presionar `Refrescar` para forzar recarga y validacion de cache |
 
 ## 9. Preguntas frecuentes (FAQ)
 1. Por que no puedo editar una planilla aplicada?

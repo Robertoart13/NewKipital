@@ -21,6 +21,7 @@ export { PayrollManagementPage } from './payroll-management/PayrollManagementPag
 export { AppliedPayrollManagementPage } from './payroll-management/AppliedPayrollManagementPage';
 export { PayrollDistributionPage } from './payroll-management/PayrollDistributionPage';
 export { PayrollGeneratePage } from './payroll-management/PayrollGeneratePage';
+export { PayrollOvertimeBulkUploadPage } from './payroll-management/PayrollOvertimeBulkUploadPage';
 export { PayrollCalendarPage } from './payroll-management/PayrollCalendarPage';
 export { PayrollHolidaysPage } from './payroll-management/PayrollHolidaysPage';
 export { IntercompanyTransferPage } from './payroll-management/IntercompanyTransferPage';
