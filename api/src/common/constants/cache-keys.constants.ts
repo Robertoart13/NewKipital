@@ -58,6 +58,14 @@ export const CACHE_QUERY_ALLOWLIST: Record<string, Set<string>> = {
     'includeInactive',
     'inactiveOnly',
   ]),
+  'distribution-rules': new Set([
+    'idEmpresa',
+    'esReglaGlobal',
+    'idDepartamento',
+    'idPuesto',
+    'esActivo',
+    'limit',
+  ]),
 };
 
 export const CACHE_USER_SCOPED: Set<string> = new Set(['notifications']);

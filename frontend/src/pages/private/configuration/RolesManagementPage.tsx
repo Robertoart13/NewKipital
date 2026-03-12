@@ -4,6 +4,7 @@ import {
   CaretDownOutlined,
   CaretRightOutlined,
   EllipsisOutlined,
+  FilterOutlined,
   InfoCircleOutlined,
   PlusOutlined,
 } from '@ant-design/icons';
@@ -11,6 +12,7 @@ import {
   App as AntdApp,
   Button,
   Card,
+  Flex,
   Checkbox,
   Dropdown,
   Form,
@@ -554,7 +556,7 @@ export function RolesManagementPage() {
         </div>
       </div>
 
-      <Card className={styles.mainCard} style={{ marginBottom: 20 }}>
+      <Card className={styles.mainCard} style={{ marginBottom: 16 }}>
         <div className={styles.mainCardBody}>
           <div className={styles.gestionHeader}>
             <div className={styles.gestionHeaderLeft}>
@@ -572,52 +574,86 @@ export function RolesManagementPage() {
         </div>
       </Card>
 
-      <div className={styles.appSelector}>
-        <span className={styles.appSelectorLabel}>Aplicación:</span>
-        <div className={styles.appSelectorButtons}>
-          <Button type={selectedApp === 'kpital' ? 'primary' : 'default'} onClick={() => setSelectedApp('kpital')}>
-            KPITAL 360
-          </Button>
-          <Button type={selectedApp === 'timewise' ? 'primary' : 'default'} onClick={() => setSelectedApp('timewise')}>
-            TimeWise
-          </Button>
-        </div>
-        <p className={styles.appSelectorDesc}>
-          {selectedApp === 'kpital'
-            ? 'Planillas y RRHH. Solo roles y permisos de KPITAL.'
-            : 'Asistencia y tiempo. Solo roles y permisos de TimeWise.'}
-        </p>
-      </div>
-
       <Card className={styles.mainCard} styles={{ body: { padding: 0 } }}>
         <div className={styles.mainCardBody}>
-          <div className={styles.controlBar}>
-            <div className={styles.searchBar}>
-              <Input.Search
-                allowClear
-                placeholder="Escriba el nombre o código del permiso..."
-                style={{ maxWidth: 380 }}
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-              />
+          <div className={styles.sectionCard}>
+            <div className={styles.sectionCardBody}>
+              <div className={styles.appSelectorRow}>
+                <div>
+                  <p className={styles.sectionTitle}>Aplicación</p>
+                  <p className={styles.sectionDescription}>
+                    Seleccione la aplicación sobre la que desea configurar los permisos de cada rol.
+                  </p>
+                </div>
+                <div className={styles.appSelectorButtons}>
+                  <Button
+                    type={selectedApp === 'kpital' ? 'primary' : 'default'}
+                    onClick={() => setSelectedApp('kpital')}
+                  >
+                    KPITAL 360
+                  </Button>
+                  <Button
+                    type={selectedApp === 'timewise' ? 'primary' : 'default'}
+                    onClick={() => setSelectedApp('timewise')}
+                  >
+                    TimeWise
+                  </Button>
+                </div>
+              </div>
             </div>
-            <Space size={12}>
-              <Button icon={<PlusOutlined />} onClick={openAddRoleModal} className={styles.btnSecondary}>
-                Agregar rol
-              </Button>
-              <Button
-                type={dirty ? 'primary' : 'default'}
-                disabled={!dirty}
-                onClick={() => void saveMatrix()}
-                loading={saving}
-                className={dirty ? styles.btnPrimary : styles.btnSecondary}
-              >
-                Guardar cambios
-              </Button>
-            </Space>
           </div>
 
-          <Table<MatrixRow>
+          <div className={styles.sectionCard} style={{ marginTop: 16 }}>
+            <div className={styles.sectionCardBody}>
+              <Flex
+                align="center"
+                justify="space-between"
+                wrap="wrap"
+                gap={12}
+                className={styles.registrosHeader}
+              >
+                <Flex align="center" gap={8}>
+                  <FilterOutlined className={styles.registrosFilterIcon} />
+                  <div>
+                    <p className={styles.sectionTitle} style={{ marginBottom: 2 }}>
+                      Registros de Roles
+                    </p>
+                    <p className={styles.sectionDescription} style={{ marginBottom: 0 }}>
+                      Marque o desmarque los permisos en la matriz. Los cambios se aplican por
+                      aplicación y deben guardarse para tener efecto.
+                    </p>
+                  </div>
+                </Flex>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 8, alignItems: 'flex-end' }}>
+                  <Input.Search
+                    allowClear
+                    placeholder="Buscar permiso por código o nombre"
+                    style={{ maxWidth: 320 }}
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                  />
+                  <Space size={8}>
+                    <Button
+                      icon={<PlusOutlined />}
+                      onClick={openAddRoleModal}
+                      className={styles.btnSecondary}
+                    >
+                      Agregar rol
+                    </Button>
+                    <Button
+                      type={dirty ? 'primary' : 'default'}
+                      disabled={!dirty}
+                      onClick={() => void saveMatrix()}
+                      loading={saving}
+                      className={dirty ? styles.btnPrimary : styles.btnSecondary}
+                    >
+                      Guardar cambios
+                    </Button>
+                  </Space>
+                </div>
+              </Flex>
+
+              <Table<MatrixRow>
             className={styles.configTable}
             rowKey="key"
             loading={loading}
@@ -657,6 +693,8 @@ export function RolesManagementPage() {
             })}
             style={{ fontSize: 13 }}
           />
+            </div>
+          </div>
         </div>
       </Card>
 

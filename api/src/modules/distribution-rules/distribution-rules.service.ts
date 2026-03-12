@@ -14,6 +14,7 @@ import { Company } from '../companies/entities/company.entity';
 import { Department } from '../employees/entities/department.entity';
 import { Position } from '../employees/entities/position.entity';
 import { AuditOutboxService } from '../integration/audit-outbox.service';
+import { AppCacheService } from '../../common/services/app-cache.service';
 
 import { CreateDistributionRuleDto } from './dto/create-distribution-rule.dto';
 import { ListDistributionRulesDto } from './dto/list-distribution-rules.dto';
@@ -75,6 +76,7 @@ export class DistributionRulesService {
     @InjectRepository(AccountingAccount)
     private readonly accountRepo: Repository<AccountingAccount>,
     private readonly auditOutbox: AuditOutboxService,
+    private readonly appCache: AppCacheService,
   ) {}
 
   async findAll(query: ListDistributionRulesDto): Promise<DistributionRuleResponse[]> {
@@ -241,9 +243,10 @@ export class DistributionRulesService {
       entidadId: rule.id,
       actorUserId,
       companyContextId: dto.idEmpresa,
-      descripcion: `Regla de distribucion creada para empresa ${dto.idEmpresa}`,
+      descripcion: this.buildCreateDescription(response),
       payloadAfter: this.buildAuditPayload(response),
     });
+    await this.invalidateDistributionRulesCache(dto.idEmpresa);
 
     return response;
   }
@@ -312,10 +315,11 @@ export class DistributionRulesService {
       entidadId: existing.id,
       actorUserId,
       companyContextId: existing.idEmpresa,
-      descripcion: `Regla de distribucion actualizada (${existing.id})`,
+      descripcion: this.buildUpdateDescription(payloadBefore, payloadAfter),
       payloadBefore: this.buildAuditPayload(payloadBefore),
       payloadAfter: this.buildAuditPayload(payloadAfter),
     });
+    await this.invalidateDistributionRulesCache(existing.idEmpresa);
 
     return payloadAfter;
   }
@@ -343,10 +347,11 @@ export class DistributionRulesService {
       entidadId: rule.id,
       actorUserId,
       companyContextId: rule.idEmpresa,
-      descripcion: `Regla de distribucion inactivada (${rule.id})`,
+      descripcion: this.buildStatusDescription('inactivate', payloadAfter),
       payloadBefore: this.buildAuditPayload(payloadBefore),
       payloadAfter: this.buildAuditPayload(payloadAfter),
     });
+    await this.invalidateDistributionRulesCache(rule.idEmpresa);
 
     return payloadAfter;
   }
@@ -379,10 +384,11 @@ export class DistributionRulesService {
       entidadId: rule.id,
       actorUserId,
       companyContextId: rule.idEmpresa,
-      descripcion: `Regla de distribucion reactivada (${rule.id})`,
+      descripcion: this.buildStatusDescription('reactivate', payloadAfter),
       payloadBefore: this.buildAuditPayload(payloadBefore),
       payloadAfter: this.buildAuditPayload(payloadAfter),
     });
+    await this.invalidateDistributionRulesCache(rule.idEmpresa);
 
     return payloadAfter;
   }
@@ -592,25 +598,30 @@ export class DistributionRulesService {
       return result;
     }
 
-    const details = await this.detailRepo
-      .createQueryBuilder('rd')
-      .innerJoin(PersonalActionType, 'tap', 'tap.id = rd.idTipoAccionPersonal')
-      .innerJoin(AccountingAccount, 'acc', 'acc.id = rd.idCuentaContable')
-      .select([
-        'rd.id AS id',
-        'rd.idReglaDistribucion AS idReglaDistribucion',
-        'rd.idTipoAccionPersonal AS idTipoAccionPersonal',
-        'tap.codigo AS codigoTipoAccionPersonal',
-        'tap.nombre AS nombreTipoAccionPersonal',
-        'rd.idCuentaContable AS idCuentaContable',
-        'acc.codigo AS codigoCuentaContable',
-        'acc.nombre AS nombreCuentaContable',
-      ])
-      .where('rd.idReglaDistribucion IN (:...ruleIds)', { ruleIds })
-      .orderBy('tap.nombre', 'ASC')
-      .getRawMany();
+    const placeholders = ruleIds.map(() => '?').join(', ');
+    const details = (await this.dataSource.query(
+      `
+      SELECT
+        rd.id_regla_distribucion_detalle AS id,
+        rd.id_regla_distribucion AS idReglaDistribucion,
+        rd.id_tipo_accion_personal AS idTipoAccionPersonal,
+        tap.codigo_accion AS codigoTipoAccionPersonal,
+        tap.nombre_accion AS nombreTipoAccionPersonal,
+        rd.id_cuenta_contable AS idCuentaContable,
+        acc.codigo_cuenta_contable AS codigoCuentaContable,
+        acc.nombre_cuenta_contable AS nombreCuentaContable
+      FROM config_reglas_distribucion_detalle rd
+      INNER JOIN nom_tipos_accion_personal tap
+        ON tap.id_tipo_accion_personal = rd.id_tipo_accion_personal
+      INNER JOIN erp_cuentas_contables acc
+        ON acc.id_cuenta_contable = rd.id_cuenta_contable
+      WHERE rd.id_regla_distribucion IN (${placeholders})
+      ORDER BY tap.nombre_accion ASC, rd.id_regla_distribucion_detalle ASC
+      `,
+      ruleIds,
+    )) as Array<Record<string, unknown>>;
 
-    for (const row of details as Array<Record<string, unknown>>) {
+    for (const row of details) {
       const ruleId = Number(row.idReglaDistribucion);
       const current = result.get(ruleId) ?? [];
       current.push({
@@ -624,7 +635,6 @@ export class DistributionRulesService {
       });
       result.set(ruleId, current);
     }
-
     return result;
   }
 
@@ -668,6 +678,108 @@ export class DistributionRulesService {
         cuentaContable: detail.nombreCuentaContable,
       })),
     };
+  }
+
+  private buildCreateDescription(rule: DistributionRuleResponse): string {
+    const scope = this.formatScope(rule);
+    const assignmentSummary = this.summarizeAssignments(rule.detalles);
+    const raw =
+      `Regla creada (${scope}) en empresa ${rule.idEmpresa} con ${rule.detalles.length} ` +
+      `asignacion(es). ${assignmentSummary}`;
+    return this.fitAuditDescription(raw);
+  }
+
+  private buildStatusDescription(
+    action: 'inactivate' | 'reactivate',
+    rule: DistributionRuleResponse,
+  ): string {
+    const actionText = action === 'inactivate' ? 'inactivada' : 'reactivada';
+    const raw =
+      `Regla ${actionText} (${this.formatScope(rule)}) en empresa ${rule.idEmpresa}. ` +
+      `${rule.detalles.length} asignacion(es) vigentes.`;
+    return this.fitAuditDescription(raw);
+  }
+
+  private buildUpdateDescription(
+    beforeRule: DistributionRuleResponse,
+    afterRule: DistributionRuleResponse,
+  ): string {
+    const parts: string[] = [];
+    const beforeScope = this.formatScope(beforeRule);
+    const afterScope = this.formatScope(afterRule);
+    if (beforeScope !== afterScope) {
+      parts.push(`Ambito: ${beforeScope} -> ${afterScope}.`);
+    }
+
+    const beforeByAction = new Map(
+      beforeRule.detalles.map((detail) => [detail.idTipoAccionPersonal, detail]),
+    );
+    const afterByAction = new Map(
+      afterRule.detalles.map((detail) => [detail.idTipoAccionPersonal, detail]),
+    );
+
+    const added: string[] = [];
+    const removed: string[] = [];
+    const changed: string[] = [];
+
+    for (const [actionId, afterDetail] of afterByAction.entries()) {
+      const beforeDetail = beforeByAction.get(actionId);
+      if (!beforeDetail) {
+        added.push(this.formatAssignment(afterDetail));
+        continue;
+      }
+      if (beforeDetail.idCuentaContable !== afterDetail.idCuentaContable) {
+        changed.push(
+          `${afterDetail.nombreTipoAccionPersonal}: ${beforeDetail.codigoCuentaContable} -> ${afterDetail.codigoCuentaContable}`,
+        );
+      }
+    }
+
+    for (const [actionId, beforeDetail] of beforeByAction.entries()) {
+      if (!afterByAction.has(actionId)) {
+        removed.push(this.formatAssignment(beforeDetail));
+      }
+    }
+
+    if (added.length > 0) {
+      parts.push(`Agrego: ${added.join('; ')}.`);
+    }
+    if (removed.length > 0) {
+      parts.push(`Elimino: ${removed.join('; ')}.`);
+    }
+    if (changed.length > 0) {
+      parts.push(`Cambio cuenta: ${changed.join('; ')}.`);
+    }
+
+    if (parts.length === 0) {
+      parts.push('Se guardo la regla sin cambios detectables en ambito o asignaciones.');
+    }
+
+    const raw = `Regla actualizada (empresa ${afterRule.idEmpresa}). ${parts.join(' ')}`;
+    return this.fitAuditDescription(raw);
+  }
+
+  private summarizeAssignments(details: DistributionRuleDetailResponse[]): string {
+    if (details.length === 0) return 'Sin asignaciones.';
+    const labels = details.map((detail) => this.formatAssignment(detail));
+    return `Asignaciones: ${labels.join('; ')}.`;
+  }
+
+  private formatAssignment(detail: DistributionRuleDetailResponse): string {
+    return `${detail.nombreTipoAccionPersonal} (${detail.codigoTipoAccionPersonal}) -> ${detail.codigoCuentaContable}`;
+  }
+
+  private formatScope(rule: DistributionRuleResponse): string {
+    if (rule.esReglaGlobal === this.activeFlag) return 'Global';
+    const department = rule.nombreDepartamento ?? `Departamento#${rule.idDepartamento ?? '-'}`;
+    const position = rule.nombrePuesto ?? 'Sin puesto';
+    return `Especifica ${department}/${position}`;
+  }
+
+  private fitAuditDescription(text: string): string {
+    const normalized = String(text ?? '').replace(/\s+/g, ' ').trim();
+    if (normalized.length <= 500) return normalized;
+    return `${normalized.slice(0, 497)}...`;
   }
 
   private normalizeAuditValue(value: unknown): string {
@@ -750,5 +862,13 @@ export class DistributionRulesService {
     }
 
     return id;
+  }
+
+  private async invalidateDistributionRulesCache(companyId: number): Promise<void> {
+    const companyKey = `empresa:${companyId}`;
+    await Promise.allSettled([
+      this.appCache.invalidateScope('distribution-rules', companyKey),
+      this.appCache.invalidateScope('distribution-rules', 'global'),
+    ]);
   }
 }

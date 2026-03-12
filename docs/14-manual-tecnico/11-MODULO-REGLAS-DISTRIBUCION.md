@@ -21,6 +21,11 @@ Frontend:
 - Acciones: crear, editar, inactivar y reactivar.
 - Bitacora visible en pantalla de edicion (si hay permiso).
 
+Correccion aplicada (2026-03-12):
+- En modo edicion, ya no se resetean las lineas `detalles` al hidratar `idEmpresa`.
+- El reset de lineas ahora aplica solo en modo creacion cuando el usuario cambia empresa manualmente.
+- Se normaliza y rehidrata `detalles` desde API con `form.resetFields()` + `setFieldsValue(...)` para evitar estado residual.
+
 ## 🎯 Reglas de negocio clave
 1. La empresa es obligatoria.
 2. Global no usa departamento/puesto.
