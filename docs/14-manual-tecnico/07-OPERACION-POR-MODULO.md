@@ -207,3 +207,46 @@ Control de acceso (OR):
 - Estado de regla:
   - `1 = Activa`
   - `0 = Inactiva`
+
+## Modulo: Carga masiva de horas extras (operacion tecnica)
+Ruta FE:
+- `/payroll-management/planillas/carga-masiva-horas-extras`
+
+Permiso:
+- `payroll:overtime:bulk-upload`
+
+Flujo tecnico:
+1. `template-data` retorna empleados elegibles + catalogos de movimiento/jornada.
+2. FE genera plantilla Excel con hojas: `Empleados`, `Movimientos`, `TiposJornada`.
+3. `preview` valida cada fila y calcula `montoCalculado` + `formulaUsada`.
+4. FE permite ajuste en tabla de preview (movimiento/jornada) con recalc local.
+5. `commit` procesa filas validas y crea acciones aprobadas.
+6. El resultado se notifica al usuario ejecutor.
+
+Reglas:
+- Opera por `empresa + planilla`.
+- Solo planillas en `ABIERTA` o `EN_PROCESO`.
+- Filas bloqueadas no se insertan.
+- Duplicado validado por llave operativa de negocio.
+
+## Modulo: Notificaciones (operacion tecnica)
+Rutas FE:
+- Campana en header (dropdown).
+- Centro: `/notifications`.
+
+Comportamiento:
+- Click en item de campana navega a `/notifications?selected={id}`.
+- Lista en panel izquierdo.
+- Detalle en panel derecho.
+- Si estado era `UNREAD`, se marca `READ`.
+
+Alcance:
+- Todas las consultas/mutaciones son por `usuario + app`.
+- No filtrar por empresa activa.
+
+Endpoints FE:
+- `GET /api/notifications`
+- `GET /api/notifications/unread-count`
+- `POST /api/notifications/:id/read`
+- `POST /api/notifications/read-all`
+- `POST /api/notifications/:id/delete`

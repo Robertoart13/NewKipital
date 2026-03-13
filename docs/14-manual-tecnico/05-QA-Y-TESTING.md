@@ -60,6 +60,32 @@ Cobertura validada en esa suite:
 5. Bloqueo de lineas duplicadas por tipo de accion.
 6. Consulta de bitacora (`audit-trail`).
 
+## 🎯 Evidencia QA final - Carga masiva de horas extras (PEND-012)
+Estado:
+- `Cerrado`.
+
+Casos evidenciados:
+1. Flujo feliz (`template -> preview -> commit`) con insercion correcta.
+2. Duplicado detectado y bloqueado.
+3. Empleado bloqueado por planilla verificada.
+4. Error bloqueante con rollback controlado.
+
+Cobertura de evidencia:
+- UI: preview, estado por fila y confirmacion.
+- API: respuestas de `preview` y `commit`.
+- DB: verificacion de persistencia esperada y no persistencia en rollback.
+
+## 🎯 Validacion final de notificaciones
+Estado:
+- `Completada`.
+
+Flujo validado:
+1. Campana muestra notificacion nueva.
+2. Navegacion a `/notifications`.
+3. Abrir notificacion no leida.
+4. Cambio de no leida -> leida.
+5. Panel derecho muestra detalle completo.
+
 ## 🔗 Ver tambien
 - [Testing QA consolidado](../10-testing-qa/TESTING-QA-CONSOLIDADO.md)
 - [Manejo de incidentes](./09-MANEJO-INCIDENTES-FUNCIONALES.md)

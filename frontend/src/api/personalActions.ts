@@ -742,6 +742,102 @@ export interface OvertimeDetailItem extends PersonalActionListItem {
   lines: OvertimeDetailLine[];
 }
 
+export interface OvertimeBulkPreviewRowPayload {
+  rowNumber: number;
+  nombreCompleto?: string;
+  codigoEmpleado: string;
+  movimientoId?: number;
+  tipoJornadaHorasExtras?: OvertimeShiftType;
+  cantidadHoras: number;
+  fechaInicioHoraExtra: string;
+  fechaFinHoraExtra?: string;
+}
+
+export interface OvertimeBulkTemplateEmployeeItem {
+  idEmpleado: number;
+  codigoEmpleado: string;
+  nombreCompleto: string;
+  periodoPago: number | null;
+  monedaSalario: string;
+}
+
+export interface OvertimeBulkTemplateMovementItem {
+  id: number;
+  nombre: string;
+  porcentaje: number;
+  esMontoFijo: number;
+  montoFijo: number;
+}
+
+export interface OvertimeBulkTemplateDataResponse {
+  payroll: {
+    id: number;
+    nombrePlanilla: string;
+    estado: number;
+    fechaInicioPeriodo: string;
+    fechaFinPeriodo: string;
+    idPeriodoPago: number;
+    moneda: string;
+  };
+  empleados: OvertimeBulkTemplateEmployeeItem[];
+  movimientos: OvertimeBulkTemplateMovementItem[];
+  tiposJornada: Array<{ id: OvertimeShiftType; nombre: string }>;
+}
+
+export interface OvertimeBulkPreviewPayload {
+  idEmpresa: number;
+  payrollId: number;
+  fileName: string;
+  fileHashSha256: string;
+  rows: OvertimeBulkPreviewRowPayload[];
+}
+
+export interface OvertimeBulkPreviewResponse {
+  uploadPublicId: string;
+  resumen: {
+    total: number;
+    validas: number;
+    noProcesables: number;
+    errorBloqueante: number;
+    estadoPreview: 'PREVIEW_OK' | 'PREVIEW_WITH_WARNINGS';
+    mensaje: string;
+  };
+  filas: Array<{
+    rowNumber: number;
+    codigoEmpleado: string;
+    nombreCompleto: string | null;
+    movimientoId: number | null;
+    movimientoNombre: string | null;
+    tipoJornada: OvertimeShiftType | null;
+    cantidadHoras: number | null;
+    fechaInicioHoraExtra: string | null;
+    fechaFinHoraExtra: string | null;
+    salarioBase: number | null;
+    montoCalculado: number | null;
+    formulaCalculada: string | null;
+    estadoLinea: 'VALIDA' | 'NO_PROCESABLE' | 'ERROR_BLOQUEANTE' | 'PROCESADA';
+    mensajeLinea: string;
+  }>;
+}
+
+export interface OvertimeBulkCommitPayload {
+  uploadPublicId: string;
+  idEmpresa: number;
+  payrollId: number;
+  observacion?: string;
+}
+
+export interface OvertimeBulkCommitResponse {
+  uploadPublicId: string;
+  payroll: {
+    id: number;
+    nombrePlanilla: string;
+  };
+  createdActions: number;
+  createdActionIds: number[];
+  message: string;
+}
+
 export interface RetentionDetailLine {
   idLinea: number;
   idAccion: number;
@@ -885,6 +981,22 @@ export async function approvePersonalAction(
     body: JSON.stringify({ payrollId: options?.payrollId }),
   });
   if (!res.ok) throw new Error(await extractApiErrorMessage(res, 'Error al aprobar accion de personal'));
+  return res.json();
+}
+
+/**
+ * PATCH /personal-actions/:id/associate-to-payroll - Asociar una accion aprobada a planilla.
+ */
+export async function associatePersonalActionToPayroll(
+  id: number,
+  payrollId: number,
+): Promise<PersonalActionListItem> {
+  const res = await httpFetch(`/personal-actions/${id}/associate-to-payroll`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ idPlanilla: payrollId, idCalendarioNomina: payrollId }),
+  });
+  if (!res.ok) throw new Error(await extractApiErrorMessage(res, 'Error al asociar accion a planilla'));
   return res.json();
 }
 
@@ -1388,6 +1500,49 @@ export async function fetchOvertimeAuditTrail(id: number, limit = 200): Promise<
   const res = await httpFetch(`/personal-actions/horas-extras/${id}/audit-trail?${qs}`);
   if (!res.ok) {
     throw new Error(await extractApiErrorMessage(res, 'Error al cargar bitacora de horas extra'));
+  }
+  return res.json();
+}
+
+export async function fetchOvertimeBulkTemplateData(
+  idEmpresa: number,
+  payrollId: number,
+): Promise<OvertimeBulkTemplateDataResponse> {
+  const qs = new URLSearchParams({
+    idEmpresa: String(idEmpresa),
+    payrollId: String(payrollId),
+  });
+  const res = await httpFetch(`/personal-actions/horas-extras/carga-masiva/template-data?${qs.toString()}`);
+  if (!res.ok) {
+    throw new Error(await extractApiErrorMessage(res, 'Error al cargar datos de plantilla de carga masiva'));
+  }
+  return res.json();
+}
+
+export async function previewOvertimeBulkUpload(
+  payload: OvertimeBulkPreviewPayload,
+): Promise<OvertimeBulkPreviewResponse> {
+  const res = await httpFetch('/personal-actions/horas-extras/carga-masiva/preview', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+  if (!res.ok) {
+    throw new Error(await extractApiErrorMessage(res, 'Error al generar preview de carga masiva'));
+  }
+  return res.json();
+}
+
+export async function commitOvertimeBulkUpload(
+  payload: OvertimeBulkCommitPayload,
+): Promise<OvertimeBulkCommitResponse> {
+  const res = await httpFetch('/personal-actions/horas-extras/carga-masiva/commit', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+  if (!res.ok) {
+    throw new Error(await extractApiErrorMessage(res, 'Error al confirmar carga masiva'));
   }
   return res.json();
 }

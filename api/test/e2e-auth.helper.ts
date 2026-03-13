@@ -1,4 +1,5 @@
-﻿import * as bcrypt from 'bcrypt';
+import * as bcrypt from 'bcrypt';
+import supertest from 'supertest';
 
 import { AuthService } from '../src/modules/auth/auth.service';
 
@@ -34,12 +35,43 @@ function hasAllPermissions(current: string[], required: string[]): boolean {
   return required.every((permission) => currentSet.has(permission));
 }
 
+async function resolvePermissionsForApp(
+  app: INestApplication,
+  accessToken: string,
+  appCode = 'kpital',
+): Promise<string[]> {
+  const requestFactory = typeof supertest === 'function' ? supertest : (supertest as any).default;
+  const server = app.getHttpServer();
+  const urls = [
+    `/auth/me?appCode=${encodeURIComponent(appCode)}&bypassCache=true`,
+    `/api/auth/me?appCode=${encodeURIComponent(appCode)}&bypassCache=true`,
+  ];
+  let response: any = null;
+  for (const url of urls) {
+    const current = await requestFactory(server)
+      .get(url)
+      .set('Authorization', `Bearer ${accessToken}`);
+    if (current.status === 200) {
+      response = current;
+      break;
+    }
+  }
+  if (!response) {
+    throw new Error('No se pudo resolver session para appCode en E2E helper.');
+  }
+
+  return normalizePermissionCodes(
+    (response.body?.session as Record<string, unknown> | null)?.permissions,
+  );
+}
+
 export async function ensureE2ELogin(
   app: INestApplication,
   options: EnsureE2ELoginOptions = {},
 ): Promise<E2ELoginResult> {
   const dataSource = app.get(DataSource);
   const configuredEmail = String(process.env.E2E_EMAIL ?? '').trim().toLowerCase();
+  const forceConfiguredEmail = configuredEmail.length > 0;
   const requiredPermissions = (options.requiredPermissions ?? [])
     .map((permission) => String(permission).trim().toLowerCase())
     .filter((permission) => permission.length > 0);
@@ -54,21 +86,28 @@ export async function ensureE2ELogin(
   };
 
   pushCandidate(configuredEmail);
+  if (forceConfiguredEmail) {
+    // Cuando E2E_EMAIL viene definido, usamos ese usuario de forma determinista.
+    candidateEmails.length = 0;
+    candidateEmails.push(configuredEmail);
+  }
 
-  const preferredUsers = await dataSource.query(
-    `
-      SELECT email_usuario AS email
-      FROM sys_usuarios
-      WHERE estado_usuario = 1
-        AND password_hash_usuario IS NOT NULL
-        AND LOWER(email_usuario) = ?
-      LIMIT 1
-    `,
-    [PREFERRED_E2E_EMAIL],
-  );
-  pushCandidate(preferredUsers?.[0]?.email);
+  if (!forceConfiguredEmail) {
+    const preferredUsers = await dataSource.query(
+      `
+        SELECT email_usuario AS email
+        FROM sys_usuarios
+        WHERE estado_usuario = 1
+          AND password_hash_usuario IS NOT NULL
+          AND LOWER(email_usuario) = ?
+        LIMIT 1
+      `,
+      [PREFERRED_E2E_EMAIL],
+    );
+    pushCandidate(preferredUsers?.[0]?.email);
+  }
 
-  if (requiredPermissions.length > 0) {
+  if (!forceConfiguredEmail && requiredPermissions.length > 0) {
     const placeholders = requiredPermissions.map(() => '?').join(',');
     const privilegedUsers = await dataSource.query(
       `
@@ -92,16 +131,18 @@ export async function ensureE2ELogin(
     }
   }
 
-  const fallbackUsers = await dataSource.query(`
-    SELECT email_usuario AS email
-    FROM sys_usuarios
-    WHERE estado_usuario = 1
-      AND password_hash_usuario IS NOT NULL
-    ORDER BY id_usuario ASC
-    LIMIT 10
-  `);
-  for (const user of fallbackUsers as Array<{ email?: string }>) {
-    pushCandidate(user.email);
+  if (!forceConfiguredEmail) {
+    const fallbackUsers = await dataSource.query(`
+      SELECT email_usuario AS email
+      FROM sys_usuarios
+      WHERE estado_usuario = 1
+        AND password_hash_usuario IS NOT NULL
+      ORDER BY id_usuario ASC
+      LIMIT 10
+    `);
+    for (const user of fallbackUsers as Array<{ email?: string }>) {
+      pushCandidate(user.email);
+    }
   }
 
   if (!candidateEmails.length) {
@@ -136,11 +177,22 @@ export async function ensureE2ELogin(
         continue;
       }
 
-      const effectivePermissions = normalizePermissionCodes(
+      let effectivePermissions = normalizePermissionCodes(
         (issued.session as Record<string, unknown> | null)?.permissions,
       );
-
       if (!hasAllPermissions(effectivePermissions, requiredPermissions)) {
+        try {
+          effectivePermissions = await resolvePermissionsForApp(
+            app,
+            String(issued.accessToken),
+            'kpital',
+          );
+        } catch {
+          // keep fallback permissions from issued.session
+        }
+      }
+
+      if (!hasAllPermissions(effectivePermissions, requiredPermissions) && !forceConfiguredEmail) {
         lastError = new Error(`Usuario ${email} sin permisos requeridos E2E.`);
         continue;
       }

@@ -623,25 +623,9 @@ export class PayrollService {
         payroll.id,
         employees.map((employee) => Number(employee.id_empleado)),
       );
-      const excludedEmployeeIds = employees
-        .map((employee) => Number(employee.id_empleado))
-        .filter((employeeId) => !this.isEmployeeIncludedInPayroll(selectionMap.get(employeeId)));
-      if (excludedEmployeeIds.length > 0) {
-        await queryRunner.manager
-          .createQueryBuilder()
-          .update(PersonalAction)
-          .set({
-            idCalendarioNomina: null,
-            modificadoPor: userId ?? null,
-            versionLock: () => 'version_lock_accion + 1',
-          })
-          .where('id_calendario_nomina = :payrollId', { payrollId: payroll.id })
-          .andWhere('id_empleado IN (:...employeeIds)', { employeeIds: excludedEmployeeIds })
-          .andWhere('estado_accion IN (:...approvedStates)', {
-            approvedStates: PERSONAL_ACTION_APPROVED_STATES,
-          })
-          .execute();
-      }
+      // Flujo operativo: RRHH puede revisar/aprobar acciones primero y marcar empleado al final.
+      // Por eso NO desasociamos automaticamente acciones aprobadas de empleados excluidos aqui.
+      // La exclusion se respeta en calculo (ver filtro isEmployeeIncludedInPayroll en approvedActions).
 
       const periodIds = Array.from(
         new Set(
@@ -732,16 +716,21 @@ export class PayrollService {
         .andWhere('a.estado = :approvedState', {
           approvedState: PersonalActionEstado.APPROVED,
         })
-        .andWhere('(a.idCalendarioNomina IS NULL OR a.idCalendarioNomina = :payrollId)', {
-          payrollId: payroll.id,
-        })
-        .andWhere('COALESCE(a.fechaInicioEfecto, a.fechaEfecto) IS NOT NULL')
         .andWhere(
-          `COALESCE(a.fechaInicioEfecto, a.fechaEfecto) <= :end
-           AND COALESCE(a.fechaFinEfecto, a.fechaInicioEfecto, a.fechaEfecto) >= :start`,
-          { start, end },
+          `
+            (
+              a.idCalendarioNomina = :payrollId
+              OR (
+                a.idCalendarioNomina IS NULL
+                AND COALESCE(a.fechaInicioEfecto, a.fechaEfecto) IS NOT NULL
+                AND COALESCE(a.fechaInicioEfecto, a.fechaEfecto) <= :end
+                AND COALESCE(a.fechaFinEfecto, a.fechaInicioEfecto, a.fechaEfecto) >= :start
+                AND (a.fechaAprobacion IS NULL OR a.fechaAprobacion <= :cutoff)
+              )
+            )
+          `,
+          { payrollId: payroll.id, start, end, cutoff },
         )
-        .andWhere('(a.fechaAprobacion IS NULL OR a.fechaAprobacion <= :cutoff)', { cutoff })
         .getMany();
 
       const displayActionStates: PersonalActionEstado[] = [
@@ -757,7 +746,6 @@ export class PayrollService {
       const employeeDaysAdjustmentMap = new Map<number, number>();
       const employeeDaysOverrideMap = new Map<number, number>();
       const resultAccumulator = new Map<number, { gross: number; ded: number }>();
-      const approvedActionAmountMap = new Map<number, number>();
       const employeePayrollBasisMap = new Map<
         number,
         { salarioBase: number; diasPeriodo: number; isHourly: boolean }
@@ -778,9 +766,6 @@ export class PayrollService {
       }
 
       for (const action of approvedActions) {
-        if (!this.isEmployeeIncludedInPayroll(selectionMap.get(action.idEmpleado))) {
-          continue;
-        }
         const amount = Number(action.monto ?? 0);
         const prorated = this.calculateProratedAmountForPayroll(
           action,
@@ -836,7 +821,6 @@ export class PayrollService {
         await queryRunner.manager.save(PayrollInputSnapshot, input);
 
         action.idCalendarioNomina = payroll.id;
-        approvedActionAmountMap.set(action.id, effectiveAmount);
         action.modificadoPor = userId ?? null;
         await queryRunner.manager.save(PersonalAction, action);
 
@@ -854,39 +838,15 @@ export class PayrollService {
         .createQueryBuilder(PersonalAction, 'a')
         .where('a.idEmpresa = :companyId', { companyId: payroll.idEmpresa })
         .andWhere('a.estado IN (:...displayStates)', { displayStates: displayActionStates })
-        .andWhere('(a.idCalendarioNomina IS NULL OR a.idCalendarioNomina = :payrollId)', {
+        .andWhere('a.idCalendarioNomina = :payrollId', {
           payrollId: payroll.id,
         })
-        .andWhere('COALESCE(a.fechaInicioEfecto, a.fechaEfecto) IS NOT NULL')
-        .andWhere(
-          `COALESCE(a.fechaInicioEfecto, a.fechaEfecto) <= :end
-           AND COALESCE(a.fechaFinEfecto, a.fechaInicioEfecto, a.fechaEfecto) >= :start`,
-          { start, end },
-        )
         .getMany();
 
       const actionDisplayLabelMap = await this.buildActionDisplayLabelMap(
         queryRunner.manager,
         displayActions,
       );
-
-      const displayActionIds = displayActions.map((a) => Number(a.id)).filter((id) => Number.isFinite(id) && id > 0);
-      const vacationDaysByActionId = new Map<number, number>();
-      if (displayActionIds.length > 0) {
-        const placeholders = displayActionIds.map(() => '?').join(',');
-        const vacationRows = (await queryRunner.manager.query(
-          `
-          SELECT id_accion AS actionId, COUNT(*) AS vacationDays
-          FROM acc_vacaciones_fechas
-          WHERE id_accion IN (${placeholders})
-          GROUP BY id_accion
-          `,
-          displayActionIds,
-        )) as Array<{ actionId: number; vacationDays: number | string }>;
-        for (const row of vacationRows) {
-          vacationDaysByActionId.set(Number(row.actionId), this.toSafeNumber(row.vacationDays));
-        }
-      }
 
       const displayActionsByEmployee = new Map<
         number,
@@ -902,25 +862,9 @@ export class PayrollService {
       >();
 
       for (const action of displayActions) {
-        const approved = action.estado === PersonalActionEstado.APPROVED; // Si aprobada: usa approvedActionAmountMap; si pendiente: usa action.monto o formula (vacaciones)
-        let actionAmount: number;
-        const actionCategory = this.resolveActionCategory(action.tipoAccion ?? '');
-        const isVacaciones = actionCategory === 'Vacaciones';
-        const vacationDays = isVacaciones ? vacationDaysByActionId.get(Number(action.id)) : undefined;
-        // Cálculo monto por acción: vacaciones=(salarioBase*dias)/30; aprobadas=approvedActionAmountMap; pendientes=action.monto. Ver CALCULOS-PLANILLA-CODIGO-COMENTADO.md
-        if (isVacaciones && vacationDays != null && vacationDays > 0) {
-          const salarioBase = employeePayrollBasisMap.get(action.idEmpleado)?.salarioBase ?? 0;
-          // Vacaciones: aprobada → monto efectivo; pendiente → (salarioBase*dias)/30. Nunca action.monto
-          actionAmount = approved
-            ? (approvedActionAmountMap.get(Number(action.id)) ?? (salarioBase * vacationDays) / 30)
-            : (salarioBase * vacationDays) / 30;
-        } else if (approved && approvedActionAmountMap.has(Number(action.id))) {
-          // Acción aprobada: monto efectivo aplicado al cálculo
-          actionAmount = approvedActionAmountMap.get(Number(action.id)) ?? Number(action.monto ?? 0);
-        } else {
-          // Acción pendiente u otra: monto capturado por RRHH (no afecta cálculo hasta aprobar)
-          actionAmount = Number(action.monto ?? 0);
-        }
+        // Tabla de detalle: mostrar siempre el monto original de la acción.
+        // El impacto calculado se refleja en los agregados de planilla (devengado/cargas/neto/dias).
+        const actionAmount = Number(action.monto ?? 0);
         const employeeActionRows = displayActionsByEmployee.get(action.idEmpleado) ?? [];
         employeeActionRows.push({
           idAccion: action.id,
@@ -1210,6 +1154,16 @@ export class PayrollService {
         estadoCodigo?: number | null;
         canApprove?: boolean;
       }>;
+      accionesPendientesSinPlanilla: Array<{
+        idAccion: number | null;
+        categoria: string;
+        tipoAccion: string;
+        monto: string;
+        tipoSigno: '+' | '-';
+        estado: string;
+        estadoCodigo?: number | null;
+        canApprove?: boolean;
+      }>;
     }>;
   }> {
     const payroll = await this.findOne(id, userId);
@@ -1257,6 +1211,16 @@ export class PayrollService {
       verificadoEmpleado: boolean;
       requiereRevalidacion: boolean;
       acciones: Array<{
+        idAccion: number | null;
+        categoria: string;
+        tipoAccion: string;
+        monto: string;
+        tipoSigno: '+' | '-';
+        estado: string;
+        estadoCodigo?: number | null;
+        canApprove?: boolean;
+      }>;
+      accionesPendientesSinPlanilla: Array<{
         idAccion: number | null;
         categoria: string;
         tipoAccion: string;
@@ -1357,6 +1321,54 @@ export class PayrollService {
     }
 
     const selectionMap = await this.loadEmployeeSelectionMap(this.dataSource.manager, id, employeeIds);
+    const pendingOrphanStates: PersonalActionEstado[] = [
+      PersonalActionEstado.PENDING_SUPERVISOR,
+      PersonalActionEstado.PENDING_RRHH,
+    ];
+
+    const orphanPendingActionsByEmployee = new Map<
+      number,
+      Array<{
+        idAccion: number | null;
+        tipoAccion: string;
+        monto: number;
+        estado: string;
+        estadoCodigo: number | null;
+        canApprove: boolean;
+      }>
+    >();
+
+    if (employeeIds.length > 0) {
+      const orphanPendingActions = await this.dataSource.manager
+        .createQueryBuilder(PersonalAction, 'a')
+        .where('a.idEmpresa = :companyId', { companyId: payroll.idEmpresa })
+        .andWhere('a.idEmpleado IN (:...employeeIds)', { employeeIds })
+        .andWhere('a.idCalendarioNomina IS NULL')
+        .andWhere('a.estado IN (:...pendingStates)', { pendingStates: pendingOrphanStates })
+        .orderBy('a.idEmpleado', 'ASC')
+        .addOrderBy('a.fechaCreacion', 'ASC')
+        .addOrderBy('a.id', 'ASC')
+        .getMany();
+
+      const orphanLabelMap = await this.buildActionDisplayLabelMap(
+        this.dataSource.manager,
+        orphanPendingActions,
+      );
+
+      for (const action of orphanPendingActions) {
+        const employeeActions = orphanPendingActionsByEmployee.get(action.idEmpleado) ?? [];
+        employeeActions.push({
+          idAccion: action.id,
+          tipoAccion: orphanLabelMap.get(action.id) ?? action.tipoAccion,
+          monto: Number(action.monto ?? 0),
+          estado: this.resolvePersonalActionStatusLabel(action.estado),
+          estadoCodigo: Number(action.estado),
+          canApprove: true,
+        });
+        orphanPendingActionsByEmployee.set(action.idEmpleado, employeeActions);
+      }
+    }
+
     const totals = snapshotPayload.totals ?? {};
 
     return {
@@ -1378,6 +1390,7 @@ export class PayrollService {
         const isIncludedInPayroll = this.isEmployeeIncludedInPayroll(employeeSelection);
         const devengadoDias = row.devengadoDias ?? row.devengadoHoras ?? 0;
         const actions = Array.isArray(row.acciones) ? row.acciones : [];
+        const orphanPendingActions = orphanPendingActionsByEmployee.get(employeeId) ?? [];
 
         return {
           idEmpleado: employeeId,
@@ -1427,6 +1440,28 @@ export class PayrollService {
               canApprove: Boolean(action.canApprove),
             };
           }),
+          accionesPendientesSinPlanilla: orphanPendingActions.map((action) => {
+            const tipoAccion = String(action.tipoAccion ?? 'Accion').trim() || 'Accion';
+            const isDeduction =
+              this.isDeductionAction(tipoAccion) ||
+              tipoAccion.toLowerCase().includes('ccss') ||
+              tipoAccion.toLowerCase().includes('renta');
+            return {
+              idAccion: Number.isFinite(Number(action.idAccion)) ? Number(action.idAccion) : null,
+              categoria: this.resolveActionCategory(tipoAccion),
+              tipoAccion,
+              monto: Number(action.monto ?? 0).toFixed(2),
+              tipoSigno: isDeduction ? '-' : '+',
+              estado:
+                typeof action.estado === 'string' && action.estado.trim().length > 0
+                  ? action.estado.trim()
+                  : this.resolvePersonalActionStatusLabel(action.estadoCodigo),
+              estadoCodigo: Number.isFinite(Number(action.estadoCodigo))
+                ? Number(action.estadoCodigo)
+                : null,
+              canApprove: Boolean(action.canApprove),
+            };
+          }),
         };
       }),
     };
@@ -1473,17 +1508,29 @@ export class PayrollService {
       );
     }
 
-    const rows = uniqueEmployeeIds.map((employeeId) =>
-      this.payrollVerificationRepo.create({
+    const existingRows = await this.payrollVerificationRepo.find({
+      where: {
+        idNomina: payrollId,
+        idEmpleado: In(uniqueEmployeeIds),
+      },
+    });
+    const existingByEmployeeId = new Map(
+      existingRows.map((row) => [Number(row.idEmpleado), row]),
+    );
+
+    const rowsToSave = uniqueEmployeeIds.map((employeeId) => {
+      const existing = existingByEmployeeId.get(employeeId);
+      return this.payrollVerificationRepo.create({
+        id: existing?.id,
         idNomina: payrollId,
         idEmpleado: employeeId,
         incluidoPlanilla: selected ? 1 : 0,
         verificado: selected ? 1 : 0,
         requiereRevalidacion: 0,
         verificadoPor: selected ? (userId ?? null) : null,
-      }),
-    );
-    await this.payrollVerificationRepo.upsert(rows, ['idNomina', 'idEmpleado']);
+      });
+    });
+    await this.payrollVerificationRepo.save(rowsToSave);
 
     payroll.requiresRecalculation = 1;
     payroll.modificadoPor = userId ?? null;
@@ -2823,11 +2870,51 @@ export class PayrollService {
 
   private toMoney(value: string | null): string {
     const decrypted = this.sensitiveDataService.decrypt(value);
-    const raw = String(decrypted ?? value ?? '0').replace(/,/g, '').trim();
-    const amount = Number(raw);
+    const amount = this.parseMonetaryValue(decrypted ?? value ?? '0');
     if (Number.isNaN(amount)) return '0.00';
     if (amount < 0) return '0.00';
     return amount.toFixed(2);
+  }
+
+  private parseMonetaryValue(rawValue: unknown): number {
+    const input = String(rawValue ?? '')
+      .trim()
+      .replace(/[₡$]/g, '')
+      .replace(/\s+/g, '');
+    if (!input) return NaN;
+    if (!/^[+-]?[0-9.,]+$/.test(input)) return Number(input);
+
+    const sign = input.startsWith('-') ? -1 : 1;
+    const unsigned = input.replace(/^[+-]/, '');
+    const lastComma = unsigned.lastIndexOf(',');
+    const lastDot = unsigned.lastIndexOf('.');
+
+    // Sin separadores decimales.
+    if (lastComma === -1 && lastDot === -1) {
+      const parsed = Number(unsigned);
+      return Number.isFinite(parsed) ? sign * parsed : NaN;
+    }
+
+    let normalized = unsigned;
+    if (lastComma !== -1 && lastDot !== -1) {
+      // Usa como decimal el ultimo separador y limpia el otro como miles.
+      if (lastComma > lastDot) {
+        normalized = unsigned.replace(/\./g, '').replace(',', '.');
+      } else {
+        normalized = unsigned.replace(/,/g, '');
+      }
+    } else if (lastComma !== -1) {
+      const commaParts = unsigned.split(',');
+      const looksLikeThousands = commaParts.slice(1).every((part) => part.length === 3);
+      normalized = looksLikeThousands ? unsigned.replace(/,/g, '') : unsigned.replace(',', '.');
+    } else {
+      const dotParts = unsigned.split('.');
+      const looksLikeThousands = dotParts.slice(1).every((part) => part.length === 3);
+      normalized = looksLikeThousands ? unsigned.replace(/\./g, '') : unsigned;
+    }
+
+    const parsed = Number(normalized);
+    return Number.isFinite(parsed) ? sign * parsed : NaN;
   }
 
   private isDeductionAction(actionType: string): boolean {

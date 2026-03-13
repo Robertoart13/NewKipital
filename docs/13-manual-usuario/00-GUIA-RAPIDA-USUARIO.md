@@ -19,7 +19,9 @@ Para manual completo enterprise, abrir:
 - Configurar articulos: [Articulos de nomina](./03-ARTICULOS-NOMINA.md)
 - Configurar movimientos: [Movimientos de nomina](./12-MOVIMIENTOS-NOMINA.md)
 - Operar planilla regular: [Planilla operativa](./05-PLANILLA-OPERATIVA.md)
+- Carga masiva de horas extras: [Planilla operativa](./05-PLANILLA-OPERATIVA.md#carga-masiva-de-horas-extras)
 - Revisar cierre de planillas (verificadas/aplicadas): [Planilla operativa](./05-PLANILLA-OPERATIVA.md#lista-de-planillas-aplicadas-finalizacion-de-proceso)
+- Revisar notificaciones y resultados async: [Planilla operativa](./05-PLANILLA-OPERATIVA.md#centro-de-notificaciones-operacion)
 - Ajustes de seguridad: [Usuarios, roles y permisos](./10-USUARIOS-ROLES-PERMISOS.md)
 
 ## Regla de oro de operacion

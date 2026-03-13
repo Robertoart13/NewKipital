@@ -389,7 +389,7 @@ export function DistributionRuleFormPage({ mode, publicId }: DistributionRuleFor
       setSaving(true);
 
       if (mode === 'create') {
-        const created = await createDistributionRule({
+        await createDistributionRule({
           idEmpresa: Number(values.idEmpresa),
           esReglaGlobal: Boolean(values.esReglaGlobal),
           idDepartamento: values.esReglaGlobal ? null : (values.idDepartamento ?? null),
@@ -397,7 +397,7 @@ export function DistributionRuleFormPage({ mode, publicId }: DistributionRuleFor
           detalles: details,
         });
         message.success('Regla de distribucion creada correctamente.');
-        navigate(`/configuration/reglas-distribucion/editar/${created.publicId}`);
+        navigate('/configuration/reglas-distribucion');
         return;
       }
 

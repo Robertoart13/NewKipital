@@ -2,8 +2,10 @@ import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 
 import { UserCompany } from '../access-control/entities/user-company.entity';
+import { App } from '../access-control/entities/app.entity';
 import { EmployeesModule } from '../employees/employees.module';
 import { IntegrationModule } from '../integration/integration.module';
+import { NotificationsModule } from '../notifications/notifications.module';
 import { PayrollCalendar } from '../payroll/entities/payroll-calendar.entity';
 import { PayrollEmployeeVerification } from '../payroll/entities/payroll-employee-verification.entity';
 
@@ -28,6 +30,7 @@ import { PersonalActionsService } from './personal-actions.service';
   imports: [
     EmployeesModule,
     IntegrationModule,
+    NotificationsModule,
     TypeOrmModule.forFeature([
       PersonalAction,
       ActionQuota,
@@ -41,6 +44,7 @@ import { PersonalActionsService } from './personal-actions.service';
       IncreaseLine,
       VacationDate,
       UserCompany,
+      App,
       PayrollCalendar,
       PayrollEmployeeVerification,
     ]),

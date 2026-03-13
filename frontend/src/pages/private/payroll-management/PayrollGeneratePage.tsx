@@ -11,7 +11,7 @@
  */
 
 // ─── Librerías externas ───────────────────────────────────────────────────────
-import { EyeOutlined, ReloadOutlined, SearchOutlined } from '@ant-design/icons';
+import { EyeOutlined, SearchOutlined } from '@ant-design/icons';
 import {
   App as AntdApp,
   Button,
@@ -32,6 +32,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 // ─── APIs ─────────────────────────────────────────────────────────────────────
 import { fetchPayPeriods, type CatalogPayPeriod } from '../../../api/catalogs';
 import {
+  associatePersonalActionToPayroll,
   approvePersonalAction,
   createAbsence,
   createDiscount,
@@ -740,14 +741,21 @@ export function PayrollGeneratePage() {
 
   /** Aprueba una acción de personal y recarga la tabla. */
   const handleApproveAction = useCallback(
-    async (actionId: number | null) => {
+    async (
+      actionId: number | null,
+      successText?: string,
+      options?: { associateToSelectedPayroll?: boolean },
+    ) => {
       if (!actionId || !selectedPayrollId) return;
 
       setApprovingActionId(actionId);
       try {
         await approvePersonalAction(actionId, { payrollId: selectedPayrollId });
+        if (options?.associateToSelectedPayroll) {
+          await associatePersonalActionToPayroll(actionId, selectedPayrollId);
+        }
         await refreshPreviewTable();
-        message.success('Acción aprobada y tabla actualizada.');
+        message.success(successText ?? 'Acción aprobada y tabla actualizada.');
       } catch (err) {
         message.error(err instanceof Error ? err.message : 'Error al aprobar la acción de personal');
       } finally {
@@ -1048,7 +1056,13 @@ export function PayrollGeneratePage() {
 
   /** Columnas de la tabla de acciones de personal (dentro del expand). */
   const buildActionColumns = useCallback(
-    (isEmployeeLocked: boolean): ColumnsType<PayrollPreviewActionRow> => [
+    (
+      isEmployeeLocked: boolean,
+      options?: {
+        approveLabel?: string;
+        approveSuccessText?: string;
+      },
+    ): ColumnsType<PayrollPreviewActionRow> => [
       { title: 'Categoría',      dataIndex: 'categoria' },
       { title: 'Tipo de Acción', dataIndex: 'tipoAccion' },
       {
@@ -1113,9 +1127,15 @@ export function PayrollGeneratePage() {
                   size="small"
                   type="link"
                   loading={approvingActionId === row.idAccion}
-                  onClick={() => void handleApproveAction(row.idAccion)}
+                  onClick={() =>
+                    void handleApproveAction(
+                      row.idAccion,
+                      options?.approveSuccessText,
+                      { associateToSelectedPayroll: Boolean(options?.approveLabel) },
+                    )
+                  }
                 >
-                  Aprobar
+                  {options?.approveLabel ?? 'Aprobar'}
                 </Button>
               )}
               {showInvalidate && (
@@ -1134,7 +1154,14 @@ export function PayrollGeneratePage() {
         },
       },
     ],
-    [approvingActionId, invalidatingActionId, canApproveActions, canViewSensitive, handleApproveAction, handleInvalidateAction],
+    [
+      approvingActionId,
+      invalidatingActionId,
+      canApproveActions,
+      canViewSensitive,
+      handleApproveAction,
+      handleInvalidateAction,
+    ],
   );
 
   // ==========================================================================
@@ -1148,7 +1175,14 @@ export function PayrollGeneratePage() {
   const renderExpandedEmployeeRow = (row: PayrollPreviewEmployeeRow) => {
     const isLocked =
       toBooleanFlag(row.seleccionadoPlanilla) && toBooleanFlag(row.verificadoEmpleado);
-    const actionColumns = buildActionColumns(isLocked);
+    const principalActionColumns = buildActionColumns(isLocked);
+    const pendingWithoutPayrollColumns = buildActionColumns(isLocked, {
+      approveLabel: 'Asignar a esta planilla',
+      approveSuccessText: 'Acción asignada a esta planilla y aprobada.',
+    });
+    const pendingWithoutPayrollActions = Array.isArray(row.accionesPendientesSinPlanilla)
+      ? row.accionesPendientesSinPlanilla
+      : [];
 
     const isSaving =
       overtimeSubmitting  === row.idEmpleado ||
@@ -1169,7 +1203,7 @@ export function PayrollGeneratePage() {
 
     return (
       <div className={genStyles.actionsDetailWrap}>
-        <div className={genStyles.actionsDetailTitle}>Detalle de acciones de personal</div>
+        <div className={genStyles.actionsDetailTitle}>Detalle de acciones de personal Principal</div>
 
         <Spin spinning={isSaving} tip="Guardando acción y recalculando planilla...">
           <Table<PayrollPreviewActionRow>
@@ -1177,7 +1211,7 @@ export function PayrollGeneratePage() {
               `${row.idEmpleado}-${a.idAccion ?? 'na'}-${a.categoria}-${a.tipoAccion}-${a.monto}-${a.estado}-${a.tipoSigno}`
             }
             dataSource={row.acciones}
-            columns={actionColumns}
+            columns={principalActionColumns}
             size="small"
             className={`${genStyles.previewTable} ${genStyles.actionsTable}`}
             rowClassName={(a) => (isApprovedActionVisual(a) ? 'action-row-approved' : 'action-row-pending')}
@@ -1186,6 +1220,34 @@ export function PayrollGeneratePage() {
         </Spin>
 
         {/* Selector de tipo de acción a agregar */}
+        <Collapse
+          ghost
+          defaultActiveKey={[]}
+          className={genStyles.secondaryActionsCollapse}
+          items={[
+            {
+              key: `pending-without-payroll-${row.idEmpleado}`,
+              label: `Detalle de acciones de personal sin planilla asignada (${pendingWithoutPayrollActions.length})`,
+              children: (
+                <Table<PayrollPreviewActionRow>
+                  rowKey={(a) =>
+                    `pending-no-payroll-${row.idEmpleado}-${a.idAccion ?? 'na'}-${a.categoria}-${a.tipoAccion}-${a.monto}-${a.estado}`
+                  }
+                  dataSource={pendingWithoutPayrollActions}
+                  columns={pendingWithoutPayrollColumns}
+                  size="small"
+                  className={`${genStyles.previewTable} ${genStyles.actionsTable}`}
+                  rowClassName={(a) => (isApprovedActionVisual(a) ? 'action-row-approved' : 'action-row-pending')}
+                  pagination={false}
+                  locale={{
+                    emptyText: 'No hay acciones pendientes sin planilla asignada.',
+                  }}
+                />
+              ),
+            },
+          ]}
+        />
+
         <div className={genStyles.addActionSelectWrap}>
           <Select
             placeholder={isLocked ? 'Empleado bloqueado para nuevas acciones' : 'Agregar acción de personal'}
@@ -1286,115 +1348,106 @@ export function PayrollGeneratePage() {
                 children: (
                   <div className={genStyles.panelContent}>
 
-                    {/* Filtros */}
-                    <div className={genStyles.sectionLabel}>Filtros</div>
-                    <div className={genStyles.statsRow}>
+                    {/* Layout de filtros (izquierda) + selector/detalle de planilla (derecha) */}
+                    <div className={genStyles.filtersLayout}>
 
-                      <div className={genStyles.statCard}>
-                        <div className={genStyles.statLabel}>Empresa</div>
-                        <Select
-                          className={genStyles.statSelect}
-                          value={selectedCompanyId}
-                          onChange={(v) => { setSelectedCompanyId(parseCompanyId(v)); resetPayrollSelection(); }}
-                          placeholder="Seleccione"
-                          options={companies.map((c) => ({ value: Number(c.id), label: c.nombre }))}
-                        />
-                      </div>
+                      {/* Columna izquierda: Filtros (2 x 2) */}
+                      <div className={genStyles.filtersColumnLeft}>
+                        <div className={genStyles.sectionLabel}>Filtros</div>
+                        <div className={genStyles.statsRow}>
 
-                      <div className={genStyles.statCard}>
-                        <div className={genStyles.statLabel}>Moneda</div>
-                        <Select
-                          className={genStyles.statSelect}
-                          value={selectedCurrency}
-                          onChange={(v) => { setSelectedCurrency(v); resetPayrollSelection(); }}
-                          options={[
-                            { value: 'ALL', label: 'Todas' },
-                            { value: 'CRC', label: 'CRC' },
-                            { value: 'USD', label: 'USD' },
-                          ]}
-                        />
-                      </div>
-
-                      <div className={genStyles.statCard}>
-                        <div className={genStyles.statLabel}>Tipo de periodo</div>
-                        <Select
-                          className={genStyles.statSelect}
-                          value={selectedPayPeriodId}
-                          onChange={(v) => { setSelectedPayPeriodId(v as PayPeriodFilter); resetPayrollSelection(); }}
-                          options={[
-                            { value: 'ALL', label: 'Todos' },
-                            ...payPeriods.map((p) => ({ value: Number(p.id), label: p.nombre })),
-                          ]}
-                        />
-                      </div>
-
-                      <div className={`${genStyles.statCard} ${genStyles.statCardAction}`}>
-                        <Button
-                          icon={<ReloadOutlined />}
-                          onClick={() => { bustApiCache('/payroll'); void loadPayrolls(); }}
-                          className={genStyles.refreshBtn}
-                        >
-                          Refrescar
-                        </Button>
-                      </div>
-                    </div>
-
-                    {/* Selector de planilla */}
-                    <div className={genStyles.sectionBlock}>
-                      <div className={genStyles.sectionLabel}>Planillas Regulares por Empresa y Moneda</div>
-                      <div className={genStyles.contentCard}>
-                        <Select
-                          showSearch
-                          optionFilterProp="label"
-                          className={styles.filterInput}
-                          style={{ width: '100%' }}
-                          loading={loadingPayrolls}
-                          value={selectedPayrollId}
-                          onChange={(v) => { setSelectedPayrollId(Number(v)); setSelectedPayrollDetail(null); resetPreview(); }}
-                          placeholder="Seleccione planilla"
-                          options={payrollSelectOptions}
-                          notFoundContent="No hay planillas regulares en estado Abierta o En Proceso."
-                        />
-                        <p className={genStyles.selectHint}>
-                          Tipo mostrado: Regular. Estados mostrados: Abierta y En Proceso.
-                        </p>
-                      </div>
-                    </div>
-
-                    {/* Detalle de la planilla seleccionada */}
-                    <div className={genStyles.sectionBlock}>
-                      <div className={genStyles.sectionLabel}>Detalle de la planilla</div>
-                      {selectedPayroll ? (
-                        <div className={genStyles.contentCard}>
-                          <div className={genStyles.detailHeader}>
-                            <span className={genStyles.detailTitle}>
-                              {selectedPayroll.nombrePlanilla?.trim() || `Planilla #${selectedPayroll.id}`}
-                            </span>
-                            <Tag color={PAYROLL_STATE_COLOR[selectedPayroll.estado]} bordered className={genStyles.stateTag}>
-                              {PAYROLL_STATE_LABEL[selectedPayroll.estado]}
-                            </Tag>
+                          <div className={genStyles.statCard}>
+                            <div className={genStyles.statLabel}>Empresa</div>
+                            <Select
+                              className={genStyles.statSelect}
+                              value={selectedCompanyId}
+                              onChange={(v) => { setSelectedCompanyId(parseCompanyId(v)); resetPayrollSelection(); }}
+                              placeholder="Seleccione"
+                              options={companies.map((c) => ({ value: Number(c.id), label: c.nombre }))}
+                            />
                           </div>
-                          <Descriptions column={{ xs: 1, sm: 2, md: 3 }} size="small" className={genStyles.descriptions}>
-                            <Descriptions.Item label="Empresa">{selectedCompanyName}</Descriptions.Item>
-                            <Descriptions.Item label="Tipo de periodo">
-                              {payPeriodNameById.get(Number(selectedPayroll.idPeriodoPago)) ?? '--'}
-                            </Descriptions.Item>
-                            <Descriptions.Item label="Moneda">{formatPrimitive(selectedPayroll.moneda)}</Descriptions.Item>
-                            <Descriptions.Item label="Inicio periodo">{formatDate(selectedPayroll.fechaInicioPeriodo)}</Descriptions.Item>
-                            <Descriptions.Item label="Fin periodo">{formatDate(selectedPayroll.fechaFinPeriodo)}</Descriptions.Item>
-                            <Descriptions.Item label="Fecha corte">{formatDate(selectedPayroll.fechaCorte)}</Descriptions.Item>
-                            <Descriptions.Item label="Inicio pago">{formatDate(selectedPayroll.fechaInicioPago)}</Descriptions.Item>
-                            <Descriptions.Item label="Fin pago">{formatDate(selectedPayroll.fechaFinPago)}</Descriptions.Item>
-                            <Descriptions.Item label="Pago programado">{formatDate(selectedPayroll.fechaPagoProgramada)}</Descriptions.Item>
-                            <Descriptions.Item label="Tipo planilla">{formatPrimitive(selectedPayroll.tipoPlanilla)}</Descriptions.Item>
-                            <Descriptions.Item label="Estado">
-                              {PAYROLL_STATE_LABEL[selectedPayroll.estado] ?? `Estado ${selectedPayroll.estado}`}
-                            </Descriptions.Item>
-                          </Descriptions>
+
+                          <div className={genStyles.statCard}>
+                            <div className={genStyles.statLabel}>Moneda</div>
+                            <Select
+                              className={genStyles.statSelect}
+                              value={selectedCurrency}
+                              onChange={(v) => { setSelectedCurrency(v); resetPayrollSelection(); }}
+                              options={[
+                                { value: 'ALL', label: 'Todas' },
+                                { value: 'CRC', label: 'CRC' },
+                                { value: 'USD', label: 'USD' },
+                              ]}
+                            />
+                          </div>
+
+                          <div className={genStyles.statCard}>
+                            <div className={genStyles.statLabel}>Tipo de periodo</div>
+                            <Select
+                              className={genStyles.statSelect}
+                              value={selectedPayPeriodId}
+                              onChange={(v) => { setSelectedPayPeriodId(v as PayPeriodFilter); resetPayrollSelection(); }}
+                              options={[
+                                { value: 'ALL', label: 'Todos' },
+                                ...payPeriods.map((p) => ({ value: Number(p.id), label: p.nombre })),
+                              ]}
+                            />
+                          </div>
+
+                          <div className={genStyles.statCard}>
+                            <div className={genStyles.statLabel}>Planillas Regulares por Empresa y Moneda</div>
+                            <Select
+                              showSearch
+                              optionFilterProp="label"
+                              className={genStyles.statSelect}
+                              loading={loadingPayrolls}
+                              value={selectedPayrollId}
+                              onChange={(v) => { setSelectedPayrollId(Number(v)); setSelectedPayrollDetail(null); resetPreview(); }}
+                              placeholder="Seleccione planilla"
+                              options={payrollSelectOptions}
+                              notFoundContent="No hay planillas regulares en estado Abierta o En Proceso."
+                            />
+                            <p className={genStyles.selectHint}>Tipo: Regular. Estados: Abierta y En Proceso.</p>
+                          </div>
                         </div>
-                      ) : (
-                        <p className={genStyles.emptyDetail}>Seleccione una planilla para ver el detalle.</p>
-                      )}
+                      </div>
+
+                      {/* Columna derecha: solo Detalle de la planilla */}
+                      <div className={genStyles.filtersColumnRight}>
+                        <div className={genStyles.sectionLabel}>Detalle de la planilla</div>
+                        {selectedPayroll ? (
+                          <div className={genStyles.contentCard}>
+                            <div className={genStyles.detailHeader}>
+                              <span className={genStyles.detailTitle}>
+                                {selectedPayroll.nombrePlanilla?.trim() || `Planilla #${selectedPayroll.id}`}
+                              </span>
+                              <Tag color={PAYROLL_STATE_COLOR[selectedPayroll.estado]} bordered className={genStyles.stateTag}>
+                                {PAYROLL_STATE_LABEL[selectedPayroll.estado]}
+                              </Tag>
+                            </div>
+                            <Descriptions column={{ xs: 1, sm: 2, md: 3 }} size="small" className={genStyles.descriptions}>
+                              <Descriptions.Item label="Empresa">{selectedCompanyName}</Descriptions.Item>
+                              <Descriptions.Item label="Tipo de periodo">
+                                {payPeriodNameById.get(Number(selectedPayroll.idPeriodoPago)) ?? '--'}
+                              </Descriptions.Item>
+                              <Descriptions.Item label="Moneda">{formatPrimitive(selectedPayroll.moneda)}</Descriptions.Item>
+                              <Descriptions.Item label="Tipo planilla">{formatPrimitive(selectedPayroll.tipoPlanilla)}</Descriptions.Item>
+                              <Descriptions.Item label="Inicio periodo">{formatDate(selectedPayroll.fechaInicioPeriodo)}</Descriptions.Item>
+                              <Descriptions.Item label="Fin periodo">{formatDate(selectedPayroll.fechaFinPeriodo)}</Descriptions.Item>
+                              <Descriptions.Item label="Fecha corte">{formatDate(selectedPayroll.fechaCorte)}</Descriptions.Item>
+                              <Descriptions.Item label="Inicio pago">{formatDate(selectedPayroll.fechaInicioPago)}</Descriptions.Item>
+                              <Descriptions.Item label="Fin pago">{formatDate(selectedPayroll.fechaFinPago)}</Descriptions.Item>
+                              <Descriptions.Item label="Pago programado">{formatDate(selectedPayroll.fechaPagoProgramada)}</Descriptions.Item>
+                              <Descriptions.Item label="Estado">
+                                {PAYROLL_STATE_LABEL[selectedPayroll.estado] ?? `Estado ${selectedPayroll.estado}`}
+                              </Descriptions.Item>
+                            </Descriptions>
+                          </div>
+                        ) : (
+                          <p className={genStyles.emptyDetail}>Seleccione una planilla para ver el detalle.</p>
+                        )}
+                      </div>
+
                     </div>
 
                   </div>
@@ -1593,3 +1646,7 @@ export function PayrollGeneratePage() {
     </div>
   );
 }
+
+
+
+

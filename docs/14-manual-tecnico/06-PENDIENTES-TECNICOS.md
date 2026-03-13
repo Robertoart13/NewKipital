@@ -36,7 +36,7 @@ Un pendiente se cierra cuando:
 | `P1` | Confirmar regla de empleados por horas vs legacy (legacy usa flujo especifico de horas extras, distinto al flujo quincenal/mensual). | Pendiente de decision funcional |
 | `P1` | Confirmar fuente de `credito por conyuge`: legacy usa bandera booleana; modelo actual deriva desde estado civil. | Pendiente de confirmacion de negocio |
 | `P2` | Validar comportamiento de empleados `verificados` vs legacy (legacy conserva/rehidrata ciertos valores). | Pendiente de analisis final |
-| `P1` | Completar `Distribucion de la planilla` (ruta `/payroll-management/planillas/aplicadas/distribucion/:publicId`) con detalle funcional final. | Pendiente de implementacion completa |
+| `P1` | Completar `Distribucion de la planilla` (ruta `/payroll-management/planillas/aplicadas/distribucion/:publicId`) con detalle funcional final. | Cerrado |
 
 ---
 
@@ -95,6 +95,35 @@ Estado del modulo:
 Pendientes para continuar:
 | Prioridad | Pendiente | Estado |
 |---|---|---|
-| `P1` | Implementar funcionalmente la vista `Distribucion de la planilla` (`/payroll-management/planillas/aplicadas/distribucion/:publicId`) para cierre del flujo contable. | Pendiente |
+| `P1` | Implementar funcionalmente la vista `Distribucion de la planilla` (`/payroll-management/planillas/aplicadas/distribucion/:publicId`) para cierre del flujo contable. | Cerrado |
 | `P2` | Definir con negocio si se requiere exportacion de reglas de distribucion (CSV/PDF) para auditoria operativa. | Pendiente de decision |
 | `P2` | Agregar E2E de UI (Playwright) para crear/editar/inactivar/reactivar reglas desde pantalla. | Pendiente |
+
+## Pendiente prioritario - Carga masiva de horas extras
+| Prioridad | Pendiente | Estado |
+|---|---|---|
+| `P0` | Cerrar evidencia final de `Carga masiva de horas extras` por `empresa + planilla` (UI + API + DB + reporte). | Cerrado (PEND-012) |
+
+Avance implementado (backend):
+- Migracion de staging creada:
+  - `acc_horas_extras_cargas_masivas`
+  - `acc_horas_extras_cargas_masivas_lineas`
+- Endpoints implementados en `personal-actions`:
+  - `GET /api/personal-actions/horas-extras/carga-masiva/template-data`
+  - `POST /api/personal-actions/horas-extras/carga-masiva/preview`
+  - `POST /api/personal-actions/horas-extras/carga-masiva/commit`
+- Reglas activas:
+  - Solo planillas `ABIERTA` y `EN_PROCESO`.
+  - Identificacion por `KPid-{id}-...`.
+  - Deteccion de duplicado por hash de archivo y huella de fila.
+  - Bloqueo por empleado verificado en planilla.
+  - Commit atomico en una transaccion (sin persistencia parcial).
+  - Acciones creadas quedan `APPROVED` con `aprobado_por` del ejecutor.
+
+Cierre ejecutado:
+- Evidencia de 4 casos QA validada: flujo feliz, duplicado, empleado bloqueado, error/rollback.
+- Evidencia cruzada UI + API + DB consolidada.
+- Validacion final de notificaciones completada: campana -> `/notifications` -> abrir no leida -> cambio a leida -> detalle a la derecha.
+
+Referencia de plan detallado:
+- [PEND-012 - Carga masiva de horas extras](../12-backlog-pendientes/PEND-012-CARGA-MASIVA-HORAS-EXTRAS-PLAN.md)

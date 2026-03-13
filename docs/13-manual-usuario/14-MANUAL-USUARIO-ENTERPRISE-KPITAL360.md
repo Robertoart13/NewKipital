@@ -12,6 +12,7 @@ Autor: Equipo KPITAL 360
 | 1.2 | 2026-03-11 | Equipo KPITAL 360 | Se agrega mapa del sistema, politica de mantenimiento, metricas y anexos visuales |
 | 1.3 | 2026-03-12 | Equipo KPITAL 360 | Se agrega operacion de Reglas de Distribucion, estados 1/0, uso de Refrescar y validacion de asignaciones |
 | 1.4 | 2026-03-12 | Equipo KPITAL 360 | Se agrega acceso de Carga Masiva de Horas Extras en Gestion Planilla > Planillas |
+| 1.5 | 2026-03-12 | Equipo KPITAL 360 | Se documenta flujo completo de carga masiva y centro de notificaciones |
 
 ## 1. Introduccion
 KPITAL 360 es un sistema de gestion de RRHH y planilla para operar el ciclo completo de pago de empleados.
@@ -100,7 +101,19 @@ Documento:
 Vista disponible:
 - `Gestion Planilla > Planillas > Carga Masiva de Horas Extras`.
 - Permiso requerido: `payroll:overtime:bulk-upload`.
-- Estado actual: pantalla base de entrada para futura operacion de carga masiva.
+- Operacion vigente:
+  - descargar plantilla Excel por empresa + planilla,
+  - generar preview,
+  - confirmar carga masiva,
+  - recibir resultado en notificaciones.
+
+### 5.6 Notificaciones
+- Campana superior: muestra no leidas y permite abrir cada notificacion.
+- Centro de notificaciones: `/notifications`.
+- Comportamiento:
+  - panel izquierdo con lista (leidas/no leidas),
+  - panel derecho con detalle completo de la seleccionada,
+  - al abrir una no leida se marca como leida.
 
 ### 5.5 Traslado interempresas
 Documento:

@@ -36,4 +36,5 @@ export { DiscountsPage } from './personal-actions/descuentos/DiscountsPage';
 export { AumentosPage } from './personal-actions/aumentos/AumentosPage';
 export { VacationsPage } from './personal-actions/vacaciones/VacationsPage';
 export { DocsBrowserPage } from './docs/DocsBrowserPage';
+export { NotificationsCenterPage } from './notifications/NotificationsCenterPage';
 

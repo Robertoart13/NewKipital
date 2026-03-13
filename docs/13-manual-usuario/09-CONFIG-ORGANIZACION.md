@@ -22,6 +22,7 @@ Flujo:
 2. Definir si la regla es global (todos los empleados) o especifica (departamento/puesto).
 3. Agregar lineas: tipo de accion personal + cuenta contable.
 4. Guardar la regla.
+5. Al crear correctamente, el sistema regresa al listado de reglas.
 
 Reglas clave:
 - Global: no permite departamento ni puesto.
@@ -47,9 +48,9 @@ Que valida el sistema al guardar:
 4. No se permite repetir el mismo tipo de accion personal en dos lineas de la misma regla.
 5. La cuenta contable debe corresponder a la empresa y al tipo de accion seleccionado.
 
-Pendiente para continuar despues:
-- Completar y publicar la vista funcional `Distribucion de la planilla` (detalle de planillas aplicadas) para cerrar el flujo contable final.
-- Definir con negocio si se requiere reporte/exportacion de reglas de distribucion (CSV/PDF) para auditoria operativa.
+Estado actual:
+- Vista funcional `Distribucion de la planilla` completada y disponible en el flujo de planillas aplicadas.
+- Como mejora opcional, queda por definir con negocio si se requiere exportacion de reglas de distribucion (CSV/PDF) para auditoria operativa.
 
 ## 🎯 Departamentos
 Ruta: `Configuracion > Departamentos`

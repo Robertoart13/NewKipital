@@ -72,6 +72,32 @@ Notas tecnicas:
 - Avance: `PATCH /personal-actions/{tipo}/:id/advance`
 - Invalida: `PATCH /personal-actions/{tipo}/:id/invalidate`
 
+### 🎯 Carga masiva horas extras
+| Endpoint | Metodo | Permiso |
+|---|---|---|
+| `/personal-actions/horas-extras/carga-masiva/template-data` | GET | `payroll:overtime:bulk-upload` |
+| `/personal-actions/horas-extras/carga-masiva/preview` | POST | `payroll:overtime:bulk-upload` |
+| `/personal-actions/horas-extras/carga-masiva/commit` | POST | `payroll:overtime:bulk-upload` |
+
+Reglas de contrato:
+- `preview` valida filas y calcula monto/formula.
+- `commit` procesa en background y notifica resultado al usuario ejecutor.
+- Scope de notificacion del resultado: `USER + APP` (sin filtro por empresa).
+- Solo filas validas se insertan; filas bloqueadas se reportan en resultado.
+
+### 🎯 Notificaciones
+| Endpoint | Metodo | Uso |
+|---|---|---|
+| `/notifications` | GET | Listar notificaciones (all/unread) |
+| `/notifications/unread-count` | GET | Contador de no leidas |
+| `/notifications/:id/read` | POST | Marcar una como leida |
+| `/notifications/read-all` | POST | Marcar todas como leidas |
+| `/notifications/:id/delete` | POST | Eliminar notificacion |
+
+Regla de alcance:
+- Notificaciones operan por usuario y app activa.
+- No deben depender de empresa activa para listar/leer.
+
 ### 🎯 Traslado interempresa
 - `POST /payroll/intercompany-transfer/simulate`
 - `POST /payroll/intercompany-transfer/execute`

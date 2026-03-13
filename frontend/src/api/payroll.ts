@@ -261,6 +261,7 @@ export interface PayrollPreviewEmployeeRow {
   verificadoEmpleado: boolean;
   requiereRevalidacion: boolean;
   acciones: PayrollPreviewActionRow[];
+  accionesPendientesSinPlanilla?: PayrollPreviewActionRow[];
 }
 
 export interface PayrollPreviewTable {

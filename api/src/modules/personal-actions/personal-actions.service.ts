@@ -1,18 +1,22 @@
-﻿import {
+import {
   Injectable,
   NotFoundException,
   BadRequestException,
   ForbiddenException,
+  Logger,
 } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { InjectRepository } from '@nestjs/typeorm';
+import { createHash, createHmac, timingSafeEqual } from 'crypto';
 import { In, DataSource, Repository } from 'typeorm';
 
 import { DOMAIN_EVENTS } from '../../common/events/event-names';
 import { EmployeeSensitiveDataService } from '../../common/services/employee-sensitive-data.service';
+import { App } from '../access-control/entities/app.entity';
 import { UserCompany } from '../access-control/entities/user-company.entity';
 import { EmployeesService } from '../employees/employees.service';
 import { AuditOutboxService } from '../integration/audit-outbox.service';
+import { NotificationsService } from '../notifications/notifications.service';
 import {
   EstadoCalendarioNomina,
   PayrollCalendar,
@@ -52,6 +56,8 @@ import type { UpsertDiscountDto, UpsertDiscountLineDto } from './dto/upsert-disc
 import type { UpsertIncreaseDto } from './dto/upsert-increase.dto';
 import type { UpsertLicenseDto, UpsertLicenseLineDto } from './dto/upsert-license.dto';
 import type { UpsertOvertimeDto, UpsertOvertimeLineDto } from './dto/upsert-overtime.dto';
+import type { OvertimeBulkCommitDto } from './dto/overtime-bulk-commit.dto';
+import type { OvertimeBulkPreviewDto } from './dto/overtime-bulk-preview.dto';
 import type { UpsertRetentionDto, UpsertRetentionLineDto } from './dto/upsert-retention.dto';
 import type { UpsertVacationDto } from './dto/upsert-vacation.dto';
 
@@ -78,8 +84,56 @@ type AbsenceAuditLinePayload = {
   formula: string | null;
 };
 
+type OvertimeBulkUploadStatus =
+  | 'UPLOADED'
+  | 'PREVIEW_OK'
+  | 'PREVIEW_WITH_WARNINGS'
+  | 'COMMIT_OK'
+  | 'COMMIT_FAILED';
+
+type OvertimeBulkRowStatus = 'VALIDA' | 'NO_PROCESABLE' | 'ERROR_BLOQUEANTE' | 'PROCESADA';
+
+type OvertimeBulkParsedRow = {
+  rowNumber: number;
+  codigoEmpleado: string;
+  nombreCompleto: string | null;
+  idEmpleado: number | null;
+  idMovimientoNomina: number | null;
+  movimientoNombre: string | null;
+  tipoJornada: TipoJornadaHoraExtraLinea | null;
+  cantidadHoras: number | null;
+  fechaInicioHoraExtra: string | null;
+  fechaFinHoraExtra: string | null;
+  salarioBase: number | null;
+  montoCalculado: number | null;
+  formulaCalculada: string | null;
+  rowHashSha256: string | null;
+  estadoLinea: OvertimeBulkRowStatus;
+  mensajeLinea: string;
+};
+
+type OvertimeBulkCommitGroupedLine = {
+  rowId: number;
+  rowNumber: number;
+  payrollId: number;
+  movimientoId: number;
+  tipoJornada: TipoJornadaHoraExtraLinea;
+  cantidad: number;
+  fechaInicioHoraExtra: string;
+  fechaFinHoraExtra: string;
+  fechaEfecto: string;
+  monto: number;
+  formula: string;
+};
+
 @Injectable()
 export class PersonalActionsService {
+  private readonly logger = new Logger(PersonalActionsService.name);
+  private readonly overtimeBulkPublicIdSecret =
+    process.env.OVERTIME_BULK_PUBLIC_ID_SECRET?.trim() || 'kpital-overtime-bulk-public-id-secret-v1';
+  private readonly overtimeBulkCommitInFlight = new Set<number>();
+  private kpitalAppIdCache: number | null | undefined = undefined;
+
   constructor(
     @InjectRepository(PersonalAction)
     private readonly repo: Repository<PersonalAction>,
@@ -105,6 +159,8 @@ export class PersonalActionsService {
     private readonly vacationDateRepo: Repository<VacationDate>,
     @InjectRepository(UserCompany)
     private readonly userCompanyRepo: Repository<UserCompany>,
+    @InjectRepository(App)
+    private readonly appRepo: Repository<App>,
     @InjectRepository(PayrollCalendar)
     private readonly payrollRepo: Repository<PayrollCalendar>,
     @InjectRepository(PayrollEmployeeVerification)
@@ -113,6 +169,7 @@ export class PersonalActionsService {
     private readonly sensitiveDataService: EmployeeSensitiveDataService,
     private readonly eventEmitter: EventEmitter2,
     private readonly auditOutbox: AuditOutboxService,
+    private readonly notificationsService: NotificationsService,
     private readonly dataSource: DataSource,
   ) {}
 
@@ -960,17 +1017,49 @@ export class PersonalActionsService {
     }
 
     const targetPayrollId = this.resolveTargetPayrollIdForApproval(action, payrollIdHint);
-    if (targetPayrollId) {
-      await this.assertEmployeeNotVerifiedForPayrolls(action.idEmpleado, [targetPayrollId], 'acciones');
+    if (!targetPayrollId) {
+      throw new BadRequestException(
+        'Antes de aprobar se debe asignar una planilla para esta accion de personal.',
+      );
     }
 
-    action.estado = PersonalActionEstado.APPROVED;
-    action.aprobadoPor = userId ?? null;
-    action.fechaAprobacion = new Date();
-    action.modificadoPor = userId ?? null;
-    action.versionLock += 1;
+    await this.assertEmployeeNotVerifiedForPayrolls(action.idEmpleado, [targetPayrollId], 'acciones');
 
-    const saved = await this.repo.save(action);
+    const targetPayroll = await this.payrollRepo.findOne({ where: { id: targetPayrollId } });
+    if (!targetPayroll || targetPayroll.esInactivo !== 1) {
+      throw new BadRequestException('La planilla seleccionada no esta disponible para asignacion.');
+    }
+    if (
+      ![EstadoCalendarioNomina.ABIERTA, EstadoCalendarioNomina.EN_PROCESO].includes(
+        targetPayroll.estado as EstadoCalendarioNomina,
+      )
+    ) {
+      throw new BadRequestException(
+        'La planilla seleccionada debe estar en estado ABIERTA o EN_PROCESO.',
+      );
+    }
+    if (Number(targetPayroll.idEmpresa) !== Number(action.idEmpresa)) {
+      throw new BadRequestException(
+        'La accion no se puede asignar a una planilla de otra empresa.',
+      );
+    }
+
+    const now = new Date();
+    await this.repo
+      .createQueryBuilder()
+      .update(PersonalAction)
+      .set({
+        estado: PersonalActionEstado.APPROVED,
+        idCalendarioNomina: targetPayrollId,
+        aprobadoPor: userId ?? null,
+        fechaAprobacion: now,
+        modificadoPor: userId ?? null,
+        versionLock: () => 'version_lock_accion + 1',
+      })
+      .where('id_accion = :id', { id })
+      .execute();
+
+    const saved = await this.findOne(id, userId);
     if (targetPayrollId) {
       await this.markPayrollEmployeeRevalidationRequired(targetPayrollId, action.idEmpleado);
     }
@@ -1125,7 +1214,7 @@ export class PersonalActionsService {
         return;
       }
       const decrypted = this.sensitiveDataService.decrypt(raw);
-      const parsed = decrypted == null ? NaN : Number(decrypted);
+      const parsed = this.parseMonetaryValue(decrypted);
       salaryByEmployeeId.set(Number(row.id), Number.isFinite(parsed) ? parsed : null);
     });
 
@@ -1245,6 +1334,624 @@ export class PersonalActionsService {
       fechaInicio: this.toYmdFlexible(row.fechaInicio) ?? '',
       fechaFin: this.toYmdFlexible(row.fechaFin) ?? '',
     }));
+  }
+
+  async getOvertimeBulkTemplateData(userId: number, idEmpresa: number, payrollId: number) {
+    await this.assertUserCompanyAccess(userId, idEmpresa);
+    const payroll = await this.assertOvertimeBulkPayroll(idEmpresa, payrollId);
+
+    const movements = await this.loadOvertimeBulkMovements(idEmpresa);
+    const employees = await this.loadOvertimeBulkEmployees(
+      idEmpresa,
+      payroll.idPeriodoPago,
+      payroll.moneda,
+      payroll.fechaFinPeriodo,
+    );
+
+    return {
+      payroll: {
+        id: payroll.id,
+        nombrePlanilla: payroll.nombrePlanilla,
+        estado: payroll.estado,
+        fechaInicioPeriodo: payroll.fechaInicioPeriodo,
+        fechaFinPeriodo: payroll.fechaFinPeriodo,
+        idPeriodoPago: payroll.idPeriodoPago,
+        moneda: payroll.moneda,
+      },
+      empleados: employees,
+      movimientos: movements.map((movement) => ({
+        id: movement.id,
+        nombre: movement.nombre,
+        porcentaje: movement.porcentaje,
+        esMontoFijo: movement.esMontoFijo,
+        montoFijo: movement.montoFijo,
+      })),
+      tiposJornada: [
+        { id: TipoJornadaHoraExtraLinea.NOCTURNA_6, nombre: 'Nocturna (6 horas)' },
+        { id: TipoJornadaHoraExtraLinea.MIXTA_7, nombre: 'Mixta (7 horas)' },
+        { id: TipoJornadaHoraExtraLinea.DIURNA_8, nombre: 'Diurna (8 horas)' },
+      ],
+    };
+  }
+
+  async previewOvertimeBulk(dto: OvertimeBulkPreviewDto, userId: number) {
+    await this.assertUserCompanyAccess(userId, dto.idEmpresa);
+    const payroll = await this.assertOvertimeBulkPayroll(dto.idEmpresa, dto.payrollId);
+
+    if (!Array.isArray(dto.rows) || dto.rows.length === 0) {
+      throw new BadRequestException('El archivo no contiene filas para procesar.');
+    }
+
+    const fileHash = String(dto.fileHashSha256 ?? '').trim().toLowerCase();
+    if (!/^[a-f0-9]{32,128}$/.test(fileHash)) {
+      throw new BadRequestException('Hash de archivo invalido para carga masiva.');
+    }
+
+    const alreadyCommitted = await this.repo.query(
+      `
+      SELECT id_carga_masiva AS id
+      FROM acc_horas_extras_cargas_masivas
+      WHERE id_empresa = ?
+        AND id_calendario_nomina = ?
+        AND hash_archivo_sha256 = ?
+        AND estado_carga_masiva = 'COMMIT_OK'
+      LIMIT 1
+      `,
+      [dto.idEmpresa, dto.payrollId, fileHash],
+    );
+    if ((alreadyCommitted ?? []).length > 0) {
+      throw new BadRequestException(
+        'Este archivo ya fue procesado exitosamente para la empresa y planilla seleccionadas.',
+      );
+    }
+
+    const movements = await this.loadOvertimeBulkMovements(dto.idEmpresa);
+    const movementMap = new Map<number, (typeof movements)[number]>(movements.map((item) => [item.id, item]));
+
+    const requestedEmployeeIds = Array.from(
+      new Set(dto.rows.map((row) => this.extractEmployeeIdFromCode(row.codigoEmpleado)).filter((id) => id > 0)),
+    );
+    const employeeMap = await this.loadOvertimeBulkEmployeeMap(
+      dto.idEmpresa,
+      requestedEmployeeIds,
+      payroll.idPeriodoPago,
+      payroll.moneda,
+    );
+    const verifiedEmployees = await this.loadVerifiedEmployeesForPayroll(dto.payrollId, requestedEmployeeIds);
+    const committedRowHashes = await this.loadCommittedOvertimeRowHashes(dto.idEmpresa, dto.payrollId);
+
+    const seenHashes = new Set<string>();
+    const parsedRows: OvertimeBulkParsedRow[] = dto.rows.map((row) =>
+      this.parseOvertimeBulkRow({
+        row,
+        payroll,
+        movementMap,
+        employeeMap,
+        verifiedEmployees,
+        committedRowHashes,
+        seenHashes,
+      }),
+    );
+
+    const totals = this.buildOvertimeBulkTotals(parsedRows);
+    const uploadStatus: OvertimeBulkUploadStatus =
+      totals.errorBloqueante > 0 || totals.noProcesables > 0 ? 'PREVIEW_WITH_WARNINGS' : 'PREVIEW_OK';
+    const provisionalPublicId = `tmp_hexb_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+    const summary = this.buildOvertimeBulkPreviewSummary(totals);
+
+    const insertResult = await this.repo.query(
+      `
+      INSERT INTO acc_horas_extras_cargas_masivas (
+        public_id_carga_masiva,
+        id_empresa,
+        id_calendario_nomina,
+        id_usuario_ejecutor,
+        nombre_archivo_original,
+        hash_archivo_sha256,
+        total_filas_archivo,
+        total_filas_validas,
+        total_filas_no_procesables,
+        total_filas_error_bloqueante,
+        estado_carga_masiva,
+        mensaje_resumen_carga_masiva,
+        metadata_carga_masiva
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `,
+      [
+        provisionalPublicId,
+        dto.idEmpresa,
+        dto.payrollId,
+        userId,
+        dto.fileName,
+        fileHash,
+        totals.total,
+        totals.validas,
+        totals.noProcesables,
+        totals.errorBloqueante,
+        uploadStatus,
+        summary,
+        JSON.stringify({
+          payroll: {
+            id: payroll.id,
+            nombre: payroll.nombrePlanilla,
+            estado: payroll.estado,
+            periodo: `${payroll.fechaInicioPeriodo}..${payroll.fechaFinPeriodo}`,
+          },
+        }),
+      ],
+    );
+
+    const uploadId = Number(insertResult?.insertId ?? 0);
+    if (!uploadId) {
+      throw new BadRequestException('No se pudo registrar el preview de carga masiva.');
+    }
+    const uploadPublicId = this.buildOvertimeBulkPublicId(uploadId);
+    await this.repo.query(
+      `
+      UPDATE acc_horas_extras_cargas_masivas
+      SET public_id_carga_masiva = ?,
+          fecha_modificacion_carga_masiva = NOW()
+      WHERE id_carga_masiva = ?
+      `,
+      [uploadPublicId, uploadId],
+    );
+
+    for (const parsed of parsedRows) {
+      await this.repo.query(
+        `
+        INSERT INTO acc_horas_extras_cargas_masivas_lineas (
+          id_carga_masiva,
+          numero_fila_excel,
+          codigo_empleado,
+          nombre_empleado_excel,
+          id_empleado,
+          id_movimiento_nomina,
+          tipo_jornada_horas_extras_linea,
+          cantidad_horas_linea,
+          fecha_inicio_hora_extra_linea,
+          fecha_fin_hora_extra_linea,
+          salario_base_empleado_linea,
+          monto_calculado_linea,
+          formula_calculo_linea,
+          hash_huella_linea_sha256,
+          estado_linea_carga_masiva,
+          mensaje_linea_carga_masiva
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `,
+        [
+          uploadId,
+          parsed.rowNumber,
+          parsed.codigoEmpleado,
+          parsed.nombreCompleto,
+          parsed.idEmpleado,
+          parsed.idMovimientoNomina,
+          parsed.tipoJornada,
+          parsed.cantidadHoras,
+          parsed.fechaInicioHoraExtra,
+          parsed.fechaFinHoraExtra,
+          parsed.salarioBase,
+          parsed.montoCalculado,
+          parsed.formulaCalculada,
+          parsed.rowHashSha256,
+          parsed.estadoLinea,
+          parsed.mensajeLinea,
+        ],
+      );
+    }
+
+    return {
+      uploadPublicId,
+      resumen: {
+        ...totals,
+        estadoPreview: uploadStatus,
+        mensaje: summary,
+      },
+      filas: parsedRows.map((line) => ({
+        rowNumber: line.rowNumber,
+        codigoEmpleado: line.codigoEmpleado,
+        nombreCompleto: line.nombreCompleto,
+        movimientoId: line.idMovimientoNomina,
+        movimientoNombre: line.movimientoNombre,
+        tipoJornada: line.tipoJornada,
+        cantidadHoras: line.cantidadHoras,
+        fechaInicioHoraExtra: line.fechaInicioHoraExtra,
+        fechaFinHoraExtra: line.fechaFinHoraExtra,
+        salarioBase: line.salarioBase,
+        montoCalculado: line.montoCalculado,
+        formulaCalculada: line.formulaCalculada,
+        estadoLinea: line.estadoLinea,
+        mensajeLinea: line.mensajeLinea,
+      })),
+    };
+  }
+
+  async commitOvertimeBulk(dto: OvertimeBulkCommitDto, userId: number) {
+    await this.assertUserCompanyAccess(userId, dto.idEmpresa);
+    const payroll = await this.assertOvertimeBulkPayroll(dto.idEmpresa, dto.payrollId);
+    const uploadId = this.parseOvertimeBulkPublicId(dto.uploadPublicId);
+
+    const uploads = await this.repo.query(
+      `
+      SELECT
+        id_carga_masiva AS id,
+        id_empresa AS idEmpresa,
+        id_calendario_nomina AS idPayroll,
+        id_usuario_ejecutor AS idUsuarioEjecutor,
+        estado_carga_masiva AS estado,
+        total_filas_validas AS totalValidas,
+        total_filas_error_bloqueante AS totalErroresBloqueantes
+      FROM acc_horas_extras_cargas_masivas
+      WHERE id_carga_masiva = ?
+      LIMIT 1
+      `,
+      [uploadId],
+    );
+    const upload = uploads?.[0] as Record<string, unknown> | undefined;
+    if (!upload) {
+      throw new NotFoundException('Carga masiva no encontrada.');
+    }
+    if (
+      Number(upload.idEmpresa) !== dto.idEmpresa ||
+      Number(upload.idPayroll) !== dto.payrollId ||
+      Number(upload.idUsuarioEjecutor) !== userId
+    ) {
+      throw new ForbiddenException('La carga masiva no pertenece al contexto solicitado.');
+    }
+    if (!['PREVIEW_OK', 'PREVIEW_WITH_WARNINGS'].includes(String(upload.estado ?? ''))) {
+      throw new BadRequestException('La carga masiva no esta disponible para confirmar.');
+    }
+
+    const stagedRows = (await this.repo.query(
+      `
+      SELECT
+        id_carga_masiva_linea AS rowId,
+        numero_fila_excel AS rowNumber,
+        codigo_empleado AS codigoEmpleado,
+        id_empleado AS idEmpleado,
+        id_movimiento_nomina AS idMovimientoNomina,
+        tipo_jornada_horas_extras_linea AS tipoJornada,
+        cantidad_horas_linea AS cantidadHoras,
+        fecha_inicio_hora_extra_linea AS fechaInicioHoraExtra,
+        fecha_fin_hora_extra_linea AS fechaFinHoraExtra,
+        monto_calculado_linea AS montoCalculado,
+        formula_calculo_linea AS formulaCalculada,
+        estado_linea_carga_masiva AS estadoLinea,
+        mensaje_linea_carga_masiva AS mensajeLinea
+      FROM acc_horas_extras_cargas_masivas_lineas
+      WHERE id_carga_masiva = ?
+      ORDER BY numero_fila_excel ASC, id_carga_masiva_linea ASC
+      `,
+      [uploadId],
+    )) as Array<Record<string, unknown>>;
+
+    if (stagedRows.length === 0) {
+      throw new BadRequestException('La carga masiva no contiene filas para confirmar.');
+    }
+
+    const validRows = stagedRows.filter((row) => String(row.estadoLinea) === 'VALIDA');
+    const blockedRows = stagedRows.filter((row) => String(row.estadoLinea) === 'ERROR_BLOQUEANTE');
+    const nonProcessableRows = stagedRows.filter((row) => String(row.estadoLinea) === 'NO_PROCESABLE');
+    if (validRows.length === 0) {
+      throw new BadRequestException('La carga no tiene filas validas para crear acciones.');
+    }
+
+    const groupedByEmployee = new Map<number, OvertimeBulkCommitGroupedLine[]>();
+    for (const row of validRows) {
+      const idEmpleado = Number(row.idEmpleado ?? 0);
+      const movimientoId = Number(row.idMovimientoNomina ?? 0);
+      const cantidad = Number(row.cantidadHoras ?? 0);
+      const monto = Number(row.montoCalculado ?? 0);
+      const jornada = String(row.tipoJornada ?? '') as TipoJornadaHoraExtraLinea;
+      const fechaInicio = this.toYmdFlexible(row.fechaInicioHoraExtra);
+      const fechaFin = this.toYmdFlexible(row.fechaFinHoraExtra) ?? fechaInicio;
+      if (!idEmpleado || !movimientoId || !cantidad || !fechaInicio || !fechaFin || !monto || !jornada) {
+        throw new BadRequestException(
+          `La fila ${Number(row.rowNumber ?? 0)} perdio datos validos. Ejecute preview nuevamente.`,
+        );
+      }
+      const item: OvertimeBulkCommitGroupedLine = {
+        rowId: Number(row.rowId ?? 0),
+        rowNumber: Number(row.rowNumber ?? 0),
+        payrollId: dto.payrollId,
+        movimientoId,
+        tipoJornada: jornada,
+        cantidad,
+        fechaInicioHoraExtra: fechaInicio,
+        fechaFinHoraExtra: fechaFin,
+        fechaEfecto: fechaFin,
+        monto,
+        formula: String(row.formulaCalculada ?? ''),
+      };
+      const current = groupedByEmployee.get(idEmpleado) ?? [];
+      current.push(item);
+      groupedByEmployee.set(idEmpleado, current);
+    }
+
+    const employeeIds = Array.from(groupedByEmployee.keys());
+    const employeeMap = await this.loadOvertimeBulkEmployeeMap(
+      dto.idEmpresa,
+      employeeIds,
+      payroll.idPeriodoPago,
+      payroll.moneda,
+    );
+    const now = new Date();
+    const createdActionIds: number[] = [];
+
+    try {
+      await this.dataSource.transaction(async (trx) => {
+        for (const [idEmpleado, employeeLines] of groupedByEmployee.entries()) {
+          const employee = employeeMap.get(idEmpleado);
+          if (!employee) {
+            throw new BadRequestException(`Empleado #${idEmpleado} ya no esta activo para la empresa.`);
+          }
+
+          const totalMonto = this.round2(employeeLines.reduce((sum, line) => sum + line.monto, 0));
+          const firstDate = this.parseDateOnlyLocal(employeeLines[0].fechaEfecto);
+          const lastDate = this.parseDateOnlyLocal(employeeLines[employeeLines.length - 1].fechaEfecto);
+          if (!firstDate || !lastDate) {
+            throw new BadRequestException(`Empleado #${idEmpleado}: fechas de efecto invalidas.`);
+          }
+
+          const action = trx.create(PersonalAction, {
+            idEmpresa: dto.idEmpresa,
+            idEmpleado,
+            idCalendarioNomina: dto.payrollId,
+            tipoAccion: 'hora_extra',
+            groupId: `HEX-BULK-${uploadId}-${idEmpleado}`,
+            origen: 'IMPORT',
+            descripcion:
+              dto.observacion?.trim() ||
+              `Carga masiva horas extra (${dto.uploadPublicId}) - fila(s): ${employeeLines.map((line) => line.rowNumber).join(', ')}`,
+            estado: PersonalActionEstado.APPROVED,
+            fechaEfecto: firstDate,
+            fechaInicioEfecto: firstDate,
+            fechaFinEfecto: lastDate,
+            monto: totalMonto,
+            moneda: employee.monedaSalario,
+            aprobadoPor: userId,
+            fechaAprobacion: now,
+            creadoPor: userId,
+            modificadoPor: userId,
+          });
+          const savedAction = await trx.save(action);
+          createdActionIds.push(savedAction.id);
+
+          for (let i = 0; i < employeeLines.length; i += 1) {
+            const line = employeeLines[i];
+            const fechaEfecto = this.parseDateOnlyLocal(line.fechaEfecto);
+            const fechaInicioHoraExtra = this.parseDateOnlyLocal(line.fechaInicioHoraExtra);
+            const fechaFinHoraExtra = this.parseDateOnlyLocal(line.fechaFinHoraExtra);
+            if (!fechaInicioHoraExtra || !fechaFinHoraExtra) {
+              throw new BadRequestException(
+                `Empleado #${idEmpleado}: la fila ${line.rowNumber} contiene fechas de hora extra invalidas.`,
+              );
+            }
+            const cuota = trx.create(ActionQuota, {
+              idAccion: savedAction.id,
+              idEmpresa: dto.idEmpresa,
+              idEmpleado,
+              idCalendarioNomina: dto.payrollId,
+              numeroCuota: i + 1,
+              montoCuota: line.monto,
+              estado: EstadoCuota.PENDIENTE_APROBACION,
+              fechaEfecto: fechaEfecto ?? null,
+              motivoEstado: null,
+            });
+            const savedQuota = await trx.save(cuota);
+
+            const overtimeLine = trx.create(OvertimeLine, {
+              idAccion: savedAction.id,
+              idCuota: savedQuota.id,
+              idEmpresa: dto.idEmpresa,
+              idEmpleado,
+              idCalendarioNomina: dto.payrollId,
+              idMovimientoNomina: line.movimientoId,
+              fechaInicioHoraExtra,
+              fechaFinHoraExtra,
+              tipoJornadaHorasExtras: line.tipoJornada,
+              cantidad: line.cantidad,
+              monto: line.monto,
+              remuneracion: 0,
+              formula: line.formula?.trim() || null,
+              orden: i + 1,
+              fechaEfecto: fechaEfecto ?? null,
+            });
+            await trx.save(overtimeLine);
+
+            await trx.query(
+              `
+              UPDATE acc_horas_extras_cargas_masivas_lineas
+              SET estado_linea_carga_masiva = 'PROCESADA',
+                  mensaje_linea_carga_masiva = ?,
+                  fecha_modificacion_linea_carga_masiva = NOW()
+              WHERE id_carga_masiva_linea = ?
+              `,
+              [`Procesada en accion #${savedAction.id}.`, line.rowId],
+            );
+          }
+        }
+
+        await trx.query(
+          `
+          UPDATE acc_horas_extras_cargas_masivas
+          SET estado_carga_masiva = 'COMMIT_OK',
+              mensaje_resumen_carga_masiva = ?,
+              fecha_modificacion_carga_masiva = NOW()
+          WHERE id_carga_masiva = ?
+          `,
+          [
+            `Carga masiva aplicada. Filas validas procesadas: ${validRows.length}. Filas ignoradas: ${
+              blockedRows.length + nonProcessableRows.length
+            } (bloqueantes: ${blockedRows.length}, no procesables: ${nonProcessableRows.length}). Acciones creadas/aprobadas: ${createdActionIds.length}.`,
+            uploadId,
+          ],
+        );
+      });
+    } catch (error) {
+      await this.repo.query(
+        `
+        UPDATE acc_horas_extras_cargas_masivas
+        SET estado_carga_masiva = 'COMMIT_FAILED',
+            mensaje_resumen_carga_masiva = ?,
+            fecha_modificacion_carga_masiva = NOW()
+        WHERE id_carga_masiva = ?
+        `,
+        [
+          `Commit fallido: ${error instanceof Error ? error.message : 'error inesperado'}. No se aplicaron cambios.`,
+          uploadId,
+        ],
+      );
+      throw error;
+    }
+
+    const actions = await this.repo.find({
+      where: { id: In(createdActionIds) },
+    });
+    for (const action of actions) {
+      await this.flagRecalculationForOpenPayrolls(action);
+      this.eventEmitter.emit(DOMAIN_EVENTS.PERSONAL_ACTION.APPROVED, {
+        eventName: DOMAIN_EVENTS.PERSONAL_ACTION.APPROVED,
+        occurredAt: new Date(),
+        payload: {
+          actionId: String(action.id),
+          employeeId: String(action.idEmpleado),
+          companyId: String(action.idEmpresa),
+        },
+      });
+    }
+
+    return {
+      uploadPublicId: dto.uploadPublicId,
+      payroll: {
+        id: payroll.id,
+        nombrePlanilla: payroll.nombrePlanilla,
+      },
+      createdActions: createdActionIds.length,
+      createdActionIds,
+      message: `Carga masiva aplicada sobre la planilla ${payroll.nombrePlanilla}. Filas procesadas: ${validRows.length}. Filas ignoradas: ${
+        blockedRows.length + nonProcessableRows.length
+      } (bloqueantes: ${blockedRows.length}, no procesables: ${nonProcessableRows.length}).`,
+    };
+  }
+
+  async commitOvertimeBulkAsync(dto: OvertimeBulkCommitDto, userId: number) {
+    await this.assertUserCompanyAccess(userId, dto.idEmpresa);
+    const payroll = await this.assertOvertimeBulkPayroll(dto.idEmpresa, dto.payrollId);
+    const uploadId = this.parseOvertimeBulkPublicId(dto.uploadPublicId);
+
+    const uploads = await this.repo.query(
+      `
+      SELECT
+        id_carga_masiva AS id,
+        id_empresa AS idEmpresa,
+        id_calendario_nomina AS idPayroll,
+        id_usuario_ejecutor AS idUsuarioEjecutor,
+        estado_carga_masiva AS estado
+      FROM acc_horas_extras_cargas_masivas
+      WHERE id_carga_masiva = ?
+      LIMIT 1
+      `,
+      [uploadId],
+    );
+    const upload = uploads?.[0] as Record<string, unknown> | undefined;
+    if (!upload) {
+      throw new NotFoundException('Carga masiva no encontrada.');
+    }
+    if (
+      Number(upload.idEmpresa) !== dto.idEmpresa ||
+      Number(upload.idPayroll) !== dto.payrollId ||
+      Number(upload.idUsuarioEjecutor) !== userId
+    ) {
+      throw new ForbiddenException('La carga masiva no pertenece al contexto solicitado.');
+    }
+    if (!['PREVIEW_OK', 'PREVIEW_WITH_WARNINGS'].includes(String(upload.estado ?? ''))) {
+      throw new BadRequestException('La carga masiva no esta disponible para confirmar.');
+    }
+    if (this.overtimeBulkCommitInFlight.has(uploadId)) {
+      throw new BadRequestException('La carga masiva ya se encuentra en procesamiento.');
+    }
+
+    this.overtimeBulkCommitInFlight.add(uploadId);
+    void this.runOvertimeBulkCommitInBackground(dto, userId, uploadId, payroll.nombrePlanilla);
+
+    return {
+      uploadPublicId: dto.uploadPublicId,
+      payroll: {
+        id: payroll.id,
+        nombrePlanilla: payroll.nombrePlanilla,
+      },
+      createdActions: 0,
+      createdActionIds: [],
+      message:
+        'Carga masiva enviada a procesamiento en segundo plano. Recibira una notificacion al finalizar.',
+    };
+  }
+
+  private async runOvertimeBulkCommitInBackground(
+    dto: OvertimeBulkCommitDto,
+    userId: number,
+    uploadId: number,
+    nombrePlanilla: string,
+  ): Promise<void> {
+    const kpitalAppId = await this.resolveKpitalAppId();
+    try {
+      const result = await this.commitOvertimeBulk(dto, userId);
+      await this.notificationsService.dispatch(
+        {
+          tipo: 'payroll.overtime.bulk.commit.ok',
+          titulo: 'Carga masiva de horas extras completada',
+          mensaje: result.message,
+          scope: 'USER',
+          idUsuarios: [userId],
+          idApp: kpitalAppId ?? undefined,
+          payload: {
+            uploadPublicId: dto.uploadPublicId,
+            payrollId: dto.payrollId,
+            payrollName: nombrePlanilla,
+            createdActions: result.createdActions,
+            createdActionIds: result.createdActionIds,
+          },
+        },
+        userId,
+      );
+    } catch (error) {
+      this.logger.error(
+        `Fallo commit asíncrono de carga masiva horas extras uploadId=${uploadId}: ${
+          error instanceof Error ? error.message : String(error)
+        }`,
+        error instanceof Error ? error.stack : undefined,
+      );
+      await this.notificationsService.dispatch(
+        {
+          tipo: 'payroll.overtime.bulk.commit.error',
+          titulo: 'Error en carga masiva de horas extras',
+          mensaje: `La carga masiva no se pudo completar. ${
+            error instanceof Error ? error.message : 'Error inesperado'
+          }`,
+          scope: 'USER',
+          idUsuarios: [userId],
+          idApp: kpitalAppId ?? undefined,
+          payload: {
+            uploadPublicId: dto.uploadPublicId,
+            payrollId: dto.payrollId,
+            payrollName: nombrePlanilla,
+          },
+        },
+        userId,
+      );
+    } finally {
+      this.overtimeBulkCommitInFlight.delete(uploadId);
+    }
+  }
+
+  private async resolveKpitalAppId(): Promise<number | null> {
+    if (this.kpitalAppIdCache !== undefined) return this.kpitalAppIdCache;
+    const app = await this.appRepo.findOne({
+      where: { codigo: 'kpital', estado: 1 },
+      select: ['id'],
+    });
+    this.kpitalAppIdCache = app?.id ?? null;
+    return this.kpitalAppIdCache;
   }
 
   async createAbsence(dto: UpsertAbsenceDto, userId: number) {
@@ -5555,6 +6262,696 @@ export class PersonalActionsService {
     }
   }
 
+  private async assertOvertimeBulkPayroll(idEmpresa: number, payrollId: number): Promise<{
+    id: number;
+    idEmpresa: number;
+    idPeriodoPago: number;
+    nombrePlanilla: string;
+    fechaInicioPeriodo: string;
+    fechaFinPeriodo: string;
+    moneda: string;
+    estado: EstadoCalendarioNomina;
+  }> {
+    const rows = await this.repo.query(
+      `
+      SELECT
+        c.id_calendario_nomina AS id,
+        c.id_empresa AS idEmpresa,
+        c.id_periodos_pago AS idPeriodoPago,
+        c.nombre_planilla_calendario_nomina AS nombrePlanilla,
+        c.fecha_inicio_periodo AS fechaInicioPeriodo,
+        c.fecha_fin_periodo AS fechaFinPeriodo,
+        c.moneda_calendario_nomina AS moneda,
+        c.estado_calendario_nomina AS estado,
+        c.es_inactivo AS esInactivo
+      FROM nom_calendarios_nomina c
+      WHERE c.id_calendario_nomina = ?
+        AND c.id_empresa = ?
+      LIMIT 1
+      `,
+      [payrollId, idEmpresa],
+    );
+    const row = rows?.[0] as Record<string, unknown> | undefined;
+    if (!row) {
+      throw new NotFoundException('Planilla no encontrada para la empresa seleccionada.');
+    }
+
+    const estado = Number(row.estado ?? -1);
+    if (![EstadoCalendarioNomina.ABIERTA, EstadoCalendarioNomina.EN_PROCESO].includes(estado)) {
+      throw new BadRequestException('La planilla debe estar en estado ABIERTA o EN_PROCESO.');
+    }
+    if (Number(row.esInactivo ?? 0) !== 1) {
+      throw new BadRequestException('La planilla seleccionada esta inactiva.');
+    }
+
+    return {
+      id: Number(row.id),
+      idEmpresa: Number(row.idEmpresa),
+      idPeriodoPago: Number(row.idPeriodoPago),
+      nombrePlanilla: String(row.nombrePlanilla ?? `Planilla #${row.id}`),
+      fechaInicioPeriodo: this.toYmdFlexible(row.fechaInicioPeriodo) ?? '',
+      fechaFinPeriodo: this.toYmdFlexible(row.fechaFinPeriodo) ?? '',
+      moneda: String(row.moneda ?? 'CRC').toUpperCase(),
+      estado: estado as EstadoCalendarioNomina,
+    };
+  }
+
+  private async loadOvertimeBulkMovements(idEmpresa: number): Promise<
+    Array<{
+      id: number;
+      nombre: string;
+      esMontoFijo: number;
+      montoFijo: number;
+      porcentaje: number;
+    }>
+  > {
+    const rows = await this.repo.query(
+      `
+      SELECT
+        id_movimiento_nomina AS id,
+        nombre_movimiento_nomina AS nombre,
+        es_monto_fijo_movimiento_nomina AS esMontoFijo,
+        monto_fijo_movimiento_nomina AS montoFijo,
+        porcentaje_movimiento_nomina AS porcentaje
+      FROM nom_movimientos_nomina
+      WHERE id_empresa_movimiento_nomina = ?
+        AND id_tipo_accion_personal_movimiento_nomina = 11
+        AND es_inactivo_movimiento_nomina = 1
+      ORDER BY nombre_movimiento_nomina ASC
+      `,
+      [idEmpresa],
+    );
+
+    return (rows ?? []).map((row: Record<string, unknown>) => ({
+      id: Number(row.id),
+      nombre: String(row.nombre ?? ''),
+      esMontoFijo: Number(row.esMontoFijo ?? 0),
+      montoFijo: Number(row.montoFijo ?? 0),
+      porcentaje: Number(row.porcentaje ?? 0),
+    }));
+  }
+
+  private async loadOvertimeBulkEmployees(
+    idEmpresa: number,
+    idPeriodoPago: number,
+    monedaPlanilla: string,
+    fechaFinPeriodo: string,
+  ): Promise<
+    Array<{
+      idEmpleado: number;
+      codigoEmpleado: string;
+      nombreCompleto: string;
+      periodoPago: number | null;
+      monedaSalario: string;
+    }>
+  > {
+    const rows = await this.repo.query(
+      `
+      SELECT
+        e.id_empleado AS idEmpleado,
+        e.codigo_empleado AS codigoEmpleadoInterno,
+        e.nombre_empleado AS nombreEncrypted,
+        e.apellido1_empleado AS apellido1Encrypted,
+        e.apellido2_empleado AS apellido2Encrypted,
+        e.id_periodos_pago AS idPeriodoPago,
+        e.moneda_salario_empleado AS monedaSalario
+      FROM sys_empleados e
+      WHERE e.id_empresa = ?
+        AND e.estado_empleado = 1
+        AND e.fecha_salida_empleado IS NULL
+        AND e.fecha_ingreso_empleado <= ?
+        AND e.id_periodos_pago = ?
+        AND e.moneda_salario_empleado = ?
+      ORDER BY e.id_empleado ASC
+      `,
+      [idEmpresa, fechaFinPeriodo, idPeriodoPago, monedaPlanilla],
+    );
+
+    return (rows ?? []).map((row: Record<string, unknown>) => {
+      const idEmpleado = Number(row.idEmpleado ?? 0);
+      const codigoInterno = String(row.codigoEmpleadoInterno ?? '').trim();
+      const codigoEmpleado = codigoInterno || `KPid-${idEmpleado}`;
+      const nombreEncrypted = typeof row.nombreEncrypted === 'string' ? row.nombreEncrypted : null;
+      const apellido1Encrypted =
+        typeof row.apellido1Encrypted === 'string' ? row.apellido1Encrypted : null;
+      const apellido2Encrypted =
+        typeof row.apellido2Encrypted === 'string' ? row.apellido2Encrypted : null;
+      const nombre = this.sensitiveDataService.decrypt(nombreEncrypted) ?? '';
+      const apellido1 = this.sensitiveDataService.decrypt(apellido1Encrypted) ?? '';
+      const apellido2 = this.sensitiveDataService.decrypt(apellido2Encrypted) ?? '';
+      const nombreCompleto = [nombre, apellido1, apellido2].filter((item) => item.trim().length > 0).join(' ');
+
+      return {
+        idEmpleado,
+        codigoEmpleado,
+        nombreCompleto: nombreCompleto || `Empleado #${idEmpleado}`,
+        periodoPago: row.idPeriodoPago == null ? null : Number(row.idPeriodoPago),
+        monedaSalario: String(row.monedaSalario ?? 'CRC').toUpperCase(),
+      };
+    });
+  }
+
+  private async loadOvertimeBulkEmployeeMap(
+    idEmpresa: number,
+    employeeIds: number[],
+    idPeriodoPago: number,
+    monedaPlanilla: string,
+  ): Promise<
+    Map<
+      number,
+      {
+        idEmpleado: number;
+        codigoEmpleado: string;
+        nombreCompleto: string;
+        idPeriodoPago: number | null;
+        monedaSalario: string;
+        salarioBase: number | null;
+      }
+    >
+  > {
+    const map = new Map<
+      number,
+      {
+        idEmpleado: number;
+        codigoEmpleado: string;
+        nombreCompleto: string;
+        idPeriodoPago: number | null;
+        monedaSalario: string;
+        salarioBase: number | null;
+      }
+    >();
+    if (employeeIds.length === 0) return map;
+
+    const rows = await this.repo.query(
+      `
+      SELECT
+        e.id_empleado AS idEmpleado,
+        e.codigo_empleado AS codigoEmpleadoInterno,
+        e.nombre_empleado AS nombreEncrypted,
+        e.apellido1_empleado AS apellido1Encrypted,
+        e.apellido2_empleado AS apellido2Encrypted,
+        e.id_periodos_pago AS idPeriodoPago,
+        e.moneda_salario_empleado AS monedaSalario,
+        e.salario_base_empleado AS salarioBaseEncrypted
+      FROM sys_empleados e
+      WHERE e.id_empresa = ?
+        AND e.estado_empleado = 1
+        AND e.fecha_salida_empleado IS NULL
+        AND e.id_periodos_pago = ?
+        AND e.moneda_salario_empleado = ?
+        AND e.id_empleado IN (?)
+      `,
+      [idEmpresa, idPeriodoPago, monedaPlanilla, employeeIds],
+    );
+
+    for (const row of rows ?? []) {
+      const idEmpleado = Number((row as Record<string, unknown>).idEmpleado ?? 0);
+      const codigoInterno = String((row as Record<string, unknown>).codigoEmpleadoInterno ?? '').trim();
+      const codigoEmpleado = codigoInterno || `KPid-${idEmpleado}`;
+      const nombreEncrypted =
+        typeof (row as Record<string, unknown>).nombreEncrypted === 'string'
+          ? ((row as Record<string, unknown>).nombreEncrypted as string)
+          : null;
+      const apellido1Encrypted =
+        typeof (row as Record<string, unknown>).apellido1Encrypted === 'string'
+          ? ((row as Record<string, unknown>).apellido1Encrypted as string)
+          : null;
+      const apellido2Encrypted =
+        typeof (row as Record<string, unknown>).apellido2Encrypted === 'string'
+          ? ((row as Record<string, unknown>).apellido2Encrypted as string)
+          : null;
+      const salarioBaseEncrypted =
+        typeof (row as Record<string, unknown>).salarioBaseEncrypted === 'string'
+          ? ((row as Record<string, unknown>).salarioBaseEncrypted as string)
+          : null;
+      const nombre = this.sensitiveDataService.decrypt(nombreEncrypted) ?? '';
+      const apellido1 = this.sensitiveDataService.decrypt(apellido1Encrypted) ?? '';
+      const apellido2 = this.sensitiveDataService.decrypt(apellido2Encrypted) ?? '';
+      const nombreCompleto = [nombre, apellido1, apellido2].filter((item) => item.trim().length > 0).join(' ');
+      const salarioRaw = this.sensitiveDataService.decrypt(salarioBaseEncrypted);
+      const salario = this.parseMonetaryValue(salarioRaw);
+
+      map.set(idEmpleado, {
+        idEmpleado,
+        codigoEmpleado,
+        nombreCompleto: nombreCompleto || `Empleado #${idEmpleado}`,
+        idPeriodoPago:
+          (row as Record<string, unknown>).idPeriodoPago == null
+            ? null
+            : Number((row as Record<string, unknown>).idPeriodoPago),
+        monedaSalario: String((row as Record<string, unknown>).monedaSalario ?? 'CRC').toUpperCase(),
+        salarioBase: Number.isFinite(salario) ? salario : null,
+      });
+    }
+
+    return map;
+  }
+
+  private async loadVerifiedEmployeesForPayroll(
+    payrollId: number,
+    employeeIds: number[],
+  ): Promise<Set<number>> {
+    const output = new Set<number>();
+    if (employeeIds.length === 0) return output;
+
+    const rows = await this.repo.query(
+      `
+      SELECT id_empleado AS idEmpleado
+      FROM nomina_empleado_verificado
+      WHERE id_nomina = ?
+        AND verificado_empleado = 1
+        AND id_empleado IN (?)
+      `,
+      [payrollId, employeeIds],
+    );
+
+    for (const row of rows ?? []) {
+      output.add(Number((row as Record<string, unknown>).idEmpleado ?? 0));
+    }
+    return output;
+  }
+
+  private async loadCommittedOvertimeRowHashes(
+    idEmpresa: number,
+    payrollId: number,
+  ): Promise<Set<string>> {
+    const rows = await this.repo.query(
+      `
+      SELECT l.hash_huella_linea_sha256 AS rowHash
+      FROM acc_horas_extras_cargas_masivas_lineas l
+      INNER JOIN acc_horas_extras_cargas_masivas h
+        ON h.id_carga_masiva = l.id_carga_masiva
+      WHERE h.id_empresa = ?
+        AND h.id_calendario_nomina = ?
+        AND h.estado_carga_masiva = 'COMMIT_OK'
+        AND l.hash_huella_linea_sha256 IS NOT NULL
+      `,
+      [idEmpresa, payrollId],
+    );
+
+    const hashes = new Set<string>();
+    for (const row of rows ?? []) {
+      const value = String((row as Record<string, unknown>).rowHash ?? '').trim().toLowerCase();
+      if (value) hashes.add(value);
+    }
+    return hashes;
+  }
+
+  private parseOvertimeBulkRow(params: {
+    row: OvertimeBulkPreviewDto['rows'][number];
+    payroll: {
+      id: number;
+      idEmpresa: number;
+      idPeriodoPago: number;
+      moneda: string;
+    };
+    movementMap: Map<
+      number,
+      {
+        id: number;
+        nombre: string;
+        esMontoFijo: number;
+        montoFijo: number;
+        porcentaje: number;
+      }
+    >;
+    employeeMap: Map<
+      number,
+      {
+        idEmpleado: number;
+        codigoEmpleado: string;
+        nombreCompleto: string;
+        idPeriodoPago: number | null;
+        monedaSalario: string;
+        salarioBase: number | null;
+      }
+    >;
+    verifiedEmployees: Set<number>;
+    committedRowHashes: Set<string>;
+    seenHashes: Set<string>;
+  }): OvertimeBulkParsedRow {
+    const { row, payroll, movementMap, employeeMap, verifiedEmployees, committedRowHashes, seenHashes } = params;
+    const rowNumber = Number(row.rowNumber ?? 0);
+    const codigoEmpleado = String(row.codigoEmpleado ?? '').trim();
+    const idEmpleado = this.extractEmployeeIdFromCode(codigoEmpleado);
+    const employee = idEmpleado > 0 ? employeeMap.get(idEmpleado) : undefined;
+    const nombreCompleto =
+      row.nombreCompleto?.trim() ||
+      employee?.nombreCompleto ||
+      (idEmpleado > 0 ? `Empleado #${idEmpleado}` : 'Empleado sin identificar');
+
+    const cantidadHorasRaw = Number(row.cantidadHoras ?? 0);
+    const cantidadHorasNormalized = Number.isFinite(cantidadHorasRaw)
+      ? Math.abs(Math.trunc(cantidadHorasRaw))
+      : 0;
+    const cantidadHoras = cantidadHorasNormalized > 0 ? cantidadHorasNormalized : null;
+
+    const tipoJornadaRaw = String(row.tipoJornadaHorasExtras ?? '').trim();
+    const tipoJornada = ['6', '7', '8'].includes(tipoJornadaRaw)
+      ? (tipoJornadaRaw as TipoJornadaHoraExtraLinea)
+      : null;
+
+    const fechaInicioInputRaw = row.fechaInicioHoraExtra;
+    const fechaFinInputRaw = row.fechaFinHoraExtra;
+    const fechaInicio = this.parseDateInputToYmd(fechaInicioInputRaw);
+    const fechaFinParsed = this.parseDateInputToYmd(fechaFinInputRaw);
+    const fechaFin = fechaFinParsed ?? fechaInicio;
+
+    const movimientoIdRaw = Number(row.movimientoId ?? 0);
+    const movimiento = Number.isInteger(movimientoIdRaw) && movimientoIdRaw > 0 ? movementMap.get(movimientoIdRaw) : undefined;
+    const idMovimientoNomina = movimiento?.id ?? null;
+
+    const messages: string[] = [];
+    let estadoLinea: OvertimeBulkRowStatus = 'VALIDA';
+    const rowContext = `Fila ${rowNumber} - ${nombreCompleto} (${codigoEmpleado || 'SIN_CODIGO'})`;
+
+    if (!idEmpleado || !employee) {
+      estadoLinea = 'ERROR_BLOQUEANTE';
+      messages.push('Empleado no existe o no esta activo para la empresa.');
+    }
+
+    if (employee) {
+      if (employee.idPeriodoPago !== payroll.idPeriodoPago || employee.monedaSalario !== payroll.moneda) {
+        estadoLinea = 'ERROR_BLOQUEANTE';
+        messages.push(
+          `Empleado no compatible con planilla (periodo pago ${employee.idPeriodoPago ?? 'N/A'} / moneda ${employee.monedaSalario}).`,
+        );
+      }
+      if (verifiedEmployees.has(employee.idEmpleado)) {
+        estadoLinea = 'ERROR_BLOQUEANTE';
+        messages.push('Empleado ya verificado en la planilla seleccionada.');
+      }
+    }
+
+    if (!cantidadHoras || !idMovimientoNomina || !tipoJornada || !fechaInicio) {
+      if (estadoLinea !== 'ERROR_BLOQUEANTE') {
+        estadoLinea = 'NO_PROCESABLE';
+      }
+      if (!cantidadHoras) messages.push('Sin cantidad de horas > 0.');
+      if (!idMovimientoNomina) messages.push('Sin movimiento valido.');
+      if (!tipoJornada) messages.push('Sin tipo de jornada valido (6, 7, 8).');
+      if (!fechaInicio) {
+        messages.push(`${rowContext}: fechaInicioHoraExtra debe ser una fecha valida y no puede ir vacia.`);
+      }
+      if (fechaFinInputRaw && !fechaFinParsed) {
+        messages.push(`${rowContext}: fechaFinHoraExtra debe ser una fecha valida.`);
+      }
+    }
+
+    let salarioBase: number | null = employee?.salarioBase ?? null;
+    let montoCalculado: number | null = null;
+    let formulaCalculada: string | null = null;
+    let rowHashSha256: string | null = null;
+
+    if (estadoLinea === 'VALIDA') {
+      if (salarioBase == null || !Number.isFinite(salarioBase) || salarioBase < 0) {
+        estadoLinea = 'ERROR_BLOQUEANTE';
+        messages.push('Empleado sin salario base valido para calcular la hora extra.');
+      } else {
+        const calc = this.calculateOvertimeAmountForBulk({
+          salarioBase,
+          idPeriodoPago: payroll.idPeriodoPago,
+          movimiento: {
+            id: movimiento!.id,
+            esMontoFijo: movimiento!.esMontoFijo,
+            montoFijo: movementMap.get(movimiento!.id)?.montoFijo ?? 0,
+            porcentaje: movementMap.get(movimiento!.id)?.porcentaje ?? 0,
+          },
+          cantidadHoras: cantidadHoras!,
+          tipoJornada: tipoJornada!,
+        });
+        montoCalculado = calc.monto;
+        formulaCalculada = calc.formula;
+        if (!Number.isFinite(montoCalculado) || montoCalculado <= 0) {
+          estadoLinea = 'NO_PROCESABLE';
+          messages.push('Monto calculado no valido (debe ser mayor a 0).');
+        }
+        rowHashSha256 = this.buildOvertimeBulkRowHash({
+          idEmpresa: payroll.idEmpresa,
+          payrollId: payroll.id,
+          idEmpleado: employee!.idEmpleado,
+          movimientoId: movimiento!.id,
+          tipoJornada: tipoJornada!,
+          cantidadHoras: cantidadHoras!,
+          fechaInicioHoraExtra: fechaInicio!,
+          fechaFinHoraExtra: fechaFin!,
+        });
+
+        if (estadoLinea === 'VALIDA') {
+          if (seenHashes.has(rowHashSha256)) {
+            estadoLinea = 'ERROR_BLOQUEANTE';
+            messages.push('Fila duplicada dentro del mismo archivo.');
+          } else {
+            seenHashes.add(rowHashSha256);
+          }
+
+          if (committedRowHashes.has(rowHashSha256)) {
+            estadoLinea = 'ERROR_BLOQUEANTE';
+            messages.push('La fila ya fue procesada en una carga masiva anterior.');
+          }
+        }
+      }
+    }
+
+    if (estadoLinea !== 'VALIDA') {
+      // Evita colisiones del UNIQUE (id_carga_masiva, hash_huella_linea_sha256)
+      // para filas marcadas como error/no procesables dentro del mismo preview.
+      rowHashSha256 = null;
+    }
+
+    const message = messages.length > 0 ? messages.join('\n') : 'Fila valida para commit.';
+
+    return {
+      rowNumber,
+      codigoEmpleado,
+      nombreCompleto,
+      idEmpleado: employee?.idEmpleado ?? null,
+      idMovimientoNomina,
+      movimientoNombre: movimiento?.nombre ?? null,
+      tipoJornada,
+      cantidadHoras,
+      fechaInicioHoraExtra: fechaInicio,
+      fechaFinHoraExtra: fechaFin,
+      salarioBase,
+      montoCalculado,
+      formulaCalculada,
+      rowHashSha256,
+      estadoLinea,
+      mensajeLinea: message,
+    };
+  }
+
+  private buildOvertimeBulkTotals(rows: OvertimeBulkParsedRow[]): {
+    total: number;
+    validas: number;
+    noProcesables: number;
+    errorBloqueante: number;
+  } {
+    return rows.reduce(
+      (acc, row) => {
+        acc.total += 1;
+        if (row.estadoLinea === 'VALIDA') acc.validas += 1;
+        if (row.estadoLinea === 'NO_PROCESABLE') acc.noProcesables += 1;
+        if (row.estadoLinea === 'ERROR_BLOQUEANTE') acc.errorBloqueante += 1;
+        return acc;
+      },
+      { total: 0, validas: 0, noProcesables: 0, errorBloqueante: 0 },
+    );
+  }
+
+  private buildOvertimeBulkPreviewSummary(totals: {
+    total: number;
+    validas: number;
+    noProcesables: number;
+    errorBloqueante: number;
+  }): string {
+    return `Preview generado. Filas: ${totals.total}. Validas: ${totals.validas}. No procesables: ${totals.noProcesables}. Errores bloqueantes: ${totals.errorBloqueante}.`;
+  }
+
+  private calculateOvertimeAmountForBulk(params: {
+    salarioBase: number;
+    idPeriodoPago: number;
+    movimiento: {
+      id: number;
+      esMontoFijo: number;
+      montoFijo: number;
+      porcentaje: number;
+    };
+    cantidadHoras: number;
+    tipoJornada: TipoJornadaHoraExtraLinea;
+  }): { monto: number; formula: string } {
+    const { salarioBase, idPeriodoPago, movimiento, cantidadHoras, tipoJornada } = params;
+    const montoFijo = Number(movimiento.montoFijo ?? 0);
+    const porcentaje = Number(movimiento.porcentaje ?? 0);
+
+    if (Number(movimiento.esMontoFijo ?? 0) === 1 && montoFijo > 0) {
+      const monto = Math.round(montoFijo * cantidadHoras);
+      return {
+        monto: this.round2(monto),
+        formula: `Monto fijo: ${montoFijo} x ${cantidadHoras}`,
+      };
+    }
+
+    if (porcentaje > 0) {
+      const porcentajeDecimal = porcentaje / 100;
+      if (idPeriodoPago === 8 || idPeriodoPago === 11) {
+        const monto = this.round2(salarioBase * porcentajeDecimal * cantidadHoras);
+        return {
+          monto: Math.round(monto),
+          formula: `${this.round2(salarioBase)} x ${porcentaje}% x ${cantidadHoras}`,
+        };
+      }
+
+      const horasJornada = Number(tipoJornada);
+      const horas = Number.isFinite(horasJornada) && horasJornada > 0 ? horasJornada : 8;
+      const valorHora = salarioBase / 30 / horas;
+      const monto = this.round2(valorHora * porcentajeDecimal * cantidadHoras);
+      return {
+        monto: Math.round(monto),
+        formula: `(${this.round2(salarioBase)}/30)/${horas} x ${porcentaje}% x ${cantidadHoras}`,
+      };
+    }
+
+    return {
+      monto: 0,
+      formula: 'Sin configuracion de calculo',
+    };
+  }
+
+  private parseDateInputToYmd(value: unknown): string | null {
+    if (value == null) return null;
+    const raw = String(value).trim();
+    if (!raw) return null;
+    if (/^\d{4}-\d{2}-\d{2}$/.test(raw)) return raw;
+    const brMatch = /^(\d{1,2})\/(\d{1,2})\/(\d{4})$/.exec(raw);
+    if (brMatch) {
+      const day = Number(brMatch[1]);
+      const month = Number(brMatch[2]);
+      const year = Number(brMatch[3]);
+      if (!Number.isInteger(day) || !Number.isInteger(month) || !Number.isInteger(year)) return null;
+      const local = new Date(year, month - 1, day);
+      if (
+        Number.isNaN(local.getTime()) ||
+        local.getFullYear() !== year ||
+        local.getMonth() !== month - 1 ||
+        local.getDate() !== day
+      ) {
+        return null;
+      }
+      return `${String(year).padStart(4, '0')}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+    }
+    const normalized = this.toYmdFlexible(raw);
+    return normalized;
+  }
+
+  private parseMonetaryValue(rawValue: unknown): number {
+    const input = String(rawValue ?? '')
+      .trim()
+      .replace(/[�$]/g, '')
+      .replace(/\s+/g, '');
+    if (!input) return NaN;
+    if (!/^[+-]?[0-9.,]+$/.test(input)) return Number(input);
+
+    const sign = input.startsWith('-') ? -1 : 1;
+    const unsigned = input.replace(/^[+-]/, '');
+    const lastComma = unsigned.lastIndexOf(',');
+    const lastDot = unsigned.lastIndexOf('.');
+
+    if (lastComma === -1 && lastDot === -1) {
+      const parsed = Number(unsigned);
+      return Number.isFinite(parsed) ? sign * parsed : NaN;
+    }
+
+    let normalized = unsigned;
+    if (lastComma !== -1 && lastDot !== -1) {
+      if (lastComma > lastDot) {
+        normalized = unsigned.replace(/\./g, '').replace(',', '.');
+      } else {
+        normalized = unsigned.replace(/,/g, '');
+      }
+    } else if (lastComma !== -1) {
+      const commaParts = unsigned.split(',');
+      const looksLikeThousands = commaParts.slice(1).every((part) => part.length === 3);
+      normalized = looksLikeThousands ? unsigned.replace(/,/g, '') : unsigned.replace(',', '.');
+    } else {
+      const dotParts = unsigned.split('.');
+      const looksLikeThousands = dotParts.slice(1).every((part) => part.length === 3);
+      normalized = looksLikeThousands ? unsigned.replace(/\./g, '') : unsigned;
+    }
+
+    const parsed = Number(normalized);
+    return Number.isFinite(parsed) ? sign * parsed : NaN;
+  }
+
+  private extractEmployeeIdFromCode(codigoEmpleado: string): number {
+    const raw = String(codigoEmpleado ?? '').trim();
+    const match = /^KPid-(\d+)-/i.exec(raw);
+    if (!match) return 0;
+    const value = Number(match[1]);
+    return Number.isInteger(value) && value > 0 ? value : 0;
+  }
+
+  private buildOvertimeBulkRowHash(payload: {
+    idEmpresa: number;
+    payrollId: number;
+    idEmpleado: number;
+    movimientoId: number;
+    tipoJornada: TipoJornadaHoraExtraLinea;
+    cantidadHoras: number;
+    fechaInicioHoraExtra: string;
+    fechaFinHoraExtra: string;
+  }): string {
+    const key = [
+      payload.idEmpresa,
+      payload.payrollId,
+      payload.idEmpleado,
+      payload.movimientoId,
+      payload.tipoJornada,
+      payload.cantidadHoras,
+      payload.fechaInicioHoraExtra,
+      payload.fechaFinHoraExtra,
+    ].join('|');
+    return createHash('sha256').update(key).digest('hex');
+  }
+
+  private buildOvertimeBulkPublicId(id: number): string {
+    const payload = Buffer.from(String(id), 'utf8').toString('base64url');
+    const signature = createHmac('sha256', this.overtimeBulkPublicIdSecret)
+      .update(payload)
+      .digest('base64url')
+      .slice(0, 16);
+    return `hexb1_${payload}.${signature}`;
+  }
+
+  private parseOvertimeBulkPublicId(publicId: string): number {
+    const raw = String(publicId ?? '').trim();
+    const match = /^hexb1_([A-Za-z0-9_-]+)\.([A-Za-z0-9_-]+)$/.exec(raw);
+    if (!match) {
+      throw new NotFoundException('Carga masiva no encontrada.');
+    }
+
+    const [, payload, signature] = match;
+    const expectedSignature = createHmac('sha256', this.overtimeBulkPublicIdSecret)
+      .update(payload)
+      .digest('base64url')
+      .slice(0, 16);
+    const receivedBuffer = Buffer.from(signature, 'utf8');
+    const expectedBuffer = Buffer.from(expectedSignature, 'utf8');
+    if (
+      receivedBuffer.length !== expectedBuffer.length ||
+      !timingSafeEqual(receivedBuffer, expectedBuffer)
+    ) {
+      throw new NotFoundException('Carga masiva no encontrada.');
+    }
+
+    const decoded = Buffer.from(payload, 'base64url').toString('utf8');
+    const id = Number(decoded);
+    if (!Number.isInteger(id) || id <= 0) {
+      throw new NotFoundException('Carga masiva no encontrada.');
+    }
+    return id;
+  }
+
   private round2(value: number): number {
     return Number(value.toFixed(2));
   }
@@ -5597,7 +6994,7 @@ export class PersonalActionsService {
     if (!row) return null;
 
     const decrypted = this.sensitiveDataService.decrypt(row.salarioBaseEncrypted ?? null);
-    const parsed = decrypted == null ? NaN : Number(decrypted);
+    const parsed = this.parseMonetaryValue(decrypted);
 
     return {
       id: Number(row.id ?? idEmpleado),
@@ -6399,6 +7796,7 @@ export class PersonalActionsService {
     const verification = await this.payrollVerificationRepo.findOne({
       where: { idNomina: payrollId, idEmpleado: employeeId },
     });
+    // No auto-incluye empleados: solo marca revalidacion si ya estaba incluido.
     if (!verification || Number(verification.incluidoPlanilla ?? 0) !== 1) {
       return;
     }

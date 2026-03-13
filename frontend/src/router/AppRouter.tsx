@@ -42,6 +42,7 @@ import {
   DiscountsPage,
   AumentosPage,
   VacationsPage,
+  NotificationsCenterPage,
 } from '../pages/private';
 import { LoginPage } from '../pages/public';
 
@@ -507,6 +508,14 @@ export function AppRouter() {
             </PrivateLayout>
           }
           path="/docs"
+        />
+        <Route
+          element={
+            <PrivateLayout>
+              <NotificationsCenterPage />
+            </PrivateLayout>
+          }
+          path="/notifications"
         />
       </Route>
 

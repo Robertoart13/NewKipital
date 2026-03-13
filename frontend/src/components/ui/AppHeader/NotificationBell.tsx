@@ -11,13 +11,14 @@
 
    Decisiones de diseno:
    - Usa useNotificationSocket para actualizacion en tiempo real
-   - Filtros por appCode y companyId del contexto activo
+   - Filtro por appCode del contexto activo
 
    ========================================================================== */
 
 import { BellOutlined, DeleteOutlined, SafetyOutlined, MessageOutlined } from '@ant-design/icons';
 import { App as AntdApp, Badge, Dropdown, Space, Button, Typography, Empty } from 'antd';
 import { useState, useCallback, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 import { useNotificationSocket } from '../../../hooks/useNotificationSocket';
 import {
@@ -79,20 +80,18 @@ function getIconForTipo(tipo: string): React.ReactNode {
 export function NotificationBell() {
   const { message } = AntdApp.useApp();
   const [open, setOpen] = useState(false);
+  const navigate = useNavigate();
   const activeApp = useAppSelector((s) => s.activeApp.app);
-  const activeCompany = useAppSelector((s) => s.activeCompany.company);
-  const companyIdNum = activeCompany?.id != null ? parseInt(String(activeCompany.id), 10) : undefined;
   const appCode = activeApp === 'kpital' ? 'kpital' : activeApp === 'timewise' ? 'timewise' : undefined;
 
   const isAuthenticated = useAppSelector((s) => s.auth.isAuthenticated);
   useNotificationSocket(!!isAuthenticated);
 
-  const { data: countData } = useUnreadCount({ appCode, companyId: companyIdNum });
+  const { data: countData } = useUnreadCount({ appCode });
   const count = typeof countData === 'number' ? countData : 0;
   const { data: listData, isLoading } = useNotifications({
     status: 'all',
     appCode,
-    companyId: companyIdNum,
   });
   const list = useMemo(() => (Array.isArray(listData) ? listData : []), [listData]);
   const markRead = useMarkAsRead();
@@ -108,16 +107,7 @@ export function NotificationBell() {
       groups[section].push(item);
     }
     return order.filter((s) => groups[s]?.length).map((s) => ({ label: s, items: groups[s] }));
-  }, [list]);
-
-  const handleMarkRead = useCallback(
-    (item: NotificationItem) => {
-      if (item.estado === 'UNREAD') {
-        markRead.mutate(item.id, { onSuccess: () => message.success('Marcada como leída') });
-      }
-    },
-    [markRead, message],
-  );
+  }, [list]);
 
   const handleDelete = useCallback(
     (item: NotificationItem, e: React.MouseEvent) => {
@@ -129,12 +119,21 @@ export function NotificationBell() {
 
   const handleMarkAllRead = useCallback(() => {
     markAllRead.mutate(
-      { appCode, companyId: companyIdNum },
+      { appCode },
       { onSuccess: () => message.success('Todas marcadas como leídas') },
     );
     setOpen(false);
-  }, [markAllRead, appCode, companyIdNum, message]);
-
+  }, [markAllRead, appCode, message]);
+  const handleOpenNotification = useCallback(
+    (item: NotificationItem) => {
+      if (item.estado === 'UNREAD') {
+        markRead.mutate(item.id);
+      }
+      setOpen(false);
+      navigate(`/notifications?selected=${item.id}`);
+    },
+    [markRead, navigate],
+  );
   const content = (
     <div
       style={{
@@ -204,7 +203,7 @@ export function NotificationBell() {
                   {items.map((item) => (
                     <div
                       key={item.id}
-                      onClick={() => handleMarkRead(item)}
+                      onClick={() => handleOpenNotification(item)}
                       style={{
                         display: 'flex',
                         gap: 12,

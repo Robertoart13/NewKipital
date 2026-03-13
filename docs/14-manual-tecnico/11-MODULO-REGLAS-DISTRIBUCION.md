@@ -20,6 +20,7 @@ Frontend:
 - Editar: `/configuration/reglas-distribucion/editar/:publicId`.
 - Acciones: crear, editar, inactivar y reactivar.
 - Bitacora visible en pantalla de edicion (si hay permiso).
+- Redireccion UX: despues de crear una regla, navega a `/configuration/reglas-distribucion` (listado).
 
 Correccion aplicada (2026-03-12):
 - En modo edicion, ya no se resetean las lineas `detalles` al hidratar `idEmpresa`.
@@ -122,11 +123,12 @@ Archivos de evidencia:
 - `api/test/evidence/distribution-rules.e2e.result.json`
 - `api/test/evidence/distribution-rules.e2e.summary.txt`
 
-## 🎯 Pendiente para continuar despues
-1. Completar la vista funcional `Distribucion de la planilla` (`/payroll-management/planillas/aplicadas/distribucion/:publicId`) para cerrar flujo contable final.
-2. Definir si se requiere exportacion de reglas (CSV/PDF) para auditoria operativa.
-3. Agregar E2E de UI (Playwright) del flujo de pantalla (crear/editar/inactivar/reactivar).
-4. Validar con negocio si se necesita versionado formal de reglas por vigencia (fecha inicio/fin) o si la inactivacion actual cubre el caso.
+## 🎯 Estado de cierre y siguientes mejoras
+1. Vista `Distribucion de la planilla` cerrada funcionalmente y documentada.
+2. Mejoras opcionales futuras:
+   - Evaluar exportacion de reglas (CSV/PDF) para auditoria operativa.
+   - Agregar E2E de UI (Playwright) del flujo crear/editar/inactivar/reactivar.
+   - Validar con negocio versionado formal por vigencia (fecha inicio/fin).
 
 ## 🔗 Ver tambien
 - [Configuracion organizacional (usuario)](../13-manual-usuario/09-CONFIG-ORGANIZACION.md)

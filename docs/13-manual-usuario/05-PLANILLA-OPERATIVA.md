@@ -257,3 +257,60 @@ Permisos para ver esta vista (cualquiera de estos):
 - `payroll:apply`
 - `payroll:netsuite:send` (o alias legacy `payroll:send_netsuite`)
 
+## Carga masiva de horas extras (actualizado)
+Ruta:
+- `Gestion Planilla > Planillas > Carga Masiva de Horas Extras`
+
+Permiso:
+- `payroll:overtime:bulk-upload`
+
+Flujo:
+1. Seleccionar empresa.
+2. Seleccionar planilla (`ABIERTA` o `EN_PROCESO`).
+3. Descargar plantilla Excel.
+4. Cargar archivo Excel.
+5. Generar preview.
+6. Revisar filas `Valida` y `Error bloqueante`.
+7. Confirmar carga masiva.
+8. Esperar notificacion de resultado.
+
+Reglas operativas:
+- Solo filas `Valida` se insertan.
+- Filas con `Error bloqueante` no se insertan.
+- `Movimiento` y `Jornada` pueden ajustarse en la tabla preview.
+- Al cambiar `Movimiento/Jornada`, se recalcula automaticamente `Monto Calculado` y `Formula Usada`.
+- Si `Fecha fin` viene vacia, toma `Fecha inicio`.
+- Si `Horas` viene negativa, se normaliza a positiva.
+- Si `Horas = 0`, la fila no se procesa.
+
+Columnas del preview:
+- `Fila`
+- `Empleado`
+- `Movimiento`
+- `Jornada`
+- `Horas`
+- `Salario Base`
+- `Monto Calculado`
+- `Formula Usada`
+- `Estado`
+- `Mensaje`
+
+Regla visual:
+- Primero filas validas.
+- Al final filas con error bloqueante.
+
+## Notificaciones de proceso (actualizado)
+Campana:
+- Muestra contador de no leidas.
+- Click en item abre el centro de notificaciones.
+
+Centro de notificaciones:
+- Ruta: `/notifications`.
+- Panel izquierdo: lista de notificaciones (leidas/no leidas).
+- Panel derecho: detalle completo de la notificacion seleccionada.
+- Si una notificacion esta `UNREAD`, al abrirla se marca como leida.
+
+Alcance de notificaciones:
+- Se registran por `usuario + app`.
+- No dependen de empresa activa para poder leerlas.
+

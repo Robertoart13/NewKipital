@@ -27,6 +27,12 @@ interface FlowContext {
   movementId: number;
 }
 
+interface OvertimeBulkFlowContext {
+  companyId: number;
+  payrollId: number;
+  employeeId: number;
+}
+
 function toPositiveInt(value: unknown): number | null {
   const parsed = Number(value);
   if (!Number.isFinite(parsed)) return null;
@@ -86,7 +92,11 @@ describe('PersonalActions (e2e)', () => {
     const requestFactory = typeof supertest === 'function' ? supertest : supertest.default;
     agent = requestFactory.agent(app.getHttpServer()) as SupertestRequestBuilder;
 
-    const auth = await ensureE2ELogin(app);
+    await ensureOvertimeBulkTables();
+
+    const auth = await ensureE2ELogin(app, {
+      requiredPermissions: ['payroll:overtime:bulk-upload'],
+    });
     accessToken = String(auth.accessToken ?? '');
     sessionCompanyIds = asArray(auth.session?.companies).reduce<number[]>(
       (acc, company) => {
@@ -110,6 +120,66 @@ describe('PersonalActions (e2e)', () => {
       requestBuilder.set('Authorization', `Bearer ${accessToken}`);
     }
     return requestBuilder;
+  }
+
+  async function ensureOvertimeBulkTables(): Promise<void> {
+    await dataSource.query(`
+      CREATE TABLE IF NOT EXISTS acc_horas_extras_cargas_masivas (
+        id_carga_masiva INT AUTO_INCREMENT PRIMARY KEY,
+        public_id_carga_masiva VARCHAR(80) NOT NULL,
+        id_empresa INT NOT NULL,
+        id_calendario_nomina INT NOT NULL,
+        id_usuario_ejecutor INT NOT NULL,
+        nombre_archivo_original VARCHAR(255) NOT NULL,
+        hash_archivo_sha256 VARCHAR(128) NOT NULL,
+        total_filas_archivo INT NOT NULL DEFAULT 0,
+        total_filas_validas INT NOT NULL DEFAULT 0,
+        total_filas_no_procesables INT NOT NULL DEFAULT 0,
+        total_filas_error_bloqueante INT NOT NULL DEFAULT 0,
+        estado_carga_masiva ENUM('UPLOADED','PREVIEW_OK','PREVIEW_WITH_WARNINGS','COMMIT_OK','COMMIT_FAILED') NOT NULL DEFAULT 'UPLOADED',
+        mensaje_resumen_carga_masiva TEXT NULL,
+        metadata_carga_masiva JSON NULL,
+        fecha_creacion_carga_masiva DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        fecha_modificacion_carga_masiva DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        INDEX idx_hex_carga_empresa_planilla (id_empresa, id_calendario_nomina),
+        INDEX idx_hex_carga_usuario (id_usuario_ejecutor),
+        INDEX idx_hex_carga_hash (hash_archivo_sha256),
+        INDEX idx_hex_carga_estado (estado_carga_masiva),
+        UNIQUE KEY uq_hex_carga_public_id (public_id_carga_masiva)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+    `);
+
+    await dataSource.query(`
+      CREATE TABLE IF NOT EXISTS acc_horas_extras_cargas_masivas_lineas (
+        id_carga_masiva_linea INT AUTO_INCREMENT PRIMARY KEY,
+        id_carga_masiva INT NOT NULL,
+        numero_fila_excel INT NOT NULL,
+        codigo_empleado VARCHAR(120) NOT NULL,
+        nombre_empleado_excel VARCHAR(255) NULL,
+        id_empleado INT NULL,
+        id_movimiento_nomina INT NULL,
+        tipo_jornada_horas_extras_linea ENUM('6','7','8') NULL,
+        cantidad_horas_linea INT NULL,
+        fecha_inicio_hora_extra_linea DATE NULL,
+        fecha_fin_hora_extra_linea DATE NULL,
+        salario_base_empleado_linea DECIMAL(12,2) NULL,
+        monto_calculado_linea DECIMAL(12,2) NULL,
+        formula_calculo_linea TEXT NULL,
+        hash_huella_linea_sha256 VARCHAR(128) NULL,
+        estado_linea_carga_masiva ENUM('VALIDA','NO_PROCESABLE','ERROR_BLOQUEANTE','PROCESADA') NOT NULL DEFAULT 'NO_PROCESABLE',
+        mensaje_linea_carga_masiva TEXT NULL,
+        fecha_creacion_linea_carga_masiva DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        fecha_modificacion_linea_carga_masiva DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        CONSTRAINT fk_hex_carga_linea_carga
+          FOREIGN KEY (id_carga_masiva) REFERENCES acc_horas_extras_cargas_masivas(id_carga_masiva)
+          ON DELETE CASCADE ON UPDATE CASCADE,
+        INDEX idx_hex_carga_linea_carga (id_carga_masiva),
+        INDEX idx_hex_carga_linea_estado (estado_linea_carga_masiva),
+        INDEX idx_hex_carga_linea_empleado (id_empleado),
+        INDEX idx_hex_carga_linea_hash (hash_huella_linea_sha256),
+        UNIQUE KEY uq_hex_carga_linea_hash_upload (id_carga_masiva, hash_huella_linea_sha256)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+    `);
   }
 
   async function findFlowContext(actionTypeId: number): Promise<FlowContext | null> {
@@ -161,6 +231,16 @@ describe('PersonalActions (e2e)', () => {
       return { companyId, employeeId, payrollId, movementId };
     }
     return null;
+  }
+
+  async function findOvertimeBulkFlowContext(): Promise<OvertimeBulkFlowContext | null> {
+    const base = await findFlowContext(20);
+    if (!base) return null;
+    return {
+      companyId: base.companyId,
+      payrollId: base.payrollId,
+      employeeId: base.employeeId,
+    };
   }
 
   it('debe completar flujo e2e de Ausencias (crear -> editar -> avanzar -> invalidar)', async () => {
@@ -446,6 +526,96 @@ describe('PersonalActions (e2e)', () => {
         String(row.estado ?? '').trim().toLowerCase().includes('aprobad'),
     );
     expect(approvedDiscount).toBeDefined();
+  }, 120000);
+
+  it('ejecuta flujo e2e simulado de carga masiva horas extra (template -> preview -> commit)', async () => {
+    const context = await findOvertimeBulkFlowContext();
+    if (!context) return;
+
+    const templateResponse = await withAuth(
+      agent.get(
+        `/personal-actions/horas-extras/carga-masiva/template-data?idEmpresa=${context.companyId}&payrollId=${context.payrollId}`,
+      ),
+    ).send();
+    expect(templateResponse.status).toBe(200);
+
+    const templateMovements = asArray(templateResponse.body?.movimientos);
+    expect(templateMovements.length).toBeGreaterThan(0);
+    const firstMovementId = toPositiveInt(templateMovements[0]?.id);
+    expect(firstMovementId).toBeGreaterThan(0);
+
+    const today = new Date().toISOString().slice(0, 10);
+    const fileHashSha256 = `e2e${Date.now().toString(16)}${Math.random().toString(16).slice(2, 34)}`.slice(
+      0,
+      64,
+    );
+    const employeeCode = `KPid-${context.employeeId}-E2E`;
+
+    const previewResponse = await withAuth(
+      agent.post('/personal-actions/horas-extras/carga-masiva/preview'),
+    ).send({
+      idEmpresa: context.companyId,
+      payrollId: context.payrollId,
+      fileName: 'e2e-carga-masiva-horas.xlsx',
+      fileHashSha256,
+      rows: [
+        {
+          rowNumber: 2,
+          nombreCompleto: 'E2E Empleado',
+          codigoEmpleado: employeeCode,
+          movimientoId: firstMovementId,
+          tipoJornadaHorasExtras: '8',
+          cantidadHoras: 2,
+          fechaInicioHoraExtra: today,
+          fechaFinHoraExtra: today,
+        },
+      ],
+    });
+    expect(previewResponse.status).toBe(201);
+    expect(String(previewResponse.body?.uploadPublicId ?? '')).toContain('hex');
+    expect(toPositiveInt(previewResponse.body?.resumen?.validas)).toBe(1);
+
+    const uploadPublicId = String(previewResponse.body?.uploadPublicId ?? '');
+    expect(uploadPublicId.length).toBeGreaterThan(10);
+
+    const commitResponse = await withAuth(
+      agent.post('/personal-actions/horas-extras/carga-masiva/commit'),
+    ).send({
+      uploadPublicId,
+      idEmpresa: context.companyId,
+      payrollId: context.payrollId,
+      observacion: 'E2E commit carga masiva horas',
+    });
+    expect(commitResponse.status).toBe(201);
+    expect(toPositiveInt(commitResponse.body?.resumen?.accionesCreadas)).toBe(1);
+    expect(toPositiveInt(commitResponse.body?.resumen?.lineasProcesadas)).toBe(1);
+
+    const uploadStatusRows = await dataSource.query(
+      `
+      SELECT estado_carga_masiva AS estado
+      FROM acc_horas_extras_cargas_masivas
+      WHERE public_id_carga_masiva = ?
+      LIMIT 1
+      `,
+      [uploadPublicId],
+    );
+    expect(String(uploadStatusRows?.[0]?.estado ?? '')).toBe('COMMIT_OK');
+
+    const createdActionRows = await dataSource.query(
+      `
+      SELECT id_accion AS id, estado_accion AS estado
+      FROM acc_acciones_personal
+      WHERE id_calendario_nomina = ?
+        AND id_empleado = ?
+        AND tipo_accion = 'hora_extra'
+        AND descripcion_accion LIKE CONCAT('%', ?, '%')
+      ORDER BY id_accion DESC
+      LIMIT 1
+      `,
+      [context.payrollId, context.employeeId, uploadPublicId],
+    );
+    expect(createdActionRows.length).toBeGreaterThan(0);
+    expect(toPositiveInt(createdActionRows[0]?.estado)).toBe(5);
   }, 120000);
 });
 

@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Controller,
   Get,
   Post,
@@ -28,6 +29,8 @@ import { UpsertLicenseDto } from './dto/upsert-license.dto';
 import { UpsertOvertimeDto } from './dto/upsert-overtime.dto';
 import { UpsertRetentionDto } from './dto/upsert-retention.dto';
 import { UpsertVacationDto } from './dto/upsert-vacation.dto';
+import { OvertimeBulkCommitDto } from './dto/overtime-bulk-commit.dto';
+import { OvertimeBulkPreviewDto } from './dto/overtime-bulk-preview.dto';
 import { PersonalActionsService } from './personal-actions.service';
 
 import type { PersonalActionEstado } from './entities/personal-action.entity';
@@ -42,6 +45,42 @@ export class PersonalActionsController {
   @Get('health')
   health() {
     return { status: 'ok', module: 'personal-actions' };
+  }
+
+  @RequirePermissions('payroll:overtime:bulk-upload')
+  @Get('horas-extras/carga-masiva/template-data')
+  getOvertimeBulkTemplateData(
+    @CurrentUser() user: { userId: number },
+    @Query('idEmpresa') idEmpresaRaw?: string,
+    @Query('payrollId') payrollIdRaw?: string,
+  ) {
+    const idEmpresa = Number.parseInt(String(idEmpresaRaw ?? ''), 10);
+    const payrollId = Number.parseInt(String(payrollIdRaw ?? ''), 10);
+    if (!Number.isInteger(idEmpresa) || idEmpresa <= 0) {
+      throw new BadRequestException('idEmpresa es obligatorio');
+    }
+    if (!Number.isInteger(payrollId) || payrollId <= 0) {
+      throw new BadRequestException('payrollId es obligatorio');
+    }
+    return this.service.getOvertimeBulkTemplateData(user.userId, idEmpresa, payrollId);
+  }
+
+  @RequirePermissions('payroll:overtime:bulk-upload')
+  @Post('horas-extras/carga-masiva/preview')
+  previewOvertimeBulk(
+    @Body() dto: OvertimeBulkPreviewDto,
+    @CurrentUser() user: { userId: number },
+  ) {
+    return this.service.previewOvertimeBulk(dto, user.userId);
+  }
+
+  @RequirePermissions('payroll:overtime:bulk-upload')
+  @Post('horas-extras/carga-masiva/commit')
+  commitOvertimeBulk(
+    @Body() dto: OvertimeBulkCommitDto,
+    @CurrentUser() user: { userId: number },
+  ) {
+    return this.service.commitOvertimeBulkAsync(dto, user.userId);
   }
 
   @RequirePermissions('hr_action:view')

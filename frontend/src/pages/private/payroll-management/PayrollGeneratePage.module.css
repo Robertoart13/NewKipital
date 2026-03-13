@@ -117,7 +117,7 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  width: fit-content;
+  width: 100%;
 }
 
 .sectionLabel::before {
@@ -133,7 +133,7 @@
 /* Stats cards – mismo estilo que contentCard */
 .statsRow {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  grid-template-columns: repeat(2, minmax(220px, 1fr));
   gap: 14px;
 }
 
@@ -141,8 +141,7 @@
   background: #ffffff;
   border: 1px solid #e0e6ed;
   border-radius: 10px;
-  padding: 16px 18px;
-  min-height: 76px;
+  padding: 12px 16px;
   transition: border-color 0.2s ease, box-shadow 0.2s ease;
   box-shadow: 0 1px 3px rgba(27, 46, 94, 0.06);
 }
@@ -150,11 +149,6 @@
 .statCard:hover {
   border-color: #246BA3;
   box-shadow: 0 2px 8px rgba(36, 107, 163, 0.12);
-}
-
-.statCardAction {
-  display: flex;
-  align-items: flex-end;
 }
 
 .statLabel {
@@ -184,10 +178,6 @@
   border-color: #246BA3 !important;
   border-width: 2px !important;
   box-shadow: 0 0 0 2px rgba(36, 107, 163, 0.1) !important;
-}
-
-.refreshBtn {
-  width: 100%;
 }
 
 /* Botón primario Old Kpital: #246BA3, hover #1e5a8a */
@@ -220,6 +210,48 @@
   padding-top: 20px;
   margin-top: 8px;
   border-top: 1px solid #e0e6ed;
+}
+
+/* Layout de filtros + selector/detalle de planilla */
+.filtersLayout {
+  display: flex;
+  gap: 24px;
+  align-items: flex-start;
+  flex-wrap: nowrap;
+}
+
+.filtersColumnLeft {
+  flex: 0 0 52%;
+  min-width: 420px;
+}
+
+.filtersColumnRight {
+  flex: 0 0 48%;
+  min-width: 360px;
+  padding-top: 14px;
+}
+
+@media (max-width: 1200px) {
+  .filtersLayout {
+    flex-direction: column;
+    flex-wrap: wrap;
+  }
+
+  .filtersColumnLeft,
+  .filtersColumnRight {
+    flex: 1 1 100%;
+    min-width: 0;
+  }
+
+  .filtersColumnRight {
+    padding-top: 0;
+  }
+}
+
+@media (max-width: 900px) {
+  .statsRow {
+    grid-template-columns: 1fr;
+  }
 }
 
 /* Content card – mismo estilo que actionsDetailWrap */
@@ -398,41 +430,44 @@
   color: #1a202c;
 }
 
-/* ===================== Resúmenes (cards) – mismo estilo que actionsDetailWrap ===================== */
+/* ===================== Resúmenes (cards) – compacto y alineado a la derecha ===================== */
 
 .summaryGrid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  gap: 14px;
-  margin-top: 16px;
+  grid-template-columns: repeat(2, minmax(200px, 260px));
+  gap: 10px;
+  margin-top: 14px;
+  margin-left: auto;
+  width: fit-content;
+  max-width: 100%;
 }
 
 .summaryCard {
   background: #ffffff;
   border: 1px solid #e0e6ed;
-  border-radius: 10px;
-  padding: 16px 18px;
+  border-radius: 8px;
+  padding: 10px 14px;
   box-shadow: 0 1px 4px rgba(27, 46, 94, 0.06);
 }
 
 .summaryTitle {
-  font-size: 14px;
+  font-size: 12px;
   font-weight: 600;
   color: #1a202c;
-  margin-bottom: 12px;
-  padding-bottom: 10px;
+  margin-bottom: 8px;
+  padding-bottom: 6px;
   border-bottom: 2px solid #246BA3;
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
   line-height: 1.2;
 }
 
 .summaryTitle::before {
   content: '';
   display: inline-block;
-  width: 4px;
-  height: 18px;
+  width: 3px;
+  height: 14px;
   background: #246BA3;
   border-radius: 2px;
 }
@@ -440,7 +475,7 @@
 .summaryTable {
   width: 100%;
   border-collapse: collapse;
-  font-size: 13px;
+  font-size: 12px;
   table-layout: fixed;
 }
 
@@ -448,10 +483,10 @@
   text-align: left;
   color: #475569;
   font-weight: 600;
-  font-size: 12px;
-  padding: 10px 12px;
+  font-size: 11px;
+  padding: 6px 8px;
   background: #f1f5f9;
-  border-bottom: 2px solid #e0e6ed;
+  border-bottom: 1px solid #e0e6ed;
 }
 
 .summaryTable thead th:last-child {
@@ -459,11 +494,11 @@
 }
 
 .summaryTable tbody td {
-  padding: 10px 12px;
+  padding: 6px 8px;
   border-bottom: 1px solid #e0e6ed;
   color: #1a202c;
   font-weight: 500;
-  font-size: 13px;
+  font-size: 12px;
 }
 
 .summaryTable tbody td:first-child {
@@ -488,14 +523,14 @@
 .summaryTotalRow td {
   background: #e8f4fd;
   font-weight: 700;
-  font-size: 14px;
+  font-size: 12px;
   color: #1a202c;
 }
 
 .summaryHint {
-  margin-top: 10px;
+  margin-top: 6px;
   color: #64748b;
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 500;
 }
 
@@ -511,6 +546,8 @@
 @media (max-width: 900px) {
   .summaryGrid {
     grid-template-columns: 1fr;
+    margin-left: 0;
+    width: 100%;
   }
 }
 
@@ -544,6 +581,22 @@
   height: 18px;
   background: #246BA3;
   border-radius: 2px;
+}
+
+.secondaryActionsCollapse {
+  margin-top: 14px;
+  margin-bottom: 10px;
+}
+
+.secondaryActionsCollapse :global(.ant-collapse-item) {
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  background: #f8fafc;
+}
+
+.secondaryActionsCollapse :global(.ant-collapse-header) {
+  font-weight: 600;
+  color: #1f2937;
 }
 
 .addActionSelectWrap {

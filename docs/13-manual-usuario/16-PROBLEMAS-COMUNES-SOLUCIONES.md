@@ -18,6 +18,10 @@ Fecha: 2026-03-11
 | Error de API al editar vacaciones | Tabla/campo no disponible o mismatch de esquema | Revisar log backend y SQL de referencia | Corregir consulta/entidad conforme a esquema actual |
 | En Reglas de Distribucion el listado muestra menos `Asignaciones` que la pantalla de edicion | Listado desactualizado por cache | Abrir regla en `Editar` y validar lineas reales | Usar `Refrescar` en listado para forzar recarga y limpiar cache de consulta |
 | En edicion de Regla de Distribucion aparece una linea vacia aunque API trae datos | Rehidratacion incompleta del formulario en frontend | Validar respuesta `GET /distribution-rules/:publicId` y campos `detalles` | Recargar vista y confirmar que `Tipo de Accion` y `Cuenta Contable` se visualizan en cada linea |
+| Preview de carga masiva devuelve errores de fecha | `Fecha inicio`/`Fecha fin` vacias o invalidas en Excel | Revisar fila y empleado indicados en mensaje | Completar fecha valida y regenerar preview |
+| Confirmar carga masiva no inserta todas las filas | Hay filas en `Error bloqueante` | Revisar columna `Estado` del preview | Corregir filas bloqueadas o confirmar sabiendo que solo entran `Valida` |
+| Campana muestra contador pero no ve detalle completo | Esta usando solo dropdown de campana | Abrir notificacion desde click en item | Ir a `/notifications` para lista izquierda + detalle derecha |
+| No llegan notificaciones de proceso async | Usuario/app no coinciden con contexto de ejecucion | Revisar sesion activa y app actual | Repetir proceso en app correcta y validar campana + centro de notificaciones |
 
 ## Escalamiento
 1. Reproducir con evidencia (captura + hora + usuario + empresa + planilla).
