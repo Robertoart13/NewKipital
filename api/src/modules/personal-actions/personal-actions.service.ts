@@ -1129,6 +1129,33 @@ export class PersonalActionsService {
     return saved;
   }
 
+  async reactivate(id: number, userId?: number): Promise<PersonalAction> {
+    const action = await this.findOne(id, userId);
+    if (action.estado !== PersonalActionEstado.INVALIDATED) {
+      throw new BadRequestException(
+        'Solo se puede reactivar una accion en estado Invalidada',
+      );
+    }
+
+    await this.assertActionNotLockedForPayrollMutation(action, 'acciones');
+
+    action.estado = PersonalActionEstado.PENDING_SUPERVISOR;
+    action.aprobadoPor = null;
+    action.fechaAprobacion = null;
+    action.invalidatedAt = null;
+    action.invalidatedReason = null;
+    action.invalidatedReasonCode = null;
+    action.invalidatedByType = null;
+    action.invalidatedByUserId = null;
+    action.invalidatedMeta = null;
+    action.modificadoPor = userId ?? null;
+    action.versionLock += 1;
+
+    const saved = await this.repo.save(action);
+    await this.flagRecalculationForOpenPayrolls(saved);
+    return saved;
+  }
+
   async findAbsenceMovementsCatalog(
     userId: number,
     idEmpresa: number,

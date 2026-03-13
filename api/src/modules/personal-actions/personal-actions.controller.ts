@@ -766,4 +766,13 @@ export class PersonalActionsController {
   ) {
     return this.service.reject(id, motivo ?? '', user.userId);
   }
+
+  @RequirePermissions('hr_action:approve')
+  @Patch(':id/reactivate')
+  reactivate(
+    @Param('id', ParseIntPipe) id: number,
+    @CurrentUser() user: { userId: number },
+  ) {
+    return this.service.reactivate(id, user.userId);
+  }
 }

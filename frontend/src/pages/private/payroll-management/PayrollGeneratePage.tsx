@@ -48,6 +48,7 @@ import {
   invalidateOvertime,
   invalidateRetention,
   invalidateVacation,
+  reactivatePersonalAction,
   type AbsenceMovementCatalogItem,
   type UpsertAbsenceLinePayload,
   type UpsertDiscountLinePayload,
@@ -260,6 +261,10 @@ function isInvalidatableAction(row: PayrollPreviewActionRow): boolean {
   return INVALIDATABLE_CATEGORIES.includes(cat as (typeof INVALIDATABLE_CATEGORIES)[number]);
 }
 
+function isInvalidatedAction(row: PayrollPreviewActionRow): boolean {
+  return (row.estado ?? '').trim().toLowerCase().includes('invalid');
+}
+
 // =============================================================================
 // COMPONENTE PRINCIPAL
 // =============================================================================
@@ -271,7 +276,7 @@ export function PayrollGeneratePage() {
   // ── Permisos desde Redux ────────────────────────────────────────────────────
   const canProcess           = useAppSelector(canProcessPayroll);
   const canVerify            = useAppSelector(canVerifyPayroll);
-  const canViewSensitive     = useAppSelector((s) => s.permissions.permissions.includes('payroll:view_sensitive'));
+  const canViewSensitive     = useAppSelector((s) => s.permissions.permissions.includes('employee:view-sensitive'));
   const canApproveActions    = useAppSelector((s) => s.permissions.permissions.includes('hr_action:approve'));
   const companies            = useAppSelector((s) => s.auth.companies);
   const activeCompany        = useAppSelector((s) => s.activeCompany.company);
@@ -311,6 +316,7 @@ export function PayrollGeneratePage() {
   // ── Estado: acciones en vuelo (por idAccion o idEmpleado) ──────────────────
   const [approvingActionId,   setApprovingActionId]   = useState<number | null>(null);
   const [invalidatingActionId, setInvalidatingActionId] = useState<number | null>(null);
+  const [reactivatingActionId, setReactivatingActionId] = useState<number | null>(null);
   const [overtimeSubmitting,  setOvertimeSubmitting]  = useState<number | null>(null);
   const [absenceSubmitting,   setAbsenceSubmitting]   = useState<number | null>(null);
   const [retentionSubmitting, setRetentionSubmitting] = useState<number | null>(null);
@@ -592,7 +598,12 @@ export function PayrollGeneratePage() {
 
     const all      = previewTable?.empleados ?? [];
     const included = all.filter((r) => toBooleanFlag(r.seleccionadoPlanilla));
-    const verified = included.filter((r) => toBooleanFlag(r.verificadoEmpleado)).length;
+    const verified = included.filter(
+      (r) =>
+        toBooleanFlag(r.verificadoEmpleado) &&
+        !toBooleanFlag(r.requiereRevalidacion) &&
+        String(r.estado ?? '').trim().toLowerCase() === 'verificado',
+    ).length;
 
     return {
       totalEmployees:    all.length,
@@ -625,7 +636,10 @@ export function PayrollGeneratePage() {
     absenceSubmitting !== null ||
     retentionSubmitting !== null ||
     discountSubmitting !== null;
-  const hasPendingActionStatusChange = approvingActionId !== null || invalidatingActionId !== null;
+  const hasPendingActionStatusChange =
+    approvingActionId !== null ||
+    invalidatingActionId !== null ||
+    reactivatingActionId !== null;
   const hasPendingPayrollOperation =
     hasPendingEmployeeSelection ||
     hasPendingInlineAction ||
@@ -823,6 +837,39 @@ export function PayrollGeneratePage() {
       });
     },
     [canApproveActions, message, modal, refreshPreviewTable, selectedCompanyId, selectedPayrollDetail?.idEmpresa],
+  );
+
+  const handleReactivateAction = useCallback(
+    (row: PayrollPreviewActionRow) => {
+      const { idAccion } = row;
+      if (!idAccion) return;
+      if (!canApproveActions) {
+        message.warning('Sin permiso para reactivar acciones de personal.');
+        return;
+      }
+
+      modal.confirm({
+        title: 'Confirmar reactivacion',
+        content:
+          'La accion volvera a estado Pendiente Supervisor y podra aprobarse nuevamente. ¿Desea continuar?',
+        okText: 'Si, reactivar',
+        cancelText: 'Cancelar',
+        centered: true,
+        onOk: async () => {
+          setReactivatingActionId(idAccion);
+          try {
+            await reactivatePersonalAction(idAccion);
+            await refreshPreviewTable();
+            message.success('Accion reactivada correctamente.');
+          } catch (err) {
+            message.error(err instanceof Error ? err.message : 'Error al reactivar la accion');
+          } finally {
+            setReactivatingActionId(null);
+          }
+        },
+      });
+    },
+    [canApproveActions, message, modal, refreshPreviewTable],
   );
 
   // ==========================================================================
@@ -1115,10 +1162,12 @@ export function PayrollGeneratePage() {
           if (isEmployeeLocked) {
             return <Text type="secondary">Bloqueado por verificacion</Text>;
           }
+          const isInvalidated = isInvalidatedAction(row);
           const showApprove    = row.canApprove && row.idAccion && canApproveActions;
-          const showInvalidate = isInvalidatableAction(row) && canApproveActions;
+          const showInvalidate = isInvalidatableAction(row) && canApproveActions && !isInvalidated;
+          const showReactivate = isInvalidated && !!row.idAccion && canApproveActions;
 
-          if (!showApprove && !showInvalidate) return <Text type="secondary">--</Text>;
+          if (!showApprove && !showInvalidate && !showReactivate) return <Text type="secondary">--</Text>;
 
           return (
             <span style={{ display: 'flex', gap: 8, justifyContent: 'center', flexWrap: 'wrap' }}>
@@ -1149,6 +1198,16 @@ export function PayrollGeneratePage() {
                   Invalidar
                 </Button>
               )}
+              {showReactivate && (
+                <Button
+                  size="small"
+                  type="link"
+                  loading={reactivatingActionId === row.idAccion}
+                  onClick={() => handleReactivateAction(row)}
+                >
+                  Reactivar
+                </Button>
+              )}
             </span>
           );
         },
@@ -1157,10 +1216,12 @@ export function PayrollGeneratePage() {
     [
       approvingActionId,
       invalidatingActionId,
+      reactivatingActionId,
       canApproveActions,
       canViewSensitive,
       handleApproveAction,
       handleInvalidateAction,
+      handleReactivateAction,
     ],
   );
 
@@ -1512,6 +1573,9 @@ export function PayrollGeneratePage() {
                   dataSource={filteredPreviewRows}
                   columns={employeeColumns}
                   className={genStyles.previewTable}
+                  rowClassName={(record) =>
+                    expandedEmployeeRowKeys.includes(record.idEmpleado) ? 'employee-row-expanded' : ''
+                  }
                   pagination={{ pageSize: 10, showSizeChanger: true }}
                   rowSelection={{
                     selectedRowKeys: selectedPreviewRowKeys,

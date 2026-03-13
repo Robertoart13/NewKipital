@@ -1014,6 +1014,17 @@ export async function rejectPersonalAction(id: number, motivo?: string): Promise
 }
 
 /**
+ * PATCH /personal-actions/:id/reactivate - Reactivar accion invalidada.
+ */
+export async function reactivatePersonalAction(id: number): Promise<PersonalActionListItem> {
+  const res = await httpFetch(`/personal-actions/${id}/reactivate`, {
+    method: 'PATCH',
+  });
+  if (!res.ok) throw new Error(await extractApiErrorMessage(res, 'Error al reactivar accion de personal'));
+  return res.json();
+}
+
+/**
  * GET /personal-actions/absence-movements?idEmpresa=N
  * Catalogo de movimientos para Ausencias sin depender de payroll-movement:view.
  */

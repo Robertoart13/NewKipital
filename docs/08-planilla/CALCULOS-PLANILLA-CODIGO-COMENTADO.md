@@ -188,19 +188,17 @@ Las acciones aprobadas obtienen sus datos de tablas específicas:
 
 ---
 
-## 12. Vacaciones: etiqueta y monto en detalle de acciones
+## 12. Vacaciones: etiqueta y monto para calculo de planilla
 
 ```typescript
 // ETIQUETA (buildActionDisplayLabelMap):
 // - Días: COUNT(*) en acc_vacaciones_fechas por id_accion
 // - Label: "Vacaciones (n)" donde n = cantidad de días
 
-// MONTO EN DETALLE (displayActionsByEmployee):
+// MONTO PARA CALCULO (engine):
 // - Si es Vacaciones y hay vacationDays:
-//   monto = (salarioBase * vacationDays) / 30
-// - Si aprobada: se usa approvedActionAmountMap si existe, sino la fórmula anterior.
-// - Si pendiente: siempre la fórmula (salarioBase * vacationDays) / 30
-// - action.monto NO se usa para vacaciones; siempre se recalcula.
+//   monto_calculo = (salarioBase * vacationDays) / 30
+// - Se usa en el recálculo de bruto/devengado/neto, no como "monto visual" obligatorio del detalle.
 ```
 
 ---
@@ -251,15 +249,26 @@ Las acciones aprobadas obtienen sus datos de tablas específicas:
 ## 16. Monto en detalle de acciones (displayActionsByEmployee)
 
 ```typescript
-// Regla: el monto mostrado en "Detalle de acciones de personal" debe ser el que hace efecto
-// en Salario Base, Salario Quincenal Bruto, Devengado, Cargas Sociales, Impuesto Renta, Monto Neto.
+// Regla visual final:
+// - En "Detalle de acciones de personal" se muestra el monto propio/original de la accion (action.monto).
+// - En Carga Social e Impuesto Renta se muestran montos calculados del sistema (filas sin idAccion).
+//
+// Regla de calculo final:
+// - El impacto real de cada accion aprobada se aplica en el engine de planilla y se refleja en:
+//   Salario Quincenal Bruto, Devengado, Cargas Sociales, Impuesto Renta, Monto Neto y Dias.
+// - El detalle es vista de acciones; la fila principal del empleado es la vista de resultado financiero.
 
-// Por tipo:
-// - Vacaciones: (salarioBase * vacationDays) / 30. Nunca action.monto.
-// - Licencias aprobadas: approvedActionAmountMap (licenseRemAmount o fallback por días).
-// - Ausencias aprobadas: approvedActionAmountMap (absenceRemAmount si existe en líneas).
-// - Pendientes: action.monto para la mayoría; vacaciones usa fórmula.
-// - Carga Social / Impuesto Renta: montos calculados por el sistema (no idAccion).
+---
+
+## 21. Alcance actual por periodicidad
+
+```typescript
+// La logica validada/documentada en este modulo aplica para:
+// - Quincenal
+// - Mensual
+//
+// Semanal y bisemanal (por horas) tienen flujo y reglas distintas y se manejan aparte.
+```
 ```
 
 ---

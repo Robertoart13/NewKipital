@@ -737,6 +737,7 @@ export class PayrollService {
         PersonalActionEstado.PENDING_SUPERVISOR,
         PersonalActionEstado.PENDING_RRHH,
         PersonalActionEstado.APPROVED,
+        PersonalActionEstado.INVALIDATED,
       ];
 
       const approvedActionRuleMap = await this.loadApprovedActionRuleMap(

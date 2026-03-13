@@ -26,10 +26,11 @@ stateDiagram-v2
 1. Seleccionar planilla procesable.
 2. Cargar empleados elegibles.
 3. Cargar acciones de personal dentro del rango de fechas (pendientes y aprobadas).
-4. Calcular bruto, deducciones y neto.
-5. Revisar tabla por empleado.
-6. Verificar planilla.
-7. Aplicar planilla.
+4. Revisar y aprobar/invalidar acciones por empleado.
+5. Validar montos recalculados por fila de empleado.
+6. Marcar empleados ya revisados (checkbox).
+7. Verificar planilla.
+8. Aplicar planilla.
 
 ## 🔄 Flujo operativo
 ```mermaid
@@ -53,6 +54,11 @@ flowchart TD
   - `Pendiente Supervisor`
   - `Pendiente RRHH`
   - `Aprobada`
+- Aprobar accion en planilla no marca automaticamente al empleado.
+- El checkbox del empleado se usa al final, cuando la revision ya termino.
+- El recálculo por fila aplica aun cuando el empleado este excluido, para poder revisar antes de marcar.
+- Los totales de planilla y la aplicacion final solo toman empleados marcados.
+- Si se invalida una accion por error, se puede reactivar para regresarla a `Pendiente Supervisor` y volver a aprobar.
 
 ## 🎯 Que pasa si...
 - Planilla inactiva con acciones pendientes: quedan en estado pendiente o invalidadas segun regla de compatibilidad.
@@ -64,6 +70,9 @@ flowchart TD
 - Bruto: salario base + ingresos aplicables.
 - Deducciones: retenciones y descuentos validos.
 - Neto: bruto - deducciones.
+- En "Detalle de acciones de personal" el monto mostrado es el monto propio/original de la accion.
+- El impacto financiero final de esas acciones se refleja en la fila principal del empleado
+  (bruto, devengado, cargas, renta, neto y dias).
 
 ## 🧮 Formula canonica de calculo (por empleado)
 ```mermaid

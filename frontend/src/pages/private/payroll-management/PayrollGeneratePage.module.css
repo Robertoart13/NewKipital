@@ -404,6 +404,19 @@
   background: #f8fafc !important;
 }
 
+/* Fila marcada (checkbox seleccionado, incluida en planilla): verde */
+.previewTable :global(.ant-table-tbody > tr.ant-table-row-selected > td) {
+  background: #dcfce7 !important;
+}
+
+/* Fila expandida (click para abrir detalle): azul con barra lateral (prioridad sobre marcada) */
+.previewTable :global(.ant-table-tbody > tr.employee-row-expanded > td) {
+  background: #e0f2fe !important;
+}
+.previewTable :global(.ant-table-tbody > tr.employee-row-expanded > td:first-child) {
+  border-left: 3px solid #246BA3 !important;
+}
+
 .previewTable :global(.ant-pagination) {
   margin-top: 16px !important;
 }
@@ -434,7 +447,7 @@
 
 .summaryGrid {
   display: grid;
-  grid-template-columns: repeat(2, minmax(200px, 260px));
+  grid-template-columns: repeat(2, minmax(240px, 320px));
   gap: 10px;
   margin-top: 14px;
   margin-left: auto;

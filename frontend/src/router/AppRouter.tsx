@@ -462,7 +462,9 @@ export function AppRouter() {
           element={
             <PrivateLayout>
               <PermissionGuard requiredPermission="payroll:generate">
-                <PayrollGeneratePage />
+                <PermissionGuard requiredPermission="employee:view-sensitive">
+                  <PayrollGeneratePage />
+                </PermissionGuard>
               </PermissionGuard>
             </PrivateLayout>
           }

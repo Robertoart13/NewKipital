@@ -58,8 +58,10 @@ stateDiagram-v2
 1. `Crear` planilla.
 2. `Process` para cargar tabla/snapshot.
 3. Revisar detalle por empleado.
-4. `Verify`.
-5. `Apply`.
+4. Aprobar/invalidar acciones necesarias por empleado.
+5. Marcar checkbox del empleado cuando su revision este completa.
+6. `Verify`.
+7. `Apply`.
 
 ## Reapertura de planilla verificada
 - Ruta: `Gestión Planilla > Planillas`.
@@ -110,6 +112,9 @@ Cuando aprueba una acción en la tabla de detalle del empleado:
 Regla funcional:
 - Si la acción aprobada ya estaba ligada a esa misma planilla, también debe impactar el recálculo del empleado.
 - En la tabla se cargan acciones dentro del rango de fechas de la planilla (pendiente supervisor, pendiente RRHH y aprobada).
+- La aprobación dentro de planilla no debe marcar automaticamente el checkbox del empleado.
+- Primero se revisa y aprueba; el marcado es el ultimo paso operativo.
+- Si una acción fue `Invalidada` por error, puede usarse `Reactivar` para devolverla a `Pendiente Supervisor` y aprobarla nuevamente.
 
 ## Cómo se calcula cada campo (vista usuario)
 | Campo | Regla funcional |
@@ -138,6 +143,14 @@ Vista simplificada:
 Regla operativa:
 - El `Estado` indica si ya impacta cálculo (`Aprobada`) o sigue pendiente.
 - El `Monto` se deja al final para lectura financiera rápida.
+- El `Monto` mostrado en esta tabla es el monto propio de la accion (valor original de la accion).
+- El efecto de esa accion sobre planilla se ve en la fila principal del empleado:
+  - `Salario Quincenal Bruto`
+  - `Devengado`
+  - `Cargas Sociales`
+  - `Impuesto Renta`
+  - `Monto Neto`
+  - `Dias`
 
 ## Permisos
 - Ver: `payroll:view`
@@ -148,6 +161,7 @@ Regla operativa:
 - Aplicar: `payroll:apply`
 - Reabrir: `payroll:reopen`
 - Inactivar/Reactivar: `payroll:cancel`
+- Gestion operativa de planilla (Cargar Planilla Regular): requiere `payroll:generate` y `employee:view-sensitive` (Ver datos sensibles de empleado).
 
 ## Ver también
 - [Acciones de personal](./06-ACCIONES-PERSONAL-OPERATIVO.md)
@@ -161,6 +175,7 @@ Regla operativa:
 - Desmarcado: el empleado se excluye de la planilla (no entra en totales ni aplicación).
 - Solo empleados marcados entran a Verify y Apply.
 - Si no hay empleados marcados, Verify/Apply se bloquea.
+- Aunque este desmarcado, la fila del empleado se recalcula al aprobar/invalidar acciones para poder revisar montos antes de marcar.
 
 ## Control de Cambios Tardíos
 - Si un empleado está marcado/verificado, no se permite crear ni aprobar nuevas acciones de personal en esa planilla.
