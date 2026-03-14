@@ -3,8 +3,18 @@ import type { RootState } from '../store';
 
 const selectPermissions = (state: RootState) => state.permissions.permissions;
 
+const normalizePermissionCode = (permission: string): string => permission.replaceAll('_', '-');
+
 const hasPermissionWithAliases = (permissions: string[], required: string): boolean => {
   if (permissions.includes(required)) return true;
+
+  // Compatibilidad legacy: algunos catálogos antiguos usan "_" y nuevos usan "-".
+  // Ejemplo: employee:view_sensitive vs employee:view-sensitive
+  const normalizedRequired = normalizePermissionCode(required);
+  if (permissions.some((permission) => normalizePermissionCode(permission) === normalizedRequired)) {
+    return true;
+  }
+
   if (required.startsWith('company:') && permissions.includes('company:manage')) return true;
   return false;
 };
