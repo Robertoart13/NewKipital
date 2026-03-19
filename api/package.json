@@ -30,7 +30,9 @@
     "script:fix-users-app": "npx ts-node -r tsconfig-paths/register scripts/run-fix-users-app.ts",
     "script:limpiar-ana": "npx ts-node -r tsconfig-paths/register scripts/run-limpiar-ana.ts",
     "script:validacion-cifrado": "npx ts-node -r tsconfig-paths/register scripts/run-validacion-cifrado-identidad.ts",
-    "script:validacion-cifrado:stress": "npx ts-node -r tsconfig-paths/register scripts/run-validacion-cifrado-identidad.ts --stress=400"
+    "script:validacion-cifrado:stress": "npx ts-node -r tsconfig-paths/register scripts/run-validacion-cifrado-identidad.ts --stress=400",
+    "script:audit-sensitive-permissions": "npx ts-node -r tsconfig-paths/register scripts/run-audit-sensitive-permissions.ts",
+    "script:controlled-key-rotation": "npx ts-node -r tsconfig-paths/register scripts/run-controlled-key-rotation.ts"
   },
   "dependencies": {
     "@nestjs/common": "^11.0.1",

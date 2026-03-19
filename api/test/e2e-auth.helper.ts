@@ -93,31 +93,29 @@ export async function ensureE2ELogin(
   }
 
   if (!forceConfiguredEmail) {
-    const preferredUsers = await dataSource.query(
-      `
+      const preferredUsers = await dataSource.query(
+        `
         SELECT email_usuario AS email
         FROM sys_usuarios
         WHERE estado_usuario = 1
-          AND password_hash_usuario IS NOT NULL
           AND LOWER(email_usuario) = ?
         LIMIT 1
       `,
-      [PREFERRED_E2E_EMAIL],
-    );
+        [PREFERRED_E2E_EMAIL],
+      );
     pushCandidate(preferredUsers?.[0]?.email);
   }
 
   if (!forceConfiguredEmail && requiredPermissions.length > 0) {
     const placeholders = requiredPermissions.map(() => '?').join(',');
-    const privilegedUsers = await dataSource.query(
-      `
+      const privilegedUsers = await dataSource.query(
+        `
         SELECT u.email_usuario AS email
         FROM sys_usuarios u
         INNER JOIN sys_usuario_rol_global urg ON urg.id_usuario = u.id_usuario
         INNER JOIN sys_rol_permiso rp ON rp.id_rol = urg.id_rol
         INNER JOIN sys_permisos p ON p.id_permiso = rp.id_permiso
         WHERE u.estado_usuario = 1
-          AND u.password_hash_usuario IS NOT NULL
           AND p.codigo_permiso IN (${placeholders})
         GROUP BY u.id_usuario, u.email_usuario
         HAVING COUNT(DISTINCT p.codigo_permiso) = ?
@@ -136,7 +134,6 @@ export async function ensureE2ELogin(
       SELECT email_usuario AS email
       FROM sys_usuarios
       WHERE estado_usuario = 1
-        AND password_hash_usuario IS NOT NULL
       ORDER BY id_usuario ASC
       LIMIT 10
     `);

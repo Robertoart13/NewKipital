@@ -47,4 +47,9 @@ describe('menu.selectors permissions filtering', () => {
     const visible = getVisibleMenuItems(buildState(['employee:view']));
     expect(findMenuItemById(visible, 'personal-actions')).toBeNull();
   });
+
+  it('accepts permission alias underscore/hyphen in menu filtering', () => {
+    const visible = getVisibleMenuItems(buildState(['employee:view_sensitive', 'payroll:generate']));
+    expect(findMenuItemById(visible, 'payroll-management')).not.toBeNull();
+  });
 });

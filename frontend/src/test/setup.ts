@@ -1,6 +1,5 @@
 import * as matchers from '@testing-library/jest-dom/matchers';
 import { cleanup } from '@testing-library/react';
-import { expect, afterEach } from 'vitest';
 
 // Force garbage collection before each test file if --expose-gc is available.
 // This prevents memory accumulation when many module-heavy files share a worker.
@@ -8,6 +7,7 @@ import { expect, afterEach } from 'vitest';
 (globalThis as any).gc?.();
 
 // Extend Vitest's expect with jest-dom matchers
+// `expect` and lifecycle hooks are available globally via vitest config (`globals: true`).
 expect.extend(matchers);
 
 // Cleanup after each test

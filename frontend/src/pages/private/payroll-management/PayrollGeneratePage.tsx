@@ -81,6 +81,7 @@ import { bustApiCache } from '../../../lib/apiCache';
 import { useAppSelector } from '../../../store/hooks';
 import {
   canProcessPayroll,
+  hasPermission,
   canVerifyPayroll,
 } from '../../../store/selectors/permissions.selectors';
 
@@ -276,7 +277,7 @@ export function PayrollGeneratePage() {
   // ── Permisos desde Redux ────────────────────────────────────────────────────
   const canProcess           = useAppSelector(canProcessPayroll);
   const canVerify            = useAppSelector(canVerifyPayroll);
-  const canViewSensitive     = useAppSelector((s) => s.permissions.permissions.includes('employee:view-sensitive'));
+  const canViewSensitive     = useAppSelector((s) => hasPermission(s, 'employee:view-sensitive'));
   const canApproveActions    = useAppSelector((s) => s.permissions.permissions.includes('hr_action:approve'));
   const companies            = useAppSelector((s) => s.auth.companies);
   const activeCompany        = useAppSelector((s) => s.activeCompany.company);

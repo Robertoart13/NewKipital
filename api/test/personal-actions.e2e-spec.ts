@@ -80,6 +80,12 @@ describe('PersonalActions (e2e)', () => {
   beforeAll(async () => {
     process.env.NODE_ENV = 'test';
     process.env.E2E_DISABLE_CSRF = 'true';
+    if (!String(process.env.E2E_EMAIL ?? '').trim()) {
+      process.env.E2E_EMAIL = 'rzuniga@roccacr.com';
+    }
+    if (!String(process.env.E2E_PASSWORD ?? '').trim()) {
+      process.env.E2E_PASSWORD = 'Demo2026!';
+    }
 
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [AppModule],

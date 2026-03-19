@@ -4,10 +4,12 @@ import type { ConfigService } from '@nestjs/config';
 
 describe('EmployeeSensitiveDataService', () => {
   let service: EmployeeSensitiveDataService;
+  let config: Record<string, string>;
 
   beforeEach(() => {
+    config = {};
     const configService = {
-      get: jest.fn().mockReturnValue(''),
+      get: jest.fn((key: string, defaultValue?: string) => config[key] ?? defaultValue ?? ''),
     } as unknown as ConfigService;
     service = new EmployeeSensitiveDataService(configService);
   });
@@ -83,6 +85,68 @@ describe('EmployeeSensitiveDataService', () => {
 
     it('should return plaintext for non-encrypted value', () => {
       expect(service.decrypt('plaintext-value')).toBe('plaintext-value');
+    });
+  });
+
+  describe('key rotation and strict config', () => {
+    it('should encrypt using active kid from keyring and decrypt with same keyring', () => {
+      config = {
+        EMPLOYEE_ENCRYPTION_KEYS: JSON.stringify({
+          k202603: 'first-key',
+          k202604: 'second-key',
+        }),
+        EMPLOYEE_ENCRYPTION_ACTIVE_KID: 'k202604',
+      };
+      const configService = {
+        get: jest.fn((key: string, defaultValue?: string) => config[key] ?? defaultValue ?? ''),
+      } as unknown as ConfigService;
+      const rotatedService = new EmployeeSensitiveDataService(configService);
+
+      const encrypted = rotatedService.encrypt('sensitive');
+      expect(encrypted).toContain('enc:v1:k202604:');
+      expect(rotatedService.decrypt(encrypted)).toBe('sensitive');
+    });
+
+    it('should decrypt data encrypted with old kid when keyring includes that kid', () => {
+      const configOld = {
+        EMPLOYEE_ENCRYPTION_KEYS: JSON.stringify({
+          old: 'old-key',
+          new: 'new-key',
+        }),
+        EMPLOYEE_ENCRYPTION_ACTIVE_KID: 'old',
+      };
+      const oldConfigService = {
+        get: jest.fn((key: string, defaultValue?: string) => configOld[key] ?? defaultValue ?? ''),
+      } as unknown as ConfigService;
+      const oldService = new EmployeeSensitiveDataService(oldConfigService);
+      const encryptedWithOldKid = oldService.encrypt('legacy-data')!;
+
+      const configNew = {
+        EMPLOYEE_ENCRYPTION_KEYS: JSON.stringify({
+          old: 'old-key',
+          new: 'new-key',
+        }),
+        EMPLOYEE_ENCRYPTION_ACTIVE_KID: 'new',
+      };
+      const newConfigService = {
+        get: jest.fn((key: string, defaultValue?: string) => configNew[key] ?? defaultValue ?? ''),
+      } as unknown as ConfigService;
+      const newService = new EmployeeSensitiveDataService(newConfigService);
+
+      expect(newService.decrypt(encryptedWithOldKid)).toBe('legacy-data');
+    });
+
+    it('should throw in production when no encryption key is provided', () => {
+      const strictConfigService = {
+        get: jest.fn((key: string, defaultValue?: string) => {
+          if (key === 'NODE_ENV') return 'production';
+          return defaultValue ?? '';
+        }),
+      } as unknown as ConfigService;
+
+      expect(() => new EmployeeSensitiveDataService(strictConfigService)).toThrow(
+        'Security configuration error: EMPLOYEE_ENCRYPTION_KEY(S) is required for this environment.',
+      );
     });
   });
 });

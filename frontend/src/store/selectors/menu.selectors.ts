@@ -6,8 +6,14 @@ import type { RootState } from '../store';
 const selectMenuConfig = (state: RootState) => state.menu.config;
 const selectPermissions = (state: RootState) => state.permissions.permissions;
 
+const normalizePermissionCode = (permission: string): string => permission.replaceAll('_', '-');
+
 const hasPermissionForMenu = (permissions: string[], required: string): boolean => {
   if (permissions.includes(required)) return true;
+  const normalizedRequired = normalizePermissionCode(required);
+  if (permissions.some((permission) => normalizePermissionCode(permission) === normalizedRequired)) {
+    return true;
+  }
   if (required.startsWith('company:') && permissions.includes('company:manage')) return true;
   return false;
 };

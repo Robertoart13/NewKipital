@@ -73,6 +73,12 @@ describe('PermissionGuard', () => {
     expect(screen.getByText('Contenido protegido')).toBeInTheDocument();
   });
 
+  it('renders children when permission differs only by underscore/hyphen', () => {
+    setup(true, true, ['employee:view_sensitive']);
+    renderGuard('employee:view-sensitive');
+    expect(screen.getByText('Contenido protegido')).toBeInTheDocument();
+  });
+
   it('includes the missing permission name in the 403 subtitle', () => {
     setup(true, true, []);
     renderGuard('payroll:create');

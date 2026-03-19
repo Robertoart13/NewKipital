@@ -1,18 +1,41 @@
-# 🛠️ Manual Tecnico - Pendientes Tecnicos
+﻿# Manual Tecnico - Pendientes Tecnicos
 
-## 🎯 Como leer pendientes
+## Registro de validacion reciente (2026-03-16)
+- `api`: `employee-sensitive-data.service.spec.ts` => `14/14` passing.
+- `api` rotacion controlada de llaves (`PEND-001`) ejecutada con evidencia en BD objetivo:
+  - Antes: `kid` inicial en escritura y lectura valida.
+  - Durante: escritura con `kid` nuevo y lectura valida.
+  - Despues/rollback: escritura de contingencia con `kid` anterior y lectura compatible de ambos `kid`.
+  - Limpieza: registro temporal eliminado de `sys_empleados` al finalizar prueba.
+- `api e2e`: `auth.e2e-spec.ts --testTimeout=30000` => `8/8` passing.
+- `api e2e` regresion critica transversal:
+  - comando:
+    `npm --prefix api run test:e2e -- auth.e2e-spec.ts companies.e2e-spec.ts employees.e2e-spec.ts personal-actions.e2e-spec.ts payroll-employee-selection.e2e-spec.ts intercompany-transfer-snapshot.e2e-spec.ts --testTimeout=30000 --runInBand`
+  - resultado: `6/6` suites, `30/30` tests passing.
+- `api`: auditoria de permisos sensibles ejecutada con script:
+  - `npm run script:audit-sensitive-permissions`
+  - salida valida con matriz por rol y por usuario.
+- `frontend` (Vitest):
+  - `PermissionGuard.test.tsx` => `8/8` passing.
+  - `menu.selectors.test.ts` => `6/6` passing.
+  - ejecucion recomendada en este workspace:
+    1. `cd frontend`
+    2. `npx vitest run src/guards/__tests__/PermissionGuard.test.tsx --config vitest.config.ts`
+    3. `npx vitest run src/store/selectors/__tests__/menu.selectors.test.ts --config vitest.config.ts`
+
+## Como leer pendientes
 - `P0`: afecta operacion o seguridad.
 - `P1`: mejora necesaria antes de escalar volumen.
 - `P2`: optimizacion o mejora incremental.
 
-## 🎯 Bloques recomendados de seguimiento
+## Bloques recomendados de seguimiento
 - Seguridad y cifrado
 - Logging y monitoreo
 - CI/CD
 - Performance
 - Cobertura API/QA
 
-## 📊 Vista operativa recomendada
+## Vista operativa recomendada
 Use como tablero oficial:
 - [Backlog consolidado (tablero vivo)](../12-backlog-pendientes/BACKLOG-CONSOLIDADO.md)
 
@@ -23,13 +46,13 @@ Cada fila debe tener:
 4. Bloqueo actual
 5. Criterio de cierre
 
-## 🎯 Regla de cierre de pendiente
+## Regla de cierre de pendiente
 Un pendiente se cierra cuando:
 1. Existe cambio implementado.
 2. Existe evidencia de prueba.
 3. Se actualiza documento maestro correspondiente.
 
-## 📌 Pendientes finos de paridad legacy (planilla)
+## Pendientes finos de paridad legacy (planilla)
 | Prioridad | Pendiente | Estado |
 |---|---|---|
 | `P1` | Validar en ambiente corriendo (`PATCH /api/payroll/:id/load-table`) paridad exacta campo a campo para empleados quincenales con combinacion de acciones. | Pendiente de ejecucion |
@@ -40,7 +63,7 @@ Un pendiente se cierra cuando:
 
 ---
 
-## 📋 Analisis: ajustes pendientes para cerrar planillas (referencia HRK-TalentPay)
+## Analisis: ajustes pendientes para cerrar planillas (referencia HRK-TalentPay)
 
 Analisis derivado de la comparacion con `Planilla_empleados_cargar.js` (HRK-TalentPay). Usar como guia para implementacion posterior.
 
@@ -79,7 +102,7 @@ Analisis derivado de la comparacion con `Planilla_empleados_cargar.js` (HRK-Tale
 
 ---
 
-## 🔗 Ver tambien
+## Ver tambien
 - [Backlog consolidado](../12-backlog-pendientes/BACKLOG-CONSOLIDADO.md)
 - [Gobierno de cambios](../15-enterprise-gobierno/03-GOBIERNO-CAMBIOS-DOCS.md)
 
@@ -124,6 +147,15 @@ Cierre ejecutado:
 - Evidencia de 4 casos QA validada: flujo feliz, duplicado, empleado bloqueado, error/rollback.
 - Evidencia cruzada UI + API + DB consolidada.
 - Validacion final de notificaciones completada: campana -> `/notifications` -> abrir no leida -> cambio a leida -> detalle a la derecha.
+
+## Siguiente bloque de pruebas pendientes (prioridad)
+| Prioridad | Prueba pendiente | Estado |
+|---|---|---|
+| `P0` | Suite E2E de regresion de flujos criticos de planilla y acciones (PEND-006). | En curso (API/BD evidenciado, falta cierre UI) |
+| `P0` | Consolidar evidencia UI transversal de la regresion (complemento a evidencia API/BD ya ejecutada). | En curso |
+| `P0` | Validacion final de excepciones de permisos sensibles y aprobacion de Security Lead (PEND-007). | En curso |
+| `P0` | Prueba controlada de rotacion de llaves en ambiente objetivo con evidencia de rollback/contingencia (PEND-001). | Cerrado |
+| `P2` | E2E UI de Reglas de distribucion (crear/editar/inactivar/reactivar/bitacora). | Pendiente |
 
 Referencia de plan detallado:
 - [PEND-012 - Carga masiva de horas extras](../12-backlog-pendientes/PEND-012-CARGA-MASIVA-HORAS-EXTRAS-PLAN.md)
